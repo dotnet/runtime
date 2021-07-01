@@ -39,6 +39,9 @@ namespace Wasm.Build.Tests
         protected bool _enablePerTestCleanup = false;
         protected SharedBuildPerTestClassFixture _buildContext;
 
+        // FIXME: use an envvar to override this
+        protected static int s_defaultPerTestTimeoutMs = 15*60*1000; // 15mins
+
         static BuildTestBase()
         {
             DirectoryInfo? solutionRoot = new (AppContext.BaseDirectory);
@@ -230,7 +233,8 @@ namespace Wasm.Build.Tests
                                         args: args.ToString(),
                                         workingDir: bundleDir,
                                         envVars: envVars,
-                                        label: testCommand);
+                                        label: testCommand,
+                                        timeoutMs: s_defaultPerTestTimeoutMs);
 
             File.WriteAllText(Path.Combine(testLogPath, $"xharness.log"), output);
 
@@ -457,9 +461,9 @@ namespace Wasm.Build.Tests
                 Assert.True(finfo0.Length != finfo1.Length, $"{label}: File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
         }
 
-        protected (int exitCode, string buildOutput) AssertBuild(string args, string label="build", bool expectSuccess=true)
+        protected (int exitCode, string buildOutput) AssertBuild(string args, string label="build", bool expectSuccess=true, int? timeoutMs=null)
         {
-            var result = RunProcess("dotnet", _testOutput, args, workingDir: _projectDir, label: label);
+            var result = RunProcess("dotnet", _testOutput, args, workingDir: _projectDir, label: label, timeoutMs: timeoutMs ?? s_defaultPerTestTimeoutMs);
             if (expectSuccess)
                 Assert.True(0 == result.exitCode, $"Build process exited with non-zero exit code: {result.exitCode}");
             else
@@ -490,7 +494,8 @@ namespace Wasm.Build.Tests
                                          IDictionary<string, string>? envVars = null,
                                          string? workingDir = null,
                                          string? label = null,
-                                         bool logToXUnit = true)
+                                         bool logToXUnit = true,
+                                         int? timeoutMs = null)
         {
             _testOutput.WriteLine($"Running {path} {args}");
             Console.WriteLine($"Running: {path}: {args}");
@@ -544,7 +549,14 @@ namespace Wasm.Build.Tests
 
                 // process.WaitForExit doesn't work if the process exits too quickly?
                 // resetEvent.WaitOne();
-                process.WaitForExit();
+                if (!process.WaitForExit(timeoutMs ?? s_defaultPerTestTimeoutMs))
+                {
+                    // process didn't exit
+                    process.Kill(entireProcessTree: true);
+                    var lastLines = outputBuilder.ToString().Split('\r', '\n').TakeLast(20);
+                    throw new XunitException($"Process timed out, output: {string.Join(Environment.NewLine, lastLines)}");
+
+                }
                 return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
             }
             catch (Exception ex)
