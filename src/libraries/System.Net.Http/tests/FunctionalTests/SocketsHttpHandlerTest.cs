@@ -2052,7 +2052,7 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/41078")]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/41078")]
         public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled()
         {
             const int MaxConcurrentStreams = 2;
@@ -2185,17 +2185,19 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
-        [OuterLoop("Incurs long delay")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/43877")]
-        public async Task Http2_MultipleConnectionsEnabled_IdleConnectionTimeoutExpired_ConnectionRemovedAndNewCreated()
+        [ConditionalTheory(nameof(SupportsAlpn))]
+        [MemberData(nameof(LongRunning))]
+        //[OuterLoop("Incurs long delay")]
+        public async Task Http2_MultipleConnectionsEnabled_IdleConnectionTimeoutExpired_ConnectionRemovedAndNewCreated(int a)
         {
+            Assert.True(a > -1);
             const int MaxConcurrentStreams = 2;
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler();
             handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(20);
             using (HttpClient client = CreateHttpClient(handler))
             {
+                client.Timeout = TimeSpan.FromSeconds(30);
                 server.AllowMultipleConnections = true;
                 List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
                 Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
@@ -2204,7 +2206,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(MaxConcurrentStreams, acceptedStreamIds.Count);
 
                 List<Task<HttpResponseMessage>> connection1SendTasks = new List<Task<HttpResponseMessage>>();
-                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 30).ConfigureAwait(false);
+                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 10).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, connection1SendTasks, MaxConcurrentStreams);
                 int handledRequests1 = (await HandleAllPendingRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false)).Count;
 
@@ -2217,20 +2219,11 @@ namespace System.Net.Http.Functional.Tests
 
                 // Wait until the idle connection timeout expires.
                 await connection1.WaitForClientDisconnectAsync(false).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
-                // Client connection might be still alive, so send an extra request which will either land on the shutting down connection or on a new one.
-                try
-                {
-                    await client.GetAsync(server.Address).WaitAsync(handler.PooledConnectionIdleTimeout).ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    // Suppress all exceptions.
-                }
 
                 Assert.True(connection1.IsInvalid);
                 Assert.False(connection0.IsInvalid);
 
-                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 15, expectedWarmUpTasks:2).ConfigureAwait(false);
+                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams, readTimeout: 2).ConfigureAwait(false);
 
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
 
@@ -2244,6 +2237,14 @@ namespace System.Net.Http.Functional.Tests
                 await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
                 await VerifySendTasks(sendTasks).ConfigureAwait(false);
+            }
+        }
+
+        public static IEnumerable<object[]> LongRunning()
+        {
+            for(var i = 0; i < 10; i++)
+            {
+                yield return new object[] { i };
             }
         }
 
@@ -2309,6 +2310,10 @@ namespace System.Net.Http.Functional.Tests
                     (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
                     await connection.SendDefaultResponseAsync(streamId).ConfigureAwait(false);
                     lastStreamId = streamId;
+                }
+                catch (IOException)
+                {
+                    return (i, lastStreamId);
                 }
                 catch (OperationCanceledException)
                 {
