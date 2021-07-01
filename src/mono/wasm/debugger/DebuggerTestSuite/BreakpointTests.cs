@@ -287,5 +287,23 @@ namespace DebuggerTests
             CheckNumber(locals, "b", 10);
         }
 
+        [Fact]
+        public async Task DebugLazyLoadedAssemblyWithHotReload()
+        {
+            var pause_location = await LoadAssemblyAndTestHotReload(
+                    Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
+                    Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
+                    Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"));
+            /*var source_location = "dotnet://lazy-debugger-test-embedded.dll/lazy-debugger-test-embedded.cs";
+            Assert.Contains(source_location, scripts.Values);*/
+            var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+            //Console.WriteLine(pause_location);
+            CheckNumber(locals, "a", 10);
+            Console.WriteLine(pause_location["callFrames"][0]);
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", null, 0, 0, null);
+            Console.WriteLine(pause_location["callFrames"][0]);
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", null, 0, 0, null);
+            Console.WriteLine(pause_location["callFrames"][0]);
+        }
     }
 }
