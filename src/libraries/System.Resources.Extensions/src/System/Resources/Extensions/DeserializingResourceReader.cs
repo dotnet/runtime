@@ -168,7 +168,7 @@ namespace System.Resources.Extensions
                             throw new TypeLoadException(SR.Format(SR.TypeLoadException_CannotLoadConverter, type));
                         }
 
-                        value = converter.ConvertFrom(data);
+                        value = converter.ConvertFrom(data)!;
                         break;
                     }
                 case SerializationFormat.TypeConverterString:
@@ -182,7 +182,7 @@ namespace System.Resources.Extensions
                             throw new TypeLoadException(SR.Format(SR.TypeLoadException_CannotLoadConverter, type));
                         }
 
-                        value = converter.ConvertFromInvariantString(stringData);
+                        value = converter.ConvertFromInvariantString(stringData)!;
                         break;
                     }
                 case SerializationFormat.ActivatorStream:

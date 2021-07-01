@@ -26,7 +26,7 @@ namespace System.ComponentModel.DataAnnotations
 
         public override Type ComponentType { get { return _descriptor.ComponentType; } }
 
-        public override object GetValue(object component) { return _descriptor.GetValue(component); }
+        public override object? GetValue(object? component) { return _descriptor.GetValue(component); }
 
         public override bool IsReadOnly
         {
@@ -45,7 +45,7 @@ namespace System.ComponentModel.DataAnnotations
 
         public override void ResetValue(object component) { _descriptor.ResetValue(component); }
 
-        public override void SetValue(object component, object value) { _descriptor.SetValue(component, value); }
+        public override void SetValue(object? component, object? value) { _descriptor.SetValue(component, value); }
 
         public override bool ShouldSerializeValue(object component) { return _descriptor.ShouldSerializeValue(component); }
 
