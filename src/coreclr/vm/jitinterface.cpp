@@ -104,39 +104,33 @@ GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 uint64_t g_cbILJitted = 0;
 uint32_t g_cMethodsJitted = 0;
-thread_local int64_t g_cNanosecondsInJitForThread = 0;
-int64_t g_cNanosecondsInJit = 0;
+int64_t g_cQPCTicksInJit = 0;
+thread_local uint64_t g_cbILJittedForThread = 0;
+thread_local uint32_t g_cMethodsJittedForThread = 0;
+thread_local int64_t g_cQPCTicksInJitForThread = 0;
 
 #ifndef CROSSGEN_COMPILE
-FCIMPL0(INT64, GetJittedBytes)
+FCIMPL1(int64_t, GetCompiledILBytes, bool currentThread)
 {
     FCALL_CONTRACT;
 
-    return g_cbILJitted;
+    return currentThread ? g_cbILJittedForThread : g_cbILJitted;
 }
 FCIMPLEND
 
-FCIMPL0(INT32, GetJittedMethodsCount)
+FCIMPL1(int32_t, GetCompiledMethodCount, bool currentThread)
 {
     FCALL_CONTRACT;
 
-    return g_cMethodsJitted;
+    return currentThread ? g_cMethodsJittedForThread : g_cMethodsJitted;
 }
 FCIMPLEND
 
-FCIMPL0(INT64, GetNanosecondsInJit)
+FCIMPL1(int64_t, GetCompilationTimeInTicks, bool currentThread)
 {
     FCALL_CONTRACT;
 
-    return g_cNanosecondsInJit;
-}
-FCIMPLEND
-
-FCIMPL0(INT64, GetNanosecondsInJitForThread)
-{
-    FCALL_CONTRACT;
-
-    return g_cNanosecondsInJitForThread;
+    return currentThread ? g_cQPCTicksInJitForThread : g_cQPCTicksInJit;
 }
 FCIMPLEND
 #endif
@@ -13035,15 +13029,10 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     PCODE ret = NULL;
     int64_t jitStartTimestamp = 0;
     int64_t jitEndTimestamp = 0;
-    int64_t jitTimeNs = 0;
-    static int64_t qpcFrequency = 1;
+    int64_t jitTimeQPCTicks = 0;
     LARGE_INTEGER qpcValue;
 
     COOPERATIVE_TRANSITION_BEGIN();
-
-    if (qpcFrequency == 1)
-        if (QueryPerformanceFrequency (&qpcValue))
-            qpcFrequency = static_cast<int64_t>(qpcValue.QuadPart) / 1000000000 /* ns per s */;
 
     if (QueryPerformanceCounter (&qpcValue))
         jitStartTimestamp = static_cast<int64_t>(qpcValue.QuadPart);
@@ -13412,12 +13401,16 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     if (QueryPerformanceCounter (&qpcValue))
         jitEndTimestamp = static_cast<int64_t>(qpcValue.QuadPart);
 
-    jitTimeNs = jitEndTimestamp - jitStartTimestamp;
-    jitTimeNs /= qpcFrequency;
-    FastInterlockExchangeAddLong((LONG64*)&g_cNanosecondsInJit, jitTimeNs);
-    FastInterlockExchangeAddLong((LONG64*)&g_cNanosecondsInJitForThread, jitTimeNs);
+    jitTimeQPCTicks = jitEndTimestamp - jitStartTimestamp;
+
+    FastInterlockExchangeAddLong((LONG64*)&g_cQPCTicksInJit, jitTimeQPCTicks);
+    FastInterlockExchangeAddLong((LONG64*)&g_cQPCTicksInJitForThread, jitTimeQPCTicks);
+
     FastInterlockExchangeAddLong((LONG64*)&g_cbILJitted, methodInfo.ILCodeSize);
+    FastInterlockExchangeAddLong((LONG64*)&g_cbILJittedForThread, methodInfo.ILCodeSize);
+
     FastInterlockIncrement((LONG*)&g_cMethodsJitted);
+    FastInterlockIncrement((LONG*)&g_cMethodsJittedForThread);
 
     COOPERATIVE_TRANSITION_END();
     return ret;

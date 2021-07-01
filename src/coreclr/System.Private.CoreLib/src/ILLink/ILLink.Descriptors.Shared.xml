@@ -36,10 +36,6 @@
     <type fullname="Internal.Runtime.InteropServices.InMemoryAssemblyLoader">
       <method name="LoadInMemoryAssembly" />
     </type>
-
-    <type fullname="System.Runtime.CompilerServices.RuntimeHelpers">
-      <method name="GetNanosecondsInJitForThread" />
-    </type>
   </assembly>
 
   <!-- The private Event methods are accessed by private reflection in the base EventSource class. -->
