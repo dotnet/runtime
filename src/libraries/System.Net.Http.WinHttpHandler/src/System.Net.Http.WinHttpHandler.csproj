@@ -10,8 +10,6 @@
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETFramework' and
                                                             '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_WinHttpHandler</GeneratePlatformNotSupportedAssemblyMessage>
-    <!-- S.N.Http.WinHttpHandler has a lot nullable warnings that need to be addressed: https://github.com/dotnet/runtime/issues/54598. -->
-    <Nullable Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">annotations</Nullable>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'" >
