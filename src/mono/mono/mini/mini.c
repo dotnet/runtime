@@ -3543,6 +3543,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->opt &= ~MONO_OPT_BRANCH;
 	}
 
+	cfg->after_method_to_ir = TRUE;
+
 	/* todo: remove code when we have verified that the liveness for try/catch blocks
 	 * works perfectly 
 	 */
