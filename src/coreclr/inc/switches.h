@@ -148,7 +148,9 @@
 // are treated as potential pinned interior pointers. When enabled, the runtime flag COMPLUS_GCCONSERVATIVE
 // determines dynamically whether GC is conservative. Note that appdomain unload, LCG and unloadable assemblies
 // do not work reliably with conservative GC.
+#if defined(TARGET_UNIX) || !defined(FEATURE_HIJACK) // Windows currently doesn't support conservative GC when suspending interruptible code
 #define FEATURE_CONSERVATIVE_GC 1
+#endif
 
 #if (defined(TARGET_ARM) && (!defined(ARM_SOFTFP) || defined(CONFIGURABLE_ARM_ABI))) || defined(TARGET_ARM64)
 #define FEATURE_HFA

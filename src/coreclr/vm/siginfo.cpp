@@ -4906,7 +4906,9 @@ void PromoteCarefully(promote_func   fn,
     //
     // Sanity check the stack scan limit
     //
+#ifdef FEATURE_SUPPORTS_STACK_LIMIT
     assert(sc->stack_limit != 0);
+#endif // FEATURE_SUPPORTS_STACK_LIMIT
 
     // Note that the base is at a higher address than the limit, since the stack
     // grows downwards.
@@ -4914,8 +4916,11 @@ void PromoteCarefully(promote_func   fn,
     // The reason is that on Unix, the stack size can be unlimited. In such case, the system can
     // shrink the current reserved stack space. That causes the real limit of the stack to move up and
     // the range can be reused for other purposes. But the sc->stack_limit is stable during the scan.
-    // Even on Windows, we care just about the stack above the stack_limit.
-    if ((sc->thread_under_crawl->IsAddressInStack(*ppObj)) && (PTR_TO_TADDR(*ppObj) >= sc->stack_limit))
+    if ((sc->thread_under_crawl->IsAddressInStack(*ppObj))
+#ifdef FEATURE_SUPPORTS_STACK_LIMIT
+         && (PTR_TO_TADDR(*ppObj) >= sc->stack_limit)
+#endif // FEATURE_SUPPORTS_STACK_LIMIT
+         )
     {
         return;
     }

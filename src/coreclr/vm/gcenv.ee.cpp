@@ -114,6 +114,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
                 IsGCSpecialThread() ||
                 (GetThread() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
 
+#ifdef FEATURE_SUPPORTS_STACK_LIMIT
     Frame* pTopFrame = pThread->GetFrame();
     Object ** topStack = (Object **)pTopFrame;
     if ((pTopFrame != ((Frame*)-1))
@@ -124,6 +125,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     }
 
     sc->stack_limit = (uintptr_t)topStack;
+#endif // FEATURE_SUPPORTS_STACK_LIMIT
 
 #ifdef FEATURE_CONSERVATIVE_GC
     if (g_pConfig->GetGCConservative())

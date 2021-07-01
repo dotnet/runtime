@@ -952,11 +952,32 @@ inline GC_ALLOC_FLAGS& operator&=(GC_ALLOC_FLAGS& a, GC_ALLOC_FLAGS b)
 #define UNCHECKED_OBJECTREF_TO_OBJECTREF(obj)       (obj)
 #endif
 
+#if !defined(FEATURE_HIJACK) || defined(TARGET_UNIX)
+#define FEATURE_SUPPORTS_STACK_LIMIT
+#else
+#if defined(FEATURE_CONSERVATIVE_GC)
+// On Windows platforms when we hijack, we use SuspendThread from outside the thread, and if we suspend
+// within an interruptible region, we can stop with the top Frame that is an InlinedCallFrame
+// that is not active. In that situation, it is possible for the actual top of the stack to be a managed
+// function which has a lower SP pointer than is reported from the InlinedCallFrame, or in the case of
+// Windows x86 platforms, the InlinedCallFrame may report a GetCallSiteSP of 0, or of an value associated
+// with some other callsite within the managed function that set up the InlinedCallFrame. This issue could
+// be fixed by capturing the SP after suspension, and storing it on the thread object for use when setting
+// stack_limit, but as conservative GC is not needed on any current Windows platforms, and the Unix scenario
+// is fully functional, I've added this #error instead.
+#error Conservative GC is not supported on this platform as the current computation of stack_limit is not strictly correct
+#endif // FEATURE_CONSERVATIVE_GC
+#endif // !defined(FEATURE_HIJACK) || defined(TARGET_UNIX)
+
 struct ScanContext
 {
     Thread* thread_under_crawl;
     int thread_number;
+#ifdef FEATURE_SUPPORTS_STACK_LIMIT
     uintptr_t stack_limit; // Lowest point on the thread stack that the scanning logic is permitted to read
+#else
+    uintptr_t stack_limitUNUSED; // Keep the shape of ScanContext the same whether or not STACK_LIMIT is supported for use
+#endif // FEATURE_SUPPORTS_STACK_LIMIT
     bool promotion; //TRUE: Promotion, FALSE: Relocation.
     bool concurrent; //TRUE: concurrent scanning
     void* _unused1;
@@ -973,7 +994,11 @@ struct ScanContext
 
         thread_under_crawl = 0;
         thread_number = -1;
+#ifdef FEATURE_SUPPORTS_STACK_LIMIT
         stack_limit = 0;
+#else
+        stack_limitUNUSED = 0;
+#endif // FEATURE_SUPPORTS_STACK_LIMIT
         promotion = false;
         concurrent = false;
         pMD = NULL;
