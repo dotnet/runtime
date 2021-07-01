@@ -68,9 +68,9 @@ namespace System
 
         private static class AndroidTimeZones
         {
-            private static IAndroidTimeZoneDB? db = GetDefaultTimeZoneDB();
+            private static AndroidTzData? db = GetDefaultTimeZoneDB();
 
-            private static IAndroidTimeZoneDB? GetDefaultTimeZoneDB()
+            private static AndroidTzData? GetDefaultTimeZoneDB()
             {
                 foreach (var p in AndroidTzData.Paths)
                 {
@@ -217,12 +217,6 @@ namespace System
         }
     }
 
-    internal interface IAndroidTimeZoneDB
-    {
-        IEnumerable<string> GetAvailableIds();
-        byte[] GetTimeZoneData(string? id);
-    }
-
     [StructLayout(LayoutKind.Sequential, Pack=1)]
     internal unsafe struct AndroidTzDataHeader
     {
@@ -254,7 +248,7 @@ namespace System
      * database location changed (https://source.android.com/devices/architecture/modular-system/runtime#time-zone-data-interactions)
      * The older locations still exist (at least the `/system/usr/share/zoneinfo` one) but they won't be updated.
      */
-    internal sealed class AndroidTzData : IAndroidTimeZoneDB
+    internal sealed class AndroidTzData
     {
 
         internal static readonly string[] Paths = new string[] {
