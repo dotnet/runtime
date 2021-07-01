@@ -93,14 +93,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="msquic.dll" Condition="Exists('msquic.dll')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Include="msquic.pdb" Condition="Exists('msquic.pdb')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
     <Content Include="libmsquic.dylib" Condition="Exists('libmsquic.dylib')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
