@@ -519,5 +519,286 @@ namespace System
             float u = BitConverter.Int32BitsToSingle(((int)(0x7f + n) << 23));
             return y * u;
         }
+
+        /// <summary>
+        /// Returns the sine of the specified angle measured in half-revolutions.
+        /// </summary>
+        /// <param name="x">An angle, measured in half-revolutions.</param>
+        /// <returns>The sine of <paramref name="x"/>. If <paramref name="x"/> is equal to <see cref="float.NaN"/>, <see cref="float.PositiveInfinity"/>,
+        /// or <see cref="float.NegativeInfinity"/>, this method returns <see cref="float.NaN"/>. </returns>
+        /// <remarks>
+        /// This method is effectively Sin(x * PI), with higher precision.
+        /// It guarantees to return -1, 0, or 1 when <paramref name="x"/> is integer or half-integer.
+        /// </remarks>
+        public static float SinPi(float x)
+        {
+            if (Abs(x) < 0.5f || !float.IsFinite(x))
+            {
+                // Fast path for small/special values, also covers +0/-0
+                return Sin(x * PI);
+            }
+
+            bool invert = false;
+            if (x < 0)
+            {
+                x = -x;
+                invert = true;
+            }
+
+            float floor = Floor(x);
+            if (x == floor)
+            {
+                // +0 for +n and -0 for -n
+                return invert ? -0.0f : 0.0f;
+            }
+
+            // fold all input into (0, 0.5]
+            if (((int)floor & 1) != 0)
+            {
+                // sin(x + PI) = -sin(x)
+                invert = !invert;
+            }
+
+            float rem = x - floor;
+            if (rem == 0.5f)
+            {
+                return invert ? -1 : 1;
+            }
+
+            if (rem > 0.5f)
+            {
+                // sin(PI - x) = sin(x)
+                rem = 1 - rem;
+            }
+
+            float sin = Sin(rem * PI);
+            return invert ? -sin : sin;
+        }
+
+        /// <summary>
+        /// Returns the cosine of the specified angle measured in half-revolutions.
+        /// </summary>
+        /// <param name="x">An angle, measured in half-revolutions.</param>
+        /// <returns>The cosine of <paramref name="x"/>. If <paramref name="x"/> is equal to <see cref="float.NaN"/>, <see cref="double.PositiveInfinity"/>,
+        /// or <see cref="float.NegativeInfinity"/>, this method returns <see cref="float.NaN"/>. </returns>
+        /// <remarks>
+        /// This method is effectively Cos(x * PI), with higher precision.
+        /// It guarantees to return -1, 0, or 1 when <paramref name="x"/> is integer or half-integer.
+        /// </remarks>
+        public static float CosPi(float x)
+        {
+            if (Abs(x) < 0.5f || !float.IsFinite(x))
+            {
+                // Fast path for small/special values, also covers +0/-0
+                return Cos(x * PI);
+            }
+
+            bool invert = false;
+            if (x < 0)
+            {
+                x = -x;
+            }
+
+            float floor = Floor(x);
+
+            // fold all input into [0, 0.5]
+            if (((int)floor & 1) != 0)
+            {
+                // cos(x + PI) = -cos(x)
+                invert = !invert;
+            }
+
+            if (x == floor)
+            {
+                return invert ? -1 : 1;
+            }
+
+            float rem = x - floor;
+            if (rem == 0.5f)
+            {
+                return 0.0f;
+            }
+
+            if (rem > 0.5f)
+            {
+                // cos(PI - x) = -cos(x)
+                rem = 1 - rem;
+                invert = !invert;
+            }
+
+            float cos = Cos(rem * PI);
+            return invert ? -cos : cos;
+        }
+
+        /// <summary>
+        /// Returns the tangent of the specified angle measured in half-revolutions.
+        /// </summary>
+        /// <param name="x">An angle, measured in half-revolutions.</param>
+        /// <returns>The tangent of <paramref name="x"/>. If <paramref name="x"/> is equal to <see cref="float.NaN"/>, <see cref="double.PositiveInfinity"/>,
+        /// or <see cref="float.NegativeInfinity"/>, this method returns <see cref="float.NaN"/>. </returns>
+        /// <remarks>
+        /// This method is effectively Tan(x * PI), with higher precision.
+        /// It guarantees to return 0, <see cref="float.PositiveInfinity"/> or <see cref="float.NegativeInfinity"/> when <paramref name="x"/> is integer or half-integer.
+        /// </remarks>
+        public static float TanPi(float x)
+        {
+
+            if (Abs(x) < 0.5f || !float.IsFinite(x))
+            {
+                // Fast path for small/special values, also covers +0/-0
+                return Tan(x * PI);
+            }
+
+            bool invert = false;
+            if (x < 0)
+            {
+                x = -x;
+                invert = true;
+            }
+
+            float floor = Floor(x);
+            if (x == floor)
+            {
+                // +0 for +2n and -0 for +2n+1
+                // -0 for -2n and +0 for -2n-1
+                if (((int)floor & 1) != 0)
+                {
+                    invert = !invert;
+                }
+                return invert ? -0.0f : 0.0f;
+            }
+
+            // fold all input into (0, 0.5]
+            float rem = x - floor;
+            if (rem == 0.5f)
+            {
+                // +inf for +2n+0.5 and -inf for +2n+1.5
+                // -inf for -2n-0.5 and +inf for -2n-1.5
+                if (((long)floor & 1) != 0)
+                {
+                    invert = !invert;
+                }
+                return invert ? float.NegativeInfinity : float.PositiveInfinity;
+            }
+
+            if (rem > 0.5)
+            {
+                // tan(PI - x) = -tan(x)
+                rem = 1 - rem;
+                invert = !invert;
+            }
+
+            float tan = Tan(rem * PI);
+            return invert ? -tan : tan;
+        }
+
+        // Float inverse-trigs fail special value tests on some platforms.
+        // Special case them.
+
+        /// <summary>
+        /// Returns the angle measured in half-revolutions whose sine is the specified number.
+        /// </summary>
+        /// <param name="x">A number representing a sine, where <paramref name="x"/> must be greater than or equal to -1, but
+        /// less than or equal to 1.</param>
+        /// <returns>An angle, θ, measured in half-revolutions, such that -0.5 ≤ θ ≤ 0.5.
+        /// -or-
+        /// <see cref="float.NaN"/> if <paramref name="x"/> &lt; -1 or <paramref name="x"/> &gt; 1
+        /// or <paramref name="x"/> equals <see cref="float.NaN"/>.</returns>
+        public static float AsinPi(float x)
+        {
+            if (x == 1)
+            {
+                return 0.5f;
+            }
+            if (x == -1)
+            {
+                return -0.5f;
+            }
+
+            return Asin(x) / PI;
+        }
+
+        /// <summary>
+        /// Returns the angle measured in half-revolutions whose cosine is the specified number.
+        /// </summary>
+        /// <param name="x">A number representing a cosine, where <paramref name="x"/> must be greater than or equal to -1, but
+        /// less than or equal to 1.</param>
+        /// <returns>An angle, θ, measured in half-revolutions, such that -0.5 ≤ θ ≤ 0.5.
+        /// -or-
+        /// <see cref="float.NaN"/> if <paramref name="x"/> &lt; -1 or <paramref name="x"/> &gt; 1
+        /// or <paramref name="x"/> equals <see cref="float.NaN"/>.</returns>
+        public static float AcosPi(float x)
+        {
+            if (x == 0)
+            {
+                return 0.5f;
+            }
+
+            return x > 0 ? Acos(x) / PI : 1 - Acos(-x) / PI;
+        }
+
+        /// <summary>
+        /// Returns the angle measured in half-revolutions whose tangent is the specified number.
+        /// </summary>
+        /// <param name="x">A number representing a tangent.</param>
+        /// <returns>An angle, θ, measured in half-revolutions, such that -0.5 ≤ θ ≤ 0.5.
+        /// -or-
+        /// <see cref="float.NaN"/> if <paramref name="x"/> equals <see cref="float.NaN"/>,
+        /// -0.5 if <paramref name="x"/> equals <see cref="float.NegativeInfinity"/>,
+        /// or 0.5 if <paramref name="x"/> equals <see cref="float.PositiveInfinity"/>.</returns>
+        public static float AtanPi(float x)
+        {
+            if (float.IsPositiveInfinity(x))
+            {
+                return 0.5f;
+            }
+            else if (float.IsNegativeInfinity(x))
+            {
+                return -0.5f;
+            }
+            else
+            {
+                return Atan(x) / PI;
+            }
+        }
+
+        /// <summary>
+        /// Returns the angle whose measured in half-revolutions tangent is the quotient of two specified numbers.
+        /// </summary>
+        /// <param name="y">The y coordinate of a point.</param>
+        /// <param name="x">The x coordinate of a point.</param>
+        /// <returns>An angle, θ, measured in half-revolutions, such that -1 ≤ θ ≤ 1, and tan(θ) = y / x,
+        /// where (x, y) is a point in the Cartesian plane. Observe the following:
+        /// <list type="bullet">
+        /// <item>For (x, y) in quadrant 1, 0 &lt; θ &lt; 0.5. </item>
+        /// <item>For (x, y) in quadrant 2, 0.5 &lt; θ ≤ 1. </item>
+        /// <item>For (x, y) in quadrant 3, -1 &lt; θ &lt; -0.5. </item>
+        /// <item>For (x, y) in quadrant 4, -0.5 &lt; θ &lt; 0. </item>
+        /// </list>
+        /// For points on the boundaries of the quadrants, the return value is the following:
+        /// <list type="bullet">
+        /// <item>If y is 0 and x is not negative, θ = 0.</item>
+        /// <item>If y is 0 and x is negative, θ = 1.</item>
+        /// <item>If y is positive and x is 0, θ = 0.5.</item>
+        /// <item>If y is negative and x is 0, θ = -0.5.</item>
+        /// <item>If y is 0 and x is 0, θ = 0.</item>
+        /// <item>If y is 0 and x is 0, θ = 0.</item>
+        /// </list>
+        /// If x or y is <see cref="float.NaN"/>, or if x and y are either
+        /// <see cref="float.PositiveInfinity"/> or <see cref="float.NegativeInfinity"/>,
+        /// the method returns <see cref="float.NaN"/>.</returns>
+        public static float Atan2Pi(float y, float x)
+        {
+            float atan = Atan2(y, x) / PI;
+
+            // if x or y is 0 or inf, it's a special value required by IEEE754:2019
+            // rounding to nearist quarter-integer (keeps +0/-0)
+            if (x == 0 || y == 0 || float.IsInfinity(x) || float.IsInfinity(y))
+            {
+                return Round(atan * 4) / 4;
+            }
+
+            return atan;
+        }
     }
 }

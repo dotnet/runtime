@@ -2765,11 +2765,15 @@ namespace System
         public static float Abs(float value) { throw null; }
         public static double Acos(double d) { throw null; }
         public static double Acosh(double d) { throw null; }
+        public static double AcosPi(double x) { throw null; }
         public static double Asin(double d) { throw null; }
         public static double Asinh(double d) { throw null; }
+        public static double AsinPi(double x) { throw null; }
         public static double Atan(double d) { throw null; }
         public static double Atan2(double y, double x) { throw null; }
+        public static double Atan2Pi(double y, double x) { throw null; }
         public static double Atanh(double d) { throw null; }
+        public static double AtanPi(double x) { throw null; }
         public static long BigMul(int a, int b) { throw null; }
         public static long BigMul(long a, long b, out long low) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -2800,6 +2804,7 @@ namespace System
         public static double CopySign(double x, double y) { throw null; }
         public static double Cos(double d) { throw null; }
         public static double Cosh(double value) { throw null; }
+        public static double CosPi(double x) { throw null; }
         public static int DivRem(int a, int b, out int result) { throw null; }
         public static long DivRem(long a, long b, out long result) { throw null; }
         public static (byte Quotient, byte Remainder) DivRem(byte left, byte right) { throw null; }
@@ -2889,9 +2894,11 @@ namespace System
         public static double Sin(double a) { throw null; }
         public static (double Sin, double Cos) SinCos(double x) { throw null; }
         public static double Sinh(double value) { throw null; }
+        public static double SinPi(double x) { throw null; }
         public static double Sqrt(double d) { throw null; }
         public static double Tan(double a) { throw null; }
         public static double Tanh(double value) { throw null; }
+        public static double TanPi(double x) { throw null; }
         public static decimal Truncate(decimal d) { throw null; }
         public static double Truncate(double d) { throw null; }
     }
@@ -2903,11 +2910,15 @@ namespace System
         public static float Abs(float x) { throw null; }
         public static float Acos(float x) { throw null; }
         public static float Acosh(float x) { throw null; }
+        public static float AcosPi(float x) { throw null; }
         public static float Asin(float x) { throw null; }
         public static float Asinh(float x) { throw null; }
+        public static float AsinPi(float x) { throw null; }
         public static float Atan(float x) { throw null; }
         public static float Atan2(float y, float x) { throw null; }
+        public static float Atan2Pi(float y, float x) { throw null; }
         public static float Atanh(float x) { throw null; }
+        public static float AtanPi(float x) { throw null; }
         public static float BitDecrement(float x) { throw null; }
         public static float BitIncrement(float x) { throw null; }
         public static float Cbrt(float x) { throw null; }
@@ -2915,6 +2926,7 @@ namespace System
         public static float CopySign(float x, float y) { throw null; }
         public static float Cos(float x) { throw null; }
         public static float Cosh(float x) { throw null; }
+        public static float CosPi(float x) { throw null; }
         public static float Exp(float x) { throw null; }
         public static float Floor(float x) { throw null; }
         public static float FusedMultiplyAdd(float x, float y, float z) { throw null; }
@@ -2940,9 +2952,11 @@ namespace System
         public static float Sin(float x) { throw null; }
         public static (float Sin, float Cos) SinCos(float x) { throw null; }
         public static float Sinh(float x) { throw null; }
+        public static float SinPi(float x) { throw null; }
         public static float Sqrt(float x) { throw null; }
         public static float Tan(float x) { throw null; }
         public static float Tanh(float x) { throw null; }
+        public static float TanPi(float x) { throw null; }
         public static float Truncate(float x) { throw null; }
     }
     public partial class MemberAccessException : System.SystemException

@@ -1449,5 +1449,239 @@ namespace System
             double u = BitConverter.Int64BitsToDouble(((long)(0x3ff + n) << 52));
             return y * u;
         }
+
+        /// <summary>
+        /// Returns the sine of the specified angle measured in half-revolutions.
+        /// </summary>
+        /// <param name="x">An angle, measured in half-revolutions.</param>
+        /// <returns>The sine of <paramref name="x"/>. If <paramref name="x"/> is equal to <see cref="double.NaN"/>, <see cref="double.PositiveInfinity"/>,
+        /// or <see cref="double.NegativeInfinity"/>, this method returns <see cref="double.NaN"/>. </returns>
+        /// <remarks>
+        /// This method is effectively Sin(x * PI), with higher precision.
+        /// It guarantees to return -1, 0, or 1 when <paramref name="x"/> is integer or half-integer.
+        /// </remarks>
+        public static double SinPi(double x)
+        {
+            if (Abs(x) < 0.5 || !double.IsFinite(x))
+            {
+                // Fast path for small/special values, also covers +0/-0
+                return Sin(x * PI);
+            }
+
+            bool invert = false;
+            if (x < 0)
+            {
+                x = -x;
+                invert = true;
+            }
+
+            double floor = Floor(x);
+            if (x == floor)
+            {
+                // +0 for +n and -0 for -n
+                return invert ? -0.0 : 0.0;
+            }
+
+            // fold all input into (0, 0.5]
+            if (((long)floor & 1) != 0)
+            {
+                // sin(x + PI) = -sin(x)
+                invert = !invert;
+            }
+
+            double rem = x - floor;
+            if (rem == 0.5)
+            {
+                return invert ? -1 : 1;
+            }
+
+            if (rem > 0.5)
+            {
+                // sin(PI - x) = sin(x)
+                rem = 1 - rem;
+            }
+
+            double sin = Sin(rem * PI);
+            return invert ? -sin : sin;
+        }
+
+        /// <summary>
+        /// Returns the cosine of the specified angle measured in half-revolutions.
+        /// </summary>
+        /// <param name="x">An angle, measured in half-revolutions.</param>
+        /// <returns>The cosine of <paramref name="x"/>. If <paramref name="x"/> is equal to <see cref="double.NaN"/>, <see cref="double.PositiveInfinity"/>,
+        /// or <see cref="double.NegativeInfinity"/>, this method returns <see cref="double.NaN"/>. </returns>
+        /// <remarks>
+        /// This method is effectively Cos(x * PI), with higher precision.
+        /// It guarantees to return -1, 0, or 1 when <paramref name="x"/> is integer or half-integer.
+        /// </remarks>
+        public static double CosPi(double x)
+        {
+            if (Abs(x) < 0.5 || !double.IsFinite(x))
+            {
+                // Fast path for small/special values, also covers +0/-0
+                return Cos(x * PI);
+            }
+
+            bool invert = false;
+            if (x < 0)
+            {
+                x = -x;
+            }
+
+            double floor = Floor(x);
+
+            // fold all input into [0, 0.5]
+            if (((long)floor & 1) != 0)
+            {
+                // cos(x + PI) = -cos(x)
+                invert = !invert;
+            }
+
+            if (x == floor)
+            {
+                return invert ? -1 : 1;
+            }
+
+            double rem = x - floor;
+            if (rem == 0.5)
+            {
+                return 0.0;
+            }
+
+            if (rem > 0.5)
+            {
+                // cos(PI - x) = -cos(x)
+                rem = 1 - rem;
+                invert = !invert;
+            }
+
+            double cos = Cos(rem * PI);
+            return invert ? -cos : cos;
+        }
+
+        /// <summary>
+        /// Returns the tangent of the specified angle measured in half-revolutions.
+        /// </summary>
+        /// <param name="x">An angle, measured in half-revolutions.</param>
+        /// <returns>The tangent of <paramref name="x"/>. If <paramref name="x"/> is equal to <see cref="double.NaN"/>, <see cref="double.PositiveInfinity"/>,
+        /// or <see cref="double.NegativeInfinity"/>, this method returns <see cref="double.NaN"/>. </returns>
+        /// <remarks>
+        /// This method is effectively Tan(x * PI), with higher precision.
+        /// It guarantees to return 0, <see cref="double.PositiveInfinity"/> or <see cref="double.NegativeInfinity"/> when <paramref name="x"/> is integer or half-integer.
+        /// </remarks>
+        public static double TanPi(double x)
+        {
+            if (Abs(x) < 0.5 || !double.IsFinite(x))
+            {
+                // Fast path for small/special values, also covers +0/-0
+                return Tan(x * PI);
+            }
+
+            bool invert = false;
+            if (x < 0)
+            {
+                x = -x;
+                invert = true;
+            }
+
+            double floor = Floor(x);
+            if (x == floor)
+            {
+                // +0 for +2n and -0 for +2n+1
+                // -0 for -2n and +0 for -2n-1
+                if (((long)floor & 1) != 0)
+                {
+                    invert = !invert;
+                }
+                return invert ? -0.0 : 0.0;
+            }
+
+            // fold all input into (0, 0.5]
+            double rem = x - floor;
+            if (rem == 0.5)
+            {
+                // +inf for +2n+0.5 and -inf for +2n+1.5
+                // -inf for -2n-0.5 and +inf for -2n-1.5
+                if (((long)floor & 1) != 0)
+                {
+                    invert = !invert;
+                }
+                return invert ? double.NegativeInfinity : double.PositiveInfinity;
+            }
+
+            if (rem > 0.5)
+            {
+                // tan(PI - x) = -tan(x)
+                rem = 1 - rem;
+                invert = !invert;
+            }
+
+            double tan = Tan(rem * PI);
+            return invert ? -tan : tan;
+        }
+
+        // Double inverse-trigs pass all special value tests on all platforms.
+        // Keep them fast.
+
+        /// <summary>
+        /// Returns the angle measured in half-revolutions whose sine is the specified number.
+        /// </summary>
+        /// <param name="x">A number representing a sine, where <paramref name="x"/> must be greater than or equal to -1, but
+        /// less than or equal to 1.</param>
+        /// <returns>An angle, θ, measured in half-revolutions, such that -0.5 ≤ θ ≤ 0.5.
+        /// -or-
+        /// <see cref="double.NaN"/> if <paramref name="x"/> &lt; -1 or <paramref name="x"/> &gt; 1
+        /// or <paramref name="x"/> equals <see cref="double.NaN"/>.</returns>
+        public static double AsinPi(double x) => Asin(x) / PI;
+
+        /// <summary>
+        /// Returns the angle measured in half-revolutions whose cosine is the specified number.
+        /// </summary>
+        /// <param name="x">A number representing a cosine, where <paramref name="x"/> must be greater than or equal to -1, but
+        /// less than or equal to 1.</param>
+        /// <returns>An angle, θ, measured in half-revolutions, such that -0.5 ≤ θ ≤ 0.5.
+        /// -or-
+        /// <see cref="double.NaN"/> if <paramref name="x"/> &lt; -1 or <paramref name="x"/> &gt; 1
+        /// or <paramref name="x"/> equals <see cref="double.NaN"/>.</returns>
+        public static double AcosPi(double x) => Acos(x) / PI;
+
+        /// <summary>
+        /// Returns the angle measured in half-revolutions whose tangent is the specified number.
+        /// </summary>
+        /// <param name="x">A number representing a tangent.</param>
+        /// <returns>An angle, θ, measured in half-revolutions, such that -0.5 ≤ θ ≤ 0.5.
+        /// -or-
+        /// <see cref="double.NaN"/> if <paramref name="x"/> equals <see cref="double.NaN"/>,
+        /// -0.5 if <paramref name="x"/> equals <see cref="double.NegativeInfinity"/>,
+        /// or 0.5 if <paramref name="x"/> equals <see cref="double.PositiveInfinity"/>.</returns>
+        public static double AtanPi(double x) => Atan(x) / PI;
+
+        /// <summary>
+        /// Returns the angle whose measured in half-revolutions tangent is the quotient of two specified numbers.
+        /// </summary>
+        /// <param name="y">The y coordinate of a point.</param>
+        /// <param name="x">The x coordinate of a point.</param>
+        /// <returns>An angle, θ, measured in half-revolutions, such that -1 ≤ θ ≤ 1, and tan(θ) = y / x,
+        /// where (x, y) is a point in the Cartesian plane. Observe the following:
+        /// <list type="bullet">
+        /// <item>For (x, y) in quadrant 1, 0 &lt; θ &lt; 0.5. </item>
+        /// <item>For (x, y) in quadrant 2, 0.5 &lt; θ ≤ 1. </item>
+        /// <item>For (x, y) in quadrant 3, -1 &lt; θ &lt; -0.5. </item>
+        /// <item>For (x, y) in quadrant 4, -0.5 &lt; θ &lt; 0. </item>
+        /// </list>
+        /// For points on the boundaries of the quadrants, the return value is the following:
+        /// <list type="bullet">
+        /// <item>If y is 0 and x is not negative, θ = 0.</item>
+        /// <item>If y is 0 and x is negative, θ = 1.</item>
+        /// <item>If y is positive and x is 0, θ = 0.5.</item>
+        /// <item>If y is negative and x is 0, θ = -0.5.</item>
+        /// <item>If y is 0 and x is 0, θ = 0.</item>
+        /// <item>If y is 0 and x is 0, θ = 0.</item>
+        /// </list>
+        /// If x or y is <see cref="double.NaN"/>, or if x and y are either
+        /// <see cref="double.PositiveInfinity"/> or <see cref="double.NegativeInfinity"/>,
+        /// the method returns <see cref="double.NaN"/>.</returns>
+        public static double Atan2Pi(double y, double x) => Atan2(y, x) / PI;
     }
 }
