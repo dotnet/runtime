@@ -63,7 +63,7 @@ namespace System.Data.Common
 
         public DbBatchCommand CreateBatchCommand() => CreateDbBatchCommand();
 
-        protected virtual DbBatchCommand CreateDbBatchCommand() => throw new NotSupportedException();
+        protected abstract DbBatchCommand CreateDbBatchCommand();
 
         public virtual void Dispose() {}
 

@@ -1941,7 +1941,7 @@ namespace System.Data.Common
         public abstract System.Threading.Tasks.Task PrepareAsync(System.Threading.CancellationToken cancellationToken = default);
         public abstract void Cancel();
         public System.Data.Common.DbBatchCommand CreateBatchCommand() { throw null; }
-        protected virtual System.Data.Common.DbBatchCommand CreateDbBatchCommand() { throw null; }
+        protected abstract System.Data.Common.DbBatchCommand CreateDbBatchCommand();
         public virtual void Dispose() { throw null; }
         public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
     }
