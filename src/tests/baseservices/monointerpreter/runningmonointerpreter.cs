@@ -12,7 +12,7 @@ namespace TestRunningMono
              const int Pass = 100, Fail = 1;
              bool isMono = typeof(object).Assembly.GetType("Mono.RuntimeStructs") != null;
 
-	         bool isInterpreter = RuntimeFeature.IsDynamicCodeSupported == true && RuntimeFeature.IsDynamicCodeCompiled == false;
+             bool isInterpreter = RuntimeFeature.IsDynamicCodeSupported == true && RuntimeFeature.IsDynamicCodeCompiled == false;
 
              if(isMono && isInterpreter)
              {
