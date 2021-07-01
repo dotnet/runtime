@@ -1023,10 +1023,11 @@ namespace System.IO
         /// An I/O error occurred.</exception>
         public static FileSystemInfo CreateSymbolicLink(string path, string pathToTarget)
         {
-            FileSystem.VerifyValidPath(path, nameof(path));
+            string fullPath = Path.GetFullPath(path);
             FileSystem.VerifyValidPath(pathToTarget, nameof(pathToTarget));
+
             FileSystem.CreateSymbolicLink(path, pathToTarget, isDirectory: false);
-            return new FileInfo(path);
+            return new FileInfo(originalPath: path, fullPath: fullPath, isNormalized: true);
         }
 
         /// <summary>
