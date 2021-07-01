@@ -280,9 +280,6 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
     <!-- Issue: https://github.com/dotnet/runtime/issues/54194 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.MemoryMappedFiles/tests/System.IO.MemoryMappedFiles.Tests.csproj" />
-
-    <!-- Issue: https://github.com/dotnet/runtime/issues/52393 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime/tests/System.Runtime.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
