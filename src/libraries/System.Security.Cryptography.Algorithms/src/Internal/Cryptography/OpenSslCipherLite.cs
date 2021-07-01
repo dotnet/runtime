@@ -11,7 +11,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography
 {
-    internal struct OpenSslCipherLite : ILiteSymmetricCipher
+    internal sealed class OpenSslCipherLite : ILiteSymmetricCipher
     {
         private readonly SafeEvpCipherCtxHandle _ctx;
 
@@ -34,7 +34,6 @@ namespace Internal.Cryptography
         {
             Debug.Assert(algorithm != IntPtr.Zero);
 
-            _isFinalized = false;
             BlockSizeInBytes = blockSizeInBytes;
             PaddingSizeInBytes = paddingSizeInBytes;
             _ctx = Interop.Crypto.EvpCipherCreate(
@@ -95,8 +94,16 @@ namespace Internal.Cryptography
             }
         }
 
-        public readonly unsafe int Transform(ReadOnlySpan<byte> input, Span<byte> output)
+        public unsafe int Transform(ReadOnlySpan<byte> input, Span<byte> output)
         {
+#if DEBUG
+            if (_isFinalized)
+            {
+                Debug.Fail("Cipher was reused without being reset.");
+                throw new CryptographicException();
+            }
+#endif
+
             // OpenSSL 1.1 does not allow partial overlap.
             if (input.Overlaps(output, out int overlapOffset) && overlapOffset != 0)
             {
@@ -119,18 +126,22 @@ namespace Internal.Cryptography
             return CipherUpdate(input, output);
         }
 
-        public readonly void Reset(ReadOnlySpan<byte> iv)
+        public void Reset(ReadOnlySpan<byte> iv)
         {
             bool status = Interop.Crypto.EvpCipherReset(_ctx);
             CheckBoolReturn(status);
+
+#if DEBUG
+            _isFinalized = false;
+#endif
         }
 
-        public readonly void Dispose()
+        public void Dispose()
         {
             _ctx.Dispose();
         }
 
-        private readonly int CipherUpdate(ReadOnlySpan<byte> input, Span<byte> output)
+        private int CipherUpdate(ReadOnlySpan<byte> input, Span<byte> output)
         {
             Interop.Crypto.EvpCipherUpdate(
                 _ctx,

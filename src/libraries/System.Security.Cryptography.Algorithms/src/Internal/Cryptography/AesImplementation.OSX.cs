@@ -37,10 +37,18 @@ namespace Internal.Cryptography
             ReadOnlySpan<byte> iv,
             int blockSize,
             int paddingSize,
-            int feedback,
+            int feedbackSizeInBytes,
             bool encrypting)
         {
-            throw new NotImplementedException();
+            return new AppleCCCryptorLite(
+                Interop.AppleCrypto.PAL_SymmetricAlgorithm.AES,
+                cipherMode,
+                blockSize,
+                key,
+                iv,
+                encrypting,
+                feedbackSizeInBytes,
+                paddingSize);
         }
     }
 }

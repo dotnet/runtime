@@ -170,6 +170,8 @@
              Link="Internal\Cryptography\BasicSymmetricCipher.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\BasicSymmetricCipherBCrypt.cs"
              Link="Internal\Cryptography\BasicSymmetricCipherBCrypt.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\SymmetricPadding.cs"
+             Link="Internal\Cryptography\SymmetricPadding.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoTransform.cs"
              Link="Internal\Cryptography\UniversalCryptoTransform.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoEncryptor.cs"

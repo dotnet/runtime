@@ -541,6 +541,7 @@
              Link="Common\System\Security\Cryptography\SecKeyPair.cs" />
     <Compile Include="Internal\Cryptography\AesImplementation.OSX.cs" />
     <Compile Include="Internal\Cryptography\AppleCCCryptor.cs" />
+    <Compile Include="Internal\Cryptography\AppleCCCryptorLite.cs" />
     <Compile Include="Internal\Cryptography\DesImplementation.OSX.cs" />
     <Compile Include="Internal\Cryptography\HashProviderDispenser.OSX.cs" />
     <Compile Include="Internal\Cryptography\RandomNumberGeneratorImplementation.OSX.cs" />
