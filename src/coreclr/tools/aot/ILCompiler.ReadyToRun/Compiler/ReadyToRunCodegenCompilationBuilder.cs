@@ -31,6 +31,7 @@ namespace ILCompiler
         private string _pdbPath;
         private bool _generatePerfMapFile;
         private string _perfMapPath;
+        private int _perfMapFormatVersion;
         private bool _generateProfileFile;
         private int _parallelism;
         Func<MethodDesc, string> _printReproInstructions;
@@ -155,10 +156,11 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UsePerfMapFile(bool generatePerfMapFile, string perfMapPath)
+        public ReadyToRunCodegenCompilationBuilder UsePerfMapFile(bool generatePerfMapFile, string perfMapPath, int perfMapFormatVersion)
         {
             _generatePerfMapFile = generatePerfMapFile;
             _perfMapPath = perfMapPath;
+            _perfMapFormatVersion = perfMapFormatVersion;
             return this;
         }
 
@@ -310,6 +312,7 @@ namespace ILCompiler
                 pdbPath: _pdbPath,
                 generatePerfMapFile: _generatePerfMapFile,
                 perfMapPath: _perfMapPath,
+                perfMapFormatVersion: _perfMapFormatVersion,
                 generateProfileFile: _generateProfileFile,
                 _parallelism,
                 _profileData,

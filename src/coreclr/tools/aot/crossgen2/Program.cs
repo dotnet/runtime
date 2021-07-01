@@ -682,7 +682,7 @@ namespace ILCompiler
                         .UseMapFile(_commandLineOptions.Map)
                         .UseMapCsvFile(_commandLineOptions.MapCsv)
                         .UsePdbFile(_commandLineOptions.Pdb, _commandLineOptions.PdbPath)
-                        .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath)
+                        .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath, _commandLineOptions.PerfMapFormatVersion)
                         .UseProfileFile(jsonProfile != null)
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseProfileData(profileDataManager)

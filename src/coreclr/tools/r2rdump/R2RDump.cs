@@ -56,6 +56,7 @@ namespace R2RDump
 
         public bool CreatePerfmap { get; set; }
         public string PerfmapPath { get; set; }
+        public int PerfmapFormatVersion { get; set; }
 
 
         public FileInfo[] Reference { get; set; }
@@ -65,6 +66,11 @@ namespace R2RDump
         public bool InlineSignatureBinary { get; set; }
 
         private SignatureFormattingOptions signatureFormattingOptions;
+
+        public DumpOptions()
+        {
+            PerfmapFormatVersion = PerfMapWriter.CurrentFormatVersion;
+        }
 
         /// <summary>
         /// Probing extensions to use when looking up assemblies under reference paths.
@@ -426,9 +432,9 @@ namespace R2RDump
                     string perfmapPath = _options.PerfmapPath;
                     if (string.IsNullOrEmpty(perfmapPath))
                     {
-                        perfmapPath = Path.ChangeExtension(r2r.Filename, ".map");
+                        perfmapPath = Path.ChangeExtension(r2r.Filename, ".r2rmap");
                     }
-                    PerfMapWriter.Write(perfmapPath, ProduceDebugInfoMethods(r2r), ProduceDebugInfoAssemblies(r2r), r2r.TargetOperatingSystem, r2r.TargetArchitecture);
+                    PerfMapWriter.Write(perfmapPath, _options.PerfmapFormatVersion, ProduceDebugInfoMethods(r2r), ProduceDebugInfoAssemblies(r2r), r2r.TargetOperatingSystem, r2r.TargetArchitecture);
                 }
 
                 if (standardDump)

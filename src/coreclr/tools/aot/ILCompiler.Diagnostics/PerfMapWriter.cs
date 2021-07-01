@@ -13,6 +13,8 @@ namespace ILCompiler.Diagnostics
 {
     public class PerfMapWriter
     {
+        public const int LegacyCrossgen1FormatVersion = 0;
+
         public const int CurrentFormatVersion = 1;
         
         public enum PseudoRVA : uint
@@ -30,8 +32,13 @@ namespace ILCompiler.Diagnostics
             _writer = writer;
         }
 
-        public static void Write(string perfMapFileName, IEnumerable<MethodInfo> methods, IEnumerable<AssemblyInfo> inputAssemblies, TargetOS targetOS, TargetArchitecture targetArch)
+        public static void Write(string perfMapFileName, int perfMapFormatVersion, IEnumerable<MethodInfo> methods, IEnumerable<AssemblyInfo> inputAssemblies, TargetOS targetOS, TargetArchitecture targetArch)
         {
+            if (perfMapFormatVersion > CurrentFormatVersion)
+            {
+                throw new NotSupportedException(perfMapFormatVersion.ToString());
+            }
+
             using (TextWriter writer = new StreamWriter(perfMapFileName))
             {
                 IEnumerable<AssemblyInfo> orderedInputs = inputAssemblies.OrderBy(asm => asm.Name, StringComparer.OrdinalIgnoreCase);

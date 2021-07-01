@@ -247,6 +247,7 @@ namespace ILCompiler
         private readonly string _pdbPath;
         private readonly bool _generatePerfMapFile;
         private readonly string _perfMapPath;
+        private readonly int _perfMapFormatVersion;
         private readonly bool _generateProfileFile;
         private readonly Func<MethodDesc, string> _printReproInstructions;
 
@@ -282,6 +283,7 @@ namespace ILCompiler
             string pdbPath,
             bool generatePerfMapFile,
             string perfMapPath,
+            int perfMapFormatVersion,
             bool generateProfileFile,
             int parallelism,
             ProfileDataManager profileData,
@@ -307,6 +309,7 @@ namespace ILCompiler
             _pdbPath = pdbPath;
             _generatePerfMapFile = generatePerfMapFile;
             _perfMapPath = perfMapPath;
+            _perfMapFormatVersion = perfMapFormatVersion;
             _generateProfileFile = generateProfileFile;
             _customPESectionAlignment = customPESectionAlignment;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
@@ -353,6 +356,7 @@ namespace ILCompiler
                     pdbPath: _pdbPath,
                     generatePerfMapFile: _generatePerfMapFile,
                     perfMapPath: _perfMapPath,
+                    perfMapFormatVersion: _perfMapFormatVersion,
                     generateProfileFile: _generateProfileFile,
                     callChainProfile: _profileData.CallChainProfile,
                     _customPESectionAlignment);
@@ -433,6 +437,7 @@ namespace ILCompiler
                 pdbPath: null,
                 generatePerfMapFile: false,
                 perfMapPath: null,
+                perfMapFormatVersion: _perfMapFormatVersion,
                 generateProfileFile: false,
                 _profileData.CallChainProfile,
                 customPESectionAlignment: 0);
