@@ -11,8 +11,8 @@ namespace System.Globalization
         // split from GlobalizationMode so the whole class can be trimmed when Invariant=true.
         private static partial class Settings
         {
-            internal static readonly bool PredefinedCulturesOnly = AppContextConfigHelper.GetBooleanConfig("System.Globalization.PredefinedCulturesOnly", "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY");
             internal static bool Invariant { get; } = GetInvariantSwitchValue();
+            internal static readonly bool PredefinedCulturesOnly = AppContextConfigHelper.GetBooleanConfig("System.Globalization.PredefinedCulturesOnly", "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", Invariant);
         }
 
         // Note: Invariant=true and Invariant=false are substituted at different levels in the ILLink.Substitutions file.
@@ -20,7 +20,7 @@ namespace System.Globalization
         // static cctor (on Unix) to be preserved when Invariant=false.
         internal static bool Invariant => Settings.Invariant;
 
-        internal static bool PredefinedCulturesOnly => !Invariant && Settings.PredefinedCulturesOnly;
+        internal static bool PredefinedCulturesOnly => Settings.PredefinedCulturesOnly;
 
         private static bool GetInvariantSwitchValue() =>
             AppContextConfigHelper.GetBooleanConfig("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
