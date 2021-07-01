@@ -9115,23 +9115,23 @@ namespace System.Reflection
     }
     public sealed class NullabilityInfoContext
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the linker")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the trimmer")]
         public System.Reflection.NullabilityInfo Create(System.Reflection.EventInfo eventInfo) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the linker")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the trimmer")]
         public System.Reflection.NullabilityInfo Create(System.Reflection.FieldInfo fieldInfo) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the linker")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the trimmer")]
         public System.Reflection.NullabilityInfo Create(System.Reflection.ParameterInfo parameterInfo) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the linker")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the trimmer")]
         public System.Reflection.NullabilityInfo Create(System.Reflection.PropertyInfo propertyInfo) { throw null; }
     }
     public sealed class NullabilityInfo
     {
-        internal NullabilityInfo(System.Type type, System.Reflection.NullabilityState readState, System.Reflection.NullabilityState writeState, System.Reflection.NullabilityInfo? elementType, System.Reflection.NullabilityInfo[] typeArguments) { }
+        internal NullabilityInfo(System.Type type, System.Reflection.NullabilityState readState, System.Reflection.NullabilityState writeState, System.Reflection.NullabilityInfo? elementType, System.Reflection.NullabilityInfo[] genericTypeArguments) { }
         public System.Type Type { get; }
         public System.Reflection.NullabilityState ReadState { get; }
         public System.Reflection.NullabilityState WriteState { get; }
         public System.Reflection.NullabilityInfo? ElementType { get; }
-        public System.Reflection.NullabilityInfo[] TypeArguments { get; }
+        public System.Reflection.NullabilityInfo[] GenericTypeArguments { get; }
     }
     public enum NullabilityState
     {

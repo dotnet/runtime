@@ -17,7 +17,7 @@ namespace System.Reflection
             ReadState = readState;
             WriteState = writeState;
             ElementType = elementType;
-            TypeArguments = typeArguments;
+            GenericTypeArguments = typeArguments;
         }
 
         /// <summary>
@@ -40,19 +40,25 @@ namespace System.Reflection
         /// <summary>
         /// If the member type is a generic type, gives the array of <see cref="NullabilityInfo" /> for each type parameter
         /// </summary>
-        public NullabilityInfo[] TypeArguments { get; }
+        public NullabilityInfo[] GenericTypeArguments { get; }
     }
 
     /// <summary>
     /// An enum that represents nullability state
-    /// Uknown - Nullable context not enabled (oblivious)
-    /// NotNull - non nullable value or reference type
-    /// Nullable - nullable value or reference type
     /// </summary>
     public enum NullabilityState
     {
+        /// <summary>
+        /// Nullability context not enabled (oblivious)
+        /// </summary>
         Unknown,
+        /// <summary>
+        /// Non nullable value or reference type
+        /// </summary>
         NotNull,
+        /// <summary>
+        /// Nullable value or reference type
+        /// </summary>
         Nullable
     }
 }
