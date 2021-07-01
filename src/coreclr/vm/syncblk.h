@@ -894,7 +894,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(memoryInSizeT != NULL);
 
-        *memoryInSizeT = _countof(m_taggedAlloc) / sizeof(SIZE_T);
+        *memoryInSizeT = GetTaggedMemorySizeInBytes() / sizeof(SIZE_T);
 
         // The allocation is meant to indicate that memory
         // has been made available by the system. Calling the 'get'
@@ -908,6 +908,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_taggedMemory;
+    }
+
+    size_t GetTaggedMemorySizeInBytes()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _countof(m_taggedAlloc);
     }
 
 private:

@@ -623,13 +623,13 @@ void MethodTable::SetIsTrackedReferenceWithFinalizer()
     SetFlag(enum_flag_IsTrackedReferenceWithFinalizer);
 }
 
+#endif // !DACCESS_COMPILE
+
 BOOL MethodTable::IsTrackedReferenceWithFinalizer()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return GetFlag(enum_flag_IsTrackedReferenceWithFinalizer);
 }
-
-#endif // !DACCESS_COMPILE
 
 //==========================================================================================
 WORD MethodTable::GetNumMethods()
