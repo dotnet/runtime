@@ -1581,13 +1581,7 @@ namespace Internal.TypeSystem.Interop
 
     class AnsiStringMarshaller : Marshaller
     {
-        internal override bool CleanupRequired
-        {
-            get
-            {
-                return true;
-            }
-        }
+        const int MAX_LOCAL_BUFFER_LENGTH = 256; // TODO: Is this accurate on all platforms? 
 
         internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
         {
@@ -1603,24 +1597,77 @@ namespace Internal.TypeSystem.Interop
             // ANSI marshalling. Allocate a byte array, copy characters
             //
 
-#if READYTORUN
             var stringToAnsi =
-                Context.SystemModule.GetKnownType("System.StubHelpers", "AnsiBSTRMarshaler")
+                Context.SystemModule.GetKnownType("System.StubHelpers", "CSTRMarshaler")
                 .GetKnownMethod("ConvertToNative", null);
+
+            bool bPassByValueInOnly = In && !Out && !IsManagedByRef;
+            ILLocalVariable localBuffer = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
+            if (bPassByValueInOnly)
+            {
+                var bufSize = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
+                //localBuffer = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Byte));
+
+                // LocalBuffer = 0
+                codeStream.Emit(ILOpcode.ldnull);
+                codeStream.EmitStLoc(localBuffer);
+
+                var noOptimize = emitter.NewCodeLabel();
+
+                // if == NULL, goto NoOptimize
+                LoadManagedValue(codeStream);
+                codeStream.Emit(ILOpcode.brfalse, noOptimize);
+
+                // String.Length + 2
+                LoadManagedValue(codeStream);
+                var stringLen =
+                            Context.SystemModule.GetKnownType("System", "String")
+                            .GetKnownMethod("get_Length", null);
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(stringLen));
+                codeStream.EmitLdc(2);
+                codeStream.Emit(ILOpcode.add);
+
+                // (String.Length + 2) * GetMaxDBCSCharByteSize()
+                codeStream.Emit(ILOpcode.ldsfld, emitter.NewToken(Context.SystemModule.GetKnownType(
+                                                "System.Runtime.InteropServices","Marshal")
+                                                .GetKnownField("SystemMaxDBCSCharSize")));
+                codeStream.Emit(ILOpcode.mul_ovf);
+
+                // BufSize = (String.Length + 2) * GetMaxDBCSCharByteSize()
+                codeStream.EmitStLoc(bufSize);
+
+                // if (MAX_LOCAL_BUFFER_LENGTH < BufSize ) goto NoOptimize
+                codeStream.EmitLdc(MAX_LOCAL_BUFFER_LENGTH + 1); 
+                codeStream.EmitLdLoc(bufSize);
+                codeStream.Emit(ILOpcode.clt);
+                codeStream.Emit(ILOpcode.brtrue, noOptimize);
+
+                // LocalBuffer = localloc(BufSize);
+                codeStream.EmitLdLoc(bufSize);
+                codeStream.Emit(ILOpcode.localloc);
+                codeStream.EmitStLoc(localBuffer);
+
+                // NoOptimize:
+                codeStream.EmitLabel(noOptimize);
+            }
+
             int flags = (PInvokeFlags.BestFitMapping ? 0x1 : 0)
                 | (PInvokeFlags.ThrowOnUnmappableChar ? 0x100 : 0);
+
+            // CSTRMarshaler.ConvertToNative pManaged, dwAnsiMarshalFlags, pLocalBuffer
             codeStream.EmitLdc(flags);
             LoadManagedValue(codeStream);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(stringToAnsi));
-#else
-            LoadManagedValue(codeStream);
-            var stringToAnsi = Context.GetHelperEntryPoint("InteropHelpers", "StringToAnsiString");
 
-            codeStream.Emit(PInvokeFlags.BestFitMapping ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
-            codeStream.Emit(PInvokeFlags.ThrowOnUnmappableChar ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+            if (bPassByValueInOnly)
+            {
+                codeStream.EmitLdLoc(localBuffer);
+            }
+            else
+            {
+                codeStream.Emit(ILOpcode.ldnull);
+            }
 
             codeStream.Emit(ILOpcode.call, emitter.NewToken(stringToAnsi));
-#endif
 
             StoreNativeValue(codeStream);
         }
@@ -1631,7 +1678,7 @@ namespace Internal.TypeSystem.Interop
 
 #if READYTORUN
             var ansiToString =
-                Context.SystemModule.GetKnownType("System.StubHelpers", "AnsiBSTRMarshaler")
+                Context.SystemModule.GetKnownType("System.StubHelpers", "CSTRMarshaler")
                 .GetKnownMethod("ConvertToManaged", null);
 #else
             var ansiToString = Context.GetHelperEntryPoint("InteropHelpers", "AnsiStringToString");
@@ -1639,30 +1686,6 @@ namespace Internal.TypeSystem.Interop
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(ansiToString));
             StoreManagedValue(codeStream);
-        }
-
-        protected override void EmitCleanupManaged(ILCodeStream codeStream)
-        {
-            var emitter = _ilCodeStreams.Emitter;
-#if READYTORUN
-            MethodDesc clearNative =
-                Context.SystemModule.GetKnownType("System.StubHelpers", "AnsiBSTRMarshaler")
-                .GetKnownMethod("ClearNative", null);
-            LoadNativeValue(codeStream);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(clearNative));
-#else
-            var lNullCheck = emitter.NewCodeLabel();
-
-            // Check for null array
-            LoadManagedValue(codeStream);
-            codeStream.Emit(ILOpcode.brfalse, lNullCheck);
-
-            LoadNativeValue(codeStream);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
-
-            codeStream.EmitLabel(lNullCheck);
-#endif
         }
     }
 
