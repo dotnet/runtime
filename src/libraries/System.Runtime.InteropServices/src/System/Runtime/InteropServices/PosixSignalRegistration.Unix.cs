@@ -83,9 +83,9 @@ namespace System.Runtime.InteropServices
             }
             lock (s_registrations)
             {
-                if (!s_registrations.TryGetValue(_signo, out List<WeakReference<PosixSignalRegistration>>? signalRegistrations))
+                if (!s_registrations.TryGetValue(_signo, out List<WeakReference<PosixSignalRegistration>?>? signalRegistrations))
                 {
-                    signalRegistrations = new List<WeakReference<PosixSignalRegistration>>();
+                    signalRegistrations = new List<WeakReference<PosixSignalRegistration>?>();
                     s_registrations.Add(_signo, signalRegistrations);
                 }
 
@@ -154,15 +154,16 @@ namespace System.Runtime.InteropServices
         {
             lock (s_registrations)
             {
-                if (s_registrations.TryGetValue(signo, out List<WeakReference<PosixSignalRegistration>>? signalRegistrations))
+                if (s_registrations.TryGetValue(signo, out List<WeakReference<PosixSignalRegistration>?>? signalRegistrations))
                 {
                     if (signalRegistrations.Count != 0)
                     {
                         var registrations = new PosixSignalRegistration?[signalRegistrations.Count];
                         bool hasRegistrations = false;
+                        bool pruneWeakReferences = false;
                         for (int i = 0; i < signalRegistrations.Count; i++)
                         {
-                            if (signalRegistrations[i].TryGetTarget(out PosixSignalRegistration? registration))
+                            if (signalRegistrations[i]!.TryGetTarget(out PosixSignalRegistration? registration))
                             {
                                 registrations[i] = registration;
                                 hasRegistrations = true;
@@ -170,10 +171,16 @@ namespace System.Runtime.InteropServices
                             else
                             {
                                 // WeakReference no longer holds an object. PosixSignalRegistration got finalized.
-                                signalRegistrations.RemoveAt(i);
-                                i--;
+                                signalRegistrations[i] = null;
+                                pruneWeakReferences = true;
                             }
                         }
+
+                        if (pruneWeakReferences)
+                        {
+                            signalRegistrations.RemoveAll(item => item is null);
+                        }
+
                         if (hasRegistrations)
                         {
                             return registrations;
@@ -240,10 +247,11 @@ namespace System.Runtime.InteropServices
             {
                 lock (s_registrations)
                 {
-                    List<WeakReference<PosixSignalRegistration>> signalRegistrations = s_registrations[_signo];
+                    List<WeakReference<PosixSignalRegistration>?> signalRegistrations = s_registrations[_signo];
+                    bool pruneWeakReferences = false;
                     for (int i = 0; i < signalRegistrations.Count; i++)
                     {
-                        if (signalRegistrations[i].TryGetTarget(out PosixSignalRegistration? registration))
+                        if (signalRegistrations[i]!.TryGetTarget(out PosixSignalRegistration? registration))
                         {
                             if (object.ReferenceEquals(this, registration))
                             {
@@ -254,9 +262,14 @@ namespace System.Runtime.InteropServices
                         else
                         {
                             // WeakReference no longer holds an object. PosixSignalRegistration got finalized.
-                            signalRegistrations.RemoveAt(i);
-                            i--;
+                            signalRegistrations[i] = null;
+                            pruneWeakReferences = true;
                         }
+                    }
+
+                    if (pruneWeakReferences)
+                    {
+                        signalRegistrations.RemoveAll(item => item is null);
                     }
 
                     if (signalRegistrations.Count == 0)
@@ -274,6 +287,6 @@ namespace System.Runtime.InteropServices
         }
 
         private static volatile bool s_initialized;
-        private static readonly Dictionary<int, List<WeakReference<PosixSignalRegistration>>> s_registrations = new();
+        private static readonly Dictionary<int, List<WeakReference<PosixSignalRegistration>?>> s_registrations = new();
     }
 }
