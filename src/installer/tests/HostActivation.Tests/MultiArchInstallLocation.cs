@@ -103,18 +103,19 @@ namespace HostActivation.Tests
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
+            var projDir = fixture.TestProject.ProjectDirectory;
             using (TestOnlyProductBehavior.Enable(appExe))
             {
                 Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(fixture.TestProject.ProjectDirectory)
+                .DotNetRoot(projDir)
                 .MultilevelLookup(false)
                 .EnvironmentVariable(
                     Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath,
                     sharedTestState.InstallLocation)
                 .Execute()
                 .Should().Fail()
-                .And.HaveUsedDotNetRootInstallLocation(sharedTestState.InstallLocation, fixture.CurrentRid)
+                .And.HaveStdErrContaining($"Using environment variable DOTNET_ROOT=[{projDir}]")
                 // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
                 .And.HaveStdErrContaining("A fatal error occurred. The required library hostfxr.dll could not be found.");
             }
