@@ -12,13 +12,13 @@
 #define _ASSERTE(x) assert((x))
 #endif
 
-#ifndef ARRAYSIZE
-#define ARRAYSIZE(x)    (sizeof(x)/sizeof(x[0]))
-#endif // !ARRAYSIZE
-
 #ifdef _WIN32
 #include <Windows.h>
 #endif // _WIN32
+
+#ifndef ARRAYSIZE
+#define ARRAYSIZE(x)    (sizeof(x)/sizeof(x[0]))
+#endif // !ARRAYSIZE
 
 #if defined(_WIN32) || defined(HOST_UNIX)
 #include <objidl.h> // COM interfaces
