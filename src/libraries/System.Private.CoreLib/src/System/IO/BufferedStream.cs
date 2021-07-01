@@ -209,11 +209,24 @@ namespace System.IO
                 EnsureCanSeek();
 
                 if (_writePos > 0)
+                {
                     FlushWrite();
-
-                _readPos = 0;
-                _readLen = 0;
-                _stream!.Seek(value, SeekOrigin.Begin);
+                    _stream!.Seek(value, SeekOrigin.Begin);
+                }
+                else
+                {
+                    long beginStreamPos = _stream!.Position - _readLen;
+                    if (beginStreamPos <= value && value < _stream!.Position)
+                    {
+                        _readPos = (int)(value - beginStreamPos);
+                    }
+                    else
+                    {
+                        _readPos = 0;
+                        _readLen = 0;
+                        _stream!.Seek(value, SeekOrigin.Begin);
+                    }
+                }
             }
         }
 
