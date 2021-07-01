@@ -1512,10 +1512,6 @@ mono_fill_class_rgctx (MonoVTable *vtable, int index)
 	ERROR_DECL (error);
 	gpointer res;
 
-	/*
-	 * This is perf critical.
-	 * fill_runtime_generic_context () contains a fallpath.
-	 */
 	res = mono_class_fill_runtime_generic_context (vtable, index, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
