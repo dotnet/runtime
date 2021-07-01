@@ -15,7 +15,7 @@ HRESULT GCAllocateProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     Profiler::Initialize(pICorProfilerInfoUnk);
 
     HRESULT hr = S_OK;
-    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(COR_PRF_ENABLE_OBJECT_ALLOCATED, COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED)))
+    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(COR_PRF_ENABLE_OBJECT_ALLOCATED, COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED | COR_PRF_HIGH_MONITOR_PINNEDOBJECT_ALLOCATED)))
     {
         printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x", hr);
         return hr;
