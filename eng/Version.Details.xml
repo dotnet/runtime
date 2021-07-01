@@ -210,7 +210,7 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>f291c7f87a563f29ff2a9af7378495769d97389c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.100" Version="6.0.0-preview.7.21329.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.100" Version="6.0.0-preview.7.21330.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>f5349765b7af1970c5b25cce4ed278544907cbe0</Sha>
     </Dependency>
