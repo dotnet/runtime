@@ -576,7 +576,7 @@ namespace System.Net.Security.Tests
                 return null;
 
             var ret = new List<TlsCipherSuite>();
-            //AllowOneOnOneSide(GetNonTls13CipherSuites(), (cs) => false, (cs) => ret.Add(cs));
+            AllowOneOnOneSide(GetNonTls13CipherSuites(), (cs) => false, (cs) => ret.Add(cs));
 
             return ret;
         }
