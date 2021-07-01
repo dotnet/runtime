@@ -88,8 +88,7 @@
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentRuntimePath)" ItemName="NativeBinPlaceItem" />
-    <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\msquic.dll" />
-    <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\msquic.pdb" />
+    <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\*" />
   </ItemGroup>
 
   <ItemGroup>
