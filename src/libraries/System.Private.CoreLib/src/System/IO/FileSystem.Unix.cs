@@ -536,31 +536,16 @@ namespace System.IO
             return DriveInfoInternal.GetLogicalDrives();
         }
 
-        /// <summary>Gets the path of the target of the specified link.</summary>
-        /// <param name="linkPath">A path to a link file.</param>
-        /// <param name="isDirectory">Whether the link represents a directory or not. Irrelevant in Unix since readlink does not care about the underlying type.</param>
-        /// <returns>If linkPath represents a link file and it exists, returns the link's target path.
-        /// If linkPath is not a link or the target does not exist, returns null.</returns>
         internal static string? GetLinkTarget(ReadOnlySpan<char> linkPath, bool isDirectory) => Interop.Sys.ReadLink(linkPath);
 
-        /// <summary>
-        /// Creates a file symbolic link identified by path that points to pathToTarget.
-        /// </summary>
-        /// <param name="path">The path where the symbolic link should be created.</param>
-        /// <param name="pathToTarget">The path of the target to which the symbolic link points.</param>
-        /// <param name="isDirectory">True if the pathToTarget represents a directory or a symlink to a directory.</param>
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
             string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
 
             // Fail if the target exists but is not consistent with the expected filesystem entry type
-            if (Interop.Sys.LStat(pathToTargetFullPath, out Interop.Sys.FileStatus targetInfo) == 0)
+            if (Interop.Sys.Stat(pathToTargetFullPath, out Interop.Sys.FileStatus targetInfo) == 0)
             {
-                // Skip this check if the target is a link:
-                // - It could be part of a chain of links, or
-                // - The link could be broken (which could be intended by the user)
-                if ((targetInfo.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFLNK &&
-                    isDirectory != ((targetInfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR))
+                if (isDirectory != ((targetInfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR))
                 {
                     throw new IOException(SR.Format(SR.IO_InconsistentLinkType, path));
                 }
@@ -569,13 +554,6 @@ namespace System.IO
             Interop.CheckIo(Interop.Sys.SymLink(pathToTarget, path), path, isDirectory);
         }
 
-        /// <summary>Gets the target of the specified link path.</summary>
-        /// <param name="linkPath">A path (absolute or relative) to a link file.</param>
-        /// <param name="returnFinalTarget">true to return the final target file or directory in a chain of links; false to return the immediate next target.</param>
-        /// <param name="isDirectory">True if the linkPath points to a directory or a symlink to a directory.</param>
-        /// <returns>If the specified linkPath represents a link file and it exists, returns a FileInfo if isDirectory
-        /// is false, or a DirectoryInfo if isDirectory is true, independently if the target file/directory exists or not.
-        /// If the specified linkPath is not a link, returns null. Throws if the file or directory in linkPath does not exist.</returns>
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
             // throws if the current link file does not exist
