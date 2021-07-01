@@ -993,11 +993,11 @@ namespace System.Diagnostics.Tracing
                 int index;
                 int refObjIndex = 0;
 
-                Debug.Assert(EtwAPIMaxRefObjCount == 8);
 #if ES_BUILD_STANDALONE
                 int[] refObjPosition = new int[EtwAPIMaxRefObjCount];
                 object?[] dataRefObj = new object?[EtwAPIMaxRefObjCount];
 #else
+                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(EightObjects)}");
                 EightObjects eightObjectStack = default;
                 Span<int> refObjPosition = stackalloc int[EtwAPIMaxRefObjCount];
                 Span<object?> dataRefObj = new Span<object?>(ref eightObjectStack._arg0, EtwAPIMaxRefObjCount);
@@ -1174,7 +1174,7 @@ namespace System.Diagnostics.Tracing
         }
 
 #if !ES_BUILD_STANDALONE
-        /// <summary>Workaround for inability to stackalloc object[8].</summary>
+        /// <summary>Workaround for inability to stackalloc object[EtwAPIMaxRefObjCount == 8].</summary>
         private struct EightObjects
         {
             internal object? _arg0;
