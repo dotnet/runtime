@@ -13,8 +13,8 @@ internal static partial class Interop
         public static extern SafeWinHttpHandle WinHttpOpen(
             IntPtr userAgent,
             uint accessType,
-            string proxyName,
-            string proxyBypass, int flags);
+            string? proxyName,
+            string? proxyBypass, int flags);
 
         [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -33,7 +33,7 @@ internal static partial class Interop
             SafeWinHttpHandle connectHandle,
             string verb,
             string objectName,
-            string version,
+            string? version,
             string referrer,
             string acceptTypes,
             uint flags);
@@ -161,8 +161,8 @@ internal static partial class Interop
             SafeWinHttpHandle requestHandle,
             uint authTargets,
             uint authScheme,
-            string userName,
-            string password,
+            string? userName,
+            string? password,
             IntPtr reserved);
 
         [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]

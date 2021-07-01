@@ -13,7 +13,7 @@ namespace System.Net.Http
     internal sealed class WinHttpChannelBinding : ChannelBinding
     {
         private int _size;
-        private string _cachedToString;
+        private string? _cachedToString;
 
         internal WinHttpChannelBinding(SafeWinHttpHandle requestHandle)
         {
@@ -55,7 +55,7 @@ namespace System.Net.Http
             }
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             if (_cachedToString == null && !IsInvalid)
             {

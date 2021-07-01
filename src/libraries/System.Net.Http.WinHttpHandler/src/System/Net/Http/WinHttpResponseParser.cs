@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http.Headers;
@@ -21,8 +22,11 @@ namespace System.Net.Http
             WinHttpRequestState state,
             DecompressionMethods manuallyProcessedDecompressionMethods)
         {
-            HttpRequestMessage request = state.RequestMessage;
-            SafeWinHttpHandle requestHandle = state.RequestHandle;
+            HttpRequestMessage? request = state.RequestMessage;
+            SafeWinHttpHandle? requestHandle = state.RequestHandle;
+            Debug.Assert(request != null);
+            Debug.Assert(requestHandle != null);
+
             var response = new HttpResponseMessage();
             bool stripEncodingHeaders = false;
 
@@ -133,9 +137,9 @@ namespace System.Net.Http
         public static unsafe bool GetResponseHeader(
             SafeWinHttpHandle requestHandle,
             uint infoLevel,
-            ref char[] buffer,
+            ref char[]? buffer,
             ref uint index,
-            out string headerValue)
+            [NotNullWhen(true)] out string? headerValue)
         {
             const int StackLimit = 128;
 
@@ -286,7 +290,7 @@ namespace System.Net.Http
 
             // If it's a known reason phrase, use the known reason phrase instead of allocating a new string.
 
-            string knownReasonPhrase = HttpStatusDescription.Get(statusCode);
+            string? knownReasonPhrase = HttpStatusDescription.Get(statusCode);
 
             return (knownReasonPhrase != null && knownReasonPhrase.AsSpan().SequenceEqual(buffer.AsSpan(0, bufferLength))) ?
                 knownReasonPhrase :
@@ -313,7 +317,7 @@ namespace System.Net.Http
             reader.ReadLine();
 
             // Parse the array of headers and split them between Content headers and Response headers.
-            while (reader.ReadHeader(out string headerName, out string headerValue))
+            while (reader.ReadHeader(out string? headerName, out string? headerValue))
             {
                 if (!responseHeaders.TryAddWithoutValidation(headerName, headerValue))
                 {
@@ -350,7 +354,7 @@ namespace System.Net.Http
             var reader = new WinHttpResponseHeaderReader(buffer, 0, bufferLength);
 
             // Parse the array of headers and split them between Content headers and Response headers.
-            while (reader.ReadHeader(out string headerName, out string headerValue))
+            while (reader.ReadHeader(out string? headerName, out string? headerValue))
             {
                 responseTrailers.TryAddWithoutValidation(headerName, headerValue);
             }
