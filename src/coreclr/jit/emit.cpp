@@ -3824,7 +3824,7 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
     }
 
     // Print the alignment boundary
-    if ((emitComp->opts.disAsm || emitComp->verbose) && emitComp->opts.disAddr)
+    if ((emitComp->opts.disAsm || emitComp->verbose) && (emitComp->opts.disAddr || emitComp->opts.disAlignment))
     {
         size_t currAddr         = (size_t)*dp;
         size_t lastBoundaryAddr = currAddr & ~((size_t)emitComp->opts.compJitAlignLoopBoundary - 1);
@@ -3867,7 +3867,7 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
             printf(" %dB boundary ...............................\n", (emitComp->opts.compJitAlignLoopBoundary));
         }
     }
-#endif
+#endif // DEBUG
 
     return is;
 }

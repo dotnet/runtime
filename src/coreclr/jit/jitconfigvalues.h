@@ -68,6 +68,9 @@ CONFIG_INTEGER(JitAlignLoopAdaptive,
                W("JitAlignLoopAdaptive"),
                1) // If set, perform adaptive loop alignment that limits number of padding based on loop size.
 
+// Print the alignment boundaries in disassembly.
+CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
+
 CONFIG_INTEGER(JitDirectAlloc, W("JitDirectAlloc"), 0)
 CONFIG_INTEGER(JitDoubleAlign, W("JitDoubleAlign"), 1)
 CONFIG_INTEGER(JitDumpASCII, W("JitDumpASCII"), 1)               // Uses only ASCII characters in tree dumps
