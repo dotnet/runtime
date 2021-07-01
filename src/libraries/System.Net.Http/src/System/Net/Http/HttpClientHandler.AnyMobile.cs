@@ -40,7 +40,7 @@ namespace System.Net.Http
                 handler = (HttpMessageHandler)_underlyingHandler;
             }
 
-            if (DiagnosticsHandler.IsGloballyEnabled())
+            if (DiagnosticsHandler.IsGloballyEnabled)
             {
                 _diagnosticsHandler = new DiagnosticsHandler(handler);
             }
@@ -369,9 +369,9 @@ namespace System.Net.Http
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (DiagnosticsHandler.IsEnabled() && _diagnosticsHandler != null)
+            if (DiagnosticsHandler.IsGloballyEnabled && _diagnosticsHandler != null)
             {
-                return _diagnosticsHandler.SendAsync(request, cancellationToken);
+                return _diagnosticsHandler!.SendAsync(request, cancellationToken);
             }
 
             if (IsSocketHandler)
@@ -396,6 +396,11 @@ namespace System.Net.Http
             {
                 throw new ObjectDisposedException(GetType().ToString());
             }
+        }
+
+        protected object? GetUnderlyingHandler()
+        {
+            return _underlyingHandler!;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
