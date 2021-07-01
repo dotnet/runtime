@@ -22,18 +22,22 @@
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.RuntimeConfigParser.Task" />
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm" />
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator-x86" />
     </ImportGroup>
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst'">
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.RuntimeConfigParser.Task" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-x64" />
     </ImportGroup>
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'tvos'">
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.RuntimeConfigParser.Task" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator-arm64" />
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator-x64" />
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64" />
-        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator" />
     </ImportGroup>
 
     <ImportGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
