@@ -1606,7 +1606,6 @@ namespace Internal.TypeSystem.Interop
             if (bPassByValueInOnly)
             {
                 var bufSize = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
-                //localBuffer = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Byte));
 
                 // LocalBuffer = 0
                 codeStream.Emit(ILOpcode.ldnull);
