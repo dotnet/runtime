@@ -175,19 +175,6 @@ void CodeGen::genCodeForBBlist()
 
     BasicBlock* block;
 
-    //if (compiler->info.compMethodHashPrivate == 0x939467e2)
-    //{
-    //    //////////
-    //     compiler->opts.dspCode    = true;
-    //     compiler->opts.dspEHTable = true;
-    //     compiler->opts.dspGCtbls  = true;
-    //     compiler->opts.disAsm2    = true;
-    //     compiler->opts.dspUnwind  = true;
-    //     compiler->verbose         = true;
-    //     compiler->codeGen->setVerbose(true);
-    //    /////////
-    //}
-
     for (block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
     {
 #ifdef DEBUG

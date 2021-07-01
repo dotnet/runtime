@@ -1715,7 +1715,7 @@ inline unsigned emitter::insEncodeRegSIB(instruction ins, regNumber reg, code_t*
     }
     unsigned regBits = RegEncoding(reg);
 #else  // !TARGET_AMD64
-    unsigned             regBits          = reg;
+    unsigned regBits = reg;
 #endif // !TARGET_AMD64
 
     assert(regBits < 8);
@@ -2160,8 +2160,8 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
                     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef UNIX_AMD64_ABI
-                    LclVarDsc* varDsc = emitComp->lvaTable + var;
-                    bool isRegPassedArg = varDsc->lvIsParam && varDsc->lvIsRegArg;
+                    LclVarDsc* varDsc         = emitComp->lvaTable + var;
+                    bool       isRegPassedArg = varDsc->lvIsParam && varDsc->lvIsRegArg;
                     // Register passed args could have a stack offset of 0.
                     noway_assert((int)offs < 0 || isRegPassedArg || emitComp->opts.IsOSR());
 #else  // !UNIX_AMD64_ABI

@@ -5876,7 +5876,6 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
     bool reload         = currentRefPosition->reload;
     bool spillAfter     = currentRefPosition->spillAfter;
     bool writeThru      = currentRefPosition->writeThru;
-    bool singleDefSpill = currentRefPosition->singleDefSpill;
 
     // In the reload case we either:
     // - Set the register to REG_STK if it will be referenced only from the home location, or
@@ -6035,25 +6034,24 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             }
         }
 
-        if (singleDefSpill && (treeNode != nullptr))
+        if (currentRefPosition->singleDefSpill && (treeNode != nullptr))
         {
-            // This is the first (and only def) of a single-def var (only defs are marked 'singleDef').
-            // If this is already marked as SPILL, we need to definitely spill the variable.
-            // As such, do not mark it as GTF_SPILLED because that will keep the value in register alive.
-            // TODO: See if the last point really matters.
-            if ((treeNode->gtFlags & GTF_SPILL) == 0)
+            // This is the first (and only) def of a single-def var (only defs are marked 'singleDefSpill').
+            // Mark it as GTF_SPILL, so it is spilled immediately to the stack at definition and
+            // GTF_SPILLED, so the variable stays live in the register.
+            // 
+            // TODO: This approach would still create the resolution moves but during codegen, will check for
+            // `lvSpillAtSingleDef` to decide whether to generate spill or not. In future, see if there is some
+            // better way to avoid resolution moves, perhaps by updating the varDsc->SetRegNum(REG_STK) in this
+            // method?
+            treeNode->gtFlags |= GTF_SPILL;
+            treeNode->gtFlags |= GTF_SPILLED;
+
+            if (treeNode->IsMultiReg())
             {
-                treeNode->gtFlags |= GTF_SPILL;
-                treeNode->gtFlags |= GTF_SPILLED;
-
-
-                if (treeNode->IsMultiReg())
-                {
-                    treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
-                }
+                treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
             }
 
-            // TODO: See if this can be outside the if-check.
             varDsc->lvSpillAtSingleDef = true;
         }
     }

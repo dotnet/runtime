@@ -447,13 +447,18 @@ public:
                                    // after lvaMarkLocalVars: identifies locals that are suitable for optAddCopies
 
     unsigned char lvSingleDefRegCandidate : 1; // variable has a single def and hence is a register candidate
-                                               // Currently, it is the criteria to decide if an EH variable can be
+                                               // Currently, this is only used to decide if an EH variable can be
                                                // a register candiate or not.
-
-    unsigned char lvSpillAtSingleDef : 1;
 
     unsigned char lvDisqualifySingleDefRegCandidate : 1; // tracks variable that are disqualified from register
                                                          // candidancy
+
+    unsigned char lvSpillAtSingleDef : 1; // variable has a single def (as determined by LSRA interval scan)
+                                          // and is spilled making it candidate to spill right after the
+                                          // first (and only) definition.
+                                          // Note: We cannot reuse lvSingleDefRegCandidate because it is set
+                                          // in earlier phase and the information might not be appropriate
+                                          // in LSRA.
 
 #if ASSERTION_PROP
     unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization

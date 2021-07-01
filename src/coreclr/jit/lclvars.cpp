@@ -4559,8 +4559,6 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
                         // count those in our heuristic for register allocation, since they always
                         // must be stored, so there's no value in enregistering them at defs; only
                         // if there are enough uses to justify it.
-                        // 
-                        //TODO: May be applicable for single-def as well.
                         if (varDsc->lvLiveInOutOfHndlr && !varDsc->lvDoNotEnregister &&
                             ((node->gtFlags & GTF_VAR_DEF) != 0))
                         {
