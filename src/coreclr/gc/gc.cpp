@@ -3645,10 +3645,10 @@ void region_allocator::enter_spin_lock()
 
 void region_allocator::leave_spin_lock()
 {
-    region_allocator_lock.lock = -1;
 #ifdef _DEBUG
     region_allocator_lock.holding_thread = (Thread*)-1;
 #endif //_DEBUG
+    region_allocator_lock.lock = -1;
 }
 
 uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction direction)
@@ -5674,9 +5674,17 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
 #ifdef MULTIPLE_HEAPS
         heap_segment_heap (res) = hp;
 #endif //MULTIPLE_HEAPS
-        res->flags |= (gen_number == poh_generation) ?
-                                        heap_segment_flags_poh :
-                                        heap_segment_flags_loh;
+
+        size_t flags = (gen_number == poh_generation) ?
+            heap_segment_flags_poh :
+            heap_segment_flags_loh;
+
+#ifdef USE_REGIONS
+        // in the regions case, flags are set by get_new_region
+        assert ((res->flags & (heap_segment_flags_loh | heap_segment_flags_poh)) == flags);
+#else //USE_REGIONS
+        res->flags |= flags;
+#endif //USE_REGIONS
 
         FIRE_EVENT(GCCreateSegment_V1,
             heap_segment_mem(res),
@@ -28284,6 +28292,21 @@ heap_segment* gc_heap::get_new_region (int gen_number, size_t size)
 
     if (new_region)
     {
+        switch (gen_number)
+        {
+        default:
+            assert ((new_region->flags & (heap_segment_flags_loh | heap_segment_flags_poh)) == 0);
+            break;
+
+        case    loh_generation:
+            new_region->flags |= heap_segment_flags_loh;
+            break;
+
+        case    poh_generation:
+            new_region->flags |= heap_segment_flags_poh;
+            break;
+        }
+
         generation* gen = generation_of (gen_number);
         heap_segment_next (generation_tail_region (gen)) = new_region;
         generation_tail_region (gen) = new_region;

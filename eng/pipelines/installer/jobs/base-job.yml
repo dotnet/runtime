@@ -217,6 +217,8 @@ jobs:
       # lowercase for RID format. (Detection normally converts, but we're preventing it.)
       - name: OutputRidArg
         value: /p:OutputRid=linux-musl-${{ parameters.archType }}
+      - name: RuntimeOSArg
+        value: /p:RuntimeOS=linux-musl
       - name: _PortableBuild
         value: true
 
@@ -231,6 +233,7 @@ jobs:
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(OutputRidArg)
+        $(RuntimeOSArg)
 
     - name: PublishArguments
       value: >-
