@@ -590,13 +590,18 @@ static guint16 sri_vector_methods [] = {
 	SN_WithElement,
 };
 
+/* nint and nuint haven't been enabled yet for System.Runtime.Intrinsics.
+ * Remove this once support has been added.
+ */
+#define MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE(t) ((MONO_TYPE_IS_VECTOR_PRIMITIVE(t)) && ((t)->type != MONO_TYPE_I) && ((t)->type != MONO_TYPE_U))
+
 static gboolean
 is_elementwise_create_overload (MonoMethodSignature *fsig, MonoType *ret_type)
 {
 	uint16_t param_count = fsig->param_count;
 	if (param_count < 1) return FALSE;
 	MonoType *type = fsig->params [0];
-	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (type)) return FALSE;
+	if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (type)) return FALSE;
 	if (!mono_metadata_type_equal (ret_type, type)) return FALSE;
 	for (uint16_t i = 1; i < param_count; ++i)
 		if (!mono_metadata_type_equal (type, fsig->params [i])) return FALSE;
@@ -641,7 +646,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_AsUInt64: {
 		MonoType *ret_type = get_vector_t_elem_type (fsig->ret);
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
-		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (ret_type) || !MONO_TYPE_IS_VECTOR_PRIMITIVE(arg_type))
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (ret_type) || !MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
 			return NULL;
 		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
 	}
@@ -662,7 +667,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_GetElement: {
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
-		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (etype))
 			return NULL;
 		int size = mono_class_value_size (arg_class, NULL);
 		int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
@@ -675,14 +680,14 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_GetLower:
 	case SN_GetUpper: {
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
-		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (arg_type))
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
 			return NULL;
 		int op = id == SN_GetLower ? OP_XLOWER : OP_XUPPER;
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 	}
 	case SN_ToScalar: {
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
-		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (arg_type))
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
 			return NULL;
 		int extract_op = type_to_extract_op (arg0_type);
 		return emit_simd_ins_for_sig (cfg, klass, extract_op, 0, arg0_type, fsig, args);
@@ -690,7 +695,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_ToVector128:
 	case SN_ToVector128Unsafe: {
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
-		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (arg_type))
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
 			return NULL;
 		int op = id == SN_ToVector128 ? OP_XWIDEN : OP_XWIDEN_UNSAFE;
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
@@ -698,7 +703,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_WithElement: {
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
-		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (etype))
 			return NULL;
 		int size = mono_class_value_size (arg_class, NULL);
 		int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
@@ -714,7 +719,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_WithLower:
 	case SN_WithUpper: {
 		MonoType *arg_type = get_vector_t_elem_type (fsig->params [0]);
-		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (arg_type))
+		if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (arg_type))
 			return NULL;
 		int op = id == SN_GetLower ? OP_XINSERT_LOWER : OP_XINSERT_UPPER;
 		return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
@@ -750,7 +755,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	g_assert (esize > 0);
 	int len = size / esize;
 
-	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
+	if (!MONO_TYPE_IS_INTRINSICS_VECTOR_PRIMITIVE (etype))
 		return NULL;
 
 	if (cfg->verbose_level > 1) {
