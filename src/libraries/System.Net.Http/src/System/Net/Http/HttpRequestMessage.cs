@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace System.Net.Http
 {
@@ -101,29 +99,16 @@ namespace System.Net.Http
             get { return _requestUri; }
             set
             {
-                if ((value != null) && (value.IsAbsoluteUri) && (!HttpUtilities.IsHttpUri(value)))
-                {
-                    throw new ArgumentException(HttpUtilities.InvalidUriMessage, nameof(value));
-                }
                 CheckDisposed();
 
-                // It's OK to set 'null'. HttpClient will add the 'BaseAddress'. If there is no 'BaseAddress'
-                // sending this message will throw.
+                // It's OK to have a 'null' request Uri. If HttpClient is used, the 'BaseAddress' will be added.
+                // If there is no 'BaseAddress', sending this request message will throw.
+                // Note that we also allow the string to be empty: null and empty are considered equivalent.
                 _requestUri = value;
             }
         }
 
-        public HttpRequestHeaders Headers
-        {
-            get
-            {
-                if (_headers == null)
-                {
-                    _headers = new HttpRequestHeaders();
-                }
-                return _headers;
-            }
-        }
+        public HttpRequestHeaders Headers => _headers ??= new HttpRequestHeaders();
 
         internal bool HasHeaders => _headers != null;
 
@@ -139,22 +124,15 @@ namespace System.Net.Http
 
         public HttpRequestMessage(HttpMethod method, Uri? requestUri)
         {
-            InitializeValues(method, requestUri);
+            _method = method ?? throw new ArgumentNullException(nameof(method));
+            _requestUri = requestUri;
+            _version = HttpUtilities.DefaultRequestVersion;
+            _versionPolicy = HttpUtilities.DefaultVersionPolicy;
         }
 
         public HttpRequestMessage(HttpMethod method, string? requestUri)
+            : this(method, string.IsNullOrEmpty(requestUri) ? null : new Uri(requestUri, UriKind.RelativeOrAbsolute))
         {
-            // It's OK to have a 'null' request Uri. If HttpClient is used, the 'BaseAddress' will be added.
-            // If there is no 'BaseAddress', sending this request message will throw.
-            // Note that we also allow the string to be empty: null and empty are considered equivalent.
-            if (string.IsNullOrEmpty(requestUri))
-            {
-                InitializeValues(method, null);
-            }
-            else
-            {
-                InitializeValues(method, new Uri(requestUri, UriKind.RelativeOrAbsolute));
-            }
         }
 
         public override string ToString()
@@ -177,25 +155,6 @@ namespace System.Net.Http
             HeaderUtilities.DumpHeaders(sb, _headers, _content?.Headers);
 
             return sb.ToString();
-        }
-
-        [MemberNotNull(nameof(_method))]
-        [MemberNotNull(nameof(_version))]
-        private void InitializeValues(HttpMethod method, Uri? requestUri)
-        {
-            if (method is null)
-            {
-                throw new ArgumentNullException(nameof(method));
-            }
-            if ((requestUri != null) && (requestUri.IsAbsoluteUri) && (!HttpUtilities.IsHttpUri(requestUri)))
-            {
-                throw new ArgumentException(HttpUtilities.InvalidUriMessage, nameof(requestUri));
-            }
-
-            _method = method;
-            _requestUri = requestUri;
-            _version = HttpUtilities.DefaultRequestVersion;
-            _versionPolicy = HttpUtilities.DefaultVersionPolicy;
         }
 
         internal bool MarkAsSent()
