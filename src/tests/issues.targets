@@ -3149,7 +3149,7 @@
     </ItemGroup>
 
     <ItemGroup Condition=" '$(RuntimeVariant)' != 'monointerpreter' " >
-        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/monointerpreter/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/mono/runningmonointerpreter/**">
             <Issue>This test tests that we are running the mono interpreter, and so is excluded in all other cases.</Issue>
         </ExcludeList>
     </ItemGroup>
