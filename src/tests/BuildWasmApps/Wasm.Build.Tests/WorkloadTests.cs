@@ -8,7 +8,7 @@ using System.Xml;
 using System.Xml.Serialization;
 using Xunit;
 using Xunit.Abstractions;
-// using FluentAssertions;
+using Xunit.Sdk;
 
 #nullable enable
 
@@ -55,7 +55,10 @@ namespace Wasm.Build.Tests
             // We don't install the cross compiler pack from nupkg, so we don't
             // have the unixFilePermissions for that
             // Expect just the emscripten ones here for now
-            Assert.Equal(3, unixPermFiles.Count());
+            int permFileCount = unixPermFiles.Count();
+            if (permFileCount != 3)
+                throw new XunitException($"Expected to find 3 UnixFilePermissions.xml files, from emscripten packages. But got {permFileCount}."
+                                        + $"{Environment.NewLine}Files: {string.Join(", ", unixPermFiles)}");
         }
     }
 
