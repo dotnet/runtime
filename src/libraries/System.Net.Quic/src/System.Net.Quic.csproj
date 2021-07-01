@@ -58,8 +58,10 @@
   <!-- Project references -->
 
   <ItemGroup>
-    <PackageReference Include="System.Net.MsQuic.Transport" PrivateAssets="all" GeneratePathProperty="true" Version="$(SystemNetMsQuicTransportVersion)" />
-    <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" BinPlaceItem="NativeBinPlaceItem" />
+    <PackageReference Include="System.Net.MsQuic.Transport"
+                      Version="$(SystemNetMsQuicTransportVersion)"
+                      PrivateAssets="all"
+                      GeneratePathProperty="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -81,7 +83,11 @@
   </ItemGroup>
 
   <!-- Support for deploying msquic -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86')">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and
+                        ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86')">
+    <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(NetCoreAppCurrentRuntimePath)" ItemName="NativeBinPlaceItem" />
     <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\msquic.dll" TargetPath="MsQuic.Native.dll" />
     <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\msquic.pdb" TargetPath="MsQuic.Native.pdb" />
   </ItemGroup>
