@@ -86,6 +86,8 @@
     <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
     <!-- Upgrade the NetStandard.Library transitive xunit dependency to avoid 1.x NS dependencies. -->
     <PackageReference Include="NETStandard.Library" Version="$(NetStandardLibraryVersion)" />
   </ItemGroup>
