@@ -14,7 +14,6 @@
 #include "mini-runtime.h"
 #include "ir-emit.h"
 #include "jit-icalls.h"
-#include "debugger-agent.h"
 
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/class-abi-details.h>

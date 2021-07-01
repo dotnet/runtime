@@ -12,11 +12,10 @@
 #include <glib.h>
 
 #include <mono/utils/json.h>
-#include <mono/mini/debugger-state-machine.h>
-#include <mono/mini/debugger-state-machine.h>
+#include "debugger-state-machine.h"
 #include <mono/metadata/object-internals.h>
 #include <mono/mini/mini-runtime.h>
-#include <mono/mini/debugger-engine.h>
+#include "debugger-engine.h"
 #include <mono/utils/mono-coop-mutex.h>
 #include <mono/utils/mono-flight-recorder.h>
 

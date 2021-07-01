@@ -80,7 +80,6 @@
 
 #include "jit-icalls.h"
 #include "jit.h"
-#include "debugger-agent.h"
 #include "seq-points.h"
 #include "aot-compiler.h"
 #include "mini-llvm.h"
