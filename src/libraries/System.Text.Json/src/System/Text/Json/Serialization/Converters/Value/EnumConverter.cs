@@ -25,9 +25,13 @@ namespace System.Text.Json.Serialization.Converters
 
         private readonly ConcurrentDictionary<ulong, JsonEncodedText> _nameCache;
 
+        private readonly Lazy<ConcurrentDictionary<ulong, JsonEncodedText>> _dictionaryKeyPolicyCache = new Lazy<ConcurrentDictionary<ulong, JsonEncodedText>>();
+
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
         private const int NameCacheSizeSoftLimit = 64;
+
+        private const int DictionaryKeyPolicyCacheSizeSoftLimit = 64;
 
         public override bool CanConvert(Type type)
         {
@@ -60,16 +64,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 T value = (T)values.GetValue(i)!;
                 ulong key = ConvertToUInt64(value);
-                string name;
-
-                if (serializerOptions.DictionaryKeyPolicy != null)
-                {
-                    name = serializerOptions.DictionaryKeyPolicy.ConvertName(names[i]);
-                }
-                else
-                {
-                    name = names[i];
-                }
+                string name = names[i];
 
                 _nameCache.TryAdd(
                     key,
@@ -334,13 +329,56 @@ namespace System.Text.Json.Serialization.Converters
 
             ulong key = ConvertToUInt64(value);
 
-            if (_nameCache.TryGetValue(key, out JsonEncodedText formatted))
+            JsonEncodedText formatted;
+            string original;
+
+            if (options.DictionaryKeyPolicy != null && !state.Current.IgnoreDictionaryKeyPolicy)
+            {
+                if (_dictionaryKeyPolicyCache.Value.TryGetValue(key, out formatted))
+                {
+                    writer.WritePropertyName(formatted);
+                    return;
+                }
+
+                original = value.ToString();
+
+                if (IsValidIdentifier(original))
+                {
+                    original = options.DictionaryKeyPolicy.ConvertName(original);
+
+                    if (original == null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(options.DictionaryKeyPolicy);
+                    }
+
+                    if (_dictionaryKeyPolicyCache.Value.Count < DictionaryKeyPolicyCacheSizeSoftLimit)
+                    {
+                        JavaScriptEncoder? encoder = options.Encoder;
+
+                        formatted = JsonEncodedText.Encode(original, encoder);
+
+                        writer.WritePropertyName(formatted);
+
+                        _dictionaryKeyPolicyCache.Value.TryAdd(key, formatted);
+                    }
+                    else
+                    {
+                        // We also do not create a JsonEncodedText instance here because passing the string
+                        // directly to the writer is cheaper than creating one and not caching it for reuse.
+                        writer.WritePropertyName(original);
+                    }
+
+                    return;
+                }
+            }
+
+            if (_nameCache.TryGetValue(key, out formatted))
             {
                 writer.WritePropertyName(formatted);
                 return;
             }
 
-            string original = value.ToString();
+            original = value.ToString();
             if (IsValidIdentifier(original))
             {
                 // We are dealing with a combination of flag constants since
