@@ -1431,6 +1431,11 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     }
 #endif
 
+    if (!compEnregLocals())
+    {
+        lvaSetVarDoNotEnregister(varNum DEBUGARG(Compiler::DNER_NoRegVars));
+    }
+
 #ifdef DEBUG
     varDsc->SetStackOffset(BAD_STK_OFFS);
 #endif
