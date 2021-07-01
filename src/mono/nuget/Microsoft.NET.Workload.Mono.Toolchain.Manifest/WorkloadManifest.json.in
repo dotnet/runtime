@@ -2,7 +2,7 @@
   "version": "${WorkloadVersion}",
   "depends-on": {
     "Microsoft.NET.Workload.Emscripten": "${EmscriptenVersion}"
-  }
+  },
   "workloads": {
     "microsoft-net-sdk-blazorwebassembly-aot": {
       "description": "Browser Runtime native performance tools",
