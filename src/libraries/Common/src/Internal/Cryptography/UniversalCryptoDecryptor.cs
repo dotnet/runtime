@@ -112,7 +112,7 @@ namespace Internal.Cryptography
 
                     if (decryptedBytes.Length > 0)
                     {
-                        unpaddedLength = GetPaddingLength(decryptedBytes);
+                        unpaddedLength = SymmetricPadding.GetPaddingLength(decryptedBytes, PaddingMode, InputBlockSize);
                         decryptedBytes.Slice(0, unpaddedLength).CopyTo(outputBuffer);
                     }
                 }
@@ -213,7 +213,9 @@ namespace Internal.Cryptography
                 {
                     int transformWritten = BasicSymmetricCipher.TransformFinal(input, buffer);
                     decryptedBuffer = buffer.Slice(0, transformWritten);
-                    int unpaddedLength = GetPaddingLength(decryptedBuffer); // validates padding
+
+                    // validates padding
+                    int unpaddedLength = SymmetricPadding.GetPaddingLength(decryptedBuffer, PaddingMode, InputBlockSize);
 
                     if (unpaddedLength > output.Length)
                     {
@@ -240,79 +242,6 @@ namespace Internal.Cryptography
                 Array.Clear(_heldoverCipher);
                 _heldoverCipher = null;
             }
-        }
-
-        /// <summary>
-        ///     Gets the length of the padding applied to the block, and validates
-        ///     the padding, if possible.
-        /// </summary>
-        private int GetPaddingLength(ReadOnlySpan<byte> block)
-        {
-            int padBytes = 0;
-
-            // See PadBlock for a description of the padding modes.
-            switch (PaddingMode)
-            {
-                case PaddingMode.ANSIX923:
-                    padBytes = block[^1];
-
-                    // Verify the amount of padding is reasonable
-                    if (padBytes <= 0 || padBytes > InputBlockSize)
-                    {
-                        throw new CryptographicException(SR.Cryptography_InvalidPadding);
-                    }
-
-                    // Verify that all the padding bytes are 0s
-                    for (int i = block.Length - padBytes; i < block.Length - 1; i++)
-                    {
-                        if (block[i] != 0)
-                        {
-                            throw new CryptographicException(SR.Cryptography_InvalidPadding);
-                        }
-                    }
-
-                    break;
-
-                case PaddingMode.ISO10126:
-                    padBytes = block[^1];
-
-                    // Verify the amount of padding is reasonable
-                    if (padBytes <= 0 || padBytes > InputBlockSize)
-                    {
-                        throw new CryptographicException(SR.Cryptography_InvalidPadding);
-                    }
-
-                    // Since the padding consists of random bytes, we cannot verify the actual pad bytes themselves
-                    break;
-
-                case PaddingMode.PKCS7:
-                    padBytes = block[^1];
-
-                    // Verify the amount of padding is reasonable
-                    if (padBytes <= 0 || padBytes > InputBlockSize)
-                        throw new CryptographicException(SR.Cryptography_InvalidPadding);
-
-                    // Verify all the padding bytes match the amount of padding
-                    for (int i = block.Length - padBytes; i < block.Length - 1; i++)
-                    {
-                        if (block[i] != padBytes)
-                            throw new CryptographicException(SR.Cryptography_InvalidPadding);
-                    }
-
-                    break;
-
-                // We cannot remove Zeros padding because we don't know if the zeros at the end of the block
-                // belong to the padding or the plaintext itself.
-                case PaddingMode.Zeros:
-                case PaddingMode.None:
-                    padBytes = 0;
-                    break;
-
-                default:
-                    throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
-            }
-
-            return block.Length - padBytes;
         }
 
         //
