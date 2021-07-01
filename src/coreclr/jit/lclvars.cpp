@@ -3482,10 +3482,6 @@ void Compiler::lvaSortByRefCount()
             {
                 varDsc->lvTracked = 0;
             }
-            else if ((varDsc->lvType == TYP_STRUCT) && !varDsc->lvRegStruct)
-            {
-                lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
-            }
         }
         if (varDsc->lvIsStructField && (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT))
         {

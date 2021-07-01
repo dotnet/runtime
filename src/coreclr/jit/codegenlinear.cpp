@@ -1191,7 +1191,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             assert(spillType != TYP_UNDEF);
 
 // TODO-Cleanup: The following code could probably be further merged and cleaned up.
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             // Load local variable from its home location.
             // In most cases the tree type will indicate the correct type to use for the load.
             // However, if it is NOT a normalizeOnLoad lclVar (i.e. NOT a small int that always gets
@@ -1209,13 +1209,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             {
                 assert(!varTypeIsGC(varDsc));
                 spillType = lclActualType;
-            }
-#elif defined(TARGET_ARM64)
-            var_types targetType = unspillTree->gtType;
-            if (spillType != genActualType(varDsc->lvType) && !varTypeIsGC(spillType) && !varDsc->lvNormalizeOnLoad())
-            {
-                assert(!varTypeIsGC(varDsc));
-                spillType = genActualType(varDsc->lvType);
             }
 #elif defined(TARGET_ARM)
 // No normalizing for ARM
@@ -1465,7 +1458,8 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
         LclVarDsc*           varDsc = &compiler->lvaTable[lcl->GetLclNum()];
         if (varDsc->GetRegNum() != REG_STK)
         {
-            inst_Mov(tree->TypeGet(), tree->GetRegNum(), varDsc->GetRegNum(), /* canSkip */ true);
+            var_types regType = varDsc->GetRegisterType(lcl);
+            inst_Mov(regType, tree->GetRegNum(), varDsc->GetRegNum(), /* canSkip */ true);
         }
     }
 
