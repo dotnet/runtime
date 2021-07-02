@@ -9,6 +9,8 @@ namespace System.IO.Tests
 {
     public class Directory_SymbolicLinks : BaseSymbolicLinks_FileSystem
     {
+        protected override bool IsDirectoryTest => true;
+
         protected override void CreateFileOrDirectory(string path, bool createOpposite = false)
         {
             if (!createOpposite)

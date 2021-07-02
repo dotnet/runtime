@@ -9,6 +9,8 @@ namespace System.IO.Tests
     // Contains test methods that can be used for FileInfo, DirectoryInfo, File or Directory.
     public abstract class BaseSymbolicLinks_FileSystem : BaseSymbolicLinks
     {
+        protected abstract bool IsDirectoryTest { get; }
+
         /// <summary>Creates a new file or directory depending on the implementing class.
         /// If createOpposite is true, creates a directory if the implementing class is for File or FileInfo, or
         /// creates a file if the implementing class is for Directory or DirectoryInfo.</summary>
@@ -23,8 +25,7 @@ namespace System.IO.Tests
 
         private void CreateSymbolicLink_Opposite(string path, string pathToTarget)
         {
-            Type t = GetType();
-            if (t == typeof(Directory_SymbolicLinks) || t == typeof(DirectoryInfo_SymbolicLinks))
+            if (IsDirectoryTest)
             {
                 File.CreateSymbolicLink(path, pathToTarget);
             }
@@ -279,6 +280,52 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void ResolveLinkTarget_ReturnFinalTarget_MaxFollowedLinks()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                // As per the docs, this should be 63 but I don't see that in practice.
+                // https://docs.microsoft.com/windows/win32/fileio/reparse-points
+                Verify(limit: 62, relative: true);
+                Verify(limit: 31, relative: false);
+            }
+            else
+            {
+                Verify(limit: 40, relative: true);
+                Verify(limit: 40, relative: false);
+            }
+
+            void Verify(int limit, bool relative)
+            {
+                string? root = relative ? Directory.CreateDirectory(GetRandomFilePath()).FullName : null;
+                string finalTarget = GetFullPath(root);
+
+                CreateFileOrDirectory(finalTarget);
+                string previousPath = finalTarget;
+
+                for (int i = 0; i < limit; i++)
+                {
+                    string currentLinkPath = GetFullPath(root);
+                    CreateSymbolicLink(currentLinkPath, GetLinkTargetPath(previousPath, relative));
+
+                    previousPath = currentLinkPath;
+                }
+
+                // This is the edge of the limit
+                FileSystemInfo linkInfo = ResolveLinkTarget(previousPath, returnFinalTarget: true);
+                AssertFullNameEquals(finalTarget, linkInfo.FullName);
+
+                // One after the limit
+                linkInfo = CreateSymbolicLink(GetFullPath(root), GetLinkTargetPath(previousPath, relative));
+                Assert.Throws<IOException>(() => ResolveLinkTarget(linkInfo.FullName, returnFinalTarget: true));
+            }
+
+            string GetFullPath(string? root) => root != null ? Path.Join(root, GetRandomFileName()) : GetRandomFilePath();
+
+            string GetLinkTargetPath(string fullPath, bool relative) => relative ? Path.GetFileName(fullPath) : fullPath;
+        }
+
+        [Fact]
         public void DetectSymbolicLinkCycle()
         {
             // link1 -> link2 -> link1 (cycle)
@@ -458,7 +505,7 @@ namespace System.IO.Tests
         {
             get
             {
-                foreach(string path in PathToTargetData)
+                foreach (string path in PathToTargetData)
                 {
                     yield return new object[] { path, false };
                     yield return new object[] { path, true };
@@ -466,26 +513,38 @@ namespace System.IO.Tests
             }
         }
 
-        internal static string[] PathToTargetData => new[]
+        internal static IEnumerable<string> PathToTargetData
         {
-#if WINDOWS
-            //Non-rooted relative
-            "foo", ".\\foo", "..\\foo",
-            // Rooted relative
-            "\\foo",
-            // Rooted absolute
-            Path.Combine(Path.GetTempPath(), "foo"),
-            Path.Combine(@"\\?\", Path.GetTempPath(), "foo"),
-            @"\\SERVER\share\path", @"\\.\pipe\foo"
-#else
-            //Non-rooted relative
-            "foo", "./foo", "../foo",
-            // Rooted relative
-            "/foo",
-            // Rooted absolute
-            Path.Combine(Path.GetTempPath(), "foo"),
-            @"//SERVER/share/path", @"//./pipe/foo"
-#endif
-        };
+            get
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    //Non-rooted relative
+                    yield return "foo";
+                    yield return @".\foo";
+                    yield return @"..\foo";
+                    // Rooted relative
+                    yield return @"\foo";
+                    // Rooted absolute
+                    yield return Path.Combine(Path.GetTempPath(), "foo");
+                    // Extended DOS
+                    yield return Path.Combine(@"\\?\", Path.GetTempPath(), "foo");
+                    // UNC
+                    yield return @"\\SERVER\share\path";
+                    yield return @"\\.\pipe\foo";
+                }
+                else
+                {
+                    //Non-rooted relative
+                    yield return "foo";
+                    yield return "./foo";
+                    yield return "../foo";
+                    // Rooted relative
+                    yield return "/foo";
+                    // Rooted absolute
+                    Path.Combine(Path.GetTempPath(), "foo");
+                }
+            }
+        }
     }
 }

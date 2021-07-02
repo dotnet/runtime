@@ -8,6 +8,8 @@ namespace System.IO.Tests
 {
     public class FileInfo_SymbolicLinks : BaseSymbolicLinks_FileSystemInfo
     {
+        protected override bool IsDirectoryTest => false;
+
         protected override FileSystemInfo GetFileSystemInfo(string path) =>
             new FileInfo(path);
 
