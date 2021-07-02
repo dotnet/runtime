@@ -45,10 +45,10 @@ int64_t SystemNative_GetSystemTimeAsTicks()
 #if defined(TARGET_ANDROID)
 char* SystemNative_GetDefaultTimeZone()
 {
-    char timezonemitch[PROP_VALUE_MAX];
-    if (__system_property_get("persist.sys.timezone", timezonemitch))
+    char defaulttimezone[PROP_VALUE_MAX];
+    if (__system_property_get("persist.sys.timezone", defaulttimezone))
     {
-        return strdup(timezonemitch);
+        return strdup(defaulttimezone);
     }
     else
     {
