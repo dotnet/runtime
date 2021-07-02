@@ -142,10 +142,10 @@ namespace System.Net.Http
         }
 
         // Estimates Round Trip Time between the client and the server by sending PING frames, and measuring the time interval until a PING ACK is received.
-        // Assuming that the network characteristics of the connection wouldn't change much within it's lifetime, we are maintaining a running minimum value.
+        // Assuming that the network characteristics of the connection wouldn't change much within its lifetime, we are maintaining a running minimum value.
         // The more PINGs we send, the more accurate is the estimation of MinRtt, however we should be careful not to send too many of them,
         // to avoid triggering the server's PING flood protection which may result in an unexpected GOAWAY.
-        // With most servers wee are fine to send PINGs, as long as we are reading their data, this is rule is well formalized for gRPC:
+        // With most servers we are fine to send PINGs, as long as we are reading their data, this rule is well formalized for gRPC:
         // https://github.com/grpc/proposal/blob/master/A8-client-side-keepalive.md
         // As a rule of thumb, we can send send a PING whenever we receive DATA or HEADERS, however, there are some servers which allow receiving only
         // a limited amount of PINGs within a given timeframe.
@@ -156,7 +156,7 @@ namespace System.Net.Http
         // Threading:
         // OnInitialSettingsSent() is called during initialization, all other methods are triggered by HttpConnection.ProcessIncomingFramesAsync(),
         // therefore the assumption is that the invocation of RttEstimator's methods is sequential, and there is no race beetween them.
-        // Http2StreamWindowManager is reading MinRtt from another concurrent thread, therefore it's value has to be changed atomically.
+        // Http2StreamWindowManager is reading MinRtt from another concurrent thread, therefore its value has to be changed atomically.
         private struct RttEstimator
         {
             private enum State
@@ -170,7 +170,7 @@ namespace System.Net.Http
 
             private const double PingIntervalInSeconds = 2;
             private const int InitialBurstCount = 4;
-            private static readonly long PingIntervalInTicks =(long)(PingIntervalInSeconds * Stopwatch.Frequency);
+            private static readonly long PingIntervalInTicks = (long)(PingIntervalInSeconds * Stopwatch.Frequency);
 
             private State _state;
             private long _pingSentTimestamp;
@@ -232,7 +232,7 @@ namespace System.Net.Http
                     return;
                 }
 
-                //RTT PINGs always carry negavie payload, positive values indicate a response to KeepAlive PING.
+                // RTT PINGs always carry negative payload, positive values indicate a response to KeepAlive PING.
                 Debug.Assert(payload < 0);
 
                 if (_pingCounter != payload)

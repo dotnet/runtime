@@ -185,7 +185,7 @@ namespace System.Net.Http
                 _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
 
                 // Send SETTINGS frame.  Disable push promise & set initial window size.
-                FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, 2*FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
+                FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, 2 * FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
                 _outgoingBuffer.Commit(FrameHeader.Size);
                 BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
                 _outgoingBuffer.Commit(2);
