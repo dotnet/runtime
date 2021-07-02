@@ -318,7 +318,7 @@ namespace System.IO
             return (vts, -1);
         }
 
-        private static long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
+        internal static long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
         {
             long total = 0;
 
@@ -340,7 +340,7 @@ namespace System.IO
             return total;
         }
 
-        private static long WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
+        internal static long WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
         {
             long total = 0;
 
