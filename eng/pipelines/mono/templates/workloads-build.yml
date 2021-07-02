@@ -64,7 +64,7 @@ jobs:
         targetFolder: $(workloadPackagesPath)
         flattenFolders: true
 
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset mono.workloads -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset mono.workloads -arch $(archType) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build workload artifacts
 
     # Upload packages wrapping msis
