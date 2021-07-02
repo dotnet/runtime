@@ -41,6 +41,7 @@ namespace Wasm.Build.Tests
 
         // FIXME: use an envvar to override this
         protected static int s_defaultPerTestTimeoutMs = 15*60*1000; // 15mins
+        protected static string s_projectRootDir;
 
         static BuildTestBase()
         {
@@ -105,6 +106,9 @@ namespace Wasm.Build.Tests
             {
                 s_xharnessRunnerCommand = $"exec {harnessVar}";
             }
+
+            s_projectRootDir = Path.Combine(Path.GetTempPath(), "Wasm.Build.Tests");
+            Directory.CreateDirectory(s_projectRootDir);
         }
 
         public BuildTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -250,7 +254,7 @@ namespace Wasm.Build.Tests
         [MemberNotNull(nameof(_projectDir), nameof(_logPath))]
         protected void InitPaths(string id)
         {
-            _projectDir = Path.Combine(AppContext.BaseDirectory, id);
+            _projectDir = Path.Combine(s_projectRootDir, id);
             _logPath = Path.Combine(s_logRoot, id);
 
             Directory.CreateDirectory(_logPath);

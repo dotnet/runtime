@@ -109,6 +109,7 @@
       <WasmAppDir>$([MSBuild]::NormalizeDirectory($(WasmAppDir)))</WasmAppDir>
       <!-- emcc, and mono-aot-cross don't like relative paths for output files -->
       <_WasmIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm'))</_WasmIntermediateOutputPath>
+      <WasmCachePath>$([MSBuild]::NormalizeDirectory($(_WasmIntermediateOutputPath), 'cache'))</WasmCachePath>
     </PropertyGroup>
 
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />

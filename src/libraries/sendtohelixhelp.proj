@@ -101,7 +101,7 @@
     <NeedsDotNetSdk>true</NeedsDotNetSdk>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">
+  <ItemGroup Condition="('$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps') and ('$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'true'">
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
   </ItemGroup>

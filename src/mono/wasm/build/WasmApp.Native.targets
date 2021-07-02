@@ -221,6 +221,7 @@
 
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />
+      <_EmccCFlags Include="--cache $(WasmCachePath)" />
       <_EmccCFlags Include="@(_EmccCommonFlags)" />
 
       <_EmccCFlags Include="-DENABLE_AOT=1"                    Condition="'$(RunAOTCompilation)' == 'true'" />
@@ -251,7 +252,8 @@
     <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
     <!-- warm up the cache -->
-    <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
+    <!--<Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />-->
+    <MakeDir Directories="$(WasmCachePath)" />
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
     <EmccCompile SourceFiles="@(_WasmSourceFileToCompile)" Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
@@ -261,6 +263,7 @@
     <ItemGroup>
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
+      <_EmccLDFlags Include="--cache $(WasmCachePath)" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
 
       <_EmccLDFlags Include="-s TOTAL_MEMORY=536870912" />
@@ -339,10 +342,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
            Text="%24(RuntimeEmccVersionRaw) is not set. '$(_EmccPropsPath)' should have set that."/>
     <Exec Command="set" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
-    <Message Text="** Trying to emscripten cache **" />
-    <Exec Command="emcc --clear-cache" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="High" />
-
-    <Exec Command="emcc --version" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low">
+    <Exec Command="emcc --version --cache $(WasmCachePath)" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
     </Exec>
 
