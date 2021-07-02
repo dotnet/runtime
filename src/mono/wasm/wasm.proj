@@ -190,6 +190,7 @@
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
                                   $(ICULibDir)/libicui18n.a" />
       <MonoComponentLibs Include="$(MonoArtifactsPath)libmono-component-hot_reload-static.a;
+                                  $(MonoArtifactsPath)libmono-component-debugger-static.a;
                                   $(MonoArtifactsPath)libmono-component-diagnostics_tracing-stub-static.a" />
       <MonoLibFiles Include="$(MonoArtifactsPath)libmono-ee-interp.a;
                              $(MonoArtifactsPath)libmonosgen-2.0.a;

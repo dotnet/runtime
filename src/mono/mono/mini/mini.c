@@ -71,7 +71,6 @@
 #include "jit-icalls.h"
 
 #include "mini-gc.h"
-#include "debugger-agent.h"
 #include "llvm-runtime.h"
 #include "mini-llvm.h"
 #include "lldb.h"
@@ -3881,7 +3880,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		if (!cfg->disable_llvm)
 			mono_llvm_emit_method (cfg);
 		if (cfg->disable_llvm) {
-			if (cfg->verbose_level >= (cfg->llvm_only ? 0 : 1)) {
+			if (cfg->verbose_level > 0) {
 				//nm = mono_method_full_name (cfg->method, TRUE);
 				printf ("LLVM failed for '%s.%s': %s\n", m_class_get_name (method->klass), method->name, cfg->exception_message);
 				//g_free (nm);

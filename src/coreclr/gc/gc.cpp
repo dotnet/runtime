@@ -7117,6 +7117,8 @@ void gc_heap::fix_youngest_allocation_area()
     assert (generation_allocation_pointer (youngest_generation) == nullptr);
     assert (generation_allocation_limit (youngest_generation) == nullptr);
     heap_segment_allocated (ephemeral_heap_segment) = alloc_allocated;
+    assert (heap_segment_mem (ephemeral_heap_segment) <= heap_segment_allocated (ephemeral_heap_segment));
+    assert (heap_segment_allocated (ephemeral_heap_segment) <= heap_segment_reserved (ephemeral_heap_segment));
 }
 
 //for_gc_p indicates that the work is being done for GC,
@@ -7128,35 +7130,41 @@ void gc_heap::fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
                  (size_t)acontext,
                  (size_t)acontext->alloc_ptr, (size_t)acontext->alloc_limit));
 
+    if (acontext->alloc_ptr == 0)
+    {
+        return;
+    }
     int align_const = get_alignment_constant (TRUE);
-
-    if (((size_t)(alloc_allocated - acontext->alloc_limit) > Align (min_obj_size, align_const)) ||
+#ifdef USE_REGIONS
+    bool is_ephemeral_heap_segment = in_range_for_segment (acontext->alloc_limit, ephemeral_heap_segment);
+#else // USE_REGIONS
+    bool is_ephemeral_heap_segment = true;
+#endif // USE_REGIONS
+    if ((!is_ephemeral_heap_segment) || ((size_t)(alloc_allocated - acontext->alloc_limit) > Align (min_obj_size, align_const)) ||
         !for_gc_p)
     {
         uint8_t*  point = acontext->alloc_ptr;
-        if (point != 0)
+        size_t  size = (acontext->alloc_limit - acontext->alloc_ptr);
+        // the allocation area was from the free list
+        // it was shortened by Align (min_obj_size) to make room for
+        // at least the shortest unused object
+        size += Align (min_obj_size, align_const);
+        assert ((size >= Align (min_obj_size)));
+
+        dprintf(3,("Making unused area [%Ix, %Ix[", (size_t)point,
+                    (size_t)point + size ));
+        make_unused_array (point, size);
+
+        if (for_gc_p)
         {
-            size_t  size = (acontext->alloc_limit - acontext->alloc_ptr);
-            // the allocation area was from the free list
-            // it was shortened by Align (min_obj_size) to make room for
-            // at least the shortest unused object
-            size += Align (min_obj_size, align_const);
-            assert ((size >= Align (min_obj_size)));
-
-            dprintf(3,("Making unused area [%Ix, %Ix[", (size_t)point,
-                       (size_t)point + size ));
-            make_unused_array (point, size);
-
-            if (for_gc_p)
-            {
-                generation_free_obj_space (generation_of (0)) += size;
-                if (record_ac_p)
-                    alloc_contexts_used ++;
-            }
+            generation_free_obj_space (generation_of (0)) += size;
+            if (record_ac_p)
+                alloc_contexts_used ++;
         }
     }
     else if (for_gc_p)
     {
+        assert (is_ephemeral_heap_segment);
         alloc_allocated = acontext->alloc_ptr;
         assert (heap_segment_allocated (ephemeral_heap_segment) <=
                 heap_segment_committed (ephemeral_heap_segment));
@@ -14191,6 +14199,8 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
         if (heap_segment_used (seg) < (alloc_allocated - plug_skew))
         {
             heap_segment_used (seg) = alloc_allocated - plug_skew;
+            assert (heap_segment_mem (seg) <= heap_segment_used (seg));
+            assert (heap_segment_used (seg) <= heap_segment_reserved (seg));
         }
     }
 #ifdef BACKGROUND_GC

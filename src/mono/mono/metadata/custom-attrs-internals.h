@@ -29,10 +29,10 @@ mono_assembly_is_weak_field (MonoImage *image, guint32 field_idx);
 void
 mono_assembly_init_weak_fields (MonoImage *image);
 
-void
+MONO_COMPONENT_API void
 mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len, MonoArrayHandleOut typed_args_out, MonoArrayHandleOut named_args_out, CattrNamedArg **named_arg_info, MonoError *error);
 
-void
+MONO_COMPONENT_API void
 mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMethod *method, const guchar *data, guint32 len,
 													  gpointer **typed_args_out, gpointer **named_args_out, int *num_named_args,
 													  CattrNamedArg **named_arg_info, MonoError *error);

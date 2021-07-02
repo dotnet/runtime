@@ -1,6 +1,6 @@
 #include <glib.h>
-#include "mini.h"
-#include "mini-runtime.h"
+#include <mono/mini/mini.h>
+#include <mono/mini/mini-runtime.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
@@ -10,9 +10,10 @@
 #include <mono/metadata/seq-points-data.h>
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/seq-points.h>
-#include <mono/mini/debugger-engine.h>
-#include <mono/mini/debugger-protocol.h>
-#include <mono/mini/debugger-agent.h>
+#include <mono/component/debugger-engine.h>
+#include "debugger-protocol.h"
+#include "debugger-agent.h"
+#include <mono/metadata/components.h>
 
 //XXX This is dirty, extend ee.h to support extracting info from MonoInterpFrameHandle
 #include <mono/mini/interp/interp-internals.h>
@@ -23,6 +24,8 @@
 
 #include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/debug-mono-ppdb.h"
+
+#include <mono/mini/debugger-agent-external.h>
 
 static int log_level = 1;
 
@@ -40,7 +43,6 @@ extern void mono_wasm_asm_loaded (const char *asm_name, const char *assembly_dat
 
 G_END_DECLS
 
-static void handle_exception (MonoException *exc, MonoContext *throw_ctx, MonoContext *catch_ctx, StackFrameInfo *catch_frame);
 static gboolean receive_debugger_agent_message (void *data, int len);
 static void assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly);
 
@@ -114,14 +116,14 @@ begin_single_step_processing (MonoContext *ctx, gboolean from_signal)
 static void
 ss_discard_frame_context (void *the_tls)
 {
-	mono_ss_discard_frame_context (mono_wasm_get_tls());
+	mono_ss_discard_frame_context (mono_wasm_get_tls ());
 }
 
 static void
 ss_calculate_framecount (void *tls, MonoContext *ctx, gboolean force_use_ctx, DbgEngineStackFrame ***out_frames, int *nframes)
 {
-	mono_wasm_save_thread_context();
-	mono_ss_calculate_framecount(mono_wasm_get_tls(), NULL, force_use_ctx, out_frames, nframes);
+	mono_wasm_save_thread_context ();
+	mono_ss_calculate_framecount (mono_wasm_get_tls (), NULL, force_use_ctx, out_frames, nframes);
 }
 
 static gboolean
@@ -144,11 +146,24 @@ handle_multiple_ss_requests (void) {
 	return 1;
 }
 
-void
-mono_wasm_debugger_init (void)
+static void
+mono_wasm_enable_debugging_internal (int debug_level)
 {
+	PRINT_DEBUG_MSG (1, "DEBUGGING ENABLED\n");
+	debugger_enabled = TRUE;
+	log_level = debug_level;
+}
+
+static void
+mono_wasm_debugger_init (MonoDefaults *mono_defaults)
+{
+	int debug_level = mono_wasm_get_debug_level();
+	mono_wasm_enable_debugging_internal (debug_level);
+
 	if (!debugger_enabled)
 		return;
+
+	mdbg_mono_defaults = mono_defaults;
 
 	DebuggerEngineCallbacks cbs = {
 		.tls_get_restore_state = tls_get_restore_state,
@@ -159,33 +174,22 @@ mono_wasm_debugger_init (void)
 		.ss_calculate_framecount = ss_calculate_framecount,
 		.ensure_jit = ensure_jit,
 		.ensure_runtime_is_suspended = ensure_runtime_is_suspended,
-		.get_this_async_id = mono_get_this_async_id,
-		.set_set_notification_for_wait_completion_flag = set_set_notification_for_wait_completion_flag,
-		.get_notify_debugger_of_wait_completion_method = get_notify_debugger_of_wait_completion_method,
-		.create_breakpoint_events = mono_dbg_create_breakpoint_events,
-		.process_breakpoint_events = mono_dbg_process_breakpoint_events,
-		.ss_create_init_args = mono_ss_create_init_args,
-		.ss_args_destroy = mono_ss_args_destroy,
 		.handle_multiple_ss_requests = handle_multiple_ss_requests,
 	};
-
 	mono_debug_init (MONO_DEBUG_FORMAT_MONO);
 	mono_de_init (&cbs);
 	mono_de_set_log_level (log_level, stdout);
 
-	mini_debug_options.gen_sdb_seq_points = TRUE;
-	mini_debug_options.mdb_optimizations = TRUE;
+	get_mini_debug_options ()->gen_sdb_seq_points = TRUE;
+	get_mini_debug_options ()->mdb_optimizations = TRUE;
 	mono_disable_optimizations (MONO_OPT_LINEARS);
-	mini_debug_options.load_aot_jit_info_eagerly = TRUE;
+	get_mini_debug_options ()->load_aot_jit_info_eagerly = TRUE;
 
 	MonoProfilerHandle prof = mono_profiler_create (NULL);
 	mono_profiler_set_jit_done_callback (prof, jit_done);
 	//FIXME support multiple appdomains
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
 	mono_profiler_set_assembly_loaded_callback (prof, assembly_loaded);
-
-	mini_get_dbg_callbacks ()->handle_exception = mono_debugger_agent_handle_exception;
-	mini_get_dbg_callbacks ()->user_break = mono_dbg_debugger_agent_user_break;
 
 //debugger-agent initialization	
 	DebuggerTransport trans;
@@ -194,14 +198,6 @@ mono_wasm_debugger_init (void)
 
 	mono_debugger_agent_register_transport (&trans);
 	mono_init_debugger_agent_for_wasm (log_level);
-}
-
-MONO_API void
-mono_wasm_enable_debugging (int debug_level)
-{
-	PRINT_DEBUG_MSG (1, "DEBUGGING ENABLED\n");
-	debugger_enabled = TRUE;
-	log_level = debug_level;
 }
 
 static void
@@ -233,17 +229,16 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 	}
 }
 
-
-void
+static void
 mono_wasm_single_step_hit (void)
 {
-	mono_de_process_single_step (mono_wasm_get_tls(), FALSE);
+	mono_de_process_single_step (mono_wasm_get_tls (), FALSE);
 }
 
-void
+static void
 mono_wasm_breakpoint_hit (void)
 {
-	mono_de_process_breakpoint (mono_wasm_get_tls(), FALSE);
+	mono_de_process_breakpoint (mono_wasm_get_tls (), FALSE);
 }
 
 static gboolean
@@ -404,14 +399,14 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	MdbgProtErrorCode error = 0;
 	if (command_set == MDBGPROT_CMD_SET_VM && command == MDBGPROT_CMD_VM_INVOKE_METHOD ) 
 	{
-		DebuggerTlsData* tls = mono_wasm_get_tls();
+		DebuggerTlsData* tls = mono_wasm_get_tls ();
 		InvokeData invoke_data;
-		memset(&invoke_data, 0, sizeof(InvokeData));
+		memset (&invoke_data, 0, sizeof (InvokeData));
 		invoke_data.endp = data + size;
-		error = mono_do_invoke_method(tls, &buf, &invoke_data, data, &data);
+		error = mono_do_invoke_method (tls, &buf, &invoke_data, data, &data);
 	}
 	else
-		error = mono_process_dbg_packet(id, command_set, command, &no_reply, data, data + size, &buf);
+		error = mono_process_dbg_packet (id, command_set, command, &no_reply, data, data + size, &buf);
 	EM_ASM ({
 		MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
 	}, error == MDBGPROT_ERR_NONE, id, buf.buf, buf.p-buf.buf);
@@ -433,19 +428,28 @@ receive_debugger_agent_message (void *data, int len)
 
 #else // HOST_WASM
 
-void
+static void
 mono_wasm_single_step_hit (void)
 {
 }
 
-void
+static void
 mono_wasm_breakpoint_hit (void)
 {
 }
 
-void
-mono_wasm_debugger_init (void)
+static void
+mono_wasm_debugger_init (MonoDefaults *mono_defaults)
 {
 }
 
+
 #endif // HOST_WASM
+
+void
+mini_wasm_debugger_add_function_pointers (MonoComponentDebugger* fn_table)
+{
+	fn_table->init = mono_wasm_debugger_init;
+	fn_table->mono_wasm_breakpoint_hit = mono_wasm_breakpoint_hit;
+	fn_table->mono_wasm_single_step_hit = mono_wasm_single_step_hit;
+}
