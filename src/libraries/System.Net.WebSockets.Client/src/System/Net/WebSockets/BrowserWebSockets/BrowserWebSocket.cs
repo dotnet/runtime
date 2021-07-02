@@ -626,7 +626,7 @@ namespace System.Net.WebSockets
                 }
                 else
                 {
-                    _closeStatus =3; // (CLOSED)
+                    _closeStatus = 3; // (CLOSED)
                 }
                 OnCloseCallback(null, cancellationToken);
                 return Task.CompletedTask;
