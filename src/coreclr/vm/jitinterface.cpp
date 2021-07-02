@@ -13049,8 +13049,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     COOPERATIVE_TRANSITION_BEGIN();
 
-    if (QueryPerformanceCounter (&qpcValue))
-        jitStartTimestamp = static_cast<int64_t>(qpcValue.QuadPart);
+    QueryPerformanceCounter(&qpcValue);
+    jitStartTimestamp = static_cast<int64_t>(qpcValue.QuadPart);
 
 #ifdef FEATURE_PREJIT
 
@@ -13413,8 +13413,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         printf(".");
 #endif // _DEBUG
 
-    if (QueryPerformanceCounter (&qpcValue))
-        jitEndTimestamp = static_cast<int64_t>(qpcValue.QuadPart);
+    QueryPerformanceCounter(&qpcValue);
+    jitEndTimestamp = static_cast<int64_t>(qpcValue.QuadPart);
 
     jitTimeQPCTicks = jitEndTimestamp - jitStartTimestamp;
 
