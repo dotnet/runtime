@@ -12,6 +12,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         // not using bool? as it's not thread safe
         private volatile NullableBool _canSeek = NullableBool.Undefined;
+        private bool _releaseLock;
 
         public SafeFileHandle() : this(ownsHandle: true)
         {
@@ -120,7 +121,11 @@ namespace Microsoft.Win32.SafeHandles
             // which could prevent subsequent usage of the file until this process dies.  To avoid that, we proactively
             // try to release the lock before we close the handle. (If it's not locked, there's no behavioral
             // problem trying to unlock it.)
-            Interop.Sys.FLock(handle, Interop.Sys.LockOperations.LOCK_UN); // ignore any errors
+            if (_releaseLock)
+            {
+                Interop.Sys.FLock(handle, Interop.Sys.LockOperations.LOCK_UN); // ignore any errors
+                _releaseLock = false;
+            }
 
             // Close the descriptor. Although close is documented to potentially fail with EINTR, we never want
             // to retry, as the descriptor could actually have been closed, been subsequently reassigned, and
@@ -240,20 +245,27 @@ namespace Microsoft.Win32.SafeHandles
         {
             IsAsync = (options & FileOptions.Asynchronous) != 0;
 
-            // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
-            // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
-            // and not atomic with file opening, it's better than nothing.
-            Interop.Sys.LockOperations lockOperation = (share == FileShare.None) ? Interop.Sys.LockOperations.LOCK_EX : Interop.Sys.LockOperations.LOCK_SH;
-            if (Interop.Sys.FLock(this, lockOperation | Interop.Sys.LockOperations.LOCK_NB) < 0)
+            if (FileStreamHelpers.UseNet5CompatStrategy || share == FileShare.None)
             {
-                // The only error we care about is EWOULDBLOCK, which indicates that the file is currently locked by someone
-                // else and we would block trying to access it.  Other errors, such as ENOTSUP (locking isn't supported) or
-                // EACCES (the file system doesn't allow us to lock), will only hamper FileStream's usage without providing value,
-                // given again that this is only advisory / best-effort.
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (errorInfo.Error == Interop.Error.EWOULDBLOCK)
+                // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
+                // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
+                // and not atomic with file opening, it's better than nothing.
+                Interop.Sys.LockOperations lockOperation = (share == FileShare.None) ? Interop.Sys.LockOperations.LOCK_EX : Interop.Sys.LockOperations.LOCK_SH;
+                if (Interop.Sys.FLock(this, lockOperation | Interop.Sys.LockOperations.LOCK_NB) < 0)
                 {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory: false);
+                    // The only error we care about is EWOULDBLOCK, which indicates that the file is currently locked by someone
+                    // else and we would block trying to access it.  Other errors, such as ENOTSUP (locking isn't supported) or
+                    // EACCES (the file system doesn't allow us to lock), will only hamper FileStream's usage without providing value,
+                    // given again that this is only advisory / best-effort.
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    if (errorInfo.Error == Interop.Error.EWOULDBLOCK)
+                    {
+                        throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory: false);
+                    }
+                }
+                else
+                {
+                    _releaseLock = true;
                 }
             }
 

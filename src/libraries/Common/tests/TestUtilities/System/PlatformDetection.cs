@@ -271,6 +271,8 @@ namespace System
 
         public static bool IsNet5CompatFileStreamEnabled => _net5CompatFileStream.Value;
 
+        public static bool IsFileLockingSupported => IsWindows || IsNet5CompatFileStreamEnabled;
+
         private static bool GetIsInContainer()
         {
             if (IsWindows)
