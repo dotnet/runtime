@@ -56,7 +56,7 @@
 
       <!-- Visual Studio components must be versioned. Build tasks will fall back to cobbling a version number from
            the manifest information unless it's overridden. -->
-      <ComponentVersions Include="microsoft-net-sdk-blazorwebassembly-aot" Version="$(SDKBundleVersion)" />
+      <ComponentVersions Include="microsoft-net-sdk-blazorwebassembly-aot" Version="$(FileVersion)" />
     </ItemGroup>
 
     <!-- BAR requires having version information in blobs -->
@@ -74,10 +74,6 @@
     <ItemGroup>
       <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.Manifest-*.nupkg" />
     </ItemGroup>
-
-    <Message Importance="High" Text="Printing package folder 123456789"/>
-    <Message Importance="High" Text="$(PackageSource)"/>
-    <Message Importance="High" Text="@(ManifestPackages)"/>
 
     <GenerateVisualStudioWorkload IntermediateBaseOutputPath="$(WorkloadIntermediateOutputPath)"
                                   WixToolsetPath="$(WixToolsetPath)"
@@ -147,7 +143,7 @@
     <MSBuild Projects="@(VisualStudioManifestProjects)" BuildInParallel="true" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath);OutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
   </Target>
 
-  <Target Name="GenerateVersions">
+  <Target Name="GenerateVersions" DependsOnTargets="GetAssemblyVersion">
     <Exec Command="git rev-list --count HEAD"
           ConsoleToMSBuild="true"
           Condition=" '$(GitCommitCount)' == '' ">
