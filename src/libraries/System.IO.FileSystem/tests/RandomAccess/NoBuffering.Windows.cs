@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -14,15 +15,18 @@ namespace System.IO.Tests
     {
         private const FileOptions NoBuffering = (FileOptions)0x20000000;
 
-        [Fact]
-        public async Task ReadAsyncUsingSingleBuffer()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadUsingSingleBuffer(bool async)
         {
             const int fileSize = 1_000_000; // 1 MB
             string filePath = GetTestFilePath();
             byte[] expected = RandomNumberGenerator.GetBytes(fileSize);
             File.WriteAllBytes(filePath, expected);
 
-            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open, options: FileOptions.Asynchronous | NoBuffering))
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open,
+                options: FileOptions.Asynchronous | NoBuffering)) // to use Scatter&Gather APIs on Windows the handle MUST be opened for async IO
             using (SectorAlignedMemory<byte> buffer = SectorAlignedMemory<byte>.Allocate(Environment.SystemPageSize))
             {
                 int current = 0;
@@ -39,7 +43,9 @@ namespace System.IO.Tests
                 // It's possible to get 0 if we are lucky and file size is a multiple of physical sector size.
                 do
                 {
-                    current = await RandomAccess.ReadAsync(handle, buffer.Memory, fileOffset: total);
+                    current = async
+                        ? await RandomAccess.ReadAsync(handle, buffer.Memory, fileOffset: total)
+                        : RandomAccess.Read(handle, buffer.GetSpan(), fileOffset: total);
 
                     Assert.True(expected.AsSpan(total, current).SequenceEqual(buffer.GetSpan().Slice(0, current)));
 
@@ -51,8 +57,10 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        public async Task ReadAsyncUsingMultipleBuffers()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsyncUsingMultipleBuffers(bool async)
         {
             const int fileSize = 1_000_000; // 1 MB
             string filePath = GetTestFilePath();
@@ -66,16 +74,17 @@ namespace System.IO.Tests
                 long current = 0;
                 long total = 0;
 
+                IReadOnlyList<Memory<byte>> buffers = new Memory<byte>[]
+                {
+                    buffer_1.Memory,
+                    buffer_2.Memory,
+                };
+
                 do
                 {
-                    current = await RandomAccess.ReadAsync(
-                        handle,
-                        new Memory<byte>[]
-                        {
-                            buffer_1.Memory,
-                            buffer_2.Memory,
-                        },
-                        fileOffset: total);
+                    current = async
+                        ? await RandomAccess.ReadAsync(handle, buffers, fileOffset: total)
+                        : RandomAccess.Read(handle, buffers, fileOffset: total);
 
                     int takeFromFirst = Math.Min(buffer_1.Memory.Length, (int)current);
                     Assert.True(expected.AsSpan((int)total, takeFromFirst).SequenceEqual(buffer_1.GetSpan().Slice(0, takeFromFirst)));
@@ -89,8 +98,10 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        public async Task WriteAsyncUsingSingleBuffer()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WriteUsingSingleBuffer(bool async)
         {
             string filePath = GetTestFilePath();
             int bufferSize = Environment.SystemPageSize;
@@ -107,18 +118,19 @@ namespace System.IO.Tests
                     int take = Math.Min(content.Length - total, bufferSize);
                     content.AsSpan(total, take).CopyTo(buffer.GetSpan());
 
-                    total += await RandomAccess.WriteAsync(
-                        handle,
-                        buffer.Memory,
-                        fileOffset: total);
+                    total += async
+                        ? await RandomAccess.WriteAsync(handle, buffer.Memory, fileOffset: total)
+                        : RandomAccess.Write(handle, buffer.GetSpan(), fileOffset: total);
                 }
             }
 
             Assert.Equal(content, File.ReadAllBytes(filePath));
         }
 
-        [Fact]
-        public async Task WriteAsyncUsingMultipleBuffers()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WriteAsyncUsingMultipleBuffers(bool async)
         {
             string filePath = GetTestFilePath();
             int bufferSize = Environment.SystemPageSize;
@@ -131,19 +143,20 @@ namespace System.IO.Tests
             {
                 long total = 0;
 
+                IReadOnlyList<ReadOnlyMemory<byte>> buffers = new ReadOnlyMemory<byte>[]
+                {
+                    buffer_1.Memory,
+                    buffer_2.Memory,
+                };
+
                 while (total != fileSize)
                 {
                     content.AsSpan((int)total, bufferSize).CopyTo(buffer_1.GetSpan());
                     content.AsSpan((int)total + bufferSize, bufferSize).CopyTo(buffer_2.GetSpan());
 
-                    total += await RandomAccess.WriteAsync(
-                        handle,
-                        new ReadOnlyMemory<byte>[]
-                        {
-                            buffer_1.Memory,
-                            buffer_2.Memory,
-                        },
-                        fileOffset: total);
+                    total += async
+                        ? await RandomAccess.WriteAsync(handle, buffers, fileOffset: total)
+                        : RandomAccess.Write(handle, buffers, fileOffset: total);
                 }
             }
 

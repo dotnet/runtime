@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -82,7 +83,7 @@ namespace System.IO.Strategies
 
         private void InitFromHandleImpl(SafeFileHandle handle, bool useAsyncIO)
         {
-            handle.InitThreadPoolBindingIfNeeded();
+            handle.EnsureThreadPoolBindingInitialized();
 
             if (handle.CanSeek)
                 SeekCore(handle, 0, SeekOrigin.Current);
@@ -1005,14 +1006,33 @@ namespace System.IO.Strategies
         {
             Debug.Assert((_useAsyncIO && overlapped != null) || (!_useAsyncIO && overlapped == null), "Async IO and overlapped parameters inconsistent in call to ReadFileNative.");
 
-            return RandomAccess.ReadFileNative(handle, bytes, false, overlapped, out errorCode);
+            return FileStreamHelpers.ReadFileNative(handle, bytes, overlapped, out errorCode);
         }
 
         private unsafe int WriteFileNative(SafeFileHandle handle, ReadOnlySpan<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
         {
             Debug.Assert((_useAsyncIO && overlapped != null) || (!_useAsyncIO && overlapped == null), "Async IO and overlapped parameters inconsistent in call to WriteFileNative.");
 
-            return RandomAccess.WriteFileNative(handle, buffer, false, overlapped, out errorCode);
+            int numBytesWritten = 0;
+            int r;
+
+            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
+            {
+                r = overlapped == null
+                    ? Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, overlapped)
+                    : Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped);
+            }
+
+            if (r == 0)
+            {
+                errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                return -1;
+            }
+            else
+            {
+                errorCode = 0;
+                return numBytesWritten;
+            }
         }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)

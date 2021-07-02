@@ -22,14 +22,6 @@ namespace System.IO.Strategies
 
         internal override bool IsAsync => true;
 
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            ValueTask<int> vt = ReadAsyncInternal(new Memory<byte>(buffer, offset, count), CancellationToken.None);
-            return vt.IsCompleted ?
-                vt.Result :
-                vt.AsTask().GetAwaiter().GetResult();
-        }
-
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             => ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
 
@@ -65,9 +57,6 @@ namespace System.IO.Strategies
                 ? new ValueTask<int>(vts, vts.Version)
                 : (errorCode == 0) ? ValueTask.FromResult(0) : ValueTask.FromException<int>(HandleIOError(positionBefore, errorCode));
         }
-
-        public override void Write(byte[] buffer, int offset, int count)
-            => WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), CancellationToken.None).AsTask().GetAwaiter().GetResult();
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             => WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
