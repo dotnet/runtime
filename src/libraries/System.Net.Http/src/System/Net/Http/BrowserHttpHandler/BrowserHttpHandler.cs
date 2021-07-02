@@ -323,9 +323,17 @@ namespace System.Net.Http
                 return httpResponse;
 
             }
-            catch (JSException jsExc)
+            catch (OperationCanceledException oce ) when (cancellationToken.IsCancellationRequested)
             {
-                throw new System.Net.Http.HttpRequestException(jsExc.Message);
+                throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
+            }
+            catch (JSException jse)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
+                }
+                throw new HttpRequestException(jse.Message, jse);
             }
         }
 
@@ -366,7 +374,6 @@ namespace System.Net.Http
 
                 _isDisposed = true;
 
-                _abortCts.Cancel();
                 _abortCts.Dispose();
                 _abortRegistration.Dispose();
 
@@ -391,14 +398,24 @@ namespace System.Net.Http
                 {
                     return _data;
                 }
-
-                using (System.Runtime.InteropServices.JavaScript.ArrayBuffer dataBuffer = (System.Runtime.InteropServices.JavaScript.ArrayBuffer)await _status.ArrayBuffer().ConfigureAwait(continueOnCapturedContext: true))
+                try
                 {
-                    using (Uint8Array dataBinView = new Uint8Array(dataBuffer))
+                    using (System.Runtime.InteropServices.JavaScript.ArrayBuffer dataBuffer = (System.Runtime.InteropServices.JavaScript.ArrayBuffer)await _status.ArrayBuffer().ConfigureAwait(continueOnCapturedContext: true))
                     {
-                        _data = dataBinView.ToArray();
-                        _status.Dispose();
+                        using (Uint8Array dataBinView = new Uint8Array(dataBuffer))
+                        {
+                            _data = dataBinView.ToArray();
+                            _status.Dispose();
+                        }
                     }
+                }
+                catch (JSException jse)
+                {
+                    if (jse.Message.StartsWith("AbortError"))
+                    {
+                        throw CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
+                    }
+                    throw new HttpRequestException(jse.Message, jse);
                 }
 
                 return _data;
@@ -482,10 +499,17 @@ namespace System.Net.Http
                             _reader = (JSObject)body.Invoke("getReader");
                         }
                     }
-                    catch (JSException)
+                    catch (OperationCanceledException oce ) when (cancellationToken.IsCancellationRequested)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        throw;
+                        throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
+                    }
+                    catch (JSException jse)
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
+                        }
+                        throw new HttpRequestException(jse.Message, jse);
                     }
                 }
 
@@ -515,10 +539,17 @@ namespace System.Net.Http
                             _bufferedBytes = binValue.ToArray();
                     }
                 }
-                catch (JSException)
+                catch (OperationCanceledException oce ) when (cancellationToken.IsCancellationRequested)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    throw;
+                    throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
+                }
+                catch (JSException jse)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
+                    }
+                    throw new HttpRequestException(jse.Message, jse);
                 }
 
                 return ReadBuffered();
