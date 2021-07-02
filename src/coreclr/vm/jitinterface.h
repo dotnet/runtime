@@ -89,7 +89,8 @@ void getMethodInfoILMethodHeaderHelper(
 
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
-                          SIZE_T *entry);
+                          SIZE_T *entry,
+                          BOOL mayUsePrecompiledNDirectMethods = TRUE);
 
 //
 // The legacy x86 monitor helpers do not need a state argument
@@ -1161,4 +1162,3 @@ FCDECL0(INT64, GetJittedBytes);
 FCDECL0(INT32, GetJittedMethodsCount);
 
 #endif // JITINTERFACE_H
-
