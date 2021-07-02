@@ -38,23 +38,6 @@ namespace System.IO.Tests
         /// <summary>Calls the actual public API for resolving the symbolic link target.</summary>
         protected abstract FileSystemInfo ResolveLinkTarget(string linkPath, bool returnFinalTarget = false);
 
-        /// <summary>
-        /// Asserts that the FullPath of the FileSystemInfo returned by ResolveLinkTarget() matches with the expected path of the file created.
-        /// Trims the Windows device prefix, in case there's any, before comparing.
-        /// </summary>
-        private static void AssertFullNameEquals(string expected, string actual)
-        {
-#if WINDOWS
-            if (PathInternal.IsExtended(actual))
-            {
-                Assert.StartsWith(PathInternal.ExtendedPathPrefix, actual);
-                actual = actual.Substring(4);
-            }
-#endif
-
-            Assert.Equal(expected, actual);
-        }
-
         [Fact]
         public void CreateSymbolicLink_NullPathToTarget()
         {
@@ -189,7 +172,7 @@ namespace System.IO.Tests
             string expectedTargetFullName = Path.IsPathFullyQualified(pathToTarget) ?
                 pathToTarget : Path.GetFullPath(Path.Join(Path.GetDirectoryName(linkPath), pathToTarget));
 
-            AssertFullNameEquals(expectedTargetFullName, targetInfo.FullName);
+            Assert.Equal(expectedTargetFullName, targetInfo.FullName);
         }
 
         [Theory]
@@ -313,7 +296,7 @@ namespace System.IO.Tests
 
                 // This is the edge of the limit
                 FileSystemInfo linkInfo = ResolveLinkTarget(previousPath, returnFinalTarget: true);
-                AssertFullNameEquals(finalTarget, linkInfo.FullName);
+                Assert.Equal(finalTarget, linkInfo.FullName);
 
                 // One after the limit
                 linkInfo = CreateSymbolicLink(GetFullPath(root), GetLinkTargetPath(previousPath, relative));
@@ -400,7 +383,7 @@ namespace System.IO.Tests
 
             FileSystemInfo secondLinkInfo = CreateSymbolicLink(secondLinkPath, firstLinkPath);
             Assert.Equal(firstLinkPath, secondLinkInfo.LinkTarget);
-            AssertFullNameEquals(targetPath, secondLinkInfo.ResolveLinkTarget(true).FullName);
+            Assert.Equal(targetPath, secondLinkInfo.ResolveLinkTarget(true).FullName);
         }
 
         private void VerifySymbolicLinkAndResolvedTarget(string linkPath, string expectedLinkTarget, string targetPath = null)
@@ -459,7 +442,7 @@ namespace System.IO.Tests
             Assert.True(link1TargetInfo.Exists);
             AssertIsCorrectTypeAndDirectoryAttribute(link1TargetInfo);
             Assert.True(link1TargetInfo.Attributes.HasFlag(FileAttributes.ReparsePoint));
-            AssertFullNameEquals(link2Path, link1TargetInfo.FullName);
+            Assert.Equal(link2Path, link1TargetInfo.FullName);
             Assert.Equal(link2Target, link1TargetInfo.LinkTarget);
 
             // link2: do not follow symlinks
@@ -467,7 +450,7 @@ namespace System.IO.Tests
             Assert.True(link2TargetInfo.Exists);
             AssertIsCorrectTypeAndDirectoryAttribute(link2TargetInfo);
             Assert.False(link2TargetInfo.Attributes.HasFlag(FileAttributes.ReparsePoint));
-            AssertFullNameEquals(filePath, link2TargetInfo.FullName);
+            Assert.Equal(filePath, link2TargetInfo.FullName);
             Assert.Null(link2TargetInfo.LinkTarget);
 
             // link1: follow symlinks
@@ -475,7 +458,7 @@ namespace System.IO.Tests
             Assert.True(finalTarget.Exists);
             AssertIsCorrectTypeAndDirectoryAttribute(finalTarget);
             Assert.False(finalTarget.Attributes.HasFlag(FileAttributes.ReparsePoint));
-            AssertFullNameEquals(filePath, finalTarget.FullName);
+            Assert.Equal(filePath, finalTarget.FullName);
         }
 
         protected void CreateSymbolicLink_PathToTarget_RelativeToLinkPath_Internal(bool createOpposite)

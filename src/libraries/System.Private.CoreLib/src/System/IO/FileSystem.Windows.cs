@@ -579,11 +579,11 @@ namespace System.IO
                     throw Win32Marshal.GetExceptionForLastWin32Error(linkPath);
                 }
 
-                Debug.Assert(PathInternal.IsExtended(new string(buffer, 0, (int)result)));
+                Debug.Assert(PathInternal.IsExtended(new string(buffer, 0, (int)result).AsSpan()));
                 // GetFinalPathNameByHandle always returns with extended DOS prefix even if the link target was created without one.
                 // While this does not interfere with correct behavior, it might be unexpected.
                 // Hence we trim it if the passed-in path to the link wasn't extended.
-                int start = PathInternal.IsExtended(linkPath) ? 0 : 4;
+                int start = PathInternal.IsExtended(linkPath.AsSpan()) ? 0 : 4;
                 return new string(buffer, start, (int)result - start);
             }
             finally
