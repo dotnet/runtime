@@ -300,11 +300,9 @@ namespace System.Data.Common
             }
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         internal Type? DataType
         {
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2073:UnrecognizedReflectionPattern",
-                Justification = "Type requirements (public properties + public fields) are checked when type is assigned to DataColumn.")]
+            [RequiresUnreferencedCode("DataRow's DataType cannot be statically analyzed")]
             get
             {
                 if (null != _schemaTable.DataType)

@@ -248,11 +248,13 @@ namespace System.Data.Common
             base.Dispose(disposing); // notify base classes
         }
 
+        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
         public virtual DataTable[] FillSchema(DataSet dataSet, SchemaType schemaType)
         {
             throw ADP.NotSupported();
         }
 
+        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
         protected virtual DataTable[] FillSchema(DataSet dataSet, SchemaType schemaType, string srcTable, IDataReader dataReader)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.FillSchema|API> {0}, dataSet, schemaType={1}, srcTable, dataReader", ObjectID, schemaType);
@@ -285,6 +287,7 @@ namespace System.Data.Common
             }
         }
 
+        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
         protected virtual DataTable? FillSchema(DataTable dataTable, SchemaType schemaType, IDataReader dataReader)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DataAdapter.FillSchema|API> {0}, dataTable, schemaType, dataReader", ObjectID);
@@ -313,6 +316,7 @@ namespace System.Data.Common
             }
         }
 
+        [RequiresUnreferencedCode("dataReader schema table rows DataTypes cannot be statically analyzed.")]
         internal object? FillSchemaFromReader(DataSet? dataset, DataTable? datatable, SchemaType schemaType, string? srcTable, IDataReader dataReader)
         {
             DataTable[]? dataTables = null;
@@ -504,13 +508,13 @@ namespace System.Data.Common
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "chapterValue is not used here")]
+            Justification = "parentChapterValue is not used here")]
         internal int FillFromReader(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int startRecord, int maxRecords)
         {
             return FillFromReader(dataset, datatable, srcTable, dataReader, startRecord, maxRecords, null, null);
         }
 
-        [RequiresUnreferencedCode("chapterValue's type cannot be statically analyzed")]
+        [RequiresUnreferencedCode("parentChapterValue's type cannot be statically analyzed")]
         internal int FillFromReader(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int startRecord, int maxRecords, DataColumn? parentChapterColumn, object? parentChapterValue)
         {
             int rowsAddedToDataSet = 0;
@@ -571,7 +575,7 @@ namespace System.Data.Common
             return rowsAddedToDataSet;
         }
 
-        [RequiresUnreferencedCode("Parent chapter's type cannot be statically analyzed")]
+        [RequiresUnreferencedCode("Row chapter column types cannot be statically analyzed")]
         private int FillLoadDataRowChunk(SchemaMapping mapping, int startRecord, int maxRecords)
         {
             DataReaderContainer dataReader = mapping.DataReader;
@@ -619,7 +623,7 @@ namespace System.Data.Common
             return rowsAddedToDataSet;
         }
 
-        [RequiresUnreferencedCode("Parent chapter's type cannot be statically analyzed")]
+        [RequiresUnreferencedCode("Row chapter column types cannot be statically analyzed")]
         private int FillLoadDataRow(SchemaMapping mapping)
         {
             int rowsAddedToDataSet = 0;
@@ -654,7 +658,7 @@ namespace System.Data.Common
             return rowsAddedToDataSet;
         }
 
-        [RequiresUnreferencedCode("chapterValue's type cannot be statically analyzed")]
+        [RequiresUnreferencedCode("parentChapterValue's type cannot be statically analyzed")]
         private SchemaMapping FillMappingInternal(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int schemaCount, DataColumn? parentChapterColumn, object? parentChapterValue)
         {
             bool withKeyInfo = (Data.MissingSchemaAction.AddWithKey == MissingSchemaAction);
@@ -666,7 +670,7 @@ namespace System.Data.Common
             return new SchemaMapping(this, dataset, datatable, dataReader, withKeyInfo, SchemaType.Mapped, tmp, true, parentChapterColumn, parentChapterValue);
         }
 
-        [RequiresUnreferencedCode("chapterValue's type cannot be statically analyzed")]
+        [RequiresUnreferencedCode("parentChapterValue's type cannot be statically analyzed")]
         private SchemaMapping? FillMapping(DataSet? dataset, DataTable? datatable, string? srcTable, DataReaderContainer dataReader, int schemaCount, DataColumn? parentChapterColumn, object? parentChapterValue)
         {
             SchemaMapping? mapping = null;
@@ -753,6 +757,7 @@ namespace System.Data.Common
             }
         }
 
+        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
         public virtual int Update(DataSet dataSet)
         {
             throw ADP.NotSupported();

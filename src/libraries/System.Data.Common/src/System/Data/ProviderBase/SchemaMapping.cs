@@ -56,14 +56,13 @@ namespace System.Data.ProviderBase
 
         private readonly LoadOption _loadOption;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "chapterValue is not used here")]
+        [RequiresUnreferencedCode("dataReader schema table rows DataTypes type cannot be statically analyzed.")]
         internal SchemaMapping(DataAdapter adapter, DataSet? dataset, DataTable? datatable, DataReaderContainer dataReader, bool keyInfo,
                                     SchemaType schemaType, string? sourceTableName, bool gettingData)
             : this(adapter, dataset, datatable, dataReader, keyInfo, schemaType, sourceTableName, gettingData, null, null)
         { }
 
-        [RequiresUnreferencedCode("chapterValue's type cannot be statically analyzed")]
+        [RequiresUnreferencedCode("chapterValue and dataReader schema table rows DataTypes type cannot be statically analyzed.")]
         internal SchemaMapping(DataAdapter adapter, DataSet? dataset, DataTable? datatable, DataReaderContainer dataReader, bool keyInfo,
                                     SchemaType schemaType, string? sourceTableName, bool gettingData,
                                     DataColumn? parentChapterColumn, object? parentChapterValue)
@@ -390,7 +389,7 @@ namespace System.Data.ProviderBase
             return _mappedDataValues!;
         }
 
-        [RequiresUnreferencedCode("Parent chapter's type cannot be statically analyzed")]
+        [RequiresUnreferencedCode("Row chapter column types cannot be statically analyzed")]
         internal void LoadDataRowWithClear()
         {
             // for FillErrorEvent to ensure no values leftover from previous row
@@ -401,7 +400,7 @@ namespace System.Data.ProviderBase
             LoadDataRow();
         }
 
-        [RequiresUnreferencedCode("Parent chapter's type cannot be statically analyzed")]
+        [RequiresUnreferencedCode("Row chapter column types cannot be statically analyzed")]
         internal void LoadDataRow()
         {
             try
@@ -457,7 +456,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        [RequiresUnreferencedCode("Parent chapter's type cannot be statically analyzed")]
+        [RequiresUnreferencedCode("Row chapter column types cannot be statically analyzed")]
         internal int LoadDataRowChapters(DataRow dataRow)
         {
             int datarowadded = 0;
@@ -772,7 +771,7 @@ namespace System.Data.ProviderBase
             return dataValues;
         }
 
-        [RequiresUnreferencedCode("chapterValue's type cannot be statically analyzed")]
+        [RequiresUnreferencedCode("chapterValue and _schemaTable schema rows DataTypes type cannot be statically analyzed. When _loadOption is set, members from types used in the expression column may be trimmed if not referenced directly.")]
         private object[]? SetupSchemaWithKeyInfo(MissingMappingAction mappingAction, MissingSchemaAction schemaAction, bool gettingData, DataColumn? parentChapterColumn, object? chapterValue)
         {
             Debug.Assert(_dataTable != null);
@@ -1014,7 +1013,11 @@ namespace System.Data.ProviderBase
                     }
                     if (null == dataColumn.Table)
                     {
-                        AddAdditionalPropertiesIfLoadOptionsSet(schemaRow, dataColumn);
+                        if (4 > (int)_loadOption)
+                        {
+                            AddAdditionalProperties(dataColumn, schemaRow.DataRow);
+                        }
+
                         AddItemToAllowRollback(ref addedItems, dataColumn);
                         columnCollection.Add(dataColumn);
                     }
@@ -1147,16 +1150,6 @@ namespace System.Data.ProviderBase
                 throw;
             }
             return dataValues;
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The trim-unsafe condition can only happen when DataAdapter.FillLoadOption is set. DataAdapter.FillLoadOption.set is marked as unsafe.")]
-        private void AddAdditionalPropertiesIfLoadOptionsSet(DbSchemaRow schemaRow, DataColumn dataColumn)
-        {
-            if (4 > (int)_loadOption)
-            {
-                AddAdditionalProperties(dataColumn, schemaRow.DataRow);
-            }
         }
 
         [RequiresUnreferencedCode("Members from types used in the expression column may be trimmed if not referenced directly.")]
