@@ -643,17 +643,17 @@ namespace System.Net.Quic.Implementations.MsQuic
                     _state.ReadState = ReadState.Aborted;
                 }
 
-                if (_state.ShutdownState != ShutdownState.Finished)
+                if (_state.ShutdownState == ShutdownState.None)
                 {
                     _state.ShutdownState = ShutdownState.Pending;
                 }
-                else if (!callShutdown && !abortRead)
+
+                // Check if we already got final event.
+                releaseHandles = Interlocked.Exchange(ref _state.ShutdownDone, 1) == 2;
+                if (releaseHandles)
                 {
                     _state.ShutdownState = ShutdownState.Finished;
                 }
-
-                // We already got final event.
-                releaseHandles = Interlocked.Exchange(ref _state.ShutdownDone, 1) == 2;
             }
 
             _canRead = false;
