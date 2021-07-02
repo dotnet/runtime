@@ -43,7 +43,7 @@
          _MonoRuntimeComponentDontLink.  For example, a workload that doesn't understand the
          contents of native/ in details will generally bundle every native library from native/.
          Such a workload should then use DontLink to exclude the disabled components.  On the other
-         hand a workload that explicitly pics the native libraries from native/ should use
+         hand a workload that explicitly picks the native libraries from native/ should use
          _MonoRuntimeComponentLink to pick just the needed runtime component artifacts. -->
    
     <!-- The target also depends on the following items that are provided by the component-manifest.props from the runtime pack -->

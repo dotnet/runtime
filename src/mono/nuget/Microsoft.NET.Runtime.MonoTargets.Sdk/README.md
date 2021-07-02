@@ -11,7 +11,7 @@ The `RuntimeConfigParserTask` task converts a json `runtimeconfig.json` to a bin
 To use the task in a project, reference the NuGet package, with the appropriate nuget source.
 
 ### NuGet.config
-```
+```xml
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <packageSources>
@@ -21,7 +21,7 @@ To use the task in a project, reference the NuGet package, with the appropriate 
 ```
 
 ### In the project file
-```
+```xml
 <!-- Import the NuGet package into the project -->
 <ItemGroup>
     <PackageReference Include="Microsoft.NET.Runtime.MonoTargets.Sdk" Version="<desired-dotnet-6-sdk-version>" />
