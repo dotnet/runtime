@@ -22,7 +22,7 @@
 
 #ifdef TARGET_LINUX
 #include <dlfcn.h>
-#include "pal_atomic.h"
+#include <stdatomic.h>
 #endif
 
 c_static_assert(PAL_GSS_C_DELEG_FLAG == GSS_C_DELEG_FLAG);
@@ -58,12 +58,51 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = ARRAY_SIZE(gss_ntlm_oid_
 
 #define libraryName "libgssapi_krb5.so"
 
+#define FOR_ALL_GSS_FUNCTIONS \
+    PER_FUNCTION_BLOCK(gss_accept_sec_context) \
+    PER_FUNCTION_BLOCK(gss_acquire_cred) \
+    PER_FUNCTION_BLOCK(gss_acquire_cred_with_password) \
+    PER_FUNCTION_BLOCK(gss_delete_sec_context) \
+    PER_FUNCTION_BLOCK(gss_display_name) \
+    PER_FUNCTION_BLOCK(gss_display_status) \
+    PER_FUNCTION_BLOCK(gss_import_name) \
+    PER_FUNCTION_BLOCK(gss_indicate_mechs) \
+    PER_FUNCTION_BLOCK(gss_init_sec_context) \
+    PER_FUNCTION_BLOCK(gss_inquire_context) \
+    PER_FUNCTION_BLOCK(gss_mech_krb5) \
+    PER_FUNCTION_BLOCK(gss_oid_equal) \
+    PER_FUNCTION_BLOCK(gss_release_buffer) \
+    PER_FUNCTION_BLOCK(gss_release_cred) \
+    PER_FUNCTION_BLOCK(gss_release_name) \
+    PER_FUNCTION_BLOCK(gss_release_oid_set) \
+    PER_FUNCTION_BLOCK(gss_unwrap) \
+    PER_FUNCTION_BLOCK(gss_wrap)
+
+#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+
+#define FOR_ALL_GSS_FUNCTIONS FOR_ALL_GSS_FUNCTIONS \
+    PER_FUNCTION_BLOCK( gss_set_cred_option)
+
+#endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+
 typedef struct gss_shim_t
 {
-    TYPEOF(gss_accept_sec_context)* gss_accept_sec_context_ptr;
+    // define indirection pointers for all functions, like
+    // TYPEOF(gss_accept_sec_context)* gss_accept_sec_context_ptr;
+#define PER_FUNCTION_BLOCK(fn) \
+    TYPEOF(fn)* fn##_ptr;
+
+    FOR_ALL_GSS_FUNCTIONS
+#undef PER_FUNCTION_BLOCK
 } gss_shim_t;
 
+// static storage for all method pointers
 static gss_shim_t s_gss_shim;
+
+// reference to the shim storage.
+// NOTE: the shim reference is published after all indirection pointers are initialized.
+//       when we read the indirection pointers, we do that via the shim reference.
+//       data dependency ensures that method pointers are loaded after reading and null-checking the shim reference.
 static gss_shim_t* volatile s_gss_shim_ptr = NULL;
 
 static void init_gss_shim()
@@ -71,10 +110,18 @@ static void init_gss_shim()
     void* lib = dlopen(libraryName, RTLD_LAZY);
     if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", libraryName, dlerror()); abort(); }
 
-    s_gss_shim.gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(lib, "gss_accept_sec_context");
-    if (s_gss_shim.gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", libraryName, dlerror()); abort(); }
+    // initialize indirection pointers for all functions, like:
+    //   s_gss_shim.gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(lib, "gss_accept_sec_context");
+    //   if (s_gss_shim.gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", libraryName, dlerror()); abort(); }
+#define PER_FUNCTION_BLOCK(fn) \
+    s_gss_shim.fn##_ptr = (TYPEOF(fn)*)dlsym(lib, #fn); \
+    if (s_gss_shim.fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", libraryName, dlerror()); abort(); }
 
-    pal_atomic_cas_ptr((void* volatile *)&s_gss_shim_ptr, &s_gss_shim, NULL);
+    FOR_ALL_GSS_FUNCTIONS
+#undef PER_FUNCTION_BLOCK
+
+    // publish the shim pointer
+    __atomic_store_n(&s_gss_shim_ptr, &s_gss_shim, __ATOMIC_RELEASE);
     dlclose(lib);
 }
 
@@ -91,29 +138,6 @@ static gss_shim_t* get_gss_shim()
 }
 
 #define gss_accept_sec_context(...) get_gss_shim()->gss_accept_sec_context_ptr(__VA_ARGS__)
-
-// gss_accept_sec_context
-// gss_acquire_cred
-// gss_acquire_cred_with_password
-// gss_delete_sec_context
-// gss_display_name
-// gss_display_status
-// gss_import_name
-// gss_indicate_mechs
-// gss_init_sec_context
-// gss_inquire_context
-// gss_mech_krb5
-// gss_oid_equal
-// gss_release_buffer
-// gss_release_cred
-// gss_release_name
-// gss_release_oid_set
-// gss_unwrap
-// gss_wrap
-
-#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-// gss_set_cred_option
-#endif
 
 #endif // TARGET_LINUX
 
