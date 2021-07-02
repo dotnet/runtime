@@ -280,7 +280,7 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
         # --keepfiles is for diagnostic. Can be removed once it's working.
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --aotcompilermode wasm --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --buildTimeout 3600 --keepfiles" 
     else
-        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --keepfiles"
     fi
 fi
 
