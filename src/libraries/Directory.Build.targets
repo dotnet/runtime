@@ -144,10 +144,6 @@
 
   <Import Sdk="Microsoft.DotNet.PackageValidation" Project="Sdk.targets" Condition="'$(IsSourceProject)' == 'true' and !Exists('$(PkgProjPath)')" />
 
-  <PropertyGroup>
-    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(MajorVersion), 1)).0.0</PackageValidationBaselineVersion>
-  </PropertyGroup>
-
   <Target Name="SetGenApiProperties"
           BeforeTargets="GenerateReferenceAssemblySource">
     <PropertyGroup>
