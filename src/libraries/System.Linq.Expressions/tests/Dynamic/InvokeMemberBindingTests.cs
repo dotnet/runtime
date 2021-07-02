@@ -54,6 +54,7 @@ namespace System.Dynamic.Tests
             yield return new[] {new object()};
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55070", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Theory, MemberData(nameof(ObjectArguments))]
         public void InvokeVirtualMethod(object value)
         {
@@ -411,6 +412,7 @@ namespace System.Dynamic.Tests
             public OutAction OutDelegate;
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55071", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public void InvokeFuncMember()
         {
