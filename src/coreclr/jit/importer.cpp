@@ -19061,8 +19061,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
 
     // If the call site has profile data, report the relative frequency of the site.
     //
-    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveProfileData() &&
-        pInlineInfo->iciBlock->hasProfileWeight())
+    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveProfileData() && pInlineInfo->iciBlock->hasProfileWeight())
     {
         BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
         BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
