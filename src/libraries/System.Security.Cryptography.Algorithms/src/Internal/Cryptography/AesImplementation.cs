@@ -70,7 +70,7 @@ namespace Internal.Cryptography
             PaddingMode paddingMode,
             out int bytesWritten)
         {
-             ILiteSymmetricCipher cipher = CreateLiteCipher(
+            ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
                 Key,
                 iv: default,
