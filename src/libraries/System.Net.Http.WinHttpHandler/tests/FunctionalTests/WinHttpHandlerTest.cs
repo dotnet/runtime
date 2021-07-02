@@ -32,7 +32,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             _output = output;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))] // HttpRequestMessage ctor guards against such Uris before .NET 6
         public async Task SendAsync_InvalidRequestUri_Throws()
         {
             using var invoker = new HttpMessageInvoker(new WinHttpHandler());
