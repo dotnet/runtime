@@ -125,6 +125,5 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.ThreadPool" />
-    <Reference Include="System.Console" />
   </ItemGroup>
 </Project>

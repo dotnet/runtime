@@ -493,12 +493,6 @@ internal static partial class Interop
             [Out] out SafeSspiAuthDataHandle authData);
 
         [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern unsafe SECURITY_STATUS QueryCredentialsAttributesW(
-            [In] ref CredHandle handlePtr,
-            [In] long ulAttribute,
-            [In] void* pBuffer);
-
-        [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern SECURITY_STATUS SetCredentialsAttributesW(
             [In] ref CredHandle handlePtr,
             [In] long ulAttribute,
