@@ -10,6 +10,7 @@
 //
 // LegalPolicy          - partial class providing common legality checks
 // DefaultPolicy        - default inliner policy
+// ExtendedDefaltPolicy - a more aggressive and profile-driven variation of DefaultPolicy
 // DiscretionaryPolicy  - default variant with uniform size policy
 // ModelPolicy          - policy based on statistical modelling
 // ProfilePolicy        - policy based on statistical modelling and profile feedback
@@ -87,7 +88,6 @@ public:
         , m_RootCompiler(compiler)
         , m_StateMachine(nullptr)
         , m_Multiplier(0.0)
-        , m_ProfileFrequency(0.0)
         , m_CodeSize(0)
         , m_CallsiteFrequency(InlineCallsiteFrequency::UNUSED)
         , m_CallsiteDepth(0)
@@ -97,23 +97,6 @@ public:
         , m_ArgFeedsConstantTest(0)
         , m_ArgFeedsRangeCheck(0)
         , m_ConstantArgFeedsConstantTest(0)
-        , m_BinaryExprWithCns(0)
-        , m_ArgCasted(0)
-        , m_ArgIsStructByValue(0)
-        , m_FldAccessOverArgStruct(0)
-        , m_FoldableBox(0)
-        , m_Intrinsic(0)
-        , m_BackwardJump(0)
-        , m_ThrowBlock(0)
-        , m_ArgIsExactCls(0)
-        , m_ArgIsExactClsSigIsNot(0)
-        , m_ArgIsConst(0)
-        , m_ArgIsBoxedAtCallsite(0)
-        , m_FoldableIntrinsic(0)
-        , m_FoldableExpr(0)
-        , m_FoldableExprUn(0)
-        , m_FoldableBranch(0)
-        , m_DivByCns(0)
         , m_CalleeNativeSizeEstimate(0)
         , m_CallsiteNativeSizeEstimate(0)
         , m_IsForceInline(false)
@@ -127,11 +110,6 @@ public:
         , m_CallsiteIsInLoop(false)
         , m_IsNoReturn(false)
         , m_IsNoReturnKnown(false)
-        , m_ReturnsStructByValue(false)
-        , m_IsFromValueClass(false)
-        , m_NonGenericCallsGeneric(false)
-        , m_IsCallsiteInNoReturnRegion(false)
-        , m_HasProfile(false)
     {
         // empty
     }
@@ -153,14 +131,12 @@ public:
     int CodeSizeEstimate() override;
 
 #if defined(DEBUG) || defined(INLINE_DATA)
+    void OnDumpXml(FILE* file, unsigned indent = 0) const override;
 
     const char* GetName() const override
     {
         return "DefaultPolicy";
     }
-
-    void DumpXml(FILE* file, unsigned indent = 0) const override;
-
 #endif // (DEBUG) || defined(INLINE_DATA)
 
 protected:
@@ -172,15 +148,14 @@ protected:
     };
 
     // Helper methods
-    double DetermineMultiplier();
-    int    DetermineNativeSizeEstimate();
+    virtual double DetermineMultiplier();
+    int            DetermineNativeSizeEstimate();
     int DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methodInfo);
 
     // Data members
     Compiler*               m_RootCompiler; // root compiler instance
     CodeSeqSM*              m_StateMachine;
     double                  m_Multiplier;
-    double                  m_ProfileFrequency;
     unsigned                m_CodeSize;
     InlineCallsiteFrequency m_CallsiteFrequency;
     unsigned                m_CallsiteDepth;
@@ -190,23 +165,6 @@ protected:
     unsigned                m_ArgFeedsConstantTest;
     unsigned                m_ArgFeedsRangeCheck;
     unsigned                m_ConstantArgFeedsConstantTest;
-    unsigned                m_BinaryExprWithCns;
-    unsigned                m_ArgCasted;
-    unsigned                m_ArgIsStructByValue;
-    unsigned                m_FldAccessOverArgStruct;
-    unsigned                m_FoldableBox;
-    unsigned                m_Intrinsic;
-    unsigned                m_BackwardJump;
-    unsigned                m_ThrowBlock;
-    unsigned                m_ArgIsExactCls;
-    unsigned                m_ArgIsExactClsSigIsNot;
-    unsigned                m_ArgIsConst;
-    unsigned                m_ArgIsBoxedAtCallsite;
-    unsigned                m_FoldableIntrinsic;
-    unsigned                m_FoldableExpr;
-    unsigned                m_FoldableExprUn;
-    unsigned                m_FoldableBranch;
-    unsigned                m_DivByCns;
     int                     m_CalleeNativeSizeEstimate;
     int                     m_CallsiteNativeSizeEstimate;
     bool                    m_IsForceInline : 1;
@@ -220,11 +178,86 @@ protected:
     bool                    m_CallsiteIsInLoop : 1;
     bool                    m_IsNoReturn : 1;
     bool                    m_IsNoReturnKnown : 1;
-    bool                    m_ReturnsStructByValue : 1;
-    bool                    m_IsFromValueClass : 1;
-    bool                    m_NonGenericCallsGeneric : 1;
-    bool                    m_IsCallsiteInNoReturnRegion : 1;
-    bool                    m_HasProfile : 1;
+};
+
+// ExtendedDefaultPolicy is a slightly more aggressive variant of
+// DefaultPolicy with an extended list of observations including profile data.
+class ExtendedDefaultPolicy : public DefaultPolicy
+{
+public:
+    ExtendedDefaultPolicy::ExtendedDefaultPolicy(Compiler* compiler, bool isPrejitRoot)
+        : DefaultPolicy(compiler, isPrejitRoot)
+        , m_ProfileFrequency(0.0)
+        , m_BinaryExprWithCns(0)
+        , m_ArgCasted(0)
+        , m_ArgIsStructByValue(0)
+        , m_FldAccessOverArgStruct(0)
+        , m_FoldableBox(0)
+        , m_Intrinsic(0)
+        , m_BackwardJump(0)
+        , m_ThrowBlock(0)
+        , m_ArgIsExactCls(0)
+        , m_ArgIsExactClsSigIsNot(0)
+        , m_ArgIsConst(0)
+        , m_ArgIsBoxedAtCallsite(0)
+        , m_FoldableIntrinsic(0)
+        , m_FoldableExpr(0)
+        , m_FoldableExprUn(0)
+        , m_FoldableBranch(0)
+        , m_DivByCns(0)
+        , m_ReturnsStructByValue(false)
+        , m_IsFromValueClass(false)
+        , m_NonGenericCallsGeneric(false)
+        , m_IsCallsiteInNoReturnRegion(false)
+        , m_HasProfile(false)
+    {
+        // Empty
+    }
+
+    void NoteBool(InlineObservation obs, bool value) override;
+    void NoteInt(InlineObservation obs, int value) override;
+    void NoteDouble(InlineObservation obs, double value) override;
+
+    double DetermineMultiplier() override;
+
+    bool RequiresPreciseScan() override
+    {
+        return true;
+    }
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+    void OnDumpXml(FILE* file, unsigned indent = 0) const override;
+
+    const char* GetName() const override
+    {
+        return "ExtendedDefaultPolicy";
+    }
+#endif // defined(DEBUG) || defined(INLINE_DATA)
+
+protected:
+    double   m_ProfileFrequency;
+    unsigned m_BinaryExprWithCns;
+    unsigned m_ArgCasted;
+    unsigned m_ArgIsStructByValue;
+    unsigned m_FldAccessOverArgStruct;
+    unsigned m_FoldableBox;
+    unsigned m_Intrinsic;
+    unsigned m_BackwardJump;
+    unsigned m_ThrowBlock;
+    unsigned m_ArgIsExactCls;
+    unsigned m_ArgIsExactClsSigIsNot;
+    unsigned m_ArgIsConst;
+    unsigned m_ArgIsBoxedAtCallsite;
+    unsigned m_FoldableIntrinsic;
+    unsigned m_FoldableExpr;
+    unsigned m_FoldableExprUn;
+    unsigned m_FoldableBranch;
+    unsigned m_DivByCns;
+    bool     m_ReturnsStructByValue : 1;
+    bool     m_IsFromValueClass : 1;
+    bool     m_NonGenericCallsGeneric : 1;
+    bool     m_IsCallsiteInNoReturnRegion : 1;
+    bool     m_HasProfile : 1;
 };
 
 // DiscretionaryPolicy is a variant of the default policy.  It

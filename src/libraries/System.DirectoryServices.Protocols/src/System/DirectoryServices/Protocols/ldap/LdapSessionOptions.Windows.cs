@@ -9,7 +9,6 @@ namespace System.DirectoryServices.Protocols
     {
         private static void PALCertFreeCRLContext(IntPtr certPtr) => Interop.Ldap.CertFreeCRLContext(certPtr);
 
-        [SupportedOSPlatform("windows")]
         public bool SecureSocketLayer
         {
             get

@@ -64,7 +64,6 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void SecureSocketLayer_GetSetWhenDisposed_ThrowsObjectDisposedException()
         {
             var connection = new LdapConnection("server");
