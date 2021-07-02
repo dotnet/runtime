@@ -15,9 +15,6 @@ namespace System
 
         private static AndroidTzData tzData = new AndroidTzData();
 
-        [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetDefaultTimeZone")]
-        private static extern string? GetDefaultTimeZone();
-
         // This should be called when name begins with GMT
         private static int ParseGMTNumericZone(string name)
         {
@@ -113,7 +110,7 @@ namespace System
 
         private static TimeZoneInfo GetLocalTimeZoneCore()
         {
-            var id = GetDefaultTimeZone();
+            var id = Interop.Sys.GetDefaultTimeZone();
             if (!string.IsNullOrEmpty(id))
             {
                 var defaultTimeZone = GetTimeZone(id, id);

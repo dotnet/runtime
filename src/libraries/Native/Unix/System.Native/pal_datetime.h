@@ -8,4 +8,6 @@
 
 PALEXPORT int64_t SystemNative_GetSystemTimeAsTicks(void);
 
+#if defined(TARGET_ANDROID)
 PALEXPORT char* SystemNative_GetDefaultTimeZone(void);
+#endif
