@@ -79,7 +79,7 @@ class FgStack;             // defined in fgbasic.cpp
 class Instrumentor;        // defined in fgprofile.cpp
 class SpanningTreeVisitor; // defined in fgprofile.cpp
 class CSE_DataFlow;        // defined in OptCSE.cpp
-struct OptBoolsDsc;        // defined in optimizer.cpp
+class OptBoolsDsc;         // defined in optimizer.cpp
 struct OptTestInfo;
 #ifdef DEBUG
 struct IndentStack;

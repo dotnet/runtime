@@ -7608,154 +7608,150 @@ bool Compiler::optIsRangeCheckRemovable(GenTree* tree)
     return true;
 }
 
-//
-// OptTestInfo:     Member of OptBoolsDsc struct used to test if a GT-JTRUE or GT_RETURN node
+//-----------------------------------------------------------------------------
+// OptTestInfo:     Member of OptBoolsDsc struct used to test if a GT_JTRUE or GT_RETURN node
 //                  is a boolean comparison
 //
 struct OptTestInfo
 {
-    GenTree* testTree; // The root node of Basic Block
+    GenTree* testTree; // The root node of basic block with GT_JTRUE or GT_RETURN type to check boolean condition on
     GenTree* compTree; // The compare node (i.e. GT_EQ or GT_NE node) of the testTree
-    bool     isBool;   // If the compTree is boolean comparison
+    bool     isBool;   // If the compTree is boolean expression
 };
 
-//
+//-----------------------------------------------------------------------------
 // OptBoolsDsc:     Descriptor used for Boolean Optimization
 //
-struct OptBoolsDsc
+class OptBoolsDsc
 {
 public:
-    BasicBlock* b1; // The first Basic Block with the BBJ_COND conditional jump type
-    BasicBlock* b2; // The next basic block of b1. Either BBJ_COND or BBJ_RETURN type
-    BasicBlock* b3; // The next basic block of b2. Null if b2 is not a return block
+    BasicBlock* m_b1; // The first basic block with the BBJ_COND conditional jump type
+    BasicBlock* m_b2; // The next basic block of m_b1. Either BBJ_COND or BBJ_RETURN type
+    BasicBlock* m_b3; // m_b1->bbJumpDest. Null if m_b2 is not a return block.
+
+    Compiler* m_comp; // The pointer to the Compiler instance
 
 private:
-    OptTestInfo t1; // The first test info
-    OptTestInfo t2; // The second test info
-    GenTree*    t3; // The root node of the first statement of b3
+    OptTestInfo m_testInfo1; // The first test info
+    OptTestInfo m_testInfo2; // The second test info
+    GenTree*    m_t3;        // The root node of the first statement of m_b3
 
-    GenTree* c1; // The first operand of t1.compTree
-    GenTree* c2; // The first operand of t2.compTree
+    GenTree* m_c1; // The first operand of m_testInfo1.compTree
+    GenTree* m_c2; // The first operand of m_testInfo2.compTree
 
-    bool sameTarget; // if b1 and b2 jumps to the same destination
+    bool m_sameTarget; // if m_b1 and m_b2 jumps to the same destination
 
-    genTreeOps foldOp;   // The fold operator (e.g., GT_AND or GT_OR)
-    var_types  foldType; // The type of the folded tree
-    genTreeOps cmpOp;    // The comparison operator (e.g., GT_EQ or GT_NE)
+    genTreeOps m_foldOp;   // The fold operator (e.g., GT_AND or GT_OR)
+    var_types  m_foldType; // The type of the folded tree
+    genTreeOps m_cmpOp;    // The comparison operator (e.g., GT_EQ or GT_NE)
 
 public:
-    bool optOptimizeBoolsCondBlock(Compiler* comp);
-    bool optOptimizeBoolsReturnBlock(Compiler* comp);
+    bool optOptimizeBoolsCondBlock();
+    bool optOptimizeBoolsReturnBlock();
 #ifdef DEBUG
-    void optOptimizeBoolsGcStress(Compiler* comp, BasicBlock* condBlock);
+    void optOptimizeBoolsGcStress(BasicBlock* condBlock);
 #endif
 
 private:
     Statement* optOptimizeBoolsChkBlkCond();
-    GenTree* optIsBoolComp(Compiler* comp, OptTestInfo* pOptTest);
-    bool optOptimizeBoolsChkTypeCostCond(Compiler* comp);
-    void optOptimizeBoolsUpdateTrees(Compiler* comp);
-    void optReturnGetFoldAndCompOper();
+    GenTree* optIsBoolComp(OptTestInfo* pOptTest);
+    bool optOptimizeBoolsChkTypeCostCond();
+    void optOptimizeBoolsUpdateTrees();
 };
 
-//
-//  optOptimizeBoolsCondBlock:  Optimize boolean when bbJumpKind of both b1 and b2 are BBJ_COND
-//
-//  Arguments:
-//      comp        The instance of Compiler class
+//-----------------------------------------------------------------------------
+//  optOptimizeBoolsCondBlock:  Optimize boolean when bbJumpKind of both m_b1 and m_b2 are BBJ_COND
 //
 //  Returns:
-//      changeCond  Set to true if boolean optimization is done and b1 and b2 are folded into b1.
+//      true if boolean optimization is done and m_b1 and m_b2 are folded into m_b1, else false.
 //
 //  Notes:
-//      When called, Basic Block b1 and b2 are set.
+//      m_b1 and m_b2 are set on entry.
 //
-//      For example, (x==0 && y==0 && z==0) generates
-//          b1: GT_JTRUE (BBJ_COND)
-//          b2: GT_JTRUE (BBJ_COND)
-//          b3: GT_RETURN (BBJ_RETURN),
-//      and it is folded into
-//          b1: GT_JTRUE (BBJ_COND)
-//          b3: GT_RETURN (BBJ_RETURN)
-//
-//      if b1.bbJumpDest == b2.bbJumpDest, it transforms
-//          b1 : brtrue(t1, b3)
-//          b2 : brtrue(t2, bx)
-//          b3 :
+//      Case 1: if b1.bbJumpDest == b2.bbJumpDest, it transforms
+//          B1 : brtrue(t1, Bx)
+//          B2 : brtrue(t2, Bx)
+//          B3 :
 //      to
-//          b1 : brtrue((!t1) && t2, bx)
-//          b3 :
+//          B1 : brtrue(t1|t2, BX)
+//          B3 :
 //
-//      if b1.bbJumpDest == b2->bbNext, it transforms
-//          b1 : brtrue(t1, b3)
-//          b2 : brtrue(t2, bx)
-//          b3 :
+//          For example, (x == 0 && y == 0 && z == 0) generates
+//              B1: GT_JTRUE (BBJ_COND), jump to B4
+//              B2: GT_JTRUE (BBJ_COND), jump to B4
+//              B3: GT_RETURN (BBJ_RETURN)
+//              B4: GT_RETURN (BBJ_RETURN)
+//          and B1 and B2 are folded into B1:
+//              B1: GT_JTRUE (BBJ_COND), jump to B4
+//              B3: GT_RETURN (BBJ_RETURN)
+//              B4: GT_RETURN (BBJ_RETURN)
+//
+//      Case 2: if B1.bbJumpDest == B2->bbNext, it transforms
+//          B1 : brtrue(t1, B3)
+//          B2 : brtrue(t2, Bx)
+//          B3 :
 //      to
-//          b1 : brtrue((!t1) && t2, bx)
-//          b3 :
+//          B1 : brtrue((!t1) && t2, Bx)
+//          B3 :
 //
-bool OptBoolsDsc::optOptimizeBoolsCondBlock(Compiler* comp)
+bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 {
-    assert(b1 != nullptr && b2 != nullptr && b3 == nullptr);
+    assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 == nullptr);
 
-    bool changeCond = false;
+    // Check if m_b1 and m_b2 jump to the same target and get back pointers to m_testInfo1 and t2 tree nodes
 
-    // Check if b1 and b2 jump to the same target and get back pointers to t1 and t2 tree nodes
-
-    this->t3         = nullptr;
-    this->sameTarget = false; // Do b1 and b2 have the same bbJumpDest?
+    m_t3         = nullptr;
+    m_sameTarget = false; // Do m_b1 and m_b2 have the same bbJumpDest?
 
     Statement* const s1 = optOptimizeBoolsChkBlkCond();
     if (s1 == nullptr)
     {
-        return changeCond;
+        return false;
     }
 
-    // Find the branch conditions of b1 and b2
+    // Find the branch conditions of m_b1 and m_b2
 
-    GenTree* const c1 = optIsBoolComp(comp, &t1);
-    if (c1 == nullptr)
+    m_c1 = optIsBoolComp(&m_testInfo1);
+    if (m_c1 == nullptr)
     {
-        return changeCond;
+        return false;
     }
-    this->c1 = c1;
 
-    GenTree* const c2 = optIsBoolComp(comp, &t2);
-    if (c2 == nullptr)
+    m_c2 = optIsBoolComp(&m_testInfo2);
+    if (m_c2 == nullptr)
     {
-        return changeCond;
+        return false;
     }
-    this->c2 = c2;
 
-    // Find the type and cost conditions of t1 and t2
+    // Find the type and cost conditions of m_testInfo1 and m_testInfo2
 
-    if (!optOptimizeBoolsChkTypeCostCond(comp))
+    if (!optOptimizeBoolsChkTypeCostCond())
     {
-        return changeCond;
+        return false;
     }
 
     // Get the fold operator and the comparison operator
 
     genTreeOps foldOp;
     genTreeOps cmpOp;
-    var_types  foldType = this->c1->TypeGet();
+    var_types  foldType = m_c1->TypeGet();
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;
     }
 
-    assert(t1.compTree->gtOper == GT_EQ || t1.compTree->gtOper == GT_NE);
+    assert(m_testInfo1.compTree->gtOper == GT_EQ || m_testInfo1.compTree->gtOper == GT_NE);
 
-    if (sameTarget)
+    if (m_sameTarget)
     {
         // Both conditions must be the same
 
-        if (t1.compTree->gtOper != t2.compTree->gtOper)
+        if (m_testInfo1.compTree->gtOper != m_testInfo2.compTree->gtOper)
         {
-            return changeCond;
+            return false;
         }
 
-        if (t1.compTree->gtOper == GT_EQ)
+        if (m_testInfo1.compTree->gtOper == GT_EQ)
         {
             // t1:c1==0 t2:c2==0 ==> Branch to BX if either value is 0
             // So we will branch to BX if (c1&c2)==0
@@ -7774,15 +7770,15 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock(Compiler* comp)
     }
     else
     {
-        // The b1 condition must be the reverse of the b2 condition because the only operators
+        // The m_b1 condition must be the reverse of the m_b2 condition because the only operators
         // that we will see here are GT_EQ and GT_NE. So, if they are not the same, we have one of each.
 
-        if (t1.compTree->gtOper == t2.compTree->gtOper)
+        if (m_testInfo1.compTree->gtOper == m_testInfo2.compTree->gtOper)
         {
-            return changeCond;
+            return false;
         }
 
-        if (t1.compTree->gtOper == GT_EQ)
+        if (m_testInfo1.compTree->gtOper == GT_EQ)
         {
             // t1:c1==0 t2:c2!=0 ==> Branch to BX if both values are non-0
             // So we will branch to BX if (c1&c2)!=0
@@ -7802,58 +7798,56 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock(Compiler* comp)
 
     // Anding requires both values to be 0 or 1
 
-    if ((foldOp == GT_AND) && (!t1.isBool || !t2.isBool))
+    if ((foldOp == GT_AND) && (!m_testInfo1.isBool || !m_testInfo2.isBool))
     {
-        return changeCond;
+        return false;
     }
 
     //
     // Now update the trees
     //
 
-    this->foldOp   = foldOp;
-    this->foldType = foldType;
-    this->cmpOp    = cmpOp;
+    m_foldOp   = foldOp;
+    m_foldType = foldType;
+    m_cmpOp    = cmpOp;
 
-    optOptimizeBoolsUpdateTrees(comp);
-
-    // Update the change to true to continue the bool optimization for the rest of the BB chain
-    changeCond = true;
+    optOptimizeBoolsUpdateTrees();
 
 #ifdef DEBUG
-    if (comp->verbose)
+    if (m_comp->verbose)
     {
-        printf("Folded %sboolean conditions of " FMT_BB " and " FMT_BB " to :\n",
-               this->c2->OperIsLeaf() ? "" : "non-leaf ", b1->bbNum, b2->bbNum);
-        comp->gtDispStmt(s1);
+        printf("Folded %sboolean conditions of " FMT_BB " and " FMT_BB " to :\n", m_c2->OperIsLeaf() ? "" : "non-leaf ",
+               m_b1->bbNum, m_b2->bbNum);
+        m_comp->gtDispStmt(s1);
         printf("\n");
     }
 #endif
 
-    return changeCond;
+    // Return true to continue the bool optimization for the rest of the BB chain
+    return true;
 }
 
-//
+//-----------------------------------------------------------------------------
 // optOptimizeBoolsChkBlkCond: Checks block conditions if it can be boolean optimized
 //
 // Return:
-//      s1              If all conditions pass, returns the last statement of b1.
+//      If all conditions pass, returns the last statement of m_b1, else return nullptr.
 //
 // Notes:
-//      This method checks if the second or third block contains only one statement, and
-//      checks if tree operators are of the right type, e.g, GT_JTRUE, GT_RETURN.
+//      This method checks if the second (and third block for cond/return/return case) contains only one statement,
+//      and checks if tree operators are of the right type, e.g, GT_JTRUE, GT_RETURN.
 //
-//      When called, b1, b2 are set and b3 is set for GT_RETURN, where
-//          b1 is the first block, b2 is the second block and b3 is the third block.
-//      If it passes all the conditions, t1, t2 and t3 are set to the root nodes of b1, b2 and b3 each.
-//      SameTarget is also updated to true if b1 and b2 jump to the same destination.
+//      On entry, m_b1, m_b2 are set and m_b3 is set for cond/return/return case.
+//      If it passes all the conditions, m_testInfo1.testTree, m_testInfo2.testTree and m_t3 are set
+//      to the root nodes of m_b1, m_b2 and m_b3 each.
+//      SameTarget is also updated to true if m_b1 and m_b2 jump to the same destination.
 //
 Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
 {
-    assert(b1 != nullptr && b2 != nullptr);
+    assert(m_b1 != nullptr && m_b2 != nullptr);
 
     bool optReturnBlock = false;
-    if (b3 != nullptr)
+    if (m_b3 != nullptr)
     {
         optReturnBlock = true;
     }
@@ -7862,7 +7856,7 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
 
     if (!optReturnBlock)
     {
-        if (b1->bbJumpDest == b2->bbJumpDest)
+        if (m_b1->bbJumpDest == m_b2->bbJumpDest)
         {
             // Given the following sequence of blocks :
             //        B1: brtrue(t1, BX)
@@ -7872,9 +7866,9 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
             //        B1: brtrue(t1|t2, BX)
             //        B3:
 
-            this->sameTarget = true;
+            m_sameTarget = true;
         }
-        else if (b1->bbJumpDest == b2->bbNext)
+        else if (m_b1->bbJumpDest == m_b2->bbNext)
         {
             // Given the following sequence of blocks :
             //        B1: brtrue(t1, B3)
@@ -7884,7 +7878,7 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
             //        B1: brtrue((!t1)&&t2, BX)
             //        B3:
 
-            this->sameTarget = false;
+            m_sameTarget = false;
         }
         else
         {
@@ -7893,36 +7887,36 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
     }
     else
     {
-        // Does b1 jump to b3?
+        // Does m_b1 jump to m_b3?
         // One example: Given the following sequence of blocks :
         //        B1: brtrue(!t1, B3)
         //        B2: return(t2)
         //        B3: return(false)
         //    we will try to fold it to :
         //        B1: return(t1|t2)
-        if (b1->bbJumpDest != b2->bbNext)
+        if (m_b1->bbJumpDest != m_b3)
         {
             return nullptr;
         }
     }
 
-    // Find the block conditions of b1 and b2
+    // Find the block conditions of m_b1 and m_b2
 
-    if (b2->countOfInEdges() > 1 || (optReturnBlock && b3->countOfInEdges() > 1))
+    if (m_b2->countOfInEdges() > 1 || (optReturnBlock && m_b3->countOfInEdges() > 1))
     {
         return nullptr;
     }
 
     // Find the condition for the first block
 
-    Statement* s1 = b1->lastStmt();
+    Statement* s1 = m_b1->lastStmt();
 
     GenTree* testTree1 = s1->GetRootNode();
-    noway_assert(testTree1->gtOper == GT_JTRUE);
+    assert(testTree1->gtOper == GT_JTRUE);
 
     // The second and the third block must contain a single statement
 
-    Statement* s2 = b2->firstStmt();
+    Statement* s2 = m_b2->firstStmt();
     if (s2->GetPrevStmt() != s2)
     {
         return nullptr;
@@ -7932,7 +7926,7 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
 
     if (!optReturnBlock)
     {
-        noway_assert(testTree2->gtOper == GT_JTRUE);
+        assert(testTree2->gtOper == GT_JTRUE);
     }
     else
     {
@@ -7941,7 +7935,7 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
             return nullptr;
         }
 
-        Statement* s3 = b3->firstStmt();
+        Statement* s3 = m_b3->firstStmt();
         if (s3->GetPrevStmt() != s3)
         {
             return nullptr;
@@ -7969,65 +7963,62 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
             return nullptr;
         }
 
-        this->t3 = testTree3;
+        m_t3 = testTree3;
     }
 
-    this->t1.testTree = testTree1;
-    this->t2.testTree = testTree2;
+    m_testInfo1.testTree = testTree1;
+    m_testInfo2.testTree = testTree2;
 
     return s1;
 }
 
-//
+//-----------------------------------------------------------------------------
 // optOptimizeBoolsChkTypeCostCond: Checks if type conditions meet the folding condition, and
 //                                  if cost to fold is not too expensive
-//
-// Arguments:
-//      comp    Instance of Compiler class
 //
 // Return:
 //      True if it meets type conditions and cost conditions.	Else false.
 //
-bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond(Compiler* comp)
+bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
 {
-    noway_assert(t1.compTree->OperIs(GT_EQ, GT_NE) && t1.compTree->AsOp()->gtOp1 == c1);
-    noway_assert(t2.compTree->OperIs(GT_EQ, GT_NE) && t2.compTree->AsOp()->gtOp1 == c2);
+    assert(m_testInfo1.compTree->OperIs(GT_EQ, GT_NE) && m_testInfo1.compTree->AsOp()->gtOp1 == m_c1);
+    assert(m_testInfo2.compTree->OperIs(GT_EQ, GT_NE) && m_testInfo2.compTree->AsOp()->gtOp1 == m_c2);
 
     //
     // Leave out floats where the bit-representation is more complicated
     // - there are two representations for 0.
     //
-    if (varTypeIsFloating(c1->TypeGet()) || varTypeIsFloating(c2->TypeGet()))
+    if (varTypeIsFloating(m_c1->TypeGet()) || varTypeIsFloating(m_c2->TypeGet()))
     {
         return false;
     }
 
     // Make sure the types involved are of the same sizes
-    if (genTypeSize(c1->TypeGet()) != genTypeSize(c2->TypeGet()))
+    if (genTypeSize(m_c1->TypeGet()) != genTypeSize(m_c2->TypeGet()))
     {
         return false;
     }
-    if (genTypeSize(t1.compTree->TypeGet()) != genTypeSize(t2.compTree->TypeGet()))
+    if (genTypeSize(m_testInfo1.compTree->TypeGet()) != genTypeSize(m_testInfo2.compTree->TypeGet()))
     {
         return false;
     }
 #ifdef TARGET_ARMARCH
     // Skip the small operand which we cannot encode.
-    if (varTypeIsSmall(c1->TypeGet()))
+    if (varTypeIsSmall(m_c1->TypeGet()))
         return false;
 #endif
     // The second condition must not contain side effects
 
-    if (c2->gtFlags & GTF_GLOB_EFFECT)
+    if (m_c2->gtFlags & GTF_GLOB_EFFECT)
     {
         return false;
     }
 
     // The second condition must not be too expensive
 
-    comp->gtPrepareCost(c2);
+    m_comp->gtPrepareCost(m_c2);
 
-    if (c2->GetCostEx() > 12)
+    if (m_c2->GetCostEx() > 12)
     {
         return false;
     }
@@ -8035,53 +8026,43 @@ bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond(Compiler* comp)
     return true;
 }
 
-//
+//-----------------------------------------------------------------------------
 // optOptimizeBoolsUpdateTrees: Fold the trees based on fold type and comparison type,
 //                              update the edges, unlink removed blocks and update loop table
 //
-// Arguments:
-//      comp    Instance of Compiler class
-//
-// Notes:
-//      The pOptBoolsDsc has below key members:
-//          b1:         The first Basic Block
-//          b2:         The second Basic Block
-//          b3:         The thrid Basic Block. null if both b1 and b2 are BBJ_COND
-//          t1:         The test info for the first test tree
-//          t2:         The second info for the second test tree
-//          foldOp:     The fold operator of GT_AND or GT_OR
-//          foldType:   The type of the folded tree
-//          cmpOp:      The comparison operator of GT_EQ or GT_NE
-//
-void OptBoolsDsc::optOptimizeBoolsUpdateTrees(Compiler* comp)
+void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 {
-    assert(b1 != nullptr && b2 != nullptr);
+    assert(m_b1 != nullptr && m_b2 != nullptr);
 
     bool optReturnBlock = false;
-    if (b3 != nullptr)
+    if (m_b3 != nullptr)
     {
         optReturnBlock = true;
     }
 
-    assert(foldOp != NULL && foldType != NULL && c1 != nullptr && c2 != nullptr);
+    assert(m_foldOp != NULL && m_foldType != NULL && m_c1 != nullptr && m_c2 != nullptr);
 
-    GenTree* cmpOp1 = comp->gtNewOperNode(foldOp, foldType, c1, c2);
-    if (t1.isBool && t2.isBool)
+    GenTree* cmpOp1 = m_comp->gtNewOperNode(m_foldOp, m_foldType, m_c1, m_c2);
+    if (m_testInfo1.isBool && m_testInfo2.isBool)
     {
         // When we 'OR'/'AND' two booleans, the result is boolean as well
         cmpOp1->gtFlags |= GTF_BOOLEAN;
     }
 
-    GenTree* t1Comp = t1.compTree;
-    t1Comp->SetOper(cmpOp);
+    GenTree* t1Comp = m_testInfo1.compTree;
+    t1Comp->SetOper(m_cmpOp);
     t1Comp->AsOp()->gtOp1         = cmpOp1;
-    t1Comp->AsOp()->gtOp2->gtType = foldType; // Could have been varTypeIsGC()
+    t1Comp->AsOp()->gtOp2->gtType = m_foldType; // Could have been varTypeIsGC()
     if (optReturnBlock)
     {
-        // Update tree when b1: BBJ_COND and b2: GT_RETURN (BBJ_RETURN)
+        // Update tree when m_b1 is BBJ_COND and m_b2 and m_b3 are GT_RETURN (BBJ_RETURN)
         t1Comp->AsOp()->gtOp2->AsIntCon()->gtIconVal = 0;
-        t1.testTree->gtOper                          = GT_RETURN;
-        t1.testTree->gtType                          = t2.testTree->gtType;
+        m_testInfo1.testTree->gtOper                 = GT_RETURN;
+        m_testInfo1.testTree->gtType                 = m_testInfo2.testTree->gtType;
+
+        // Update the return count of flow graph
+        assert(m_comp->fgReturnCount >= 2);
+        --m_comp->fgReturnCount;
     }
 
 #if FEATURE_SET_FLAGS
@@ -8094,8 +8075,8 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees(Compiler* comp)
 
     // Make sure that the GTF_SET_FLAGS bit is cleared.
     // Fix 388436 ARM JitStress WP7
-    c1->gtFlags &= ~GTF_SET_FLAGS;
-    c2->gtFlags &= ~GTF_SET_FLAGS;
+    m_c1->gtFlags &= ~GTF_SET_FLAGS;
+    m_c2->gtFlags &= ~GTF_SET_FLAGS;
 
     // The new top level node that we just created does feed directly into
     // a comparison against zero, so set the GTF_SET_FLAGS bit so that
@@ -8110,38 +8091,38 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees(Compiler* comp)
 
     if (!optReturnBlock)
     {
-        // Update edges if b1: BBJ_COND and b2: BBJ_COND
+        // Update edges if m_b1: BBJ_COND and m_b2: BBJ_COND
 
-        flowList* edge1 = comp->fgGetPredForBlock(b1->bbJumpDest, b1);
+        flowList* edge1 = m_comp->fgGetPredForBlock(m_b1->bbJumpDest, m_b1);
         flowList* edge2;
 
-        if (sameTarget)
+        if (m_sameTarget)
         {
-            edge2 = comp->fgGetPredForBlock(b2->bbJumpDest, b2);
+            edge2 = m_comp->fgGetPredForBlock(m_b2->bbJumpDest, m_b2);
         }
         else
         {
-            edge2 = comp->fgGetPredForBlock(b2->bbNext, b2);
+            edge2 = m_comp->fgGetPredForBlock(m_b2->bbNext, m_b2);
 
-            comp->fgRemoveRefPred(b1->bbJumpDest, b1);
+            m_comp->fgRemoveRefPred(m_b1->bbJumpDest, m_b1);
 
-            b1->bbJumpDest = b2->bbJumpDest;
+            m_b1->bbJumpDest = m_b2->bbJumpDest;
 
-            comp->fgAddRefPred(b2->bbJumpDest, b1);
+            m_comp->fgAddRefPred(m_b2->bbJumpDest, m_b1);
         }
 
-        noway_assert(edge1 != nullptr);
-        noway_assert(edge2 != nullptr);
+        assert(edge1 != nullptr);
+        assert(edge2 != nullptr);
 
         BasicBlock::weight_t edgeSumMin = edge1->edgeWeightMin() + edge2->edgeWeightMin();
         BasicBlock::weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
         if ((edgeSumMax >= edge1->edgeWeightMax()) && (edgeSumMax >= edge2->edgeWeightMax()))
         {
-            edge1->setEdgeWeights(edgeSumMin, edgeSumMax, b1->bbJumpDest);
+            edge1->setEdgeWeights(edgeSumMin, edgeSumMax, m_b1->bbJumpDest);
         }
         else
         {
-            edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, b1->bbJumpDest);
+            edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, m_b1->bbJumpDest);
         }
     }
 
@@ -8149,277 +8130,229 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees(Compiler* comp)
 
     if (optReturnBlock)
     {
-        comp->fgRemoveRefPred(b1->bbJumpDest, b1);
-
-        noway_assert(!b2->bbJumpDest);
-        b1->bbJumpDest = b2->bbJumpDest;
-        b1->bbJumpKind = b2->bbJumpKind;
-        b1->bbJumpSwt  = b2->bbJumpSwt;
-
-        noway_assert(b1->bbJumpKind == BBJ_RETURN);
-        noway_assert(b2->bbJumpKind == BBJ_RETURN);
-        noway_assert(b1->bbNext == b2);
-        noway_assert(b2->bbNext == b3);
-        noway_assert(b3);
+        m_b1->bbJumpDest = nullptr;
+        m_b1->bbJumpKind = BBJ_RETURN;
+#ifdef DEBUG
+        m_b1->bbJumpSwt = m_b2->bbJumpSwt;
+#endif
+        assert(m_b2->bbJumpKind == BBJ_RETURN);
+        assert(m_b1->bbNext == m_b2);
+        assert(m_b3 != nullptr);
     }
     else
     {
-        noway_assert(b1->bbJumpKind == BBJ_COND);
-        noway_assert(b2->bbJumpKind == BBJ_COND);
-        noway_assert(b1->bbJumpDest == b2->bbJumpDest);
-        noway_assert(b1->bbNext == b2);
-        noway_assert(b2->bbNext);
-    }
-
-    // Get rid of the second block
-
-    comp->fgUnlinkBlock(b2);
-    b2->bbFlags |= BBF_REMOVED;
-    // If b2 was the last block of a try or handler, update the EH table.
-    comp->ehUpdateForDeletedBlock(b2);
-
-    if (optReturnBlock)
-    {
-        // Get rid of the third block
-        comp->fgUnlinkBlock(b3);
-        b3->bbFlags |= BBF_REMOVED;
-        // If b3 was the last block of a try or handler, update the EH table.
-        comp->ehUpdateForDeletedBlock(b3);
+        assert(m_b1->bbJumpKind == BBJ_COND);
+        assert(m_b2->bbJumpKind == BBJ_COND);
+        assert(m_b1->bbJumpDest == m_b2->bbJumpDest);
+        assert(m_b1->bbNext == m_b2);
+        assert(m_b2->bbNext != nullptr);
     }
 
     if (!optReturnBlock)
     {
         // Update bbRefs and bbPreds
         //
-        // Replace pred 'b2' for 'b2->bbNext' with 'b1'
-        // Remove  pred 'b2' for 'b2->bbJumpDest'
-        comp->fgReplacePred(b2->bbNext, b2, b1);
-        comp->fgRemoveRefPred(b2->bbJumpDest, b2);
+        // Replace pred 'm_b2' for 'm_b2->bbNext' with 'm_b1'
+        // Remove  pred 'm_b2' for 'm_b2->bbJumpDest'
+        m_comp->fgReplacePred(m_b2->bbNext, m_b2, m_b1);
+        m_comp->fgRemoveRefPred(m_b2->bbJumpDest, m_b2);
+    }
+
+    // Get rid of the second block
+
+    m_comp->fgUnlinkBlock(m_b2);
+    m_b2->bbFlags |= BBF_REMOVED;
+    // If m_b2 was the last block of a try or handler, update the EH table.
+    m_comp->ehUpdateForDeletedBlock(m_b2);
+
+    if (optReturnBlock)
+    {
+        // Get rid of the third block
+        m_comp->fgUnlinkBlock(m_b3);
+        m_b3->bbFlags |= BBF_REMOVED;
+        // If m_b3 was the last block of a try or handler, update the EH table.
+        m_comp->ehUpdateForDeletedBlock(m_b3);
     }
 
     // Update loop table
-    comp->fgUpdateLoopsAfterCompacting(b1, b2);
+    m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b2);
     if (optReturnBlock)
     {
-        comp->fgUpdateLoopsAfterCompacting(b1, b3);
+        m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
     }
 }
 
-//
-//  optOptimizeBoolsReturnBlock: Optimize boolean when b1.bbJumpKind is BBJ_COND and b2.bbJumpKind is BBJ_RETURN
-//
-//  Arguments:
-//      comp    The instance of Compiler class
+//-----------------------------------------------------------------------------
+//  optOptimizeBoolsReturnBlock: Optimize boolean when m_b1 is BBJ_COND and m_b2 and m_b3 are BBJ_RETURN
 //
 //  Returns:
-//      changeReturn    Set to true if boolean optimization is done and b1, b2 and b3 are folded into b1.
+//      true if boolean optimization is done and m_b1, m_b2 and m_b3 are folded into m_b1, else false.
 //
 //  Notes:
-//      Below members of OptBoolsDsc are set when called:
-//          b1      The first Basic Block with the BBJ_COND conditional jump type
-//          b2      The next basic block of b1 with the BBJ_RETURN
-//          b3      The next basic block of b2 with GT_RETURN
+//      m_b1, m_b2, and m_b3 of OptBoolsDsc are set on entry.
 //
-//      For example, (x==0 && y==0) generates:
-//          b1: GT_JTRUE (BBJ_COND)
-//          b2: GT_RETURN (BBJ_RETURN)
-//          b3: GT_RETURN (BBJ_RETURN),
-//      and it is folded into
-//          b1: GT_RETURN (BBJ_RETURN)
-//
-//      if b1.bbJumpDest == b2.bbNext, it transforms
-//          b1 : brtrue(t1, b3)
-//          b2 : ret(t2)
-//          b3 : ret(0)
+//      if B1.bbJumpDest == b3, it transforms
+//          B1 : brtrue(t1, B3)
+//          B2 : ret(t2)
+//          B3 : ret(0)
 //      to
-//          b1 : ret((!t1) && t2)
+//          B1 : ret((!t1) && t2)
 //
-bool OptBoolsDsc::optOptimizeBoolsReturnBlock(Compiler* comp)
+//          For example, (x==0 && y==0) generates:
+//              B1: GT_JTRUE (BBJ_COND), jumps to B3
+//              B2: GT_RETURN (BBJ_RETURN)
+//              B3: GT_RETURN (BBJ_RETURN),
+//          and it is folded into
+//              B1: GT_RETURN (BBJ_RETURN)
+//
+bool OptBoolsDsc::optOptimizeBoolsReturnBlock()
 {
-    assert(b1 != nullptr && b2 != nullptr && b3 != nullptr);
+    assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 != nullptr);
 
-    bool changeReturn = false;
-
-    sameTarget          = false;
+    m_sameTarget        = false;
     Statement* const s1 = optOptimizeBoolsChkBlkCond();
     if (s1 == nullptr)
     {
-        return changeReturn;
+        return false;
     }
 
-    // Find the branch conditions of b1 and b2
+    // Find the branch conditions of m_b1 and m_b2
 
-    GenTree* const op1 = optIsBoolComp(comp, &t1);
-    if (op1 == nullptr)
+    m_c1 = optIsBoolComp(&m_testInfo1);
+    if (m_c1 == nullptr)
     {
-        return changeReturn;
+        return false;
     }
-    c1 = op1;
 
-    GenTree* const op2 = optIsBoolComp(comp, &t2);
-    if (op2 == nullptr)
+    m_c2 = optIsBoolComp(&m_testInfo2);
+    if (m_c2 == nullptr)
     {
-        return changeReturn;
+        return false;
     }
-    c2 = op2;
 
-    // Find the type and cost conditions of t1 and t2
+    // Find the type and cost conditions of m_testInfo1 and m_testInfo2
 
-    if (!optOptimizeBoolsChkTypeCostCond(comp))
+    if (!optOptimizeBoolsChkTypeCostCond())
     {
-        return changeReturn;
+        return false;
     }
 
-    // Get the fold operator and the comparison operator
+    // Get the fold operator (m_foldOp, e.g., GT_OR/GT_AND) and
+    // the comparison operator (m_cmpOp, e.g., GT_EQ/GT_NE)
 
-    var_types foldType = c1->TypeGet();
+    var_types foldType = m_c1->TypeGet();
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;
     }
-    this->foldType = foldType;
+    m_foldType = foldType;
 
-    foldOp = GT_NONE;
-    cmpOp  = GT_NONE;
+    m_foldOp = GT_NONE;
+    m_cmpOp  = GT_NONE;
 
-    optReturnGetFoldAndCompOper();
-    if (foldOp == GT_NONE || cmpOp == GT_NONE)
-    {
-        return changeReturn;
-    }
+    genTreeOps foldOp;
+    genTreeOps cmpOp;
 
-    // Now update the trees
+    ssize_t it1val = m_testInfo1.compTree->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+    ssize_t it2val = m_testInfo2.compTree->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+    ssize_t it3val = m_t3->AsOp()->gtOp1->AsIntCon()->gtIconVal;
 
-    optOptimizeBoolsUpdateTrees(comp);
-
-    // Update the change to true to continue the bool optimization for the rest of the BB chain
-    changeReturn = true;
-
-#ifdef DEBUG
-    if (comp->verbose)
-    {
-        printf("Folded %sboolean conditions of " FMT_BB ", " FMT_BB " and " FMT_BB " to :\n",
-               c2->OperIsLeaf() ? "" : "non-leaf ", b1->bbNum, b2->bbNum, b3->bbNum);
-        comp->gtDispStmt(s1);
-        printf("\n");
-    }
-#endif
-
-    return changeReturn;
-}
-
-//
-// optReturnGetFoldAndCompOper: Based on t1 and t2 conditions, determine fold type and comparison type
-//
-// Notes:
-//      For example, the fold operator (foldOp) of below tree is GT_OR, and
-//      comparison operator (cmpOp) is GT_EQ.
-//                          *  RETURN   int
-//                          \--*  EQ        int
-//                             +--*  OR         int
-//                             |  +--*  LCL_VAR     int     V00 arg0
-//                             |  \--*  LCL_VAR     int     V01 arg1
-//                             \--*  CNS_INT    int     0
-//
-//      Below members of OptBoolsDsc are set when called:
-//          t1:     The first test info
-//          t2:     The second test info
-//          t3:     The tree of b3
-//
-//      On success, below values are set:
-//          foldOp: the fold operator of GT_AND or GT_OR.
-//          cmpOp:  the comparison operator of GT_EQ or GT_NE
-//
-void OptBoolsDsc::optReturnGetFoldAndCompOper()
-{
-    assert(t1.compTree != nullptr && t2.compTree != nullptr && t3 != nullptr);
-
-    genTreeOps foldOper;
-    genTreeOps cmpOper;
-
-    ssize_t it1val = t1.compTree->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-    ssize_t it2val = t2.compTree->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-    ssize_t it3val = t3->AsOp()->gtOp1->AsIntCon()->gtIconVal;
-
-    if ((t1.compTree->gtOper == GT_NE && t2.compTree->gtOper == GT_EQ) && (it1val == 0 && it2val == 0 && it3val == 0))
+    if ((m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_EQ) &&
+        (it1val == 0 && it2val == 0 && it3val == 0))
     {
         // Case: x == 0 && y == 0
         //      t1:c1!=0 t2:c2==0 t3:c3==0
         //      ==> true if (c1|c2)==0
-        foldOper = GT_OR;
-        cmpOper  = GT_EQ;
+        foldOp = GT_OR;
+        cmpOp  = GT_EQ;
     }
-    else if ((t1.compTree->gtOper == GT_EQ && t2.compTree->gtOper == GT_NE) &&
+    else if ((m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_NE) &&
              (it1val == 0 && it2val == 0 && it3val == 0))
     {
         // Case: x == 1 && y ==1
         //      t1:c1!=1 t2:c2==1 t3:c3==0 is reversed from optIsBoolComp() to: t1:c1==0 t2:c2!=0 t3:c3==0
         //      ==> true if (c1&c2)!=0
-        foldOper = GT_AND;
-        cmpOper  = GT_NE;
+        foldOp = GT_AND;
+        cmpOp  = GT_NE;
     }
-    else if ((t1.compTree->gtOper == GT_EQ && t2.compTree->gtOper == GT_EQ) &&
+    else if ((m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_EQ) &&
              (it1val == 0 && it2val == 0 && it3val == 1))
     {
         // Case: x == 0 || y == 0
         //      t1:c1==0 t2:c2==0 t3:c3==1
         //      ==> true if (c1&c2)==0
-        foldOper = GT_AND;
-        cmpOper  = GT_EQ;
+        foldOp = GT_AND;
+        cmpOp  = GT_EQ;
     }
-    else if ((t1.compTree->gtOper == GT_NE && t2.compTree->gtOper == GT_NE) &&
+    else if ((m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_NE) &&
              (it1val == 0 && it2val == 0 && it3val == 1))
     {
         // Case: x == 1 || y == 1
-        //      t1:c1==1 t2:c2==1 is reversed from optIsBoolComp() to: t1:c1!=0 t2:c2!=0 t3:c3==1
+        //      t1:c1==1 t2:c2==1 t3:c3==1 is reversed from optIsBoolComp() to: t1:c1!=0 t2:c2!=0 t3:c3==1
         //      ==> true if (c1|c2)!=0
-        foldOper = GT_OR;
-        cmpOper  = GT_NE;
+        foldOp = GT_OR;
+        cmpOp  = GT_NE;
     }
     else
     {
         // Require NOT operation for operand(s). Do Not fold.
-        return;
+        return false;
     }
 
-    if ((foldOper == GT_AND || cmpOper == GT_NE) && (!t1.isBool || !t2.isBool))
+    if ((foldOp == GT_AND || cmpOp == GT_NE) && (!m_testInfo1.isBool || !m_testInfo2.isBool))
     {
         // x == 1 && y == 1: Skip cases where x or y is greather than 1, e.g., x=3, y=1
         // x == 0 || y == 0: Skip cases where x and y have opposite bits set, e.g., x=2, y=1
         // x == 1 || y == 1: Skip cases where either x or y is greater than 1, e.g., x=2, y=0
-        return;
+        return false;
     }
 
-    this->foldOp = foldOper;
-    this->cmpOp  = cmpOper;
+    m_foldOp = foldOp;
+    m_cmpOp  = cmpOp;
+
+    // Now update the trees
+
+    optOptimizeBoolsUpdateTrees();
+
+#ifdef DEBUG
+    if (m_comp->verbose)
+    {
+        printf("Folded %sboolean conditions of " FMT_BB ", " FMT_BB " and " FMT_BB " to :\n",
+               m_c2->OperIsLeaf() ? "" : "non-leaf ", m_b1->bbNum, m_b2->bbNum, m_b3->bbNum);
+        m_comp->gtDispStmt(s1);
+        printf("\n");
+    }
+#endif
+
+    // Return true to continue the bool optimization for the rest of the BB chain
+    return true;
 }
 
-//
+//-----------------------------------------------------------------------------
 //  optOptimizeBoolsGcStress: Replace x==null with (x|x)==0 if x is a GC-type.
 //                            This will stress code-gen and the emitter to make sure they support such trees.
 //
 //  Arguments:
-//      pOptBoolsDsc    Boolean optimization descriptor
-//      condBlock       The conditional Basic Block
+//      condBlock       The conditional basic block
 //
 #ifdef DEBUG
 
-void OptBoolsDsc::optOptimizeBoolsGcStress(Compiler* comp, BasicBlock* condBlock)
+void OptBoolsDsc::optOptimizeBoolsGcStress(BasicBlock* condBlock)
 {
-    if (!comp->compStressCompile(comp->STRESS_OPT_BOOLS_GC, 20))
+    if (!m_comp->compStressCompile(m_comp->STRESS_OPT_BOOLS_GC, 20))
     {
         return;
     }
 
-    noway_assert(condBlock->bbJumpKind == BBJ_COND);
+    assert(condBlock->bbJumpKind == BBJ_COND);
     GenTree* cond = condBlock->lastStmt()->GetRootNode();
 
-    noway_assert(cond->gtOper == GT_JTRUE);
+    assert(cond->gtOper == GT_JTRUE);
 
     OptTestInfo test;
     test.testTree = cond;
 
-    GenTree* comparand = optIsBoolComp(comp, &test);
+    GenTree* comparand = optIsBoolComp(&test);
 
     if (comparand == nullptr || !varTypeIsGC(comparand->TypeGet()))
     {
@@ -8433,11 +8366,11 @@ void OptBoolsDsc::optOptimizeBoolsGcStress(Compiler* comp, BasicBlock* condBlock
         return;
     }
 
-    GenTree* comparandClone = comp->gtCloneExpr(comparand);
+    GenTree* comparandClone = m_comp->gtCloneExpr(comparand);
 
     noway_assert(relop->AsOp()->gtOp1 == comparand);
-    genTreeOps oper      = comp->compStressCompile(comp->STRESS_OPT_BOOLS_GC, 50) ? GT_OR : GT_AND;
-    relop->AsOp()->gtOp1 = comp->gtNewOperNode(oper, TYP_I_IMPL, comparand, comparandClone);
+    genTreeOps oper      = m_comp->compStressCompile(m_comp->STRESS_OPT_BOOLS_GC, 50) ? GT_OR : GT_AND;
+    relop->AsOp()->gtOp1 = m_comp->gtNewOperNode(oper, TYP_I_IMPL, comparand, comparandClone);
 
     // Comparand type is already checked, and we have const int, there is no harm
     // morphing it into a TYP_I_IMPL.
@@ -8447,32 +8380,32 @@ void OptBoolsDsc::optOptimizeBoolsGcStress(Compiler* comp, BasicBlock* condBlock
 
 #endif
 
-//
+//-----------------------------------------------------------------------------
 // optIsBoolComp:   Function used by folding of boolean conditionals
 //
 // Arguments:
-//      pOptTest    The test info that the tree to test is set when called
+//      pOptTest    The test info for the test tree
 //
 // Return:
-//      opr1        On success, the first operand is returned.   Else NULL.
+//      On success, return the first operand (gtOp1) of compTree, else return nullptr.
 //
 // Notes:
-//      pOptTest->tree      Tree node with GT_JTRUE or GT_RETURN type to check boolean condition on.
-//      pOptTest->compTree  On success, the compare tree (i.e. GT_EQ or GT_NE node) is set
-//      isBool              true if the comparand is boolean. Otherwise, false.
+//      On entry, testTree is set.
+//      On success, compTree is set to the compare node (i.e. GT_EQ or GT_NE) of the testTree.
+//      isBool is set to true if the comparand (i.e., operand 1 of compTree is boolean. Otherwise, false.
 //
-//      Given a GT_JTRUE or GT_RETURN node, this method checks that it is a boolean comparison
+//      Given a GT_JTRUE or GT_RETURN node, this method checks if it is a boolean comparison
 //      of the form "if (boolVal ==/!=  0/1)".This is translated into
 //      a GT_EQ/GT_NE node with "opr1" being a boolean lclVar and "opr2" the const 0/1.
 //
 //      When isBool == true, if the comparison was against a 1 (i.e true)
 //      then we morph the tree by reversing the GT_EQ/GT_NE and change the 1 to 0.
 //
-GenTree* OptBoolsDsc::optIsBoolComp(Compiler* comp, OptTestInfo* pOptTest)
+GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 {
     pOptTest->isBool = false;
 
-    noway_assert(pOptTest->testTree->gtOper == GT_JTRUE || pOptTest->testTree->gtOper == GT_RETURN);
+    assert(pOptTest->testTree->gtOper == GT_JTRUE || pOptTest->testTree->gtOper == GT_RETURN);
     GenTree* cond = pOptTest->testTree->AsOp()->gtOp1;
 
     // The condition must be "!= 0" or "== 0"
@@ -8520,9 +8453,9 @@ GenTree* OptBoolsDsc::optIsBoolComp(Compiler* comp, OptTestInfo* pOptTest)
         // is it a boolean local variable?
 
         unsigned lclNum = opr1->AsLclVarCommon()->GetLclNum();
-        noway_assert(lclNum < comp->lvaCount);
+        noway_assert(lclNum < m_comp->lvaCount);
 
-        if (comp->lvaTable[lclNum].lvIsBoolean)
+        if (m_comp->lvaTable[lclNum].lvIsBoolean)
         {
             pOptTest->isBool = true;
         }
@@ -8535,7 +8468,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(Compiler* comp, OptTestInfo* pOptTest)
         // and change the true to false.
         if (pOptTest->isBool)
         {
-            comp->gtReverseCond(cond);
+            m_comp->gtReverseCond(cond);
             opr2->AsIntCon()->gtIconVal = 0;
         }
         else
@@ -8547,7 +8480,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(Compiler* comp, OptTestInfo* pOptTest)
     return opr1;
 }
 
-//
+//-----------------------------------------------------------------------------
 // optOptimizeBools:    Folds boolean conditionals for GT_JTRUE/GR_RETURN nodes
 //
 // Notes:
@@ -8557,14 +8490,51 @@ GenTree* OptBoolsDsc::optIsBoolComp(Compiler* comp, OptTestInfo* pOptTest)
 //          "op1" being a boolean GT_OR/GT_AND lclVar and
 //          "op2" the const 0/1.
 //      For example, the folded tree for the below boolean optimization is shown below:
-//          (x == 0 && y ==0) => (c1 | c2) == 0
-//
+//      Case 1:     (x == 0 && y ==0) => (x | y) == 0
 //          *  RETURN   int
 //          \--*  EQ        int
 //             +--*  OR         int
 //             |  +--*  LCL_VAR     int     V00 arg0
 //             |  \--*  LCL_VAR     int     V01 arg1
 //             \--*  CNS_INT    int     0
+//
+//      Case 2:     (x == null && y == null) ==> (x | y) == 0
+//          *  RETURN    int
+//          \-- * EQ        int
+//              + -- * OR        long
+//              |    +-- * LCL_VAR   ref    V00 arg0
+//              |    \-- * LCL_VAR   ref    V01 arg1
+//              \-- * CNS_INT   long   0
+//
+//      Case 3:     (x == 0 && y == 0 && z == 0) ==> ((x | y) | z) == 0
+//          *  RETURN    int
+//          \-- * EQ        int
+//              + -- * OR        int
+//              |    +-- * OR        int
+//              |    |   +-- * LCL_VAR   int    V00 arg0
+//              |    |   \-- * LCL_VAR   int    V01 arg1
+//              |    \-- * LCL_VAR   int    V02 arg2
+//              \-- * CNS_INT   int    0
+//
+//      Case 4:     (x == 0 && y == 0 && z == 0 && w == 0) ==> (((x | y) | z) | w) == 0
+//          *  RETURN    int
+//          \-- *  EQ        int
+//              +  *  OR        int
+//              |  +--*  OR        int
+//              |  |  +--*  OR        int
+//              |  |  |  +--*  LCL_VAR   int    V00 arg0
+//              |  |  |  \--*  LCL_VAR   int    V01 arg1
+//              |  |  \--*  LCL_VAR   int    V02 arg2
+//              |  \--*  LCL_VAR   int    V03 arg3
+//              \--*  CNS_INT   int    0
+//
+//      Patterns that are not optimized include (x == 1 && y == 1), (x == 1 || y == 1),
+//      (x == 0 || y == 0) because currently their comptree is not marked as boolean expression.
+//      When m_foldOp == GT_AND or m_cmpOp == GT_NE, both compTrees must be boolean expression
+//      in order to skip below cases when compTree is not boolean expression:
+//          - x == 1 && y == 1 ==> (x&y)!=0: Skip cases where x or y is greather than 1, e.g., x=3, y=1
+//          - x == 1 || y == 1 ==> (x|y)!=0: Skip cases where either x or y is greater than 1, e.g., x=2, y=0
+//          - x == 0 || y == 0 ==> (x&y)==0: Skip cases where x and y have opposite bits set, e.g., x=2, y=1
 //
 void Compiler::optOptimizeBools()
 {
@@ -8597,7 +8567,7 @@ void Compiler::optOptimizeBools()
             // If there is no next block, we're done
 
             BasicBlock* b2 = b1->bbNext;
-            if (!b2)
+            if (b2 == nullptr)
             {
                 break;
             }
@@ -8609,26 +8579,25 @@ void Compiler::optOptimizeBools()
             }
 
             // The next block also needs to be a condition
-            OptBoolsDsc optBoolsDsc;
-
-            optBoolsDsc.b1 = b1;
-            optBoolsDsc.b2 = b2;
 
             if (b2->bbJumpKind == BBJ_COND)
             {
                 // When it is conditional jumps
-
-                optBoolsDsc.b3 = nullptr;
-                if (optBoolsDsc.optOptimizeBoolsCondBlock(this))
+                OptBoolsDsc optBoolsDsc;
+                optBoolsDsc.m_b1   = b1;
+                optBoolsDsc.m_b2   = b2;
+                optBoolsDsc.m_b3   = nullptr;
+                optBoolsDsc.m_comp = this;
+                if (optBoolsDsc.optOptimizeBoolsCondBlock())
                 {
                     change = true;
                 }
             }
             else if (b2->bbJumpKind == BBJ_RETURN)
             {
-                // If there is no next block after b2, we're done
+                // If there is no b1->bbJumpDest, we're done
 
-                BasicBlock* b3 = b2->bbNext;
+                BasicBlock* b3 = b1->bbJumpDest;
                 if (b3 == nullptr)
                 {
                     break;
@@ -8641,8 +8610,19 @@ void Compiler::optOptimizeBools()
                     continue;
                 }
 
-                optBoolsDsc.b3 = b3;
-                if (optBoolsDsc.optOptimizeBoolsReturnBlock(this))
+                // b3 must be RETURN type
+
+                if (b3->bbJumpKind != BBJ_RETURN)
+                {
+                    continue;
+                }
+
+                OptBoolsDsc optBoolsDsc;
+                optBoolsDsc.m_b1   = b1;
+                optBoolsDsc.m_b2   = b2;
+                optBoolsDsc.m_b3   = b3;
+                optBoolsDsc.m_comp = this;
+                if (optBoolsDsc.optOptimizeBoolsReturnBlock())
                 {
                     change = true;
                 }
@@ -8650,7 +8630,9 @@ void Compiler::optOptimizeBools()
             else
             {
 #ifdef DEBUG
-                optBoolsDsc.optOptimizeBoolsGcStress(this, b1);
+                OptBoolsDsc optBoolsDsc;
+                optBoolsDsc.m_comp = this;
+                optBoolsDsc.optOptimizeBoolsGcStress(b1);
 #endif
             }
         }
