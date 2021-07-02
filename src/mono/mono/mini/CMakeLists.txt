@@ -168,15 +168,9 @@ set(mini_common_sources
     monovm.c)
 
 set(debugger_sources
-  debugger-engine.h
-  debugger-engine.c
-  debugger-agent.h
-  debugger-agent.c
-  debugger-protocol.h
-  debugger-protocol.c
-  debugger-agent-stubs.c
-  debugger-state-machine.h
-  debugger-state-machine.c)
+  debugger-agent-external.h
+  debugger-agent-external.c
+  )
 
 set(amd64_sources
     mini-amd64.c
@@ -228,7 +222,6 @@ set(wasm_sources
     tramp-wasm.c
     exceptions-wasm.c
     aot-runtime-wasm.c
-    mini-wasm-debugger.c
     wasm_m2n_invoke.g.h
     cpu-wasm.h)
 

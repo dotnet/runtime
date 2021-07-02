@@ -7,6 +7,8 @@
     <NoWarn>CS1574</NoWarn>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
+    <IsNETCoreAppAnalyzer>true</IsNETCoreAppAnalyzer>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -2575,7 +2575,7 @@ public:
                 }
 
                 // If we have maxed out lvaTrackedCount then this CSE may end up as an untracked variable
-                if (m_pCompiler->lvaTrackedCount == lclMAX_TRACKED)
+                if (m_pCompiler->lvaTrackedCount == (unsigned)JitConfig.JitMaxLocalsToTrack())
                 {
                     cse_def_cost += 1;
                     cse_use_cost += 1;

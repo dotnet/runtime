@@ -1517,6 +1517,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleFileName.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetModuleFileName.cs</Link>
     </Compile>
+	<Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcessMemoryInfo.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetProcessMemoryInfo.cs</Link>
     </Compile>
@@ -2253,5 +2256,28 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Threading.cs">
       <Link>Interop\Windows\Kernel32\Interop.Threading.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureGenericMath)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\IAdditionOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IAdditiveIdentity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IBitwiseOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IComparisonOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IDecrementOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IDivisionOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IEqualityOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IFloatingPoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IIncrementOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IInteger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IMinMaxValue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IModulusOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IMultiplicativeIdentity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IMultiplyOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\INumber.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IParseable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IShiftOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\ISpanParseable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\ISubtractionOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IUnaryNegationOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IUnaryPlusOperators.cs" />
   </ItemGroup>
 </Project>

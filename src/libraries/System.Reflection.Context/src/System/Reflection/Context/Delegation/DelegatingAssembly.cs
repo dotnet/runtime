@@ -22,11 +22,13 @@ namespace System.Reflection.Context.Delegation
             UnderlyingAssembly = assembly;
         }
 
+#pragma warning disable IL3003 // netstandard2.1 didn't have RequiresAssemblyFiles attributes applied on Assembly
         [RequiresAssemblyFiles(Message = "Calling 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'", Url = "https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/il3000")]
         public override string Location
         {
             get { return UnderlyingAssembly.Location; }
         }
+#pragma warning restore IL3003
 
         public override Module ManifestModule
         {
@@ -74,17 +76,17 @@ namespace System.Reflection.Context.Delegation
         [Obsolete]
         [RequiresAssemblyFiles]
 #endif
-        public override string CodeBase
+        public override string? CodeBase
         {
             get { return UnderlyingAssembly.CodeBase; }
         }
 
-        public override object CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes)
+        public override object? CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object[]? args, CultureInfo? culture, object[]? activationAttributes)
         {
             return UnderlyingAssembly.CreateInstance(typeName, ignoreCase, bindingAttr, binder, args, culture, activationAttributes);
         }
 
-        public override MethodInfo EntryPoint
+        public override MethodInfo? EntryPoint
         {
             get { return UnderlyingAssembly.EntryPoint; }
         }
@@ -98,7 +100,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingAssembly.EscapedCodeBase; }
         }
 
-        public override string FullName
+        public override string? FullName
         {
             get { return UnderlyingAssembly.FullName; }
         }
@@ -108,8 +110,9 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingAssembly.GetExportedTypes();
         }
 
+#pragma warning disable IL3003 // netstandard2.1 didn't have RequiresAssemblyFiles attributes applied on Assembly
         [RequiresAssemblyFiles(Message = "Calling 'System.Reflection.Assembly.GetFile(string)' will throw for assemblies embedded in a single-file app", Url = "https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/il3001")]
-        public override FileStream GetFile(string name)
+        public override FileStream? GetFile(string name)
         {
             return UnderlyingAssembly.GetFile(name);
         }
@@ -125,13 +128,14 @@ namespace System.Reflection.Context.Delegation
         {
             return UnderlyingAssembly.GetFiles(getResourceModules);
         }
+#pragma warning restore IL3003
 
         public override Module[] GetLoadedModules(bool getResourceModules)
         {
             return UnderlyingAssembly.GetLoadedModules(getResourceModules);
         }
 
-        public override ManifestResourceInfo GetManifestResourceInfo(string resourceName)
+        public override ManifestResourceInfo? GetManifestResourceInfo(string resourceName)
         {
             return UnderlyingAssembly.GetManifestResourceInfo(resourceName);
         }
@@ -141,17 +145,17 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingAssembly.GetManifestResourceNames();
         }
 
-        public override Stream GetManifestResourceStream(string name)
+        public override Stream? GetManifestResourceStream(string name)
         {
             return UnderlyingAssembly.GetManifestResourceStream(name);
         }
 
-        public override Stream GetManifestResourceStream(Type type, string name)
+        public override Stream? GetManifestResourceStream(Type type, string name)
         {
             return UnderlyingAssembly.GetManifestResourceStream(type, name);
         }
 
-        public override Module GetModule(string name)
+        public override Module? GetModule(string name)
         {
             return UnderlyingAssembly.GetModule(name);
         }
@@ -181,12 +185,12 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingAssembly.GetSatelliteAssembly(culture);
         }
 
-        public override Assembly GetSatelliteAssembly(CultureInfo culture, Version version)
+        public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
         {
             return UnderlyingAssembly.GetSatelliteAssembly(culture, version);
         }
 
-        public override Type GetType(string name, bool throwOnError, bool ignoreCase)
+        public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
             return UnderlyingAssembly.GetType(name, throwOnError, ignoreCase);
         }
@@ -219,7 +223,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingAssembly.IsDynamic; }
         }
 
-        public override Module LoadModule(string moduleName, byte[] rawModule, byte[] rawSymbolStore)
+        public override Module LoadModule(string moduleName, byte[]? rawModule, byte[]? rawSymbolStore)
         {
             return UnderlyingAssembly.LoadModule(moduleName, rawModule, rawSymbolStore);
         }

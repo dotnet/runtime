@@ -4459,7 +4459,7 @@ fail:
 }
 
 MonoStringHandle
-ves_icall_System_Reflection_RuntimeAssembly_get_code_base (MonoReflectionAssemblyHandle assembly, MonoBoolean escaped, MonoError *error)
+ves_icall_System_Reflection_RuntimeAssembly_get_code_base (MonoReflectionAssemblyHandle assembly, MonoError *error)
 {
 	MonoAssembly *mass = MONO_HANDLE_GETVAL (assembly, assembly);
 	gchar *absolute;
@@ -4472,13 +4472,8 @@ ves_icall_System_Reflection_RuntimeAssembly_get_code_base (MonoReflectionAssembl
 
 	mono_icall_make_platform_path (absolute);
 
-	gchar *uri;
-	if (escaped) {
-		uri = g_filename_to_uri (absolute, NULL, NULL);
-	} else {
-		const gchar *prepend = mono_icall_get_file_path_prefix (absolute);
-		uri = g_strconcat (prepend, absolute, (const char*)NULL);
-	}
+	const gchar *prepend = mono_icall_get_file_path_prefix (absolute);
+	gchar *uri = g_strconcat (prepend, absolute, (const char*)NULL);
 
 	g_free (absolute);
 

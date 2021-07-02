@@ -37,14 +37,13 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
         /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
-        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> was opened for async IO.</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for reading.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
         /// <remarks>Position of the file is not advanced.</remarks>
         public static int Read(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {
-            ValidateInput(handle, fileOffset, mustBeSync: OperatingSystem.IsWindows());
+            ValidateInput(handle, fileOffset);
 
             return ReadAtOffset(handle, buffer, fileOffset);
         }
@@ -60,14 +59,13 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
         /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
-        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> was opened for async IO.</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for reading.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
         /// <remarks>Position of the file is not advanced.</remarks>
         public static long Read(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
         {
-            ValidateInput(handle, fileOffset, mustBeSync: OperatingSystem.IsWindows());
+            ValidateInput(handle, fileOffset);
             ValidateBuffers(buffers);
 
             return ReadScatterAtOffset(handle, buffers, fileOffset);
@@ -85,14 +83,13 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
         /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
-        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> was not opened for async IO.</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for reading.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
         /// <remarks>Position of the file is not advanced.</remarks>
         public static ValueTask<int> ReadAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken = default)
         {
-            ValidateInput(handle, fileOffset, mustBeAsync: OperatingSystem.IsWindows());
+            ValidateInput(handle, fileOffset);
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -114,14 +111,13 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
         /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
-        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> was not opened for async IO.</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for reading.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
         /// <remarks>Position of the file is not advanced.</remarks>
         public static ValueTask<long> ReadAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset, CancellationToken cancellationToken = default)
         {
-            ValidateInput(handle, fileOffset, mustBeAsync: OperatingSystem.IsWindows());
+            ValidateInput(handle, fileOffset);
             ValidateBuffers(buffers);
 
             if (cancellationToken.IsCancellationRequested)
@@ -143,14 +139,13 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
         /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
-        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> was opened for async IO.</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
         /// <remarks>Position of the file is not advanced.</remarks>
         public static int Write(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
         {
-            ValidateInput(handle, fileOffset, mustBeSync: OperatingSystem.IsWindows());
+            ValidateInput(handle, fileOffset);
 
             return WriteAtOffset(handle, buffer, fileOffset);
         }
@@ -166,14 +161,13 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
         /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
-        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> was opened for async IO.</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
         /// <remarks>Position of the file is not advanced.</remarks>
         public static long Write(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
         {
-            ValidateInput(handle, fileOffset, mustBeSync: OperatingSystem.IsWindows());
+            ValidateInput(handle, fileOffset);
             ValidateBuffers(buffers);
 
             return WriteGatherAtOffset(handle, buffers, fileOffset);
@@ -191,14 +185,13 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
         /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
-        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> was not opened for async IO.</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
         /// <remarks>Position of the file is not advanced.</remarks>
         public static ValueTask<int> WriteAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken = default)
         {
-            ValidateInput(handle, fileOffset, mustBeAsync: OperatingSystem.IsWindows());
+            ValidateInput(handle, fileOffset);
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -220,14 +213,13 @@ namespace System.IO
         /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> is invalid.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The file is closed.</exception>
         /// <exception cref="T:System.NotSupportedException">The file does not support seeking (pipe or socket).</exception>
-        /// <exception cref="T:System.ArgumentException"><paramref name="handle" /> was not opened for async IO.</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="fileOffset" /> is negative.</exception>
         /// <exception cref="T:System.UnauthorizedAccessException"><paramref name="handle" /> was not opened for writing.</exception>
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
         /// <remarks>Position of the file is not advanced.</remarks>
         public static ValueTask<long> WriteAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset, CancellationToken cancellationToken = default)
         {
-            ValidateInput(handle, fileOffset, mustBeAsync: OperatingSystem.IsWindows());
+            ValidateInput(handle, fileOffset);
             ValidateBuffers(buffers);
 
             if (cancellationToken.IsCancellationRequested)
@@ -238,7 +230,7 @@ namespace System.IO
             return WriteGatherAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
         }
 
-        private static void ValidateInput(SafeFileHandle handle, long fileOffset, bool mustBeSync = false, bool mustBeAsync = false)
+        private static void ValidateInput(SafeFileHandle handle, long fileOffset)
         {
             if (handle is null)
             {
@@ -258,17 +250,9 @@ namespace System.IO
 
                 ThrowHelper.ThrowNotSupportedException_UnseekableStream();
             }
-            else if (mustBeSync && handle.IsAsync)
-            {
-                ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(handle));
-            }
-            else if (mustBeAsync && !handle.IsAsync)
-            {
-                ThrowHelper.ThrowArgumentException_HandleNotAsync(nameof(handle));
-            }
             else if (fileOffset < 0)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException_NeedPosNum(nameof(fileOffset));
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(fileOffset));
             }
         }
 
@@ -278,6 +262,44 @@ namespace System.IO
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffers);
             }
+        }
+
+        private static ValueTask<int> ScheduleSyncReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        {
+            return new ValueTask<int>(Task.Factory.StartNew(static state =>
+            {
+                var args = ((SafeFileHandle handle, Memory<byte> buffer, long fileOffset))state!;
+                return ReadAtOffset(args.handle, args.buffer.Span, args.fileOffset);
+            }, (handle, buffer, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+        }
+
+        private static ValueTask<long> ScheduleSyncReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
+            long fileOffset, CancellationToken cancellationToken)
+        {
+            return new ValueTask<long>(Task.Factory.StartNew(static state =>
+            {
+                var args = ((SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset))state!;
+                return ReadScatterAtOffset(args.handle, args.buffers, args.fileOffset);
+            }, (handle, buffers, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+        }
+
+        private static ValueTask<int> ScheduleSyncWriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        {
+            return new ValueTask<int>(Task.Factory.StartNew(static state =>
+            {
+                var args = ((SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset))state!;
+                return WriteAtOffset(args.handle, args.buffer.Span, args.fileOffset);
+            }, (handle, buffer, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+        }
+
+        private static ValueTask<long> ScheduleSyncWriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
+            long fileOffset, CancellationToken cancellationToken)
+        {
+            return new ValueTask<long>(Task.Factory.StartNew(static state =>
+            {
+                var args = ((SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset))state!;
+                return WriteGatherAtOffset(args.handle, args.buffers, args.fileOffset);
+            }, (handle, buffers, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
         }
     }
 }

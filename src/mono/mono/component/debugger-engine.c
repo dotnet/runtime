@@ -10,13 +10,13 @@
  */
 
 #include <config.h>
-#include "mini-runtime.h"
+#include <mono/mini/mini-runtime.h>
 
 #if !defined (DISABLE_SDB) || defined(TARGET_WASM)
 
 #include <glib.h>
-#include "seq-points.h"
-#include "aot-runtime.h"
+#include <mono/mini/seq-points.h>
+#include <mono/mini/aot-runtime.h>
 #include "debugger-engine.h"
 #include "debugger-state-machine.h"
 #include <mono/metadata/debug-internals.h>
@@ -24,6 +24,8 @@
 static void mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args);
 static gboolean mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls, MonoContext *ctx, MonoMethod* method);
 
+static gpointer get_this_addr(DbgEngineStackFrame* the_frame);
+static MonoMethod* get_set_notification_method(MonoClass* async_builder_class);
 
 static DebuggerEngineCallbacks rt_callbacks;
 
@@ -87,17 +89,6 @@ void
 mono_de_foreach_domain (GHFunc func, gpointer user_data)
 {
 	g_hash_table_foreach (domains, func, user_data);
-}
-
-/*
- * LOCKING: Takes the loader lock
- */
-void
-mono_de_domain_remove (MonoDomain *domain)
-{
-	mono_loader_lock ();
-	g_hash_table_remove (domains, domain);
-	mono_loader_unlock ();
 }
 
 /*
@@ -210,7 +201,7 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 		PRINT_DEBUG_MSG (1, "[dbg] Attempting to insert seq point at dead IL offset %d, ignoring.\n", (int)bp->il_offset);
 	} else if (count == 0) {
 		if (ji->is_interp) {
-			mini_get_interp_callbacks ()->set_breakpoint (ji, inst->ip);
+			mini_get_interp_callbacks_api ()->set_breakpoint (ji, inst->ip);
 		} else {
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 			mono_arch_set_breakpoint (ji, inst->ip);
@@ -239,7 +230,7 @@ remove_breakpoint (BreakpointInstance *inst)
 
 	if (count == 1 && inst->native_offset != SEQ_POINT_NATIVE_OFFSET_DEAD_CODE) {
 		if (ji->is_interp) {
-			mini_get_interp_callbacks ()->clear_breakpoint (ji, ip);
+			mini_get_interp_callbacks_api ()->clear_breakpoint (ji, ip);
 		} else {
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 			mono_arch_clear_breakpoint (ji, ip);
@@ -464,17 +455,6 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	return bp;
 }
 
-MonoBreakpoint *
-mono_de_get_breakpoint_by_id (int id)
-{
-	for (int i = 0; i < breakpoints->len; ++i) {
-		MonoBreakpoint *bp = (MonoBreakpoint *)g_ptr_array_index (breakpoints, i);
-		if (bp->req->id == id)
-			return bp;
-	}
-	return NULL;
-}
-
 void
 mono_de_clear_breakpoint (MonoBreakpoint *bp)
 {
@@ -617,7 +597,7 @@ mono_de_start_single_stepping (void)
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_start_single_stepping ();
 #endif
-		mini_get_interp_callbacks ()->start_single_stepping ();
+		mini_get_interp_callbacks_api ()->start_single_stepping ();
 	}
 }
 
@@ -630,7 +610,7 @@ mono_de_stop_single_stepping (void)
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_stop_single_stepping ();
 #endif
-		mini_get_interp_callbacks ()->stop_single_stepping ();
+		mini_get_interp_callbacks_api ()->stop_single_stepping ();
 	}
 }
 
@@ -656,11 +636,11 @@ get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
 
 		g_assert (ext->kind == MONO_LMFEXT_INTERP_EXIT || ext->kind == MONO_LMFEXT_INTERP_EXIT_WITH_CTX);
 		frame = (MonoInterpFrameHandle*)ext->interp_exit_data;
-		ji = mini_get_interp_callbacks ()->frame_get_jit_info (frame);
+		ji = mini_get_interp_callbacks_api ()->frame_get_jit_info (frame);
 		if (domain)
 			*domain = mono_domain_get ();
 		if (out_ip)
-			*out_ip = mini_get_interp_callbacks ()->frame_get_ip (frame);
+			*out_ip = mini_get_interp_callbacks_api ()->frame_get_ip (frame);
 	}
 	return ji;
 }
@@ -775,7 +755,7 @@ mono_de_cancel_ss (SingleStepReq *req)
 }
 
 void
-mono_de_cancel_all_ss ()
+mono_de_cancel_all_ss (void)
 {
 	int i;
 	for (i = 0; i < the_ss_reqs->len; ++i) {
@@ -832,7 +812,7 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 	 * Stopping in memset makes half-initialized vtypes visible.
 	 * Stopping in memcpy makes half-copied vtypes visible.
 	 */
-	if (method->klass == mono_defaults.string_class && (!strcmp (method->name, "memset") || strstr (method->name, "memcpy")))
+	if (method->klass == mdbg_mono_defaults->string_class && (!strcmp (method->name, "memset") || strstr (method->name, "memcpy")))
 		goto exit;
 
 	/*
@@ -892,13 +872,13 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 	g_ptr_array_add (reqs, ss_req->req);
 
 	void *bp_events;
-	bp_events = rt_callbacks.create_breakpoint_events (reqs, NULL, ji, EVENT_KIND_BREAKPOINT);
+	bp_events = mono_dbg_create_breakpoint_events (reqs, NULL, ji, EVENT_KIND_BREAKPOINT);
 
 	g_ptr_array_free (reqs, TRUE);
 
 	mono_loader_unlock ();
 
-	rt_callbacks.process_breakpoint_events (bp_events, method, ctx, il_offset);
+	mono_dbg_process_breakpoint_events (bp_events, method, ctx, il_offset);
 
  exit:
 	mono_de_ss_req_release (ss_req);
@@ -1123,7 +1103,7 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 				mono_debug_free_method_async_debug_info (asyncMethod);
 
 			//breakpoint was hit in parallelly executing async method, ignore it
-			if (ss_req->async_id != rt_callbacks.get_this_async_id (frames [0]))
+			if (ss_req->async_id != mono_de_frame_async_id (frames [0]))
 				continue;
 		}
 
@@ -1154,14 +1134,14 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 		mono_de_ss_start (ss_req, &args);
 	}
 
-	void *bp_events = rt_callbacks.create_breakpoint_events (ss_reqs, bp_reqs, ji, kind);
+	void *bp_events = mono_dbg_create_breakpoint_events (ss_reqs, bp_reqs, ji, kind);
 
 	mono_loader_unlock ();
 
 	g_ptr_array_free (bp_reqs, TRUE);
 	g_ptr_array_free (ss_reqs, TRUE);
 
-	rt_callbacks.process_breakpoint_events (bp_events, method, ctx, sp.il_offset);
+	mono_dbg_process_breakpoint_events (bp_events, method, ctx, sp.il_offset);
 }
 
 /*
@@ -1352,7 +1332,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			// of this await call and sets async_id so we can distinguish it from parallel executions
 			for (i = 0; i < asyncMethod->num_awaits; i++) {
 				if (sp->il_offset == asyncMethod->yield_offsets [i]) {
-					ss_req->async_id = rt_callbacks.get_this_async_id (frames [0]);
+					ss_req->async_id = mono_de_frame_async_id (frames [0]);
 					ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, method, asyncMethod->resume_offsets [i]);
 					g_hash_table_destroy (ss_req_bp_cache);
 					mono_debug_free_method_async_debug_info (asyncMethod);
@@ -1368,9 +1348,9 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 			}
 			if (ss_req->depth == STEP_DEPTH_OUT) {
 				//If we are inside `async void` method, do normal step-out
-				if (rt_callbacks.set_set_notification_for_wait_completion_flag (frames [0])) {
-					ss_req->async_id = rt_callbacks.get_this_async_id (frames [0]);
-					ss_req->async_stepout_method = rt_callbacks.get_notify_debugger_of_wait_completion_method ();
+				if (set_set_notification_for_wait_completion_flag (frames [0])) {
+					ss_req->async_id = mono_de_frame_async_id (frames [0]);
+					ss_req->async_stepout_method = get_notify_debugger_of_wait_completion_method ();
 					ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, ss_req->async_stepout_method, 0);
 					g_hash_table_destroy (ss_req_bp_cache);
 					mono_debug_free_method_async_debug_info (asyncMethod);
@@ -1499,7 +1479,7 @@ mono_de_ss_start (SingleStepReq *ss_req, SingleStepArgs *ss_args)
 		mono_loader_unlock ();
 
 cleanup:
-	rt_callbacks.ss_args_destroy (ss_args);
+	mono_ss_args_destroy (ss_args);
 }
 
 
@@ -1542,7 +1522,7 @@ mono_de_ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, S
 	}
 
 	SingleStepArgs args;
-	err = rt_callbacks.ss_create_init_args (ss_req, &args);
+	err = mono_ss_create_init_args (ss_req, &args);
 	if (err)
 		return err;
 	g_ptr_array_add (the_ss_reqs, ss_req);
@@ -1671,12 +1651,12 @@ get_object_id_for_debugger_method (MonoClass* async_builder_class)
 	return method;
 }
 
-gpointer
+static gpointer
 get_this_addr (DbgEngineStackFrame *the_frame)
 {
 	StackFrame *frame = (StackFrame *)the_frame;
 	if (frame->de.ji->is_interp)
-		return mini_get_interp_callbacks ()->frame_get_this (frame->interp_frame);
+		return mini_get_interp_callbacks_api ()->frame_get_this (frame->interp_frame);
 
 	MonoDebugVarInfo *var = frame->jit->this_var;
 	if ((var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS) != MONO_DEBUG_VAR_ADDRESS_MODE_REGOFFSET)
@@ -1716,7 +1696,7 @@ get_async_method_builder (DbgEngineStackFrame *frame)
 	return builder;
 }
 
-MonoMethod*
+static MonoMethod*
 get_set_notification_method (MonoClass* async_builder_class)
 {
 	ERROR_DECL (error);
@@ -1739,7 +1719,7 @@ get_notify_debugger_of_wait_completion_method (void)
 	if (notify_debugger_of_wait_completion_method_cache != NULL)
 		return notify_debugger_of_wait_completion_method_cache;
 	ERROR_DECL (error);
-	MonoClass* task_class = mono_class_load_from_name (mono_defaults.corlib, "System.Threading.Tasks", "Task");
+	MonoClass* task_class = mono_class_load_from_name (mdbg_mono_defaults->corlib, "System.Threading.Tasks", "Task");
 	GPtrArray* array = mono_class_get_methods_by_name (task_class, "NotifyDebuggerOfWaitCompletion", 0x24, 1, FALSE, error);
 	mono_error_assert_ok (error);
 	g_assert (array->len == 1);

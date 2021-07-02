@@ -115,6 +115,7 @@ typedef struct _EventPipeSampleProfileData {
 	uintptr_t thread_ip;
 	uint32_t payload_data;
 	bool async_frame;
+	bool safe_point_frame;
 } EventPipeSampleProfileData;
 
 // Rundown flags.
@@ -898,13 +899,15 @@ eventpipe_execute_rundown (
 	if (root_domain) {
 		uint64_t domain_id = (uint64_t)root_domain;
 
-		// Iterate all functions in use (both JIT and AOT).
+		// Iterate all functions in use (JIT, AOT and Interpreter).
 		EventPipeFireMethodEventsData events_data;
 		events_data.domain = root_domain;
 		events_data.buffer_size = 1024 * sizeof(uint32_t);
 		events_data.buffer = g_new (uint8_t, events_data.buffer_size);
 		events_data.method_events_func = method_events_func;
 		mono_jit_info_table_foreach_internal (eventpipe_fire_method_events_func, &events_data);
+		if (mono_get_runtime_callbacks ()->is_interpreter_enabled())
+			mono_get_runtime_callbacks ()->interp_jit_info_foreach (eventpipe_fire_method_events_func, &events_data);
 		g_free (events_data.buffer);
 
 		// Iterate all assemblies in domain.
@@ -997,21 +1000,32 @@ eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
 	EP_ASSERT (frame != NULL);
 	EP_ASSERT (data != NULL);
 
-	gboolean result = false;
 	EventPipeSampleProfileData *sample_data = (EventPipeSampleProfileData *)data;
 
 	if (sample_data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR) {
-		if (frame->type == FRAME_TYPE_MANAGED_TO_NATIVE)
-			sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
-		else
+		switch (frame->type) {
+		case FRAME_TYPE_MANAGED:
 			sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
+			break;
+		case FRAME_TYPE_MANAGED_TO_NATIVE:
+		case FRAME_TYPE_TRAMPOLINE:
+			sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+			break;
+		case FRAME_TYPE_INTERP:
+			if (frame->managed)
+				sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
+			else
+				sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+			break;
+		case FRAME_TYPE_INTERP_TO_MANAGED:
+		case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+			break;
+		default:
+			sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
+		}
 	}
 
-	bool safe_point_frame = false;
-	result = eventpipe_walk_managed_stack_for_thread (frame, ctx, &sample_data->stack_contents, &sample_data->async_frame, &safe_point_frame);
-	if (sample_data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL && safe_point_frame)
-		sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
-	return result;
+	return eventpipe_walk_managed_stack_for_thread (frame, ctx, &sample_data->stack_contents, &sample_data->async_frame, &sample_data->safe_point_frame);
 }
 
 static
@@ -1515,8 +1529,12 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 					data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&thread_state->ctx);
 					data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
 					data->async_frame = FALSE;
+					data->safe_point_frame = FALSE;
 					ep_stack_contents_reset (&data->stack_contents);
-					mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_sample_profiler_walk_managed_stack_for_thread_func, thread_state, MONO_UNWIND_SIGNAL_SAFE, data);
+					mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_sample_profiler_walk_managed_stack_for_thread_func, thread_state, MONO_UNWIND_SIGNAL_SAFE, data);		
+					if (data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL && data->safe_point_frame)
+						data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
+
 					sampled_thread_count++;
 				}
 			}
