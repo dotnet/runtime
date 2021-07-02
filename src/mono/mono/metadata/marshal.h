@@ -403,7 +403,7 @@ mono_type_to_stind (MonoType *type);
 
 /* functions to create various architecture independent helper functions */
 
-MonoMethod *
+MONO_COMPONENT_API MonoMethod *
 mono_marshal_method_from_wrapper (MonoMethod *wrapper);
 
 WrapperInfo*

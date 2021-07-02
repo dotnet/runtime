@@ -193,6 +193,13 @@
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-stub-static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-stub-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.lib" IsNative="true" />
     <!-- Mono WASM-specific files -->
     <PlatformManifestFileEntry Include="libmono-ee-interp.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />

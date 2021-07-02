@@ -26,7 +26,7 @@ namespace System.Reflection.Context.Virtual
                 get { return base.Attributes | MethodAttributes.SpecialName; }
             }
 
-            public override sealed Type DeclaringType
+            public override sealed Type? DeclaringType
             {
                 get { return DeclaringProperty.DeclaringType; }
             }

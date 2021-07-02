@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Context.Delegation;
 
 namespace System.Reflection.Context.Projection
@@ -44,7 +45,7 @@ namespace System.Reflection.Context.Projection
             return base.IsDefined(attributeType, inherit);
         }
 
-        public override FieldInfo GetField(string name, BindingFlags bindingAttr)
+        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             return Projector.ProjectField(base.GetField(name, bindingAttr));
         }
@@ -54,7 +55,7 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetFields(bindingFlags), Projector.ProjectField);
         }
 
-        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             types = Projector.Unproject(types);
             return Projector.ProjectMethod(base.GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers));
@@ -65,7 +66,7 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetMethods(bindingFlags), Projector.ProjectMethod);
         }
 
-        public override Type GetType(string className, bool throwOnError, bool ignoreCase)
+        public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
             return Projector.ProjectType(base.GetType(className, throwOnError, ignoreCase));
         }
@@ -75,7 +76,7 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetTypes(), Projector.ProjectType);
         }
 
-        public override FieldInfo ResolveField(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        public override FieldInfo? ResolveField(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             genericTypeArguments = Projector.Unproject(genericTypeArguments);
             genericMethodArguments = Projector.Unproject(genericMethodArguments);
@@ -83,7 +84,7 @@ namespace System.Reflection.Context.Projection
             return Projector.ProjectField(base.ResolveField(metadataToken, genericTypeArguments, genericMethodArguments));
         }
 
-        public override MemberInfo ResolveMember(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        public override MemberInfo? ResolveMember(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             genericTypeArguments = Projector.Unproject(genericTypeArguments);
             genericMethodArguments = Projector.Unproject(genericMethodArguments);
@@ -91,7 +92,7 @@ namespace System.Reflection.Context.Projection
             return Projector.ProjectMember(base.ResolveMember(metadataToken, genericTypeArguments, genericMethodArguments));
         }
 
-        public override MethodBase ResolveMethod(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        public override MethodBase? ResolveMethod(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             genericTypeArguments = Projector.Unproject(genericTypeArguments);
             genericMethodArguments = Projector.Unproject(genericMethodArguments);
@@ -99,7 +100,7 @@ namespace System.Reflection.Context.Projection
             return Projector.ProjectMethodBase(base.ResolveMethod(metadataToken, genericTypeArguments, genericMethodArguments));
         }
 
-        public override Type ResolveType(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        public override Type ResolveType(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             genericTypeArguments = Projector.Unproject(genericTypeArguments);
             genericMethodArguments = Projector.Unproject(genericMethodArguments);
@@ -107,11 +108,9 @@ namespace System.Reflection.Context.Projection
             return Projector.ProjectType(base.ResolveType(metadataToken, genericTypeArguments, genericMethodArguments));
         }
 
-        public override bool Equals(object o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
-            var other = o as ProjectingModule;
-
-            return other != null &&
+            return o is ProjectingModule other &&
                    Projector == other.Projector &&
                    UnderlyingModule.Equals(other.UnderlyingModule);
         }

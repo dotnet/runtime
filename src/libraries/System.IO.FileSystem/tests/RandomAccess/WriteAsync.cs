@@ -16,13 +16,11 @@ namespace System.IO.Tests
         protected override ValueTask<int> MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset)
             => RandomAccess.WriteAsync(handle, bytes, fileOffset);
 
-        protected override bool ShouldThrowForSyncHandle
-            => OperatingSystem.IsWindows(); // on Windows we can NOT perform async IO using sync handle
-
-        [Fact]
-        public async Task TaskAlreadyCanceledAsync()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public async Task TaskAlreadyCanceledAsync(FileOptions options)
         {
-            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.ReadWrite, options: FileOptions.Asynchronous))
+            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.ReadWrite, options: options))
             {
                 CancellationTokenSource cts = GetCancelledTokenSource();
                 CancellationToken token = cts.Token;
@@ -34,32 +32,35 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        public async Task ThrowsOnReadAccess()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public async Task ThrowsOnReadAccess(FileOptions options)
         {
-            using (SafeFileHandle handle = GetHandleToExistingFile(FileAccess.Read))
+            using (SafeFileHandle handle = GetHandleToExistingFile(FileAccess.Read, options))
             {
                 await Assert.ThrowsAsync<UnauthorizedAccessException>(async () => await RandomAccess.WriteAsync(handle, new byte[1], 0));
             }
         }
 
-        [Fact]
-        public async Task WriteUsingEmptyBufferReturnsZeroAsync()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public async Task WriteUsingEmptyBufferReturnsZeroAsync(FileOptions options)
         {
-            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, options: FileOptions.Asynchronous))
+            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, options: options))
             {
                 Assert.Equal(0, await RandomAccess.WriteAsync(handle, Array.Empty<byte>(), fileOffset: 0));
             }
         }
 
-        [Fact]
-        public async Task WritesBytesFromGivenBufferToGivenFileAtGivenOffsetAsync()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public async Task WritesBytesFromGivenBufferToGivenFileAtGivenOffsetAsync(FileOptions options)
         {
             const int fileSize = 4_001;
             string filePath = GetTestFilePath();
             byte[] content = RandomNumberGenerator.GetBytes(fileSize);
 
-            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.Asynchronous))
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, options))
             {
                 int total = 0;
                 int current = 0;
