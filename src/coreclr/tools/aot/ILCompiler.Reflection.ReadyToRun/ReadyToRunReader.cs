@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -15,9 +16,9 @@ using System.Text;
 using Internal.CorConstants;
 using Internal.Runtime;
 using Internal.ReadyToRunConstants;
+using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
-using System.Linq;
 
 namespace ILCompiler.Reflection.ReadyToRun
 {
@@ -79,6 +80,8 @@ namespace ILCompiler.Reflection.ReadyToRun
 
     public sealed class ReadyToRunReader
     {
+        public const int GuidByteSize = 16;
+
         private const string SystemModuleName = "System.Private.CoreLib";
 
         /// <summary>
@@ -177,6 +180,33 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         /// <summary>
+        /// Conversion of the PE machine ID to TargetArchitecture used by TargetDetails.
+        /// </summary>
+        public TargetArchitecture TargetArchitecture
+        {
+            get
+            {
+                switch (Machine)
+                {
+                    case Machine.I386:
+                        return TargetArchitecture.X86;
+
+                    case Machine.Amd64:
+                        return TargetArchitecture.X64;
+
+                    case Machine.ArmThumb2:
+                        return TargetArchitecture.ARM;
+
+                    case Machine.Arm64:
+                        return TargetArchitecture.ARM64;
+
+                    default:
+                        throw new NotImplementedException(_machine.ToString());
+                }
+            }
+        }
+
+        /// <summary>
         /// Targeting operating system for the R2R executable
         /// </summary>
         public OperatingSystem OperatingSystem
@@ -185,6 +215,36 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 EnsureHeader();
                 return _operatingSystem;
+            }
+        }
+
+        /// <summary>
+        /// Targeting operating system converted to the enumeration used by TargetDetails.
+        /// </summary>
+        public TargetOS TargetOperatingSystem
+        {
+            get
+            {
+                switch (OperatingSystem)
+                {
+                    case OperatingSystem.Windows:
+                        return TargetOS.Windows;
+
+                    case OperatingSystem.Linux:
+                        return TargetOS.Linux;
+
+                    case OperatingSystem.Apple:
+                        return TargetOS.OSX;
+
+                    case OperatingSystem.FreeBSD:
+                        return TargetOS.FreeBSD;
+
+                    case OperatingSystem.NetBSD:
+                        return TargetOS.FreeBSD;
+
+                    default:
+                        throw new NotImplementedException(OperatingSystem.ToString());
+                }
             }
         }
 
@@ -535,6 +595,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             EnsureHeader();
             return (_composite ? null : _assemblyCache[0]);
+        }
+
+        public string GetGlobalAssemblyName()
+        {
+            MetadataReader mdReader = GetGlobalMetadata().MetadataReader;
+            return mdReader.GetString(mdReader.GetAssemblyDefinition().Name);
         }
 
         private unsafe void EnsureHeader()
@@ -1084,6 +1150,26 @@ namespace ILCompiler.Reflection.ReadyToRun
             else
             {
                 return 0;
+            }
+        }
+
+        public Guid GetAssemblyMvid(int assemblyIndex)
+        {
+            EnsureHeader();
+            if (_composite)
+            {
+                if (!ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ManifestAssemblyMvids, out ReadyToRunSection mvidSection))
+                {
+                    return Guid.Empty;
+                }
+                int mvidOffset = GetOffset(mvidSection.RelativeVirtualAddress) + GuidByteSize * assemblyIndex;
+                return new Guid(new ReadOnlySpan<byte>(Image, mvidOffset, ReadyToRunReader.GuidByteSize));
+            }
+            else
+            {
+                Debug.Assert(assemblyIndex == 0);
+                MetadataReader mdReader = GetGlobalMetadata().MetadataReader;
+                return mdReader.GetGuid(mdReader.GetModuleDefinition().Mvid);
             }
         }
 

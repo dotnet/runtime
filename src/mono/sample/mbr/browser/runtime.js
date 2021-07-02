@@ -5,7 +5,7 @@ var Module = {
     config: null,
 
     preInit: async function() {
-        Module.config = await MONO.mono_wasm_load_config("./mono-config.json");
+        await MONO.mono_wasm_load_config("./mono-config.json"); // sets Module.config implicitly
     },
 
     // Called when the runtime is initialized and wasm is ready

@@ -345,4 +345,7 @@
   <data name="PerfMapFilePathOption" xml:space="preserve">
     <value>Explicit specification of the PerfMap file path</value>
   </data>
+  <data name="PerfMapFormatVersionOption" xml:space="preserve">
+    <value>Explicitly request a particular PerfMap format version</value>
+  </data>
 </root>

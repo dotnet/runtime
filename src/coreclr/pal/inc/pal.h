@@ -3582,7 +3582,7 @@ YieldProcessor()
     __asm__ __volatile__(
         "rep\n"
         "nop");
-#elif defined(HOST_ARM64)
+#elif defined(HOST_ARM) || defined(HOST_ARM64)
     __asm__ __volatile__( "yield");
 #else
     return;

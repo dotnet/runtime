@@ -70,7 +70,27 @@ namespace Internal.Cryptography
             Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
             Debug.Assert(input.Length <= output.Length);
 
-            int written = ProcessFinalBlock(input, output);
+            int written = 0;
+
+            if (input.Overlaps(output, out int offset) && offset != 0)
+            {
+                byte[] rented = CryptoPool.Rent(output.Length);
+
+                try
+                {
+                    written = ProcessFinalBlock(input, rented);
+                    rented.AsSpan(0, written).CopyTo(output);
+                }
+                finally
+                {
+                    CryptoPool.Return(rented, clearSize: written);
+                }
+            }
+            else
+            {
+                written = ProcessFinalBlock(input, output);
+            }
+
             Reset();
             return written;
         }

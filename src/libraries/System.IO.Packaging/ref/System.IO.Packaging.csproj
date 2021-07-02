@@ -1,13 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'net461'">
     <Compile Include="System.IO.Packaging.cs" />
     <Compile Include="System.IO.Packaging.Serialization.cs" />
     <Compile Include="System.IO.Packaging.PackUriScheme.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\ref\System.Collections.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Compile Include="System.IO.Packaging.net461.cs" />
     <Reference Include="WindowsBase" />

@@ -296,10 +296,10 @@ mono_mem_manager_free (MonoMemoryManager *memory_manager, gboolean debug_unload)
 void
 mono_mem_manager_free_objects (MonoMemoryManager *memory_manager);
 
-void
+MONO_COMPONENT_API void
 mono_mem_manager_lock (MonoMemoryManager *memory_manager);
 
-void
+MONO_COMPONENT_API void
 mono_mem_manager_unlock (MonoMemoryManager *memory_manager);
 
 MONO_COMPONENT_API

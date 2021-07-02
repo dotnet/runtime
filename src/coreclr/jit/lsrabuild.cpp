@@ -525,7 +525,7 @@ RefPosition* LinearScan::newRefPosition(
            (regRecord->lastRefPosition->refType != theRefType));
     associateRefPosWithInterval(newRP);
 
-    DBEXEC(VERBOSE, newRP->dump());
+    DBEXEC(VERBOSE, newRP->dump(this));
     return newRP;
 }
 
@@ -620,7 +620,7 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
 
     associateRefPosWithInterval(newRP);
 
-    DBEXEC(VERBOSE, newRP->dump());
+    DBEXEC(VERBOSE, newRP->dump(this));
     return newRP;
 }
 
@@ -2333,6 +2333,15 @@ void LinearScan::buildIntervals()
             // assert(block->isRunRarely());
         }
 
+        // For frame poisoning we generate code into scratch BB right after prolog since
+        // otherwise the prolog might become too large. In this case we will put the poison immediate
+        // into the scratch register, so it will be killed here.
+        if (compiler->compShouldPoisonFrame() && compiler->fgFirstBBisScratch() && block == compiler->fgFirstBB)
+        {
+            addRefsForPhysRegMask(genRegMask(REG_SCRATCH), currentLoc + 1, RefTypeKill, true);
+            currentLoc += 2;
+        }
+
         LIR::Range& blockRange = LIR::AsRange(block);
         for (GenTree* node : blockRange)
         {
@@ -2624,7 +2633,7 @@ void LinearScan::validateIntervals()
             printf("-----------------\n");
             for (RefPosition* ref = interval->firstRefPosition; ref != nullptr; ref = ref->nextRefPosition)
             {
-                ref->dump();
+                ref->dump(this);
                 RefType refType = ref->refType;
                 if (!defined && RefTypeIsUse(refType))
                 {

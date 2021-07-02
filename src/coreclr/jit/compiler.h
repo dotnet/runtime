@@ -2333,6 +2333,8 @@ class Compiler
     friend class ObjectAllocator;
     friend class LocalAddressVisitor;
     friend struct GenTree;
+    friend class MorphInitBlockHelper;
+    friend class MorphCopyBlockHelper;
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct HWIntrinsicInfo;
@@ -2850,8 +2852,8 @@ public:
                                                   GenTree*                ctxTree,
                                                   void*                   compileTimeHandle);
 
-    GenTree* gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs = BAD_IL_OFFSET));
-    GenTree* gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs = BAD_IL_OFFSET));
+    GenTreeLclVar* gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs = BAD_IL_OFFSET));
+    GenTreeLclVar* gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs = BAD_IL_OFFSET));
 
     GenTreeLclVar* gtNewLclVarAddrNode(unsigned lclNum, var_types type = TYP_I_IMPL);
     GenTreeLclFld* gtNewLclFldAddrNode(unsigned      lclNum,
@@ -5833,6 +5835,12 @@ private:
     GenTree* fgRecognizeAndMorphBitwiseRotation(GenTree* tree);
     bool fgOperIsBitwiseRotationRoot(genTreeOps oper);
 
+#if !defined(TARGET_64BIT)
+    //                  Recognize and morph a long multiplication with 32 bit operands.
+    GenTreeOp* fgRecognizeAndMorphLongMul(GenTreeOp* mul);
+    GenTreeOp* fgMorphLongMul(GenTreeOp* mul);
+#endif
+
     //-------- Determine the order in which the trees will be evaluated -------
 
     unsigned fgTreeSeqNum;
@@ -6011,8 +6019,7 @@ private:
     GenTree* fgMorphInitBlock(GenTree* tree);
     GenTree* fgMorphPromoteLocalInitBlock(GenTreeLclVar* destLclNode, GenTree* initVal, unsigned blockSize);
     GenTree* fgMorphGetStructAddr(GenTree** pTree, CORINFO_CLASS_HANDLE clsHnd, bool isRValue = false);
-    GenTree* fgMorphBlkNode(GenTree* tree, bool isDest);
-    GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigned blockWidth, bool isDest);
+    GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigned blockWidth, bool isBlkReqd);
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
@@ -9771,9 +9778,19 @@ public:
 #endif // FEATURE_MULTIREG_RET
     }
 
+    bool compEnregLocals()
+    {
+        return ((opts.compFlags & CLFLG_REGVAR) != 0);
+    }
+
     bool compEnregStructLocals()
     {
         return (JitConfig.JitEnregStructLocals() != 0);
+    }
+
+    bool compObjectStackAllocation()
+    {
+        return (JitConfig.JitObjectStackAllocation() != 0);
     }
 
     // Returns true if the method returns a value in more than one return register,
@@ -9820,6 +9837,16 @@ public:
     bool compMethodRequiresPInvokeFrame()
     {
         return (info.compUnmanagedCallCountWithGCTransition > 0);
+    }
+
+    // Returns true if address-exposed user variables should be poisoned with a recognizable value
+    bool compShouldPoisonFrame()
+    {
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        if (opts.IsOSR())
+            return false;
+#endif
+        return !info.compInitMem && opts.compDbgCode;
     }
 
 #if defined(DEBUG)
@@ -9908,7 +9935,6 @@ public:
 // Bytes of padding between save-reg area and locals.
 #define VSQUIRK_STACK_PAD (2 * REGSIZE_BYTES)
     unsigned compVSQuirkStackPaddingNeeded;
-    bool     compQuirkForPPPflag;
 #endif
 
     unsigned compArgSize; // total size of arguments in bytes (including register args (lvIsRegArg))
@@ -10128,9 +10154,6 @@ protected:
     bool  compProfilerMethHndIndirected; // Whether compProfilerHandle is pointer to the handle or is an actual handle
 #endif
 
-#ifdef TARGET_AMD64
-    bool compQuirkForPPP(); // Check if this method should be Quirked for the PPP issue
-#endif
 public:
     // Assumes called as part of process shutdown; does any compiler-specific work associated with that.
     static void ProcessShutdownWork(ICorStaticInfo* statInfo);

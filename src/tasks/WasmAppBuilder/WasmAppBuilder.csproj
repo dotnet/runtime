@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppToolCurrent);$(TargetFrameworkForNETFramework)</TargetFrameworks>
+    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);$(TargetFrameworkForNETFrameworkTasks)</TargetFrameworks>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050</NoWarn>
     <!-- Ignore nullable warnings on net4* -->
@@ -39,14 +39,14 @@
       <_PublishFramework Include="$(TargetFrameworks)" />
 
       <!-- non-net4* -->
-      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\$(MSBuildProjectName)*"
-                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
-      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\publish\System.Reflection.MetadataLoadContext.dll"
-                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\$(MSBuildProjectName)*"
+                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\publish\System.Reflection.MetadataLoadContext.dll"
+                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
 
       <!-- for net472 we need all the dependent assemblies too, so copy from the publish folder -->
-      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETFramework)\publish\*"
-                      TargetPath="tasks\$(TargetFrameworkForNETFramework)" />
+      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETFrameworkTasks)\publish\*"
+                      TargetPath="tasks\$(TargetFrameworkForNETFrameworkTasks)" />
     </ItemGroup>
   </Target>
 

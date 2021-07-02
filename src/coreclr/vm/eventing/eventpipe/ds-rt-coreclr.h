@@ -195,20 +195,10 @@ ds_rt_generate_core_dump (DiagnosticsGenerateCoreDumpCommandPayload *payload)
 	ds_ipc_result_t result = DS_IPC_E_FAIL;
 	EX_TRY
 	{
-#ifdef HOST_WIN32
-		if (GenerateCrashDump (reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)),
+		if (GenerateDump (reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)),
 			static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
 			(ds_generate_core_dump_command_payload_get_diagnostics (payload) != 0) ? true : false))
 			result = DS_IPC_S_OK;
-#else
-		MAKE_UTF8PTR_FROMWIDE_NOTHROW (dump_name, reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)));
-		if (dump_name != nullptr) {
-			if (PAL_GenerateCoreDump (dump_name,
-				static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
-				(ds_generate_core_dump_command_payload_get_diagnostics (payload) != 0) ? true : false))
-				result = DS_IPC_S_OK;
-		}
-#endif
 	}
 	EX_CATCH {}
 	EX_END_CATCH(SwallowAllExceptions);

@@ -56,6 +56,9 @@
 #include "mono/metadata/custom-attrs-internals.h"
 #include <mono/utils/w32subset.h>
 
+#include <mono/metadata/components.h>
+#include <mono/mini/debugger-agent-external.h>
+
 #include "mini.h"
 #include "jit.h"
 #include "aot-compiler.h"
@@ -66,7 +69,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
-#include "debugger-agent.h"
 #if TARGET_OSX
 #   include <sys/resource.h>
 #endif
@@ -1807,7 +1809,7 @@ mono_jit_parse_options (int argc, char * argv[])
 		if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
-			sdb_options = g_strdup (argv [i] + 17);
+			mono_debugger_agent_parse_options (g_strdup (argv [i] + 17));
 			opt->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
 		} else if (!strcmp (argv [i], "--soft-breakpoints")) {
@@ -2382,7 +2384,7 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
-			sdb_options = g_strdup (argv [i] + 17);
+			mono_debugger_agent_parse_options (g_strdup (argv [i] + 17));
 			opt->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
 		} else if (strcmp (argv [i], "--security") == 0) {
@@ -3259,4 +3261,10 @@ mono_parse_env_options (int *ref_argc, char **ref_argv [])
 		return;
 	fprintf (stderr, "%s", ret);
 	exit (1);
+}
+
+MonoDebugOptions *
+get_mini_debug_options (void)
+{
+	return &mini_debug_options;
 }
