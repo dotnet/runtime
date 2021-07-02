@@ -48,7 +48,7 @@ function(set_common_libs TargetType)
         # Specify the import library to link against for Arm32 build since the default set is minimal
         if (CLR_CMAKE_TARGET_ARCH_ARM)
             if (CLR_CMAKE_TARGET_WIN32)
-                target_link_libraries(${DOTNET_PROJECT_NAME} shell32.lib)
+                target_link_libraries(${DOTNET_PROJECT_NAME} shell32.lib advapi32.lib)
             else()
                 target_link_libraries(${DOTNET_PROJECT_NAME} atomic.a)
             endif()
