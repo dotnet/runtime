@@ -382,6 +382,7 @@ namespace System.Text.Json.Tests
 
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [ConditionalTheory(nameof(IsX64))]
+        [OuterLoop]
         [InlineData(JsonTokenType.String)]
         [InlineData(JsonTokenType.StartArray)]
         [InlineData(JsonTokenType.StartObject)]
@@ -473,6 +474,7 @@ namespace System.Text.Json.Tests
         [ConditionalTheory(nameof(IsX64))]
         [InlineData((int.MaxValue / 3) + 1)]
         [InlineData(int.MaxValue / 3 + 2)]
+        [OuterLoop]
         public static void WriteRawUtf16LengthGreaterThanMax(int len)
         {
             StringBuilder sb = new();
@@ -503,6 +505,7 @@ namespace System.Text.Json.Tests
 
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [ConditionalFact(nameof(IsX64))]
+        [OuterLoop]
         public static void WriteRawTranscodeFromUtf16ToUtf8TooLong()
         {
             // Max raw payload length supported by the writer.
