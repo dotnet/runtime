@@ -132,7 +132,7 @@ namespace System.Collections.Generic
                     {
 
                         int comp = _lBoundActive ? Comparer.Compare(_min, current.Item) : -1;
-                        if (comp == 1)
+                        if (comp > 0)
                         {
                             current = current.Right;
                         }
@@ -161,7 +161,7 @@ namespace System.Collections.Generic
                     while (current != null)
                     {
                         int comp = _uBoundActive ? Comparer.Compare(_max, current.Item) : 1;
-                        if (comp == -1)
+                        if (comp < 0)
                         {
                             current = current.Left;
                         }
