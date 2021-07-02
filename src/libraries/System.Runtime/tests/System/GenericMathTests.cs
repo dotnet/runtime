@@ -55,15 +55,19 @@ namespace System.Tests
         where TSelf : INumber<TSelf>
     {
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/54910", TestPlatforms.Browser)]
         public abstract void AverageTest();
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/54910", TestPlatforms.Browser)]
         public abstract void StandardDeviationTest();
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/54910", TestPlatforms.Browser)]
         public abstract void SumTest();
 
         [Fact]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/54910", TestPlatforms.Browser)]
         public abstract void SumInt32Test();
     }
 }
