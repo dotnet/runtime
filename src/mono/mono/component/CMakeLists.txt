@@ -182,7 +182,8 @@ if(NOT MONO_CROSS_COMPILE)
     set(TemplateMonoRuntimeComponentLinking "static")
     set(TemplateMonoRuntimeAvailableComponents "")
   else()
-    list(JOIN components ";" TemplateMonoRuntimeAvailableComponents)
+    list(TRANSFORM components REPLACE "^(.+)$" "{ \"identity\": \"\\1\", \"RuntimeIdentifier\": \"${TemplateRuntimeIdentifier}\" }," OUTPUT_VARIABLE TemplateMonoRuntimeAvailableComponentsList)
+    list(JOIN TemplateMonoRuntimeAvailableComponentsList "\n" TemplateMonoRuntimeAvailableComponents)
     if(STATIC_COMPONENTS)
       set(TemplateMonoRuntimeComponentLinking "static")
     else()
@@ -191,7 +192,7 @@ if(NOT MONO_CROSS_COMPILE)
   endif()
   # Write a component-manifest.props file in the artifacts/obj/mono/<host>/build/ directory
   # without the ../.. the file would go in artifacts/obj/mono/<host>/mono/mini
-  configure_file( "${MONO_COMPONENT_PATH}/component-manifest.props.in" "../../build/component-manifest.props")
+  configure_file( "${MONO_COMPONENT_PATH}/component-manifest.json.in" "../../build/component-manifest.json")
 endif()
 
 # component tests
