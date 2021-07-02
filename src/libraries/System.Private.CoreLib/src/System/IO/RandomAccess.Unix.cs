@@ -67,25 +67,12 @@ namespace System.IO
             return FileStreamHelpers.CheckFileCall(result, path: null);
         }
 
-        private static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset,
-            CancellationToken cancellationToken)
-        {
-            return new ValueTask<int>(Task.Factory.StartNew(static state =>
-            {
-                var args = ((SafeFileHandle handle, Memory<byte> buffer, long fileOffset))state!;
-                return ReadAtOffset(args.handle, args.buffer.Span, args.fileOffset);
-            }, (handle, buffer, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
-        }
+        private static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+            => ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
 
         private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
-        {
-            return new ValueTask<long>(Task.Factory.StartNew(static state =>
-            {
-                var args = ((SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset))state!;
-                return ReadScatterAtOffset(args.handle, args.buffers, args.fileOffset);
-            }, (handle, buffers, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
-        }
+            => ScheduleSyncReadScatterAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
 
         private static unsafe int WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
         {
@@ -130,24 +117,11 @@ namespace System.IO
             return FileStreamHelpers.CheckFileCall(result, path: null);
         }
 
-        private static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset,
-            CancellationToken cancellationToken)
-        {
-            return new ValueTask<int>(Task.Factory.StartNew(static state =>
-            {
-                var args = ((SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset))state!;
-                return WriteAtOffset(args.handle, args.buffer.Span, args.fileOffset);
-            }, (handle, buffer, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
-        }
+        private static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+            => ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
 
         private static ValueTask<long> WriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
-        {
-            return new ValueTask<long>(Task.Factory.StartNew(static state =>
-            {
-                var args = ((SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset))state!;
-                return WriteGatherAtOffset(args.handle, args.buffers, args.fileOffset);
-            }, (handle, buffers, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
-        }
+            => ScheduleSyncWriteGatherAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
     }
 }

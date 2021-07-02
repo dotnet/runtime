@@ -51,8 +51,9 @@
 #include "mini-s390x.h"
 #include "mini-runtime.h"
 #include "jit-icalls.h"
-#include "debugger-agent.h"
 #include "mono/utils/mono-tls-inline.h"
+
+#include <mono/metadata/components.h>
 
 /*========================= End of Includes ========================*/
 
@@ -195,9 +196,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	s390_la (code, s390_r2, 0, STK_BASE, ctx_offset);
 
 	if (single_step) 
-		ep = (mini_get_dbg_callbacks())->single_step_from_context;
+		ep = (mono_component_debugger ())->single_step_from_context;
 	else
-		ep = (mini_get_dbg_callbacks())->breakpoint_from_context;
+		ep = (mono_component_debugger ())->breakpoint_from_context;
 
 	S390_SET  (code, s390_r1, ep);
 	s390_basr (code, s390_r14, s390_r1);

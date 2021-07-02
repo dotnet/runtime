@@ -6,6 +6,7 @@
 #include <glib.h>
 #include <gmodule.h>
 #include "mono/component/component.h"
+#include "mono/component/debugger.h"
 #include "mono/component/hot_reload.h"
 #include "mono/component/event_pipe.h"
 #include "mono/component/diagnostics_server.h"
@@ -32,7 +33,13 @@ typedef struct _MonoComponentEntry {
 
 #define HOT_RELOAD_LIBRARY_NAME "hot_reload"
 #define HOT_RELOAD_COMPONENT_NAME HOT_RELOAD_LIBRARY_NAME
+
+#define DEBUGGER_LIBRARY_NAME "debugger"
+#define DEBUGGER_COMPONENT_NAME DEBUGGER_LIBRARY_NAME
+
 MonoComponentHotReload *hot_reload = NULL;
+
+MonoComponentDebugger *debugger = NULL;
 
 MonoComponentEventPipe *event_pipe = NULL;
 MonoComponentDiagnosticsServer *diagnostics_server = NULL;
@@ -44,6 +51,7 @@ MonoComponentDiagnosticsServer *diagnostics_server = NULL;
 
 /* One per component */
 MonoComponentEntry components[] = {
+	{ DEBUGGER_LIBRARY_NAME, DEBUGGER_COMPONENT_NAME, COMPONENT_INIT_FUNC (debugger), (MonoComponent**)&debugger, NULL },
 	{ HOT_RELOAD_LIBRARY_NAME, HOT_RELOAD_COMPONENT_NAME, COMPONENT_INIT_FUNC (hot_reload), (MonoComponent**)&hot_reload, NULL },
 	{ DIAGNOSTICS_TRACING_LIBRARY_NAME, EVENT_PIPE_COMPONENT_NAME, COMPONENT_INIT_FUNC (event_pipe), (MonoComponent**)&event_pipe, NULL },
 	{ DIAGNOSTICS_TRACING_LIBRARY_NAME, DIAGNOSTICS_SERVER_COMPONENT_NAME, COMPONENT_INIT_FUNC (diagnostics_server), (MonoComponent**)&diagnostics_server, NULL },
