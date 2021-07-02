@@ -5041,6 +5041,45 @@ HRESULT ClrDataAccess::GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRES
 #endif // FEATURE_COMWRAPPERS
 }
 
+namespace
+{
+    BOOL TryReadTaggedMemoryState(
+        CLRDATA_ADDRESS objAddr,
+        ICorDebugDataTarget* target,
+        CLRDATA_ADDRESS *taggedMemory = NULL,
+        size_t *taggedMemorySizeInBytes = NULL)
+    {
+        BOOL hasTaggedMemory = FALSE;
+
+#ifdef FEATURE_OBJCMARSHAL
+        EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
+        {
+            PTR_SyncBlock pSyncBlk = DACGetSyncBlockFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(objAddr), target);
+            if (pSyncBlk != NULL)
+            {
+                PTR_InteropSyncBlockInfo pInfo = pSyncBlk->GetInteropInfoNoCreate();
+                if (pInfo != NULL)
+                {
+                    CLRDATA_ADDRESS taggedMemoryLocal = PTR_CDADDR(pInfo->GetTaggedMemory());
+                    if (taggedMemoryLocal != NULL)
+                    {
+                        hasTaggedMemory = TRUE;
+                        if (taggedMemory)
+                            *taggedMemory = taggedMemoryLocal;
+
+                        if (taggedMemorySizeInBytes)
+                            *taggedMemorySizeInBytes = pInfo->GetTaggedMemorySizeInBytes();
+                    }
+                }
+            }
+        }
+        EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
+#endif // FEATURE_OBJCMARSHAL
+
+        return hasTaggedMemory;
+    }
+}
+
 HRESULT ClrDataAccess::IsTrackedType(
     CLRDATA_ADDRESS objAddr,
     BOOL *isTrackedType,
@@ -5058,7 +5097,7 @@ HRESULT ClrDataAccess::IsTrackedType(
 
     SOSDacEnter();
 
-    TADDR mtTADDR = DACGetMethodTableFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(objAddr),m_pTarget);
+    TADDR mtTADDR = DACGetMethodTableFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(objAddr), m_pTarget);
     if (mtTADDR==NULL)
         hr = E_INVALIDARG;
 
@@ -5075,23 +5114,7 @@ HRESULT ClrDataAccess::IsTrackedType(
     {
         *isTrackedType = mt->IsTrackedReferenceWithFinalizer();
         hr = *isTrackedType ? S_OK : S_FALSE;
-
-#ifdef FEATURE_OBJCMARSHAL
-        EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
-        {
-            PTR_SyncBlock pSyncBlk = DACGetSyncBlockFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(objAddr), m_pTarget);
-            if (pSyncBlk != NULL)
-            {
-                // see if we have an RCW and/or CCW associated with this object
-                PTR_InteropSyncBlockInfo pInfo = pSyncBlk->GetInteropInfoNoCreate();
-                if (pInfo != NULL)
-                {
-                    *hasTaggedMemory = pInfo->GetTaggedMemory() != NULL ? TRUE : FALSE;
-                }
-            }
-        }
-        EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
-#endif // FEATURE_OBJCMARSHAL
+        *hasTaggedMemory = TryReadTaggedMemoryState(objAddr, m_pTarget);
     }
 
     SOSDacLeave();
@@ -5115,23 +5138,10 @@ HRESULT ClrDataAccess::GetTaggedMemory(
 
     SOSDacEnter();
 
-#ifdef FEATURE_OBJCMARSHAL
-    EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
+    if (FALSE == TryReadTaggedMemoryState(objAddr, m_pTarget, taggedMemory, taggedMemorySizeInBytes))
     {
-        PTR_SyncBlock pSyncBlk = DACGetSyncBlockFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(objAddr), m_pTarget);
-        if (pSyncBlk != NULL)
-        {
-            // see if we have an RCW and/or CCW associated with this object
-            PTR_InteropSyncBlockInfo pInfo = pSyncBlk->GetInteropInfoNoCreate();
-            if (pInfo != NULL)
-            {
-                *taggedMemory = TO_CDADDR(pInfo->GetTaggedMemory());
-                *taggedMemorySizeInBytes = pInfo->GetTaggedMemorySizeInBytes();
-            }
-        }
+        hr = S_FALSE;
     }
-    EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
-#endif // FEATURE_OBJCMARSHAL
 
     SOSDacLeave();
     return hr;
