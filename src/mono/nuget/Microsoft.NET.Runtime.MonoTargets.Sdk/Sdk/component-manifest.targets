@@ -62,9 +62,9 @@
         <ComponentName>%(_MonoRuntimeSelectedComponents.Identity)</ComponentName>
       </_MonoRuntimeComponentLink>
       <_MonoRuntimeComponentDontLink Include="%(_MonoRuntimeUnSelectedComponents.ComponentLib)">
-	<Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
-	<IsStub>false</IsStub>
-	<ComponentName>%(_MonoRuntimeUnSelectedComponents.Identity)</ComponentName>
+        <Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
+        <IsStub>false</IsStub>
+        <ComponentName>%(_MonoRuntimeUnSelectedComponents.Identity)</ComponentName>
       </_MonoRuntimeComponentDontLink>
       <!-- non-empty if any unknown components are specified -->
       <_MonoRuntimeSelectedMissingComponents Include="@(_MonoComponent)" Exclude="@(_MonoRuntimeComponentNameForRid)" />
@@ -80,9 +80,9 @@
         <ComponentName>%(_MonoRuntimeSelectedStubComponents.Identity)</ComponentName>
       </_MonoRuntimeComponentLink>
       <_MonoRuntimeComponentDontLink Include="%(_MonoRuntimeUnSelectedStubComponents.ComponentStubLib)">
-	<Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
-	<IsStub>true</IsStub>
-	<ComponentName>%(_MonoRuntimeUnSelectedStubComponents.Identity)</ComponentName>
+        <Linking>$(_MonoRuntimeComponentCurrentLinking)</Linking>
+        <IsStub>true</IsStub>
+        <ComponentName>%(_MonoRuntimeUnSelectedStubComponents.Identity)</ComponentName>
       </_MonoRuntimeComponentDontLink>
     </ItemGroup>
 
