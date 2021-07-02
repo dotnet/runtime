@@ -32,6 +32,21 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             _output = output;
         }
 
+        [Fact]
+        public async Task SendAsync_InvalidRequestUri_Throws()
+        {
+            using var invoker = new HttpMessageInvoker(new WinHttpHandler());
+
+            var request = new HttpRequestMessage(HttpMethod.Get, (Uri)null);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => invoker.SendAsync(request, CancellationToken.None));
+
+            request = new HttpRequestMessage(HttpMethod.Get, new Uri("/relative", UriKind.Relative));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => invoker.SendAsync(request, CancellationToken.None));
+
+            request = new HttpRequestMessage(HttpMethod.Get, new Uri("foo://foo.bar"));
+            await Assert.ThrowsAsync<NotSupportedException>(() => invoker.SendAsync(request, CancellationToken.None));
+        }
+
         [OuterLoop]
         [Fact]
         public void SendAsync_SimpleGet_Success()
