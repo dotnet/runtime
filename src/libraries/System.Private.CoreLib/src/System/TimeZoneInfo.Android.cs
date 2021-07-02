@@ -16,7 +16,7 @@ namespace System
         private static AndroidTzData tzData = new AndroidTzData();
 
         [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetDefaultTimeZone")]
-        internal static extern string GetDefaultTimeZone();
+        private static extern string? GetDefaultTimeZone();
 
         // This should be called when name begins with GMT
         private static int ParseGMTNumericZone(string name)
@@ -88,7 +88,7 @@ namespace System
             }
         }
 
-        internal static TimeZoneInfo? GetTimeZone(string id, string name)
+        private static TimeZoneInfo? GetTimeZone(string id, string name)
         {
             if (name == "GMT" || name == "UTC")
             {
@@ -152,7 +152,7 @@ namespace System
             return TimeZoneInfoResult.Success;
         }
 
-        internal static List<string> GetTimeZoneIds()
+        internal static string[] GetTimeZoneIds()
         {
             return tzData.GetTimeZoneIds();
         }
@@ -351,8 +351,8 @@ namespace System
         private unsafe void ReadIndex(int indexOffset, int dataOffset, byte[] buffer)
         {
             int indexSize = dataOffset - indexOffset;
-            int entryCount = indexSize / Marshal.SizeOf(typeof(AndroidTzDataEntry));
             int entrySize = Marshal.SizeOf(typeof(AndroidTzDataEntry));
+            int entryCount = indexSize / entrySize;
 
             byteOffsets = new int[entryCount];
             ids = new string[entryCount];
@@ -375,9 +375,9 @@ namespace System
             }
         }
 
-        public List<string> GetTimeZoneIds()
+        public string[] GetTimeZoneIds()
         {
-            return new List<string>(ids!);
+            return ids!;
         }
 
         public byte[] GetTimeZoneData(string id)
