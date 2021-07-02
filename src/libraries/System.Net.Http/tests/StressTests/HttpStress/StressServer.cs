@@ -121,16 +121,16 @@ namespace HttpStress
                                 HttpProtocols.Http1 ;
                         }
                     }
-
-                    if (configuration.HttpVersion == HttpVersion.Version30)
-                    {
-                        host = host.UseQuic(options =>
-                        {
-                            options.Alpn = "h3-29";
-                            options.IdleTimeout = TimeSpan.FromMinutes(1);
-                        });
-                    }
                 });
+
+                if (configuration.HttpVersion == HttpVersion.Version30)
+                {
+                    host = host.UseQuic(options =>
+                    {
+                        options.Alpn = "h3-29";
+                        options.IdleTimeout = TimeSpan.FromMinutes(1);
+                    });
+                }
             };
 
             LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
