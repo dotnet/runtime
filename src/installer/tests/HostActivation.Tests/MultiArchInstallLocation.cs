@@ -115,9 +115,9 @@ namespace HostActivation.Tests
                     sharedTestState.InstallLocation)
                 .Execute()
                 .Should().Fail()
-                .And.HaveStdErrContaining($"Using environment variable DOTNET_ROOT=[{projDir}]")
+                .And.HaveUsedDotNetRootInstallLocation(projDir, fixture.CurrentRid)
                 // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
-                .And.HaveStdErrContaining("A fatal error occurred. The required library hostfxr.dll could not be found.");
+                .And.HaveStdErrContaining($"A fatal error occurred. The required library {RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform ("hostfxr")} could not be found.");
             }
         }
 
