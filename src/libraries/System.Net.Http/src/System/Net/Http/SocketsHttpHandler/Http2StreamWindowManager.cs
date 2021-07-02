@@ -96,9 +96,9 @@ namespace System.Net.Http
                 long currentTime = Stopwatch.GetTimestamp();
                 Http2Connection connection = stream.Connection;
 
-                if (connection._rttEstimator.MinRtt > TimeSpan.Zero)
+                TimeSpan rtt = connection._rttEstimator.MinRtt;
+                if (rtt > TimeSpan.Zero && _streamWindowSize < MaxStreamWindowSize)
                 {
-                    TimeSpan rtt = connection._rttEstimator.MinRtt;
                     TimeSpan dt = StopwatchTicksToTimeSpan(currentTime - _lastWindowUpdate);
 
                     // We are detecting bursts in the amount of data consumed within a single 'dt' window update period.
