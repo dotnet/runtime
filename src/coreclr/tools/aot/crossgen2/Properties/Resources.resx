@@ -169,7 +169,7 @@
     <value>Instruction set(s) to use for compilation</value>
   </data>
   <data name="InstructionSetMustNotBe" xml:space="preserve">
-    <value>Instruction set must not be '{0}' for this architecture and operating system</value>
+    <value>Instruction set '{0}' is not valid for this architecture and operating system</value>
   </data>
   <data name="InstructionSetWithoutInputBubble" xml:space="preserve">
     <value>Instruction set(s) specified without also specifying input-bubble</value>
