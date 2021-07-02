@@ -1583,7 +1583,7 @@ namespace Internal.TypeSystem.Interop
     {
         const int MAX_LOCAL_BUFFER_LENGTH = 256; // TODO: Is this accurate on all platforms?
 
-        private ILLocalVariable m_localBuffer = default;
+        private ILLocalVariable _localBuffer = default;
 
         internal override bool CleanupRequired
         {
@@ -1617,11 +1617,11 @@ namespace Internal.TypeSystem.Interop
             if (bPassByValueInOnly)
             {
                 var bufSize = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
-                m_localBuffer = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
+                _localBuffer = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
 
                 // LocalBuffer = 0
                 codeStream.Emit(ILOpcode.ldnull);
-                codeStream.EmitStLoc(m_localBuffer);
+                codeStream.EmitStLoc(_localBuffer);
 
                 var noOptimize = emitter.NewCodeLabel();
 
@@ -1656,7 +1656,7 @@ namespace Internal.TypeSystem.Interop
                 // LocalBuffer = localloc(BufSize);
                 codeStream.EmitLdLoc(bufSize);
                 codeStream.Emit(ILOpcode.localloc);
-                codeStream.EmitStLoc(m_localBuffer);
+                codeStream.EmitStLoc(_localBuffer);
 
                 // NoOptimize:
                 codeStream.EmitLabel(noOptimize);
@@ -1669,9 +1669,9 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdc(flags);
             LoadManagedValue(codeStream);
 
-            if (m_localBuffer != default)
+            if (_localBuffer != default)
             {
-                codeStream.EmitLdLoc(m_localBuffer);
+                codeStream.EmitLdLoc(_localBuffer);
             }
             else
             {
@@ -1685,6 +1685,7 @@ namespace Internal.TypeSystem.Interop
 
             codeStream.Emit(PInvokeFlags.BestFitMapping ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
             codeStream.Emit(PInvokeFlags.ThrowOnUnmappableChar ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+
             codeStream.Emit(ILOpcode.call, emitter.NewToken(stringToAnsi));
 #endif
 
@@ -1717,10 +1718,10 @@ namespace Internal.TypeSystem.Interop
                 Context.SystemModule.GetKnownType("System.StubHelpers", "CSTRMarshaler")
                 .GetKnownMethod("ClearNative", null);
 
-            if (m_localBuffer != default)
+            if (_localBuffer != default)
             {
                 // if (m_dwLocalBuffer) goto Optimize
-                codeStream.EmitLdLoc(m_localBuffer);
+                codeStream.EmitLdLoc(_localBuffer);
                 codeStream.Emit(ILOpcode.brtrue, optimize);
             }
 
@@ -1729,7 +1730,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.call, emitter.NewToken(clearNative));
 
             // Optimize:
-            if (m_localBuffer != default)
+            if (_localBuffer != default)
             {
                 codeStream.EmitLabel(optimize);
             }
