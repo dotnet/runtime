@@ -2668,8 +2668,16 @@ gpointer
 mono_jit_compile_method (MonoMethod *method, MonoError *error)
 {
 	gpointer code;
+	MonoLMFExt ext;
+
+	memset (&ext, 0, sizeof (MonoLMFExt));
+	ext.kind = MONO_LMFEXT_JIT_ENTRY;
+	mono_push_lmf (&ext);
 
 	code = mono_jit_compile_method_with_opt (method, mono_get_optimizations_for_method (method, default_opt), FALSE, error);
+
+	mono_pop_lmf (&ext.lmf);
+
 	return code;
 }
 
