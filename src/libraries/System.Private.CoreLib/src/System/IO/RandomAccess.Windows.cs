@@ -64,7 +64,7 @@ namespace System.IO
         {
             handle.EnsureThreadPoolBindingInitialized();
 
-            CallbackResetEvent resetEvent = new CallbackResetEvent(false, handle.ThreadPoolBinding!);
+            CallbackResetEvent resetEvent = new CallbackResetEvent(handle.ThreadPoolBinding!);
             NativeOverlapped* overlapped = null;
 
             try
@@ -150,7 +150,7 @@ namespace System.IO
         {
             handle.EnsureThreadPoolBindingInitialized();
 
-            CallbackResetEvent resetEvent = new CallbackResetEvent(false, handle.ThreadPoolBinding!);
+            CallbackResetEvent resetEvent = new CallbackResetEvent(handle.ThreadPoolBinding!);
             NativeOverlapped* overlapped = null;
 
             try
@@ -676,15 +676,15 @@ namespace System.IO
             }
         }
 
-        // We need to store the reference count (see the comment in FreeNativeOverlappedIfItIsSafe) and an EventHandle to signal the completition.
+        // We need to store the reference count (see the comment in FreeNativeOverlappedIfItIsSafe) and an EventHandle to signal the completion.
         // We could keep these two things separate, but since ManualResetEvent is sealed and we want to avoid any extra allocations, this type has been created.
         // It's basically ManualResetEvent with reference count.
         private sealed class CallbackResetEvent : EventWaitHandle
         {
+            private readonly ThreadPoolBoundHandle _threadPoolBoundHandle;
             private int _freeWhenZero = 2; // one for the callback and another for the method that calls GetOverlappedResult
-            private ThreadPoolBoundHandle _threadPoolBoundHandle;
 
-            internal CallbackResetEvent(bool initialState, ThreadPoolBoundHandle threadPoolBoundHandle) : base(initialState, EventResetMode.ManualReset)
+            internal CallbackResetEvent(ThreadPoolBoundHandle threadPoolBoundHandle) : base(initialState: false, EventResetMode.ManualReset)
             {
                 _threadPoolBoundHandle = threadPoolBoundHandle;
             }
