@@ -374,7 +374,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: Browser_wasm_Windows
       buildArgs: -subset mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=windows /p:Scenario=WasmTestOnBrowser 
-      timeoutInMinutes: 120
+      timeoutInMinutes: 180
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
