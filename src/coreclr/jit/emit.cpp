@@ -4854,9 +4854,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
             emitLastLoopStart = currLoopStart;
             emitLastLoopEnd   = currLoopEnd;
         }
-        // else if current loop completely encloses last loop,
-        // then current loop should not be aligned.
-        else if ((currLoopStart <= emitLastLoopStart) && (emitLastLoopEnd < currLoopEnd))
+        else if (currLoopStart == emitLastLoopStart)
         {
             // Note: If current and last loop starts at same point,
             // retain the alignment flag of the smaller loop.
@@ -4868,23 +4866,18 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
             //               |     |
             //               |-----.
             //
+        }
+        // else if current loop completely encloses last loop,
+        // then current loop should not be aligned.
+        else if ((currLoopStart < emitLastLoopStart) && (emitLastLoopEnd < currLoopEnd))
+        {
             noAlignCurrentLoop = true;
         }
 
         // else if last loop completely encloses current loop,
         // then last loop should not be aligned.
-        else if ((emitLastLoopStart <= currLoopStart) && (currLoopEnd < emitLastLoopEnd))
+        else if ((emitLastLoopStart < currLoopStart) && (currLoopEnd < emitLastLoopEnd))
         {
-            // Note: If current and last loop starts at same point,
-            // retain the alignment flag of the smaller loop.
-            //               |
-            //         .---->|<----.
-            //   last  |     |     |
-            //   loop  |     |     | current
-            //         |     |-----. loop
-            //         |     |
-            //         .---->|
-            //
             noAlignLastLoop = true;
         }
         else
@@ -4907,7 +4900,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                     assert(!markedCurrLoop);
                     alignInstr->idaIG->igFlags &= ~IGF_LOOP_ALIGN;
                     markedCurrLoop = true;
-                    JITDUMP("** Skip alignment for loop IG%02u ~ IG%02u because it encloses an aligned loop IG%02u ~ IG%02u.\n",
+                    JITDUMP("** Skip alignment for current loop IG%02u ~ IG%02u because it encloses an aligned loop IG%02u ~ IG%02u.\n",
                             currLoopStart, currLoopEnd, emitLastLoopStart, emitLastLoopEnd);
                 }
 
@@ -4919,7 +4912,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                     assert(alignInstr->idaIG->isLoopAlign());
                     alignInstr->idaIG->igFlags &= ~IGF_LOOP_ALIGN;
                     markedLastLoop = true;
-                    JITDUMP("** Skip alignment for loop IG%02u ~ IG%02u because it encloses an aligned loop IG%02u ~ IG%02u.\n",
+                    JITDUMP("** Skip alignment for aligned loop IG%02u ~ IG%02u because it encloses the current loop IG%02u ~ IG%02u.\n",
                             emitLastLoopStart, emitLastLoopEnd, currLoopStart, currLoopEnd);
                 }
 
