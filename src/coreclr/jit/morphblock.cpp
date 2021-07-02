@@ -137,7 +137,11 @@ GenTree* MorphInitBlockHelper::Morph()
 
     if (m_transformationDecision == BlockTransformation::Undefined)
     {
-        GenTree* oneAsgTree = m_comp->fgMorphOneAsgBlockOp(m_asg);
+        GenTree* oneAsgTree = nullptr;
+        if (m_dst != m_dstLclNode)
+        {
+            oneAsgTree = m_comp->fgMorphOneAsgBlockOp(m_asg);
+        }
         if (oneAsgTree != nullptr)
         {
             assert((m_asg == oneAsgTree) && "fgMorphOneAsgBlock must return the incoming tree.");
@@ -362,22 +366,6 @@ void MorphInitBlockHelper::MorphStructCases()
                 m_result                 = newTree;
             }
         }
-
-        if (m_transformationDecision != BlockTransformation::FieldByField)
-        {
-            if (m_dst != m_dstLclNode)
-            {
-                // If we access the dst as a whole but not directly, for example, with OBJ(ADDR(LCL_VAR))
-                // then set doNotEnreg.
-                // TODO-1stClassStructs: remove it when we can represent narowing struct cast
-                // without taking address of the lcl.
-                m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(Compiler::DNER_BlockOp));
-            }
-            else if (m_dstVarDsc->lvPromoted)
-            {
-                m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(Compiler::DNER_BlockOp));
-            }
-        }
     }
 
     if (m_transformationDecision == BlockTransformation::Undefined)
@@ -403,6 +391,22 @@ void MorphInitBlockHelper::MorphStructCases()
             m_result->AsOp()->gtOp2 = m_src;
         }
 #endif // FEATURE_SIMD
+
+        if (m_dstVarDsc != nullptr)
+        {
+            if (m_dst != m_dstLclNode)
+            {
+                // If we access the dst as a whole but not directly, for example, with OBJ(ADDR(LCL_VAR))
+                // then set doNotEnreg.
+                // TODO-1stClassStructs: remove it when we can represent narowing struct cast
+                // without taking address of the lcl.
+                m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(Compiler::DNER_BlockOp));
+            }
+            else if (m_dstVarDsc->lvPromoted)
+            {
+                m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(Compiler::DNER_BlockOp));
+            }
+        }
     }
 }
 
@@ -981,35 +985,6 @@ void MorphCopyBlockHelper::MorphStructCases()
 
     JITDUMP(requiresCopyBlock ? " this requires a CopyBlock.\n" : " using field by field assignments.\n");
 
-    // Mark the dest/src structs as DoNotEnreg when they are not being fully referenced as the same type.
-    //
-    if (!m_dstDoFldAsg && (m_dstVarDsc != nullptr) && !m_dstSingleLclVarAsg)
-    {
-        if (!m_dstVarDsc->lvRegStruct || (m_dstVarDsc->lvType != m_dst->TypeGet()))
-        {
-            if (!m_dst->IsMultiRegLclVar() || (m_blockSize != m_dstVarDsc->lvExactSize) ||
-                (m_dstVarDsc->lvCustomLayout && m_dstVarDsc->lvContainsHoles))
-            {
-                // Mark it as DoNotEnregister.
-                m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(Compiler::DNER_BlockOp));
-            }
-            else if (m_dst->IsMultiRegLclVar())
-            {
-                // Handle this as lvIsMultiRegRet; this signals to SSA that it can't consider these fields
-                // SSA candidates (we don't have a way to represent multiple SSANums on MultiRegLclVar nodes).
-                m_dstVarDsc->lvIsMultiRegRet = true;
-            }
-        }
-    }
-
-    if (!m_srcDoFldAsg && (m_srcVarDsc != nullptr) && !m_srcSingleLclVarAsg)
-    {
-        if (!m_srcVarDsc->lvRegStruct || (m_srcVarDsc->lvType != m_dst->TypeGet()))
-        {
-            m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(Compiler::DNER_BlockOp));
-        }
-    }
-
     if (requiresCopyBlock)
     {
         const var_types asgType   = m_dst->TypeGet();
@@ -1030,6 +1005,40 @@ void MorphCopyBlockHelper::MorphStructCases()
     {
         m_result                 = CopyFieldByField();
         m_transformationDecision = BlockTransformation::FieldByField;
+    }
+
+    // Mark the dest/src structs as DoNotEnreg when they are not being fully referenced as the same type.
+    //
+    if (!m_dstDoFldAsg && (m_dstVarDsc != nullptr) && !m_dstSingleLclVarAsg)
+    {
+        if (m_dst != m_dstLclNode)
+        {
+            // Mark it as DoNotEnregister.
+            m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(Compiler::DNER_BlockOp));
+        }
+        else if (m_dstVarDsc->lvPromoted)
+        {
+            // Mark it as DoNotEnregister.
+            m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(Compiler::DNER_BlockOp));
+        }
+        else if (m_dst->IsMultiRegLclVar())
+        {
+            // Handle this as lvIsMultiRegRet; this signals to SSA that it can't consider these fields
+            // SSA candidates (we don't have a way to represent multiple SSANums on MultiRegLclVar nodes).
+            m_dstVarDsc->lvIsMultiRegRet = true;
+        }
+    }
+
+    if (!m_srcDoFldAsg && (m_srcVarDsc != nullptr) && !m_srcSingleLclVarAsg)
+    {
+        if (m_src != m_srcLclNode)
+        {
+            m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(Compiler::DNER_BlockOp));
+        }
+        else if (m_srcVarDsc->lvPromoted)
+        {
+            m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(Compiler::DNER_BlockOp));
+        }
     }
 }
 
@@ -1156,8 +1165,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             // We will *not* consider this to define the local, but rather have each individual field assign
             // be a definition.
             addrSpillOp->gtFlags &= ~(GTF_LIVENESS_MASK);
-            assert(m_comp->lvaGetPromotionType(addrSpillOp->AsLclVarCommon()->GetLclNum()) !=
-                   Compiler::PROMOTION_TYPE_INDEPENDENT);
             addrSpillIsStackDest = true; // addrSpill represents the address of LclVar[varNum] in our
                                          // local stack frame
         }
@@ -1423,6 +1430,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                             m_srcLclNode->ChangeOper(GT_LCL_FLD);
                             m_srcLclNode->gtType = destType;
                             m_srcLclNode->AsLclFld()->SetFieldSeq(curFieldSeq);
+                            m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(Compiler::DNER_LocalField));
                             srcFld = m_srcLclNode;
                             done   = true;
                         }

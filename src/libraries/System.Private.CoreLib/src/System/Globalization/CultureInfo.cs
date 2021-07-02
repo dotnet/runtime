@@ -158,6 +158,8 @@ namespace System.Globalization
             return s_userDefaultUICulture!;
         }
 
+        private static string GetCultureNotSupportedExceptionMessage() => GlobalizationMode.Invariant ? SR.Argument_CultureNotSupportedInInvariantMode : SR.Argument_CultureNotSupported;
+
         public CultureInfo(string name) : this(name, true)
         {
         }
@@ -174,7 +176,7 @@ namespace System.Globalization
 
             if (cultureData == null)
             {
-                throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(name), name, GetCultureNotSupportedExceptionMessage());
             }
 
             _cultureData = cultureData;
@@ -249,7 +251,7 @@ namespace System.Globalization
             }
 
             CultureData? cultureData = CultureData.GetCultureData(cultureName, false) ??
-                throw new CultureNotFoundException(nameof(cultureName), cultureName, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(cultureName), cultureName, GetCultureNotSupportedExceptionMessage());
 
             _cultureData = cultureData;
 
@@ -1060,7 +1062,7 @@ namespace System.Globalization
             }
             catch (ArgumentException)
             {
-                throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(culture), culture, GetCultureNotSupportedExceptionMessage());
             }
 
             lock (lcidTable)
@@ -1096,7 +1098,7 @@ namespace System.Globalization
             }
 
             result = CreateCultureInfoNoThrow(name, useUserOverride: false) ??
-                throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(name), name, GetCultureNotSupportedExceptionMessage());
             result._isReadOnly = true;
 
             // Remember our name as constructed.  Do NOT use alternate sort name versions because

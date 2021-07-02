@@ -2855,8 +2855,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     setUsesSIMDTypes(false);
 #endif // FEATURE_SIMD
 
-    lvaEnregEHVars       = (((opts.compFlags & CLFLG_REGVAR) != 0) && JitConfig.EnableEHWriteThru());
-    lvaEnregMultiRegVars = (((opts.compFlags & CLFLG_REGVAR) != 0) && JitConfig.EnableMultiRegLocals());
+    lvaEnregEHVars       = (compEnregLocals() && JitConfig.EnableEHWriteThru());
+    lvaEnregMultiRegVars = (compEnregLocals() && JitConfig.EnableMultiRegLocals());
 
     if (compIsForImportOnly())
     {
@@ -5099,11 +5099,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
     }
 
-#ifdef TARGET_AMD64
-    //  Check if we need to add the Quirk for the PPP backward compat issue
-    compQuirkForPPPflag = compQuirkForPPP();
-#endif
-
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
 
@@ -5396,89 +5391,6 @@ void Compiler::RecomputeLoopInfo()
 void Compiler::ProcessShutdownWork(ICorStaticInfo* statInfo)
 {
 }
-
-#ifdef TARGET_AMD64
-//  Check if we need to add the Quirk for the PPP backward compat issue.
-//  This Quirk addresses a compatibility issue between the new RyuJit and the previous JIT64.
-//  A backward compatibity issue called 'PPP' exists where a PInvoke call passes a 32-byte struct
-//  into a native API which basically writes 48 bytes of data into the struct.
-//  With the stack frame layout used by the RyuJIT the extra 16 bytes written corrupts a
-//  caller saved register and this leads to an A/V in the calling method.
-//  The older JIT64 jit compiler just happened to have a different stack layout and/or
-//  caller saved register set so that it didn't hit the A/V in the caller.
-//  By increasing the amount of stack allocted for the struct by 32 bytes we can fix this.
-//
-//  Return true if we actually perform the Quirk, otherwise return false
-//
-bool Compiler::compQuirkForPPP()
-{
-    if (lvaCount != 2)
-    { // We require that there are exactly two locals
-        return false;
-    }
-
-    if (compTailCallUsed)
-    { // Don't try this quirk if a tail call was used
-        return false;
-    }
-
-    bool       hasOutArgs          = false;
-    LclVarDsc* varDscExposedStruct = nullptr;
-
-    unsigned   lclNum;
-    LclVarDsc* varDsc;
-
-    /* Look for struct locals that are address taken */
-    for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
-    {
-        if (varDsc->lvIsParam) // It can't be a parameter
-        {
-            continue;
-        }
-
-        // We require that the OutgoingArg space lclVar exists
-        if (lclNum == lvaOutgoingArgSpaceVar)
-        {
-            hasOutArgs = true; // Record that we saw it
-            continue;
-        }
-
-        // Look for a 32-byte address exposed Struct and record its varDsc
-        if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvAddrExposed && (varDsc->lvExactSize == 32))
-        {
-            varDscExposedStruct = varDsc;
-        }
-    }
-
-    // We only perform the Quirk when there are two locals
-    // one of them is a address exposed struct of size 32
-    // and the other is the outgoing arg space local
-    //
-    if (hasOutArgs && (varDscExposedStruct != nullptr))
-    {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nAdding a backwards compatibility quirk for the 'PPP' issue\n");
-        }
-#endif // DEBUG
-
-        // Increase the exact size of this struct by 32 bytes
-        // This fixes the PPP backward compat issue
-        varDscExposedStruct->lvExactSize += 32;
-
-        // The struct is now 64 bytes.
-        // We're on x64 so this should be 8 pointer slots.
-        assert((varDscExposedStruct->lvExactSize / TARGET_POINTER_SIZE) == 8);
-
-        varDscExposedStruct->SetLayout(
-            varDscExposedStruct->GetLayout()->GetPPPQuirkLayout(getAllocator(CMK_ClassLayout)));
-
-        return true;
-    }
-    return false;
-}
-#endif // TARGET_AMD64
 
 /*****************************************************************************/
 

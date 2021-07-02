@@ -181,7 +181,7 @@ namespace System.Data.OleDb
             }
             else if ((null != _nestedTransaction) && _nestedTransaction.IsAlive)
             {
-                throw ADP.ParallelTransactionsNotSupported(Connection);
+                throw ADP.ParallelTransactionsNotSupported(Connection!);
             }
             // either the connection will be open or this will be a zombie
 

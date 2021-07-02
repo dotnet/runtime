@@ -9,7 +9,21 @@ namespace System.DirectoryServices.Protocols
     {
         private static void PALCertFreeCRLContext(IntPtr certPtr) { /* No op */ }
 
-        public bool SecureSocketLayer { get; set; }
+        private bool _secureSocketLayer;
+
+        public bool SecureSocketLayer
+        {
+            get
+            {
+                if (_connection._disposed) throw new ObjectDisposedException(GetType().Name);
+                return _secureSocketLayer;
+            }
+            set
+            {
+                if (_connection._disposed) throw new ObjectDisposedException(GetType().Name);
+                _secureSocketLayer = value;
+            }
+        }
 
         public int ProtocolVersion
         {

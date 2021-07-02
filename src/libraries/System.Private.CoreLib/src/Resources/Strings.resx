@@ -957,6 +957,9 @@
   <data name="Argument_CultureNotSupported" xml:space="preserve">
     <value>Culture is not supported.</value>
   </data>
+  <data name="Argument_CultureNotSupportedInInvariantMode" xml:space="preserve">
+    <value>Only the invariant culture is supported in globalization-invariant mode. See https://aka.ms/GlobalizationInvariantMode for more information.</value>
+  </data>
   <data name="Argument_CustomAssemblyLoadContextRequestedNameMismatch" xml:space="preserve">
     <value>Resolved assembly's simple name should be the same as of the requested assembly.</value>
   </data>
@@ -2664,6 +2667,9 @@
   </data>
   <data name="IO_FileTooLong2GB" xml:space="preserve">
     <value>The file is too long. This operation is currently limited to supporting files less than 2 gigabytes in size.</value>
+  </data>
+  <data name="IO_FileTooLong" xml:space="preserve">
+    <value>IO operation will not work. Most likely the file will become too long.</value>
   </data>
   <data name="IO_FileTooLongOrHandleNotSync" xml:space="preserve">
     <value>IO operation will not work. Most likely the file will become too long or the handle was not opened to support synchronous IO operations.</value>

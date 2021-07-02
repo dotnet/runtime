@@ -10,6 +10,7 @@
          to be trimmed when Invariant=true, and allows for the Settings static cctor (on Unix) to be preserved when Invariant=false. -->
     <type fullname="System.Globalization.GlobalizationMode">
       <method signature="System.Boolean get_Invariant()" body="stub" value="true" feature="System.Globalization.Invariant" featurevalue="true" />
+      <method signature="System.Boolean get_PredefinedCulturesOnly()" body="stub" value="true" feature="System.Globalization.PredefinedCulturesOnly" featurevalue="true" />
     </type>
     <type fullname="System.Globalization.GlobalizationMode/Settings">
       <method signature="System.Boolean get_Invariant()" body="stub" value="false" feature="System.Globalization.Invariant" featurevalue="false" />
