@@ -19,8 +19,7 @@ namespace System.IO.Tests
         {
             yield return new object[] { FileOptions.None };
 
-            // https://github.com/dotnet/runtime/issues/34582
-            if (!(OperatingSystem.IsWindows() && PlatformDetection.IsMonoRuntime))
+            if (PlatformDetection.IsAsyncFileIOSupported)
             {
                 yield return new object[] { FileOptions.Asynchronous };
             }
