@@ -25,6 +25,11 @@ namespace System
             return new List<string>(AndroidTimeZones.GetAvailableIds());
         }
 
+        private static string GetTimeZoneDirectory()
+        {
+            return Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory;
+        }
+
         //TODO: TryGetTimeZoneFromLocalMachine maps to FindSystemTimeZoneByIdCore in mono/mono implementation
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
@@ -380,7 +385,7 @@ namespace System
                         string.Format("Error reading '{0}': read {1} bytes, expected {2}", tzdataPath, r, size));
             }
 
-            fixed(byte* b = buffer)
+            fixed (byte* b = buffer)
             {
                 return (T)Marshal.PtrToStructure((IntPtr)b, typeof(T))!;
             }
