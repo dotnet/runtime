@@ -110,7 +110,7 @@ thread_local uint32_t g_cMethodsJittedForThread = 0;
 thread_local int64_t g_cQPCTicksInJitForThread = 0;
 
 #ifndef CROSSGEN_COMPILE
-FCIMPL1(int64_t, GetCompiledILBytes, bool currentThread)
+FCIMPL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread)
 {
     FCALL_CONTRACT;
 
@@ -118,7 +118,7 @@ FCIMPL1(int64_t, GetCompiledILBytes, bool currentThread)
 }
 FCIMPLEND
 
-FCIMPL1(int32_t, GetCompiledMethodCount, bool currentThread)
+FCIMPL1(INT32, GetCompiledMethodCount, CLR_BOOL currentThread)
 {
     FCALL_CONTRACT;
 
@@ -126,7 +126,7 @@ FCIMPL1(int32_t, GetCompiledMethodCount, bool currentThread)
 }
 FCIMPLEND
 
-FCIMPL1(int64_t, GetCompilationTimeInTicks, bool currentThread)
+FCIMPL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread)
 {
     FCALL_CONTRACT;
 
@@ -13042,15 +13042,13 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     MethodDesc* ftn = nativeCodeVersion.GetMethodDesc();
 
     PCODE ret = NULL;
-    int64_t jitStartTimestamp = 0;
-    int64_t jitEndTimestamp = 0;
+    LARGE_INTEGER jitStartTimestamp;
+    LARGE_INTEGER jitEndTimestamp;
     int64_t jitTimeQPCTicks = 0;
-    LARGE_INTEGER qpcValue;
 
     COOPERATIVE_TRANSITION_BEGIN();
 
-    QueryPerformanceCounter(&qpcValue);
-    jitStartTimestamp = static_cast<int64_t>(qpcValue.QuadPart);
+    QueryPerformanceCounter(&jitStartTimestamp);
 
 #ifdef FEATURE_PREJIT
 
@@ -13413,19 +13411,18 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         printf(".");
 #endif // _DEBUG
 
-    QueryPerformanceCounter(&qpcValue);
-    jitEndTimestamp = static_cast<int64_t>(qpcValue.QuadPart);
+    QueryPerformanceCounter(&jitEndTimestamp);
 
-    jitTimeQPCTicks = jitEndTimestamp - jitStartTimestamp;
+    jitTimeQPCTicks = static_cast<int64_t>(jitEndTimestamp.QuadPart - jitStartTimestamp.QuadPart);
 
     FastInterlockExchangeAddLong((LONG64*)&g_cQPCTicksInJit, jitTimeQPCTicks);
-    FastInterlockExchangeAddLong((LONG64*)&g_cQPCTicksInJitForThread, jitTimeQPCTicks);
+    g_cQPCTicksInJitForThread += jitTimeQPCTicks;
 
     FastInterlockExchangeAddLong((LONG64*)&g_cbILJitted, methodInfo.ILCodeSize);
-    FastInterlockExchangeAddLong((LONG64*)&g_cbILJittedForThread, methodInfo.ILCodeSize);
+    g_cbILJittedForThread += methodInfo.ILCodeSize;
 
     FastInterlockIncrement((LONG*)&g_cMethodsJitted);
-    FastInterlockIncrement((LONG*)&g_cMethodsJittedForThread);
+    g_cMethodsJittedForThread++;
 
     COOPERATIVE_TRANSITION_END();
     return ret;

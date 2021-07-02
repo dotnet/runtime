@@ -1157,9 +1157,9 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 
 bool __stdcall TrackAllocationsEnabled();
 
-FCDECL1(int64_t, GetCompiledILBytes, bool currentThread);
-FCDECL1(int32_t, GetCompiledMethodCount, bool currentThread);
-FCDECL1(int64_t, GetCompilationTimeInTicks, bool currentThread);
+FCDECL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread);
+FCDECL1(INT32, GetCompiledMethodCount, CLR_BOOL currentThread);
+FCDECL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread);
 
 #endif // JITINTERFACE_H
 
