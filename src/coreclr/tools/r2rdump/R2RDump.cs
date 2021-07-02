@@ -20,6 +20,7 @@ using ILCompiler.Diagnostics;
 using ILCompiler.Reflection.ReadyToRun;
 
 using Internal.Runtime;
+using Internal.TypeSystem;
 
 namespace R2RDump
 {
@@ -55,6 +56,7 @@ namespace R2RDump
 
         public bool CreatePerfmap { get; set; }
         public string PerfmapPath { get; set; }
+        public int PerfmapFormatVersion { get; set; }
 
 
         public FileInfo[] Reference { get; set; }
@@ -64,6 +66,11 @@ namespace R2RDump
         public bool InlineSignatureBinary { get; set; }
 
         private SignatureFormattingOptions signatureFormattingOptions;
+
+        public DumpOptions()
+        {
+            PerfmapFormatVersion = PerfMapWriter.CurrentFormatVersion;
+        }
 
         /// <summary>
         /// Probing extensions to use when looking up assemblies under reference paths.
@@ -425,9 +432,9 @@ namespace R2RDump
                     string perfmapPath = _options.PerfmapPath;
                     if (string.IsNullOrEmpty(perfmapPath))
                     {
-                        perfmapPath = Path.ChangeExtension(r2r.Filename, ".map");
-                        PerfMapWriter.Write(perfmapPath, ProduceDebugInfoMethods(r2r));
+                        perfmapPath = Path.ChangeExtension(r2r.Filename, ".r2rmap");
                     }
+                    PerfMapWriter.Write(perfmapPath, _options.PerfmapFormatVersion, ProduceDebugInfoMethods(r2r), ProduceDebugInfoAssemblies(r2r), r2r.TargetOperatingSystem, r2r.TargetArchitecture);
                 }
 
                 if (standardDump)
@@ -454,6 +461,21 @@ namespace R2RDump
                 mi.ColdLength = 0;
                 
                 yield return mi;
+            }
+        }
+
+        IEnumerable<AssemblyInfo> ProduceDebugInfoAssemblies(ReadyToRunReader r2r)
+        {
+            if (r2r.Composite)
+            {
+                foreach (KeyValuePair<string, int> kvpRefAssembly in r2r.ManifestReferenceAssemblies.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
+                {
+                    yield return new AssemblyInfo(kvpRefAssembly.Key, r2r.GetAssemblyMvid(kvpRefAssembly.Value));
+                }
+            }
+            else
+            {
+                yield return new AssemblyInfo(r2r.GetGlobalAssemblyName(), r2r.GetAssemblyMvid(0));
             }
         }
 

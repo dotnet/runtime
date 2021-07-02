@@ -106,6 +106,7 @@ namespace ILCompiler.PEWriter
     /// </summary>
     public class OutputInfoBuilder
     {
+        private readonly List<EcmaModule> _inputModules;
         private readonly List<OutputNode> _nodes;
         private readonly List<OutputSymbol> _symbols;
         private readonly List<Section> _sections;
@@ -117,6 +118,7 @@ namespace ILCompiler.PEWriter
 
         public OutputInfoBuilder()
         {
+            _inputModules = new List<EcmaModule>();
             _nodes = new List<OutputNode>();
             _symbols = new List<OutputSymbol>();
             _sections = new List<Section>();
@@ -125,6 +127,11 @@ namespace ILCompiler.PEWriter
             _methodSymbolMap = new Dictionary<ISymbolDefinitionNode, MethodWithGCInfo>();
 
             _relocCounts = new Dictionary<RelocType, int>();
+        }
+
+        public void AddInputModule(EcmaModule module)
+        {
+            _inputModules.Add(module);
         }
 
         public void AddNode(OutputNode node, ISymbolDefinitionNode symbol)
@@ -194,6 +201,16 @@ namespace ILCompiler.PEWriter
                     methodInfo.ColdLength = 0;
                     yield return methodInfo;
                 }
+            }
+        }
+
+        public IEnumerable<AssemblyInfo> EnumerateInputAssemblies()
+        {
+            foreach (EcmaModule inputModule in _inputModules)
+            {
+                yield return new AssemblyInfo(
+                    inputModule.Assembly.GetName().Name,
+                    inputModule.MetadataReader.GetGuid(inputModule.MetadataReader.GetModuleDefinition().Mvid));
             }
         }
 

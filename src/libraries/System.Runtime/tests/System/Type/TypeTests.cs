@@ -528,6 +528,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52393", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void GetTypeByName_InvokeViaReflection_Success()
         {
             MethodInfo method = typeof(Type).GetMethod("GetType", new[] { typeof(string) });
