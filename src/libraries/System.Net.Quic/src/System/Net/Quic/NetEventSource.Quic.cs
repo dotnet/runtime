@@ -5,7 +5,7 @@ using System.Diagnostics.Tracing;
 
 namespace System.Net
 {
-    [EventSource(Name = "Microsoft-System-Net-Quic")]
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Quic")]
     internal sealed partial class NetEventSource : EventSource
     {
     }
