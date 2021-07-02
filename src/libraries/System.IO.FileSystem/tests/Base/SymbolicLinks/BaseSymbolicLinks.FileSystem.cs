@@ -514,7 +514,6 @@ namespace System.IO.Tests
                     yield return Path.Combine(@"\\?\", Path.GetTempPath(), "foo");
                     // UNC
                     yield return @"\\SERVER\share\path";
-                    yield return @"\\.\pipe\foo";
                 }
                 else
                 {
