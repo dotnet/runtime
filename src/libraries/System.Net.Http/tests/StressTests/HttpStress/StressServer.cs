@@ -108,14 +108,27 @@ namespace HttpStress
                                 }
                                 listenOptions.UseHttps(cert);
                             }
+                            if (configuration.HttpVersion == HttpVersion.Version30)
+                            {
+                                listenOptions.Protocols = HttpProtocols.Http3;
+                            }
                         }
                         else
                         {
                             listenOptions.Protocols =
-                                configuration.HttpVersion == new Version(2,0) ?
+                                configuration.HttpVersion ==  HttpVersion.Version20 ?
                                 HttpProtocols.Http2 :
                                 HttpProtocols.Http1 ;
                         }
+                    }
+
+                    if (configuration.HttpVersion == HttpVersion.Version30)
+                    {
+                        host = host.UseQuic(options =>
+                        {
+                            options.Alpn = "h3-29";
+                            options.IdleTimeout = TimeSpan.FromMinutes(1);
+                        });
                     }
                 });
             };
@@ -161,7 +174,7 @@ namespace HttpStress
         private static void MapRoutes(IEndpointRouteBuilder endpoints)
         {
             var loggerFactory = endpoints.ServiceProvider.GetService<ILoggerFactory>();
-            var logger = loggerFactory.CreateLogger<StressServer>();
+            var logger = loggerFactory?.CreateLogger<StressServer>();
             var head = new[] { "HEAD" };
 
             endpoints.MapGet("/", async context =>
