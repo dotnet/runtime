@@ -14,11 +14,11 @@ namespace System.Text.Json
         /// <param name="json">The raw JSON content to write.</param>
         /// <param name="skipInputValidation">Whether to validate if the input is an RFC 8259-compliant JSON payload.</param>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="json"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or greater than 715,827,882.</exception>
+        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or greater than 715,827,882 (<see cref="int.MaxValue"/> / 3).</exception>
         /// <exception cref="JsonException">
         /// Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input
         /// is not a valid, complete, single JSON value according to the JSON RFC (https://tools.ietf.org/html/rfc8259)
-        /// or the input JSON exceeds the default recursive depth of 64.
+        /// or the input JSON exceeds a recursive depth of 64.
         /// </exception>
         /// <remarks>
         /// When writing untrused JSON values, do not set <paramref name="skipInputValidation"/> to <see langword="true"/> as this can result in invalid JSON
@@ -50,11 +50,11 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="json">The raw JSON content to write.</param>
         /// <param name="skipInputValidation">Whether to validate if the input is an RFC 8259-compliant JSON payload.</param>
-        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or greater than 715,827,882.</exception>
+        /// <exception cref="ArgumentException">Thrown if the length of the input is zero or greater than 715,827,882 (<see cref="int.MaxValue"/> / 3).</exception>
         /// <exception cref="JsonException">
         /// Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input
         /// is not a valid, complete, single JSON value according to the JSON RFC (https://tools.ietf.org/html/rfc8259)
-        /// or the input JSON exceeds the default recursive depth of 64.
+        /// or the input JSON exceeds a recursive depth of 64.
         /// </exception>
         /// <remarks>
         /// When writing untrused JSON values, do not set <paramref name="skipInputValidation"/> to <see langword="true"/> as this can result in invalid JSON
@@ -85,7 +85,7 @@ namespace System.Text.Json
         /// <exception cref="JsonException">
         /// Thrown if <paramref name="skipInputValidation"/> is <see langword="false"/>, and the input
         /// is not a valid, complete, single JSON value according to the JSON RFC (https://tools.ietf.org/html/rfc8259)
-        /// or the input JSON exceeds the default recursive depth of 64.
+        /// or the input JSON exceeds a recursive depth of 64.
         /// </exception>
         /// <remarks>
         /// When writing untrused JSON values, do not set <paramref name="skipInputValidation"/> to <see langword="true"/> as this can result in invalid JSON
@@ -194,7 +194,6 @@ namespace System.Text.Json
 
             utf8Json.CopyTo(output.Slice(BytesPending));
             BytesPending += len;
-
 
             SetFlagToAddListSeparatorBeforeNextItem();
         }

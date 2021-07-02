@@ -62,8 +62,14 @@ namespace System.Text.Json.Tests
             validate = (data) => Assert.Equal(1234.56789, JsonSerializer.Deserialize<double>(data));
             yield return new object[] { Encoding.UTF8.GetBytes("1234.56789"), validate };
 
+            validate = (data) => Assert.Equal(1234.56789, JsonSerializer.Deserialize<double>(data));
+            yield return new object[] { Encoding.UTF8.GetBytes(" 1234.56789 "), validate };
+
             validate = (data) => Assert.Equal(@"Hello", JsonSerializer.Deserialize<string>(data));
             yield return new object[] { Encoding.UTF8.GetBytes(@"""Hello"""), validate };
+
+            validate = (data) => Assert.Equal(@"Hello", JsonSerializer.Deserialize<string>(data));
+            yield return new object[] { Encoding.UTF8.GetBytes(@"  ""Hello""  "), validate };
 
             validate = (data) => Assert.Equal(s_guid, JsonSerializer.Deserialize<Guid>(data));
             byte[] guidAsJson = WrapInQuotes(Encoding.UTF8.GetBytes(TestGuidAsStr));
@@ -101,6 +107,39 @@ namespace System.Text.Json.Tests
                 {
                     Assert.Equal("Hello", str);
                 }
+            };
+            yield return new object[] { json, validate };
+
+            json = Encoding.UTF8.GetBytes("[ 1, 1,1,1,1 ] ");
+            validate = (data) =>
+            {
+                foreach (int val in JsonSerializer.Deserialize<int[]>(data))
+                {
+                    Assert.Equal(1, val);
+                }
+            };
+            yield return new object[] { json, validate };
+        }
+
+        public static IEnumerable<object[]> GetObjects()
+        {
+            Action<byte[]> validate;
+
+            byte[] json = Encoding.UTF8.GetBytes(@"{""Hello"":""World""}"); ;
+            validate = (data) =>
+            {
+                KeyValuePair<string, string> kvp = JsonSerializer.Deserialize<Dictionary<string, string>>(data).Single();
+                Assert.Equal("Hello", kvp.Key);
+                Assert.Equal("World", kvp.Value);
+            };
+            yield return new object[] { json, validate };
+
+            json = Encoding.UTF8.GetBytes(@" {  ""Hello""    :""World""  }   "); ;
+            validate = (data) =>
+            {
+                KeyValuePair<string, string> kvp = JsonSerializer.Deserialize<Dictionary<string, string>>(data).Single();
+                Assert.Equal("Hello", kvp.Key);
+                Assert.Equal("World", kvp.Value);
             };
             yield return new object[] { json, validate };
         }
