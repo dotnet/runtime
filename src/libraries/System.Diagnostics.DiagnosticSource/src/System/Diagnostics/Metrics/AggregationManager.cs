@@ -26,7 +26,11 @@ namespace System.Diagnostics.Metrics
         private readonly CancellationTokenSource _cts = new();
         private Thread? _collectThread;
         private readonly MeterListener _listener;
+        private int _currentTimeSeries;
+        private int _currentHistograms;
 
+        private readonly int _maxTimeSeries;
+        private readonly int _maxHistograms;
         private readonly Action<Instrument, LabeledAggregationStatistics> _collectMeasurement;
         private readonly Action<DateTime, DateTime> _beginCollection;
         private readonly Action<DateTime, DateTime> _endCollection;
@@ -35,8 +39,12 @@ namespace System.Diagnostics.Metrics
         private readonly Action<Instrument> _instrumentPublished;
         private readonly Action _initialInstrumentEnumerationComplete;
         private readonly Action<Exception> _collectionError;
+        private readonly Action _timeSeriesLimitReached;
+        private readonly Action _histogramLimitReached;
 
         public AggregationManager(
+            int maxTimeSeries,
+            int maxHistograms,
             Action<Instrument, LabeledAggregationStatistics> collectMeasurement,
             Action<DateTime, DateTime> beginCollection,
             Action<DateTime, DateTime> endCollection,
@@ -44,8 +52,12 @@ namespace System.Diagnostics.Metrics
             Action<Instrument> endInstrumentMeasurements,
             Action<Instrument> instrumentPublished,
             Action initialInstrumentEnumerationComplete,
-            Action<Exception> collectionError)
+            Action<Exception> collectionError,
+            Action timeSeriesLimitReached,
+            Action histogramLimitReached)
         {
+            _maxTimeSeries = maxTimeSeries;
+            _maxHistograms = maxHistograms;
             _collectMeasurement = collectMeasurement;
             _beginCollection = beginCollection;
             _endCollection = endCollection;
@@ -54,6 +66,8 @@ namespace System.Diagnostics.Metrics
             _instrumentPublished = instrumentPublished;
             _initialInstrumentEnumerationComplete = initialInstrumentEnumerationComplete;
             _collectionError = collectionError;
+            _timeSeriesLimitReached = timeSeriesLimitReached;
+            _histogramLimitReached = histogramLimitReached;
 
             _listener = new MeterListener()
             {
@@ -234,7 +248,7 @@ namespace System.Diagnostics.Metrics
 
         internal InstrumentState? BuildInstrumentState(Instrument instrument)
         {
-            Func<Aggregator>? createAggregatorFunc = GetAggregatorFactory(instrument);
+            Func<Aggregator?>? createAggregatorFunc = GetAggregatorFactory(instrument);
             if (createAggregatorFunc == null)
             {
                 return null;
@@ -244,30 +258,94 @@ namespace System.Diagnostics.Metrics
             return (InstrumentState)Activator.CreateInstance(instrumentStateType, createAggregatorFunc)!;
         }
 
-        private static Func<Aggregator>? GetAggregatorFactory(Instrument instrument)
+        private Func<Aggregator?>? GetAggregatorFactory(Instrument instrument)
         {
             Type type = instrument.GetType();
             Type? genericDefType = null;
             genericDefType = type.IsGenericType ? type.GetGenericTypeDefinition() : null;
             if (genericDefType == typeof(Counter<>))
             {
-                return () => new RateSumAggregator();
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return CheckTimeSeriesAllowed() ? new RateSumAggregator() : null;
+                    }
+                };
             }
             else if (genericDefType == typeof(ObservableCounter<>))
             {
-                return () => new RateAggregator();
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return CheckTimeSeriesAllowed() ? new RateAggregator() : null;
+                    }
+                };
             }
             else if (genericDefType == typeof(ObservableGauge<>))
             {
-                return () => new LastValue();
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return CheckTimeSeriesAllowed() ? new LastValue() : null;
+                    }
+                };
             }
             else if (genericDefType == typeof(Histogram<>))
             {
-                return () => new ExponentialHistogramAggregator(s_defaultHistogramConfig);
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return (!CheckTimeSeriesAllowed() || !CheckHistogramAllowed()) ?
+                            null :
+                            new ExponentialHistogramAggregator(s_defaultHistogramConfig);
+                    }
+                };
             }
             else
             {
                 return null;
+            }
+        }
+
+        private bool CheckTimeSeriesAllowed()
+        {
+            if (_currentTimeSeries < _maxTimeSeries)
+            {
+                _currentTimeSeries++;
+                return true;
+            }
+            else if (_currentTimeSeries == _maxTimeSeries)
+            {
+                _currentTimeSeries++;
+                _timeSeriesLimitReached();
+                return false;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private bool CheckHistogramAllowed()
+        {
+            if (_currentHistograms < _maxHistograms)
+            {
+                _currentHistograms++;
+                return true;
+            }
+            else if (_currentHistograms == _maxHistograms)
+            {
+                _currentHistograms++;
+                _histogramLimitReached();
+                return false;
+            }
+            else
+            {
+                return false;
             }
         }
 

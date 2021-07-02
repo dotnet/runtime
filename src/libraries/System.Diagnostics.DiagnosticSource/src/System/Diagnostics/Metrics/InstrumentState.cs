@@ -22,7 +22,7 @@ namespace System.Diagnostics.Metrics
     {
         private AggregatorStore<TAggregator> _aggregatorStore;
 
-        public InstrumentState(Func<TAggregator> createAggregatorFunc)
+        public InstrumentState(Func<TAggregator?> createAggregatorFunc)
         {
             _aggregatorStore = new AggregatorStore<TAggregator>(createAggregatorFunc);
         }
@@ -35,7 +35,7 @@ namespace System.Diagnostics.Metrics
         [SecuritySafeCritical]
         public override void Update(double measurement, ReadOnlySpan<KeyValuePair<string, object?>> labels)
         {
-            TAggregator aggregator = _aggregatorStore.GetAggregator(labels);
+            TAggregator? aggregator = _aggregatorStore.GetAggregator(labels);
             aggregator?.Update(measurement);
         }
     }

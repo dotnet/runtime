@@ -201,10 +201,10 @@ namespace System.Diagnostics.Metrics.Tests
             {
                 gaugeState += 9;
                 return new Measurement<int>[]
-{
+                {
                     new Measurement<int>(gaugeState,   new KeyValuePair<string,object?>("Color", "red"),  new KeyValuePair<string,object?>("Size", 19) ),
                     new Measurement<int>(2*gaugeState, new KeyValuePair<string,object?>("Color", "blue"), new KeyValuePair<string,object?>("Size", 4 ) )
-};
+                };
             });
             Histogram<int> h = meter.CreateHistogram<int>("histogram1");
 
@@ -293,9 +293,9 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meterB.Name, c3b.Name, "", "", "1", "2");
             AssertCounterEventsPresent(events, meterC.Name, c3c.Name, "", "", "1", "2");
             AssertCounterEventsPresent(events, meterC.Name, c3c.Name, "", "", "1", "2");
-            AssertCounterEventsNotPresent(events, meterA.Name, c1a.Name);
-            AssertCounterEventsNotPresent(events, meterA.Name, c2a.Name);
-            AssertCounterEventsNotPresent(events, meterC.Name, c1c.Name);
+            AssertCounterEventsNotPresent(events, meterA.Name, c1a.Name, "");
+            AssertCounterEventsNotPresent(events, meterA.Name, c2a.Name, "");
+            AssertCounterEventsNotPresent(events, meterC.Name, c1c.Name, "");
             AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
         }
 
@@ -530,6 +530,76 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void EventSourceEnforcesTimeSeriesLimit()
+        {
+            using Meter meter = new Meter("TestMeter13");
+            Counter<int> c = meter.CreateCounter<int>("counter1");
+            
+
+            EventWrittenEventArgs[] events;
+            double intervalSecs = 0.3;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs, 2, 50, "TestMeter13"))
+            {
+                c.Add(5, new KeyValuePair<string, object?>("Color", "red"));
+                c.Add(6, new KeyValuePair<string, object?>("Color", "blue"));
+                c.Add(7, new KeyValuePair<string, object?>("Color", "green"));
+                c.Add(8, new KeyValuePair<string, object?>("Color", "yellow"));
+                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 1);
+
+                c.Add(12, new KeyValuePair<string, object?>("Color", "red"));
+                c.Add(13, new KeyValuePair<string, object?>("Color", "blue"));
+                c.Add(14, new KeyValuePair<string, object?>("Color", "green"));
+                c.Add(15, new KeyValuePair<string, object?>("Color", "yellow"));
+                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 2);
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c);
+            AssertInitialEnumerationCompleteEventPresent(events);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "Color=red", "", "5", "12");
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "Color=blue", "", "6", "13");
+            AssertTimeSeriesLimitPresent(events);
+            AssertCounterEventsNotPresent(events, meter.Name, c.Name, "Color=green");
+            AssertCounterEventsNotPresent(events, meter.Name, c.Name, "Color=yellow");
+            AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void EventSourceEnforcesHistogramLimit()
+        {
+            using Meter meter = new Meter("TestMeter14");
+            Histogram<int> h = meter.CreateHistogram<int>("histogram1");
+
+
+            EventWrittenEventArgs[] events;
+            double intervalSecs = 0.3;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs, 50, 2, "TestMeter14"))
+            {
+                h.Record(5, new KeyValuePair<string, object?>("Color", "red"));
+                h.Record(6, new KeyValuePair<string, object?>("Color", "blue"));
+                h.Record(7, new KeyValuePair<string, object?>("Color", "green"));
+                h.Record(8, new KeyValuePair<string, object?>("Color", "yellow"));
+                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 1);
+
+                h.Record(12, new KeyValuePair<string, object?>("Color", "red"));
+                h.Record(13, new KeyValuePair<string, object?>("Color", "blue"));
+                h.Record(14, new KeyValuePair<string, object?>("Color", "green"));
+                h.Record(15, new KeyValuePair<string, object?>("Color", "yellow"));
+                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 2);
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, h);
+            AssertInitialEnumerationCompleteEventPresent(events);
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Color=red", "", "0.5=5;0.95=5;0.99=5", "0.5=12;0.95=12;0.99=12");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Color=blue", "", "0.5=6;0.95=6;0.99=6", "0.5=13;0.95=13;0.99=13");
+            AssertHistogramLimitPresent(events);
+            AssertHistogramEventsNotPresent(events, meter.Name, h.Name, "Color=green");
+            AssertHistogramEventsNotPresent(events, meter.Name, h.Name, "Color=yellow");
+            AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
+        }
+
         private void AssertBeginInstrumentReportingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
         {
             var beginReportEvents = events.Where(e => e.EventName == "BeginInstrumentReporting").Select(e =>
@@ -587,6 +657,16 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(1, events.Where(e => e.EventName == "InitialInstrumentEnumerationComplete").Count());
         }
 
+        private void AssertTimeSeriesLimitPresent(EventWrittenEventArgs[] events)
+        {
+            Assert.Equal(1, events.Where(e => e.EventName == "TimeSeriesLimitReached").Count());
+        }
+
+        private void AssertHistogramLimitPresent(EventWrittenEventArgs[] events)
+        {
+            Assert.Equal(1, events.Where(e => e.EventName == "HistogramLimitReached").Count());
+        }
+
         private void AssertInstrumentPublishingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
         {
             var publishEvents = events.Where(e => e.EventName == "InstrumentPublished").Select(e =>
@@ -635,16 +715,17 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        private void AssertCounterEventsNotPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName)
+        private void AssertCounterEventsNotPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags)
         {
             var counterEvents = events.Where(e => e.EventName == "CounterRateValuePublished").Select(e =>
                 new
                 {
                     MeterName = e.Payload[1].ToString(),
                     MeterVersion = e.Payload[2].ToString(),
-                    InstrumentName = e.Payload[3].ToString()
+                    InstrumentName = e.Payload[3].ToString(),
+                    Tags = e.Payload[5].ToString()
                 }).ToArray();
-            var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName).ToArray();
+            var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags).ToArray();
             Assert.Equal(0, filteredEvents.Length);
         }
 
@@ -692,6 +773,19 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
+        private void AssertHistogramEventsNotPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags)
+        {
+            var counterEvents = events.Where(e => e.EventName == "HistogramValuePublished").Select(e =>
+                new
+                {
+                    MeterName = e.Payload[1].ToString(),
+                    MeterVersion = e.Payload[2].ToString(),
+                    InstrumentName = e.Payload[3].ToString(),
+                    Tags = e.Payload[5].ToString()
+                }).ToArray();
+            var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags).ToArray();
+            Assert.Equal(0, filteredEvents.Length);
+        }
         private void AssertCollectStartStopEventsPresent(EventWrittenEventArgs[] events, double expectedIntervalSecs, int expectedPairs)
         {
             int startEventsSeen = 0;
@@ -731,17 +825,24 @@ namespace System.Diagnostics.Metrics.Tests
 
 
         public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, double? refreshInterval, params string[]? instruments) :
-            this(output, keywords, Guid.NewGuid().ToString(), refreshInterval, instruments)
+            this(output, keywords, Guid.NewGuid().ToString(), refreshInterval, 50, 50, instruments)
         {
         }
 
-        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, string sessionId, double? refreshInterval, params string[]? instruments) :
+        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, double? refreshInterval,
+            int timeSeriesLimit, int histogramLimit, params string[]? instruments) :
+            this(output, keywords, Guid.NewGuid().ToString(), refreshInterval, timeSeriesLimit, histogramLimit, instruments)
+        {
+        }
+
+        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, string sessionId, double? refreshInterval,
+            int timeSeriesLimit, int histogramLimit, params string[]? instruments) :
             this(output, keywords, sessionId,
-            FormatArgDictionary(refreshInterval, instruments, sessionId))
+            FormatArgDictionary(refreshInterval,timeSeriesLimit, histogramLimit, instruments, sessionId))
         {
         }
 
-        private static Dictionary<string,string> FormatArgDictionary(double? refreshInterval, string?[]? instruments, string? sessionId)
+        private static Dictionary<string,string> FormatArgDictionary(double? refreshInterval, int? timeSeriesLimit, int? histogramLimit, string?[]? instruments, string? sessionId)
         {
             Dictionary<string, string> d = new Dictionary<string, string>();
             if(instruments != null)
@@ -755,6 +856,14 @@ namespace System.Diagnostics.Metrics.Tests
             if(sessionId != null)
             {
                 d.Add("SessionId", sessionId);
+            }
+            if(timeSeriesLimit != null)
+            {
+                d.Add("MaxTimeSeries", timeSeriesLimit.ToString());
+            }
+            if (histogramLimit != null)
+            {
+                d.Add("MaxHistograms", histogramLimit.ToString());
             }
             return d;
         }

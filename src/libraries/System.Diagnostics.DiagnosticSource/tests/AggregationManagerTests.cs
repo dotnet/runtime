@@ -674,5 +674,80 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.NotEqual(val, val3);
             Assert.NotEqual(val, val4);
         }
+
+        [Fact]
+        public void AggregatorLimitReached_NoLabel()
+        {
+            AggregatorStore<LastValue> store = new AggregatorStore<LastValue>(() => null);
+            var span = new ReadOnlySpan<KeyValuePair<string, object?>>();
+            LastValue val = store.GetAggregator(span);
+
+            Assert.Null(val);
+            Assert.Equal(val, store.GetAggregator(span));
+            Assert.Equal(val, store.GetAggregator());
+        }
+
+        [Fact]
+        public void AggregatorLimitReached_WithLabels()
+        {
+            AggregatorStore<LastValue> store = new AggregatorStore<LastValue>(() => null);
+            KeyValuePair<string, object?>[] labels1 = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("color", "red") };
+            var span1 = new ReadOnlySpan<KeyValuePair<string, object?>>(labels1, 0, 1);
+            LastValue val = store.GetAggregator(span1);
+
+            Assert.Null(val);
+            Assert.Equal(val, store.GetAggregator(span1));
+        }
+
+        [Fact]
+        public void AggregatorLimitReached_Multisize_NoLabel()
+        {
+            int count = 1;
+            AggregatorStore<LastValue> store = new AggregatorStore<LastValue>(() =>
+            {
+                if (count > 0)
+                {
+                    count--;
+                    return new LastValue();
+                }
+                return null;
+            });
+            KeyValuePair<string, object?>[] labels1 = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("color", "red") };
+            var span = new ReadOnlySpan<KeyValuePair<string, object?>>();
+            var span1 = new ReadOnlySpan<KeyValuePair<string, object?>>(labels1, 0, 1);
+
+            LastValue val1 = store.GetAggregator(span1);
+            Assert.NotNull(val1);
+            Assert.Equal(val1, store.GetAggregator(span1));
+            LastValue val0 = store.GetAggregator(span);
+            Assert.Null(val0);
+            Assert.Equal(val0, store.GetAggregator(span));
+        }
+
+        [Fact]
+        public void AggregatorLimitReached_Multisize_TwoLabel()
+        {
+            int count = 1;
+            AggregatorStore<LastValue> store = new AggregatorStore<LastValue>(() =>
+            {
+                if (count > 0)
+                {
+                    count--;
+                    return new LastValue();
+                }
+                return null;
+            });
+            KeyValuePair<string, object?>[] labels1 = new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("color", "red") };
+            var span = new ReadOnlySpan<KeyValuePair<string, object?>>();
+            var span1 = new ReadOnlySpan<KeyValuePair<string, object?>>(labels1, 0, 1);
+
+            LastValue val0 = store.GetAggregator(span);
+            Assert.NotNull(val0);
+            Assert.Equal(val0, store.GetAggregator(span));
+            LastValue val1 = store.GetAggregator(span1);
+            Assert.Null(val1);
+            Assert.Equal(val1, store.GetAggregator(span1));
+            
+        }
     }
 }

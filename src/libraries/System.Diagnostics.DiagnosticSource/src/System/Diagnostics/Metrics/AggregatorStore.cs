@@ -58,21 +58,21 @@ namespace System.Diagnostics.Metrics
         // MultiSizeLabelNameDictionary<TAggregator> - this is used when we need to store more than one of the above union items
         private volatile object? _stateUnion;
         private volatile AggregatorLookupFunc<TAggregator>? _cachedLookupFunc;
-        private readonly Func<TAggregator> _createAggregatorFunc;
+        private readonly Func<TAggregator?> _createAggregatorFunc;
 
-        public AggregatorStore(Func<TAggregator> createAggregator)
+        public AggregatorStore(Func<TAggregator?> createAggregator)
         {
             _stateUnion = null;
             _cachedLookupFunc = null;
             _createAggregatorFunc = createAggregator;
         }
 
-        public TAggregator GetAggregator(ReadOnlySpan<KeyValuePair<string, object?>> labels)
+        public TAggregator? GetAggregator(ReadOnlySpan<KeyValuePair<string, object?>> labels)
         {
             AggregatorLookupFunc<TAggregator>? lookupFunc = _cachedLookupFunc;
             if (lookupFunc != null)
             {
-                if (lookupFunc(labels, out TAggregator? aggregator)) return aggregator!;
+                if (lookupFunc(labels, out TAggregator? aggregator)) return aggregator;
             }
 
             // slow path, label names have changed from what the lookupFunc cached so we need to
@@ -80,13 +80,13 @@ namespace System.Diagnostics.Metrics
             return GetAggregatorSlow(labels);
         }
 
-        private TAggregator GetAggregatorSlow(ReadOnlySpan<KeyValuePair<string, object?>> labels)
+        private TAggregator? GetAggregatorSlow(ReadOnlySpan<KeyValuePair<string, object?>> labels)
         {
             AggregatorLookupFunc<TAggregator> lookupFunc = LabelInstructionCompiler.Create(ref this, _createAggregatorFunc, labels);
             _cachedLookupFunc = lookupFunc;
             bool match = lookupFunc(labels, out TAggregator? aggregator);
             Debug.Assert(match);
-            return aggregator!;
+            return aggregator;
         }
 
         public void Collect(Action<LabeledAggregationStatistics> visitFunc)
@@ -122,14 +122,22 @@ namespace System.Diagnostics.Metrics
         }
 
 
-        public TAggregator GetAggregator()
+        public TAggregator? GetAggregator()
         {
             while (true)
             {
                 object? state = _stateUnion;
                 if (state == null)
                 {
-                    TAggregator newState = _createAggregatorFunc();
+                    // running this delegate will increment the counter for the number of time series
+                    // even though in the rare race condition we don't store it. If we wanted to be perfectly
+                    // accurate we need to decrement the counter again, but I don't think mitigating that
+                    // error is worth the complexity
+                    TAggregator? newState = _createAggregatorFunc();
+                    if (newState == null)
+                    {
+                        return newState;
+                    }
                     if (Interlocked.CompareExchange(ref _stateUnion, newState, null) is null)
                     {
                         return newState;
@@ -232,11 +240,15 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        public TAggregator GetNoLabelAggregator(Func<TAggregator> createFunc)
+        public TAggregator? GetNoLabelAggregator(Func<TAggregator?> createFunc)
         {
             if (NoLabelAggregator == null)
             {
-                Interlocked.CompareExchange(ref NoLabelAggregator, createFunc(), null);
+                TAggregator? aggregator = createFunc();
+                if (aggregator != null)
+                {
+                    Interlocked.CompareExchange(ref NoLabelAggregator, aggregator, null);
+                }
             }
             return NoLabelAggregator;
         }
@@ -308,14 +320,14 @@ namespace System.Diagnostics.Metrics
         public readonly string LabelName { get; }
     }
 
-    internal delegate bool AggregatorLookupFunc<TAggregator>(ReadOnlySpan<KeyValuePair<string, object?>> labels, [NotNullWhen(true)] out TAggregator? aggregator);
+    internal delegate bool AggregatorLookupFunc<TAggregator>(ReadOnlySpan<KeyValuePair<string, object?>> labels, out TAggregator? aggregator);
 
     [System.Security.SecurityCritical] // using SecurityCritical type ReadOnlySpan
     internal static class LabelInstructionCompiler
     {
         public static AggregatorLookupFunc<TAggregator> Create<TAggregator>(
             ref AggregatorStore<TAggregator> aggregatorStore,
-            Func<TAggregator> createAggregatorFunc,
+            Func<TAggregator?> createAggregatorFunc,
             ReadOnlySpan<KeyValuePair<string, object?>> labels)
             where TAggregator : Aggregator
         {
@@ -325,7 +337,7 @@ namespace System.Diagnostics.Metrics
             switch (instructions.Length)
             {
                 case 0:
-                    TAggregator defaultAggregator = aggregatorStore.GetAggregator();
+                    TAggregator? defaultAggregator = aggregatorStore.GetAggregator();
                     return (ReadOnlySpan<KeyValuePair<string, object?>> l, out TAggregator? aggregator) =>
                     {
                         if (l.Length != expectedLabels)
@@ -401,13 +413,13 @@ namespace System.Diagnostics.Metrics
         private int _expectedLabelCount;
         private LabelInstruction[] _instructions;
         private ConcurrentDictionary<TObjectSequence, TAggregator> _valuesDict;
-        private Func<TObjectSequence, TAggregator> _createAggregator;
+        private Func<TObjectSequence, TAggregator?> _createAggregator;
 
         public LabelInstructionInterpretter(
             int expectedLabelCount,
             LabelInstruction[] instructions,
             ConcurrentDictionary<TObjectSequence, TAggregator> valuesDict,
-            Func<TAggregator> createAggregator)
+            Func<TAggregator?> createAggregator)
         {
             _expectedLabelCount = expectedLabelCount;
             _instructions = instructions;
@@ -415,9 +427,12 @@ namespace System.Diagnostics.Metrics
             _createAggregator = _ => createAggregator();
         }
 
+        // Returns true if label keys matched what was expected
+        // aggregator may be null even when true is returned if
+        // we have hit the storage limits
         public bool GetAggregator(
             ReadOnlySpan<KeyValuePair<string, object?>> labels,
-            [NotNullWhen(true)] out TAggregator? aggregator)
+            out TAggregator? aggregator)
         {
             aggregator = null;
             if (labels.Length != _expectedLabelCount)
@@ -445,7 +460,19 @@ namespace System.Diagnostics.Metrics
                 indexedValues[i] = labels[instr.SourceIndex].Value;
             }
 
-            aggregator = _valuesDict.GetOrAdd(values, _createAggregator);
+            if (!_valuesDict.TryGetValue(values, out aggregator))
+            {
+                // running this delegate will increment the counter for the number of time series
+                // even though in the rare race condition we don't store it. If we wanted to be perfectly
+                // accurate we need to decrement the counter again, but I don't think mitigating that
+                // error is worth the complexity
+                aggregator = _createAggregator(values);
+                if (aggregator is null)
+                {
+                    return true;
+                }
+                aggregator = _valuesDict.GetOrAdd(values, aggregator);
+            }
             return true;
         }
     }

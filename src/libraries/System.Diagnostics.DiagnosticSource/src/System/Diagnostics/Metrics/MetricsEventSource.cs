@@ -32,6 +32,12 @@ namespace System.Diagnostics.Metrics
     ///   Meter or 'meter_name\instrument_name'. For example "Foo;System.Runtime\gc-gen0-size"
     ///   would include all instruments in the 'Foo' meter and the single 'gc-gen0-size' instrument
     ///   in the 'System.Runtime' meter.
+    ///   - MaxTimeSeries - An integer that sets an upper bound on the number of time series
+    ///   this event source will track. Because instruments can have unbounded sets of tags
+    ///   even specifying a single metric could create unbounded load without this limit.
+    ///   - MaxHistograms - An integer that sets an upper bound on the number of histograms
+    ///   this event source will track. This allows setting a tighter bound on histograms
+    ///   than time series in general given that histograms use considerably more memory.
     /// </summary>
     [EventSource(Name = "System.Diagnostics.Metrics")]
     internal sealed class MetricsEventSource : EventSource
@@ -151,6 +157,18 @@ namespace System.Diagnostics.Metrics
             WriteEvent(11, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "");
         }
 
+        [Event(12, Keywords = Keywords.TimeSeriesValues)]
+        public void TimeSeriesLimitReached(string sessionId)
+        {
+            WriteEvent(12, sessionId);
+        }
+
+        [Event(13, Keywords = Keywords.TimeSeriesValues)]
+        public void HistogramLimitReached(string sessionId)
+        {
+            WriteEvent(13, sessionId);
+        }
+
         /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
         /// </summary>
@@ -220,7 +238,7 @@ namespace System.Diagnostics.Metrics
                         double refreshIntervalSecs = defaultIntervalSecs;
                         if (command.Arguments!.TryGetValue("RefreshInterval", out string? refreshInterval))
                         {
-                            Log.Message($"RefreshInterval filter argument received: {refreshInterval}");
+                            Log.Message($"RefreshInterval argument received: {refreshInterval}");
                             if (!double.TryParse(refreshInterval, out refreshIntervalSecs))
                             {
                                 Log.Message($"Failed to parse RefreshInterval. Using default {defaultIntervalSecs}s.");
@@ -234,13 +252,48 @@ namespace System.Diagnostics.Metrics
                         }
                         else
                         {
-                            Log.Message($"No RefreshInterval filter argument received. Using default {defaultIntervalSecs}s.");
+                            Log.Message($"No RefreshInterval argument received. Using default {defaultIntervalSecs}s.");
                             refreshIntervalSecs = defaultIntervalSecs;
                         }
 
+                        int defaultMaxTimeSeries = 1000;
+                        int maxTimeSeries;
+                        if (command.Arguments!.TryGetValue("MaxTimeSeries", out string? maxTimeSeriesString))
+                        {
+                            Log.Message($"MaxTimeSeries argument received: {maxTimeSeriesString}");
+                            if (!int.TryParse(maxTimeSeriesString, out maxTimeSeries))
+                            {
+                                Log.Message($"Failed to parse MaxTimeSeries. Using default {defaultMaxTimeSeries}");
+                                maxTimeSeries = defaultMaxTimeSeries;
+                            }
+                        }
+                        else
+                        {
+                            Log.Message($"No MaxTimeSeries argument received. Using default {defaultMaxTimeSeries}");
+                            maxTimeSeries = defaultMaxTimeSeries;
+                        }
+
+                        int defaultMaxHistograms = 20;
+                        int maxHistograms;
+                        if (command.Arguments!.TryGetValue("MaxHistograms", out string? maxHistogramsString))
+                        {
+                            Log.Message($"MaxHistograms argument received: {maxHistogramsString}");
+                            if (!int.TryParse(maxHistogramsString, out maxHistograms))
+                            {
+                                Log.Message($"Failed to parse MaxHistograms. Using default {defaultMaxHistograms}");
+                                maxHistograms = defaultMaxHistograms;
+                            }
+                        }
+                        else
+                        {
+                            Log.Message($"No MaxHistogram argument received. Using default {defaultMaxHistograms}");
+                            maxHistograms = defaultMaxHistograms;
+                        }
 
                         string sessionId = _sessionId;
                         _aggregationManager = new AggregationManager(
+                            maxTimeSeries,
+                            maxHistograms,
                             (i, s) => TransmitMetricValue(i, s, sessionId),
                             (startIntervalTime, endIntervalTime) => Log.CollectionStart(sessionId, startIntervalTime, endIntervalTime),
                             (startIntervalTime, endIntervalTime) => Log.CollectionStop(sessionId, startIntervalTime, endIntervalTime),
@@ -248,18 +301,20 @@ namespace System.Diagnostics.Metrics
                             i => Log.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
                             i => Log.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
                             () => Log.InitialInstrumentEnumerationComplete(sessionId),
-                            e => Log.Error(sessionId, e.Message, e.StackTrace?.ToString() ?? ""));
+                            e => Log.Error(sessionId, e.Message, e.StackTrace?.ToString() ?? ""),
+                            () => Log.TimeSeriesLimitReached(sessionId),
+                            () => Log.HistogramLimitReached(sessionId));
 
                         _aggregationManager.SetCollectionPeriod(TimeSpan.FromSeconds(refreshIntervalSecs));
 
                         if (command.Arguments!.TryGetValue("Metrics", out string? metricsSpecs))
                         {
-                            Log.Message($"Metrics filter argument received: {metricsSpecs}");
+                            Log.Message($"Metrics argument received: {metricsSpecs}");
                             ParseSpecs(metricsSpecs);
                         }
                         else
                         {
-                            Log.Message("No Metrics filter argument received");
+                            Log.Message("No Metrics argument received");
                         }
 
                         _aggregationManager.Start();
@@ -315,12 +370,12 @@ namespace System.Diagnostics.Metrics
                 if (stats.AggregationStatistics is RateStatistics rateStats)
                 {
                     Log.CounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
-                        rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString() : "");
+                        rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "");
                 }
                 else if (stats.AggregationStatistics is LastValueStatistics lastValueStats)
                 {
                     Log.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
-                        lastValueStats.LastValue.HasValue ? lastValueStats.LastValue.Value.ToString() : "");
+                        lastValueStats.LastValue.HasValue ? lastValueStats.LastValue.Value.ToString(CultureInfo.InvariantCulture) : "");
                 }
                 else if (stats.AggregationStatistics is HistogramStatistics histogramStats)
                 {
@@ -333,7 +388,7 @@ namespace System.Diagnostics.Metrics
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < labels.Length; i++)
                 {
-                    sb.AppendFormat("{0}={1}", labels[i].Key, labels[i].Value);
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "{0}={1}", labels[i].Key, labels[i].Value);
                     if (i != labels.Length - 1)
                     {
                         sb.Append(',');
@@ -347,7 +402,7 @@ namespace System.Diagnostics.Metrics
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < quantiles.Length; i++)
                 {
-                    sb.AppendFormat("{0}={1}", quantiles[i].Quantile.ToString(CultureInfo.InvariantCulture), quantiles[i].Value.ToString(CultureInfo.InvariantCulture));
+                    sb.AppendFormat(CultureInfo.InvariantCulture, "{0}={1}", quantiles[i].Quantile, quantiles[i].Value);
                     if (i != quantiles.Length - 1)
                     {
                         sb.Append(';');
