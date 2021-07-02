@@ -1581,7 +1581,17 @@ namespace Internal.TypeSystem.Interop
 
     class AnsiStringMarshaller : Marshaller
     {
-        const int MAX_LOCAL_BUFFER_LENGTH = 256; // TODO: Is this accurate on all platforms? 
+        const int MAX_LOCAL_BUFFER_LENGTH = 256; // TODO: Is this accurate on all platforms?
+
+        private ILLocalVariable m_localBuffer = default;
+
+        internal override bool CleanupRequired
+        {
+            get
+            {
+                return true;
+            }
+        }
 
         internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
         {
@@ -1597,19 +1607,21 @@ namespace Internal.TypeSystem.Interop
             // ANSI marshalling. Allocate a byte array, copy characters
             //
 
+#if READYTORUN
             var stringToAnsi =
                 Context.SystemModule.GetKnownType("System.StubHelpers", "CSTRMarshaler")
                 .GetKnownMethod("ConvertToNative", null);
 
             bool bPassByValueInOnly = In && !Out && !IsManagedByRef;
-            ILLocalVariable localBuffer = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
+            
             if (bPassByValueInOnly)
             {
                 var bufSize = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.Int32));
+                m_localBuffer = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
 
                 // LocalBuffer = 0
                 codeStream.Emit(ILOpcode.ldnull);
-                codeStream.EmitStLoc(localBuffer);
+                codeStream.EmitStLoc(m_localBuffer);
 
                 var noOptimize = emitter.NewCodeLabel();
 
@@ -1644,7 +1656,7 @@ namespace Internal.TypeSystem.Interop
                 // LocalBuffer = localloc(BufSize);
                 codeStream.EmitLdLoc(bufSize);
                 codeStream.Emit(ILOpcode.localloc);
-                codeStream.EmitStLoc(localBuffer);
+                codeStream.EmitStLoc(m_localBuffer);
 
                 // NoOptimize:
                 codeStream.EmitLabel(noOptimize);
@@ -1657,9 +1669,9 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdc(flags);
             LoadManagedValue(codeStream);
 
-            if (bPassByValueInOnly)
+            if (m_localBuffer != default)
             {
-                codeStream.EmitLdLoc(localBuffer);
+                codeStream.EmitLdLoc(m_localBuffer);
             }
             else
             {
@@ -1667,6 +1679,14 @@ namespace Internal.TypeSystem.Interop
             }
 
             codeStream.Emit(ILOpcode.call, emitter.NewToken(stringToAnsi));
+#else
+            LoadManagedValue(codeStream);
+            var stringToAnsi = Context.GetHelperEntryPoint("InteropHelpers", "StringToAnsiString");
+
+            codeStream.Emit(PInvokeFlags.BestFitMapping ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+            codeStream.Emit(PInvokeFlags.ThrowOnUnmappableChar ? ILOpcode.ldc_i4_1 : ILOpcode.ldc_i4_0);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(stringToAnsi));
+#endif
 
             StoreNativeValue(codeStream);
         }
@@ -1685,6 +1705,47 @@ namespace Internal.TypeSystem.Interop
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(ansiToString));
             StoreManagedValue(codeStream);
+        }
+
+        protected override void EmitCleanupManaged(ILCodeStream codeStream)
+        {
+            var emitter = _ilCodeStreams.Emitter;
+#if READYTORUN
+            var optimize = emitter.NewCodeLabel();
+
+            MethodDesc clearNative =
+                Context.SystemModule.GetKnownType("System.StubHelpers", "CSTRMarshaler")
+                .GetKnownMethod("ClearNative", null);
+
+            if (m_localBuffer != default)
+            {
+                // if (m_dwLocalBuffer) goto Optimize
+                codeStream.EmitLdLoc(m_localBuffer);
+                codeStream.Emit(ILOpcode.brtrue, optimize);
+            }
+
+            LoadNativeValue(codeStream);
+            // static void m_idClearNative(IntPtr ptr)
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(clearNative));
+
+            // Optimize:
+            if (m_localBuffer != default)
+            {
+                codeStream.EmitLabel(optimize);
+            }
+#else
+            var lNullCheck = emitter.NewCodeLabel();
+
+            // Check for null array
+            LoadManagedValue(codeStream);
+            codeStream.Emit(ILOpcode.brfalse, lNullCheck);
+
+            LoadNativeValue(codeStream);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+
+            codeStream.EmitLabel(lNullCheck);
+#endif
         }
     }
 
