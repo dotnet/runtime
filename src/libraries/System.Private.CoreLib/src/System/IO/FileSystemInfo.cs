@@ -151,7 +151,7 @@ namespace System.IO
         /// The link's file system entry type is inconsistent with that of its target.
         /// -or-
         /// Too many levels of symbolic links.</exception>
-        /// <remarks>When <paramref name="returnFinalTarget"/> is <see langword="true"/>, the maximum number of symbolic links that are followed are 40 on Unix.</remarks>
+        /// <remarks>When <paramref name="returnFinalTarget"/> is <see langword="true"/>, the maximum number of symbolic links that are followed are 40 on Unix and 63 on Windows.</remarks>
         public FileSystemInfo? ResolveLinkTarget(bool returnFinalTarget = false) =>
             FileSystem.ResolveLinkTarget(FullPath, returnFinalTarget, this is DirectoryInfo);
 
