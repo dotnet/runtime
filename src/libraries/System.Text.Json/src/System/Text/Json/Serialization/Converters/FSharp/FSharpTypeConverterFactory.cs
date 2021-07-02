@@ -1,0 +1,60 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics;
+using System.Text.Json.Serialization.Metadata;
+
+namespace System.Text.Json.Serialization.Converters
+{
+    internal class FSharpTypeConverterFactory : JsonConverterFactory
+    {
+        private ObjectConverterFactory? _recordConverterFactory;
+
+        public override bool CanConvert(Type typeToConvert) =>
+            FSharpCoreReflectionProxy.IsFSharpType(typeToConvert) &&
+                FSharpCoreReflectionProxy.Instance.DetectFSharpKind(typeToConvert) is not FSharpKind.Unrecognized;
+
+        public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+        {
+            Debug.Assert(CanConvert(typeToConvert));
+
+            Type elementType;
+            Type converterFactoryType;
+            object?[]? constructorArguments = null;
+
+            switch (FSharpCoreReflectionProxy.Instance.DetectFSharpKind(typeToConvert))
+            {
+                case FSharpKind.Option:
+                    elementType = typeToConvert.GetGenericArguments()[0];
+                    converterFactoryType = typeof(FSharpOptionConverter<,>).MakeGenericType(typeToConvert, elementType);
+                    constructorArguments = new object[] { options.GetConverterInternal(elementType) };
+                    break;
+                case FSharpKind.List:
+                    elementType = typeToConvert.GetGenericArguments()[0];
+                    converterFactoryType = typeof(FSharpListConverter<,>).MakeGenericType(typeToConvert, elementType);
+                    break;
+                case FSharpKind.Set:
+                    elementType = typeToConvert.GetGenericArguments()[0];
+                    converterFactoryType = typeof(FSharpSetConverter<,>).MakeGenericType(typeToConvert, elementType);
+                    break;
+                case FSharpKind.Map:
+                    Type[] genericArgs = typeToConvert.GetGenericArguments();
+                    Type keyType = genericArgs[0];
+                    Type valueType = genericArgs[1];
+                    converterFactoryType = typeof(FSharpMapConverter<,,>).MakeGenericType(typeToConvert, keyType, valueType);
+                    break;
+                case FSharpKind.Record:
+                    // Use a modified object converter factory that picks the right constructor for struct record deserialization.
+                    ObjectConverterFactory objectFactory = _recordConverterFactory ??= new ObjectConverterFactory(useDefaultConstructorInUnannotatedStructs: false);
+                    Debug.Assert(objectFactory.CanConvert(typeToConvert));
+                    return objectFactory.CreateConverter(typeToConvert, options);
+
+                default:
+                    Debug.Fail("Unrecognized F# type.");
+                    throw new Exception();
+            }
+
+            return (JsonConverter)Activator.CreateInstance(converterFactoryType, constructorArguments)!;
+        }
+    }
+}

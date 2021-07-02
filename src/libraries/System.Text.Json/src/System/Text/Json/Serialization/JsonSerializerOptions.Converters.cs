@@ -38,6 +38,7 @@ namespace System.Text.Json
                 new NullableConverterFactory(),
                 new EnumConverterFactory(),
                 new JsonNodeConverterFactory(),
+                new FSharpTypeConverterFactory(),
                 // IAsyncEnumerable takes precedence over IEnumerable.
                 new IAsyncEnumerableConverterFactory(),
                 // IEnumerable should always be second to last since they can convert any IEnumerable.

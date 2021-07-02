@@ -249,6 +249,8 @@ namespace System.Text.Json.Serialization
             else
 #endif
             {
+                long originalBytesConsumed = 0;
+
                 if (!wasContinuation)
                 {
                     // For perf and converter simplicity, handle null here instead of forwarding to the converter.
@@ -272,6 +274,10 @@ namespace System.Text.Json.Serialization
 
                     Debug.Assert(state.Current.OriginalDepth == 0);
                     state.Current.OriginalDepth = reader.CurrentDepth;
+
+                    // Do not store in the ReadStack since it will only be used if the converter
+                    // behaves like a value converter (hence no continuations are expected to occur).
+                    originalBytesConsumed = reader.BytesConsumed;
                 }
 
                 success = OnTryRead(ref reader, typeToConvert, options, ref state, out value);
@@ -286,8 +292,8 @@ namespace System.Text.Json.Serialization
                     VerifyRead(
                         state.Current.OriginalTokenType,
                         state.Current.OriginalDepth,
-                        bytesConsumed: 0,
-                        isValueConverter: false,
+                        bytesConsumed: originalBytesConsumed,
+                        isValueConverter: CanWriteJsonValues,
                         ref reader);
 
                     // No need to clear state.Current.* since a stack pop will occur.
@@ -545,6 +551,7 @@ namespace System.Text.Json.Serialization
                     break;
 
                 default:
+
                     // A non-value converter (object or collection) should always have Start and End tokens.
                     // A value converter should not make any reads.
                     if (!isValueConverter || reader.BytesConsumed != bytesConsumed)
