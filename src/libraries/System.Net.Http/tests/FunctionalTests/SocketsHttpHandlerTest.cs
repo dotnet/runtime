@@ -3282,11 +3282,8 @@ namespace System.Net.Http.Functional.Tests
             if (TestAsync)
             {
                 Task<HttpResponseMessage> task = invoker.SendAsync(request, CancellationToken.None);
-                Assert.True(task.IsCompleted, "Validation should happen synchronously, but wrapped in a Task");
-                Assert.True(task.IsFaulted);
-                Exception exception = task.Exception.InnerException;
-                Assert.IsType<TException>(exception);
-                return (TException)exception;
+                Assert.Equal(TaskStatus.Faulted, task.Status);
+                return Assert.IsType<TException>(task.Exception.InnerException);
             }
             else
             {

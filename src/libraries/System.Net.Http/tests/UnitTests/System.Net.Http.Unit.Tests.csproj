@@ -218,8 +218,6 @@
              Link="ProductionCode\System\Net\Http\HttpResponseMessage.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpRuleParser.cs"
              Link="ProductionCode\System\Net\Http\HttpRuleParser.cs" />
-    <Compile Include="..\..\src\System\Net\Http\HttpUtilities.cs"
-             Link="ProductionCode\System\Net\Http\HttpUtilities.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpVersionPolicy.cs"
              Link="ProductionCode\System\Net\Http\HttpVersionPolicy.cs" />
     <Compile Include="..\..\src\System\Net\Http\MessageProcessingHandler.cs"
@@ -244,6 +242,8 @@
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Windows.cs" Condition=" '$(TargetsWindows)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Windows.cs" />
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpUtilities.cs"
+             Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpUtilities.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.OSX.cs" Condition=" ('$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)'))"

@@ -10,6 +10,9 @@ namespace System.Net.Http
 {
     public class HttpRequestMessage : IDisposable
     {
+        internal static Version DefaultRequestVersion => HttpVersion.Version11;
+        internal static HttpVersionPolicy DefaultVersionPolicy => HttpVersionPolicy.RequestVersionOrLower;
+
         private const int MessageNotYetSent = 0;
         private const int MessageAlreadySent = 1;
 
@@ -100,10 +103,6 @@ namespace System.Net.Http
             set
             {
                 CheckDisposed();
-
-                // It's OK to have a 'null' request Uri. If HttpClient is used, the 'BaseAddress' will be added.
-                // If there is no 'BaseAddress', sending this request message will throw.
-                // Note that we also allow the string to be empty: null and empty are considered equivalent.
                 _requestUri = value;
             }
         }
@@ -124,10 +123,13 @@ namespace System.Net.Http
 
         public HttpRequestMessage(HttpMethod method, Uri? requestUri)
         {
+            // It's OK to have a 'null' request Uri. If HttpClient is used, the 'BaseAddress' will be added.
+            // If there is no 'BaseAddress', sending this request message will throw.
+            // Note that we also allow the string to be empty: null and empty are considered equivalent.
             _method = method ?? throw new ArgumentNullException(nameof(method));
             _requestUri = requestUri;
-            _version = HttpUtilities.DefaultRequestVersion;
-            _versionPolicy = HttpUtilities.DefaultVersionPolicy;
+            _version = DefaultRequestVersion;
+            _versionPolicy = DefaultVersionPolicy;
         }
 
         public HttpRequestMessage(HttpMethod method, string? requestUri)
