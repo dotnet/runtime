@@ -67,7 +67,19 @@ jobs:
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset mono.workloads -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build workload artifacts
 
-    # Upload to artifacts to be signed
+    # Upload packages wrapping msis
+    - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+      parameters:
+        name: workloads
+
+    # Delete wixpdb files before they are uploaded to artifacts
+    - task: DeleteFiles@1
+      displayName: Delete wixpdb's
+      inputs:
+        SourceFolder: $(workloadArtifactsPath)
+        Contents: '*.wixpdb'
+
+    # Upload artifacts to be used for generating VS components
     - task: PublishPipelineArtifact@1
       displayName: Publish workload artifacts
       inputs:
