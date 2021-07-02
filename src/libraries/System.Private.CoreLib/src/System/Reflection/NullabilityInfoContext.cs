@@ -34,8 +34,7 @@ namespace System.Reflection
                     return state;
                 }
 
-                IList<CustomAttributeData> attributes = memberInfo.GetCustomAttributesData();
-                foreach (CustomAttributeData attribute in attributes)
+                foreach (CustomAttributeData attribute in memberInfo.GetCustomAttributesData())
                 {
                     if (attribute.AttributeType.Name == "NullableContextAttribute" &&
                         attribute.AttributeType.Namespace == CompilerServicesNameSpace &&
@@ -55,13 +54,12 @@ namespace System.Reflection
 
         /// <summary>
         /// Populates <see cref="NullabilityInfo" /> for the given <see cref="ParameterInfo" />.
-        /// If NullablePublicOnlyAttribute is set the private and/or internal member's nullability attributes will be omitted, for example in
-        /// .NET SDK the private and internal member's nullability attributes are omitted, in this case the API return NullabilityState.Unknown state.
+        /// If the nullablePublicOnly feature is set for an assembly, like it does in .NET SDK, the private and/or internal member's
+        /// nullability attributes are omitted, in this case the API will return NullabilityState.Unknown state.
         /// </summary>
         /// <param name="parameterInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the parameterInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("Nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(ParameterInfo parameterInfo)
         {
             if (parameterInfo is null)
@@ -90,12 +88,11 @@ namespace System.Reflection
             return nullability;
         }
 
-        [RequiresUnreferencedCode("Nullability attributes are trimmed by the trimmer")]
         private void CheckParameterMetadataType(ParameterInfo parameter, NullabilityInfo nullability)
         {
             if (parameter.Member is MethodInfo method)
             {
-                var metaMethod = (MethodInfo)method.Module.ResolveMethod(method.MetadataToken)!;
+                MethodInfo metaMethod = GetMethodMetadataDefinition(method);
                 ParameterInfo? metaParameter = null;
                 if (string.IsNullOrEmpty(parameter.Name))
                 {
@@ -120,6 +117,16 @@ namespace System.Reflection
                     CheckGenericParameters(nullability, metaMethod, metaParameter.ParameterType);
                 }
             }
+        }
+
+        private static MethodInfo GetMethodMetadataDefinition(MethodInfo method)
+        {
+            if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
+            {
+                method = method.GetGenericMethodDefinition();
+            }
+
+            return (MethodInfo)GetMemberMetadataDefinition(method);
         }
 
         private void CheckNullabilityAttributes(NullabilityInfo nullability, IList<CustomAttributeData> attributes)
@@ -162,13 +169,12 @@ namespace System.Reflection
 
         /// <summary>
         /// Populates <see cref="NullabilityInfo" /> for the given <see cref="PropertyInfo" />.
-        /// If NullablePublicOnlyAttribute is set the private and/or internal member's nullability attributes will be omitted, for example in
-        /// .NET SDK the private and internal member's nullability attributes are omitted, in this case the API return NullabilityState.Unknown state.
+        /// If the nullablePublicOnly feature is set for an assembly, like it does in .NET SDK, the private and/or internal member's
+        /// nullability attributes are omitted, in this case the API will return NullabilityState.Unknown state.
         /// </summary>
         /// <param name="propertyInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the propertyInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("Nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(PropertyInfo propertyInfo)
         {
             if (propertyInfo is null)
@@ -195,13 +201,12 @@ namespace System.Reflection
 
         /// <summary>
         /// Populates <see cref="NullabilityInfo" /> for the given <see cref="EventInfo" />.
-        /// If NullablePublicOnlyAttribute is set the private and/or internal member's nullability attributes will be omitted, for example in
-        /// .NET SDK the private and internal member's nullability attributes are omitted, in this case the API return NullabilityState.Unknown state.
+        /// If the nullablePublicOnly feature is set for an assembly, like it does in .NET SDK, the private and/or internal member's
+        /// nullability attributes are omitted, in this case the API will return NullabilityState.Unknown state.
         /// </summary>
         /// <param name="eventInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the eventInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("Nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(EventInfo eventInfo)
         {
             if (eventInfo is null)
@@ -214,13 +219,12 @@ namespace System.Reflection
 
         /// <summary>
         /// Populates <see cref="NullabilityInfo" /> for the given <see cref="FieldInfo" />
-        /// If NullablePublicOnlyAttribute is set the private and/or internal member's nullability attributes will be omitted, for example in
-        /// .NET SDK the private and internal member's nullability attributes are omitted, in this case the API return NullabilityState.Unknown state.
+        /// If the nullablePublicOnly feature is set for an assembly, like it does in .NET SDK, the private and/or internal member's
+        /// nullability attributes are omitted, in this case the API will return NullabilityState.Unknown state.
         /// </summary>
         /// <param name="fieldInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the fieldInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        [RequiresUnreferencedCode("Nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(FieldInfo fieldInfo)
         {
             if (fieldInfo is null)
@@ -286,11 +290,9 @@ namespace System.Reflection
             return NotAnnotatedStatus.None;
         }
 
-        [RequiresUnreferencedCode("Nullability attributes are trimmed by the trimmer")]
         private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, IList<CustomAttributeData> customAttributes) =>
             GetNullabilityInfo(memberInfo, type, customAttributes, 0);
 
-        [RequiresUnreferencedCode("Nullability attributes are trimmed by the trimmer")]
         private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, IList<CustomAttributeData> customAttributes, int index)
         {
             NullabilityState state = NullabilityState.Unknown;
@@ -373,50 +375,46 @@ namespace System.Reflection
             return false;
         }
 
-        [RequiresUnreferencedCode("Nullability attributes are trimmed by the trimmer")]
-        private bool TryLoadGenericMetaTypeNullability(MemberInfo memberInfo, NullabilityInfo nullability)
+        private void TryLoadGenericMetaTypeNullability(MemberInfo memberInfo, NullabilityInfo nullability)
         {
-            MemberInfo? metaMember = null;
+            MemberInfo? metaMember = GetMemberMetadataDefinition(memberInfo);
             Type? metaType = null;
-            if (memberInfo is FieldInfo field)
+            if (metaMember is FieldInfo field)
             {
-                metaType = GetFieldMetaData(field, metaMember);
+                metaType = field.FieldType;
             }
-            else if (memberInfo is PropertyInfo property)
+            else if (metaMember is PropertyInfo property)
             {
-                metaType = GetPropertyMetadata(property, metaMember);
+                metaType = GetPropertyMetaType(property);
             }
 
             if (metaType != null)
             {
                 CheckGenericParameters(nullability, metaMember!, metaType);
             }
-
-            return false;
         }
 
-        [RequiresUnreferencedCode("Nullability attributes are trimmed by the trimmer")]
-        private Type GetFieldMetaData(FieldInfo field, MemberInfo? metaMember)
+        private static MemberInfo GetMemberMetadataDefinition(MemberInfo member)
         {
-            FieldInfo member = field.Module.ResolveField(field.MetadataToken)!;
-            metaMember = member;
-            return member.FieldType;
+            Type? type = member.DeclaringType;
+            if ((type != null) && type.IsGenericType && !type.IsGenericTypeDefinition)
+            {
+                return type.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(member);
+            }
+
+            return member;
         }
 
-        [RequiresUnreferencedCode("Nullability attributes are trimmed by the trimmer")]
-        private static Type GetPropertyMetadata(PropertyInfo property, MemberInfo? metaMember)
+        private static Type GetPropertyMetaType(PropertyInfo property)
         {
             if (property.GetGetMethod(true) is MethodInfo method)
             {
-                metaMember = property.Module.ResolveMethod(method.MetadataToken)!;
-                return ((MethodInfo)metaMember).ReturnType;
+                return method.ReturnType;
             }
 
-            metaMember = property.Module.ResolveMethod(property.GetSetMethod(true)!.MetadataToken);
-            return ((MethodInfo)metaMember!).GetParameters()[0].ParameterType;
+            return property.GetSetMethod(true)!.GetParameters()[0].ParameterType;
         }
 
-        [RequiresUnreferencedCode("Nullability attributes are trimmed by the trimmer")]
         private void CheckGenericParameters(NullabilityInfo nullability, MemberInfo metaMember, Type metaType)
         {
             if (metaType.IsGenericParameter)
@@ -458,7 +456,6 @@ namespace System.Reflection
             }
         }
 
-        [RequiresUnreferencedCode("Nullability attributes are trimmed by the trimmer")]
         private void UpdateGenericArrayElements(NullabilityInfo? elementState, MemberInfo metaMember, Type metaType)
         {
             if (metaType.IsArray && elementState != null

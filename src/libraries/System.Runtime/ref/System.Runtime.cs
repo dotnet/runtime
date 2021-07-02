@@ -9115,13 +9115,9 @@ namespace System.Reflection
     }
     public sealed class NullabilityInfoContext
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the trimmer")]
         public System.Reflection.NullabilityInfo Create(System.Reflection.EventInfo eventInfo) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the trimmer")]
         public System.Reflection.NullabilityInfo Create(System.Reflection.FieldInfo fieldInfo) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the trimmer")]
         public System.Reflection.NullabilityInfo Create(System.Reflection.ParameterInfo parameterInfo) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Nullability attributes are trimmed by the trimmer")]
         public System.Reflection.NullabilityInfo Create(System.Reflection.PropertyInfo propertyInfo) { throw null; }
     }
     public sealed class NullabilityInfo
