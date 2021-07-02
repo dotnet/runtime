@@ -1,3 +1,4 @@
 <Project>
   <Import Project="$(MSBuildThisFileDirectory)\RuntimeConfigParserTask.props" />
+  <Import Project="$(MSBuildThisFileDirectory)\component-manifest.props" />
 </Project>

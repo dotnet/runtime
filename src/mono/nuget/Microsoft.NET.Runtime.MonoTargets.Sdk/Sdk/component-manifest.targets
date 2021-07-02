@@ -1,5 +1,16 @@
 <Project>
-  <Target Name="_MonoComputeAvailableComponentDefinitions">
+  <Target Name="_MonoReadAvailableComponentsManifest">
+    <Error Condition="'%(ResolvedRuntimePack.PackageDirectory)' == ''"
+           Text="Empty ResolvedRuntimePack.PackageDirectory while trying to read runtime components manifest" />
+    <MonoRuntimeComponentsReadManifestTask JsonFilePath="%(ResolvedRuntimePack.PackageDirectory)\runtimes\$(RuntimeIdentifier)\build\component-manifest.json">
+      <Output TaskParameter="_MonoRuntimeComponentSharedLibExt" ItemName="_MonoRuntimeComponentSharedLibExt" />
+      <Output TaskParameter="_MonoRuntimeComponentStaticLibExt" ItemName="_MonoRuntimeComponentStaticLibExt" />
+      <Output TaskParameter="_MonoRuntimeComponentLinking" ItemName="_MonoRuntimeComponentLinking" />
+      <Output TaskParameter="_MonoRuntimeAvailableComponents" ItemName="_MonoRuntimeAvailableComponents" />
+    </MonoRuntimeComponentsReadManifestTask>
+  </Target>
+
+  <Target Name="_MonoComputeAvailableComponentDefinitions" DependsOnTargets="_MonoReadAvailableComponentsManifest">
     <!-- Input: _MonoRuntimeAvailableComponents item list: the components provided by the runtime -->
     <!-- Input: _MonoRuntimeComponentLinking property: either 'dynamic' or 'static'.  Are the components static or shared libraries. -->
     <!-- Output: _MonoRuntimeComponentName item list: the components provided by the runtime, with ComponentLib and ComponentStubLib metadata that gives the filenames of the components relative to the runtime pack native subdirectory -->
