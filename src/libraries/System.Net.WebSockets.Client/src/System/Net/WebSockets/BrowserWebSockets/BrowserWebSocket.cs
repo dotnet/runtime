@@ -580,7 +580,7 @@ namespace System.Net.WebSockets
                 }
                 else
                 {
-                    _closeStatus =3; // (CLOSED)
+                    _closeStatus = 3; // (CLOSED)
                 }
 
                 return _tcsClose.Task;
