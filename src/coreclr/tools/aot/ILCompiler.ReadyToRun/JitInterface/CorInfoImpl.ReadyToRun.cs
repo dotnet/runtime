@@ -1450,6 +1450,8 @@ namespace Internal.JitInterface
 
             callerModule = ((EcmaMethod)callerMethod.GetTypicalMethodDefinition()).Module;
             bool isCallVirt = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0;
+            bool isLdftn = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0;
+            bool isStaticVirtual = (originalMethod.Signature.IsStatic && originalMethod.IsVirtual);
 
             // Spec says that a callvirt lookup ignores static methods. Since static methods
             // can't have the exact same signature as instance methods, a lookup that found
@@ -1489,7 +1491,7 @@ namespace Internal.JitInterface
                 }
 
                 MethodDesc directMethod;
-                if (originalMethod.Signature.IsStatic)
+                if (isStaticVirtual)
                 {
                     directMethod = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(originalMethod, _compilation.CompilationModuleGroup.VersionsWithType);
                     forceUseRuntimeLookup = (directMethod == null);
@@ -1519,6 +1521,10 @@ namespace Internal.JitInterface
                     pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
 
                     exactType = constrainedType;
+                }
+                else if (isStaticVirtual)
+                {
+                    pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
                 }
                 else if (constrainedType.IsValueType)
                 {
@@ -1569,12 +1575,15 @@ namespace Internal.JitInterface
             bool resolvedCallVirt = false;
             bool callVirtCrossingVersionBubble = false;
 
-            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0)
+            if (isLdftn)
             {
                 directCall = true;
             }
-            else
-            if (targetMethod.Signature.IsStatic)
+            else if (isStaticVirtual && !resolvedConstraint)
+            {
+                // Don't use direct calls for static virtual method calls unresolved at compile time
+            }
+            else if (targetMethod.Signature.IsStatic)
             {
                 // Static methods are always direct calls
                 directCall = true;
@@ -1638,10 +1647,12 @@ namespace Internal.JitInterface
 
             if (directCall)
             {
+                bool isVirtualBehaviorUnresolved = (isCallVirt && !resolvedCallVirt || isStaticVirtual && !resolvedConstraint);
+
                 // Direct calls to abstract methods are not allowed
                 if (targetMethod.IsAbstract &&
                     // Compensate for always treating delegates as direct calls above
-                    !(((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0) && isCallVirt && !resolvedCallVirt))
+                    !(isLdftn && isVirtualBehaviorUnresolved))
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallAbstractMethod, targetMethod);
                 }
@@ -1666,7 +1677,7 @@ namespace Internal.JitInterface
                 // which is generic numerics which will always resolve to exact valuetypes, it is not expected that
                 // the complexity involved would be worth the risk. Other scenarios are not expected to be as performance
                 // sensitive.
-                if (targetMethod.Signature.IsStatic && constrainedType != null && pResult->exactContextNeedsRuntimeLookup)
+                if (isStaticVirtual && pResult->exactContextNeedsRuntimeLookup)
                 {
                     allowInstParam = false;
                 }
@@ -1722,9 +1733,9 @@ namespace Internal.JitInterface
                             ? DictionaryEntryKind.ConstrainedMethodEntrySlot
                             : DictionaryEntryKind.MethodEntrySlot);
 
-                        if (constrainedType != null && originalMethod.Signature.IsStatic && exactType.HasInstantiation)
+                        if (isStaticVirtual && exactType.HasInstantiation)
                         {
-                            useInstantiatingStub = false;
+                            useInstantiatingStub = true;
                         }
 
                         ComputeRuntimeLookupForSharedGenericToken(entryKind, ref pResolvedToken, pConstrainedResolvedToken, originalMethod, ref pResult->codePointerOrStubLookup);
@@ -1747,6 +1758,11 @@ namespace Internal.JitInterface
                     }
                 }
                 pResult->nullInstanceCheck = resolvedCallVirt;
+            }
+            else if (isStaticVirtual)
+            {
+                pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
+                pResult->nullInstanceCheck = false;
             }
             // All virtual calls which take method instantiations must
             // currently be implemented by an indirect call via a runtime-lookup
