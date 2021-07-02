@@ -8,6 +8,10 @@
       <_MonoRuntimeComponentCurrentStaticLibExt>@(_MonoRuntimeComponentStaticLibExt->WithMetadataValue('RuntimeIdentifier', '$(RuntimeIdentifier)'))</_MonoRuntimeComponentCurrentStaticLibExt>
       <_MonoRuntimeComponentCurrentLinking>@(_MonoRuntimeComponentLinking->WithMetadataValue('RuntimeIdentifier', '$(RuntimeIdentifier)'))</_MonoRuntimeComponentCurrentLinking>
     </PropertyGroup>
+    <Error Condition="'$(_MonoRuntimeComponentCurrentSharedLibExt)' == '' or '$(_MonoRuntimeComponentCurrentStaticLibExt)' == ''"
+           Text="No _MonoRuntimeComponentSharedLibExt or _MonoRuntimeComponentStaticLibExt for '$(RuntimeIdentifier)'. Malformed runtime pack?" />
+    <Error Condition="'$(_MonoRuntimeComponentCurrentLinking)' != 'dynamic' and '$(_MonoRuntimeComponentCurrentLinking)' != 'static'"
+           Text="Value of _MonoRuntimeComponentLinking for '$(RuntimeIdentifier)' must be 'dynamic' or 'static' it is '$(_MonoRuntimeComponentCurrentLinking)'. Malformed runtime pack?" />
     <ItemGroup Condition="'$(_MonoRuntimeComponentCurrentLinking)' == 'dynamic'">
       <_MonoRuntimeComponentName Include="@(_MonoRuntimeAvailableComponents)" Condition="'%(RuntimeIdentifier)' == '$(RuntimeIdentifier)'">
         <ComponentLib>libmono-component-%(Identity)$(_MonoRuntimeComponentCurrentSharedLibExt)</ComponentLib>
