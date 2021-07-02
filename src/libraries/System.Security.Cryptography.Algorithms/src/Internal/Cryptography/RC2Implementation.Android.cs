@@ -22,5 +22,19 @@ namespace Internal.Cryptography
         {
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RC2)));
         }
+
+        private static ILiteSymmetricCipher CreateLiteCipher(
+            CipherMode cipherMode,
+            PaddingMode paddingMode,
+            ReadOnlySpan<byte> key,
+            int effectiveKeyLength,
+            ReadOnlySpan<byte> iv,
+            int blockSize,
+            int feedbackSizeInBytes,
+            int paddingSize,
+            bool encrypting)
+        {
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RC2)));
+        }
     }
 }
