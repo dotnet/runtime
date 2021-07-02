@@ -9,8 +9,8 @@
     <ICULibDir>$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
     <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">false</WasmEnableES6>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
-    <_LocalEmccFlags>--cache "$(NativeBinDir)emscripten-cache"</_LocalEmccFlags>
-    <EmccCmd>emcc $(_LocalEmccFlags)</EmccCmd>
+    <_EmccLocalFlags>--cache "$(NativeBinDir)emscripten-cache"</_EmccLocalFlags>
+    <EmccCmd>emcc $(_EmccLocalFlags)</EmccCmd>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
     <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
   </PropertyGroup>
