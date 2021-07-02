@@ -437,11 +437,10 @@ namespace System.Text
             }
         }
 
-        public override int ReadByte()
+        public override unsafe int ReadByte()
         {
-            Span<byte> buffer = stackalloc byte[1];
-            int bytesRead = Read(buffer);
-            return (bytesRead == 0) ? -1 /* EOF */ : buffer[0];
+            byte b;
+            return Read(new Span<byte>(&b, 1)) != 0 ? b : -1;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -607,7 +606,7 @@ namespace System.Text
             }
         }
 
-        public override void WriteByte(byte value)
-            => Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+        public override unsafe void WriteByte(byte value)
+            => Write(new ReadOnlySpan<byte>(&value, 1));
     }
 }

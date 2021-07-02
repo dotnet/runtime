@@ -51,6 +51,7 @@ provision-wasm: .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION)
 # FIXME: When https://github.com/dotnet/runtime/issues/54565 is fixed, and the WasmApp targets are updated to use mono runtime components, remove this
 MONO_COMPONENT_LIBS= \
 	$(MONO_BIN_DIR)/libmono-component-hot_reload-static.a \
+	$(MONO_BIN_DIR)/libmono-component-debugger-static.a \
 	$(MONO_BIN_DIR)/libmono-component-diagnostics_tracing-stub-static.a
 
 MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)

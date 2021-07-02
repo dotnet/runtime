@@ -720,7 +720,7 @@ table_info_get_rows (const MonoTableInfo *table)
 }
 
 /* for use with allocated memory blocks (assumes alignment is to 8 bytes) */
-guint mono_aligned_addr_hash (gconstpointer ptr);
+MONO_COMPONENT_API guint mono_aligned_addr_hash (gconstpointer ptr);
 
 void
 mono_image_check_for_module_cctor (MonoImage *image);
@@ -818,7 +818,7 @@ mono_image_effective_table (const MonoTableInfo **t, int *idx)
 int
 mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
 
-void
+MONO_COMPONENT_API void
 mono_image_load_enc_delta (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
 
 gboolean
@@ -916,7 +916,7 @@ mono_metadata_parse_generic_inst            (MonoImage             *image,
 					     const char           **rptr,
 						 MonoError *error);
 
-MonoGenericInst *
+MONO_COMPONENT_API MonoGenericInst *
 mono_metadata_get_generic_inst              (int 		    type_argc,
 					     MonoType 		  **type_argv);
 
@@ -1052,7 +1052,7 @@ mono_type_create_from_typespec_checked (MonoImage *image, guint32 type_spec, Mon
 MonoMethodSignature*
 mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32 token, MonoGenericContext *context, MonoError *error);
 	
-MonoMethod *
+MONO_COMPONENT_API MonoMethod *
 mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, MonoGenericContext *context, MonoError *error);
 
 guint32
@@ -1085,7 +1085,7 @@ mono_loader_set_strict_assembly_name_check (gboolean enabled);
 gboolean
 mono_loader_get_strict_assembly_name_check (void);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_type_in_image (MonoType *type, MonoImage *image);
 
 gboolean

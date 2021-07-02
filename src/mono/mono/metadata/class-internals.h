@@ -317,7 +317,7 @@ int mono_class_interface_match (const uint8_t *bitmap, int id);
 
 
 MONO_API int mono_class_interface_offset (MonoClass *klass, MonoClass *itf);
-int mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match);
+MONO_COMPONENT_API int mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match);
 
 typedef gpointer MonoRuntimeGenericContext;
 
@@ -578,7 +578,7 @@ typedef struct {
 	MonoMethod *wrapper_method;
 } MonoJitICallInfo;
 
-void
+MONO_COMPONENT_API void
 mono_class_setup_supertypes (MonoClass *klass);
 
 /* WARNING
@@ -773,7 +773,7 @@ mono_class_get_implemented_interfaces (MonoClass *klass, MonoError *error);
 int
 mono_class_get_vtable_size (MonoClass *klass);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_class_is_open_constructed_type (MonoType *t);
 
 void
@@ -788,10 +788,10 @@ mono_class_get_finalizer (MonoClass *klass);
 gboolean
 mono_class_needs_cctor_run (MonoClass *klass, MonoMethod *caller);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_class_field_is_special_static (MonoClassField *field);
 
-guint32
+MONO_COMPONENT_API guint32
 mono_class_field_get_special_static_type (MonoClassField *field);
 
 gboolean
@@ -800,7 +800,7 @@ mono_class_has_special_static_fields (MonoClass *klass);
 const char*
 mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_type);
 
-MonoProperty* 
+MONO_COMPONENT_API MonoProperty* 
 mono_class_get_property_from_name_internal (MonoClass *klass, const char *name);
 
 const char*
@@ -894,10 +894,10 @@ mono_method_get_is_covariant_override_impl (MonoMethod *method);
 void
 mono_method_set_is_covariant_override_impl (MonoMethod *methoddef);
 
-MonoMethod*
+MONO_COMPONENT_API MonoMethod*
 mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context, MonoError *error);
 
-MonoMethod *
+MONO_COMPONENT_API MonoMethod *
 mono_class_inflate_generic_method_checked (MonoMethod *method, MonoGenericContext *context, MonoError *error);
 
 MonoMemoryManager *
@@ -915,7 +915,7 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 MonoType*
 mono_class_inflate_generic_type_with_mempool (MonoImage *image, MonoType *type, MonoGenericContext *context, MonoError *error);
 
-MonoType*
+MONO_COMPONENT_API MonoType*
 mono_class_inflate_generic_type_checked (MonoType *type, MonoGenericContext *context, MonoError *error);
 
 MONO_API void
@@ -1062,16 +1062,16 @@ mono_loader_init           (void);
 void
 mono_loader_cleanup        (void);
 
-void
+MONO_COMPONENT_API void
 mono_loader_lock           (void);
 
-void
+MONO_COMPONENT_API void
 mono_loader_unlock         (void);
 
-void
+MONO_COMPONENT_API void
 mono_loader_lock_track_ownership (gboolean track);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_loader_lock_is_owned_by_self (void);
 
 void
@@ -1086,7 +1086,7 @@ mono_reflection_init       (void);
 void
 mono_icall_init            (void);
 
-gpointer
+MONO_COMPONENT_API gpointer
 mono_method_get_wrapper_data (MonoMethod *method, guint32 id);
 
 gboolean
@@ -1209,7 +1209,7 @@ mono_method_search_in_array_class (MonoClass *klass, const char *name, MonoMetho
 void
 mono_class_setup_interface_id (MonoClass *klass);
 
-MonoGenericContainer*
+MONO_COMPONENT_API MonoGenericContainer*
 mono_class_get_generic_container (MonoClass *klass);
 
 gpointer
@@ -1220,13 +1220,13 @@ mono_class_alloc0 (MonoClass *klass, int size);
 
 #define mono_class_alloc0(klass, size) (g_cast (mono_class_alloc0 ((klass), (size))))
 
-void
+MONO_COMPONENT_API void
 mono_class_setup_interfaces (MonoClass *klass, MonoError *error);
 
-MonoClassField*
+MONO_COMPONENT_API MonoClassField*
 mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoType *type);
 
-MonoVTable*
+MONO_COMPONENT_API MonoVTable*
 mono_class_vtable_checked (MonoClass *klass, MonoError *error);
 
 void
@@ -1247,7 +1247,7 @@ mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass, gboolean 
 gboolean 
 mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc, gboolean check_interfaces);
 
-mono_bool
+MONO_COMPONENT_API mono_bool
 mono_class_is_assignable_from_internal (MonoClass *klass, MonoClass *oklass);
 
 gboolean
@@ -1261,7 +1261,7 @@ mono_field_get_type_checked (MonoClassField *field, MonoError *error);
 MonoType*
 mono_field_get_type_internal (MonoClassField *field);
 
-MonoClassField*
+MONO_COMPONENT_API MonoClassField*
 mono_class_get_fields_internal (MonoClass* klass, gpointer *iter);
 
 MonoClassField*
@@ -1276,7 +1276,7 @@ mono_class_has_finalizer (MonoClass *klass);
 void
 mono_unload_interface_id (MonoClass *klass);
 
-GPtrArray*
+MONO_COMPONENT_API GPtrArray*
 mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bflags, guint32 mlisttype, gboolean allow_ctors, MonoError *error);
 
 char*
@@ -1300,10 +1300,10 @@ mono_class_from_name_case_checked (MonoImage *image, const char* name_space, con
 MONO_PROFILER_API MonoClass *
 mono_class_from_mono_type_internal (MonoType *type);
 
-MonoClassField*
+MONO_COMPONENT_API MonoClassField*
 mono_field_from_token_checked (MonoImage *image, uint32_t token, MonoClass **retklass, MonoGenericContext *context, MonoError *error);
 
-gpointer
+MONO_COMPONENT_API gpointer
 mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
 
 MonoImage *
@@ -1312,10 +1312,10 @@ mono_get_image_for_generic_param (MonoGenericParam *param);
 char *
 mono_make_generic_name_string (MonoImage *image, int num);
 
-MonoClass *
+MONO_COMPONENT_API MonoClass *
 mono_class_load_from_name (MonoImage *image, const char* name_space, const char *name);
 
-MonoClass*
+MONO_COMPONENT_API MonoClass*
 mono_class_try_load_from_name (MonoImage *image, const char* name_space, const char *name);
 
 void
@@ -1325,7 +1325,7 @@ gboolean
 mono_class_has_failure (const MonoClass *klass);
 
 /* Kind specific accessors */
-MonoGenericClass*
+MONO_COMPONENT_API MonoGenericClass*
 mono_class_get_generic_class (MonoClass *klass);
 
 MonoGenericClass*

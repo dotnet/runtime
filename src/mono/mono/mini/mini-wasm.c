@@ -9,10 +9,12 @@
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/seq-points.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/metadata/components.h>
 
 //XXX This is dirty, extend ee.h to support extracting info from MonoInterpFrameHandle
 #include <mono/mini/interp/interp-internals.h>
 
+static int mono_wasm_debug_level = 0;
 #ifndef DISABLE_JIT
 
 #include "ir-emit.h"
@@ -759,4 +761,16 @@ gpointer
 mono_arch_load_function (MonoJitICallId jit_icall_id)
 {
 	return NULL;
+}
+
+MONO_API void 
+mono_wasm_enable_debugging (int log_level)
+{
+	mono_wasm_debug_level = log_level;
+}
+
+int
+mono_wasm_get_debug_level (void)
+{
+	return mono_wasm_debug_level;
 }

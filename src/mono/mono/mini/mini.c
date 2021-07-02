@@ -71,7 +71,6 @@
 #include "jit-icalls.h"
 
 #include "mini-gc.h"
-#include "debugger-agent.h"
 #include "llvm-runtime.h"
 #include "mini-llvm.h"
 #include "lldb.h"
@@ -3542,6 +3541,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		/* FIXME: */
 		cfg->opt &= ~MONO_OPT_BRANCH;
 	}
+
+	cfg->after_method_to_ir = TRUE;
 
 	/* todo: remove code when we have verified that the liveness for try/catch blocks
 	 * works perfectly 

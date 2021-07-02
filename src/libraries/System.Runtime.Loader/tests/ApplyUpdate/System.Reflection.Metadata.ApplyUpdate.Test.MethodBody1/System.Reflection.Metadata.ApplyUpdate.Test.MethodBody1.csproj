@@ -5,6 +5,7 @@
     <TestRuntime>true</TestRuntime>
     <DeltaScript>deltascript.json</DeltaScript>
     <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MethodBody1.cs" />

@@ -98,7 +98,7 @@ MonoGCDescriptor mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 MonoGCDescriptor mono_gc_make_vector_descr (void);
 
 /* Return a root descriptor for a root with all refs */
-MonoGCDescriptor mono_gc_make_root_descr_all_refs (int numbits)
+MONO_COMPONENT_API MonoGCDescriptor mono_gc_make_root_descr_all_refs (int numbits)
     MONO_PERMIT (need (sgen_lock_gc));
 
 /* Return the bitmap encoded by a descriptor */
