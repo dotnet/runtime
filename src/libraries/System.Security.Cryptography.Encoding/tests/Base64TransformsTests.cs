@@ -115,6 +115,38 @@ namespace System.Security.Cryptography.Encoding.Tests
             }
         }
 
+        [Theory]
+        [InlineData(100)]
+        [InlineData(101)]
+        [InlineData(102)]
+        [InlineData(103)]
+        public static void RoundtripCryptoStream(int length)
+        {
+            byte[] expected = RandomNumberGenerator.GetBytes(length);
+            var ms = new MemoryStream();
+
+            using (var toBase64 = new ToBase64Transform())
+            using (var stream = new CryptoStream(ms, toBase64, CryptoStreamMode.Write, leaveOpen: true))
+            {
+                stream.Write(expected);
+            }
+
+            ms.Position = 0;
+
+            byte[] actual = new byte[expected.Length];
+            using (var fromBase64 = new FromBase64Transform())
+            using (var stream = new CryptoStream(ms, fromBase64, CryptoStreamMode.Read, leaveOpen: true))
+            {
+                int totalRead = 0, bytesRead;
+                while ((bytesRead = stream.Read(actual.AsSpan(totalRead))) != 0)
+                {
+                    totalRead += bytesRead;
+                }
+                Assert.Equal(actual.Length, totalRead);
+                AssertExtensions.SequenceEqual(expected, actual);
+            }
+        }
+
         private static void ValidateCryptoStream(string expected, string data, ICryptoTransform transform)
         {
             byte[] inputBytes = Text.Encoding.ASCII.GetBytes(data);
@@ -280,7 +312,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         {
             using (var transform = new ToBase64Transform())
             {
-                Assert.False(transform.CanTransformMultipleBlocks);
+                Assert.True(transform.CanTransformMultipleBlocks);
                 Assert.True(transform.CanReuseTransform);
             }
         }
