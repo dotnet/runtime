@@ -159,12 +159,12 @@ namespace System.IO.Ports
 
         internal int BytesToWrite
         {
-            get { return Interop.Termios.TermiosGetAvailableBytes(_handle, Interop.Termios.Queue.SendQueue); }
+            get { return Interop.Termios.TermiosGetAvailableBytes(_handle, false); }
         }
 
         internal int BytesToRead
         {
-            get { return Interop.Termios.TermiosGetAvailableBytes(_handle, Interop.Termios.Queue.ReceiveQueue); }
+            get { return Interop.Termios.TermiosGetAvailableBytes(_handle, true); }
         }
 
         internal bool CDHolding
