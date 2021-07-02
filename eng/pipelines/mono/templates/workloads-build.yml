@@ -46,11 +46,6 @@ jobs:
     steps:
     - task: DownloadPipelineArtifact@2
       inputs:
-        source: 'specific'
-        project: 'internal'
-        pipeline: 679
-        runVersion: 'specific'
-        runId: 1217582
         artifact: 'IntermediateArtifacts'
         path: $(workloadPackagesPath)
         patterns: 'IntermediateArtifacts/*/Shipping/*.nupkg'
