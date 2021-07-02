@@ -69,6 +69,7 @@
       <_EmccCommonFlags Include="-s &quot;EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']&quot;" />
       <_EmccCommonFlags Include="-s &quot;EXPORTED_FUNCTIONS=['_putchar']&quot;" />
       <_EmccCommonFlags Include="--source-map-base http://example.com" />
+      <_EmccCommonFlags Include="--cache &quot;$(NativeBinDir)cache&quot;" />
       <_EmccCommonFlags Include="-emit-llvm" />
 
       <_EmccCommonFlags Include="-s MODULARIZE=1" Condition="'$(WasmEnableES6)' != 'false'" />
