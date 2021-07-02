@@ -41,6 +41,7 @@
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.RuntimeConfigParser.Task" />
     </ImportGroup>
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'tvos' and $([MSBuild]::IsOSPlatform('osx'))">
+        <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64" />
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator-arm64" />
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator-x64" />
     </ImportGroup>
