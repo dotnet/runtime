@@ -714,6 +714,82 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
+    public static void Xml_TypeWithDateTimeOffsetProperty()
+    {
+        var now = new DateTimeOffset(DateTime.Now);
+        var obj = new TypeWithDateTimeOffsetProperties { DTO = now };
+        var deserializedObj = SerializeAndDeserialize(obj,
+@"<?xml version=""1.0""?>
+<TypeWithDateTimeOffsetProperties xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <DTO>" + now.ToString("o") + @"</DTO>
+  <DTO2>0001-01-01T00:00:00Z</DTO2>
+  <NullableDTO xsi:nil=""true"" />
+  <NullableDefaultDTO xsi:nil=""true"" />
+</TypeWithDateTimeOffsetProperties>");
+        Assert.StrictEqual(obj.DTO, deserializedObj.DTO);
+        Assert.StrictEqual(obj.DTO2, deserializedObj.DTO2);
+        Assert.StrictEqual(default(DateTimeOffset), deserializedObj.DTO2);
+        Assert.StrictEqual(obj.DTOWithDefault, deserializedObj.DTOWithDefault);
+        Assert.StrictEqual(default(DateTimeOffset), deserializedObj.DTOWithDefault);
+        Assert.StrictEqual(obj.NullableDTO, deserializedObj.NullableDTO);
+        Assert.True(deserializedObj.NullableDTO == null);
+        Assert.StrictEqual(obj.NullableDTOWithDefault, deserializedObj.NullableDTOWithDefault);
+        Assert.True(deserializedObj.NullableDTOWithDefault == null);
+    }
+
+    [Fact]
+    public static void Xml_DeserializeTypeWithEmptyDateTimeOffsetProperties()
+    {
+        var def = DateTimeOffset.Parse("3/17/1977 5:00:01 PM -05:00");  //  "1977-03-17T17:00:01-05:00"
+        string xml = @"<?xml version=""1.0""?>
+            <TypeWithDateTimeOffsetProperties xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+              <DTO />
+              <DTO2 />
+              <DTOWithDefault />
+              <NullableDefaultDTO />
+            </TypeWithDateTimeOffsetProperties>";
+        XmlSerializer serializer = new XmlSerializer(typeof(TypeWithDateTimeOffsetProperties));
+
+        using (StringReader reader = new StringReader(xml))
+        {
+            TypeWithDateTimeOffsetProperties deserializedObj = (TypeWithDateTimeOffsetProperties)serializer.Deserialize(reader);
+            Assert.NotNull(deserializedObj);
+            Assert.Equal(default(DateTimeOffset), deserializedObj.DTO);
+            Assert.Equal(default(DateTimeOffset), deserializedObj.DTO2);
+            //Assert.Equal(def, deserializedObj.DTOWithDefault);
+            Assert.True(deserializedObj.NullableDTO == null);
+            //Assert.Equal(def, deserializedObj.NullableDTOWithDefault);
+        }
+    }
+
+    [Fact]
+    public static void Xml_DeserializeDateTimeOffsetType()
+    {
+        var now = new DateTimeOffset(DateTime.Now);
+        string xml = @"<?xml version=""1.0""?><dateTimeOffset>" + now.ToString("o") + "</dateTimeOffset>";
+        XmlSerializer serializer = new XmlSerializer(typeof(DateTimeOffset));
+
+        using (StringReader reader = new StringReader(xml))
+        {
+            DateTimeOffset deserializedObj = (DateTimeOffset)serializer.Deserialize(reader);
+            Assert.Equal(now, deserializedObj);
+        }
+    }
+
+    [Fact]
+    public static void Xml_DeserializeEmptyDateTimeOffsetType()
+    {
+        string xml = @"<?xml version=""1.0""?><dateTimeOffset />";
+        XmlSerializer serializer = new XmlSerializer(typeof(DateTimeOffset));
+
+        using (StringReader reader = new StringReader(xml))
+        {
+            DateTimeOffset deserializedObj = (DateTimeOffset)serializer.Deserialize(reader);
+            Assert.Equal(default(DateTimeOffset), deserializedObj);
+        }
+    }
+
+    [Fact]
     public static void Xml_TypeWithByteProperty()
     {
         var obj = new TypeWithByteProperty() { ByteProperty = 123 };
