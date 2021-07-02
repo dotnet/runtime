@@ -557,37 +557,40 @@ namespace System.IO
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
             // throws if the current link file does not exist
-            Interop.CheckIo(Interop.Sys.LStat(linkPath, out _), linkPath, isDirectory);
+            Interop.CheckIo(Interop.Sys.LStat(linkPath, out Interop.Sys.FileStatus info), linkPath, isDirectory);
+
+            if ((info.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFLNK)
+            {
+                return null;
+            }
 
             ValueStringBuilder sb = new(stackalloc char[Interop.DefaultPathBufferSize]);
             sb.Append(linkPath);
 
-            int maxVisits = returnFinalTarget ? MaxFollowedLinks : 1;
-            int visitCount = 0;
-            while (visitCount < maxVisits)
+            if (returnFinalTarget)
             {
-                if (!TryGetLinkTarget(ref sb))
+                int visitCount = 0;
+                while (true)
                 {
-                    if (visitCount == 0)
+                    if (!TryGetLinkTarget(ref sb))
                     {
-                        // Special case: Reaching here means linkPath is not a link,
-                        // but we know it exists because we did an lstat at the top
-                        sb.Dispose();
-                        return null;
+                        // We finally found the final target: either
+                        // this file does not exist (broken links are acceptable)
+                        // or this file is not a link
+                        break;
                     }
 
-                    // We finally found the final target: either
-                    // this file does not exist (broken links are acceptable)
-                    // or this file is not a link
-                    break;
+                    visitCount++;
+                    if (visitCount > MaxFollowedLinks)
+                    {
+                        // We went over the limit and couldn't reach the final target
+                        throw new IOException(SR.Format(SR.IO_TooManySymbolicLinkLevels, linkPath));
+                    }
                 }
-                visitCount++;
             }
-
-            if (visitCount >= MaxFollowedLinks)
+            else
             {
-                // We went over the limit and couldn't reach the final target
-                throw new IOException(SR.Format(SR.IO_TooManySymbolicLinkLevels, linkPath));
+                TryGetLinkTarget(ref sb);
             }
 
             Debug.Assert(sb.Length > 0);
