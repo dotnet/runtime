@@ -35,7 +35,6 @@ namespace Microsoft.Workload.Build.Tasks
         public ITaskItem[]?   ExtraNuGetSources  { get; set; }
         public string?        Rid                { get; set; }
 
-        // private readonly string _tempDir = Path.Combine(Path.GetTempPath(), "install-workload", Path.GetRandomFileName());
         private string? _packsDir;
 
         private static string? GetRid()
@@ -75,31 +74,38 @@ namespace Microsoft.Workload.Build.Tasks
             }
 
             PackageInstaller installer = new(BuiltNuGetsPath.GetMetadata("FullPath"), ExtraNuGetSources ?? Array.Empty<ITaskItem>(), Log);
-            // if (!installer.Install(
-            if (!InstallWorkloadManifest(WorkloadId.GetMetadata("ManifestName"), WorkloadId.GetMetadata("Version"), out ManifestInformation? manifest))
+
+            Dictionary<string, PackVersionInformation> packs = new();
+            Dictionary<string, WorkloadInformation> workloads = new();
+            if (!InstallWorkloadManifest(WorkloadId.GetMetadata("ManifestName"), WorkloadId.GetMetadata("Version"), ref workloads, ref packs))
             {
                 return false;
             }
+
+            // foreach (var kvp in packs)
+                // Log.LogMessage(MessageImportance.High, $"Final: {kvp.Key} => {kvp.Value}");
 
 
             // if (!InstallWorkloadManifest(WorkloadId.ItemSpec, WorkloadId.GetMetadata("Version"), out ManifestInformation? manifest))
             //     return false;
 
-            // IEnumerable<PackageReference> references = GetPackageReferencesForWorkload(manifest, WorkloadId.ItemSpec);
-            // IEnumerable<PackageReference> remaining = LayoutPacksFromBuiltNuGets(references);
+            // IEnumerable<PackageReference> references = GetPackageReferencesForWorkload(string workloadId, Dictionary<string, WorkloadInformation> workloads, Dictionary<string, PackVersionInformation> packs);
+            // // IEnumerable<PackageReference> remaining = LayoutPacksFromBuiltNuGets(references);
             // if (!remaining.Any())
             //     return !Log.HasLoggedErrors;
 
-            // if (!InstallPacksWithNuGetRestore(remaining))
+            // // if (!InstallPacksWithNuGetRestore(remaining))
             //     return false;
 
             return !Log.HasLoggedErrors;
         }
 
-        private bool InstallWorkloadManifest(string name, string version, [NotNullWhen(true)] out ManifestInformation? manifest)
+        // private bool InstallWorkloadManifest(string name, string version, [NotNullWhen(true)] out ManifestInformation? manifest)
+        private bool InstallWorkloadManifest(string name,
+                                             string version,
+                                             ref Dictionary<string, WorkloadInformation> workloads,
+                                             ref Dictionary<string, PackVersionInformation> allPacks)
         {
-            manifest = null;
-
             PackageInstaller installer = new(BuiltNuGetsPath.GetMetadata("FullPath"), ExtraNuGetSources ?? Array.Empty<ITaskItem>(), Log);
             PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBand}",
                                           Version: version,
@@ -109,11 +115,7 @@ namespace Microsoft.Workload.Build.Tasks
             if (!installer.Install(pkgRef))
                 return false;
 
-            // StringBuilder errorBuilder = new();
-
-            // if (TryInstallManifestFromArtifacts(workloadId, workloadVersion))
             string manifestDir = pkgRef.OutputDir;
-
             string jsonPath = Path.Combine(manifestDir, "WorkloadManifest.json");
             if (!File.Exists(jsonPath))
             {
@@ -123,56 +125,71 @@ namespace Microsoft.Workload.Build.Tasks
 
             try
             {
-                manifest = JsonSerializer.Deserialize<ManifestInformation>(
-                                    File.ReadAllBytes(jsonPath),
-                                    new JsonSerializerOptions(JsonSerializerDefaults.Web)
-                                    {
-                                        AllowTrailingCommas = true,
-                                        ReadCommentHandling = JsonCommentHandling.Skip
-                                    });
+                ManifestInformation? manifest = JsonSerializer.Deserialize<ManifestInformation>(
+                                        File.ReadAllBytes(jsonPath),
+                                        new JsonSerializerOptions(JsonSerializerDefaults.Web)
+                                        {
+                                            AllowTrailingCommas = true,
+                                            ReadCommentHandling = JsonCommentHandling.Skip
+                                        });
+
+                if (manifest == null)
+                {
+                    Log.LogError($"Could not parse manifest from {jsonPath}.");
+                    return false;
+                }
+
+                foreach (var kvp in manifest.Packs)
+                    allPacks.Add(kvp.Key, kvp.Value);
+
+                // get the workload that we want
+
+                if (manifest.DependsOn != null)
+                {
+                    foreach ((string depName, string depVersion) in manifest.DependsOn)
+                    {
+                        Log.LogMessage(MessageImportance.High, $"{depName} = {depVersion}");
+
+                        if (!InstallWorkloadManifest(depName, depVersion, ref workloads, ref allPacks))
+                            return false;
+                    }
+                }
+
+                return true;
             }
             catch (JsonException je)
             {
                 Log.LogError($"Failed to read from {jsonPath}: {je.Message}");
                 return false;
             }
-
-            if (manifest == null)
-            {
-                Log.LogError($"Could not parse manifest from {jsonPath}.");
-                return false;
-            }
-
-            // manifestNupkgPath = nupkgPath;
-            return true;
         }
 
-        private IEnumerable<PackageReference> GetPackageReferencesForWorkload(ManifestInformation manifest, string workloadId)
+        private IEnumerable<PackageReference> GetPackageReferencesForWorkload(string workloadId,
+                                                                              Dictionary<string, WorkloadInformation> allWorkloads,
+                                                                              Dictionary<string, PackVersionInformation> allPacks)
         {
-            var workload = manifest.Workloads[workloadId];
-            var subset = workload.Packs;
+            WorkloadInformation? workload = allWorkloads[workloadId];
+            List<string> packsNeededForWorkload = workload.Packs;
             if (workload.Extends.Count > 0)
             {
-                subset = new List<string>(subset);
+                packsNeededForWorkload = new List<string>(packsNeededForWorkload);
                 //FIXME: use exceptions!
-                if (!ProcessWorkload(workload))
+                if (!ReadPacksForWorkload(workload))
                     throw new KeyNotFoundException();
             }
 
             List<PackageReference> references = new();
-            foreach (var item in manifest.Packs)
+            foreach (KeyValuePair<string, PackVersionInformation> item in allPacks)
             {
-                if (subset != null && !subset.Contains(item.Key))
+                if (/*packsNeededForWorkload != null && */!packsNeededForWorkload.Contains(item.Key))
                 {
                     Log.LogMessage(MessageImportance.Low, $"Ignoring pack {item.Key} as it is not in the workload");
                     continue;
                 }
 
-                var packageName = item.Key;
-                if (item.Value.AliasTo is Dictionary<string, string> alias)
-                {
-                    alias.TryGetValue(Rid!, out packageName);
-                }
+                //if (item.Value.AliasTo is Dictionary<string, string> alias)
+                if (!item.Value.AliasTo.TryGetValue(Rid!, out string? packageName))
+                    packageName = item.Key;
 
                 if (!string.IsNullOrEmpty(packageName) && !packageName.Contains("cross", StringComparison.InvariantCultureIgnoreCase))
                     references.Add(new PackageReference(packageName, item.Value.Version, Path.Combine(_packsDir!, $"{packageName}.{item.Value.Version}")));
@@ -180,24 +197,24 @@ namespace Microsoft.Workload.Build.Tasks
 
             return references;
 
-            bool ProcessWorkload(WorkloadInformation workload)
+            bool ReadPacksForWorkload(WorkloadInformation workload)
             {
                 if (workload.Extends == null || workload.Extends.Count == 0)
                     return true;
 
                 foreach (var w in workload.Extends)
                 {
-                    if (!manifest.Workloads.TryGetValue(w, out WorkloadInformation? depWorkload))
+                    if (!allWorkloads.TryGetValue(w, out WorkloadInformation? depWorkload))
                     {
                         Log.LogError($"Could not find workload {w} needed by {workload.Description} in the manifest");
                         return false;
                     }
                     //FIXME:
 
-                    if (!ProcessWorkload(depWorkload))
+                    if (!ReadPacksForWorkload(depWorkload))
                         return false;
 
-                    subset.AddRange(depWorkload.Packs);
+                    packsNeededForWorkload.AddRange(depWorkload.Packs);
                 }
 
                 return true;
@@ -218,7 +235,7 @@ namespace Microsoft.Workload.Build.Tasks
             string Description,
 
             [property: JsonPropertyName("depends-on")]
-            IDictionary<string, object> DependsOn,
+            IDictionary<string, string> DependsOn,
             IDictionary<string, WorkloadInformation> Workloads,
             IDictionary<string, PackVersionInformation> Packs,
             object Data
