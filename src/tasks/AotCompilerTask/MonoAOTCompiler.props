@@ -14,7 +14,10 @@
     <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Android'">
-    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm'" Include="mtriple=armv7-linux-gnueabi-thumbv7s" />
+    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm'" Include="mtriple=armv7-linux-gnueabi" />
+    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mtriple=aarch64-linux-android" />
+    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x86'" Include="mtriple=i686-linux-android" />
+    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64'" Include="mtriple=x86_64-linux-android" />
     <MonoAOTCompilerDefaultAotArguments Include="static" />
     <!-- Default trampolines run out for libraries tests -->
     <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />

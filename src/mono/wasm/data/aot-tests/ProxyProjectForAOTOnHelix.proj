@@ -33,17 +33,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <WasmSatelliteAssemblies Include="$(OriginalPublishDir)**\*.resources.dll" />
-      <WasmSatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
-
-      <WasmAssembliesToBundle Include="$(OriginalPublishDir)*.dll" />
+      <WasmAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" />
 
       <_ExtraFiles Include="$(ExtraFilesPath)**\*" />
       <WasmFilesToIncludeInFileSystem Include="@(_ExtraFiles)" TargetPath="%(RecursiveDir)%(FileName)%(Extension)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'">
-      <_SatelliteAssembliesForVFS Include="@(WasmSatelliteAssemblies)" />
+      <_SatelliteAssembliesForVFS Include="$(OriginalPublishDir)**\*.resources.dll" />
+      <_SatelliteAssembliesForVFS CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
       <_SatelliteAssembliesForVFS TargetPath="%(CultureName)\%(FileName)%(Extension)" />
 
       <WasmFilesToIncludeInFileSystem Include="@(_SatelliteAssembliesForVFS)" />

@@ -4176,6 +4176,26 @@ InitializeCrashDump()
 
 #endif // HOST_WINDOWS
 
+bool GenerateDump(
+    LPCWSTR dumpName,
+    int dumpType,
+    bool diag)
+{
+#ifdef TARGET_UNIX
+    MAKE_UTF8PTR_FROMWIDE_NOTHROW (dumpNameUtf8, dumpName);
+    if (dumpNameUtf8 == nullptr)
+    {
+        return false;
+    }
+    else
+    {
+        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, diag);
+    }
+#else // TARGET_UNIX
+    return GenerateCrashDump(dumpName, dumpType, diag);
+#endif // TARGET_UNIX
+}
+
 //************************************************************************************
 // Create crash dump if enabled and terminate process. Generates crash dumps for both
 // Windows and Linux if enabled. For Linux, it happens in TerminateProcess in the PAL.

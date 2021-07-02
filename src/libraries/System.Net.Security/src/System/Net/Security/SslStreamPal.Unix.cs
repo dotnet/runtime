@@ -62,11 +62,14 @@ namespace System.Net.Security
             }
         }
 
-        public static SecurityStatusPal DecryptMessage(SafeDeleteSslContext securityContext, byte[] buffer, ref int offset, ref int count)
+        public static SecurityStatusPal DecryptMessage(SafeDeleteSslContext securityContext, Span<byte> buffer, out int offset, out int count)
         {
+            offset = 0;
+            count = 0;
+
             try
             {
-                int resultSize = Interop.OpenSsl.Decrypt(securityContext.SslContext, new Span<byte>(buffer, offset, count), out Interop.Ssl.SslErrorCode errorCode);
+                int resultSize = Interop.OpenSsl.Decrypt(securityContext.SslContext, buffer, out Interop.Ssl.SslErrorCode errorCode);
 
                 SecurityStatusPal retVal = MapNativeErrorCode(errorCode);
 

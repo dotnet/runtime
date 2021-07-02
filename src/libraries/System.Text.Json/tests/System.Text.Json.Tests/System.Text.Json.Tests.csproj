@@ -109,7 +109,6 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ValueTypedMember.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
-    <Compile Include="Serialization\DeserializationWrapper.cs" />
     <Compile Include="Serialization\DynamicTests.cs" />
     <Compile Include="Serialization\EnumConverterTests.cs" />
     <Compile Include="Serialization\EnumTests.cs" />
@@ -119,6 +118,8 @@
     <Compile Include="Serialization\InvalidTypeTests.cs" />
     <Compile Include="Serialization\JsonDocumentTests.cs" />
     <Compile Include="Serialization\JsonElementTests.cs" />
+    <Compile Include="Serialization\JsonSerializerWrapperForString.cs" />
+    <Compile Include="Serialization\JsonSerializationWrapperForStream.cs" />
     <Compile Include="Serialization\MetadataTests\JsonContext\DateTimeOffset.cs" />
     <Compile Include="Serialization\MetadataTests\JsonContext\Dictionary.cs" />
     <Compile Include="Serialization\MetadataTests\JsonContext\HighLowTemps.cs" />
@@ -152,8 +153,8 @@
     <Compile Include="Serialization\ReferenceHandlerTests.IgnoreCycles.cs" />
     <Compile Include="Serialization\ReferenceHandlerTests.Serialize.cs" />
     <Compile Include="Serialization\SampleTestData.OrderPayload.cs" />
-    <Compile Include="Serialization\SerializationWrapper.cs" />
     <Compile Include="Serialization\SpanTests.cs" />
+    <Compile Include="Serialization\StreamTests.cs" />
     <Compile Include="Serialization\Stream.Collections.cs" />
     <Compile Include="Serialization\Stream.DeserializeAsyncEnumerable.cs" />
     <Compile Include="Serialization\Stream.ReadTests.cs" />

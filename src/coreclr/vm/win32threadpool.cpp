@@ -1278,8 +1278,9 @@ void ThreadpoolMgr::ManagedWaitIOCompletionCallback_Worker(LPVOID state)
     DestroyHandle(completeWaitWorkItemObjectHandle);
     completeWaitWorkItemObjectHandle = NULL;
 
+    MethodDescCallSite completeAwait(METHOD__COMPLETE_WAIT_THREAD_POOL_WORK_ITEM__COMPLETE_WAIT, &completeWaitWorkItemObject);
     ARG_SLOT args[] = { ObjToArgSlot(completeWaitWorkItemObject) };
-    MethodDescCallSite(METHOD__COMPLETE_WAIT_THREAD_POOL_WORK_ITEM__COMPLETE_WAIT, &completeWaitWorkItemObject).Call(args);
+    completeAwait.Call(args);
 
     GCPROTECT_END();
 }

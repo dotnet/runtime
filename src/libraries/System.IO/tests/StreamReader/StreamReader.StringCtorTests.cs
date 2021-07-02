@@ -47,6 +47,16 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamReader("path", Encoding.UTF8, true, 0));
         }
 
+        [Fact]
+        public static void LackOfReadAccess_ThrowsArgumentException()
+        {
+            var noReadAccess = new FileStreamOptions { Access = FileAccess.Write };
+
+            AssertExtensions.Throws<ArgumentException>("options", () => new StreamReader("path", noReadAccess));
+            AssertExtensions.Throws<ArgumentException>("options", () => new StreamReader("path", Encoding.UTF8, false, noReadAccess));
+            AssertExtensions.Throws<ArgumentException>("options", () => new StreamReader("path", Encoding.UTF8, true, noReadAccess));
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

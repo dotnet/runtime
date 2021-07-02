@@ -361,7 +361,7 @@ else
 	HARNESS_RUNNER="xharness"
 fi
 
-$__Command $HARNESS_RUNNER android run --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$__Category" --app="$__TestBinaryBase/$__Category.apk" --output-directory="$__OutputDir" --arg=entrypoint:libname=$(MsBuildProjectName).dll --expected-exit-code=100 -v
+$__Command $HARNESS_RUNNER android run --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$__Category" --output-directory="$__OutputDir" --arg=entrypoint:libname=$(MsBuildProjectName).dll --expected-exit-code=100 -v
 CLRTestExitCode=$?
 
 # Exist code of xharness is zero when tests finished successfully

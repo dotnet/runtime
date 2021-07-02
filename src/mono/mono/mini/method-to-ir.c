@@ -80,7 +80,6 @@
 
 #include "jit-icalls.h"
 #include "jit.h"
-#include "debugger-agent.h"
 #include "seq-points.h"
 #include "aot-compiler.h"
 #include "mini-llvm.h"
@@ -2482,29 +2481,23 @@ context_used_is_mrgctx (MonoCompile *cfg, int context_used)
 /*
  * emit_get_rgctx:
  *
- *   Emit IR to return either the this pointer for instance method,
- * or the mrgctx for static methods.
+ *   Emit IR to return either the vtable or the mrgctx.
  */
 static MonoInst*
 emit_get_rgctx (MonoCompile *cfg, int context_used)
 {
-	MonoInst *this_ins = NULL;
 	MonoMethod *method = cfg->method;
 
 	g_assert (cfg->gshared);
 
-	if (!(method->flags & METHOD_ATTRIBUTE_STATIC) &&
-			!(context_used & MONO_GENERIC_CONTEXT_USED_METHOD) &&
-			!m_class_is_valuetype (method->klass))
-		EMIT_NEW_VARLOAD (cfg, this_ins, cfg->this_arg, mono_get_object_type ());
-
+	/* Data whose context contains method type vars is stored in the mrgctx */
 	if (context_used_is_mrgctx (cfg, context_used)) {
 		MonoInst *mrgctx_loc, *mrgctx_var;
 
-		if (!mini_method_is_default_method (method)) {
-			g_assert (!this_ins);
+		g_assert (cfg->rgctx_access == MONO_RGCTX_ACCESS_MRGCTX);
+
+		if (!mini_method_is_default_method (method))
 			g_assert (method->is_inflated && mono_method_get_context (method)->method_inst);
-		}
 
 		if (cfg->llvm_only) {
 			mrgctx_var = mono_get_mrgctx_var (cfg);
@@ -2515,10 +2508,34 @@ emit_get_rgctx (MonoCompile *cfg, int context_used)
 			EMIT_NEW_TEMPLOAD (cfg, mrgctx_var, mrgctx_loc->inst_c0);
 		}
 		return mrgctx_var;
-	} else if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass)) {
+	}
+
+	/*
+	 * The rest of the entries are stored in vtable->runtime_generic_context so
+	 * have to return a vtable.
+	 */
+	if (cfg->rgctx_access == MONO_RGCTX_ACCESS_MRGCTX) {
+		MonoInst *mrgctx_loc, *mrgctx_var, *vtable_var;
+		int vtable_reg;
+
+		/* We are passed an mrgctx, return mrgctx->class_vtable */
+
+		if (cfg->llvm_only) {
+			mrgctx_var = mono_get_mrgctx_var (cfg);
+		} else {
+			mrgctx_loc = mono_get_mrgctx_var (cfg);
+			g_assert (mrgctx_loc->flags & MONO_INST_VOLATILE);
+			EMIT_NEW_TEMPLOAD (cfg, mrgctx_var, mrgctx_loc->inst_c0);
+		}
+
+		vtable_reg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, vtable_var, OP_LOAD_MEMBASE, vtable_reg, mrgctx_var->dreg, MONO_STRUCT_OFFSET (MonoMethodRuntimeGenericContext, class_vtable));
+		vtable_var->type = STACK_PTR;
+		return vtable_var;
+	} else if (cfg->rgctx_access == MONO_RGCTX_ACCESS_VTABLE) {
 		MonoInst *vtable_loc, *vtable_var;
 
-		g_assert (!this_ins);
+		/* We are passed a vtable, return it */
 
 		if (cfg->llvm_only) {
 			vtable_var = mono_get_vtable_var (cfg);
@@ -2527,20 +2544,15 @@ emit_get_rgctx (MonoCompile *cfg, int context_used)
 			g_assert (vtable_loc->flags & MONO_INST_VOLATILE);
 			EMIT_NEW_TEMPLOAD (cfg, vtable_var, vtable_loc->inst_c0);
 		}
-
-		if (method->is_inflated && mono_method_get_context (method)->method_inst) {
-			MonoInst *mrgctx_var = vtable_var;
-			int vtable_reg;
-
-			vtable_reg = alloc_preg (cfg);
-			EMIT_NEW_LOAD_MEMBASE (cfg, vtable_var, OP_LOAD_MEMBASE, vtable_reg, mrgctx_var->dreg, MONO_STRUCT_OFFSET (MonoMethodRuntimeGenericContext, class_vtable));
-			vtable_var->type = STACK_PTR;
-		}
-
+		vtable_var->type = STACK_PTR;
 		return vtable_var;
 	} else {
-		MonoInst *ins;
+		MonoInst *ins, *this_ins;
 		int vtable_reg;
+
+		/* We are passed a this pointer, return this->vtable */
+
+		EMIT_NEW_VARLOAD (cfg, this_ins, cfg->this_arg, mono_get_object_type ());
 	
 		vtable_reg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, vtable_reg, this_ins->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
@@ -2570,117 +2582,86 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 {
 	MonoInst *call;
 
-	// FIXME: No fastpath since the slot is not a compile time constant
-	MonoInst *args [2] = { rgctx };
-	EMIT_NEW_AOTCONST (cfg, args [1], MONO_PATCH_INFO_RGCTX_SLOT_INDEX, entry);
-	if (entry->in_mrgctx)
-		call = mono_emit_jit_icall (cfg, mono_fill_method_rgctx, args);
-	else
-		call = mono_emit_jit_icall (cfg, mono_fill_class_rgctx, args);
-	return call;
-#if 0
-	/*
-	 * FIXME: This can be called during decompose, which is a problem since it creates
-	 * new bblocks.
-	 * Also, the fastpath doesn't work since the slot number is dynamically allocated.
-	 */
-	int i, slot, depth, index, rgctx_reg, val_reg, res_reg;
-	gboolean mrgctx;
-	MonoBasicBlock *is_null_bb, *end_bb;
-	MonoInst *res, *ins, *call;
-	MonoInst *args[16];
+	MonoInst *slot_ins;
+	EMIT_NEW_AOTCONST (cfg, slot_ins, MONO_PATCH_INFO_RGCTX_SLOT_INDEX, entry);
 
-	slot = mini_get_rgctx_entry_slot (entry);
-
-	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
-	index = MONO_RGCTX_SLOT_INDEX (slot);
-	if (mrgctx)
-		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / TARGET_SIZEOF_VOID_P;
-	for (depth = 0; ; ++depth) {
-		int size = mono_class_rgctx_get_array_size (depth, mrgctx);
-
-		if (index < size - 1)
-			break;
-		index -= size - 1;
-	}
-
-	NEW_BBLOCK (cfg, end_bb);
-	NEW_BBLOCK (cfg, is_null_bb);
-
-	if (mrgctx) {
-		rgctx_reg = rgctx->dreg;
-	} else {
-		rgctx_reg = alloc_preg (cfg);
-
-		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, rgctx_reg, rgctx->dreg, MONO_STRUCT_OFFSET (MonoVTable, runtime_generic_context));
-		// FIXME: Avoid this check by allocating the table when the vtable is created etc.
-		NEW_BBLOCK (cfg, is_null_bb);
-
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rgctx_reg, 0);
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, is_null_bb);
-	}
-
-	for (i = 0; i < depth; ++i) {
-		int array_reg = alloc_preg (cfg);
-
-		/* load ptr to next array */
-		if (mrgctx && i == 0)
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, array_reg, rgctx_reg, MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT);
+	// Can't add basic blocks during decompose/interp entry mode etc.
+	// FIXME: Add a fastpath for in_mrgctx
+	if (cfg->after_method_to_ir || cfg->gsharedvt || cfg->interp_entry_only || entry->in_mrgctx) {
+		MonoInst *args [2] = { rgctx, slot_ins };
+		if (entry->in_mrgctx)
+			call = mono_emit_jit_icall (cfg, mono_fill_method_rgctx, args);
 		else
-			MONO_EMIT_NEW_LOAD_MEMBASE (cfg, array_reg, rgctx_reg, 0);
-		rgctx_reg = array_reg;
-		/* is the ptr null? */
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rgctx_reg, 0);
-		/* if yes, jump to actual trampoline */
-		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, is_null_bb);
+			call = mono_emit_jit_icall (cfg, mono_fill_class_rgctx, args);
+		return call;
 	}
 
-	/* fetch slot */
-	val_reg = alloc_preg (cfg);
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, val_reg, rgctx_reg, (index + 1) * TARGET_SIZEOF_VOID_P);
-	/* is the slot null? */
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, val_reg, 0);
-	/* if yes, jump to actual trampoline */
-	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, is_null_bb);
+	MonoBasicBlock *slowpath_bb, *end_bb;
+	MonoInst *ins, *res;
+	int rgctx_reg, res_reg;
 
-	/* Fastpath */
+	/*
+	 * rgctx = vtable->runtime_generic_context;
+	 * if (rgctx) {
+	 *    val = rgctx [slot + 1];
+	 *    if (val)
+	 *       return val;
+	 * }
+	 * <slowpath>
+	 */
+	NEW_BBLOCK (cfg, end_bb);
+	NEW_BBLOCK (cfg, slowpath_bb);
+
+	rgctx_reg = alloc_preg (cfg);
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, rgctx_reg, rgctx->dreg, MONO_STRUCT_OFFSET (MonoVTable, runtime_generic_context));
+	// FIXME: Avoid this check by allocating the table when the vtable is created etc.
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rgctx_reg, 0);
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, slowpath_bb);
+
+	int table_size = mono_class_rgctx_get_array_size (0, FALSE);
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, slot_ins->dreg, table_size - 1);
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBGE, slowpath_bb);
+
+	int shifted_slot_reg = alloc_ireg (cfg);
+	EMIT_NEW_BIALU_IMM (cfg, ins, OP_ISHL_IMM, shifted_slot_reg, slot_ins->dreg, TARGET_SIZEOF_VOID_P == 8 ? 3 : 2);
+
+	int addr_reg = alloc_preg (cfg);
+	EMIT_NEW_UNALU (cfg, ins, OP_MOVE, addr_reg, rgctx_reg);
+	EMIT_NEW_BIALU (cfg, ins, OP_PADD, addr_reg, addr_reg, shifted_slot_reg);
+	int val_reg = alloc_preg (cfg);
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, val_reg, addr_reg, TARGET_SIZEOF_VOID_P);
+
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, val_reg, 0);
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, slowpath_bb);
+
 	res_reg = alloc_preg (cfg);
-	MONO_INST_NEW (cfg, ins, OP_MOVE);
-	ins->dreg = res_reg;
-	ins->sreg1 = val_reg;
-	MONO_ADD_INS (cfg->cbb, ins);
+	EMIT_NEW_UNALU (cfg, ins, OP_MOVE, res_reg, val_reg);
 	res = ins;
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 
-	/* Slowpath */
-	MONO_START_BB (cfg, is_null_bb);
-	args [0] = rgctx;
-	EMIT_NEW_ICONST (cfg, args [1], index);
-	if (mrgctx)
-		call = mono_emit_jit_icall (cfg, mono_fill_method_rgctx, args);
-	else
-		call = mono_emit_jit_icall (cfg, mono_fill_class_rgctx, args);
-	MONO_INST_NEW (cfg, ins, OP_MOVE);
-	ins->dreg = res_reg;
-	ins->sreg1 = call->dreg;
-	MONO_ADD_INS (cfg->cbb, ins);
+	MONO_START_BB (cfg, slowpath_bb);
+	slowpath_bb->out_of_line = TRUE;
+
+	MonoInst *args[2] = { rgctx, slot_ins };
+	call = mono_emit_jit_icall (cfg, mono_fill_class_rgctx, args);
+	EMIT_NEW_UNALU (cfg, ins, OP_MOVE, res_reg, call->dreg);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 
 	MONO_START_BB (cfg, end_bb);
 
 	return res;
-#endif
 }
 
 /*
  * emit_rgctx_fetch:
  *
- *   Emit IR to load the value of the rgctx entry ENTRY from the rgctx
- * given by RGCTX.
+ *   Emit IR to load the value of the rgctx entry ENTRY from the rgctx.
  */
 static MonoInst*
-emit_rgctx_fetch (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *entry)
+emit_rgctx_fetch (MonoCompile *cfg, int context_used, MonoJumpInfoRgctxEntry *entry)
 {
+	MonoInst *rgctx = emit_get_rgctx (cfg, context_used);
+
 	if (cfg->llvm_only)
 		return emit_rgctx_fetch_inline (cfg, rgctx, entry);
 	else
@@ -2704,15 +2685,23 @@ mini_emit_get_rgctx_klass (MonoCompile *cfg, int context_used,
 		case MONO_RGCTX_INFO_KLASS:
 			EMIT_NEW_CLASSCONST (cfg, ins, klass);
 			return ins;
+		case MONO_RGCTX_INFO_VTABLE: {
+			MonoVTable *vtable = mono_class_vtable_checked (klass, cfg->error);
+			CHECK_CFG_ERROR;
+			EMIT_NEW_VTABLECONST (cfg, ins, vtable);
+			return ins;
+		}
 		default:
 			g_assert_not_reached ();
 		}
 	}
 
 	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_CLASS, klass, rgctx_type);
-	MonoInst *rgctx = emit_get_rgctx (cfg, context_used);
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+	return emit_rgctx_fetch (cfg, context_used, entry);
+
+mono_error_exit:
+	return NULL;
 }
 
 static MonoInst*
@@ -2720,9 +2709,8 @@ emit_get_rgctx_sig (MonoCompile *cfg, int context_used,
 					MonoMethodSignature *sig, MonoRgctxInfoType rgctx_type)
 {
 	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_SIGNATURE, sig, rgctx_type);
-	MonoInst *rgctx = emit_get_rgctx (cfg, context_used);
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+	return emit_rgctx_fetch (cfg, context_used, entry);
 }
 
 static MonoInst*
@@ -2731,16 +2719,14 @@ emit_get_rgctx_gsharedvt_call (MonoCompile *cfg, int context_used,
 {
 	MonoJumpInfoGSharedVtCall *call_info;
 	MonoJumpInfoRgctxEntry *entry;
-	MonoInst *rgctx;
 
 	call_info = (MonoJumpInfoGSharedVtCall *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfoGSharedVtCall));
 	call_info->sig = sig;
 	call_info->method = cmethod;
 
 	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_GSHAREDVT_CALL, call_info, rgctx_type);
-	rgctx = emit_get_rgctx (cfg, context_used);
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+	return emit_rgctx_fetch (cfg, context_used, entry);
 }
 
 /*
@@ -2754,16 +2740,14 @@ emit_get_rgctx_virt_method (MonoCompile *cfg, int context_used,
 {
 	MonoJumpInfoVirtMethod *info;
 	MonoJumpInfoRgctxEntry *entry;
-	MonoInst *rgctx;
 
 	info = (MonoJumpInfoVirtMethod *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfoVirtMethod));
 	info->klass = klass;
 	info->method = virt_method;
 
 	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_VIRT_METHOD, info, rgctx_type);
-	rgctx = emit_get_rgctx (cfg, context_used);
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+	return emit_rgctx_fetch (cfg, context_used, entry);
 }
 
 static MonoInst*
@@ -2771,12 +2755,10 @@ emit_get_rgctx_gsharedvt_method (MonoCompile *cfg, int context_used,
 								 MonoMethod *cmethod, MonoGSharedVtMethodInfo *info)
 {
 	MonoJumpInfoRgctxEntry *entry;
-	MonoInst *rgctx;
 
 	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_GSHAREDVT_METHOD, info, MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO);
-	rgctx = emit_get_rgctx (cfg, context_used);
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+	return emit_rgctx_fetch (cfg, context_used, entry);
 }
 
 /*
@@ -2810,9 +2792,8 @@ emit_get_rgctx_method (MonoCompile *cfg, int context_used,
 		}
 	} else {
 		MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_METHODCONST, cmethod, rgctx_type);
-		MonoInst *rgctx = emit_get_rgctx (cfg, context_used);
 
-		return emit_rgctx_fetch (cfg, rgctx, entry);
+		return emit_rgctx_fetch (cfg, context_used, entry);
 	}
 }
 
@@ -2821,9 +2802,8 @@ emit_get_rgctx_field (MonoCompile *cfg, int context_used,
 					  MonoClassField *field, MonoRgctxInfoType rgctx_type)
 {
 	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_FIELD, field, rgctx_type);
-	MonoInst *rgctx = emit_get_rgctx (cfg, context_used);
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+	return emit_rgctx_fetch (cfg, context_used, entry);
 }
 
 MonoInst*
@@ -3522,7 +3502,6 @@ emit_get_rgctx_dele_tramp (MonoCompile *cfg, int context_used,
 {
 	MonoDelegateClassMethodPair *info;
 	MonoJumpInfoRgctxEntry *entry;
-	MonoInst *rgctx;
 
 	info = (MonoDelegateClassMethodPair *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoDelegateClassMethodPair));
 	info->klass = klass;
@@ -3530,11 +3509,9 @@ emit_get_rgctx_dele_tramp (MonoCompile *cfg, int context_used,
 	info->is_virtual = _virtual;
 
 	entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_DELEGATE_TRAMPOLINE, info, rgctx_type);
-	rgctx = emit_get_rgctx (cfg, context_used);
 
-	return emit_rgctx_fetch (cfg, rgctx, entry);
+	return emit_rgctx_fetch (cfg, context_used, entry);
 }
-
 
 /*
  * Returns NULL and set the cfg exception on error.
@@ -5563,25 +5540,23 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 {
 	MonoInst *vtable_arg = NULL, *callvirt_this_arg = NULL, *ins;
 
-	if (m_class_is_valuetype (cmethod->klass) && mono_class_generic_sharing_enabled (cmethod->klass) &&
-					mono_method_is_generic_sharable (cmethod, TRUE)) {
-		if (cmethod->is_inflated && mono_method_get_context (cmethod)->method_inst) {
+	if (mono_class_generic_sharing_enabled (cmethod->klass) && mono_method_is_generic_sharable (cmethod, TRUE)) {
+		MonoRgctxAccess access = mini_get_rgctx_access_for_method (cmethod);
+
+		if (access == MONO_RGCTX_ACCESS_MRGCTX) {
 			mono_class_vtable_checked (cmethod->klass, cfg->error);
 			CHECK_CFG_ERROR;
 			CHECK_TYPELOAD (cmethod->klass);
 
 			vtable_arg = emit_get_rgctx_method (cfg, context_used,
 												cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
+		} else if (access == MONO_RGCTX_ACCESS_VTABLE) {
+			vtable_arg = mini_emit_get_rgctx_klass (cfg, context_used,
+													cmethod->klass, MONO_RGCTX_INFO_VTABLE);
+			CHECK_CFG_ERROR;
+			CHECK_TYPELOAD (cmethod->klass);
 		} else {
-			if (context_used) {
-				vtable_arg = mini_emit_get_rgctx_klass (cfg, context_used,
-												   cmethod->klass, MONO_RGCTX_INFO_VTABLE);
-			} else {
-				MonoVTable *vtable = mono_class_vtable_checked (cmethod->klass, cfg->error);
-				CHECK_CFG_ERROR;
-				CHECK_TYPELOAD (cmethod->klass);
-				EMIT_NEW_VTABLECONST (cfg, vtable_arg, vtable);
-			}
+			g_assert (access == MONO_RGCTX_ACCESS_THIS);
 		}
 	}
 
@@ -6498,9 +6473,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
-		if (!cfg->method->wrapper_type && header->num_clauses)
-			cfg->interp_entry_only = TRUE;
-
+		if (!cfg->method->wrapper_type && header->num_clauses) {
+			for (int i = 0; i < header->num_clauses; ++i) {
+				MonoExceptionClause *clause = &header->clauses [i];
+				/* Finally clauses are checked after the remove_finally pass */
+				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
+					cfg->interp_entry_only = TRUE;
+			}
+		}
 		if (cfg->interp_entry_only)
 			emit_llvmonly_interp_entry (cfg, header);
 	}
@@ -7237,8 +7217,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					emit_method_access_failure (cfg, method, cil_method);
 			}
 
-			if (cfg->llvm_only && cmethod && method_needs_stack_walk (cfg, cmethod))
-				needs_stack_walk = TRUE;
+			if (cfg->llvm_only && cmethod && method_needs_stack_walk (cfg, cmethod)) {
+				if (cfg->interp && !cfg->interp_entry_only) {
+					/* Use the interpreter instead */
+					cfg->exception_message = g_strdup ("stack walk");
+					cfg->disable_llvm = TRUE;
+				} else {
+					needs_stack_walk = TRUE;
+				}
+			}
 
 			if (!virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
 				if (!mono_class_is_interface (method->klass))
@@ -7908,7 +7895,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* Common call */
-			if (!(cfg->opt & MONO_OPT_AGGRESSIVE_INLINING) && !(method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) && !(cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
+			if (!(cfg->opt & MONO_OPT_AGGRESSIVE_INLINING) && !(method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) && !(cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) && !method_does_not_return (cmethod))
 				INLINE_FAILURE ("call");
 			common_call = TRUE;
 

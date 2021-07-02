@@ -317,6 +317,13 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT.cs"
              Link="Common\Interop\Windows\Interop.HRESULT.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <Compile Include="System\Drawing\Icon.Windows.COMWrappers.cs" />
+    <Compile Include="System\Drawing\DrawingComWrappers.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <Compile Include="System\Drawing\Icon.Windows.NoCOMWrappers.cs" />
+  </ItemGroup>
   <!-- Unix specific -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Drawing\Graphics.Unix.cs" />

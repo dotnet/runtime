@@ -20,6 +20,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public object Resolve(ServiceCallSite callSite, ServiceProviderEngineScope scope)
         {
+            // Fast path to avoid virtual calls if we already have the cached value in the root scope
+            if (scope.IsRootScope && callSite.Value is object cached)
+            {
+                return cached;
+            }
+
             return VisitCallSite(callSite, new RuntimeResolverContext
             {
                 Scope = scope
@@ -151,11 +157,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override object VisitServiceProvider(ServiceProviderCallSite serviceProviderCallSite, RuntimeResolverContext context)
         {
             return context.Scope;
-        }
-
-        protected override object VisitServiceScopeFactory(ServiceScopeFactoryCallSite serviceScopeFactoryCallSite, RuntimeResolverContext context)
-        {
-            return serviceScopeFactoryCallSite.Value;
         }
 
         protected override object VisitIEnumerable(IEnumerableCallSite enumerableCallSite, RuntimeResolverContext context)

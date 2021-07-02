@@ -760,12 +760,19 @@ namespace System.Net.Sockets
         public void JoinMulticastGroup(System.Net.IPAddress multicastAddr, System.Net.IPAddress localAddress) { }
         public byte[] Receive([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref System.Net.IPEndPoint? remoteEP) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Sockets.UdpReceiveResult> ReceiveAsync() { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Net.Sockets.UdpReceiveResult> ReceiveAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public int Send(byte[] dgram, int bytes) { throw null; }
+        public int Send(System.ReadOnlySpan<byte> datagram) {throw null; }
         public int Send(byte[] dgram, int bytes, System.Net.IPEndPoint? endPoint) { throw null; }
+        public int Send(System.ReadOnlySpan<byte> datagram, System.Net.IPEndPoint? endPoint) { throw null; }
         public int Send(byte[] dgram, int bytes, string? hostname, int port) { throw null; }
+        public int Send(System.ReadOnlySpan<byte> datagram, string? hostname, int port) { throw null; }
         public System.Threading.Tasks.Task<int> SendAsync(byte[] datagram, int bytes) { throw null; }
+        public System.Threading.Tasks.ValueTask<int> SendAsync(System.ReadOnlyMemory<byte> datagram, System.Threading.CancellationToken cancellationToken = default)  { throw null; }
         public System.Threading.Tasks.Task<int> SendAsync(byte[] datagram, int bytes, System.Net.IPEndPoint? endPoint) { throw null; }
+        public System.Threading.Tasks.ValueTask<int> SendAsync(System.ReadOnlyMemory<byte> datagram, System.Net.IPEndPoint? endPoint, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public System.Threading.Tasks.Task<int> SendAsync(byte[] datagram, int bytes, string? hostname, int port) { throw null; }
+        public System.Threading.Tasks.ValueTask<int> SendAsync(System.ReadOnlyMemory<byte> datagram, string? hostname, int port, System.Threading.CancellationToken cancellationToken = default)  { throw null; }
     }
     public partial struct UdpReceiveResult : System.IEquatable<System.Net.Sockets.UdpReceiveResult>
     {
