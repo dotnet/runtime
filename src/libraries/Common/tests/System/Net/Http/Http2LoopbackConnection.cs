@@ -36,11 +36,12 @@ namespace System.Net.Test.Common
         public Stream Stream => _connectionStream;
         public Task<bool> SettingAckWaiter => _ignoredSettingsAckPromise?.Task;
 
-        private Http2LoopbackConnection(SocketWrapper socket, Stream stream, TimeSpan timeout)
+        private Http2LoopbackConnection(SocketWrapper socket, Stream stream, TimeSpan timeout, bool transparentPingResponse)
         {
             _connectionSocket = socket;
             _connectionStream = stream;
             _timeout = timeout;
+            _transparentPingResponse = transparentPingResponse;
         }
 
         public static Task<Http2LoopbackConnection> CreateAsync(SocketWrapper socket, Stream stream, Http2Options httpOptions)
@@ -78,12 +79,8 @@ namespace System.Net.Test.Common
                 stream = sslStream;
             }
 
-            var con = new Http2LoopbackConnection(socket, stream, timeout);
+            var con = new Http2LoopbackConnection(socket, stream, timeout, httpOptions.EnableTransparentPingResponse);
             await con.ReadPrefixAsync().ConfigureAwait(false);
-            if (httpOptions.EnableTransparentPingResponse)
-            {
-                con.SetuptransparentPingResponse();
-            }
 
             return con;
         }
@@ -204,20 +201,12 @@ namespace System.Net.Test.Common
                 return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            if (_expectPingFrame != null && header.Type == FrameType.Ping)
+            if (header.Type == FrameType.Ping && (_expectPingFrame != null || _transparentPingResponse))
             {
                 PingFrame pingFrame = PingFrame.ReadFrom(header, data);
 
-                // _expectPingFrame is not intended to work with PING ACK:
-                if (!pingFrame.AckFlag)
-                {
-                    await ProcessExpectedPingFrameAsync(pingFrame);
-                    return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    return pingFrame;
-                }
+                bool processed = await TryProcessExpectedPingFrameAsync(pingFrame);
+                return processed ? await ReadFrameAsync(cancellationToken).ConfigureAwait(false) : pingFrame;
             }
 
             // Construct the correct frame type and return it.
@@ -246,30 +235,30 @@ namespace System.Net.Test.Common
             }
         }
 
-        private async Task ProcessExpectedPingFrameAsync(PingFrame pingFrame)
+        private async Task<bool> TryProcessExpectedPingFrameAsync(PingFrame pingFrame)
         {
-            _expectPingFrame.SetResult(pingFrame);
-            bool shutdownOccured = false;
-            if (_transparentPingResponse)
+            if (_expectPingFrame != null)
             {
+                _expectPingFrame.SetResult(pingFrame);
+                _expectPingFrame = null;
+                return true;
+            }
+            else if (_transparentPingResponse && !pingFrame.AckFlag)
+            {
+                bool shutdownOccured = false;
                 try
                 {
                     await SendPingAckAsync(pingFrame.Data);
                 }
-                catch (IOException ex) when (_expectClientDisconnect && ex.InnerException is SocketException sex && sex.SocketErrorCode == SocketError.Shutdown)
+                catch (IOException ex) when (_expectClientDisconnect && ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown)
                 {
                     // couldn't send PING ACK, because client is already disconnected
                     shutdownOccured = true;
                 }
+                _transparentPingResponse = !shutdownOccured;
+                return true;
             }
-
-            _expectPingFrame = null;
-            _transparentPingResponse = !shutdownOccured;
-
-            if (_transparentPingResponse)
-            {
-                _ = ExpectPingFrameAsync();
-            }
+            return false;
         }
 
         // Reset and return underlying networking objects.
@@ -306,23 +295,20 @@ namespace System.Net.Test.Common
             _ignoreWindowUpdates = true;
         }
 
-        // Set up loopback server to expect a (non-ACK) PING frame among other frames.
+        // Set up loopback server to expect a PING frame among other frames.
         // Once PING frame is read in ReadFrameAsync, the returned task is completed.
         // The returned task is canceled in ReadPingAsync if no PING frame has been read so far.
+        // Does not work when Http2Options.EnableTransparentPingResponse == true
         public Task<PingFrame> ExpectPingFrameAsync()
         {
+            if (_transparentPingResponse)
+            {
+                throw new InvalidOperationException(
+                    $"{nameof(Http2LoopbackConnection)}.{nameof(ExpectPingFrameAsync)} can not be used when transparent PING response is enabled.");
+            }
+
             _expectPingFrame ??= new TaskCompletionSource<PingFrame>();
-
             return _expectPingFrame.Task;
-        }
-
-        // Recurring variant of ExpectPingFrame().
-        // Starting from the time of the call, respond to all (non-ACK) PING frames which are received among other frames.
-        private void SetuptransparentPingResponse()
-        {
-            if (_transparentPingResponse) return;
-            _transparentPingResponse = true;
-            _ = ExpectPingFrameAsync();
         }
 
         public async Task ReadRstStreamAsync(int streamId)

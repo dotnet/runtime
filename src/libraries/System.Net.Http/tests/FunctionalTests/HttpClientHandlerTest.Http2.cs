@@ -1891,7 +1891,6 @@ namespace System.Net.Http.Functional.Tests
                     },
                     new Http2Options() { EnableTransparentPingResponse = false });
             }
-            
         }
 
         [OuterLoop("Uses Task.Delay")]
