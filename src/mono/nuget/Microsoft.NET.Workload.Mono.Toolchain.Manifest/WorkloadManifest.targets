@@ -20,6 +20,8 @@
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'ios'">
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.RuntimeConfigParser.Task" />
+    </ImportGroup>
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'ios' and $([MSBuild]::IsOSPlatform('osx'))">
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm" />
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.ios-arm64" />
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.iossimulator" />
@@ -27,11 +29,15 @@
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst'">
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.RuntimeConfigParser.Task" />
+    </ImportGroup>
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst' and $([MSBuild]::IsOSPlatform('osx'))">
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst" />
     </ImportGroup>
 
     <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'tvos'">
         <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.RuntimeConfigParser.Task" />
+    </ImportGroup>
+    <ImportGroup Condition="'$(TargetPlatformIdentifier)' == 'tvos' and $([MSBuild]::IsOSPlatform('osx'))">
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvos-arm64" />
         <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.tvossimulator" />
     </ImportGroup>
