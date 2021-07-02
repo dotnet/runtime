@@ -4,11 +4,11 @@
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// Specifies that the JSON object should have its <see cref="OnSerializing"/> method called
-    /// before serialization occurs.
+    /// Specifies that the type should have its <see cref="OnSerializing"/> method called before serialization occurs.
     /// </summary>
     /// <remarks>
-    /// Only JSON objects using the default custom converter support this behavior; collections, dictionaries and values do not.
+    /// This behavior is only supported on types representing JSON objects.
+    /// Types that have a custom converter or represent collections or values do not support this behavior.
     /// </remarks>
     public interface IJsonOnSerializing
     {
