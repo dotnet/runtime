@@ -918,6 +918,86 @@ public:
     static BOOL nativeIsDigit(WCHAR c);
 };
 
+// ======================================================================================
+// Simple, reusable 100ns timer for normalizing ticks. For use in Q/FCalls to avoid discrepency with
+// tick frequency between native and managed.
+class NormalizedTimer
+{
+private:
+    LARGE_INTEGER startTimestamp = { .QuadPart = 0 };
+    LARGE_INTEGER stopTimestamp = { .QuadPart = 0 };
+    int64_t cachedElapsed100nsTicks = 0;
+    bool shouldRecalculate = true;
+    bool isRunning = false;
+    static const int64_t NormalizedTicksPerSecond = 10000000 /* 100ns ticks per second (1e7) */;
+    static Volatile<int64_t> s_frequency;
+
+    inline
+    void Lap()
+    {
+        startTimestamp = stopTimestamp;
+        stopTimestamp.QuadPart = 0;
+        isRunning = true;
+        shouldRecalculate = true;
+    }
+public:
+    // ======================================================================================
+    // Start the timer
+    inline
+    void Start()
+    {
+        QueryPerformanceCounter(&startTimestamp);
+        stopTimestamp.QuadPart = 0;
+        isRunning = true;
+        shouldRecalculate = true;
+    }
+
+    // ======================================================================================
+    // stop the timer. If called before starting, sets the start time to the same as the stop
+    inline
+    void Stop()
+    {
+        QueryPerformanceCounter(&stopTimestamp);
+        // protect against stop before start
+        if (!isRunning)
+            startTimestamp = stopTimestamp;
+
+        isRunning = false;
+        shouldRecalculate = true;
+    }
+
+    // ======================================================================================
+    // Return elapsed ticks. This will stop a running timer.
+    // Will return 0 if called out of order.
+    // Only recalculated this value if it has been stopped/started since previous calculation.
+    inline
+    int64_t Elapsed100nsTicks(bool shouldContinue = false)
+    {
+        if (s_frequency == -1)
+        {
+            int64_t frequency;
+            LARGE_INTEGER qpfValue;
+            QueryPerformanceFrequency(&qpfValue);
+            frequency = static_cast<int64_t>(qpfValue.QuadPart);
+            frequency /= NormalizedTicksPerSecond;
+            InterlockedExchange64(&s_frequency, frequency);
+        }
+
+        if (shouldRecalculate)
+        {
+            if (isRunning)
+                Stop();
+
+            cachedElapsed100nsTicks = static_cast<int64_t>(stopTimestamp.QuadPart - startTimestamp.QuadPart) / s_frequency;
+
+            if (shouldContinue)
+                Lap();
+        }
+
+        return cachedElapsed100nsTicks;
+    }
+};
+
 #ifdef _DEBUG
 #define FORCEINLINE_NONDEBUG
 #else

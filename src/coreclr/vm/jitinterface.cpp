@@ -13042,13 +13042,11 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     MethodDesc* ftn = nativeCodeVersion.GetMethodDesc();
 
     PCODE ret = NULL;
-    LARGE_INTEGER jitStartTimestamp;
-    LARGE_INTEGER jitEndTimestamp;
-    int64_t jitTimeQPCTicks = 0;
+    NormalizedTimer timer;
 
     COOPERATIVE_TRANSITION_BEGIN();
 
-    QueryPerformanceCounter(&jitStartTimestamp);
+    timer.Start();
 
 #ifdef FEATURE_PREJIT
 
@@ -13411,12 +13409,10 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         printf(".");
 #endif // _DEBUG
 
-    QueryPerformanceCounter(&jitEndTimestamp);
+    timer.Stop();
 
-    jitTimeQPCTicks = static_cast<int64_t>(jitEndTimestamp.QuadPart - jitStartTimestamp.QuadPart);
-
-    FastInterlockExchangeAddLong((LONG64*)&g_cQPCTicksInJit, jitTimeQPCTicks);
-    g_cQPCTicksInJitForThread += jitTimeQPCTicks;
+    FastInterlockExchangeAddLong((LONG64*)&g_cQPCTicksInJit, timer.Elapsed100nsTicks());
+    g_cQPCTicksInJitForThread += timer.Elapsed100nsTicks();
 
     FastInterlockExchangeAddLong((LONG64*)&g_cbILJitted, methodInfo.ILCodeSize);
     g_cbILJittedForThread += methodInfo.ILCodeSize;

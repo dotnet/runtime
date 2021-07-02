@@ -24,11 +24,12 @@ namespace System.Runtime
         /// </summary>
         /// <param name="currentThread">Whether the returned value should be specific to the current thread. Default: false</param>
         /// <returns>The number of methods the JIT has compiled.</returns>
-        public static int GetCompiledMethodCount(bool currentThread = false)
+        public static long GetCompiledMethodCount(bool currentThread = false)
         {
-            return currentThread ? 0 : (int)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.JIT_METHODS_JITTED);
+            return currentThread ? 0 : (long)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.JIT_METHODS_JITTED);
         }
 
+        // normalized to 100ns ticks on vm side
         public static long GetCompilationTimeInTicks(bool currentThread = false)
         {
             return currentThread ? 0 : (long)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.JIT_TICKS_IN_JIT);

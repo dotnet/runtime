@@ -5,7 +5,7 @@ namespace System.Diagnostics
 {
     public partial class Stopwatch
     {
-        internal static unsafe long QueryPerformanceFrequency()
+        private static unsafe long QueryPerformanceFrequency()
         {
             long resolution;
 
@@ -16,7 +16,7 @@ namespace System.Diagnostics
             return resolution;
         }
 
-        internal static unsafe long QueryPerformanceCounter()
+        private static unsafe long QueryPerformanceCounter()
         {
             long timestamp;
 

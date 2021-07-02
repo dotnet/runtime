@@ -25,8 +25,9 @@ namespace System.Runtime
         /// <param name="currentThread">Whether the returned value should be specific to the current thread. Default: false</param>
         /// <returns>The number of methods the JIT has compiled.</returns>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetCompiledMethodCount(bool currentThread = false);
+        public static extern long GetCompiledMethodCount(bool currentThread = false);
 
+        // Normalized to 100ns ticks on vm side
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern long GetCompilationTimeInTicks(bool currentThread = false);
     }

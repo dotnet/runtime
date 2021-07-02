@@ -275,7 +275,7 @@ get_il_bytes_jitted (void)
 
 static
 inline
-gint32
+gint64
 get_methods_jitted (void)
 {
 	gint64 methods_compiled = 0;
@@ -285,7 +285,7 @@ get_methods_jitted (void)
 
 	if (mono_get_runtime_callbacks ()->get_jit_stats)
 		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes, &jit_time);
-	return (gint32)methods_compiled;
+	return methods_compiled;
 }
 
 static
