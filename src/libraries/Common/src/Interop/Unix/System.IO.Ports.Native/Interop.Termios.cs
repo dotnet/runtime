@@ -48,7 +48,7 @@ internal static partial class Interop
         internal static extern int TermiosGetSpeed(SafeSerialDeviceHandle handle);
 
         [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_TermiosAvailableBytes", SetLastError = true)]
-        internal static extern int TermiosGetAvailableBytes(SafeSerialDeviceHandle handle, bool fromReadBuffer);
+        internal static extern int TermiosGetAvailableBytes(SafeSerialDeviceHandle handle, [MarshalAs(UnmanagedType.I4)]bool fromReadBuffer);
 
         [DllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_TermiosDiscard", SetLastError = true)]
         internal static extern int TermiosDiscard(SafeSerialDeviceHandle handle, Queue input);
