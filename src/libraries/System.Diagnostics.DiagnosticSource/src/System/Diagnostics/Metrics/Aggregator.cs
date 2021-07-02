@@ -17,7 +17,7 @@ namespace System.Diagnostics.Metrics
 
     internal interface IAggregationStatistics { }
 
-    internal struct QuantileValue
+    internal readonly struct QuantileValue
     {
         public QuantileValue(double quantile, double value)
         {
@@ -28,7 +28,7 @@ namespace System.Diagnostics.Metrics
         public double Value { get; }
     }
 
-    internal class HistogramStatistics : IAggregationStatistics
+    internal sealed class HistogramStatistics : IAggregationStatistics
     {
         internal HistogramStatistics(QuantileValue[] quantiles)
         {
@@ -38,7 +38,7 @@ namespace System.Diagnostics.Metrics
         public QuantileValue[] Quantiles { get; }
     }
 
-    internal class LabeledAggregationStatistics
+    internal sealed class LabeledAggregationStatistics
     {
         public LabeledAggregationStatistics(IAggregationStatistics stats, params KeyValuePair<string, string>[] labels)
         {

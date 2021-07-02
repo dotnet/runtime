@@ -19,13 +19,13 @@ namespace System.Diagnostics.Metrics
 
         public bool Equals(ObjectSequence1 other)
         {
-            return (Value1 == null && other.Value1 == null) || (Value1 != null && Value1.Equals(other.Value1));
+            return Value1 is null ? other.Value1 is null : Value1.Equals(other.Value1);
         }
 
         //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
-            return obj is ObjectSequence1 && Equals((ObjectSequence1)obj);
+            return obj is ObjectSequence1 os1 && Equals(os1);
         }
     }
 
@@ -42,14 +42,14 @@ namespace System.Diagnostics.Metrics
 
         public bool Equals(ObjectSequence2 other)
         {
-            return ((Value1 == null && other.Value1 == null) || (Value1 != null && Value1.Equals(other.Value1))) &&
-                   ((Value2 == null && other.Value2 == null) || (Value2 != null && Value2.Equals(other.Value2)));
+            return (Value1 is null ? other.Value1 is null : Value1.Equals(other.Value1)) &&
+                   (Value2 is null ? other.Value2 is null : Value2.Equals(other.Value2));
         }
 
         //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
-            return obj is ObjectSequence2 && Equals((ObjectSequence2)obj);
+            return obj is ObjectSequence2 os2 && Equals(os2);
         }
     }
 
@@ -68,21 +68,21 @@ namespace System.Diagnostics.Metrics
 
         public bool Equals(ObjectSequence3 other)
         {
-            return ((Value1 == null && other.Value1 == null) || (Value1 != null && Value1.Equals(other.Value1))) &&
-                   ((Value2 == null && other.Value2 == null) || (Value2 != null && Value2.Equals(other.Value2))) &&
-                   ((Value3 == null && other.Value3 == null) || (Value3 != null && Value3.Equals(other.Value3)));
+            return (Value1 is null ? other.Value1 is null : Value1.Equals(other.Value1)) &&
+                   (Value2 is null ? other.Value2 is null : Value2.Equals(other.Value2)) &&
+                   (Value3 is null ? other.Value3 is null : Value3.Equals(other.Value3));
         }
 
         //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
-            return obj is ObjectSequence3 && Equals((ObjectSequence3)obj);
+            return obj is ObjectSequence3 os3 && Equals(os3);
         }
     }
 
     internal partial struct ObjectSequenceMany : IEquatable<ObjectSequenceMany>, IObjectSequence
     {
-        private object?[] _values;
+        private readonly object?[] _values;
 
         public ObjectSequenceMany(object[] values)
         {
@@ -97,15 +97,15 @@ namespace System.Diagnostics.Metrics
             }
             for (int i = 0; i < _values.Length; i++)
             {
-                if (_values[i] == null)
+                object? value = _values[i], otherValue = other._values[i];
+                if (value is null)
                 {
-                    if (other._values[i] == null)
+                    if (otherValue is not null)
                     {
-                        continue;
+                        return false;
                     }
-                    return false;
                 }
-                if (!_values[i]!.Equals(other._values[i]))
+                else if (!value.Equals(otherValue))
                 {
                     return false;
                 }
@@ -116,7 +116,7 @@ namespace System.Diagnostics.Metrics
         //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
-            return obj is ObjectSequenceMany && Equals((ObjectSequenceMany)obj);
+            return obj is ObjectSequenceMany osm && Equals(osm);
         }
     }
 }

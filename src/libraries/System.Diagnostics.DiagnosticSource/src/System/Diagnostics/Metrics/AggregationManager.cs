@@ -10,38 +10,36 @@ using System.Threading.Tasks;
 
 namespace System.Diagnostics.Metrics
 {
-#if OS_SUPPORT_ATTRTIBUTES
     [UnsupportedOSPlatform("browser")]
-#endif
     [SecuritySafeCritical]
-    internal class AggregationManager
+    internal sealed class AggregationManager
     {
         public const double MinCollectionTimeSecs = 0.1;
-        private static readonly QuantileAggregation DefaultHistogramConfig = new QuantileAggregation(new double[] { 0.50, 0.95, 0.99 });
+        private static readonly QuantileAggregation s_defaultHistogramConfig = new QuantileAggregation(new double[] { 0.50, 0.95, 0.99 });
 
         // these fields are modified after construction and accessed on multiple threads, use lock(this) to ensure the data
         // is synchronized
-        private List<Predicate<Instrument>> _instrumentConfigFuncs = new();
+        private readonly List<Predicate<Instrument>> _instrumentConfigFuncs = new();
         private TimeSpan _collectionPeriod;
 
-        private ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new();
-        private CancellationTokenSource _cts = new();
+        private readonly ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new();
+        private readonly CancellationTokenSource _cts = new();
         private Thread? _collectThread;
-        private MeterListener _listener;
+        private readonly MeterListener _listener;
 
-        private Action<Instrument, LabeledAggregationStatistics> _collectMeasurement;
-        private Action<DateTime> _beginCollection;
-        private Action<DateTime> _endCollection;
-        private Action<Instrument> _beginInstrumentMeasurements;
-        private Action<Instrument> _endInstrumentMeasurements;
-        private Action<Instrument> _instrumentPublished;
-        private Action _initialInstrumentEnumerationComplete;
-        private Action<Exception> _collectionError;
+        private readonly Action<Instrument, LabeledAggregationStatistics> _collectMeasurement;
+        private readonly Action<DateTime, DateTime> _beginCollection;
+        private readonly Action<DateTime, DateTime> _endCollection;
+        private readonly Action<Instrument> _beginInstrumentMeasurements;
+        private readonly Action<Instrument> _endInstrumentMeasurements;
+        private readonly Action<Instrument> _instrumentPublished;
+        private readonly Action _initialInstrumentEnumerationComplete;
+        private readonly Action<Exception> _collectionError;
 
         public AggregationManager(
             Action<Instrument, LabeledAggregationStatistics> collectMeasurement,
-            Action<DateTime> beginCollection,
-            Action<DateTime> endCollection,
+            Action<DateTime, DateTime> beginCollection,
+            Action<DateTime, DateTime> endCollection,
             Action<Instrument> beginInstrumentMeasurements,
             Action<Instrument> endInstrumentMeasurements,
             Action<Instrument> instrumentPublished,
@@ -84,29 +82,28 @@ namespace System.Diagnostics.Metrics
             _listener.SetMeasurementEventCallback<decimal>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
         }
 
-        public AggregationManager Include(string meterName)
+        public void Include(string meterName)
         {
             Include(i => i.Meter.Name == meterName);
-            return this;
         }
 
-        public AggregationManager Include(string meterName, string instrumentName)
+        public void Include(string meterName, string instrumentName)
         {
             Include(i => i.Meter.Name == meterName && i.Name == instrumentName);
-            return this;
         }
 
-        public AggregationManager Include(Predicate<Instrument> instrumentFilter)
+        private void Include(Predicate<Instrument> instrumentFilter)
         {
             lock (this)
             {
                 _instrumentConfigFuncs.Add(instrumentFilter);
             }
-            return this;
         }
 
         public AggregationManager SetCollectionPeriod(TimeSpan collectionPeriod)
         {
+            // The caller, MetricsEventSource, is responsible for enforcing this
+            Debug.Assert(collectionPeriod.TotalSeconds >= MinCollectionTimeSecs);
             lock (this)
             {
                 _collectionPeriod = collectionPeriod;
@@ -117,27 +114,16 @@ namespace System.Diagnostics.Metrics
         public void Start()
         {
             // if already started or already stopped we can't be started again
-            if (_collectThread != null || _cts.IsCancellationRequested)
-            {
-                // this is purely for defensive programming and it should be impossible
-                // for a developer to observe this exception unless this library has a
-                // bug in it. Because of that we didn't bother to localize the error message.
-                throw new InvalidOperationException("Start can only be called once");
-            }
-
-            if (_collectionPeriod.TotalSeconds < MinCollectionTimeSecs)
-            {
-                // this is purely for defensive programming and it should be impossible
-                // for a developer to observe this exception unless this library has a
-                // bug in it. Because of that we didn't bother to localize the error message.
-                throw new InvalidOperationException($"CollectionPeriod must be >= {MinCollectionTimeSecs} sec");
-            }
+            Debug.Assert(_collectThread == null && !_cts.IsCancellationRequested);
+            Debug.Assert(_collectionPeriod.TotalSeconds >= MinCollectionTimeSecs);
 
             // This explicitly uses a Thread and not a Task so that metrics still work
             // even when an app is experiencing thread-pool starvation. Although we
             // can't make in-proc metrics robust to everything, this is a common enough
             // problem in .NET apps that it feels worthwhile to take the precaution.
             _collectThread = new Thread(() => CollectWorker(_cts.Token));
+            _collectThread.IsBackground = true;
+            _collectThread.Name = "MetricsEventSource CollectWorker";
             _collectThread.Start();
 
             _listener.Start();
@@ -153,13 +139,7 @@ namespace System.Diagnostics.Metrics
                 {
                     collectionIntervalSecs = _collectionPeriod.TotalSeconds;
                 }
-                if (collectionIntervalSecs < MinCollectionTimeSecs)
-                {
-                    // this is purely for defensive programming and it should be impossible
-                    // for a developer to observe this exception unless this library has a
-                    // bug in it. Because of that we didn't bother to localize the error message.
-                    throw new InvalidOperationException($"_collectionPeriod must be >= {MinCollectionTimeSecs} sec");
-                }
+                Debug.Assert(collectionIntervalSecs >= MinCollectionTimeSecs);
 
                 DateTime startTime = DateTime.UtcNow;
                 DateTime intervalStartTime = startTime;
@@ -190,18 +170,16 @@ namespace System.Diagnostics.Metrics
 
                     // pause until the interval is complete
                     TimeSpan delayTime = nextIntervalStartTime - now;
-                    cancelToken.WaitHandle.WaitOne(delayTime);
-
-                    // don't do collection if timer may not have run to completion
-                    if (cancelToken.IsCancellationRequested)
+                    if (cancelToken.WaitHandle.WaitOne(delayTime))
                     {
+                        // don't do collection if timer may not have run to completion
                         break;
                     }
 
                     // collect statistics for the completed interval
-                    _beginCollection(intervalStartTime);
+                    _beginCollection(intervalStartTime, nextIntervalStartTime);
                     Collect();
-                    _endCollection(intervalStartTime);
+                    _endCollection(intervalStartTime, nextIntervalStartTime);
                     intervalStartTime = nextIntervalStartTime;
                 }
             }
@@ -224,16 +202,16 @@ namespace System.Diagnostics.Metrics
 
         private void RemoveInstrumentState(Instrument instrument, InstrumentState state)
         {
-            _instrumentStates.TryRemove(instrument, out InstrumentState? _state);
+            _instrumentStates.TryRemove(instrument, out _);
         }
 
         private InstrumentState? GetInstrumentState(Instrument instrument)
         {
             if (!_instrumentStates.TryGetValue(instrument, out InstrumentState? instrumentState))
             {
-                lock (this) // protect _isntrumentConfigFuncs list
+                lock (this) // protect _instrumentConfigFuncs list
                 {
-                    foreach (var filter in _instrumentConfigFuncs)
+                    foreach (Predicate<Instrument> filter in _instrumentConfigFuncs)
                     {
                         if (filter(instrument))
                         {
@@ -241,7 +219,10 @@ namespace System.Diagnostics.Metrics
                             if (instrumentState != null)
                             {
                                 _instrumentStates.TryAdd(instrument, instrumentState);
-                                instrumentState = _instrumentStates[instrument];
+                                // I don't think it is possible for the instrument to be removed immediately
+                                // and instrumentState = _instrumentStates[instrument] should work, but writing
+                                // this defensively.
+                                _instrumentStates.TryGetValue(instrument, out instrumentState);
                             }
                             break;
                         }
@@ -267,15 +248,7 @@ namespace System.Diagnostics.Metrics
         {
             Type type = instrument.GetType();
             Type? genericDefType = null;
-#if IS_GENERIC_TYPE_SUPPORT
             genericDefType = type.IsGenericType ? type.GetGenericTypeDefinition() : null;
-#else
-            try
-            {
-                 genericDefType = type.GetGenericTypeDefinition();
-            }
-            catch {}
-#endif
             if (genericDefType == typeof(Counter<>))
             {
                 return () => new RateSumAggregator();
@@ -290,7 +263,7 @@ namespace System.Diagnostics.Metrics
             }
             else if (genericDefType == typeof(Histogram<>))
             {
-                return () => new ExponentialHistogramAggregator(DefaultHistogramConfig);
+                return () => new ExponentialHistogramAggregator(s_defaultHistogramConfig);
             }
             else
             {

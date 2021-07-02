@@ -703,13 +703,11 @@ namespace System.Diagnostics.Metrics.Tests
                 {
                     Assert.True(startEventsSeen == stopEventsSeen, "Unbalanced CollectionStart event");
                     startEventsSeen++;
-                    Assert.Equal(expectedIntervalSecs, (double)e.Payload[2]);
                 }
                 else if(e.EventName == "CollectionStop")
                 {
                     Assert.True(startEventsSeen == stopEventsSeen + 1, "Unbalanced CollectionStop event");
                     stopEventsSeen++;
-                    Assert.Equal(expectedIntervalSecs, (double)e.Payload[2]);
                 }
                 else if (e.EventName == "CounterRateValuePublished" ||
                     e.EventName == "GaugeValuePublished" ||

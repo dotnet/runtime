@@ -25,7 +25,7 @@ namespace System.Diagnostics.Metrics
         //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
-            return obj is StringSequence1 && Equals((StringSequence1)obj);
+            return obj is StringSequence1 ss1 && Equals(ss1);
         }
     }
 
@@ -48,7 +48,7 @@ namespace System.Diagnostics.Metrics
         //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
-            return obj is StringSequence2 && Equals((StringSequence2)obj);
+            return obj is StringSequence2 ss2 && Equals(ss2);
         }
     }
 
@@ -73,13 +73,13 @@ namespace System.Diagnostics.Metrics
         //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
-            return obj is StringSequence3 && Equals((StringSequence3)obj);
+            return obj is StringSequence3 ss3 && Equals(ss3);
         }
     }
 
     internal partial struct StringSequenceMany : IEquatable<StringSequenceMany>, IStringSequence
     {
-        private string[] _values;
+        private readonly string[] _values;
 
         public StringSequenceMany(string[] values)
         {
@@ -110,7 +110,7 @@ namespace System.Diagnostics.Metrics
         //GetHashCode() is in the platform specific files
         public override bool Equals(object? obj)
         {
-            return obj is StringSequenceMany && Equals((StringSequenceMany)obj);
+            return obj is StringSequenceMany ssm && Equals(ssm);
         }
     }
 }

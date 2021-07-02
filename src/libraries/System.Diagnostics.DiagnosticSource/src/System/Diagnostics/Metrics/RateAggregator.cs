@@ -3,7 +3,7 @@
 
 namespace System.Diagnostics.Metrics
 {
-    internal class RateSumAggregator : Aggregator
+    internal sealed class RateSumAggregator : Aggregator
     {
         private double _sum;
 
@@ -26,7 +26,7 @@ namespace System.Diagnostics.Metrics
         }
     }
 
-    internal class RateAggregator : Aggregator
+    internal sealed class RateAggregator : Aggregator
     {
         private double? _prevValue;
         private double _value;
@@ -43,7 +43,7 @@ namespace System.Diagnostics.Metrics
         {
             lock (this)
             {
-                double? delta = default;
+                double? delta = null;
                 if (_prevValue.HasValue)
                 {
                     delta = _value - _prevValue.Value;
@@ -55,7 +55,7 @@ namespace System.Diagnostics.Metrics
         }
     }
 
-    internal class RateStatistics : IAggregationStatistics
+    internal sealed class RateStatistics : IAggregationStatistics
     {
         public RateStatistics(double? delta)
         {

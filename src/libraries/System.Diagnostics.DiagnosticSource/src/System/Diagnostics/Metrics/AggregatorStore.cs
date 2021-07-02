@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -57,12 +58,12 @@ namespace System.Diagnostics.Metrics
         // MultiSizeLabelNameDictionary<TAggregator> - this is used when we need to store more than one of the above union items
         private volatile object? _stateUnion;
         private volatile AggregatorLookupFunc<TAggregator>? _cachedLookupFunc;
-        private Func<TAggregator> _createAggregatorFunc;
+        private readonly Func<TAggregator> _createAggregatorFunc;
 
         public AggregatorStore(Func<TAggregator> createAggregator)
         {
-            _stateUnion = default;
-            _cachedLookupFunc = default;
+            _stateUnion = null;
+            _cachedLookupFunc = null;
             _createAggregatorFunc = createAggregator;
         }
 
@@ -91,30 +92,32 @@ namespace System.Diagnostics.Metrics
         public void Collect(Action<LabeledAggregationStatistics> visitFunc)
         {
             object? stateUnion = _stateUnion;
-            if (stateUnion is TAggregator agg)
+            switch (_stateUnion)
             {
-                IAggregationStatistics stats = agg.Collect();
-                visitFunc(new LabeledAggregationStatistics(stats));
-            }
-            else if (stateUnion is FixedSizeLabelNameDictionary<StringSequence1, ObjectSequence1, TAggregator> aggs1)
-            {
-                aggs1.Collect(visitFunc);
-            }
-            else if (stateUnion is FixedSizeLabelNameDictionary<StringSequence2, ObjectSequence2, TAggregator> aggs2)
-            {
-                aggs2.Collect(visitFunc);
-            }
-            else if (stateUnion is FixedSizeLabelNameDictionary<StringSequence3, ObjectSequence3, TAggregator> aggs3)
-            {
-                aggs3.Collect(visitFunc);
-            }
-            else if (stateUnion is FixedSizeLabelNameDictionary<StringSequenceMany, ObjectSequenceMany, TAggregator> aggsMany)
-            {
-                aggsMany.Collect(visitFunc);
-            }
-            else if (stateUnion is MultiSizeLabelNameDictionary<TAggregator> aggsMultiSize)
-            {
-                aggsMultiSize.Collect(visitFunc);
+                case TAggregator agg:
+                    IAggregationStatistics stats = agg.Collect();
+                    visitFunc(new LabeledAggregationStatistics(stats));
+                    break;
+
+                case FixedSizeLabelNameDictionary<StringSequence1, ObjectSequence1, TAggregator> aggs1:
+                    aggs1.Collect(visitFunc);
+                    break;
+
+                case FixedSizeLabelNameDictionary<StringSequence2, ObjectSequence2, TAggregator> aggs2:
+                    aggs2.Collect(visitFunc);
+                    break;
+
+                case FixedSizeLabelNameDictionary<StringSequence3, ObjectSequence3, TAggregator> aggs3:
+                    aggs3.Collect(visitFunc);
+                    break;
+
+                case FixedSizeLabelNameDictionary<StringSequenceMany, ObjectSequenceMany, TAggregator> aggsMany:
+                    aggsMany.Collect(visitFunc);
+                    break;
+
+                case MultiSizeLabelNameDictionary<TAggregator> aggsMultiSize:
+                    aggsMultiSize.Collect(visitFunc);
+                    break;
             }
         }
 
@@ -127,7 +130,10 @@ namespace System.Diagnostics.Metrics
                 if (state == null)
                 {
                     TAggregator newState = _createAggregatorFunc();
-                    Interlocked.CompareExchange(ref _stateUnion, newState, null);
+                    if (Interlocked.CompareExchange(ref _stateUnion, newState, null) is null)
+                    {
+                        return newState;
+                    }
                     continue;
                 }
                 else if (state is TAggregator aggState)
@@ -141,7 +147,10 @@ namespace System.Diagnostics.Metrics
                 else
                 {
                     MultiSizeLabelNameDictionary<TAggregator> newState = new(state);
-                    Interlocked.CompareExchange(ref _stateUnion, newState, state);
+                    if (Interlocked.CompareExchange(ref _stateUnion, newState, state) == state)
+                    {
+                        return newState.GetNoLabelAggregator(_createAggregatorFunc);
+                    }
                     continue;
                 }
             }
@@ -157,7 +166,10 @@ namespace System.Diagnostics.Metrics
                 if (state == null)
                 {
                     FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator> newState = new();
-                    Interlocked.CompareExchange(ref _stateUnion, newState, null);
+                    if (Interlocked.CompareExchange(ref _stateUnion, newState, null) is null)
+                    {
+                        return newState.GetValuesDictionary(names);
+                    }
                     continue;
                 }
                 else if (state is FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator> fixedState)
@@ -171,7 +183,10 @@ namespace System.Diagnostics.Metrics
                 else
                 {
                     MultiSizeLabelNameDictionary<TAggregator> newState = new(state);
-                    Interlocked.CompareExchange(ref _stateUnion, newState, state);
+                    if (Interlocked.CompareExchange(ref _stateUnion, newState, state) == state)
+                    {
+                        return newState.GetFixedSizeLabelNameDictionary<TStringSequence, TObjectSequence>().GetValuesDictionary(names);
+                    }
                     continue;
                 }
             }
@@ -188,30 +203,32 @@ namespace System.Diagnostics.Metrics
 
         public MultiSizeLabelNameDictionary(object initialLabelNameDict)
         {
-            NoLabelAggregator = default;
-            Label1 = default;
-            Label2 = default;
-            Label3 = default;
-            LabelMany = default;
-            if (initialLabelNameDict is TAggregator val0)
+            NoLabelAggregator = null;
+            Label1 = null;
+            Label2 = null;
+            Label3 = null;
+            LabelMany = null;
+            switch (initialLabelNameDict)
             {
-                NoLabelAggregator = val0;
-            }
-            else if (initialLabelNameDict is FixedSizeLabelNameDictionary<StringSequence1, ObjectSequence1, TAggregator> val1)
-            {
-                Label1 = val1;
-            }
-            else if (initialLabelNameDict is FixedSizeLabelNameDictionary<StringSequence2, ObjectSequence2, TAggregator> val2)
-            {
-                Label2 = val2;
-            }
-            else if (initialLabelNameDict is FixedSizeLabelNameDictionary<StringSequence3, ObjectSequence3, TAggregator> val3)
-            {
-                Label3 = val3;
-            }
-            else if (initialLabelNameDict is FixedSizeLabelNameDictionary<StringSequenceMany, ObjectSequenceMany, TAggregator> valMany)
-            {
-                LabelMany = valMany;
+                case TAggregator val0:
+                    NoLabelAggregator = val0;
+                    break;
+
+                case FixedSizeLabelNameDictionary<StringSequence1, ObjectSequence1, TAggregator> val1:
+                    Label1 = val1;
+                    break;
+
+                case FixedSizeLabelNameDictionary<StringSequence2, ObjectSequence2, TAggregator> val2:
+                    Label2 = val2;
+                    break;
+
+                case FixedSizeLabelNameDictionary<StringSequence3, ObjectSequence3, TAggregator> val3:
+                    Label3 = val3;
+                    break;
+
+                case FixedSizeLabelNameDictionary<StringSequenceMany, ObjectSequenceMany, TAggregator> valMany:
+                    LabelMany = valMany;
+                    break;
             }
         }
 
@@ -229,40 +246,41 @@ namespace System.Diagnostics.Metrics
             where TObjectSequence : IObjectSequence, IEquatable<TObjectSequence>
         {
             TStringSequence? seq = default;
-            if (seq is StringSequence1)
+            switch (seq)
             {
-                if (Label1 == null)
-                {
-                    Interlocked.CompareExchange(ref Label1, new FixedSizeLabelNameDictionary<StringSequence1, ObjectSequence1, TAggregator>(), null);
-                }
-                return (FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator>)(object)Label1;
+                case StringSequence1:
+                    if (Label1 == null)
+                    {
+                        Interlocked.CompareExchange(ref Label1, new FixedSizeLabelNameDictionary<StringSequence1, ObjectSequence1, TAggregator>(), null);
+                    }
+                    return (FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator>)(object)Label1;
+
+                case StringSequence2:
+                    if (Label2 == null)
+                    {
+                        Interlocked.CompareExchange(ref Label2, new FixedSizeLabelNameDictionary<StringSequence2, ObjectSequence2, TAggregator>(), null);
+                    }
+                    return (FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator>)(object)Label2;
+
+                case StringSequence3:
+                    if (Label3 == null)
+                    {
+                        Interlocked.CompareExchange(ref Label3, new FixedSizeLabelNameDictionary<StringSequence3, ObjectSequence3, TAggregator>(), null);
+                    }
+                    return (FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator>)(object)Label3;
+
+                case StringSequenceMany:
+                    if (LabelMany == null)
+                    {
+                        Interlocked.CompareExchange(ref LabelMany, new FixedSizeLabelNameDictionary<StringSequenceMany, ObjectSequenceMany, TAggregator>(), null);
+                    }
+                    return (FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator>)(object)LabelMany;
+
+                default:
+                    // we should never get here unless this library has a bug
+                    Debug.Fail("Unexpected sequence type");
+                    return null;
             }
-            else if (seq is StringSequence2)
-            {
-                if (Label2 == null)
-                {
-                    Interlocked.CompareExchange(ref Label2, new FixedSizeLabelNameDictionary<StringSequence2, ObjectSequence2, TAggregator>(), null);
-                }
-                return (FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator>)(object)Label2;
-            }
-            else if (seq is StringSequence3)
-            {
-                if (Label3 == null)
-                {
-                    Interlocked.CompareExchange(ref Label3, new FixedSizeLabelNameDictionary<StringSequence3, ObjectSequence3, TAggregator>(), null);
-                }
-                return (FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator>)(object)Label3;
-            }
-            else if (seq is StringSequenceMany)
-            {
-                if (LabelMany == null)
-                {
-                    Interlocked.CompareExchange(ref LabelMany, new FixedSizeLabelNameDictionary<StringSequenceMany, ObjectSequenceMany, TAggregator>(), null);
-                }
-                return (FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator>)(object)LabelMany;
-            }
-            // we should never get here unless this library has a bug
-            throw new ArgumentException("Unexpected sequence type");
         }
 
         public void Collect(Action<LabeledAggregationStatistics> visitFunc)
@@ -286,11 +304,11 @@ namespace System.Diagnostics.Metrics
             SourceIndex = sourceIndex;
             LabelName = labelName;
         }
-        public readonly int SourceIndex;
-        public readonly string LabelName;
+        public readonly int SourceIndex { get; }
+        public readonly string LabelName { get; }
     }
 
-    internal delegate bool AggregatorLookupFunc<TAggregator>(ReadOnlySpan<KeyValuePair<string, object?>> labels, out TAggregator? aggregator);
+    internal delegate bool AggregatorLookupFunc<TAggregator>(ReadOnlySpan<KeyValuePair<string, object?>> labels, [NotNullWhen(true)] out TAggregator? aggregator);
 
     [System.Security.SecurityCritical] // using SecurityCritical type ReadOnlySpan
     internal static class LabelInstructionCompiler
@@ -385,7 +403,6 @@ namespace System.Diagnostics.Metrics
         private ConcurrentDictionary<TObjectSequence, TAggregator> _valuesDict;
         private Func<TObjectSequence, TAggregator> _createAggregator;
 
-
         public LabelInstructionInterpretter(
             int expectedLabelCount,
             LabelInstruction[] instructions,
@@ -400,7 +417,7 @@ namespace System.Diagnostics.Metrics
 
         public bool GetAggregator(
             ReadOnlySpan<KeyValuePair<string, object?>> labels,
-            out TAggregator? aggregator)
+            [NotNullWhen(true)] out TAggregator? aggregator)
         {
             aggregator = null;
             if (labels.Length != _expectedLabelCount)

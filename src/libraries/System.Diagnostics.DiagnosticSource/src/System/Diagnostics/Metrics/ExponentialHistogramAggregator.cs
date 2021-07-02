@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Metrics
 {
-    internal class QuantileAggregation
+    internal sealed class QuantileAggregation
     {
         public QuantileAggregation(params double[] quantiles)
         {
@@ -18,26 +17,39 @@ namespace System.Diagnostics.Metrics
         public double MaxRelativeError { get; set; } = 0.001;
     }
 
-    // PERF Note: This histogram has a fast Update() but the _counters array has a sizable of memory footprint (32KB+ on 64 bit)
+
+
+    // This histogram ensures that the quantiles reported from the histogram are within some bounded % error of the correct
+    // value. More mathematically, if we have a set of measurements where quantile X = Y, the histogram should always report a
+    // value Y` where Y*(1-E) <= Y` <= Y*(1+E). E is our allowable error, so if E = 0.01 then the reported value Y` is
+    // between 0.99*Y and 1.01*Y. We achieve this by ensuring that if a bucket holds measurements from M_min to M_max
+    // then M_max - M_min <= M_min*E. We can determine which bucket must hold quantile X and we know that all values assigned to
+    // the bucket are within the error bound if we approximate the result as M_min.
+    // Note: we should be able to refine this to return the bucket midpoint rather than bucket lower bound, halving the number of
+    // buckets to achieve the same error bound.
+    //
+    // Implementation: The histogram buckets are implemented as an array of arrays (a tree). The top level has a fixed 4096 entries
+    // corresponding to every possible sign+exponent in the encoding of a double (IEEE 754 spec). The 2nd level has variable size
+    // depending on how many buckets are needed to achieve the error bounds. For ease of insertion we round the 2nd level size up to
+    // the nearest power of 2. This lets us mask off the first k bits in the mantissa to map a measurement to one of 2^k 2nd level
+    // buckets. The top level array is pre-allocated but the 2nd level arrays are created on demand.
+    //
+    // PERF Note: This histogram has a fast Update() but the _counters array has a sizable memory footprint (32KB+ on 64 bit)
     // It is probably well suited for tracking 10s or maybe 100s of histograms but if we wanted to go higher
-    // we probably want to trade a little more CPU cost in Update() + code complexity for more precise array memory growth.
-    internal class ExponentialHistogramAggregator : Aggregator
+    // we probably want to trade a little more CPU cost in Update() + code complexity to avoid eagerly allocating 4096
+    // top level entries.
+    internal sealed class ExponentialHistogramAggregator : Aggregator
     {
         private const int ExponentArraySize = 4096;
         private const int ExponentShift = 52;
         private const double MinRelativeError = 0.0001;
 
-#if NO_ARRAY_EMPTY_SUPPORT
-        private static readonly QuantileValue[] EmptyQuantiles = new QuantileValue[0];
-#endif
-
         private readonly QuantileAggregation _config;
-        private int[][] _counters;
+        private int[]?[] _counters;
         private int _count;
         private readonly int _mantissaMax;
         private readonly int _mantissaMask;
         private readonly int _mantissaShift;
-
 
         private struct Bucket
         {
@@ -67,7 +79,7 @@ namespace System.Diagnostics.Metrics
 
         public override IAggregationStatistics Collect()
         {
-            int[][] counters;
+            int[]?[] counters;
             int count;
             lock (this)
             {
@@ -76,6 +88,7 @@ namespace System.Diagnostics.Metrics
                 _counters = new int[ExponentArraySize][];
                 _count = 0;
             }
+
             QuantileValue[] quantiles = new QuantileValue[_config.Quantiles.Length];
             int nextQuantileIndex = 0;
             if (nextQuantileIndex == _config.Quantiles.Length)
@@ -110,17 +123,13 @@ namespace System.Diagnostics.Metrics
             }
 
             Debug.Assert(count == 0);
-#if NO_ARRAY_EMPTY_SUPPORT
-            return new HistogramStatistics(EmptyQuantiles);
-#else
             return new HistogramStatistics(Array.Empty<QuantileValue>());
-#endif
         }
 
-        private int GetInvalidCount(int[][] counters)
+        private int GetInvalidCount(int[]?[] counters)
         {
-            int[] positiveInfAndNan = counters[ExponentArraySize / 2 - 1];
-            int[] negativeInfAndNan = counters[ExponentArraySize - 1];
+            int[]? positiveInfAndNan = counters[ExponentArraySize / 2 - 1];
+            int[]? negativeInfAndNan = counters[ExponentArraySize - 1];
             int count = 0;
             if (positiveInfAndNan != null)
             {
@@ -139,14 +148,14 @@ namespace System.Diagnostics.Metrics
             return count;
         }
 
-        private IEnumerable<Bucket> IterateBuckets(int[][] counters)
+        private IEnumerable<Bucket> IterateBuckets(int[]?[] counters)
         {
             // iterate over the negative exponent buckets
-            const int lowestNegativeOffset = ExponentArraySize / 2;
+            const int LowestNegativeOffset = ExponentArraySize / 2;
             // exponent = ExponentArraySize-1 encodes infinity and NaN, which we want to ignore
-            for (int exponent = ExponentArraySize-2; exponent >= lowestNegativeOffset; exponent--)
+            for (int exponent = ExponentArraySize-2; exponent >= LowestNegativeOffset; exponent--)
             {
-                int[] mantissaCounts = counters[exponent];
+                int[]? mantissaCounts = counters[exponent];
                 if (mantissaCounts == null)
                 {
                     continue;
@@ -163,9 +172,9 @@ namespace System.Diagnostics.Metrics
 
             // iterate over the positive exponent buckets
             // exponent = lowestNegativeOffset-1 encodes infinity and NaN, which we want to ignore
-            for (int exponent = 0; exponent < lowestNegativeOffset-1; exponent++)
+            for (int exponent = 0; exponent < LowestNegativeOffset-1; exponent++)
             {
-                int[] mantissaCounts = counters[exponent];
+                int[]? mantissaCounts = counters[exponent];
                 if (mantissaCounts == null)
                 {
                     continue;
@@ -193,7 +202,7 @@ namespace System.Diagnostics.Metrics
                 ulong bits = (ulong)BitConverter.DoubleToInt64Bits(measurement);
                 int exponent = (int)(bits >> ExponentShift);
                 int mantissa = (int)(bits >> _mantissaShift) & _mantissaMask;
-                ref int[] mantissaCounts = ref _counters[exponent];
+                ref int[]? mantissaCounts = ref _counters[exponent];
                 mantissaCounts ??= new int[_mantissaMax];
                 mantissaCounts[mantissa]++;
                 _count++;

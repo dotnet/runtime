@@ -34,9 +34,9 @@ namespace System.Diagnostics.Metrics
     ///   in the 'System.Runtime' meter.
     /// </summary>
     [EventSource(Name = "System.Diagnostics.Metrics")]
-    internal class MetricsEventSource : EventSource
+    internal sealed class MetricsEventSource : EventSource
     {
-        public static readonly MetricsEventSource Logger = new();
+        public static readonly MetricsEventSource Log = new();
 
         public static class Keywords
         {
@@ -73,17 +73,17 @@ namespace System.Diagnostics.Metrics
         [Event(2, Keywords = Keywords.TimeSeriesValues)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
-        public void CollectionStart(string sessionId, DateTime intervalStartTime, double collectionIntervalSecs)
+        public void CollectionStart(string sessionId, DateTime intervalStartTime, DateTime intervalEndTime)
         {
-            WriteEvent(2, sessionId, intervalStartTime, collectionIntervalSecs);
+            WriteEvent(2, sessionId, intervalStartTime, intervalEndTime);
         }
 
         [Event(3, Keywords = Keywords.TimeSeriesValues)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
-        public void CollectionStop(string sessionId, DateTime intervalStartTime, double collectionIntervalSecs)
+        public void CollectionStop(string sessionId, DateTime intervalStartTime, DateTime intervalEndTime)
         {
-            WriteEvent(3, sessionId, intervalStartTime, collectionIntervalSecs);
+            WriteEvent(3, sessionId, intervalStartTime, intervalEndTime);
         }
 
         [Event(4, Keywords = Keywords.TimeSeriesValues)]
@@ -167,7 +167,7 @@ namespace System.Diagnostics.Metrics
         // Methods that are declared explicitly can use the [NonEvent] attribute to opt-out but
         // lambdas can't. Putting all the command handling logic in this nested class
         // is a simpler way to opt everything out in bulk.
-        private class CommandHandler
+        private sealed class CommandHandler
         {
             private AggregationManager? _aggregationManager;
             private string _sessionId = "";
@@ -176,7 +176,7 @@ namespace System.Diagnostics.Metrics
             {
                 try
                 {
-#if OS_SUPPORT_ATTRTIBUTES
+#if OS_ISBROWSER_SUPPORT
                     if (OperatingSystem.IsBrowser())
                     {
                         // AggregationManager uses a dedicated thread to avoid losing data for apps experiencing threadpool starvation
@@ -185,7 +185,7 @@ namespace System.Diagnostics.Metrics
                         // This limitation shouldn't really matter because browser also doesn't support out-of-proc EventSource communication
                         // which is the intended scenario for this EventSource. If it matters in the future AggregationManager can be
                         // modified to have some other fallback path that works for browser.
-                        Logger.Error("", "System.Diagnostics.Metrics EventSource not supported on browser", "");
+                        Log.Error("", "System.Diagnostics.Metrics EventSource not supported on browser", "");
                         return;
                     }
 #endif
@@ -196,7 +196,7 @@ namespace System.Diagnostics.Metrics
                         {
                             _aggregationManager.Dispose();
                             _aggregationManager = null;
-                            Logger.Message($"Previous session with id {_sessionId} is stopped");
+                            Log.Message($"Previous session with id {_sessionId} is stopped");
                         }
                         _sessionId = "";
                     }
@@ -206,12 +206,12 @@ namespace System.Diagnostics.Metrics
                         if (command.Arguments!.TryGetValue("SessionId", out string? id))
                         {
                             _sessionId = id!;
-                            Logger.Message($"SessionId argument received: {_sessionId}");
+                            Log.Message($"SessionId argument received: {_sessionId}");
                         }
                         else
                         {
                             _sessionId = System.Guid.NewGuid().ToString();
-                            Logger.Message($"New session started. SessionId auto-generated: {_sessionId}");
+                            Log.Message($"New session started. SessionId auto-generated: {_sessionId}");
                         }
 
 
@@ -220,21 +220,21 @@ namespace System.Diagnostics.Metrics
                         double refreshIntervalSecs = defaultIntervalSecs;
                         if (command.Arguments!.TryGetValue("RefreshInterval", out string? refreshInterval))
                         {
-                            Logger.Message("RefreshInterval filter argument received: " + refreshInterval);
+                            Log.Message($"RefreshInterval filter argument received: {refreshInterval}");
                             if (!double.TryParse(refreshInterval, out refreshIntervalSecs))
                             {
-                                Logger.Message($"Failed to parse RefreshInterval. Using default {defaultIntervalSecs}s.");
+                                Log.Message($"Failed to parse RefreshInterval. Using default {defaultIntervalSecs}s.");
                                 refreshIntervalSecs = defaultIntervalSecs;
                             }
                             else if (refreshIntervalSecs < AggregationManager.MinCollectionTimeSecs)
                             {
-                                Logger.Message($"RefreshInterval too small. Using minimum interval {AggregationManager.MinCollectionTimeSecs} seconds.");
+                                Log.Message($"RefreshInterval too small. Using minimum interval {AggregationManager.MinCollectionTimeSecs} seconds.");
                                 refreshIntervalSecs = AggregationManager.MinCollectionTimeSecs;
                             }
                         }
                         else
                         {
-                            Logger.Message($"No RefreshInterval filter argument received. Using default {defaultIntervalSecs}s.");
+                            Log.Message($"No RefreshInterval filter argument received. Using default {defaultIntervalSecs}s.");
                             refreshIntervalSecs = defaultIntervalSecs;
                         }
 
@@ -242,24 +242,24 @@ namespace System.Diagnostics.Metrics
                         string sessionId = _sessionId;
                         _aggregationManager = new AggregationManager(
                             (i, s) => TransmitMetricValue(i, s, sessionId),
-                            startIntervalTime => Logger.CollectionStart(sessionId, startIntervalTime, refreshIntervalSecs),
-                            startIntervalTime => Logger.CollectionStop(sessionId, startIntervalTime, refreshIntervalSecs),
-                            i => Logger.BeginInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
-                            i => Logger.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
-                            i => Logger.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
-                            () => Logger.InitialInstrumentEnumerationComplete(sessionId),
-                            e => Logger.Error(sessionId, e.Message, e.StackTrace?.ToString() ?? ""));
+                            (startIntervalTime, endIntervalTime) => Log.CollectionStart(sessionId, startIntervalTime, endIntervalTime),
+                            (startIntervalTime, endIntervalTime) => Log.CollectionStop(sessionId, startIntervalTime, endIntervalTime),
+                            i => Log.BeginInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
+                            i => Log.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
+                            i => Log.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
+                            () => Log.InitialInstrumentEnumerationComplete(sessionId),
+                            e => Log.Error(sessionId, e.Message, e.StackTrace?.ToString() ?? ""));
 
                         _aggregationManager.SetCollectionPeriod(TimeSpan.FromSeconds(refreshIntervalSecs));
 
                         if (command.Arguments!.TryGetValue("Metrics", out string? metricsSpecs))
                         {
-                            Logger.Message("Metrics filter argument received: " + metricsSpecs);
+                            Log.Message($"Metrics filter argument received: {metricsSpecs}");
                             ParseSpecs(metricsSpecs);
                         }
                         else
                         {
-                            Logger.Message("No Metrics filter argument received");
+                            Log.Message("No Metrics filter argument received");
                         }
 
                         _aggregationManager.Start();
@@ -273,17 +273,15 @@ namespace System.Diagnostics.Metrics
 
             private bool LogError(Exception e)
             {
-                Logger.Error(_sessionId, e.Message, e.StackTrace?.ToString() ?? "");
+                Log.Error(_sessionId, e.Message, e.StackTrace?.ToString() ?? "");
                 // this code runs as an exception filter
                 // returning false ensures the catch handler isn't run
                 return false;
             }
 
-            private static char[] s_instrumentSeperators = new char[] { '\r', '\n', ',', ';' };
+            private static readonly char[] s_instrumentSeperators = new char[] { '\r', '\n', ',', ';' };
 
-#if OS_SUPPORT_ATTRTIBUTES
             [UnsupportedOSPlatform("browser")]
-#endif
             private void ParseSpecs(string? metricsSpecs)
             {
                 if (metricsSpecs == null)
@@ -295,11 +293,11 @@ namespace System.Diagnostics.Metrics
                 {
                     if (!MetricSpec.TryParse(specString, out MetricSpec spec))
                     {
-                        Logger.Message("Failed to parse metric spec: " + specString);
+                        Log.Message("Failed to parse metric spec: {specString}");
                     }
                     else
                     {
-                        Logger.Message("Parsed metric: " + spec.ToString());
+                        Log.Message("Parsed metric: {spec}");
                         if (spec.InstrumentName != null)
                         {
                             _aggregationManager!.Include(spec.MeterName, spec.InstrumentName);
@@ -316,17 +314,17 @@ namespace System.Diagnostics.Metrics
             {
                 if (stats.AggregationStatistics is RateStatistics rateStats)
                 {
-                    Logger.CounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
+                    Log.CounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
                         rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString() : "");
                 }
                 else if (stats.AggregationStatistics is LastValueStatistics lastValueStats)
                 {
-                    Logger.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
+                    Log.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
                         lastValueStats.LastValue.HasValue ? lastValueStats.LastValue.Value.ToString() : "");
                 }
                 else if (stats.AggregationStatistics is HistogramStatistics histogramStats)
                 {
-                    Logger.HistogramValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels), FormatQuantiles(histogramStats.Quantiles));
+                    Log.HistogramValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels), FormatQuantiles(histogramStats.Quantiles));
                 }
             }
 
@@ -361,7 +359,7 @@ namespace System.Diagnostics.Metrics
 
         private class MetricSpec
         {
-            private static char s_meterInstrumentSeparator = '\\';
+            private const char MeterInstrumentSeparator = '\\';
             public string MeterName { get; private set; }
             public string? InstrumentName { get; private set; }
 
@@ -373,7 +371,7 @@ namespace System.Diagnostics.Metrics
 
             public static bool TryParse(string text, out MetricSpec spec)
             {
-                int slashIdx = text.IndexOf(s_meterInstrumentSeparator);
+                int slashIdx = text.IndexOf(MeterInstrumentSeparator);
                 if (slashIdx == -1)
                 {
                     spec = new MetricSpec(text.Trim(), null);
@@ -388,8 +386,9 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
-            public override string ToString() => MeterName +
-                (InstrumentName != null ? s_meterInstrumentSeparator + InstrumentName : "");
+            public override string ToString() => InstrumentName != null ?
+                MeterName + MeterInstrumentSeparator + InstrumentName :
+                MeterName;
         }
     }
 }

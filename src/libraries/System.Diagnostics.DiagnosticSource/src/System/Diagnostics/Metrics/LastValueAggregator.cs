@@ -3,7 +3,7 @@
 
 namespace System.Diagnostics.Metrics
 {
-    internal class LastValue : Aggregator
+    internal sealed class LastValue : Aggregator
     {
         private double? _lastValue;
 
@@ -23,7 +23,7 @@ namespace System.Diagnostics.Metrics
         }
     }
 
-    internal class LastValueStatistics : IAggregationStatistics
+    internal sealed class LastValueStatistics : IAggregationStatistics
     {
         internal LastValueStatistics(double? lastValue)
         {

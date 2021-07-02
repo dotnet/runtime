@@ -46,7 +46,7 @@ namespace System.Diagnostics.Metrics
             }
 
             // Ensure the metrics EventSource has been created in case we need to log this meter
-            GC.KeepAlive(MetricsEventSource.Logger);
+            GC.KeepAlive(MetricsEventSource.Log);
         }
 
         /// <summary>
