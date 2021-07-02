@@ -329,6 +329,10 @@ namespace System.Net.Http
             }
             catch (JSException jse)
             {
+                if (jse.Message.StartsWith("AbortError"))
+                {
+                    throw CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
+                }
                 if (cancellationToken.IsCancellationRequested)
                 {
                     throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
@@ -392,7 +396,7 @@ namespace System.Net.Http
                 _status = status ?? throw new ArgumentNullException(nameof(status));
             }
 
-            private async Task<byte[]> GetResponseData()
+            private async Task<byte[]> GetResponseData(CancellationToken cancellationToken)
             {
                 if (_data != null)
                 {
@@ -413,7 +417,7 @@ namespace System.Net.Http
                 {
                     if (jse.Message.StartsWith("AbortError"))
                     {
-                        throw CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
+                        throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
                     }
                     throw new HttpRequestException(jse.Message, jse);
                 }
@@ -423,7 +427,7 @@ namespace System.Net.Http
 
             protected override async Task<Stream> CreateContentReadStreamAsync()
             {
-                byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
+                byte[] data = await GetResponseData(CancellationToken.None).ConfigureAwait(continueOnCapturedContext: true);
                 return new MemoryStream(data, writable: false);
             }
 
@@ -431,7 +435,7 @@ namespace System.Net.Http
                 SerializeToStreamAsync(stream, context, CancellationToken.None);
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
             {
-                byte[] data = await GetResponseData().ConfigureAwait(continueOnCapturedContext: true);
+                byte[] data = await GetResponseData(cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
                 await stream.WriteAsync(data, cancellationToken).ConfigureAwait(continueOnCapturedContext: true);
             }
             protected internal override bool TryComputeLength(out long length)
@@ -505,6 +509,10 @@ namespace System.Net.Http
                     }
                     catch (JSException jse)
                     {
+                        if (jse.Message.StartsWith("AbortError"))
+                        {
+                            throw CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
+                        }
                         if (cancellationToken.IsCancellationRequested)
                         {
                             throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
@@ -545,6 +553,10 @@ namespace System.Net.Http
                 }
                 catch (JSException jse)
                 {
+                    if (jse.Message.StartsWith("AbortError"))
+                    {
+                        throw CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
+                    }
                     if (cancellationToken.IsCancellationRequested)
                     {
                         throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
