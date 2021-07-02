@@ -11,7 +11,7 @@ namespace System.Net.Http
     {
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Unused fields don't make a difference for hashcode quality")]
-        private object CreateNativeHandler()
+        private HttpMessageHandler CreateNativeHandler()
         {
             if (_underlyingHandlerMethod == null)
             {
@@ -19,7 +19,7 @@ namespace System.Net.Http
                 _underlyingHandlerMethod = runtimeOptions!.GetMethod("GetHttpMessageHandler", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             }
 
-            return _underlyingHandlerMethod!.Invoke(null, null)!;
+            return (HttpMessageHandler)_underlyingHandlerMethod!.Invoke(null, null)!;
         }
     }
 }

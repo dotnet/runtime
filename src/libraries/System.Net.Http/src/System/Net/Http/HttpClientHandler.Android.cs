@@ -12,7 +12,6 @@ namespace System.Net.Http
     {
         // not sure
         public virtual bool SupportsAutomaticDecompression => true;
-        public virtual bool SupportsProxy => true;
         public virtual bool SupportsRedirectConfiguration => true;
 
         [UnsupportedOSPlatform("browser")]
@@ -38,7 +37,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    SetNativeHandlerProp("AutomaticDecompression", value);
+                    InvokeNativeHandlerMethod("set_AutomaticDecompression", value);
                 }
             }
         }
@@ -66,7 +65,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    SetNativeHandlerProp("UseProxy", value);
+                    InvokeNativeHandlerMethod("set_UseProxy", value);
                 }
             }
         }
@@ -94,7 +93,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    SetNativeHandlerProp("PreAuthenticate", value);
+                    InvokeNativeHandlerMethod("set_PreAuthenticate", value);
                 }
             }
         }
@@ -122,14 +121,14 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    SetNativeHandlerProp("MaxAutomaticRedirections", value);
+                    InvokeNativeHandlerMethod("set_MaxAutomaticRedirections", value);
                 }
             }
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Unused fields don't make a difference for hashcode quality")]
-        private object CreateNativeHandler()
+        private HttpMessageHandler CreateNativeHandler()
         {
             if (_underlyingHandlerMethod == null)
             {
@@ -137,7 +136,7 @@ namespace System.Net.Http
                 _underlyingHandlerMethod = androidEnv!.GetMethod("GetHttpMessageHandler", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             }
 
-            return _underlyingHandlerMethod!.Invoke(null, null)!;
+            return (HttpMessageHandler)_underlyingHandlerMethod!.Invoke(null, null)!;
         }
     }
 }

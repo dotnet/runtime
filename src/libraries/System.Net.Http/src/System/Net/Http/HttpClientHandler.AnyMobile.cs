@@ -20,7 +20,7 @@ namespace System.Net.Http
         private readonly SocketsHttpHandler? _socketHandler;
         private readonly DiagnosticsHandler? _diagnosticsHandler;
 
-        private readonly object? _underlyingHandler;
+        private readonly HttpMessageHandler? _underlyingHandler;
         private static MethodInfo? _underlyingHandlerMethod;
 
         private volatile bool _disposed;
@@ -37,7 +37,7 @@ namespace System.Net.Http
             else
             {
                 _underlyingHandler = CreateNativeHandler();
-                handler = (HttpMessageHandler)_underlyingHandler;
+                handler = _underlyingHandler;
             }
 
             if (DiagnosticsHandler.IsGloballyEnabled)
@@ -58,14 +58,16 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    ((HttpMessageHandler)_underlyingHandler!)!.Dispose();
+                    _underlyingHandler!.Dispose();
                 }
             }
 
             base.Dispose(disposing);
         }
 
-        protected static bool IsSocketHandler => IsNativeHandlerEnabled();
+        public virtual bool SupportsProxy => false;
+
+        protected static bool IsSocketHandler => IsSocketHandlerEnabled();
 
         [UnsupportedOSPlatform("browser")]
         public bool UseCookies
@@ -89,7 +91,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    SetNativeHandlerProp("UseCookies", value);
+                    InvokeNativeHandlerMethod("set_UseCookies", value);
                 }
             }
         }
@@ -121,7 +123,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    SetNativeHandlerProp("CookieContainer", value);
+                    InvokeNativeHandlerMethod("set_CookieContainer", value);
                 }
             }
         }
@@ -174,7 +176,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        SetNativeHandlerProp("Credentials", CredentialCache.DefaultCredentials);
+                        InvokeNativeHandlerMethod("set_Credentials", CredentialCache.DefaultCredentials);
                     }
                 }
                 else
@@ -192,7 +194,7 @@ namespace System.Net.Http
 
                         if (creds == CredentialCache.DefaultCredentials)
                         {
-                            SetNativeHandlerProp("Credentials", null);
+                            InvokeNativeHandlerMethod("set_Credentials", null!);
                         }
                     }
                 }
@@ -222,7 +224,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    SetNativeHandlerProp("Credentials", value);
+                    InvokeNativeHandlerMethod("set_Credentials", value!);
                 }
             }
         }
@@ -248,7 +250,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    SetNativeHandlerProp("AllowAutoRedirect", value);
+                    InvokeNativeHandlerMethod("set_AllowAutoRedirect", value);
                 }
             }
         }
@@ -380,7 +382,7 @@ namespace System.Net.Http
             }
             else
             {
-                return (Task<HttpResponseMessage>)InvokeNativeHandlerMethod("SendAsync", request, cancellationToken);
+                return _underlyingHandler!.SendAsync(request, cancellationToken);
             }
         }
 
@@ -398,7 +400,7 @@ namespace System.Net.Http
             }
         }
 
-        protected object? GetUnderlyingHandler()
+        protected HttpMessageHandler? GetUnderlyingHandler()
         {
             return _underlyingHandler!;
         }
@@ -412,27 +414,20 @@ namespace System.Net.Http
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Unused fields don't make a difference for hashcode quality")]
-        private void SetNativeHandlerProp(string name, object? value)
-        {
-            _underlyingHandler!.GetType()!.GetProperty(name)!.SetValue(_underlyingHandler, value!);
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Unused fields don't make a difference for hashcode quality")]
-        private object InvokeNativeHandlerMethod(string name, params object[] parameters)
+        private object InvokeNativeHandlerMethod(string name, params object?[] parameters)
         {
             return _underlyingHandler!.GetType()!.GetMethod(name)!.Invoke(_underlyingHandler, parameters)!;
         }
 
         // check to see if this is linker friendly or not.
-        private static bool IsNativeHandlerEnabled()
+        private static bool IsSocketHandlerEnabled()
         {
-            if (!AppContext.TryGetSwitch("System.Net.Http.UseNativeHttpHandler", out bool isEnabled))
+            if (!AppContext.TryGetSwitch("System.Net.Http.UseNativeHttpHandler", out bool isNativeHandlerEnabled))
             {
-                return false;
+                return true;
             }
 
-            return isEnabled;
+            return !isNativeHandlerEnabled;
         }
     }
 }

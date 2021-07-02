@@ -10,7 +10,6 @@ namespace System.Net.Http
     {
         // not sure
         public virtual bool SupportsAutomaticDecompression => false;
-        public virtual bool SupportsProxy => false;
         public virtual bool SupportsRedirectConfiguration => true;
 
         [UnsupportedOSPlatform("browser")]
