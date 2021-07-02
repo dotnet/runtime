@@ -4,6 +4,10 @@
       <Uri>https://github.com/dotnet/icu</Uri>
       <Sha>d7db669b70f4dd67ec001c192f9809c218cab88b</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.2.0.21.Node.win-x64" Version="6.0.0-preview.6.21275.1">
+      <Uri>https://github.com/dotnet/emsdk</Uri>
+      <Sha>defa37b05c734e025292c5747664e970cd2ac444</Sha>
+    </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="6.0.0-beta.21311.3">
