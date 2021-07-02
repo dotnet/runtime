@@ -6,7 +6,7 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
     <!-- Ignore nullable warnings on net4* -->
-    <NoWarn Condition="$(TargetFramework.StartsWith('net4'))">$(NoWarn),CS8604,CS8602</NoWarn>
+    <!-- NoWarn Condition="$(TargetFramework.StartsWith('net4'))">$(NoWarn),CS8604,CS8602</NoWarn -->
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
@@ -19,7 +19,7 @@
     <Compile Include="JsonToItemsTaskFactory.cs" />
   </ItemGroup>
 
-  <!-- GetFilesToPackage assists to place `RuntimeConfigParser.dll` in a NuGet package in Microsoft.NET.Runtime.RuntimeConfigParser.Task.pkgproj for external use -->
+  <!-- GetFilesToPackage assists to place `JsonToItemsTaskFactory.dll` in a NuGet package in Microsoft.NET.Runtime.MonoTargets.Sdk.pkgproj for external use -->
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
       <_PublishFramework Remove="@(_PublishFramework)" />
