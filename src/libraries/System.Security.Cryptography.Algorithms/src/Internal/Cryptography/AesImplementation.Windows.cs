@@ -31,10 +31,20 @@ namespace Internal.Cryptography
             ReadOnlySpan<byte> iv,
             int blockSize,
             int paddingSize,
-            int feedback,
+            int feedbackSize,
             bool encrypting)
         {
-            throw new NotImplementedException();
+            SafeAlgorithmHandle algorithm = AesBCryptModes.GetSharedHandle(cipherMode, feedbackSize);
+
+            return new BasicSymmetricCipherBCrypt(
+                algorithm,
+                cipherMode,
+                blockSize,
+                paddingSize,
+                key,
+                ownsParentHandle: false,
+                iv.ToArray(),
+                encrypting);
         }
     }
 }

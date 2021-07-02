@@ -8,14 +8,14 @@ using Internal.NativeCrypto;
 
 namespace Internal.Cryptography
 {
-    internal sealed class BasicSymmetricCipherBCrypt : BasicSymmetricCipher
+    internal sealed class BasicSymmetricCipherBCrypt : BasicSymmetricCipher, ILiteSymmetricCipher
     {
         private readonly bool _encrypting;
         private SafeKeyHandle _hKey;
         private byte[]? _currentIv;  // CNG mutates this with the updated IV for the next stage on each Encrypt/Decrypt call.
                                      // The base IV holds a copy of the original IV for Reset(), until it is cleared by Dispose().
 
-        public BasicSymmetricCipherBCrypt(SafeAlgorithmHandle algorithm, CipherMode cipherMode, int blockSizeInBytes, int paddingSizeInBytes, byte[] key, bool ownsParentHandle, byte[]? iv, bool encrypting)
+        public BasicSymmetricCipherBCrypt(SafeAlgorithmHandle algorithm, CipherMode cipherMode, int blockSizeInBytes, int paddingSizeInBytes, ReadOnlySpan<byte> key, bool ownsParentHandle, byte[]? iv, bool encrypting)
             : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
         {
             Debug.Assert(algorithm != null);
@@ -34,7 +34,7 @@ namespace Internal.Cryptography
                 _hKey.SetParentHandle(algorithm);
             }
 
-            Reset();
+            Reset(IV);
         }
 
         protected override void Dispose(bool disposing)
@@ -117,15 +117,15 @@ namespace Internal.Cryptography
                 Debug.Assert(numBytesWritten == input.Length);  // Our implementation of Transform() guarantees this. See comment above.
             }
 
-            Reset();
+            Reset(IV);
             return numBytesWritten;
         }
 
-        private void Reset()
+        public void Reset(ReadOnlySpan<byte> iv)
         {
-            if (IV != null)
+            if (_currentIv is not null)
             {
-                Buffer.BlockCopy(IV, 0, _currentIv!, 0, IV.Length);
+                iv.CopyTo(_currentIv);
             }
         }
     }
