@@ -9,8 +9,14 @@ namespace System.Net.Security
     {
         internal readonly X509Certificate2 Certificate;
         internal readonly X509Certificate2[] IntermediateCertificates;
+        internal readonly SslCertificateTrust? Trust;
 
         public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline = false)
+        {
+            return Create(target, additionalCertificates, offline, null);
+        }
+
+        public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline = false, SslCertificateTrust? trust = null)
         {
             if (!target.HasPrivateKey)
             {
@@ -81,13 +87,12 @@ namespace System.Net.Security
                 }
             }
 
-            return new SslStreamCertificateContext(target, intermediates);
+            return new SslStreamCertificateContext(target, intermediates, trust);
         }
 
         internal SslStreamCertificateContext Duplicate()
         {
-            return new SslStreamCertificateContext(new X509Certificate2(Certificate), IntermediateCertificates);
-
+            return new SslStreamCertificateContext(new X509Certificate2(Certificate), IntermediateCertificates, Trust);
         }
     }
 }

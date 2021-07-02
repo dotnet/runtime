@@ -329,35 +329,9 @@ internal static partial class Interop
             public int dwRevocationFreshnessTime;
             [MarshalAs(UnmanagedType.Bool)]
             public bool fOmitUsageCheck;
-               [MarshalAs(UnmanagedType.LPWStr)]
-               public string? pwszSslCtlStoreName;
-            //public void* pwszSslCtlStoreName;
+            public char* pwszSslCtlStoreName;
             [MarshalAs(UnmanagedType.LPWStr)]
-            public string? pwszSslCtlIdentifier;
-            //LPWSTR pwszSslCtlStoreName; ç Here is the named cert store you can set.
-            //LPWSTR pwszSslCtlIdentifier;
-        }
-
-        //[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct SecPkgCred_ClientCertPolicy2
-        {
-            public int dwFlags;
-            public fixed byte guid[16];
-            public int dwCertFlags;
-            public int dwUrlRetrievalTimeout;
-            [MarshalAs(UnmanagedType.Bool)]
-            public bool fCheckRevocationFreshnessTime;
-            public int dwRevocationFreshnessTime;
-            [MarshalAs(UnmanagedType.Bool)]
-            public bool fOmitUsageCheck;
-            //[MarshalAs(UnmanagedType.LPWStr)]
-            public IntPtr pwszSslCtlStoreName;
-            //public void* pwszSslCtlStoreName;
-            //[MarshalAs(UnmanagedType.LPWStr)]
-            public IntPtr pwszSslCtlIdentifier;
-            //LPWSTR pwszSslCtlStoreName; ç Here is the named cert store you can set.
-            //LPWSTR pwszSslCtlIdentifier;
+            public char* pwszSslCtlIdentifier;
         }
 
         [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, SetLastError = true)]
@@ -530,29 +504,5 @@ internal static partial class Interop
             [In] long ulAttribute,
             [In] ref SecPkgCred_ClientCertPolicy pBuffer,
             [In] long cbBuffer);
-
-
-        [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, SetLastError = true)]
-        internal static extern SECURITY_STATUS SetCredentialsAttributesW(
-           [In] ref CredHandle handlePtr,
-           [In] long ulAttribute,
-           [In] ref SecPkgCred_ClientCertPolicy2 pBuffer,
-           [In] long cbBuffer);
-
-        [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, SetLastError = true)]
-        internal static extern unsafe SECURITY_STATUS SetCredentialsAttributesW(
-            [In] ref CredHandle handlePtr,
-            [In] long ulAttribute,
-            [In] void* buffer,
-            [In] long cbBuffer);
-
-
-
-        [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern unsafe SECURITY_STATUS SetCredentialsAttributesW(
-           [In] void* ptr,
-           [In] long ulAttribute,
-           [In] void* pBuffer,
-           [In] long cbBuffer);
     }
 }

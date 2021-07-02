@@ -9,12 +9,13 @@ namespace System.Net.Security
     {
         private const bool TrimRootCertificate = true;
 
-        private SslStreamCertificateContext(X509Certificate2 target, X509Certificate2[] intermediates)
+        private SslStreamCertificateContext(X509Certificate2 target, X509Certificate2[] intermediates, SslCertificateTrust? trust)
         {
             Certificate = target;
             IntermediateCertificates = intermediates;
+            Trust = trust;
         }
 
-        internal static SslStreamCertificateContext Create(X509Certificate2 target) => Create(target, null);
+        internal static SslStreamCertificateContext Create(X509Certificate2 target) => Create(target, null, false, null);
     }
 }

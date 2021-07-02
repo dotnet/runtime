@@ -40,7 +40,7 @@ namespace System.Net.Security.Tests
             {
                 clientOptions.RemoteCertificateValidationCallback = AllowAnyServerCertificate;
                 clientOptions.TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false);
-                serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificate, null);
+                serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificate, null, false, null);
 
                 Task t1 = clientSslStream.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions);
                 Task t2 = serverSslStream.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
