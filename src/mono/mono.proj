@@ -771,6 +771,9 @@
         <Destination>$(RuntimeBinDir)cross\$(PackageRID)\opt$(ExeExt)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
+      <_MonoRuntimeArtifacts Condition="'$(MonoComponentsStatic)' != 'true' and Exists('$(MonoObjDir)out\lib\Mono.release.framework')" Include="@(_MonoRuntimeComponentsSharedFilePath)">
+        <Destination>$(RuntimeBinDir)\Mono.release.framework\%(_MonoRuntimeComponentsSharedFilePath.Filename)%(_MonoRuntimeComponentsSharedFilePath.Extension)</Destination>
+      </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and !Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Mono.release">
         <Destination>$(RuntimeBinDir)\Mono.release.framework\Mono</Destination>
       </_MonoRuntimeArtifacts>
@@ -779,6 +782,9 @@
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Mono.release.dwarf">
         <Destination>$(RuntimeBinDir)\Mono.release.framework\Mono.dwarf</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(MonoComponentsStatic)' != 'true' and Exists('$(MonoObjDir)out\lib\Mono.debug.framework')" Include="@(_MonoRuntimeComponentsSharedFilePath)">
+        <Destination>$(RuntimeBinDir)\Mono.debug.framework\%(_MonoRuntimeComponentsSharedFilePath.Filename)%(_MonoRuntimeComponentsSharedFilePath.Extension)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and !Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Mono.debug">
         <Destination>$(RuntimeBinDir)\Mono.debug.framework\Mono</Destination>
