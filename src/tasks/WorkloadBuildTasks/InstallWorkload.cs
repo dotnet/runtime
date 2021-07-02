@@ -78,6 +78,18 @@ namespace Microsoft.Workload.Build.Tasks
                 return false;
             }
 
+            /* TODO:
+            - move to workload resolver or something
+            - single record for packs, and workloads
+            - and make that a field for the resolver
+
+            - use custom Exceptions.. TaskException..
+
+            - add more logging
+            - um.. and maybe return list of unresolved packs?
+            */
+
+
             Dictionary<string, PackVersionInformation> allPacks = new();
             Dictionary<string, WorkloadInformation> allWorkloads = new();
             allWorkloads.Merge(manifest.Workloads);
@@ -90,21 +102,17 @@ namespace Microsoft.Workload.Build.Tasks
 
             Log.LogMessage(MessageImportance.High, $"Final needed: {packsNeeded.DumpToString()}");
 
-            var packRefs = ResolvePacks(packsNeeded, allPacks);
-            foreach (var pr in packRefs)
+            var resolvedPackRefs = ResolvePacks(packsNeeded, allPacks);
+            foreach (var pr in resolvedPackRefs)
                 Log.LogMessage(MessageImportance.High, $"Final resolved: {pr}");
 
+            PackageInstaller installer = new(BuiltNuGetsPath.GetMetadata("FullPath"), ExtraNuGetSources ?? Array.Empty<ITaskItem>(), Log);
+            resolvedPackRefs = resolvedPackRefs
+                                    .Where(rpr => !rpr.Name.Contains("cross", StringComparison.InvariantCultureIgnoreCase))
+                                    .Select(rpr => rpr with { OutputDir = Path.Combine(OutputDir, "packs", rpr.Name, rpr.Version) });
 
-            // if (!InstallWorkloadManifest(WorkloadId.ItemSpec, WorkloadId.GetMetadata("Version"), out ManifestInformation? manifest))
-            //     return false;
-
-            // IEnumerable<PackageReference> references = GetPackageReferencesForWorkload(string workloadId, Dictionary<string, WorkloadInformation> workloads, Dictionary<string, PackVersionInformation> packs);
-            // // IEnumerable<PackageReference> remaining = LayoutPacksFromBuiltNuGets(references);
-            // if (!remaining.Any())
-            //     return !Log.HasLoggedErrors;
-
-            // // if (!InstallPacksWithNuGetRestore(remaining))
-            //     return false;
+            if (!installer.Install(resolvedPackRefs.ToArray()))
+                return false;
 
             return !Log.HasLoggedErrors;
         }
