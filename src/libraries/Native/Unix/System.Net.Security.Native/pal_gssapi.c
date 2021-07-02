@@ -20,7 +20,7 @@
 #include <assert.h>
 #include <string.h>
 
-#ifdef TARGET_LINUX
+#if defined(GSS_SHIM)
 #include <dlfcn.h>
 #include <stdatomic.h>
 #endif
@@ -53,10 +53,7 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = ARRAY_SIZE(gss_ntlm_oid_
                                               .elements = gss_ntlm_oid_value};
 #endif
 
-// gssapi shim
-#ifdef TARGET_LINUX
-
-#define libraryName "libgssapi_krb5.so"
+#if defined(GSS_SHIM)
 
 #define FOR_ALL_GSS_FUNCTIONS \
     PER_FUNCTION_BLOCK(gss_accept_sec_context) \
@@ -76,12 +73,14 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = ARRAY_SIZE(gss_ntlm_oid_
     PER_FUNCTION_BLOCK(gss_release_name) \
     PER_FUNCTION_BLOCK(gss_release_oid_set) \
     PER_FUNCTION_BLOCK(gss_unwrap) \
-    PER_FUNCTION_BLOCK(gss_wrap)
+    PER_FUNCTION_BLOCK(gss_wrap) \
+    PER_FUNCTION_BLOCK(GSS_C_NT_USER_NAME) \
+    PER_FUNCTION_BLOCK(GSS_C_NT_HOSTBASED_SERVICE)
 
 #if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 
 #define FOR_ALL_GSS_FUNCTIONS FOR_ALL_GSS_FUNCTIONS \
-    PER_FUNCTION_BLOCK( gss_set_cred_option)
+    PER_FUNCTION_BLOCK(gss_set_cred_option)
 
 #endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 
@@ -107,15 +106,15 @@ static gss_shim_t* volatile s_gss_shim_ptr = NULL;
 
 static void init_gss_shim()
 {
-    void* lib = dlopen(libraryName, RTLD_LAZY);
-    if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", libraryName, dlerror()); abort(); }
+    void* lib = dlopen(gssLibraryName, RTLD_LAZY);
+    if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", gssLibraryName, dlerror()); abort(); }
 
     // initialize indirection pointers for all functions, like:
     //   s_gss_shim.gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(lib, "gss_accept_sec_context");
-    //   if (s_gss_shim.gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", libraryName, dlerror()); abort(); }
+    //   if (s_gss_shim.gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", gssLibraryName, dlerror()); abort(); }
 #define PER_FUNCTION_BLOCK(fn) \
     s_gss_shim.fn##_ptr = (TYPEOF(fn)*)dlsym(lib, #fn); \
-    if (s_gss_shim.fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", libraryName, dlerror()); abort(); }
+    if (s_gss_shim.fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gssLibraryName, dlerror()); abort(); }
 
     FOR_ALL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
@@ -137,9 +136,35 @@ static gss_shim_t* get_gss_shim()
     return ptr;
 }
 
-#define gss_accept_sec_context(...) get_gss_shim()->gss_accept_sec_context_ptr(__VA_ARGS__)
+// remap gss function use to use indirection pointers
+#define gss_accept_sec_context(...)         get_gss_shim()->gss_accept_sec_context_ptr(__VA_ARGS__)
+#define gss_acquire_cred(...)               get_gss_shim()->gss_acquire_cred_ptr(__VA_ARGS__)
+#define gss_acquire_cred_with_password(...) get_gss_shim()->gss_acquire_cred_with_password_ptr(__VA_ARGS__)
+#define gss_delete_sec_context(...)         get_gss_shim()->gss_delete_sec_context_ptr(__VA_ARGS__)
+#define gss_display_name(...)               get_gss_shim()->gss_display_name_ptr(__VA_ARGS__)
+#define gss_display_status(...)             get_gss_shim()->gss_display_status_ptr(__VA_ARGS__)
+#define gss_import_name(...)                get_gss_shim()->gss_import_name_ptr(__VA_ARGS__)
+#define gss_indicate_mechs(...)             get_gss_shim()->gss_indicate_mechs_ptr(__VA_ARGS__)
+#define gss_init_sec_context(...)           get_gss_shim()->gss_init_sec_context_ptr(__VA_ARGS__)
+#define gss_inquire_context(...)            get_gss_shim()->gss_inquire_context_ptr(__VA_ARGS__)
+#define gss_oid_equal(...)                  get_gss_shim()->gss_oid_equal_ptr(__VA_ARGS__)
+#define gss_release_buffer(...)             get_gss_shim()->gss_release_buffer_ptr(__VA_ARGS__)
+#define gss_release_cred(...)               get_gss_shim()->gss_release_cred_ptr(__VA_ARGS__)
+#define gss_release_name(...)               get_gss_shim()->gss_release_name_ptr(__VA_ARGS__)
+#define gss_release_oid_set(...)            get_gss_shim()->gss_release_oid_set_ptr(__VA_ARGS__)
+#define gss_unwrap(...)                     get_gss_shim()->gss_unwrap_ptr(__VA_ARGS__)
+#define gss_wrap(...)                       get_gss_shim()->gss_wrap_ptr(__VA_ARGS__)
 
-#endif // TARGET_LINUX
+#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+#define gss_set_cred_option(...)            get_gss_shim()->gss_set_cred_option_ptr(__VA_ARGS__)
+#endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+
+
+#define GSS_C_NT_USER_NAME                      *get_gss_shim()->GSS_C_NT_USER_NAME_ptr
+#define GSS_C_NT_HOSTBASED_SERVICE              *get_gss_shim()->GSS_C_NT_HOSTBASED_SERVICE_ptr
+#define gss_mech_krb5                           *get_gss_shim()->gss_mech_krb5_ptr
+
+#endif // GSS_SHIM
 
 // transfers ownership of the underlying data from gssBuffer to PAL_GssBuffer
 static void NetSecurityNative_MoveBuffer(gss_buffer_t gssBuffer, PAL_GssBuffer* targetBuffer)
