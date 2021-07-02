@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
@@ -101,10 +102,12 @@ namespace Microsoft.Interop.Analyzers
 
             // Create GeneratedDllImport attribute based on the DllImport attribute
             var generatedDllImportSyntax = GetGeneratedDllImportAttribute(
+                editor,
                 generator,
                 dllImportSyntax,
                 methodSymbol.GetDllImportData()!,
-                generatedDllImportAttrType);
+                generatedDllImportAttrType,
+                out SyntaxNode? unmanagedCallConvAttributeMaybe);
 
             // Add annotation about potential behavioural and compatibility changes
             generatedDllImportSyntax = generatedDllImportSyntax.WithAdditionalAnnotations(
@@ -112,6 +115,11 @@ namespace Microsoft.Interop.Analyzers
 
             // Replace DllImport with GeneratedDllImport
             SyntaxNode generatedDeclaration = generator.ReplaceNode(methodSyntax, dllImportSyntax, generatedDllImportSyntax);
+
+            if (unmanagedCallConvAttributeMaybe is not null)
+            {
+                generatedDeclaration = generator.AddAttributes(generatedDeclaration, unmanagedCallConvAttributeMaybe);
+            }
 
             // Replace extern keyword with partial keyword
             generatedDeclaration = generator.WithModifiers(
@@ -165,11 +173,14 @@ namespace Microsoft.Interop.Analyzers
         }
 
         private SyntaxNode GetGeneratedDllImportAttribute(
+            DocumentEditor editor,
             SyntaxGenerator generator,
             AttributeSyntax dllImportSyntax,
             DllImportData dllImportData,
-            INamedTypeSymbol generatedDllImportAttrType)
+            INamedTypeSymbol generatedDllImportAttrType,
+            out SyntaxNode? unmanagedCallConvAttributeMaybe)
         {
+            unmanagedCallConvAttributeMaybe = null;
             // Create GeneratedDllImport based on the DllImport attribute
             var generatedDllImportSyntax = generator.ReplaceNode(dllImportSyntax,
                 dllImportSyntax.Name,
@@ -200,9 +211,71 @@ namespace Microsoft.Interop.Analyzers
                     // has the equivalent behaviour of ThrowOnUnmappableChar=false, so we can remove the argument.
                     argumentsToRemove.Add(argument);
                 }
+                else if (IsMatchingNamedArg(attrArg, nameof(DllImportAttribute.CallingConvention)))
+                {
+                    if (TryCreateUnmanagedCallConvAttributeToEmit(
+                        editor,
+                        generator,
+                        dllImportData.CallingConvention,
+                        out unmanagedCallConvAttributeMaybe))
+                    {
+                        argumentsToRemove.Add(argument);
+                    }
+                }
             }
 
             return generator.RemoveNodes(generatedDllImportSyntax, argumentsToRemove);
+        }
+
+        private bool TryCreateUnmanagedCallConvAttributeToEmit(
+            DocumentEditor editor,
+            SyntaxGenerator generator,
+            CallingConvention callingConvention,
+            out SyntaxNode? unmanagedCallConvAttribute)
+        {
+            if (editor.SemanticModel.Compilation.GetTypeByMetadataName(TypeNames.UnmanagedCallConvAttribute) is null)
+            {
+                unmanagedCallConvAttribute = null;
+                return false;
+            }
+
+            if (callingConvention == CallingConvention.Winapi)
+            {
+                // Winapi is the default, so we return true that we've created the attribute to emit,
+                // but set the attribute-to-emit to null since we don't need to emit an attribute.
+                unmanagedCallConvAttribute = null;
+                return true;
+            }
+
+            ITypeSymbol? callingConventionType = callingConvention switch
+            {
+                CallingConvention.Cdecl => editor.SemanticModel.Compilation.ObjectType.ContainingAssembly.
+                GetTypeByMetadataName($"System.Runtime.CompilerServices.CallConvCdecl"),
+                CallingConvention.StdCall => editor.SemanticModel.Compilation.ObjectType.ContainingAssembly.
+                GetTypeByMetadataName($"System.Runtime.CompilerServices.CallConvStdcall"),
+                CallingConvention.ThisCall => editor.SemanticModel.Compilation.ObjectType.ContainingAssembly.
+                GetTypeByMetadataName($"System.Runtime.CompilerServices.CallConvThiscall"),
+                CallingConvention.FastCall => editor.SemanticModel.Compilation.ObjectType.ContainingAssembly.
+                GetTypeByMetadataName($"System.Runtime.CompilerServices.CallConvFastcall"),
+                _ => null
+            };
+
+            // The user is using a calling convention type that doesn't have a matching CallConv type.
+            // There are no calling conventions like this, so we're already in a state that won't work at runtime.
+            // Leave the value as-is for now and let the user handle this however they see fit.
+            if (callingConventionType is null)
+            {
+                unmanagedCallConvAttribute = null;
+                return false;
+            }
+
+            unmanagedCallConvAttribute = generator.Attribute(TypeNames.UnmanagedCallConvAttribute,
+                generator.AttributeArgument("CallConvs",
+                    generator.ArrayCreationExpression(
+                        generator.TypeExpression(editor.SemanticModel.Compilation.GetTypeByMetadataName(TypeNames.System_Type)),
+                        new [] { generator.TypeOfExpression(generator.TypeExpression(callingConventionType)) })));
+
+            return true;
         }
 
         private static bool TryGetAttribute(IMethodSymbol method, INamedTypeSymbol attributeType, out AttributeData? attr)

@@ -1,3 +1,6 @@
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 using static Microsoft.Interop.Analyzers.ConvertToGeneratedDllImportFixer;
@@ -261,7 +264,7 @@ partial class Test
     [DllImport(""DoesNotExist"", ThrowOnUnmappableChar = false)]
     public static extern int Method2(out int ret);
 #endif
-}}"             : @$"
+}}" : @$"
 using System.Runtime.InteropServices;
 partial class Test
 {{
@@ -270,6 +273,90 @@ partial class Test
 
     [GeneratedDllImport(""DoesNotExist"")]
     public static partial int {{|CS8795:Method2|}}(out int ret);
+}}";
+            await VerifyCS.VerifyCodeFixAsync(
+                source,
+                fixedSource,
+                usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReplaceableExplicitPlatformDefaultCallingConvention(bool usePreprocessorDefines)
+        {
+            string source = @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [DllImport(""DoesNotExist"", CallingConvention = CallingConvention.Winapi, EntryPoint = ""Entry"")]
+    public static extern int [|Method1|](out int ret);
+}}";
+            // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
+            string fixedSource = usePreprocessorDefines
+                ? @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+#if DLLIMPORTGENERATOR_ENABLED
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
+    public static partial int {{|CS8795:Method1|}}(out int ret);
+#else
+    [DllImport(""DoesNotExist"", CallingConvention = CallingConvention.Winapi, EntryPoint = ""Entry"")]
+    public static extern int Method1(out int ret);
+#endif
+}}" : @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
+    public static partial int {{|CS8795:Method1|}}(out int ret);
+}}";
+            await VerifyCS.VerifyCodeFixAsync(
+                source,
+                fixedSource,
+                usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
+        }
+
+        [Theory]
+        [InlineData(CallingConvention.Cdecl, typeof(CallConvCdecl), true)]
+        [InlineData(CallingConvention.Cdecl, typeof(CallConvCdecl), false)]
+        [InlineData(CallingConvention.StdCall, typeof(CallConvStdcall), true)]
+        [InlineData(CallingConvention.StdCall, typeof(CallConvStdcall), false)]
+        [InlineData(CallingConvention.ThisCall, typeof(CallConvThiscall), true)]
+        [InlineData(CallingConvention.ThisCall, typeof(CallConvThiscall), false)]
+        [InlineData(CallingConvention.FastCall, typeof(CallConvFastcall), true)]
+        [InlineData(CallingConvention.FastCall, typeof(CallConvFastcall), false)]
+        public async Task ReplaceableCallingConvention(CallingConvention callConv, Type callConvType, bool usePreprocessorDefines)
+        {
+            string source = @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [DllImport(""DoesNotExist"", CallingConvention = CallingConvention.{callConv}, EntryPoint = ""Entry"")]
+    public static extern int [|Method1|](out int ret);
+}}";
+            // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
+            string fixedSource = usePreprocessorDefines
+                ? @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+#if DLLIMPORTGENERATOR_ENABLED
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
+    [UnmanagedCallConv(CallConvs = new System.Type[] {{ typeof({callConvType.FullName}) }})]
+    public static partial int {{|CS8795:Method1|}}(out int ret);
+#else
+    [DllImport(""DoesNotExist"", CallingConvention = CallingConvention.{callConv}, EntryPoint = ""Entry"")]
+    public static extern int Method1(out int ret);
+#endif
+}}" : @$"
+using System.Runtime.InteropServices;
+partial class Test
+{{
+    [GeneratedDllImport(""DoesNotExist"", EntryPoint = ""Entry"")]
+    [UnmanagedCallConv(CallConvs = new System.Type[] {{ typeof({callConvType.FullName}) }})]
+    public static partial int {{|CS8795:Method1|}}(out int ret);
 }}";
             await VerifyCS.VerifyCodeFixAsync(
                 source,
