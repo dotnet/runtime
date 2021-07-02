@@ -546,7 +546,7 @@ namespace System.IO
 
             if (handle.IsInvalid)
             {
-                // If the handle fails because it is unreachable, is becuse the link was broken.
+                // If the handle fails because it is unreachable, is because the link was broken.
                 // We need to fallback to manually traverse the links and return the target of the last resolved link.
                 int error = Marshal.GetLastWin32Error();
                 if (IsPathUnreachableError(error))
@@ -579,9 +579,12 @@ namespace System.IO
                     throw Win32Marshal.GetExceptionForLastWin32Error(linkPath);
                 }
 
-                // If the function succeeds, the return value is the length of the string received by lpszFilePath, in TCHARs.
-                // This value does not include the size of the terminating null character.
-                return new string(buffer, 0, (int)result);
+                Debug.Assert(PathInternal.IsExtended(new string(buffer, 0, (int)result)));
+                // GetFinalPathNameByHandle always returns with extended DOS prefix even if the link target was created without one.
+                // While this does not interfere with correct behavior, it might be unexpected.
+                // Hence we trim it if the passed-in path to the link wasn't extended.
+                int start = PathInternal.IsExtended(linkPath) ? 0 : 4;
+                return new string(buffer, start, (int)result - start);
             }
             finally
             {
