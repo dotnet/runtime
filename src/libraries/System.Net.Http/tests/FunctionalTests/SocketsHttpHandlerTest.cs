@@ -2242,7 +2242,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> LongRunning()
         {
-            for(var i = 0; i < 10; i++)
+            for(var i = 0; i < 50; i++)
             {
                 yield return new object[] { i };
             }
