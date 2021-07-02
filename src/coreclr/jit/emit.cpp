@@ -1023,9 +1023,9 @@ void emitter::emitBegFN(bool hasFramePtr
     emitIGbuffSize    = 0;
 
 #if FEATURE_LOOP_ALIGN
-    emitLastAlignedIgNum        = 0;
-    emitLastLoopStart = 0;
-    emitLastLoopEnd   = 0;
+    emitLastAlignedIgNum = 0;
+    emitLastLoopStart    = 0;
+    emitLastLoopEnd      = 0;
 #endif
 
     /* Record stack frame info (the temp size is just an estimate) */
@@ -4822,7 +4822,7 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
 // Notes:
 //    Despite we align only inner most loop, we might see intersected loops because of control flow
 //    re-arrangement like adding a split edge in LSRA.
-// 
+//
 //    If there is an intersection of current loop with last loop that is already marked as align,
 //    then *do not align* one of the loop that completely encloses the other one. Or if they both intersect,
 //    then *do not align* either of them because since the flow is complicated enough that aligning one of them
@@ -4830,9 +4830,9 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
 //
 void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 {
-    insGroup* dstIG = (insGroup*)loopTopBlock->bbEmitCookie;
-    bool      noAlignCurrentLoop      = false;
-    bool      noAlignLastLoop = false;
+    insGroup* dstIG              = (insGroup*)loopTopBlock->bbEmitCookie;
+    bool      noAlignCurrentLoop = false;
+    bool      noAlignLastLoop    = false;
 
     // With (dstIG != nullptr), ensure that only back edges are tracked.
     // If there is forward jump, dstIG is not yet generated.
@@ -4867,17 +4867,16 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
             //               |-----.
             //
         }
-        // else if current loop completely encloses last loop,
-        // then current loop should not be aligned.
         else if ((currLoopStart < emitLastLoopStart) && (emitLastLoopEnd < currLoopEnd))
         {
+            // if current loop completely encloses last loop,
+            // then current loop should not be aligned.
             noAlignCurrentLoop = true;
         }
-
-        // else if last loop completely encloses current loop,
-        // then last loop should not be aligned.
         else if ((emitLastLoopStart < currLoopStart) && (currLoopEnd < emitLastLoopEnd))
         {
+            // if last loop completely encloses current loop,
+            // then last loop should not be aligned.
             noAlignLastLoop = true;
         }
         else
@@ -4889,7 +4888,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 
         if (noAlignLastLoop || noAlignCurrentLoop)
         {
-            instrDescAlign* alignInstr = emitAlignList;
+            instrDescAlign* alignInstr     = emitAlignList;
             bool            markedLastLoop = !noAlignLastLoop;
             bool            markedCurrLoop = !noAlignCurrentLoop;
             while ((alignInstr != nullptr))
@@ -4900,7 +4899,8 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                     assert(!markedCurrLoop);
                     alignInstr->idaIG->igFlags &= ~IGF_LOOP_ALIGN;
                     markedCurrLoop = true;
-                    JITDUMP("** Skip alignment for current loop IG%02u ~ IG%02u because it encloses an aligned loop IG%02u ~ IG%02u.\n",
+                    JITDUMP("** Skip alignment for current loop IG%02u ~ IG%02u because it encloses an aligned loop "
+                            "IG%02u ~ IG%02u.\n",
                             currLoopStart, currLoopEnd, emitLastLoopStart, emitLastLoopEnd);
                 }
 
@@ -4912,7 +4912,8 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                     assert(alignInstr->idaIG->isLoopAlign());
                     alignInstr->idaIG->igFlags &= ~IGF_LOOP_ALIGN;
                     markedLastLoop = true;
-                    JITDUMP("** Skip alignment for aligned loop IG%02u ~ IG%02u because it encloses the current loop IG%02u ~ IG%02u.\n",
+                    JITDUMP("** Skip alignment for aligned loop IG%02u ~ IG%02u because it encloses the current loop "
+                            "IG%02u ~ IG%02u.\n",
                             emitLastLoopStart, emitLastLoopEnd, currLoopStart, currLoopEnd);
                 }
 
