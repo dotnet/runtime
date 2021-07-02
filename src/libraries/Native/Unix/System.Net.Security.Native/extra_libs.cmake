@@ -19,5 +19,8 @@ macro(append_extra_security_libs NativeLibsExtra)
      endif()
   endif()
 
-  list(APPEND ${NativeLibsExtra} ${LIBGSS})
+   # On Linux libgssapi_krb5.so is loaded on demand
+  if(NOT CLR_CMAKE_TARGET_LINUX)
+    list(APPEND ${NativeLibsExtra} ${LIBGSS})
+  endif()
 endmacro()
