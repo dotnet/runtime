@@ -73,22 +73,26 @@ namespace Microsoft.Workload.Build.Tasks
                 return false;
             }
 
-            PackageInstaller installer = new(BuiltNuGetsPath.GetMetadata("FullPath"), ExtraNuGetSources ?? Array.Empty<ITaskItem>(), Log);
-
-            Dictionary<string, PackVersionInformation> packs = new();
-            Dictionary<string, WorkloadInformation> workloads = new();
             if (!InstallWorkloadManifest(WorkloadId.GetMetadata("ManifestName"), WorkloadId.GetMetadata("Version"), out ManifestInformation? manifest))
             {
                 return false;
             }
 
-            workloads.Merge(manifest.Workloads);
-            packs.Merge(manifest.Packs);
+            Dictionary<string, PackVersionInformation> allPacks = new();
+            Dictionary<string, WorkloadInformation> allWorkloads = new();
+            allWorkloads.Merge(manifest.Workloads);
+            allPacks.Merge(manifest.Packs);
 
-            var packRefs = GetPackageReferencesForWorkload(WorkloadId.ItemSpec, manifest, workloads);
+            Log.LogMessage(MessageImportance.High, $"START: allWorklaodS: {allWorkloads.DumpToString()}");
+            Log.LogMessage(MessageImportance.High, $"START: allPacks: {allPacks.DumpToString()}");
 
-            foreach (var kvp in packRefs)
-                Log.LogMessage(MessageImportance.High, $"Final: {kvp.Name} - {kvp.Version}");
+            var packsNeeded = GetPacksNeededForWorkload(WorkloadId.ItemSpec, manifest, allWorkloads, allPacks);
+
+            Log.LogMessage(MessageImportance.High, $"Final needed: {packsNeeded.DumpToString()}");
+
+            var packRefs = ResolvePacks(packsNeeded, allPacks);
+            foreach (var pr in packRefs)
+                Log.LogMessage(MessageImportance.High, $"Final resolved: {pr}");
 
 
             // if (!InstallWorkloadManifest(WorkloadId.ItemSpec, WorkloadId.GetMetadata("Version"), out ManifestInformation? manifest))
@@ -172,28 +176,70 @@ namespace Microsoft.Workload.Build.Tasks
             }
         }
 
-        private IEnumerable<PackageReference> GetPackageReferencesForWorkload(string workloadId, ManifestInformation manifest,
-                                                                              Dictionary<string, WorkloadInformation> allWorkloads)
-                                                                            //   Dictionary<string, PackVersionInformation> allPacks)
+        private IEnumerable<string> GetPacksNeededForWorkload(string workloadId, ManifestInformation manifest,
+                                                                Dictionary<string, WorkloadInformation> allWorkloads,
+                                                                Dictionary<string, PackVersionInformation> allPacks)
         {
             if (!manifest.Workloads.TryGetValue(workloadId, out WorkloadInformation? workload))
                 throw new Exception($"Could not find workload {workloadId}");
+
             // WorkloadInformation? workload = manifest.Workloads[workloadId];
 
-            Dictionary<string, PackVersionInformation> allPacks = new(manifest.Packs);
+            // Dictionary<string, PackVersionInformation> allPacks = new(manifest.Packs);
             HashSet<string> packsNeededForWorkload = new(workload.Packs);
             Log.LogMessage(MessageImportance.High, $"GetPackRef.. start packsNeeded: {packsNeededForWorkload.DumpToString()}");
-            if (workload.Extends.Count > 0)
+            if (workload.Extends == null || workload.Extends.Count == 0)
+                return packsNeededForWorkload;
+
+            Log.LogMessage(MessageImportance.High, $"- ReadPacksForWorkload: {workload.Description}");
+
+            foreach (var extendsWorkloadId in workload.Extends)
             {
-                // packsNeededForWorkload = new List<string>(packsNeededForWorkload);
-                //FIXME: use exceptions!
-                if (!ReadPacksForWorkload(workload))
-                    throw new KeyNotFoundException();
+                Log.LogMessage(MessageImportance.High, $"- GetPacks: looking for extends: {extendsWorkloadId}");
+                if (!allWorkloads.ContainsKey(extendsWorkloadId))
+                {
+                    Log.LogMessage(MessageImportance.High, $"Could not find workload {extendsWorkloadId} needed by {workload.Description} in the manifest");
+
+                    foreach ((string depName, string depVersion) in manifest.DependsOn)
+                    {
+                        Log.LogMessage(MessageImportance.High, $"ReadPacks.. before installing dep: {packsNeededForWorkload.DumpToString()}");
+                        Log.LogMessage(MessageImportance.High, $"{depName} = {depVersion}, let's try installing that!");
+
+                        if (!InstallWorkloadManifest(depName, depVersion, out ManifestInformation? depManifest))
+                        {
+                            Log.LogMessage(MessageImportance.High, $"Could not find workload {extendsWorkloadId} needed by {workload.Description}");
+                            //FIXME: skip as arg
+                            continue;
+                        }
+
+                        Log.LogMessage(MessageImportance.High, $"\tAdding workloads, and packs that we found for {depName}");
+
+                        //FIXME: duplicate key
+                        allWorkloads.Merge(depManifest.Workloads);
+                        allPacks.Merge(depManifest.Packs);
+                    }
+                }
+
+                if (allWorkloads.TryGetValue(extendsWorkloadId, out WorkloadInformation? extendsWorkloadInfo))// && ReadPacksForWorkload(depWorkload))
+                {
+                    Log.LogMessage(MessageImportance.High, $"\tReadPacks.. found the extended one with :{extendsWorkloadInfo.Packs.DumpToString()}");
+                    packsNeededForWorkload.UnionWith(extendsWorkloadInfo.Packs);
+                    Log.LogMessage(MessageImportance.High, $"ReadPacks.. after adding new installing dep({extendsWorkloadId}): {packsNeededForWorkload.DumpToString()}");
+                }
+                else
+                {
+                    Log.LogMessage(MessageImportance.High, $"GetPacksNeeded .. couldn't find workload {extendsWorkloadId} in allWorkloads: {allWorkloads.DumpToString()}");
+                }
             }
 
+            return packsNeededForWorkload;
+        }
+
+        private IEnumerable<PackageReference> ResolvePacks(IEnumerable<string> packsToResolve, IDictionary<string, PackVersionInformation> allPacks)
+        {
             // Resolve pack references
             List<PackageReference> references = new();
-            foreach (var packRefName in packsNeededForWorkload.Distinct())
+            foreach (var packRefName in packsToResolve.Distinct())
             {
                 if (!allPacks.TryGetValue(packRefName, out PackVersionInformation? packInfo))
                     throw new Exception($"Could not find pack named {packRefName}");
@@ -201,7 +247,7 @@ namespace Microsoft.Workload.Build.Tasks
                 if (packInfo.AliasTo == null || !packInfo.AliasTo.TryGetValue(Rid!, out string? actualPackageName))
                     actualPackageName = packRefName;
 
-                if (!string.IsNullOrEmpty(actualPackageName) && !actualPackageName.Contains("cross", StringComparison.InvariantCultureIgnoreCase))
+                if (!string.IsNullOrEmpty(actualPackageName))// && !actualPackageName.Contains("cross", StringComparison.InvariantCultureIgnoreCase))
                 {
                     references.Add(new PackageReference(actualPackageName,
                                                         packInfo.Version,
@@ -210,49 +256,6 @@ namespace Microsoft.Workload.Build.Tasks
             }
 
             return references;
-
-            bool ReadPacksForWorkload(WorkloadInformation workload)
-            {
-                Log.LogMessage(MessageImportance.High, $"- ReadPacksForWorkload: {workload.Description}");
-                if (workload.Extends == null || workload.Extends.Count == 0)
-                    return true;
-
-                foreach (var w in workload.Extends)
-                {
-                    if (!allWorkloads.ContainsKey(w))
-                    {
-                        Log.LogMessage(MessageImportance.High, $"Could not find workload {w} needed by {workload.Description} in the manifest");
-
-                        foreach ((string depName, string depVersion) in manifest.DependsOn)
-                        {
-                            Log.LogMessage(MessageImportance.High, $"ReadPacks.. before installing dep: {packsNeededForWorkload.DumpToString()}");
-                            Log.LogMessage(MessageImportance.High, $"{depName} = {depVersion}, let's try installing that!");
-
-                            if (!InstallWorkloadManifest(depName, depVersion, out ManifestInformation? depManifest))
-                            {
-                                Log.LogMessage(MessageImportance.High, $"Could not find workload {w} needed by {workload.Description}");
-                                //FIXME: skip as arg
-                                continue;
-                            }
-
-                            Log.LogMessage(MessageImportance.High, $"\tAdding workloads, and packs that we found for {depName}");
-
-                            //FIXME: duplicate key
-                            allWorkloads.Merge(depManifest.Workloads);
-                            allPacks.Merge(depManifest.Packs);
-                        }
-                    }
-
-                    //FIXME: log
-                    if (!allWorkloads.TryGetValue(w, out WorkloadInformation? depWorkload) || !ReadPacksForWorkload(depWorkload))
-                        return false;
-
-                    packsNeededForWorkload.Union(depWorkload.Packs);
-                    Log.LogMessage(MessageImportance.High, $"ReadPacks.. after adding new installing dep: {packsNeededForWorkload.DumpToString()}");
-                }
-
-                return true;
-            }
         }
 
         private bool HasMetadata(ITaskItem item, string itemName, string metadataName)
