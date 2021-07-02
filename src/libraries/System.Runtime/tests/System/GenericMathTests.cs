@@ -55,19 +55,19 @@ namespace System.Tests
         where TSelf : INumber<TSelf>
     {
         [Fact]
-        [SkipOnMono("https://github.com/dotnet/runtime/issues/54910", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54910", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public abstract void AverageTest();
 
         [Fact]
-        [SkipOnMono("https://github.com/dotnet/runtime/issues/54910", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54910", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public abstract void StandardDeviationTest();
 
         [Fact]
-        [SkipOnMono("https://github.com/dotnet/runtime/issues/54910", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54910", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public abstract void SumTest();
 
         [Fact]
-        [SkipOnMono("https://github.com/dotnet/runtime/issues/54910", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54910", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public abstract void SumInt32Test();
     }
 }
