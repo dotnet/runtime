@@ -13,6 +13,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+// using Microsoft.NET.Sdk.WorkloadManifestReader;
 
 #nullable enable
 
@@ -30,7 +31,7 @@ namespace Microsoft.Workload.Build.Tasks
         public ITaskItem?     BuiltNuGetsPath    { get; set; }
 
         [Required, NotNull]
-        public string?        OutputDir          { get; set; }
+        public string?        SdkDir          { get; set; }
 
         public ITaskItem[]?   ExtraNuGetSources  { get; set; }
         public string?        Rid                { get; set; }
@@ -59,13 +60,13 @@ namespace Microsoft.Workload.Build.Tasks
                 return false;
             }
 
-            if (!Directory.Exists(OutputDir))
+            if (!Directory.Exists(SdkDir))
             {
-                Log.LogError($"Cannot find OutputDir={OutputDir}");
+                Log.LogError($"Cannot find OutputDir={SdkDir}");
                 return false;
             }
 
-            _packsDir = Path.Combine(OutputDir, "packs");
+            _packsDir = Path.Combine(SdkDir, "packs");
             Rid ??= GetRid();
             if (Rid == null)
             {
@@ -75,6 +76,28 @@ namespace Microsoft.Workload.Build.Tasks
 
             if (!InstallWorkloadManifest(WorkloadId.GetMetadata("ManifestName"), WorkloadId.GetMetadata("Version"), out ManifestInformation? manifest))
             {
+                return false;
+            }
+
+            /*
+
+                - install manifests
+                - set nuget.config for local source, and dotnet6
+                - dotnet workload install
+                - ensure cache not used
+                - check that we got all the correct versions
+
+                - fake package for cross compiler
+            */
+
+            //FIXME: Error
+            string workingDir = Path.Combine(BuiltNuGetsPath.GetMetadata("FullPath"), "..");
+            WriteNuGetConfig(workingDir);
+
+            (int exitCode, string output) = Utils.TryRunProcess(Path.Combine(SdkDir, "dotnet"), $"workload install --skip-manifest-update {WorkloadId.ItemSpec}", workingDir: workingDir, silent: false, debugMessageImportance: MessageImportance.Normal);
+            if (exitCode != 0)
+            {
+                Log.LogError("workload install failed: {output}");
                 return false;
             }
 
@@ -88,7 +111,7 @@ namespace Microsoft.Workload.Build.Tasks
             - add more logging
             - um.. and maybe return list of unresolved packs?
             */
-
+#if false
 
             Dictionary<string, PackVersionInformation> allPacks = new();
             Dictionary<string, WorkloadInformation> allWorkloads = new();
@@ -113,8 +136,34 @@ namespace Microsoft.Workload.Build.Tasks
 
             if (!installer.Install(resolvedPackRefs.ToArray()))
                 return false;
+#endif
 
             return !Log.HasLoggedErrors;
+        }
+
+        private bool WriteNuGetConfig(string dir)
+        {
+            StringBuilder nugetConfigBuilder = new();
+            nugetConfigBuilder.AppendLine($"<configuration>{Environment.NewLine}<packageSources>");
+
+            nugetConfigBuilder.AppendLine($@"<add key=""nuget-local"" value=""{BuiltNuGetsPath.GetMetadata("FullPath")}"" />");
+            foreach (ITaskItem source in ExtraNuGetSources ?? Array.Empty<ITaskItem>())
+            {
+                string key = source.ItemSpec;
+                string value = source.GetMetadata("Value");
+                if (string.IsNullOrEmpty(value))
+                {
+                    Log.LogError($"ExtraNuGetSource {key} is missing Value metadata");
+                    return false;
+                }
+
+                nugetConfigBuilder.AppendLine($@"<add key=""{key}"" value=""{value}"" />");
+            }
+
+            nugetConfigBuilder.AppendLine($"</packageSources>{Environment.NewLine}</configuration>");
+            File.WriteAllText(Path.Combine(dir, "nuget.config"), nugetConfigBuilder.ToString());
+
+            return true;
         }
 
         // private bool InstallWorkloadManifest(string name, string version, [NotNullWhen(true)] out ManifestInformation? manifest)
@@ -128,7 +177,7 @@ namespace Microsoft.Workload.Build.Tasks
             PackageInstaller installer = new(BuiltNuGetsPath.GetMetadata("FullPath"), ExtraNuGetSources ?? Array.Empty<ITaskItem>(), Log);
             PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBand}",
                                           Version: version,
-                                          OutputDir: Path.Combine(OutputDir, "sdk-manifests", VersionBand, name),
+                                          OutputDir: Path.Combine(SdkDir, "sdk-manifests", VersionBand, name),
                                           relativeSourceDir: "data");
 
             manifest = null;
@@ -164,16 +213,17 @@ namespace Microsoft.Workload.Build.Tasks
 
                 // // get the workload that we want
 
-                // if (manifest.DependsOn != null)
-                // {
-                //     foreach ((string depName, string depVersion) in manifest.DependsOn)
-                //     {
-                //         Log.LogMessage(MessageImportance.High, $"{depName} = {depVersion}");
+                if (manifest.DependsOn != null)
+                {
+                    foreach ((string depName, string depVersion) in manifest.DependsOn)
+                    {
+                        Log.LogMessage(MessageImportance.High, $"Need to get DependsOn manifest: {depName} = {depVersion}");
 
-                //         if (!InstallWorkloadManifest(depName, depVersion, ref workloads, ref allPacks))
-                //             return false;
-                //     }
-                // }
+                        // just warn if the it wasn't found
+                        if (!InstallWorkloadManifest(depName, depVersion, out _))
+                            return false;
+                    }
+                }
 
                 return true;
             }

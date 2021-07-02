@@ -366,12 +366,13 @@
 
     <RemoveDir Directories="$(SdkPathForWorkloadTesting)" />
     <MakeDir Directories="$(SdkPathForWorkloadTesting)" />
+    <Exec Command="cp -R /tmp/sdk-test/ $(SdkPathForWorkloadTesting)" />
 
-    <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-          Command="chmod +x $(_DotNetInstallScriptPath); $(_DotNetInstallScriptPath) -i $(SdkPathForWorkloadTesting) -v $(SdkVersionForWorkloadTesting)" />
+    <!--<Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"-->
+          <!--Command="chmod +x $(_DotNetInstallScriptPath); $(_DotNetInstallScriptPath) -i $(SdkPathForWorkloadTesting) -v $(SdkVersionForWorkloadTesting)" />-->
 
-    <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
-          Command="$(_DotNetInstallScriptPath) -i $(SdkPathForWorkloadTesting) -v $(SdkVersionForWorkloadTesting)" />
+    <!--<Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"-->
+          <!--Command="$(_DotNetInstallScriptPath) -i $(SdkPathForWorkloadTesting) -v $(SdkVersionForWorkloadTesting)" />-->
 
     <WriteLinesToFile File="$(SdkForWorkloadTestingStampPath)" Lines="" Overwrite="true" />
   </Target>
@@ -399,6 +400,10 @@
           Outputs="$(WorkloadStampFile)"
           Condition="'$(InstallWorkloadForTesting)' == 'true'">
 
+    <MSBuild Projects="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
+             Properties="TestingWorkloads=true;RuntimeIdentifier=osx-x64;Configuration=$(Configuration);TargetCrossRid=browser-wasm"
+             Targets="Pack" />
+
     <ItemGroup>
       <_NuGetSourceForWorkloads Include="dotnet6" Value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6/nuget/v3/index.json" />
     </ItemGroup>
@@ -409,27 +414,27 @@
                      VersionBand="$(SdkBandVersion)"
                      BuiltNuGetsPath="$(LibrariesShippingPackagesDir)"
                      ExtraNuGetSources="@(_NuGetSourceForWorkloads)"
-                     OutputDir="$(SdkPathForWorkloadTesting)" />
+                     SdkDir="$(SdkPathForWorkloadTesting)" />
 
     <!-- HACK, FIXME: figure out how to build monoaotcross package! -->
-    <PropertyGroup>
-      <AOTCrossPackPath>$(SdkPathForWorkloadTesting)packs\Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RuntimeIdentifier)\$(PackageVersion)</AOTCrossPackPath>
-    </PropertyGroup>
+    <!--<PropertyGroup>-->
+      <!--<AOTCrossPackPath>$(SdkPathForWorkloadTesting)packs\Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RuntimeIdentifier)\$(PackageVersion)</AOTCrossPackPath>-->
+    <!--</PropertyGroup>-->
 
-    <MakeDir Directories="$(AOTCrossPackPath);$(AOTCrossPackPath)\Sdk" />
+    <!--<MakeDir Directories="$(AOTCrossPackPath);$(AOTCrossPackPath)\Sdk" />-->
 
-    <Copy SourceFiles="$(MonoAotCrossDir)mono-aot-cross" DestinationFolder="$(AOTCrossPackPath)\tools" />
+    <!--<Copy SourceFiles="$(MonoAotCrossDir)mono-aot-cross" DestinationFolder="$(AOTCrossPackPath)\tools" />-->
 
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
-      <_SdkPropsProperties Condition="!$([MSBuild]::IsOsPlatform('Windows'))" Include="ExeSuffix" Value="" />
-      <_SdkPropsProperties Condition="$([MSBuild]::IsOsPlatform('Windows'))" Include="ExeSuffix" Value=".exe" />
-      <_SdkPropsProperties Include="TargetRid" Value="browser-wasm" />
-    </ItemGroup>
+    <!--<ItemGroup Condition="'$(TargetOS)' == 'Browser'">-->
+      <!--<_SdkPropsProperties Condition="!$([MSBuild]::IsOsPlatform('Windows'))" Include="ExeSuffix" Value="" />-->
+      <!--<_SdkPropsProperties Condition="$([MSBuild]::IsOsPlatform('Windows'))" Include="ExeSuffix" Value=".exe" />-->
+      <!--<_SdkPropsProperties Include="TargetRid" Value="browser-wasm" />-->
+    <!--</ItemGroup>-->
 
-    <GenerateFileFromTemplate
-      TemplateFile="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.MonoCrossAOT.Sdk.props.in"
-      Properties="@(_SdkPropsProperties)"
-      OutputPath="$(AOTCrossPackPath)\Sdk\Sdk.props" />
+    <!--<GenerateFileFromTemplate-->
+      <!--TemplateFile="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.MonoCrossAOT.Sdk.props.in"-->
+      <!--Properties="@(_SdkPropsProperties)"-->
+      <!--OutputPath="$(AOTCrossPackPath)\Sdk\Sdk.props" />-->
 
     <WriteLinesToFile File="$(WorkloadStampFile)" Lines="" Overwrite="true" />
 
