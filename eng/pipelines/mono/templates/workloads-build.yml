@@ -3,6 +3,7 @@ parameters:
   buildConfig: ''
   container: ''
   dependOnEvaluatePaths: false
+  dependsOn: []
   isOfficialBuild: false
   osGroup: ''
   osSubgroup: ''
@@ -29,6 +30,8 @@ jobs:
     stagedBuild: ${{ parameters.stagedBuild }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+
+    dependsOn: ${{ parameters.dependsOn }}
 
     name: workloadsbuild
     displayName: Build Workloads
