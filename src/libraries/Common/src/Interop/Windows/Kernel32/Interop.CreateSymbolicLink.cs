@@ -30,16 +30,19 @@ internal static partial class Interop
         /// <param name="targetFileName">The name of the target for the symbolic link to be created.
         /// If it has a device name associated with it, the link is treated as an absolute link; otherwise, the link is treated as a relative link.</param>
         /// <param name="isDirectory"><see langword="true" /> if the link target is a directory; <see langword="false" /> otherwise.</param>
-        /// <returns><see langword="true" /> if the operation succeeds; <see langword="false" /> otherwise.</returns>
-        internal static bool CreateSymbolicLink(string symlinkFileName, string targetFileName, bool isDirectory)
+        internal static void CreateSymbolicLink(string symlinkFileName, string targetFileName, bool isDirectory)
         {
+            string originalPath = symlinkFileName;
             symlinkFileName = PathInternal.EnsureExtendedPrefixIfNeeded(symlinkFileName);
             targetFileName = PathInternal.EnsureExtendedPrefixIfNeeded(targetFileName);
 
             int flags = 0;
 
-            if (Environment.OSVersion.Version.Major == 10 && Environment.OSVersion.Version.Build >= 14972 ||
-                Environment.OSVersion.Version.Major >= 11)
+            bool isAtLeastWin10Build14972 =
+                Environment.OSVersion.Version.Major == 10 && Environment.OSVersion.Version.Build >= 14972 ||
+                Environment.OSVersion.Version.Major >= 11;
+
+            if (isAtLeastWin10Build14972)
             {
                 flags = SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
             }
@@ -49,7 +52,19 @@ internal static partial class Interop
                 flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;
             }
 
-            return CreateSymbolicLinkPrivate(symlinkFileName, targetFileName, flags);
+            bool success = CreateSymbolicLinkPrivate(symlinkFileName, targetFileName, flags);
+
+            int error;
+            if (!success)
+            {
+                throw Win32Marshal.GetExceptionForLastWin32Error(originalPath);
+            }
+            // In older versions we need to check GetLastWin32Error regardless of the return value of CreateSymbolicLink,
+            // e.g: if the user doesn't have enough privileges to create a symlink the method returns success which we can consider as a silent failure.
+            else if (!isAtLeastWin10Build14972 && (error = Marshal.GetLastWin32Error()) != 0)
+            {
+                throw Win32Marshal.GetExceptionForWin32Error(error, originalPath);
+            }
         }
     }
 }

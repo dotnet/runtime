@@ -420,10 +420,7 @@ namespace System.IO
                 throw new IOException(SR.Format(SR.IO_InconsistentLinkType, path));
             }
 
-            if (!Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory))
-            {
-                throw Win32Marshal.GetExceptionForLastWin32Error(path);
-            }
+            Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory);
         }
 
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
