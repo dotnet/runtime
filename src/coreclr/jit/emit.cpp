@@ -2586,8 +2586,8 @@ void emitter::emitPrintLabel(insGroup* ig)
 //
 const char* emitter::emitLabelString(insGroup* ig)
 {
-    const int TEMP_BUFFER_LEN = 40;
-    static unsigned curBuf    = 0;
+    const int       TEMP_BUFFER_LEN = 40;
+    static unsigned curBuf          = 0;
     static char     buf[4][TEMP_BUFFER_LEN];
     const char*     retbuf;
 
@@ -5017,10 +5017,10 @@ void emitter::emitLoopAlignAdjustments()
                 alignInstr = prevAlignInstr;
             }
 
-            JITDUMP("Adjusted alignment of %s from %u to %u.\n", emitLabelString(alignIG),
-                    estimatedPaddingNeeded, actualPaddingNeeded);
-            JITDUMP("Adjusted size of %s from %u to %u.\n", emitLabelString(alignIG),
-                    (alignIG->igSize + diff), alignIG->igSize);
+            JITDUMP("Adjusted alignment of %s from %u to %u.\n", emitLabelString(alignIG), estimatedPaddingNeeded,
+                    actualPaddingNeeded);
+            JITDUMP("Adjusted size of %s from %u to %u.\n", emitLabelString(alignIG), (alignIG->igSize + diff),
+                    alignIG->igSize);
         }
 
         // Adjust the offset of all IGs starting from next IG until we reach the IG having the next
@@ -5029,8 +5029,8 @@ void emitter::emitLoopAlignAdjustments()
         insGroup* adjOffUptoIG = alignInstr->idaNext != nullptr ? alignInstr->idaNext->idaIG : emitIGlast;
         while ((adjOffIG != nullptr) && (adjOffIG->igNum <= adjOffUptoIG->igNum))
         {
-            JITDUMP("Adjusted offset of %s from %04X to %04X\n", emitLabelString(adjOffIG),
-                    adjOffIG->igOffs, (adjOffIG->igOffs - alignBytesRemoved));
+            JITDUMP("Adjusted offset of %s from %04X to %04X\n", emitLabelString(adjOffIG), adjOffIG->igOffs,
+                    (adjOffIG->igOffs - alignBytesRemoved));
             adjOffIG->igOffs -= alignBytesRemoved;
             adjOffIG = adjOffIG->igNext;
         }
@@ -5089,8 +5089,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     // No padding if loop is already aligned
     if ((offset & (alignmentBoundary - 1)) == 0)
     {
-        JITDUMP(";; Skip alignment: 'Loop at %s already aligned at %dB boundary.'\n",
-                emitLabelString(ig->igNext), alignmentBoundary);
+        JITDUMP(";; Skip alignment: 'Loop at %s already aligned at %dB boundary.'\n", emitLabelString(ig->igNext),
+                alignmentBoundary);
         return 0;
     }
 
@@ -5114,8 +5114,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     // No padding if loop is big
     if (loopSize > maxLoopSize)
     {
-        JITDUMP(";; Skip alignment: 'Loop at %s is big. LoopSize= %d, MaxLoopSize= %d.'\n",
-                emitLabelString(ig->igNext), loopSize, maxLoopSize);
+        JITDUMP(";; Skip alignment: 'Loop at %s is big. LoopSize= %d, MaxLoopSize= %d.'\n", emitLabelString(ig->igNext),
+                loopSize, maxLoopSize);
         return 0;
     }
 
