@@ -11329,6 +11329,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
     assert(op1->IsMultiRegNode());
     unsigned regCount =
         actualOp1->IsMultiRegLclVar() ? actualOp1->AsLclVar()->GetFieldCount(compiler) : actualOp1->GetMultiRegCount();
+    assert(regCount > 1);
 
     // Assumption: current implementation requires that a multi-reg
     // var in 'var = call' is flagged as lvIsMultiRegRet to prevent it from
