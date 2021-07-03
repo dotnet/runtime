@@ -99,11 +99,7 @@ namespace Wasm.Build.Tests
                     return;
 
                 output.Add($"[{_label}] {e.Data}");
-                var handler = OutputDataReceived;
-                if (handler != null)
-                {
-                    handler(s, e);
-                }
+                OutputDataReceived?.Invoke(s, e);
             };
 
             var completionTask = CurrentProcess.StartAndWaitForExitAsync();
