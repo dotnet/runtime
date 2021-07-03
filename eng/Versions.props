@@ -180,7 +180,7 @@
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.21328.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21328.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <!-- emscripten / Node -->
-    <MicrosoftNETRuntimeEmscripten2023Nodewinx64Version>6.0.0-preview.7.21330.1</MicrosoftNETRuntimeEmscripten2023Nodewinx64Version>
-    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETRuntimeEmscripten2023Nodewinx64Version)</MicrosoftNETRuntimeEmscriptenVersion>
+    <MicrosoftNETWorkloadEmscriptenManifest60100>6.0.0-preview.7.21330.1</MicrosoftNETWorkloadEmscriptenManifest60100>
+    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenManifest60100)</MicrosoftNETRuntimeEmscriptenVersion>
   </PropertyGroup>
 </Project>
