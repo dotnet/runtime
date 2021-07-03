@@ -565,11 +565,6 @@ void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFla
     // Reg cannot be a FP reg
     assert(!genIsValidFloatReg(reg));
 
-    // The only TYP_REF constant that can come this path is a managed 'null' since it is not
-    // relocatable.  Other ref type constants (e.g. string objects) go through a different
-    // code path.
-    noway_assert(type != TYP_REF || val == 0);
-
     instGen_Set_Reg_To_Imm(emitActualTypeSize(type), reg, val, flags);
 }
 

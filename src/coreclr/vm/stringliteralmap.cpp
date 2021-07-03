@@ -387,7 +387,7 @@ StringLiteralEntry *GlobalStringLiteralMap::GetStringLiteral(EEStringData *pStri
     else
     {
         if (bAddIfNotFound)
-            pEntry = AddStringLiteral(pStringData);
+            pEntry = AddStringLiteral(pStringData, true);
     }
 
     return pEntry;
@@ -443,7 +443,8 @@ static void LogStringLiteral(__in_z const char* action, EEStringData *pStringDat
 }
 #endif
 
-STRINGREF AllocateStringObject(EEStringData *pStringData)
+
+STRINGREF AllocateStringObject(EEStringData *pStringData, bool preferFrozenObjHeap)
 {
     CONTRACTL
     {
@@ -456,7 +457,7 @@ STRINGREF AllocateStringObject(EEStringData *pStringData)
     // Create the COM+ string object.
     DWORD cCount = pStringData->GetCharCount();
 
-    STRINGREF strObj = AllocateString(cCount);
+    STRINGREF strObj = AllocateString(cCount, preferFrozenObjHeap);
 
     GCPROTECT_BEGIN(strObj)
     {
@@ -472,7 +473,7 @@ STRINGREF AllocateStringObject(EEStringData *pStringData)
 
     return strObj;
 }
-StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStringData)
+StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStringData, bool preferFrozenObjHeap)
 {
     CONTRACTL
     {
@@ -489,7 +490,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
     {
     PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable,1);
     // Create the COM+ string object.
-    STRINGREF strObj = AllocateStringObject(pStringData);
+    STRINGREF strObj = AllocateStringObject(pStringData, preferFrozenObjHeap);
 
     // Allocate a handle for the string.
     SetObjectReference(pStrObj[0], (OBJECTREF) strObj);
@@ -525,26 +526,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString
     CONTRACTL_END;
 
     EEStringData StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());
-    StringLiteralEntry *pRet;
-
-    {
-    PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable,1);
-    SetObjectReference(pStrObj[0], (OBJECTREF) *pString);
-
-    // Since the allocation might have caused a GC we need to re-get the
-    // string data.
-    StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());
-
-    StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(&StringData, (STRINGREF*)pStrObj[0]));
-    pStrObj.SuppressRelease();
-
-    // Insert the handle to the string into the hash table.
-    m_StringToEntryHashTable->InsertValue(&StringData, (LPVOID)pEntry, FALSE);
-    pEntry.SuppressRelease();
-    pRet = pEntry;
-    }
-
-    return pRet;
+    return AddStringLiteral(&StringData, true);
 }
 
 void GlobalStringLiteralMap::RemoveStringLiteralEntry(StringLiteralEntry *pEntry)

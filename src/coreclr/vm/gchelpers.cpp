@@ -28,6 +28,7 @@
 
 #include "gchelpers.inl"
 #include "eeprofinterfaces.inl"
+#include "frozenobjectheap.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -825,7 +826,7 @@ OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle elementType, BOOL bAll
     return AllocateSzArray(arrayType, (INT32) cElements, flags);
 }
 
-STRINGREF AllocateString( DWORD cchStringLength )
+STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenObjHeap)
 {
     CONTRACTL {
         THROWS;
@@ -851,13 +852,29 @@ STRINGREF AllocateString( DWORD cchStringLength )
     SIZE_T totalSize = PtrAlign(StringObject::GetSize(cchStringLength));
     _ASSERTE(totalSize > cchStringLength);
 
-    SetTypeHandleOnThreadForAlloc(TypeHandle(g_pStringClass));
-
     GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
-    if (totalSize >= g_pConfig->GetGCLOHThreshold())
-        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
+    StringObject* orString = nullptr;
 
-    StringObject* orString = (StringObject*)Alloc(totalSize, flags);
+    // Try to allocate the string in Frozen Object Heap.
+    if (preferFrozenObjHeap && (cchStringLength < 2048))
+    {
+        FrozenObjectHeap* foh = SystemDomain::GetSegmentWithFrozenObjects();
+        if (foh != nullptr)
+        {
+            orString = static_cast<StringObject*>(foh->Alloc(totalSize));
+        }
+        // if FOH is null or full - fallback to normal allocation.
+    }
+
+    if (orString == nullptr)
+    {
+        SetTypeHandleOnThreadForAlloc(TypeHandle(g_pStringClass));
+
+        if (totalSize >= g_pConfig->GetGCLOHThreshold())
+            flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
+
+        orString = static_cast<StringObject*>(Alloc(totalSize, flags));
+    }
 
     // Initialize Object
     orString->SetMethodTable(g_pStringClass);

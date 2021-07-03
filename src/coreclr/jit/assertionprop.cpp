@@ -734,8 +734,14 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
 
                     if (op1Type == TYP_REF)
                     {
-                        assert(curAssertion->op2.u1.iconVal == 0);
-                        printf("null");
+                        if (curAssertion->op2.u1.iconVal == 0)
+                        {
+                            printf("null");
+                        }
+                        else
+                        {
+                            printf("[%08p]", dspPtr(curAssertion->op2.u1.iconVal));
+                        }
                     }
                     else
                     {
@@ -2713,6 +2719,10 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
             // Don't propagate handles if we need to report relocs.
             if (opts.compReloc && ((curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK) != 0))
+            {
+                return nullptr;
+            }
+            if ((curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK) == GTF_ICON_STR_HDL)
             {
                 return nullptr;
             }

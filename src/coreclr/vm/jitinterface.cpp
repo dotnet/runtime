@@ -11935,7 +11935,18 @@ InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd
     }
     else
     {
-        *ppValue = (LPVOID)ConstructStringLiteral(scopeHnd, metaTok); // throws
+        void** ptr = (void**)ConstructStringLiteral(scopeHnd, metaTok); // throws
+
+        // If it's in the frozen segment we can pass the direct reference.
+        if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment((Object*)*ptr))
+        {
+            *ppValue = *ptr;
+            result = IAT_VALUE;
+        }
+        else
+        {
+            *ppValue = (void*)ptr;
+        }
     }
 
     EE_TO_JIT_TRANSITION();

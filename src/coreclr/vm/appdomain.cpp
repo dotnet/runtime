@@ -114,6 +114,7 @@ int                 BaseDomain::m_iNumberOfProcessors = 0;
 
 // System Domain Statics
 GlobalStringLiteralMap* SystemDomain::m_pGlobalStringLiteralMap = NULL;
+FrozenObjectHeap* SystemDomain::m_FrozenObjects = NULL;
 
 DECLSPEC_ALIGN(16)
 static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
@@ -1317,6 +1318,31 @@ void SystemDomain::LazyInitGlobalStringLiteralMap()
     if (InterlockedCompareExchangeT<GlobalStringLiteralMap *>(&m_pGlobalStringLiteralMap, pGlobalStringLiteralMap, NULL) == NULL)
     {
         pGlobalStringLiteralMap.SuppressRelease();
+    }
+}
+
+void SystemDomain::LazyInitFrozenObjectsHeap()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    const size_t fohSize = 16 * 1024 * 1024;
+
+    // TODO: remove commit
+    void* alloc = ClrVirtualAlloc(nullptr, fohSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    NewHolder<FrozenObjectHeap> pFoh(new FrozenObjectHeap());
+
+    pFoh->Init(alloc, fohSize);
+
+    if (InterlockedCompareExchangeT<FrozenObjectHeap*>(&m_FrozenObjects, pFoh, nullptr) == nullptr)
+    {
+        pFoh.SuppressRelease();
     }
 }
 
