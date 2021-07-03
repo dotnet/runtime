@@ -42,6 +42,7 @@ namespace System.IO.Tests
     }
 
     [PlatformSpecific(TestPlatforms.Windows)] // DOS device paths (\\.\ and \\?\) are a Windows concept
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class SeekableDeviceFileStreamStandaloneConformanceTests : UnbufferedAsyncFileStreamStandaloneConformanceTests
     {
         protected override string GetTestFilePath(int? index = null, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
@@ -90,7 +91,7 @@ namespace System.IO.Tests
                 return false;
             }
 
-            // the "Server Service" allows for file sharing. It can be disabled on some of our CI machines.    
+            // the "Server Service" allows for file sharing. It can be disabled on some of our CI machines.
             using (ServiceController sharingService = new ServiceController("Server"))
             {
                 return sharingService.Status == ServiceControllerStatus.Running;

@@ -13,6 +13,7 @@
     <PackageVersion Condition="'$(PackageVersion)' == '' and '$(MSBuildProjectExtension)' == '.pkgproj'">6.0.0</PackageVersion>
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
     <SkipGenerationCheck>true</SkipGenerationCheck>
+    <DefaultAllowedOutputExtensionsInPackageBuildOutputFolder>.dll;.exe;.winmd;.json;.pri;</DefaultAllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
@@ -28,10 +29,6 @@
   </PropertyGroup>
 
   <Import Condition="Exists('$(PkgDir)baseline\baseline.props') and '$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(PkgDir)baseline\baseline.props" />
-
-  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
-    <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
-  </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <!-- Add a marker to help the designer optimize & share .NET Core packages -->
@@ -49,5 +46,10 @@
     <DefaultValidateFramework Include="netcoreapp3.1">
       <RuntimeIDs>@(NETCoreApp30RIDs)</RuntimeIDs>
     </DefaultValidateFramework>
+  </ItemGroup>
+
+  <!-- TODO: Remove when all required nuget pack features are part of the consumed SDK. -->
+  <ItemGroup Condition="'$(IsPackable)' == 'true' and '$(IsSourceProject)' == 'true'">
+    <PackageReference Include="NuGet.Build.Tasks.Pack" Version="$(NuGetBuildTasksPackVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 </Project>

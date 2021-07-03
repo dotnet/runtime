@@ -189,6 +189,31 @@ namespace System.IO.Strategies
         }
 
 
+        internal static unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, NativeOverlapped* overlapped, out int errorCode)
+        {
+            Debug.Assert(handle != null, "handle != null");
+
+            int r;
+            int numBytesRead = 0;
+
+            fixed (byte* p = &MemoryMarshal.GetReference(bytes))
+            {
+                r = overlapped == null
+                    ? Interop.Kernel32.ReadFile(handle, p, bytes.Length, out numBytesRead, overlapped)
+                    : Interop.Kernel32.ReadFile(handle, p, bytes.Length, IntPtr.Zero, overlapped);
+            }
+
+            if (r == 0)
+            {
+                errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                return -1;
+            }
+            else
+            {
+                errorCode = 0;
+                return numBytesRead;
+            }
+        }
 
         internal static async Task AsyncModeCopyToAsync(SafeFileHandle handle, string? path, bool canSeek, long filePosition, Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
@@ -265,7 +290,7 @@ namespace System.IO.Strategies
                             }
 
                             // Kick off the read.
-                            synchronousSuccess = RandomAccess.ReadFileNative(handle, copyBuffer, false, readAwaitable._nativeOverlapped, out errorCode) >= 0;
+                            synchronousSuccess = ReadFileNative(handle, copyBuffer, readAwaitable._nativeOverlapped, out errorCode) >= 0;
                         }
 
                         // If the operation did not synchronously succeed, it either failed or initiated the asynchronous operation.
