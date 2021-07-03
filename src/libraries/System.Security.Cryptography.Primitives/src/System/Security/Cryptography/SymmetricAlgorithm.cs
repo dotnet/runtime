@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using Internal.Cryptography;
 
@@ -601,7 +602,7 @@ namespace System.Security.Cryptography
             if (!TryEncryptEcbCore(plaintext, buffer, paddingMode, out int written) ||
                 written != ciphertextLength)
             {
-                // This means a user-derived imiplementation added more padding than we expected or
+                // This means a user-derived implementation added more padding than we expected or
                 // did something non-standard (encrypt to a partial block). This can't happen for
                 // multiple padding blocks since the buffer would have been too small in the first
                 // place. It doesn't make sense to try and support partial block encryption, likely
@@ -666,6 +667,60 @@ namespace System.Security.Cryptography
             return TryEncryptEcbCore(plaintext, destination, paddingMode, out bytesWritten);
         }
 
+        public byte[] DecryptCbc(byte[] ciphertext, byte[] iv, PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            if (ciphertext is null)
+                throw new ArgumentNullException(nameof(ciphertext));
+            if (iv is null)
+                throw new ArgumentNullException(nameof(iv));
+
+            return DecryptCbc(new ReadOnlySpan<byte>(ciphertext), new ReadOnlySpan<byte>(iv), paddingMode);
+        }
+
+        public byte[] DecryptCbc(ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> iv, PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            CheckPaddingMode(paddingMode);
+
+            // CBC is more typically used with padding so the resulting plaintext is
+            // unlikely to be the same size as the ciphertext. So we rent since we are
+            // likely to going to need to resize anyway.
+            // This will pass the rented buffer to user code (the virtual Core) so
+            // don't use CryptoPool.
+            byte[] decryptRent = ArrayPool<byte>.Shared.Rent(ciphertext.Length);
+            Span<byte> decryptBuffer = decryptRent.AsSpan(0, ciphertext.Length);
+
+            if (!TryDecryptCbcCore(ciphertext, iv, decryptBuffer, paddingMode, out int written)
+                || (uint)written > decryptBuffer.Length)
+            {
+                // This means decrypting the ciphertext grew in to a larger plaintext or overflowed.
+                // A user-derived class could do this, but it is not expected in any of the
+                // implementations that we ship.
+                throw new CryptographicException(SR.Argument_DestinationTooShort);
+            }
+
+            byte[] plaintext = decryptBuffer.Slice(0, written).ToArray();
+            CryptographicOperations.ZeroMemory(decryptBuffer.Slice(0, written));
+            ArrayPool<byte>.Shared.Return(decryptRent);
+
+            return plaintext;
+        }
+
+        public int DecryptCbc(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            CheckPaddingMode(paddingMode);
+
+            if (!TryDecryptCbcCore(ciphertext, iv, destination, paddingMode, out int written))
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
+
+            return written;
+        }
+
         public byte[] EncryptCbc(byte[] plaintext, byte[] iv, PaddingMode paddingMode = PaddingMode.PKCS7)
         {
             if (plaintext is null)
@@ -691,7 +746,7 @@ namespace System.Security.Cryptography
             if (!TryEncryptCbcCore(plaintext, iv, buffer, paddingMode, out int written) ||
                 written != ciphertextLength)
             {
-                // This means a user-derived imiplementation added more padding than we expected or
+                // This means a user-derived implementation added more padding than we expected or
                 // did something non-standard (encrypt to a partial block). This can't happen for
                 // multiple padding blocks since the buffer would have been too small in the first
                 // place. It doesn't make sense to try and support partial block encryption, likely
@@ -806,6 +861,16 @@ namespace System.Security.Cryptography
         /// </remarks>
         protected virtual bool TryEncryptCbcCore(
             ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        }
+
+        protected virtual bool TryDecryptCbcCore(
+            ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> iv,
             Span<byte> destination,
             PaddingMode paddingMode,

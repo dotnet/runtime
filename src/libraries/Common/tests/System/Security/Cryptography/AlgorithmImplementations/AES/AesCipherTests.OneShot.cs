@@ -300,6 +300,19 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
         [Theory]
         [MemberData(nameof(CbcTestCases))]
+        public static void DecryptCbc_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+                byte[] decrypted = aes.DecryptCbc(ciphertext, s_aes128OneShotIv, padding);
+
+                AssertPlaintexts(plaintext, decrypted, padding);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CbcTestCases))]
         public static void EncryptCbc_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
         {
             using (Aes aes = AesFactory.Create())
