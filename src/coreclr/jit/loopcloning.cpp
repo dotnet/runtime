@@ -1320,10 +1320,14 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
 
                 for (unsigned dim = 0; dim <= arrIndexInfo->dim; dim++)
                 {
+                    GenTree* bndsChkNode = arrIndexInfo->arrIndex.bndsChks[dim];
+
 #ifdef DEBUG
                     if (verbose)
                     {
-                        printf("Remove bounds check for stmt " FMT_STMT ", dim %d, ", arrIndexInfo->stmt->GetID(), dim);
+                        printf("Remove bounds check ");
+                        printTreeID(bndsChkNode->gtGetOp1());
+                        printf(" for " FMT_STMT ", dim% d, ", arrIndexInfo->stmt->GetID(), dim);
                         arrIndexInfo->arrIndex.Print();
                         printf(", bounds check nodes: ");
                         arrIndexInfo->arrIndex.PrintBoundsCheckNodes();
@@ -1331,7 +1335,6 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
                     }
 #endif // DEBUG
 
-                    GenTree* bndsChkNode = arrIndexInfo->arrIndex.bndsChks[dim];
                     if (bndsChkNode->gtGetOp1()->OperIsBoundsCheck())
                     {
                         // This COMMA node will only represent a bounds check if we've haven't already removed this
@@ -2324,7 +2327,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
 #ifdef DEBUG
         if (verbose)
         {
-            printf("Found ArrIndex at tree ");
+            printf("Found ArrIndex at " FMT_BB " " FMT_STMT " tree ", arrIndex.useBlock->bbNum, info->stmt->GetID());
             printTreeID(tree);
             printf(" which is equivalent to: ");
             arrIndex.Print();
