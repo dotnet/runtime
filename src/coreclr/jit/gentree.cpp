@@ -12997,15 +12997,59 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return tree;
     }
 
+    GenTree* const op1 = tree->AsOp()->gtOp1;
+    GenTree* const op2 = tree->AsOp()->gtOp2;
+
+    GenTreeIndir*  ind    = nullptr;
+    GenTreeIntCon* intCns = nullptr;
+    if (op1->OperIs(GT_CNS_INT) && op2->OperIs(GT_IND))
+    {
+        intCns = op1->AsIntCon();
+        ind    = op2->AsIndir();
+    }
+    else if (op2->OperIs(GT_CNS_INT) && op1->OperIs(GT_IND))
+    {
+        intCns = op2->AsIntCon();
+        ind    = op1->AsIndir();
+    }
+
+    // Try to clean up redundant checks after GDV if any
+    if ((ind != nullptr) && ind->Addr()->OperIsLeaf())
+    {
+        bool isExact = false;
+        bool isNonNull = false;
+        CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(ind->Addr(), &isExact, &isNonNull);
+        CORINFO_CLASS_HANDLE cls2 = reinterpret_cast<CORINFO_CLASS_HANDLE>(intCns->IconValue());
+
+        if ((cls1 != nullptr) && (cls1 == cls2))
+        {
+            GenTree* newNode = nullptr;
+            if (ind->gtFlags & GTF_EXCEPT)
+            {
+                // keep nullcheck
+                GenTree* nullcheck = gtNewNullCheck(ind->Addr(), compCurBB);
+                newNode = gtNewOperNode(GT_COMMA, tree->TypeGet(), nullcheck, gtNewIconNode(oper == GT_EQ ? 1 : 0));
+            }
+            else
+            {
+                newNode = gtNewIconNode(oper == GT_EQ ? 1 : 0);
+            }
+
+            DEBUG_DESTROY_NODE(op1);
+            DEBUG_DESTROY_NODE(op2);
+            DEBUG_DESTROY_NODE(tree);
+            return newNode;
+        }
+    }
+
+
     // Screen for the right kinds of operands
-    GenTree* const         op1     = tree->AsOp()->gtOp1;
     const TypeProducerKind op1Kind = gtGetTypeProducerKind(op1);
     if (op1Kind == TPK_Unknown)
     {
         return tree;
     }
 
-    GenTree* const         op2     = tree->AsOp()->gtOp2;
     const TypeProducerKind op2Kind = gtGetTypeProducerKind(op2);
     if (op2Kind == TPK_Unknown)
     {
