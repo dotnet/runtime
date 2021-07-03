@@ -63,7 +63,7 @@ namespace System.Net.Security
                 if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
                 {
                     // given cert is X509Certificate2 with key. We can use it directly.
-                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, null, false, null);
+                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, null);
                 }
                 else
                 {

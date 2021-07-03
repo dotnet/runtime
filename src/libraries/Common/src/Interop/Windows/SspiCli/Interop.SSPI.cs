@@ -319,17 +319,14 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct SecPkgCred_ClientCertPolicy
         {
-            public int dwFlags;
-            public fixed byte guid[16];
-            public int dwCertFlags;
-            public int dwUrlRetrievalTimeout;
-            [MarshalAs(UnmanagedType.Bool)]
-            public bool fCheckRevocationFreshnessTime;
-            public int dwRevocationFreshnessTime;
-            [MarshalAs(UnmanagedType.Bool)]
-            public bool fOmitUsageCheck;
+            public uint dwFlags;
+            public Guid guidPolicyId;
+            public uint dwCertFlags;
+            public uint dwUrlRetrievalTimeout;
+            public BOOL fCheckRevocationFreshnessTime;
+            public uint dwRevocationFreshnessTime;
+            public BOOL fOmitUsageCheck;
             public char* pwszSslCtlStoreName;
-            [MarshalAs(UnmanagedType.LPWStr)]
             public char* pwszSslCtlIdentifier;
         }
 

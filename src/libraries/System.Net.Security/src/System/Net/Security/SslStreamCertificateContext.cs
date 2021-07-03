@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
@@ -11,7 +12,8 @@ namespace System.Net.Security
         internal readonly X509Certificate2[] IntermediateCertificates;
         internal readonly SslCertificateTrust? Trust;
 
-        public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline = false)
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline)
         {
             return Create(target, additionalCertificates, offline, null);
         }

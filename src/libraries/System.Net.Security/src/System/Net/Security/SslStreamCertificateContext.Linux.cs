@@ -16,6 +16,6 @@ namespace System.Net.Security
             Trust = trust;
         }
 
-        internal static SslStreamCertificateContext Create(X509Certificate2 target) => Create(target, null, false, null);
+        internal static SslStreamCertificateContext Create(X509Certificate2 target) => Create(target, null);
     }
 }

@@ -719,7 +719,7 @@ namespace System.Net.Security.Tests
                 serverChain = certificates.serverChain;
             }
 
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificates.serverCert, certificates.serverChain, false, null);
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificates.serverCert, certificates.serverChain);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -766,7 +766,7 @@ namespace System.Net.Security.Tests
             }
 
             var serverOptions = new SslServerAuthenticationOptions();
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificates.serverCert, certificates.serverChain, false, null);
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificates.serverCert, certificates.serverChain);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -817,7 +817,7 @@ namespace System.Net.Security.Tests
             clientOptions.LocalCertificateSelectionCallback = (sender, target, certificates, remoteCertificate, issuers) => clientCertificate;
 
             var serverOptions = new SslServerAuthenticationOptions() { ClientCertificateRequired = true };
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null, false, null);
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null);
             serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
             {
                 // Client should send chain without root CA. There is no good way how to know if the chain was built from certificates
@@ -876,7 +876,7 @@ namespace System.Net.Security.Tests
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
 
             var serverOptions = new SslServerAuthenticationOptions();
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null, false, null);
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedTcpStreams();
             using (clientStream)
