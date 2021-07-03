@@ -924,13 +924,13 @@ public:
 class NormalizedTimer
 {
 private:
-    LARGE_INTEGER startTimestamp = { .QuadPart = 0 };
-    LARGE_INTEGER stopTimestamp = { .QuadPart = 0 };
+    LARGE_INTEGER startTimestamp;
+    LARGE_INTEGER stopTimestamp;
     int64_t cachedElapsed100nsTicks = 0;
     bool shouldRecalculate = true;
     bool isRunning = false;
     static const int64_t NormalizedTicksPerSecond = 10000000 /* 100ns ticks per second (1e7) */;
-    static Volatile<int64_t> s_frequency;
+    static Volatile<double> s_frequency;
 
     inline
     void Lap()
@@ -941,6 +941,22 @@ private:
         shouldRecalculate = true;
     }
 public:
+    NormalizedTimer()
+    {
+        if (s_frequency.Load() == -1)
+        {
+            double frequency;
+            LARGE_INTEGER qpfValue;
+            QueryPerformanceFrequency(&qpfValue);
+            frequency = static_cast<double>(qpfValue.QuadPart);
+            frequency /= NormalizedTicksPerSecond;
+            s_frequency.Store(frequency);
+        }
+
+        startTimestamp.QuadPart = 0;
+        startTimestamp.QuadPart = 0;
+    }
+
     // ======================================================================================
     // Start the timer
     inline
@@ -973,22 +989,12 @@ public:
     inline
     int64_t Elapsed100nsTicks(bool shouldContinue = false)
     {
-        if (s_frequency == -1)
-        {
-            int64_t frequency;
-            LARGE_INTEGER qpfValue;
-            QueryPerformanceFrequency(&qpfValue);
-            frequency = static_cast<int64_t>(qpfValue.QuadPart);
-            frequency /= NormalizedTicksPerSecond;
-            InterlockedExchange64(&s_frequency, frequency);
-        }
-
         if (shouldRecalculate)
         {
             if (isRunning)
                 Stop();
 
-            cachedElapsed100nsTicks = static_cast<int64_t>(stopTimestamp.QuadPart - startTimestamp.QuadPart) / s_frequency;
+            cachedElapsed100nsTicks = static_cast<int64_t>((stopTimestamp.QuadPart - startTimestamp.QuadPart) / s_frequency);
 
             if (shouldContinue)
                 Lap();

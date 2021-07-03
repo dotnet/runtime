@@ -2272,6 +2272,6 @@ HRESULT GetFileVersion(                     // S_OK or error
 }
 #endif // !TARGET_UNIX
 
-Volatile<int64_t> NormalizedTimer::s_frequency = -1;
+Volatile<double> NormalizedTimer::s_frequency = -1.0;
 
 #endif // !DACCESS_COMPILE
