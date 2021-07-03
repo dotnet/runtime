@@ -13021,7 +13021,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         CORINFO_CLASS_HANDLE cls1      = gtGetClassHandle(ind->Addr(), &isExact, &isNonNull);
         CORINFO_CLASS_HANDLE cls2      = reinterpret_cast<CORINFO_CLASS_HANDLE>(intCns->IconValue());
 
-        if ((cls1 != nullptr) && (cls1 == cls2))
+        if ((cls1 != nullptr) && (cls1 == cls2) && isExact)
         {
             GenTree* newNode = ind->Addr();
             if (newNode->OperIsLocal() && !(newNode->gtFlags & GTF_EXCEPT))
@@ -18012,6 +18012,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         }
     }
 
+    if (!*pIsExact && (objClass != nullptr))
+    {
+        *pIsExact = info.compCompHnd->getClassAttribs(objClass) & CORINFO_FLG_FINAL;
+    }
     return objClass;
 }
 
