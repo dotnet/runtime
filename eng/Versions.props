@@ -17,6 +17,8 @@
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
     <!-- Opt-in/out repo features -->
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
+    <!-- TODO: Upgrade compiler version to enable Static Abstracts in Interfaces; remove this once the employed SDK uses a new enough version. -->
+    <MicrosoftNetCompilersToolsetVersion>4.0.0-2.21323.11</MicrosoftNetCompilersToolsetVersion>
     <UsingToolMicrosoftNetILLinkTasks>true</UsingToolMicrosoftNetILLinkTasks>
     <UsingToolIbcOptimization>false</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
