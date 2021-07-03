@@ -13024,11 +13024,15 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         if ((cls1 != nullptr) && (cls1 == cls2))
         {
             GenTree* newNode = ind->Addr();
-            if (newNode->gtFlags & GTF_EXCEPT)
+            if (newNode->OperIsLocal() && !(newNode->gtFlags & GTF_EXCEPT))
             {
-                newNode = gtNewNullCheck(newNode, compCurBB);
+                newNode = gtNewIconNode(oper == GT_EQ ? 1 : 0);
             }
-            newNode = gtNewOperNode(GT_COMMA, tree->TypeGet(), newNode, gtNewIconNode(oper == GT_EQ ? 1 : 0));
+            else
+            {
+                newNode = gtNewOperNode(GT_COMMA, tree->TypeGet(), gtNewNullCheck(newNode, compCurBB),
+                                        gtNewIconNode(oper == GT_EQ ? 1 : 0));
+            }
 
             DEBUG_DESTROY_NODE(op1);
             DEBUG_DESTROY_NODE(op2);
