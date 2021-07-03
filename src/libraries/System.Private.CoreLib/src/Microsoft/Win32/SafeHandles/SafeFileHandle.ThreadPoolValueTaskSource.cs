@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Internal.Runtime.CompilerServices;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -49,10 +50,10 @@ namespace Microsoft.Win32.SafeHandles
             // The first two are common for all kinds of operations.
             private long _fileOffset;
             private CancellationToken _cancellationToken;
-            private Memory<byte> _readMemory;
-            private ReadOnlyMemory<byte> _writeMemory;
-            private IReadOnlyList<Memory<byte>>? _readScatterMemories;
-            private IReadOnlyList<ReadOnlyMemory<byte>>? _writeGatherMemories;
+            // Used by simple reads and writes. Will be unsafely cast to a memory when performing a read.
+            private ReadOnlyMemory<byte> _singleSegment;
+            // Used by vectored reads and writes. Is an IReadOnlyList of either Memory or ReadOnlyMemory of bytes.
+            private object? _multiSegmentCollection;
 
             internal ThreadPoolValueTaskSource(SafeFileHandle fileHandle)
             {
@@ -98,18 +99,19 @@ namespace Microsoft.Win32.SafeHandles
                         switch (_operation)
                         {
                             case Operation.Read:
-                                result = RandomAccess.ReadAtOffset(_fileHandle, _readMemory.Span, _fileOffset);
+                                Memory<byte> writableSingleSegment = Unsafe.As<ReadOnlyMemory<byte>, Memory<byte>>(ref _singleSegment);
+                                result = RandomAccess.ReadAtOffset(_fileHandle, writableSingleSegment.Span, _fileOffset);
                                 break;
                             case Operation.Write:
-                                result = RandomAccess.WriteAtOffset(_fileHandle, _writeMemory.Span, _fileOffset);
+                                result = RandomAccess.WriteAtOffset(_fileHandle, _singleSegment.Span, _fileOffset);
                                 break;
                             case Operation.ReadScatter:
-                                Debug.Assert(_readScatterMemories != null);
-                                result = RandomAccess.ReadScatterAtOffset(_fileHandle, _readScatterMemories!, _fileOffset);
+                                Debug.Assert(_multiSegmentCollection != null && _multiSegmentCollection is IReadOnlyList<Memory<byte>>);
+                                result = RandomAccess.ReadScatterAtOffset(_fileHandle, (IReadOnlyList<Memory<byte>>) _multiSegmentCollection, _fileOffset);
                                 break;
                             case Operation.WriteGather:
-                                Debug.Assert(_writeGatherMemories != null);
-                                result = RandomAccess.WriteGatherAtOffset(_fileHandle, _writeGatherMemories!, _fileOffset);
+                                Debug.Assert(_multiSegmentCollection != null && _multiSegmentCollection is IReadOnlyList<ReadOnlyMemory<byte>>);
+                                result = RandomAccess.WriteGatherAtOffset(_fileHandle, (IReadOnlyList<ReadOnlyMemory<byte>>)_multiSegmentCollection, _fileOffset);
                                 break;
                         }
                     } finally
@@ -119,10 +121,8 @@ namespace Microsoft.Win32.SafeHandles
                         _operation = Operation.None;
                         _fileOffset = 0;
                         _cancellationToken = default;
-                        _readMemory = default;
-                        _writeMemory = default;
-                        _readScatterMemories = null;
-                        _writeGatherMemories = null;
+                        _singleSegment = default;
+                        _multiSegmentCollection = null;
                     }
                 } catch (Exception e)
                 {
@@ -136,7 +136,7 @@ namespace Microsoft.Win32.SafeHandles
                 Debug.Assert(_operation == Operation.None, "An operation was queued before the previous one's completion.");
 
                 _operation = Operation.Read;
-                _readMemory = buffer;
+                _singleSegment = buffer;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
                 ThreadPool.UnsafeQueueUserWorkItem(this, false);
@@ -149,7 +149,7 @@ namespace Microsoft.Win32.SafeHandles
                 Debug.Assert(_operation == Operation.None, "An operation was queued before the previous one's completion.");
 
                 _operation = Operation.Write;
-                _writeMemory = buffer;
+                _singleSegment = buffer;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
                 ThreadPool.UnsafeQueueUserWorkItem(this, false);
@@ -162,7 +162,7 @@ namespace Microsoft.Win32.SafeHandles
                 Debug.Assert(_operation == Operation.None, "An operation was queued before the previous one's completion.");
 
                 _operation = Operation.ReadScatter;
-                _readScatterMemories = buffers;
+                _multiSegmentCollection = buffers;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
                 ThreadPool.UnsafeQueueUserWorkItem(this, false);
@@ -175,7 +175,7 @@ namespace Microsoft.Win32.SafeHandles
                 Debug.Assert(_operation == Operation.None, "An operation was queued before the previous one's completion.");
 
                 _operation = Operation.WriteGather;
-                _writeGatherMemories = buffers;
+                _multiSegmentCollection = buffers;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
                 ThreadPool.UnsafeQueueUserWorkItem(this, false);
