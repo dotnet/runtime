@@ -13014,7 +13014,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     }
 
     // Try to clean up redundant checks after GDV if any
-    if ((ind != nullptr) && (ind->Addr() != nullptr) && ind->Addr()->TypeIs(TYP_REF))
+    if ((ind != nullptr) && (ind->Addr() != nullptr) && ind->Addr()->TypeIs(TYP_REF) && fgGlobalMorph)
     {
         bool                 isExact   = false;
         bool                 isNonNull = false;
@@ -13023,20 +13023,18 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
         if ((cls1 != nullptr) && (cls1 == cls2) && isExact)
         {
-            GenTree* newNode = ind->Addr();
-            if (newNode->OperIsLocal() && !(newNode->gtFlags & GTF_EXCEPT))
+            GenTree* newNode     = ind->Addr();
+            GenTree* sideEffList = nullptr;
+            gtExtractSideEffList(ind, &sideEffList);
+            if (sideEffList == nullptr)
             {
                 newNode = gtNewIconNode(oper == GT_EQ ? 1 : 0);
             }
             else
             {
-                newNode = gtNewOperNode(GT_COMMA, tree->TypeGet(), gtNewNullCheck(newNode, compCurBB),
-                                        gtNewIconNode(oper == GT_EQ ? 1 : 0));
+                newNode = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffList, gtNewIconNode(oper == GT_EQ ? 1 : 0));
+                newNode->gtFlags |= (sideEffList->gtFlags & GTF_ALL_EFFECT);
             }
-
-            DEBUG_DESTROY_NODE(op1);
-            DEBUG_DESTROY_NODE(op2);
-            DEBUG_DESTROY_NODE(tree);
             return newNode;
         }
     }
@@ -17875,6 +17873,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 {
                     assert(sig.retType == CORINFO_TYPE_CLASS);
                     objClass = sig.retTypeClass;
+                    if ((objClass != NO_CLASS_HANDLE) && impIsClassExact(objClass))
+                    {
+                        *pIsExact = true;
+                    }
                 }
             }
             else if (call->gtCallType == CT_HELPER)
@@ -18010,11 +18012,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         {
             break;
         }
-    }
-
-    if (!*pIsExact && (objClass != nullptr))
-    {
-        *pIsExact = info.compCompHnd->getClassAttribs(objClass) & CORINFO_FLG_FINAL;
     }
     return objClass;
 }
