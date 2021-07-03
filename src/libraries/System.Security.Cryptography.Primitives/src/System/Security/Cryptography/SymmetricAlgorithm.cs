@@ -721,6 +721,17 @@ namespace System.Security.Cryptography
             return written;
         }
 
+        public bool TryDecryptCbc(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            out int bytesWritten,
+            PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            CheckPaddingMode(paddingMode);
+            return TryDecryptCbcCore(ciphertext, iv, destination, paddingMode, out bytesWritten);
+        }
+
         public byte[] EncryptCbc(byte[] plaintext, byte[] iv, PaddingMode paddingMode = PaddingMode.PKCS7)
         {
             if (plaintext is null)

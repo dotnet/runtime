@@ -300,6 +300,272 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
         [Theory]
         [MemberData(nameof(CbcTestCases))]
+        public static void CbcRoundtrip(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+
+                // Even though we have set the instance to use CFB, the Cbc one shots should
+                // always be done in CBC.
+                aes.FeedbackSize = 8;
+                aes.Mode = CipherMode.CFB;
+                aes.Padding = padding == PaddingMode.None ? PaddingMode.PKCS7 : PaddingMode.None;
+
+                byte[] encrypted = aes.EncryptCbc(plaintext, s_aes128OneShotIv, padding);
+                byte[] decrypted = aes.DecryptCbc(encrypted, s_aes128OneShotIv, padding);
+
+                AssertPlaintexts(plaintext, decrypted, padding);
+
+                decrypted = aes.DecryptCbc(ciphertext, s_aes128OneShotIv, padding);
+                encrypted = aes.EncryptCbc(decrypted, s_aes128OneShotIv, padding);
+
+                AssertCiphertexts(ciphertext, encrypted, padding, aes.BlockSize / 8);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CbcTestCases))]
+        public static void TryDecryptCbc_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            if (plaintext.Length == 0)
+            {
+                // Can't have a ciphertext length shorter than zero.
+                return;
+            }
+
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+
+                Span<byte> destinationBuffer = new byte[plaintext.Length - 1];
+
+                bool result = aes.TryDecryptCbc(ciphertext, s_aes128OneShotIv, destinationBuffer, out int bytesWritten, padding);
+                Assert.False(result, "TryDecryptCbc");
+                Assert.Equal(0, bytesWritten);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CbcTestCases))]
+        public static void TryEncryptCbc_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            if (ciphertext.Length == 0)
+            {
+                // Can't have a too small buffer for zero.
+                return;
+            }
+
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+
+                Span<byte> destinationBuffer = new byte[ciphertext.Length - 1];
+
+                bool result = aes.TryEncryptCbc(plaintext, s_aes128OneShotIv, destinationBuffer, out int bytesWritten, padding);
+                Assert.False(result, "TryEncryptCbc");
+                Assert.Equal(0, bytesWritten);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CbcTestCases))]
+        public static void TryDecryptCbc_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+
+                int expectedPlaintextSize = padding == PaddingMode.Zeros ? ciphertext.Length : plaintext.Length;
+                Span<byte> destinationBuffer = new byte[expectedPlaintextSize];
+
+                bool result = aes.TryDecryptCbc(ciphertext, s_aes128OneShotIv, destinationBuffer, out int bytesWritten, padding);
+                Assert.True(result, "TryDecryptCbc");
+                Assert.Equal(destinationBuffer.Length, bytesWritten);
+
+                AssertPlaintexts(plaintext, destinationBuffer.ToArray(), padding);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CbcTestCases))]
+        public static void TryEncryptCbc_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+
+                int expectedCiphertextSize = aes.GetCiphertextLengthCbc(plaintext.Length, padding);
+                Span<byte> destinationBuffer = new byte[expectedCiphertextSize];
+
+                bool result = aes.TryEncryptCbc(plaintext, s_aes128OneShotIv, destinationBuffer, out int bytesWritten, padding);
+                Assert.True(result, "TryEncryptCbc");
+                Assert.Equal(expectedCiphertextSize, bytesWritten);
+
+                AssertCiphertexts(ciphertext, destinationBuffer.ToArray(), padding, aes.BlockSize / 8);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CbcTestCases))]
+        public static void TryDecryptCbc_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+                int expectedPlaintextSize = padding == PaddingMode.Zeros ? ciphertext.Length : plaintext.Length;
+
+                Span<byte> largeBuffer = new byte[expectedPlaintextSize + 10];
+                Span<byte> destinationBuffer = largeBuffer.Slice(0, expectedPlaintextSize);
+                largeBuffer.Fill(0xCC);
+
+                bool result = aes.TryDecryptCbc(
+                    ciphertext,
+                    s_aes128OneShotIv,
+                    destinationBuffer,
+                    out int bytesWritten,
+                    padding);
+
+                Assert.True(result, "TryDecryptCbc");
+                Assert.Equal(destinationBuffer.Length, bytesWritten);
+
+                AssertPlaintexts(plaintext, destinationBuffer.ToArray(), padding);
+
+                Span<byte> excess = largeBuffer.Slice(destinationBuffer.Length);
+                AssertExtensions.FilledWith<byte>(0xCC, excess);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CbcTestCases))]
+        public static void TryEncryptCbc_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+
+                Span<byte> largeBuffer = new byte[ciphertext.Length + 10];
+                Span<byte> destinationBuffer = largeBuffer.Slice(0, ciphertext.Length);
+                largeBuffer.Fill(0xCC);
+
+                bool result = aes.TryEncryptCbc(
+                    plaintext,
+                    s_aes128OneShotIv,
+                    destinationBuffer,
+                    out int bytesWritten,
+                    padding);
+
+                Assert.True(result, "TryEncryptCbc");
+                Assert.Equal(destinationBuffer.Length, bytesWritten);
+
+                AssertCiphertexts(ciphertext, destinationBuffer.ToArray(), padding, aes.BlockSize / 8);
+                AssertExtensions.FilledWith<byte>(0xCC, largeBuffer.Slice(ciphertext.Length));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CbcTestCases))]
+        public static void TryDecryptCbc_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            (int plaintextOffset, int ciphertextOffset)[] offsets =
+            {
+                (0, 0), (8, 0), (0, 8), (8, 8),
+            };
+
+            foreach ((int plaintextOffset, int ciphertextOffset) in offsets)
+            {
+                using (Aes aes = AesFactory.Create())
+                {
+                    aes.Key = s_aes128OneShotKey;
+
+                    int expectedPlaintextSize = padding == PaddingMode.Zeros ? ciphertext.Length : plaintext.Length;
+                    int destinationSize = Math.Max(expectedPlaintextSize, ciphertext.Length) + Math.Max(plaintextOffset, ciphertextOffset);
+                    Span<byte> buffer = new byte[destinationSize];
+                    Span<byte> destinationBuffer = buffer.Slice(plaintextOffset, expectedPlaintextSize);
+                    Span<byte> ciphertextBuffer = buffer.Slice(ciphertextOffset, ciphertext.Length);
+                    ciphertext.AsSpan().CopyTo(ciphertextBuffer);
+
+                    bool result = aes.TryDecryptCbc(
+                        ciphertextBuffer,
+                        s_aes128OneShotIv,
+                        destinationBuffer,
+                        out int bytesWritten,
+                        padding);
+
+                    Assert.True(result, "TryDecryptCbc");
+                    Assert.Equal(destinationBuffer.Length, bytesWritten);
+
+                    AssertPlaintexts(plaintext, destinationBuffer.ToArray(), padding);
+                    Assert.True(destinationBuffer.Overlaps(ciphertextBuffer) || plaintext.Length == 0 || ciphertext.Length == 0);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CbcTestCases))]
+        public static void TryEncryptCbc_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            (int plaintextOffset, int ciphertextOffset)[] offsets =
+            {
+                (0, 0), (8, 0), (0, 8), (8, 8),
+            };
+
+            foreach ((int plaintextOffset, int ciphertextOffset) in offsets)
+            {
+                using (Aes aes = AesFactory.Create())
+                {
+                    aes.Key = s_aes128OneShotKey;
+
+                    int destinationSize = ciphertext.Length + Math.Max(plaintextOffset, ciphertextOffset);
+                    Span<byte> buffer = new byte[destinationSize];
+                    Span<byte> destinationBuffer = buffer.Slice(ciphertextOffset, ciphertext.Length);
+                    Span<byte> plaintextBuffer = buffer.Slice(plaintextOffset, plaintext.Length);
+                    plaintext.AsSpan().CopyTo(plaintextBuffer);
+
+                    bool result = aes.TryEncryptCbc(
+                        plaintextBuffer,
+                        s_aes128OneShotIv,
+                        destinationBuffer,
+                        out int bytesWritten,
+                        padding);
+
+                    Assert.True(result, "TryEncryptCbc");
+                    Assert.Equal(destinationBuffer.Length, bytesWritten);
+
+                    AssertCiphertexts(ciphertext, destinationBuffer.ToArray(), padding, aes.BlockSize / 8);
+                    Assert.True(destinationBuffer.Overlaps(plaintextBuffer) || plaintext.Length == 0 || ciphertext.Length == 0);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CbcTestCases))]
+        public static void DecryptCbc_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+                byte[] decrypted = aes.DecryptCbc(ciphertext.AsSpan(), s_aes128OneShotIv.AsSpan(), padding);
+
+                AssertPlaintexts(plaintext, decrypted, padding);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CbcTestCases))]
+        public static void EncryptCbc_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                aes.Key = s_aes128OneShotKey;
+                byte[] encrypted = aes.EncryptCbc(plaintext.AsSpan(), s_aes128OneShotIv.AsSpan(), padding);
+
+                AssertCiphertexts(ciphertext, encrypted, padding, aes.BlockSize / 8);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CbcTestCases))]
         public static void DecryptCbc_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
         {
             using (Aes aes = AesFactory.Create())
