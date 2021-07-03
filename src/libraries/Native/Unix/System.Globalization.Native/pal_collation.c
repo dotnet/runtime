@@ -112,6 +112,14 @@ static const UChar g_HalfFullHigherChars[] = {
 };
 static const int32_t g_HalfFullCharsLength = (sizeof(g_HalfFullHigherChars) / sizeof(UChar));
 
+static const UChar g_HiraganaWithoutDakutenChars[] = {
+    0x3041, 0x3042, 0x3043, 0x3044, 0x3045, 0x3046, 0x3047, 0x3048, 0x3049, 0x304A, 0x304B, 0x304D, 0x304F, 0x3051, 0x3053,
+    0x3055, 0x3057, 0x3059, 0x305B, 0x305D, 0x305F, 0x3061, 0x3063, 0x3064, 0x3066, 0x3068, 0x306A, 0x306B, 0x306C, 0x306D,
+    0x306E, 0x306F, 0x3072, 0x3075, 0x3078, 0x307B, 0x307E, 0x307F, 0x3080, 0x3081, 0x3082, 0x3083, 0x3084, 0x3085, 0x3086,
+    0x3087, 0x3088, 0x3089, 0x308A, 0x308B, 0x308C, 0x308D, 0x308E, 0x308F, 0x3090, 0x3091, 0x3092, 0x3093, 0x3095, 0x3096, 0x309D, 
+};
+static const int32_t g_HiraganaWithoutDakutenCharsLength = (sizeof(g_HiraganaWithoutDakutenChars) / sizeof(UChar));
+
 /*
 ICU collation rules reserve any punctuation and whitespace characters for use in the syntax.
 Thus, to use these characters in a rule, they need to be escaped.
@@ -158,11 +166,28 @@ static void FillIgnoreKanaRules(UChar* completeRules, int32_t* fillIndex, int32_
         return;
     }
 
-    for (UChar hiraganaChar = hiraganaStart; hiraganaChar <= hiraganaEnd; hiraganaChar++)
+    if (isIgnoreKanaType)
     {
-        // Hiragana is the range 3041 to 3096 & 309D & 309E
-        if (hiraganaChar <= 0x3096 || hiraganaChar >= 0x309D) // characters between 3096 and 309D are not mapped to katakana
+        for (UChar hiraganaChar = hiraganaStart; hiraganaChar <= hiraganaEnd; hiraganaChar++)
         {
+            // Hiragana is the range 3041 to 3096 & 309D & 309E
+            if (hiraganaChar <= 0x3096 ||
+                hiraganaChar >= 0x309D) // characters between 3096 and 309D are not mapped to katakana
+            {
+                completeRules[*fillIndex] = '&';
+                completeRules[(*fillIndex) + 1] = hiraganaChar;
+                completeRules[(*fillIndex) + 2] = compareChar;
+                completeRules[(*fillIndex) + 3] = hiraganaChar + hiraganaToKatakanaOffset;
+                (*fillIndex) += 4;
+            }
+        }
+    }
+    else
+    {
+        // Avoid conflicts between default dakuten rules and custom rules
+        for (int i = 0; i < g_HiraganaWithoutDakutenCharsLength; i++)
+        {
+            UChar hiraganaChar = g_HiraganaWithoutDakutenChars[i];
             completeRules[*fillIndex] = '&';
             completeRules[(*fillIndex) + 1] = hiraganaChar;
             completeRules[(*fillIndex) + 2] = compareChar;
