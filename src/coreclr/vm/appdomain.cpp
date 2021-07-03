@@ -1332,17 +1332,21 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
     }
     CONTRACTL_END;
 
+    GCX_PREEMP();
+
     const size_t fohSize = 16 * 1024 * 1024;
 
     // TODO: remove commit
     void* alloc = ClrVirtualAlloc(nullptr, fohSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-    NewHolder<FrozenObjectHeap> pFoh(new FrozenObjectHeap());
-
-    pFoh->Init(alloc, fohSize);
-
-    if (InterlockedCompareExchangeT<FrozenObjectHeap*>(&m_FrozenObjects, pFoh, nullptr) == nullptr)
+    if (alloc != nullptr)
     {
-        pFoh.SuppressRelease();
+        GCInterface::RegisterFrozenSegment(alloc, fohSize);
+        NewHolder<FrozenObjectHeap> pFoh(new FrozenObjectHeap());
+        pFoh->Init(alloc, fohSize);
+        if (InterlockedCompareExchangeT<FrozenObjectHeap*>(&m_FrozenObjects, pFoh, nullptr) == nullptr)
+        {
+            pFoh.SuppressRelease();
+        }
     }
 }
 
