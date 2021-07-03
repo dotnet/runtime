@@ -3501,6 +3501,27 @@ void Compiler::lvaSortByRefCount()
             {
                 lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
             }
+            else if (varDsc->lvType == TYP_STRUCT)
+            {
+                if (!varDsc->lvRegStruct && !compEnregStructLocals())
+                {
+                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
+                }
+                else if (varDsc->lvIsMultiRegArgOrRet())
+                {
+                    // Prolog and return generators do not support SIMD<->general register moves.
+                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStructArg));
+                }
+#if defined(TARGET_ARM)
+                else if (varDsc->lvIsParam)
+                {
+                    // On arm we prespill all struct args,
+                    // TODO-Arm-CQ: keep them in registers, it will need a fix
+                    // to "On the ARM we will spill any incoming struct args" logic in codegencommon.
+                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStructArg));
+                }
+#endif // TARGET_ARM
+            }
         }
         if (varDsc->lvIsStructField && (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT))
         {

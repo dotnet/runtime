@@ -555,7 +555,7 @@ CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSave
 #endif // defined(TARGET_ARM64)
 #endif // DEBUG
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_XARCH)
+#if (defined(TARGET_WINDOWS) && defined(TARGET_XARCH)) || defined(TARGET_ARM)
 CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 1) // Allow to enregister locals with struct type.
 #else
 CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 0) // Don't allow to enregister locals with struct type
