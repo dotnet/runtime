@@ -58,11 +58,11 @@ namespace Wasm.Build.Tests
             // Expect just the emscripten ones here for now
 
             // linux doesn't have Emscripten.Python package, so only 2 there
-            int expectedPermFileCount = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? 2 : 3;
+            int expectedPermFileCount = RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? 3 : 4;
 
             int permFileCount = unixPermFiles.Count();
             if (permFileCount != expectedPermFileCount)
-                throw new XunitException($"Expected to find 3 UnixFilePermissions.xml files, from emscripten packages. But got {permFileCount}."
+                throw new XunitException($"Expected to find 3 UnixFilePermissions.xml files, but got {permFileCount}."
                                             + $"{Environment.NewLine}Files: {string.Join(", ", unixPermFiles)}");
         }
     }
