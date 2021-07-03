@@ -30,7 +30,7 @@ namespace System.Runtime
         }
 
         // normalized to 100ns ticks on vm side
-        public static long GetCompilationTimeInTicks(bool currentThread = false)
+        private static long GetCompilationTimeInTicks(bool currentThread = false)
         {
             return currentThread ? 0 : (long)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.JIT_TICKS_IN_JIT);
         }

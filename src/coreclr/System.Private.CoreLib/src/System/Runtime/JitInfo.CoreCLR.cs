@@ -29,6 +29,6 @@ namespace System.Runtime
 
         // Normalized to 100ns ticks on vm side
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern long GetCompilationTimeInTicks(bool currentThread = false);
+        private static extern long GetCompilationTimeInTicks(bool currentThread = false);
     }
 }
