@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -18,6 +19,7 @@ namespace System.Text.Json.Serialization.Converters
         private readonly Func<TOption, TElement> _optionValueGetter;
         private readonly Func<TElement, TOption> _optionConstructor;
 
+        [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
         public FSharpOptionConverter(JsonConverter<TElement> elementConverter)
         {
             _optionValueGetter = FSharpCoreReflectionProxy.Instance.CreateFSharpOptionValueGetter<TOption, TElement>();

@@ -2,18 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
+    [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
     internal class FSharpTypeConverterFactory : JsonConverterFactory
     {
         private ObjectConverterFactory? _recordConverterFactory;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked with RequiresUnreferencedCode.")]
         public override bool CanConvert(Type typeToConvert) =>
             FSharpCoreReflectionProxy.IsFSharpType(typeToConvert) &&
                 FSharpCoreReflectionProxy.Instance.DetectFSharpKind(typeToConvert) is not FSharpKind.Unrecognized;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked with RequiresUnreferencedCode.")]
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(CanConvert(typeToConvert));

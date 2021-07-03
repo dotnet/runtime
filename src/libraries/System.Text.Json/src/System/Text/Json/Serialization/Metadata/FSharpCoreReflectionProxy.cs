@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -24,6 +25,8 @@ namespace System.Text.Json.Serialization.Metadata
     /// </summary>
     internal sealed class FSharpCoreReflectionProxy
     {
+        public const string FSharpCoreUnreferencedCodeMessage = "Uses Reflection to access FSharp.Core components, which requires unreferenced code.";
+
         private static object s_lockObj = new object();
         private static FSharpCoreReflectionProxy? s_singletonInstance;
 
@@ -80,12 +83,15 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The public methods are marked RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern", Justification = "The public methods are marked RequiresUnreferencedCode.")]
         private FSharpCoreReflectionProxy(Assembly fsharpCoreAssembly)
         {
             Debug.Assert(fsharpCoreAssembly.GetName().Name == "FSharp.Core");
 
-            _compilationMappingAttributeType = fsharpCoreAssembly.GetType(CompilationMappingAttributeTypeName)!;
-            _sourceConstructFlagsGetter = _compilationMappingAttributeType.GetProperty("SourceConstructFlags")?.GetGetMethod();
+            Type compilationMappingAttributeType = fsharpCoreAssembly.GetType(CompilationMappingAttributeTypeName)!;
+            _sourceConstructFlagsGetter = compilationMappingAttributeType.GetMethod("get_SourceConstructFlags", BindingFlags.Public | BindingFlags.Instance);
+            _compilationMappingAttributeType = compilationMappingAttributeType;
 
             _fsharpOptionType = fsharpCoreAssembly.GetType("Microsoft.FSharp.Core.FSharpOption`1");
             _fsharpListType = fsharpCoreAssembly.GetType("Microsoft.FSharp.Collections.FSharpList`1");
@@ -97,6 +103,7 @@ namespace System.Text.Json.Serialization.Metadata
             _fsharpMapCtor = fsharpCoreAssembly.GetType("Microsoft.FSharp.Collections.MapModule")?.GetMethod("OfSeq", BindingFlags.Public | BindingFlags.Static);
         }
 
+        [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
         public FSharpKind DetectFSharpKind(Type type)
         {
             Attribute? compilationMappingAttribute = GetFSharpCompilationMappingAttribute(type);
@@ -122,35 +129,43 @@ namespace System.Text.Json.Serialization.Metadata
             };
         }
 
-        public Func<TFSharpOption, T> CreateFSharpOptionValueGetter<TFSharpOption, T>()
+        [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        public Func<TFSharpOption, T> CreateFSharpOptionValueGetter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TFSharpOption, T>()
         {
-            Debug.Assert(_fsharpOptionType!.MakeGenericType(typeof(T)) == typeof(TFSharpOption));
-            MethodInfo valueGetter = EnsureMemberExists(typeof(TFSharpOption).GetProperty("Value", BindingFlags.Public | BindingFlags.Instance)?.GetGetMethod(), "Option.Value");
+            Debug.Assert(typeof(TFSharpOption).GetGenericTypeDefinition() == _fsharpOptionType!);
+            MethodInfo valueGetter = EnsureMemberExists(typeof(TFSharpOption).GetMethod("get_Value", BindingFlags.Public | BindingFlags.Instance), "Option.Value");
             return CreateDelegate<Func<TFSharpOption, T>>(valueGetter);
         }
 
-        public Func<T, TFSharpOption> CreateFSharpOptionConstructor<TFSharpOption, T>()
+        [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        public Func<T, TFSharpOption> CreateFSharpOptionConstructor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TFSharpOption, T>()
         {
-            Debug.Assert(_fsharpOptionType!.MakeGenericType(typeof(T)) == typeof(TFSharpOption));
+            Debug.Assert(typeof(TFSharpOption).GetGenericTypeDefinition() == _fsharpOptionType!);
             MethodInfo methodInfo = EnsureMemberExists(typeof(TFSharpOption).GetMethod("Some", BindingFlags.Public | BindingFlags.Static), "Option.Some");
             return CreateDelegate<Func<T, TFSharpOption>>(methodInfo);
         }
 
+        [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod", Justification = "The public methods are marked RequiresUnreferencedCode.")]
         public Func<IEnumerable<T>, TFSharpList> CreateFSharpListConstructor<TFSharpList, T>()
         {
-            Debug.Assert(_fsharpListType!.MakeGenericType(typeof(T)) == typeof(TFSharpList));
+            Debug.Assert(typeof(TFSharpList).GetGenericTypeDefinition() == _fsharpListType!);
             return CreateDelegate<Func<IEnumerable<T>, TFSharpList>>(EnsureMemberExists(_fsharpListCtor, "List.ofSeq").MakeGenericMethod(typeof(T)));
         }
 
+        [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod", Justification = "The public methods are marked RequiresUnreferencedCode.")]
         public Func<IEnumerable<T>, TFSharpSet> CreateFSharpSetConstructor<TFSharpSet, T>()
         {
-            Debug.Assert(_fsharpSetType!.MakeGenericType(typeof(T)) == typeof(TFSharpSet));
+            Debug.Assert(typeof(TFSharpSet).GetGenericTypeDefinition() == _fsharpSetType!);
             return CreateDelegate<Func<IEnumerable<T>, TFSharpSet>>(EnsureMemberExists(_fsharpSetCtor, "Set.ofSeq").MakeGenericMethod(typeof(T)));
         }
 
+        [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod", Justification = "The public methods are marked RequiresUnreferencedCode.")]
         public Func<IEnumerable<Tuple<TKey, TValue>>, TFSharpMap> CreateFSharpMapConstructor<TFSharpMap, TKey, TValue>()
         {
-            Debug.Assert(_fsharpMapType!.MakeGenericType(typeof(TKey), typeof(TValue)) == typeof(TFSharpMap));
+            Debug.Assert(typeof(TFSharpMap).GetGenericTypeDefinition() == _fsharpMapType!);
             return CreateDelegate<Func<IEnumerable<Tuple<TKey, TValue>>, TFSharpMap>>(EnsureMemberExists(_fsharpMapCtor, "Map.ofSeq").MakeGenericMethod(typeof(TKey), typeof(TValue)));
         }
 
