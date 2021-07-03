@@ -4,16 +4,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using System.Threading.Tasks;
 
 #nullable enable
 
 namespace Wasm.Build.Tests
 {
-    public class Command
+    public class ToolCommand
     {
-        private StringBuilder _extraArgsBuilder = new();
         private string _label;
 
         protected string _command;
@@ -28,25 +26,25 @@ namespace Wasm.Build.Tests
 
         public string? WorkingDirectory { get; set; }
 
-        public Command(string command, string label="")
+        public ToolCommand(string command, string label="")
         {
             _command = command;
             _label = label;
         }
 
-        public Command WithWorkingDirectory(string dir)
+        public ToolCommand WithWorkingDirectory(string dir)
         {
             WorkingDirectory = dir;
             return this;
         }
 
-        public Command WithEnvironmentVariable(string key, string value)
+        public ToolCommand WithEnvironmentVariable(string key, string value)
         {
             Environment[key] = value;
             return this;
         }
 
-        public Command WithEnvironmentVariables(IDictionary<string, string>? extraEnvVars)
+        public ToolCommand WithEnvironmentVariables(IDictionary<string, string>? extraEnvVars)
         {
             if (extraEnvVars != null)
             {
@@ -57,12 +55,12 @@ namespace Wasm.Build.Tests
             return this;
         }
 
-        public virtual CommandResult Execute(string args = "")
+        public virtual CommandResult Execute(params string[] args)
         {
             return Task.Run(async () => await ExecuteAsync(args)).Result;
         }
 
-        public async virtual Task<CommandResult> ExecuteAsync(string args = "")
+        public async virtual Task<CommandResult> ExecuteAsync(params string[] args)
         {
             var resolvedCommand = _command;
             string fullArgs = GetFullArgs(args);
@@ -70,7 +68,7 @@ namespace Wasm.Build.Tests
             return await ExecuteAsyncInternal(resolvedCommand, fullArgs);
         }
 
-        public virtual CommandResult ExecuteWithCapturedOutput(string args = "")
+        public virtual CommandResult ExecuteWithCapturedOutput(params string[] args)
         {
             var resolvedCommand = _command;
             string fullArgs = GetFullArgs(args);
@@ -78,11 +76,11 @@ namespace Wasm.Build.Tests
             return Task.Run(async () => await ExecuteAsyncInternal(resolvedCommand, fullArgs)).Result;
         }
 
-        protected virtual string GetFullArgs(string args) => $"{args} {_extraArgsBuilder}";
+        protected virtual string GetFullArgs(params string[] args) => string.Join(" ", args);
 
         private async Task<CommandResult> ExecuteAsyncInternal(string executable, string args)
         {
-            var output = new List<String>();
+            var output = new List<string>();
             CurrentProcess = CreateProcess(executable, args);
             CurrentProcess.ErrorDataReceived += (s, e) =>
             {
@@ -140,12 +138,6 @@ namespace Wasm.Build.Tests
 
             process.EnableRaisingEvents = true;
             return process;
-        }
-
-        public Command WithExtraArgs(string extraArgs)
-        {
-            _extraArgsBuilder.Append($" {extraArgs}");
-            return this;
         }
 
         private string WorkingDirectoryInfo()
