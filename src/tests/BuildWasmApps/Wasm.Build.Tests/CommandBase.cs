@@ -90,11 +90,7 @@ namespace Wasm.Build.Tests
                     return;
 
                 output.Add($"[{_label}] {e.Data}");
-                var handler = ErrorDataReceived;
-                if (handler != null)
-                {
-                    handler(s, e);
-                }
+                ErrorDataReceived?.Invoke(s, e);
             };
 
             CurrentProcess.OutputDataReceived += (s, e) =>
