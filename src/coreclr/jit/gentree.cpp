@@ -13014,7 +13014,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     }
 
     // Try to clean up redundant checks after GDV if any
-    if ((ind != nullptr) && (ind->Addr() != nullptr))
+    if ((ind != nullptr) && (ind->Addr() != nullptr) && ind->Addr()->TypeIs(TYP_REF))
     {
         bool                 isExact   = false;
         bool                 isNonNull = false;
