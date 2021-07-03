@@ -779,7 +779,6 @@ DEFINE_FIELD(RAW_ARRAY_DATA,        PADDING,                Padding)
 DEFINE_FIELD(RAW_ARRAY_DATA,        DATA,                   Data)
 
 DEFINE_CLASS(PORTABLE_TAIL_CALL_FRAME, CompilerServices,              PortableTailCallFrame)
-DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, PREV,                          Prev)
 DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, TAILCALL_AWARE_RETURN_ADDRESS, TailCallAwareReturnAddress)
 DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, NEXT_CALL,                     NextCall)
 
@@ -788,7 +787,6 @@ DEFINE_FIELD(TAIL_CALL_TLS,            FRAME,                         Frame)
 DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER,                    ArgBuffer)
 
 DEFINE_CLASS_U(CompilerServices,           PortableTailCallFrame, PortableTailCallFrame)
-DEFINE_FIELD_U(Prev,                       PortableTailCallFrame, Prev)
 DEFINE_FIELD_U(TailCallAwareReturnAddress, PortableTailCallFrame, TailCallAwareReturnAddress)
 DEFINE_FIELD_U(NextCall,                   PortableTailCallFrame, NextCall)
 

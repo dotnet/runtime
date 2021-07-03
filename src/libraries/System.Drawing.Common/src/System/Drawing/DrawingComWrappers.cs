@@ -27,9 +27,9 @@ namespace System.Drawing
 
         private static ComInterfaceEntry* InitializeComInterfaceEntry()
         {
-            GetIUnknownImpl(out IntPtr fpQueryInteface, out IntPtr fpAddRef, out IntPtr fpRelease);
+            GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
-            IntPtr iStreamVtbl = IStreamVtbl.Create(fpQueryInteface, fpAddRef, fpRelease);
+            IntPtr iStreamVtbl = IStreamVtbl.Create(fpQueryInterface, fpAddRef, fpRelease);
 
             ComInterfaceEntry* wrapperEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(DrawingComWrappers), sizeof(ComInterfaceEntry));
             wrapperEntry->IID = IID_IStream;
@@ -68,10 +68,10 @@ namespace System.Drawing
 
         internal static class IStreamVtbl
         {
-            public static IntPtr Create(IntPtr fpQueryInteface, IntPtr fpAddRef, IntPtr fpRelease)
+            public static IntPtr Create(IntPtr fpQueryInterface, IntPtr fpAddRef, IntPtr fpRelease)
             {
                 IntPtr* vtblRaw = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(IStreamVtbl), IntPtr.Size * 14);
-                vtblRaw[0] = fpQueryInteface;
+                vtblRaw[0] = fpQueryInterface;
                 vtblRaw[1] = fpAddRef;
                 vtblRaw[2] = fpRelease;
                 vtblRaw[3] = (IntPtr)(delegate* unmanaged<IntPtr, byte*, uint, uint*, int>)&Read;

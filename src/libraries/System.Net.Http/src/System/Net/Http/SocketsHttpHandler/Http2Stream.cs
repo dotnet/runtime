@@ -1281,6 +1281,23 @@ namespace System.Net.Http
                         await _connection.SendStreamDataAsync(StreamId, current, flush, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                     }
                 }
+                catch (OperationCanceledException e) when (e.CancellationToken == _requestBodyCancellationSource.Token)
+                {
+                    lock (SyncObject)
+                    {
+                        if (_resetException is Exception resetException)
+                        {
+                            if (_canRetry)
+                            {
+                                ThrowRetry(SR.net_http_request_aborted, resetException);
+                            }
+
+                            ThrowRequestAborted(resetException);
+                        }
+                    }
+
+                    throw;
+                }
                 finally
                 {
                     linkedRegistration.Dispose();

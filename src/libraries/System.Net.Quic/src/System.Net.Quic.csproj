@@ -56,9 +56,14 @@
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.OSX.cs" />
   </ItemGroup>
   <!-- Project references -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <PackageReference Include="System.Net.MsQuic.Transport" PrivateAssets="all" Version="$(SystemNetMsQuicTransportVersion)" />
+
+  <ItemGroup>
+    <PackageReference Include="System.Net.MsQuic.Transport"
+                      Version="$(SystemNetMsQuicTransportVersion)"
+                      PrivateAssets="all"
+                      GeneratePathProperty="true" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
@@ -76,16 +81,17 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Channels" />
   </ItemGroup>
+
   <!-- Support for deploying msquic -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and
+                        ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86')">
+    <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(NetCoreAppCurrentRuntimePath)" ItemName="NativeBinPlaceItem" />
+    <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\*" />
+  </ItemGroup>
+
   <ItemGroup>
-    <Content Include="msquic.dll" Condition="Exists('msquic.dll')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Include="msquic.pdb" Condition="Exists('msquic.pdb')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
     <Content Include="libmsquic.dylib" Condition="Exists('libmsquic.dylib')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>

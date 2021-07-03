@@ -230,9 +230,9 @@ namespace System
         /// converted to.</typeparam>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> to use when serializing to JSON.</param>
         /// <returns>The data converted to the specified type.</returns>
-        public T ToObjectFromJson<T>(JsonSerializerOptions? options = default)
+        public T? ToObjectFromJson<T>(JsonSerializerOptions? options = default)
         {
-            return (T)JsonSerializer.Deserialize(_bytes.Span, typeof(T), options);
+            return JsonSerializer.Deserialize<T>(_bytes.Span, options);
         }
 
         /// <summary>

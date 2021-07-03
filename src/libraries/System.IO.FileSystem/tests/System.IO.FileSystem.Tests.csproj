@@ -73,6 +73,7 @@
     <Compile Include="FileSystemTest.Windows.cs" />
     <Compile Include="FileStream\ctor_options_as.Windows.cs" />
     <Compile Include="FileStream\FileStreamConformanceTests.Windows.cs" />
+    <Compile Include="RandomAccess\Mixed.Windows.cs" />
     <Compile Include="RandomAccess\NoBuffering.Windows.cs" />
     <Compile Include="RandomAccess\SectorAlignedMemory.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
