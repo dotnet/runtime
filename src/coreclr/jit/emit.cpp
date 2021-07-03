@@ -843,7 +843,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 #ifdef DEBUG
     if (emitComp->opts.dspCode)
     {
-        printf("\n      G_M%03u_IG%02u:", emitComp->compMethodID, ig->igNum);
+        printf("\n      %s:", emitLabelString(ig));
         if (emitComp->verbose)
         {
             printf("        ; offs=%06XH, funclet=%02u, bbWeight=%s", ig->igOffs, ig->igFuncIdx,
@@ -2504,7 +2504,7 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
 void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
                             regMaskTP        gcrefRegs,
                             regMaskTP        byrefRegs,
-                            bool isFinallyTarget DEBUG_ARG(unsigned bbNum))
+                            bool isFinallyTarget DEBUG_ARG(BasicBlock* block))
 {
     /* Create a new IG if the current one is non-empty */
 
@@ -2533,7 +2533,10 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef DEBUG
-    JITDUMP("Mapped " FMT_BB " to G_M%03u_IG%02u\n", bbNum, emitComp->compMethodID, emitCurIG->igNum);
+    JITDUMP("Mapped " FMT_BB " to %s\n", block->bbNum, emitLabelString(emitCurIG));
+
+    assert(emitCurIG->igBlock == nullptr);
+    emitCurIG->igBlock = block;
 
     if (EMIT_GC_VERBOSE)
     {
@@ -2548,6 +2551,7 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
         printf("\n");
     }
 #endif
+
     return emitCurIG;
 }
 
@@ -2560,6 +2564,40 @@ void* emitter::emitAddInlineLabel()
 
     return emitCurIG;
 }
+
+#ifdef DEBUG
+
+//-----------------------------------------------------------------------------
+// emitPrintLabel: Print the assembly label for an insGroup. We could use emitter::emitLabelString()
+// to be consistent, but that seems silly.
+//
+void emitter::emitPrintLabel(insGroup* ig)
+{
+    printf("G_M%03u_IG%02u", emitComp->compMethodID, ig->igNum);
+}
+
+//-----------------------------------------------------------------------------
+// emitLabelString: Return label string for an insGroup, for use in debug output.
+// This can be called up to four times in a single 'printf' before the static buffers
+// get reused.
+//
+// Returns:
+//    String with insGroup label
+//
+const char* emitter::emitLabelString(insGroup* ig)
+{
+    const int TEMP_BUFFER_LEN = 40;
+    static unsigned curBuf    = 0;
+    static char     buf[4][TEMP_BUFFER_LEN];
+    const char*     retbuf;
+
+    sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "G_M%03u_IG%02u", emitComp->compMethodID, ig->igNum);
+    retbuf = buf[curBuf];
+    curBuf = (curBuf + 1) % 4;
+    return retbuf;
+}
+
+#endif // DEBUG
 
 #ifdef TARGET_ARMARCH
 
@@ -3502,7 +3540,7 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
     const int TEMP_BUFFER_LEN = 40;
     char      buff[TEMP_BUFFER_LEN];
 
-    sprintf_s(buff, TEMP_BUFFER_LEN, "G_M%03u_IG%02u:        ", emitComp->compMethodID, ig->igNum);
+    sprintf_s(buff, TEMP_BUFFER_LEN, "%s:        ", emitLabelString(ig));
     printf("%s; ", buff);
 
     // We dump less information when we're only interleaving GC info with a disassembly listing,
@@ -3599,9 +3637,16 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
     else
     {
         const char* separator = "";
+
+        if (jitdump && (ig->igBlock != nullptr))
+        {
+            printf("%s%s", separator, ig->igBlock->dspToString());
+            separator = ", ";
+        }
+
         if (jitdump)
         {
-            printf("offs=%06XH, size=%04XH", ig->igOffs, ig->igSize);
+            printf("%soffs=%06XH, size=%04XH", separator, ig->igOffs, ig->igSize);
             separator = ", ";
         }
 
@@ -4229,7 +4274,7 @@ AGAIN:
             {
                 if (tgtIG)
                 {
-                    printf(" to G_M%03u_IG%02u\n", emitComp->compMethodID, tgtIG->igNum);
+                    printf(" to %s\n", emitLabelString(tgtIG));
                 }
                 else
                 {
@@ -4687,8 +4732,7 @@ void emitter::emitLoopAlignment()
     // all IGs that follows this IG and participate in a loop.
     emitCurIG->igFlags |= IGF_LOOP_ALIGN;
 
-    JITDUMP("Adding 'align' instruction of %d bytes in G_M%03u_IG%02u.\n", paddingBytes, emitComp->compMethodID,
-            emitCurIG->igNum);
+    JITDUMP("Adding 'align' instruction of %d bytes in %s.\n", paddingBytes, emitLabelString(emitCurIG));
 
 #ifdef DEBUG
     emitComp->loopAlignCandidates++;
@@ -4973,9 +5017,9 @@ void emitter::emitLoopAlignAdjustments()
                 alignInstr = prevAlignInstr;
             }
 
-            JITDUMP("Adjusted alignment of G_M%03u_IG%02u from %u to %u.\n", emitComp->compMethodID, alignIG->igNum,
+            JITDUMP("Adjusted alignment of %s from %u to %u.\n", emitLabelString(alignIG),
                     estimatedPaddingNeeded, actualPaddingNeeded);
-            JITDUMP("Adjusted size of G_M%03u_IG%02u from %u to %u.\n", emitComp->compMethodID, alignIG->igNum,
+            JITDUMP("Adjusted size of %s from %u to %u.\n", emitLabelString(alignIG),
                     (alignIG->igSize + diff), alignIG->igSize);
         }
 
@@ -4985,7 +5029,7 @@ void emitter::emitLoopAlignAdjustments()
         insGroup* adjOffUptoIG = alignInstr->idaNext != nullptr ? alignInstr->idaNext->idaIG : emitIGlast;
         while ((adjOffIG != nullptr) && (adjOffIG->igNum <= adjOffUptoIG->igNum))
         {
-            JITDUMP("Adjusted offset of G_M%03u_IG%02u from %04X to %04X\n", emitComp->compMethodID, adjOffIG->igNum,
+            JITDUMP("Adjusted offset of %s from %04X to %04X\n", emitLabelString(adjOffIG),
                     adjOffIG->igOffs, (adjOffIG->igOffs - alignBytesRemoved));
             adjOffIG->igOffs -= alignBytesRemoved;
             adjOffIG = adjOffIG->igNext;
@@ -5045,8 +5089,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     // No padding if loop is already aligned
     if ((offset & (alignmentBoundary - 1)) == 0)
     {
-        JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u already aligned at %dB boundary.'\n",
-                emitComp->compMethodID, ig->igNext->igNum, alignmentBoundary);
+        JITDUMP(";; Skip alignment: 'Loop at %s already aligned at %dB boundary.'\n",
+                emitLabelString(ig->igNext), alignmentBoundary);
         return 0;
     }
 
@@ -5070,8 +5114,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     // No padding if loop is big
     if (loopSize > maxLoopSize)
     {
-        JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u is big. LoopSize= %d, MaxLoopSize= %d.'\n",
-                emitComp->compMethodID, ig->igNext->igNum, loopSize, maxLoopSize);
+        JITDUMP(";; Skip alignment: 'Loop at %s is big. LoopSize= %d, MaxLoopSize= %d.'\n",
+                emitLabelString(ig->igNext), loopSize, maxLoopSize);
         return 0;
     }
 
@@ -5097,17 +5141,16 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
             if (nPaddingBytes == 0)
             {
                 skipPadding = true;
-                JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u already aligned at %uB boundary.'\n",
-                        emitComp->compMethodID, ig->igNext->igNum, alignmentBoundary);
+                JITDUMP(";; Skip alignment: 'Loop at %s already aligned at %uB boundary.'\n",
+                        emitLabelString(ig->igNext), alignmentBoundary);
             }
             // Check if the alignment exceeds new maxPadding limit
             else if (nPaddingBytes > nMaxPaddingBytes)
             {
                 skipPadding = true;
-                JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
+                JITDUMP(";; Skip alignment: 'Loop at %s PaddingNeeded= %d, MaxPadding= %d, LoopSize= %d, "
                         "AlignmentBoundary= %dB.'\n",
-                        emitComp->compMethodID, ig->igNext->igNum, nPaddingBytes, nMaxPaddingBytes, loopSize,
-                        alignmentBoundary);
+                        emitLabelString(ig->igNext), nPaddingBytes, nMaxPaddingBytes, loopSize, alignmentBoundary);
             }
         }
 
@@ -5129,8 +5172,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
             else
             {
                 // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
-                JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u is aligned to fit in %d blocks of %d chunks.'\n",
-                        emitComp->compMethodID, ig->igNext->igNum, minBlocksNeededForLoop, alignmentBoundary);
+                JITDUMP(";; Skip alignment: 'Loop at %s is aligned to fit in %d blocks of %d chunks.'\n",
+                        emitLabelString(ig->igNext), minBlocksNeededForLoop, alignmentBoundary);
             }
         }
     }
@@ -5158,13 +5201,13 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
         else
         {
             // Otherwise, the loop just fits in minBlocksNeededForLoop and so can skip alignment.
-            JITDUMP(";; Skip alignment: 'Loop at G_M%03u_IG%02u is aligned to fit in %d blocks of %d chunks.'\n",
-                    emitComp->compMethodID, ig->igNext->igNum, minBlocksNeededForLoop, alignmentBoundary);
+            JITDUMP(";; Skip alignment: 'Loop at %s is aligned to fit in %d blocks of %d chunks.'\n",
+                    emitLabelString(ig->igNext), minBlocksNeededForLoop, alignmentBoundary);
         }
     }
 
-    JITDUMP(";; Calculated padding to add %d bytes to align G_M%03u_IG%02u at %dB boundary.\n", paddingToAdd,
-            emitComp->compMethodID, ig->igNext->igNum, alignmentBoundary);
+    JITDUMP(";; Calculated padding to add %d bytes to align %s at %dB boundary.\n", paddingToAdd,
+            emitLabelString(ig->igNext), alignmentBoundary);
 
     // Either no padding is added because it is too expensive or the offset gets aligned
     // to the alignment boundary
@@ -5846,7 +5889,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             }
             else
             {
-                printf("\nG_M%03u_IG%02u:", emitComp->compMethodID, ig->igNum);
+                printf("\n%s:", emitLabelString(ig));
                 if (!emitComp->opts.disDiffable)
                 {
                     printf("              ;; offset=%04XH", emitCurCodeOffs(cp));
@@ -6808,11 +6851,8 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                 BasicBlock* block = reinterpret_cast<BasicBlock**>(data->dsCont)[i];
                 insGroup*   ig    = static_cast<insGroup*>(emitCodeGetCookie(block));
 
-                const char* blockLabelFormat = "G_M%03u_IG%02u";
-                char        blockLabel[64];
-                char        firstLabel[64];
-                sprintf_s(blockLabel, _countof(blockLabel), blockLabelFormat, emitComp->compMethodID, ig->igNum);
-                sprintf_s(firstLabel, _countof(firstLabel), blockLabelFormat, emitComp->compMethodID, igFirst->igNum);
+                const char* blockLabel = emitLabelString(ig);
+                const char* firstLabel = emitLabelString(igFirst);
 
                 if (isRelative)
                 {
@@ -7932,11 +7972,6 @@ insGroup* emitter::emitAllocIG()
     ig->igSelf = ig;
 #endif
 
-#if defined(DEBUG) || defined(LATE_DISASM)
-    ig->igWeight    = getCurrentBlockWeight();
-    ig->igPerfScore = 0.0;
-#endif
-
 #if EMITTER_STATS
     emitTotalIGcnt += 1;
     emitTotalIGsize += sz;
@@ -7974,6 +8009,11 @@ void emitter::emitInitIG(insGroup* ig)
 
     ig->igFlags = 0;
 
+#if defined(DEBUG) || defined(LATE_DISASM)
+    ig->igWeight    = getCurrentBlockWeight();
+    ig->igPerfScore = 0.0;
+#endif
+
     /* Zero out some fields to avoid printing garbage in JitDumps. These
        really only need to be set in DEBUG, but do it in all cases to make
        sure we act the same in non-DEBUG builds.
@@ -7985,6 +8025,10 @@ void emitter::emitInitIG(insGroup* ig)
 
 #if FEATURE_LOOP_ALIGN
     ig->igLoopBackEdge = nullptr;
+#endif
+
+#ifdef DEBUG
+    ig->igBlock = nullptr;
 #endif
 }
 
@@ -8584,7 +8628,7 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
         if (ig->igOffs == offs)
         {
             // Found it!
-            sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "G_M%03u_IG%02u", emitComp->compMethodID, ig->igNum);
+            sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "%s", emitLabelString(ig));
             retbuf = buf[curBuf];
             curBuf = (curBuf + 1) % 4;
             return retbuf;

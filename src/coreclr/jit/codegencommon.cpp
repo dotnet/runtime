@@ -1070,7 +1070,7 @@ void CodeGen::genDefineTempLabel(BasicBlock* label)
 {
     genLogLabel(label);
     label->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                     gcInfo.gcRegByrefSetCur, false DEBUG_ARG(label->bbNum));
+                                                     gcInfo.gcRegByrefSetCur, false DEBUG_ARG(label));
 }
 
 // genDefineInlineTempLabel: Define an inline label that does not affect the GC
@@ -2066,7 +2066,7 @@ void CodeGen::genInsertNopForUnwinder(BasicBlock* block)
 
         block->bbUnwindNopEmitCookie =
             GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur,
-                                       false DEBUG_ARG(block->bbNum));
+                                       false DEBUG_ARG(block));
 
         instGen(INS_nop);
     }

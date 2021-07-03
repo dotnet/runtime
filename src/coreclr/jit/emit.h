@@ -349,6 +349,10 @@ struct insGroup
         return (igFlags & IGF_LOOP_ALIGN) != 0;
     }
 
+#ifdef DEBUG
+    BasicBlock* igBlock; // The BasicBlock that generated code into this insGroup.
+#endif // DEBUG
+
 }; // end of struct insGroup
 
 //  For AMD64 the maximum prolog/epilog size supported on the OS is 256 bytes
@@ -1904,12 +1908,17 @@ private:
     void* emitAddLabel(VARSET_VALARG_TP GCvars,
                        regMaskTP        gcrefRegs,
                        regMaskTP        byrefRegs,
-                       bool isFinallyTarget = false DEBUG_ARG(unsigned bbNum = 0));
+                       bool isFinallyTarget = false DEBUG_ARG(BasicBlock* block = nullptr));
 
     // Same as above, except the label is added and is conceptually "inline" in
     // the current block. Thus it extends the previous block and the emitter
     // continues to track GC info as if there was no label.
     void* emitAddInlineLabel();
+
+#ifdef DEBUG
+    void emitPrintLabel(insGroup* ig);
+    const char* emitLabelString(insGroup* ig);
+#endif
 
 #ifdef TARGET_ARMARCH
 

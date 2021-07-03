@@ -8452,7 +8452,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             lab = (insGroup*)emitCodeGetCookie(*bbp++);
             assert(lab);
 
-            printf("\n            D" SIZE_LETTER "      G_M%03u_IG%02u", emitComp->compMethodID, lab->igNum);
+            printf("\n            D" SIZE_LETTER "      %s", emitLabelString(lab));
         } while (--cnt);
     }
 }
@@ -9649,7 +9649,7 @@ void emitter::emitDispIns(
                 }
                 else
                 {
-                    printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                    emitPrintLabel(id->idAddr()->iiaIGlabel);
                 }
             }
             else
