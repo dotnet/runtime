@@ -133,7 +133,7 @@ namespace System.Text.Json
             {
                 int actualByteCount = JsonReaderHelper.GetUtf8FromText(json, utf8Json);
                 utf8Json = utf8Json.Slice(0, actualByteCount);
-                WriteRawValue(utf8Json, skipInputValidation);
+                WriteRawValueCore(utf8Json, skipInputValidation);
             }
             finally
             {
