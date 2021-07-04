@@ -39,7 +39,8 @@ bool FrozenObjectHeap::Initialize()
 
     // TODO: Implement COMMIT on demand.
     void* alloc = ClrVirtualAllocAligned(nullptr, m_Size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, m_PageSize);
-    ZeroMemory(alloc, m_Size);
+    ZeroMemory(alloc, m_Size); // Will remove, was just testing.
+
     if (alloc != nullptr)
     {
         segment_info si{};
