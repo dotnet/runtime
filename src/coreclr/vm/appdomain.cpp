@@ -114,7 +114,7 @@ int                 BaseDomain::m_iNumberOfProcessors = 0;
 
 // System Domain Statics
 GlobalStringLiteralMap* SystemDomain::m_pGlobalStringLiteralMap = NULL;
-FrozenObjectHeap* SystemDomain::m_FrozenObjects = NULL;
+FrozenObjectHeap*       SystemDomain::m_FrozenObjects           = NULL;
 
 DECLSPEC_ALIGN(16)
 static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
@@ -1334,19 +1334,10 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
 
     GCX_PREEMP();
 
-    const size_t fohSize = 16 * 1024 * 1024;
-
-    // TODO: remove commit
-    void* alloc = ClrVirtualAlloc(nullptr, fohSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-    if (alloc != nullptr)
+    NewHolder<FrozenObjectHeap> pFoh(new FrozenObjectHeap());
+    if (pFoh->Init() && InterlockedCompareExchangeT<FrozenObjectHeap*>(&m_FrozenObjects, pFoh, nullptr) == nullptr)
     {
-        GCInterface::RegisterFrozenSegment(alloc, fohSize);
-        NewHolder<FrozenObjectHeap> pFoh(new FrozenObjectHeap());
-        pFoh->Init(alloc, fohSize);
-        if (InterlockedCompareExchangeT<FrozenObjectHeap*>(&m_FrozenObjects, pFoh, nullptr) == nullptr)
-        {
-            pFoh.SuppressRelease();
-        }
+        pFoh.SuppressRelease();
     }
 }
 

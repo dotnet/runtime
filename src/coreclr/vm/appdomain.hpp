@@ -2597,6 +2597,8 @@ public:
     }
     static FrozenObjectHeap* GetSegmentWithFrozenObjects()
     {
+        WRAPPER_NO_CONTRACT;
+
 #ifdef FEATURE_BASICFREEZE
         if (m_FrozenObjects == NULL)
         {
@@ -2792,7 +2794,7 @@ private:
     static CrstStatic       m_SystemDomainCrst;
 
     static GlobalStringLiteralMap *m_pGlobalStringLiteralMap;
-    static FrozenObjectHeap *m_FrozenObjects;
+    static FrozenObjectHeap       *m_FrozenObjects;
 
     static ULONG       s_dNumAppDomains;  // Maintain a count of children app domains.
 

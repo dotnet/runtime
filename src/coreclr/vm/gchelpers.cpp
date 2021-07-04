@@ -856,14 +856,14 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenObjHeap)
     StringObject* orString = nullptr;
 
     // Try to allocate the string in Frozen Object Heap.
-    if (preferFrozenObjHeap && (cchStringLength < 2048))
+    if (preferFrozenObjHeap)
     {
         FrozenObjectHeap* foh = SystemDomain::GetSegmentWithFrozenObjects();
         if (foh != nullptr)
         {
-            orString = static_cast<StringObject*>(foh->Alloc(totalSize));
+            orString = (StringObject*)foh->AllocateObject(totalSize);
+            // if FOH is null, full, or object is too big - fallback to normal allocation.
         }
-        // if FOH is null or full - fallback to normal allocation.
     }
 
     if (orString == nullptr)
@@ -873,7 +873,7 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenObjHeap)
         if (totalSize >= g_pConfig->GetGCLOHThreshold())
             flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-        orString = static_cast<StringObject*>(Alloc(totalSize, flags));
+        orString = (StringObject*)(Alloc(totalSize, flags));
     }
 
     // Initialize Object
