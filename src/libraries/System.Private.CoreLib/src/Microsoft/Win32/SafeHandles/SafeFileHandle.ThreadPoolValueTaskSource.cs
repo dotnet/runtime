@@ -51,7 +51,6 @@ namespace Microsoft.Win32.SafeHandles
             internal ThreadPoolValueTaskSource(SafeFileHandle fileHandle)
             {
                 _fileHandle = fileHandle;
-                _source.RunContinuationsAsynchronously = true;
             }
 
             private long GetResultAndRelease(short token)
@@ -78,37 +77,39 @@ namespace Microsoft.Win32.SafeHandles
                 Debug.Assert(_operation >= Operation.Read && _operation <= Operation.WriteGather);
 
                 long result = 0;
+                Exception? exception = null;
                 try
                 {
                     // This is the operation's last chance to be canceled.
                     if (_cancellationToken.IsCancellationRequested)
                     {
-                        _source.SetException(new OperationCanceledException(_cancellationToken));
-                        return;
+                        exception = new OperationCanceledException(_cancellationToken);
                     }
-
-                    switch (_operation)
+                    else
                     {
-                        case Operation.Read:
-                            Memory<byte> writableSingleSegment = MemoryMarshal.AsMemory(_singleSegment);
-                            result = RandomAccess.ReadAtOffset(_fileHandle, writableSingleSegment.Span, _fileOffset);
-                            break;
-                        case Operation.Write:
-                            result = RandomAccess.WriteAtOffset(_fileHandle, _singleSegment.Span, _fileOffset);
-                            break;
-                        case Operation.ReadScatter:
-                            Debug.Assert(_multiSegmentCollection is IReadOnlyList<Memory<byte>>);
-                            result = RandomAccess.ReadScatterAtOffset(_fileHandle, (IReadOnlyList<Memory<byte>>)_multiSegmentCollection, _fileOffset);
-                            break;
-                        case Operation.WriteGather:
-                            Debug.Assert(_multiSegmentCollection is IReadOnlyList<ReadOnlyMemory<byte>>);
-                            result = RandomAccess.WriteGatherAtOffset(_fileHandle, (IReadOnlyList<ReadOnlyMemory<byte>>)_multiSegmentCollection, _fileOffset);
-                            break;
+                        switch (_operation)
+                        {
+                            case Operation.Read:
+                                Memory<byte> writableSingleSegment = MemoryMarshal.AsMemory(_singleSegment);
+                                result = RandomAccess.ReadAtOffset(_fileHandle, writableSingleSegment.Span, _fileOffset);
+                                break;
+                            case Operation.Write:
+                                result = RandomAccess.WriteAtOffset(_fileHandle, _singleSegment.Span, _fileOffset);
+                                break;
+                            case Operation.ReadScatter:
+                                Debug.Assert(_multiSegmentCollection is IReadOnlyList<Memory<byte>>);
+                                result = RandomAccess.ReadScatterAtOffset(_fileHandle, (IReadOnlyList<Memory<byte>>)_multiSegmentCollection, _fileOffset);
+                                break;
+                            case Operation.WriteGather:
+                                Debug.Assert(_multiSegmentCollection is IReadOnlyList<ReadOnlyMemory<byte>>);
+                                result = RandomAccess.WriteGatherAtOffset(_fileHandle, (IReadOnlyList<ReadOnlyMemory<byte>>)_multiSegmentCollection, _fileOffset);
+                                break;
+                        }
                     }
                 }
                 catch (Exception e)
                 {
-                    _source.SetException(e);
+                    exception = e;
                 }
                 finally
                 {
@@ -117,7 +118,15 @@ namespace Microsoft.Win32.SafeHandles
                     _singleSegment = default;
                     _multiSegmentCollection = null;
                 }
-                _source.SetResult(result);
+
+                if (exception == null)
+                {
+                    _source.SetResult(result);
+                }
+                else
+                {
+                    _source.SetException(exception);
+                }
             }
 
             public ValueTask<int> QueueRead(Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
