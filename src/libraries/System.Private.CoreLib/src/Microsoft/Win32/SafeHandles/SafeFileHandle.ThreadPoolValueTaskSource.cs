@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -44,8 +44,8 @@ namespace Microsoft.Win32.SafeHandles
             private CancellationToken _cancellationToken;
             // Used by simple reads and writes. Will be unsafely cast to a memory when performing a read.
             private ReadOnlyMemory<byte> _singleSegment;
-            // Used by vectored reads and writes. Is an IReadOnlyList of either Memory or ReadOnlyMemory of bytes.
-            private object? _multiSegmentCollection;
+            private IReadOnlyList<Memory<byte>>? _readScatterBuffers;
+            private IReadOnlyList<ReadOnlyMemory<byte>>? _writeGatherBuffers;
 
             internal ThreadPoolValueTaskSource(SafeFileHandle fileHandle)
             {
@@ -103,12 +103,12 @@ namespace Microsoft.Win32.SafeHandles
                                 result = RandomAccess.WriteAtOffset(_fileHandle, _singleSegment.Span, _fileOffset);
                                 break;
                             case Operation.ReadScatter:
-                                Debug.Assert(_multiSegmentCollection is IReadOnlyList<Memory<byte>>);
-                                result = RandomAccess.ReadScatterAtOffset(_fileHandle, (IReadOnlyList<Memory<byte>>)_multiSegmentCollection, _fileOffset);
+                                Debug.Assert(_readScatterBuffers != null);
+                                result = RandomAccess.ReadScatterAtOffset(_fileHandle, _readScatterBuffers, _fileOffset);
                                 break;
                             case Operation.WriteGather:
-                                Debug.Assert(_multiSegmentCollection is IReadOnlyList<ReadOnlyMemory<byte>>);
-                                result = RandomAccess.WriteGatherAtOffset(_fileHandle, (IReadOnlyList<ReadOnlyMemory<byte>>)_multiSegmentCollection, _fileOffset);
+                                Debug.Assert(_writeGatherBuffers != null);
+                                result = RandomAccess.WriteGatherAtOffset(_fileHandle, _writeGatherBuffers, _fileOffset);
                                 break;
                         }
                     }
@@ -123,7 +123,8 @@ namespace Microsoft.Win32.SafeHandles
                     _context = null;
                     _cancellationToken = default;
                     _singleSegment = default;
-                    _multiSegmentCollection = null;
+                    _readScatterBuffers = null;
+                    _writeGatherBuffers = null;
                 }
 
                 if (exception == null)
@@ -185,7 +186,7 @@ namespace Microsoft.Win32.SafeHandles
                 ValidateInvariants();
 
                 _operation = Operation.ReadScatter;
-                _multiSegmentCollection = buffers;
+                _readScatterBuffers = buffers;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
                 QueueToThreadPool();
@@ -198,7 +199,7 @@ namespace Microsoft.Win32.SafeHandles
                 ValidateInvariants();
 
                 _operation = Operation.WriteGather;
-                _multiSegmentCollection = buffers;
+                _writeGatherBuffers = buffers;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
                 QueueToThreadPool();
