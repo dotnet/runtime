@@ -11938,8 +11938,9 @@ InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd
     {
         void** ptr = (void**)ConstructStringLiteral(scopeHnd, metaTok); // throws
 
+        FrozenObjectHeap* foh = SystemDomain::GetSegmentWithFrozenObjects();
         // If it's in the frozen segment we can pass the direct reference.
-        if (SystemDomain::GetSegmentWithFrozenObjects()->IsInHeap((Object*)*ptr))
+        if ((foh != nullptr) && foh->IsInHeap((Object*)*ptr))
         {
             *ppValue = *ptr;
             result = IAT_VALUE;

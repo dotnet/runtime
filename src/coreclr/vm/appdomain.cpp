@@ -24,6 +24,7 @@
 #include "assemblynative.hpp"
 #include "shimload.h"
 #include "stringliteralmap.h"
+#include "frozenobjectheap.h"
 #include "codeman.h"
 #include "comcallablewrapper.h"
 #include "eventtrace.h"
