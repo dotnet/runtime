@@ -4,6 +4,8 @@
 #ifndef _FROZENOBJECTHEAP_H
 #define _FROZENOBJECTHEAP_H
 
+#include "common.h"
+
 #define FOX_MAX_OBJECT_SIZE 2 * 1024
 #define FOH_DEFAULT_SIZE    1 * 1024 * 1024
 
