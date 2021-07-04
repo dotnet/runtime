@@ -1,11 +1,11 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Runtime.CompilerServices;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
@@ -33,18 +33,11 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         internal sealed class ThreadPoolValueTaskSource : IThreadPoolWorkItem, IValueTaskSource<int>, IValueTaskSource<long>
         {
-            private enum Operation : byte
-            {
-                None,
-                Read,
-                Write,
-                ReadScatter,
-                WriteGather
-            }
-
             private ManualResetValueTaskSourceCore<long> _source;
             private readonly SafeFileHandle _fileHandle;
             private Operation _operation = Operation.None;
+
+            private const bool PreferLocal = true;
 
             // These fields store the parameters for the operation.
             // The first two are common for all kinds of operations.
@@ -66,7 +59,8 @@ namespace Microsoft.Win32.SafeHandles
                 try
                 {
                     return _source.GetResult(token);
-                } finally
+                }
+                finally
                 {
                     _source.Reset();
                     _fileHandle.TryToReuse(this);
@@ -84,49 +78,44 @@ namespace Microsoft.Win32.SafeHandles
                 Debug.Assert(_operation >= Operation.Read && _operation <= Operation.WriteGather);
 
                 long result = 0;
-                try {
-                    bool notifyWhenUnblocked = false;
-                    try
+                try
+                {
+                    // This is the operation's last chance to be canceled.
+                    if (_cancellationToken.IsCancellationRequested)
                     {
-                        // This is the operation's last chance to be cancelled.
-                        if (_cancellationToken.IsCancellationRequested)
-                        {
-                            _source.SetException(new OperationCanceledException(_cancellationToken));
-                            return;
-                        }
-
-                        notifyWhenUnblocked = ThreadPool.NotifyThreadBlocked();
-                        switch (_operation)
-                        {
-                            case Operation.Read:
-                                Memory<byte> writableSingleSegment = Unsafe.As<ReadOnlyMemory<byte>, Memory<byte>>(ref _singleSegment);
-                                result = RandomAccess.ReadAtOffset(_fileHandle, writableSingleSegment.Span, _fileOffset);
-                                break;
-                            case Operation.Write:
-                                result = RandomAccess.WriteAtOffset(_fileHandle, _singleSegment.Span, _fileOffset);
-                                break;
-                            case Operation.ReadScatter:
-                                Debug.Assert(_multiSegmentCollection != null && _multiSegmentCollection is IReadOnlyList<Memory<byte>>);
-                                result = RandomAccess.ReadScatterAtOffset(_fileHandle, (IReadOnlyList<Memory<byte>>) _multiSegmentCollection, _fileOffset);
-                                break;
-                            case Operation.WriteGather:
-                                Debug.Assert(_multiSegmentCollection != null && _multiSegmentCollection is IReadOnlyList<ReadOnlyMemory<byte>>);
-                                result = RandomAccess.WriteGatherAtOffset(_fileHandle, (IReadOnlyList<ReadOnlyMemory<byte>>)_multiSegmentCollection, _fileOffset);
-                                break;
-                        }
-                    } finally
-                    {
-                        if (notifyWhenUnblocked)
-                            ThreadPool.NotifyThreadUnblocked();
-                        _operation = Operation.None;
-                        _fileOffset = 0;
-                        _cancellationToken = default;
-                        _singleSegment = default;
-                        _multiSegmentCollection = null;
+                        _source.SetException(new OperationCanceledException(_cancellationToken));
+                        return;
                     }
-                } catch (Exception e)
+
+                    switch (_operation)
+                    {
+                        case Operation.Read:
+                            Memory<byte> writableSingleSegment = MemoryMarshal.AsMemory(_singleSegment);
+                            result = RandomAccess.ReadAtOffset(_fileHandle, writableSingleSegment.Span, _fileOffset);
+                            break;
+                        case Operation.Write:
+                            result = RandomAccess.WriteAtOffset(_fileHandle, _singleSegment.Span, _fileOffset);
+                            break;
+                        case Operation.ReadScatter:
+                            Debug.Assert(_multiSegmentCollection is IReadOnlyList<Memory<byte>>);
+                            result = RandomAccess.ReadScatterAtOffset(_fileHandle, (IReadOnlyList<Memory<byte>>)_multiSegmentCollection, _fileOffset);
+                            break;
+                        case Operation.WriteGather:
+                            Debug.Assert(_multiSegmentCollection is IReadOnlyList<ReadOnlyMemory<byte>>);
+                            result = RandomAccess.WriteGatherAtOffset(_fileHandle, (IReadOnlyList<ReadOnlyMemory<byte>>)_multiSegmentCollection, _fileOffset);
+                            break;
+                    }
+                }
+                catch (Exception e)
                 {
                     _source.SetException(e);
+                }
+                finally
+                {
+                    _operation = Operation.None;
+                    _cancellationToken = default;
+                    _singleSegment = default;
+                    _multiSegmentCollection = null;
                 }
                 _source.SetResult(result);
             }
@@ -139,7 +128,7 @@ namespace Microsoft.Win32.SafeHandles
                 _singleSegment = buffer;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
-                ThreadPool.UnsafeQueueUserWorkItem(this, false);
+                ThreadPool.UnsafeQueueUserWorkItem(this, PreferLocal);
 
                 return new ValueTask<int>(this, _source.Version);
             }
@@ -152,7 +141,7 @@ namespace Microsoft.Win32.SafeHandles
                 _singleSegment = buffer;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
-                ThreadPool.UnsafeQueueUserWorkItem(this, false);
+                ThreadPool.UnsafeQueueUserWorkItem(this, PreferLocal);
 
                 return new ValueTask<int>(this, _source.Version);
             }
@@ -165,7 +154,7 @@ namespace Microsoft.Win32.SafeHandles
                 _multiSegmentCollection = buffers;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
-                ThreadPool.UnsafeQueueUserWorkItem(this, false);
+                ThreadPool.UnsafeQueueUserWorkItem(this, PreferLocal);
 
                 return new ValueTask<long>(this, _source.Version);
             }
@@ -178,9 +167,18 @@ namespace Microsoft.Win32.SafeHandles
                 _multiSegmentCollection = buffers;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
-                ThreadPool.UnsafeQueueUserWorkItem(this, false);
+                ThreadPool.UnsafeQueueUserWorkItem(this, PreferLocal);
 
                 return new ValueTask<long>(this, _source.Version);
+            }
+
+            private enum Operation : byte
+            {
+                None,
+                Read,
+                Write,
+                ReadScatter,
+                WriteGather
             }
         }
     }
