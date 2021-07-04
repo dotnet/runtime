@@ -8,7 +8,7 @@ using System.IO.Strategies;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         // not using bool? as it's not thread safe
         private volatile NullableBool _canSeek = NullableBool.Undefined;
@@ -21,11 +21,6 @@ namespace Microsoft.Win32.SafeHandles
             : base(ownsHandle)
         {
             SetHandle(new IntPtr(-1));
-        }
-
-        public SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle) : this(ownsHandle)
-        {
-            SetHandle(preexistingHandle);
         }
 
         public bool IsAsync { get; private set; }

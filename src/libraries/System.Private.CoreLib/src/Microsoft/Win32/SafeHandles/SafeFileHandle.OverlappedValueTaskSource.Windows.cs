@@ -12,33 +12,34 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private ValueTaskSource? _reusableValueTaskSource; // reusable ValueTaskSource that is currently NOT being used
+        private OverlappedValueTaskSource? _reusableOverlappedValueTaskSource; // reusable OverlappedValueTaskSource that is currently NOT being used
 
-        // Rent the reusable ValueTaskSource, or create a new one to use if we couldn't get one (which
-        // should only happen on first use or if the FileStream is being used concurrently).
-        internal ValueTaskSource GetValueTaskSource() => Interlocked.Exchange(ref _reusableValueTaskSource, null) ?? new ValueTaskSource(this);
+        // Rent the reusable OverlappedValueTaskSource, or create a new one to use if we couldn't get one (which
+        // should only happen on first use or if the SafeFileHandle is being used concurrently).
+        internal OverlappedValueTaskSource GetOverlappedValueTaskSource() =>
+            Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null) ?? new OverlappedValueTaskSource(this);
 
         protected override bool ReleaseHandle()
         {
             bool result = Interop.Kernel32.CloseHandle(handle);
 
-            Interlocked.Exchange(ref _reusableValueTaskSource, null)?.Dispose();
+            Interlocked.Exchange(ref _reusableOverlappedValueTaskSource, null)?.Dispose();
 
             return result;
         }
 
-        private void TryToReuse(ValueTaskSource source)
+        private void TryToReuse(OverlappedValueTaskSource source)
         {
             source._source.Reset();
 
-            if (Interlocked.CompareExchange(ref _reusableValueTaskSource, source, null) is not null)
+            if (Interlocked.CompareExchange(ref _reusableOverlappedValueTaskSource, source, null) is not null)
             {
                 source._preallocatedOverlapped.Dispose();
             }
         }
 
-        /// <summary>Reusable IValueTaskSource for FileStream ValueTask-returning async operations.</summary>
-        internal sealed unsafe class ValueTaskSource : IValueTaskSource<int>, IValueTaskSource
+        /// <summary>Reusable IValueTaskSource for RandomAccess async operations based on Overlapped I/O.</summary>
+        internal sealed unsafe class OverlappedValueTaskSource : IValueTaskSource<int>, IValueTaskSource
         {
             internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
 
@@ -55,7 +56,7 @@ namespace Microsoft.Win32.SafeHandles
             /// </summary>
             internal ulong _result;
 
-            internal ValueTaskSource(SafeFileHandle fileHandle)
+            internal OverlappedValueTaskSource(SafeFileHandle fileHandle)
             {
                 _fileHandle = fileHandle;
                 _source.RunContinuationsAsynchronously = true;
@@ -112,7 +113,7 @@ namespace Microsoft.Win32.SafeHandles
                     {
                         _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, token) =>
                         {
-                            ValueTaskSource vts = (ValueTaskSource)s!;
+                            OverlappedValueTaskSource vts = (OverlappedValueTaskSource)s!;
                             if (!vts._fileHandle.IsInvalid)
                             {
                                 try
@@ -156,7 +157,7 @@ namespace Microsoft.Win32.SafeHandles
             // done by that cancellation registration, e.g. unregistering.  As such, we use _result to both track who's
             // responsible for calling Complete and for passing the necessary data between parties.
 
-            /// <summary>Invoked when AsyncWindowsFileStreamStrategy has finished scheduling the async operation.</summary>
+            /// <summary>Invoked when the async operation finished being scheduled.</summary>
             internal void FinishedScheduling()
             {
                 // Set the value to 1.  If it was already non-0, then the asynchronous operation already completed but
@@ -172,7 +173,7 @@ namespace Microsoft.Win32.SafeHandles
             /// <summary>Invoked when the asynchronous operation has completed asynchronously.</summary>
             private static void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
-                ValueTaskSource? vts = (ValueTaskSource?)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
+                OverlappedValueTaskSource? vts = (OverlappedValueTaskSource?)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
                 Debug.Assert(vts is not null);
                 Debug.Assert(vts._overlapped == pOverlapped, "Overlaps don't match");
 
