@@ -12,7 +12,7 @@ bool FrozenObjectHeap::Init(CrstExplicitInit crst, size_t fohSize)
 
     // TODO: Implement COMMIT on demand.
     void* alloc = ClrVirtualAllocAligned(nullptr, fohSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, m_PageSize);
-    ZeroMemory(alloc, fohSize); // will remove it.
+    ZeroMemory(alloc, fohSize); // will remove it, was just testing.
 
     if (alloc != nullptr)
     {
@@ -24,6 +24,8 @@ bool FrozenObjectHeap::Init(CrstExplicitInit crst, size_t fohSize)
             m_pCurrent = m_pStart;
             m_pCommited = m_pStart;
             m_Size = fohSize;
+
+            INDEBUG(m_ObjectsCount = 0);
 
             ASSERT((intptr_t)m_pCurrent % DATA_ALIGNMENT == 0);
             return true;
@@ -52,6 +54,7 @@ Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
         return nullptr;
     }
 
+    INDEBUG(m_ObjectsCount++);
     m_pCurrent = obj + OBJECT_BASESIZE + objectSize;
     ZeroMemory(obj, objectSize); // is it needed?
     return reinterpret_cast<Object*>(obj + OBJECT_BASESIZE);

@@ -888,7 +888,7 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap)
     if (cchStringLength > 0x3FFFFFDF)
         ThrowOutOfMemory();
 
-    SIZE_T totalSize = PtrAlign(StringObject::GetSize(cchStringLength));
+    const SIZE_T totalSize = PtrAlign(StringObject::GetSize(cchStringLength));
     _ASSERTE(totalSize > cchStringLength);
 
     if (preferFrozenHeap)
@@ -897,10 +897,15 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap)
         if (foh != nullptr)
         {
             orString = (StringObject*)foh->AllocateObject(totalSize);
-            orString->SetMethodTable(g_pStringClass);
-            orString->SetStringLength(cchStringLength);
-            PublishObjectAndNotify(orString, GC_ALLOC_NO_FLAGS);
-            orStringRef = ObjectToSTRINGREF(orString);
+            if (orString != nullptr)
+            {
+                orString->SetMethodTable(g_pStringClass);
+                orString->SetStringLength(cchStringLength);
+
+                // Do we need to perform "PublishObject" here?
+                PublishObjectAndNotify(orString, GC_ALLOC_NO_FLAGS);
+                orStringRef = ObjectToSTRINGREF(orString);
+            }
         }
     }
     if (orString == nullptr)

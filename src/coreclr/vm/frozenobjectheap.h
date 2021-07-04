@@ -28,6 +28,8 @@ private:
     size_t m_PageSize;
     void* m_SegmentHandle;
     CrstExplicitInit m_Crst;
+
+    INDEBUG(size_t m_ObjectsCount);
 };
 
 #endif // _FROZENOBJECTHEAP_H
