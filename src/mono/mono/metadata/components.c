@@ -164,13 +164,14 @@ try_load (const char* dir, const MonoComponentEntry *component, const char* comp
 		char *error_msg = NULL;
 		lib = mono_dl_open (path, MONO_DL_EAGER | MONO_DL_LOCAL, &error_msg);
 		if (!lib) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s not found: %s", component->name, error_msg);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component library %s not found at %s: %s", component_base_lib, path, error_msg);
 			g_free (error_msg);
+		} else {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component library %s found at %s", component_base_lib, path);
 		}
 		g_free (path);
 	}
-	if (lib)
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s found at %s", component->name, path);
+
 	return lib;
 }
 
@@ -207,9 +208,12 @@ load_component (const MonoComponentEntry *component, MonoComponentLibrary **comp
 		g_hash_table_insert (component_library_load_history, g_strdup (component_base_lib), (gpointer)component_lib);
 	}
 
-	g_free (component_base_lib);
-	if (!component_lib || !component_lib->lib)
+	if (!component_lib || !component_lib->lib) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s not found", component->name);
 		goto done;
+	}
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "Component %s found in %s", component->name, component_base_lib);
 
 	gpointer sym = load_component_entrypoint (component_lib, component);
 
@@ -218,6 +222,7 @@ load_component (const MonoComponentEntry *component, MonoComponentLibrary **comp
 	mono_refcount_inc (component_lib);
 	*component_lib_out = component_lib;
 done:
+	g_free (component_base_lib);
 	return result;
 }
 
