@@ -21,34 +21,54 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             new byte[] { 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20, 0x21, 0x22 };
 
         [Theory]
-        [MemberData(nameof(EcbTestCases))]
-        public static void EcbRoundtrip(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        [MemberData(nameof(TestCases))]
+        public static void OneShotRoundtrip(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode)
         {
             using (Aes aes = AesFactory.Create())
             {
                 aes.Key = s_aes128OneShotKey;
 
-                // Even though we have set the instance to use CFB, the Ecb one shots should
-                // always be done in ECB.
+                // Set the instance to use a different mode and padding than what will be used
+                // in the one-shots to test that the one shot "wins".
                 aes.FeedbackSize = 8;
-                aes.Mode = CipherMode.CFB;
+                aes.Mode = mode == CipherMode.ECB ? CipherMode.CBC : CipherMode.ECB;
                 aes.Padding = padding == PaddingMode.None ? PaddingMode.PKCS7 : PaddingMode.None;
 
-                byte[] encrypted = aes.EncryptEcb(plaintext, padding);
-                byte[] decrypted = aes.DecryptEcb(encrypted, padding);
+                byte[] encrypted = mode switch
+                {
+                    CipherMode.ECB => aes.EncryptEcb(plaintext, padding),
+                    CipherMode.CBC => aes.EncryptCbc(plaintext, s_aes128OneShotIv, padding),
+                    _ => throw new NotImplementedException(),
+                };
+                byte[] decrypted = mode switch
+                {
+                    CipherMode.ECB => aes.DecryptEcb(encrypted, padding),
+                    CipherMode.CBC => aes.DecryptCbc(encrypted, s_aes128OneShotIv, padding),
+                    _ => throw new NotImplementedException(),
+                };
 
                 AssertPlaintexts(plaintext, decrypted, padding);
 
-                decrypted = aes.DecryptEcb(ciphertext, padding);
-                encrypted = aes.EncryptEcb(decrypted, padding);
+                decrypted = mode switch
+                {
+                    CipherMode.ECB => aes.DecryptEcb(ciphertext, padding),
+                    CipherMode.CBC => aes.DecryptCbc(ciphertext, s_aes128OneShotIv, padding),
+                    _ => throw new NotImplementedException(),
+                };
+                encrypted = mode switch
+                {
+                    CipherMode.ECB => aes.EncryptEcb(decrypted, padding),
+                    CipherMode.CBC => aes.EncryptCbc(decrypted, s_aes128OneShotIv, padding),
+                    _ => throw new NotImplementedException(),
+                };
 
                 AssertCiphertexts(ciphertext, encrypted, padding, aes.BlockSize / 8);
             }
         }
 
         [Theory]
-        [MemberData(nameof(EcbTestCases))]
-        public static void TryDecryptEcb_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        [MemberData(nameof(TestCases))]
+        public static void TryDecryptOneShot_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode)
         {
             if (plaintext.Length == 0)
             {
@@ -62,15 +82,22 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 Span<byte> destinationBuffer = new byte[plaintext.Length - 1];
 
-                bool result = aes.TryDecryptEcb(ciphertext, destinationBuffer, padding, out int bytesWritten);
-                Assert.False(result, "TryDecryptEcb");
+                int bytesWritten;
+                bool result = mode switch
+                {
+                    CipherMode.ECB => aes.TryDecryptEcb(ciphertext, destinationBuffer, padding, out bytesWritten),
+                    CipherMode.CBC => aes.TryDecryptCbc(ciphertext, s_aes128OneShotIv, destinationBuffer, out bytesWritten, padding),
+                    _ => throw new NotImplementedException(),
+                };
+
+                Assert.False(result, "TryDecrypt");
                 Assert.Equal(0, bytesWritten);
             }
         }
 
         [Theory]
-        [MemberData(nameof(EcbTestCases))]
-        public static void TryEncryptEcb_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        [MemberData(nameof(TestCases))]
+        public static void TryEncryptOneShot_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode)
         {
             if (ciphertext.Length == 0)
             {
@@ -84,15 +111,21 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 Span<byte> destinationBuffer = new byte[ciphertext.Length - 1];
 
-                bool result = aes.TryEncryptEcb(plaintext, destinationBuffer, padding, out int bytesWritten);
-                Assert.False(result, "TryDecryptEcb");
+                int bytesWritten;
+                bool result = mode switch
+                {
+                    CipherMode.ECB => aes.TryEncryptEcb(plaintext, destinationBuffer, padding, out bytesWritten),
+                    CipherMode.CBC => aes.TryEncryptCbc(plaintext, s_aes128OneShotIv, destinationBuffer, out bytesWritten, padding),
+                    _ => throw new NotImplementedException(),
+                };
+                Assert.False(result, "TryEncrypt");
                 Assert.Equal(0, bytesWritten);
             }
         }
 
         [Theory]
-        [MemberData(nameof(EcbTestCases))]
-        public static void TryDecryptEcb_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        [MemberData(nameof(TestCases))]
+        public static void TryDecryptOneShot_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode)
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -101,8 +134,14 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 int expectedPlaintextSize = padding == PaddingMode.Zeros ? ciphertext.Length : plaintext.Length;
                 Span<byte> destinationBuffer = new byte[expectedPlaintextSize];
 
-                bool result = aes.TryDecryptEcb(ciphertext, destinationBuffer, padding, out int bytesWritten);
-                Assert.True(result, "TryDecryptEcb");
+                int bytesWritten;
+                bool result = mode switch
+                    {
+                        CipherMode.ECB => aes.TryDecryptEcb(ciphertext, destinationBuffer, padding, out bytesWritten),
+                        CipherMode.CBC => aes.TryDecryptCbc(ciphertext, s_aes128OneShotIv, destinationBuffer, out bytesWritten, padding),
+                        _ => throw new NotImplementedException(),
+                    };
+                Assert.True(result, "TryDecrypt");
                 Assert.Equal(destinationBuffer.Length, bytesWritten);
 
                 AssertPlaintexts(plaintext, destinationBuffer.ToArray(), padding);
@@ -110,18 +149,29 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EcbTestCases))]
-        public static void TryEncryptEcb_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        [MemberData(nameof(TestCases))]
+        public static void TryEncryptOneShot_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode)
         {
             using (Aes aes = AesFactory.Create())
             {
                 aes.Key = s_aes128OneShotKey;
 
-                int expectedCiphertextSize = aes.GetCiphertextLengthEcb(plaintext.Length, padding);
+                int expectedCiphertextSize = mode switch
+                {
+                    CipherMode.ECB => aes.GetCiphertextLengthEcb(plaintext.Length, padding),
+                    CipherMode.CBC => aes.GetCiphertextLengthCbc(plaintext.Length, padding),
+                    _ => throw new NotImplementedException(),
+                };
                 Span<byte> destinationBuffer = new byte[expectedCiphertextSize];
 
-                bool result = aes.TryEncryptEcb(plaintext, destinationBuffer, padding, out int bytesWritten);
-                Assert.True(result, "TryEncryptEcb");
+                int bytesWritten;
+                bool result = mode switch
+                {
+                    CipherMode.ECB => aes.TryEncryptEcb(plaintext, destinationBuffer, padding, out bytesWritten),
+                    CipherMode.CBC => aes.TryEncryptCbc(plaintext, s_aes128OneShotIv, destinationBuffer, out bytesWritten, padding),
+                    _ => throw new NotImplementedException(),
+                };
+                Assert.True(result, "TryEncrypt");
                 Assert.Equal(expectedCiphertextSize, bytesWritten);
 
                 AssertCiphertexts(ciphertext, destinationBuffer.ToArray(), padding, aes.BlockSize / 8);
@@ -129,8 +179,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EcbTestCases))]
-        public static void TryDecryptEcb_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        [MemberData(nameof(TestCases))]
+        public static void TryDecryptOneShot_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode)
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -141,13 +191,15 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 Span<byte> destinationBuffer = largeBuffer.Slice(0, expectedPlaintextSize);
                 largeBuffer.Fill(0xCC);
 
-                bool result = aes.TryDecryptEcb(
-                    ciphertext,
-                    destinationBuffer,
-                    padding,
-                    out int bytesWritten);
+                int bytesWritten;
+                bool result = mode switch
+                {
+                    CipherMode.ECB => aes.TryDecryptEcb(ciphertext, destinationBuffer, padding, out bytesWritten),
+                    CipherMode.CBC => aes.TryDecryptCbc(ciphertext, s_aes128OneShotIv, destinationBuffer, out bytesWritten, padding),
+                    _ => throw new NotImplementedException(),
+                };
 
-                Assert.True(result, "TryDecryptEcb");
+                Assert.True(result, "TryDecrypt");
                 Assert.Equal(destinationBuffer.Length, bytesWritten);
 
                 AssertPlaintexts(plaintext, destinationBuffer.ToArray(), padding);
@@ -158,8 +210,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EcbTestCases))]
-        public static void TryEncryptEcb_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        [MemberData(nameof(TestCases))]
+        public static void TryEncryptOneShot_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode)
         {
             using (Aes aes = AesFactory.Create())
             {
@@ -169,13 +221,15 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 Span<byte> destinationBuffer = largeBuffer.Slice(0, ciphertext.Length);
                 largeBuffer.Fill(0xCC);
 
-                bool result = aes.TryEncryptEcb(
-                    plaintext,
-                    destinationBuffer,
-                    padding,
-                    out int bytesWritten);
+                int bytesWritten;
+                bool result = mode switch
+                {
+                    CipherMode.ECB => aes.TryEncryptEcb(plaintext, destinationBuffer, padding, out bytesWritten),
+                    CipherMode.CBC => aes.TryEncryptCbc(plaintext, s_aes128OneShotIv, destinationBuffer, out bytesWritten, padding),
+                    _ => throw new NotImplementedException(),
+                };
 
-                Assert.True(result, "TryEncryptEcb");
+                Assert.True(result, "TryEncrypt");
                 Assert.Equal(destinationBuffer.Length, bytesWritten);
 
                 AssertCiphertexts(ciphertext, destinationBuffer.ToArray(), padding, aes.BlockSize / 8);
@@ -184,8 +238,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EcbTestCases))]
-        public static void TryDecryptEcb_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        [MemberData(nameof(TestCases))]
+        public static void TryDecryptOneShot_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode)
         {
             (int plaintextOffset, int ciphertextOffset)[] offsets =
             {
@@ -205,8 +259,14 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     Span<byte> ciphertextBuffer = buffer.Slice(ciphertextOffset, ciphertext.Length);
                     ciphertext.AsSpan().CopyTo(ciphertextBuffer);
 
-                    bool result = aes.TryDecryptEcb(ciphertextBuffer, destinationBuffer, padding, out int bytesWritten);
-                    Assert.True(result, "TryDecryptEcb");
+                    int bytesWritten;
+                    bool result = mode switch
+                    {
+                        CipherMode.ECB => aes.TryDecryptEcb(ciphertextBuffer, destinationBuffer, padding, out bytesWritten),
+                        CipherMode.CBC => aes.TryDecryptCbc(ciphertextBuffer, s_aes128OneShotIv, destinationBuffer, out bytesWritten, padding),
+                        _ => throw new NotImplementedException(),
+                    };
+                    Assert.True(result, "TryDecrypt");
                     Assert.Equal(destinationBuffer.Length, bytesWritten);
 
                     AssertPlaintexts(plaintext, destinationBuffer.ToArray(), padding);
@@ -216,8 +276,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EcbTestCases))]
-        public static void TryEncryptEcb_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        [MemberData(nameof(TestCases))]
+        public static void TryEncryptOneShot_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode)
         {
             (int plaintextOffset, int ciphertextOffset)[] offsets =
             {
@@ -236,8 +296,14 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     Span<byte> plaintextBuffer = buffer.Slice(plaintextOffset, plaintext.Length);
                     plaintext.AsSpan().CopyTo(plaintextBuffer);
 
-                    bool result = aes.TryEncryptEcb(plaintextBuffer, destinationBuffer, padding, out int bytesWritten);
-                    Assert.True(result, "TryEncryptEcb");
+                    int bytesWritten;
+                    bool result = mode switch
+                    {
+                        CipherMode.ECB => aes.TryEncryptEcb(plaintextBuffer, destinationBuffer, padding, out bytesWritten),
+                        CipherMode.CBC => aes.TryEncryptCbc(plaintextBuffer, s_aes128OneShotIv, destinationBuffer, out bytesWritten, padding),
+                        _ => throw new NotImplementedException(),
+                    };
+                    Assert.True(result, "TryEncrypt");
                     Assert.Equal(destinationBuffer.Length, bytesWritten);
 
                     AssertCiphertexts(ciphertext, destinationBuffer.ToArray(), padding, aes.BlockSize / 8);
@@ -247,344 +313,72 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EcbTestCases))]
-        public static void DecryptEcb_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        [MemberData(nameof(TestCases))]
+        public static void DecryptOneShot_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode)
         {
             using (Aes aes = AesFactory.Create())
             {
                 aes.Key = s_aes128OneShotKey;
-                byte[] decrypted = aes.DecryptEcb(ciphertext.AsSpan(), padding);
-
-                AssertPlaintexts(plaintext, decrypted, padding);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(EcbTestCases))]
-        public static void EncryptEcb_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
-        {
-            using (Aes aes = AesFactory.Create())
-            {
-                aes.Key = s_aes128OneShotKey;
-                byte[] encrypted = aes.EncryptEcb(plaintext.AsSpan(), padding);
-
-                AssertCiphertexts(ciphertext, encrypted, padding, aes.BlockSize / 8);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(EcbTestCases))]
-        public static void DecryptEcb_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
-        {
-            using (Aes aes = AesFactory.Create())
-            {
-                aes.Key = s_aes128OneShotKey;
-                byte[] decrypted = aes.DecryptEcb(ciphertext, padding);
-
-                AssertPlaintexts(plaintext, decrypted, padding);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(EcbTestCases))]
-        public static void EncryptEcb_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
-        {
-            using (Aes aes = AesFactory.Create())
-            {
-                aes.Key = s_aes128OneShotKey;
-                byte[] encrypted = aes.EncryptEcb(plaintext, padding);
-
-                AssertCiphertexts(ciphertext, encrypted, padding, aes.BlockSize / 8);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(CbcTestCases))]
-        public static void CbcRoundtrip(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
-        {
-            using (Aes aes = AesFactory.Create())
-            {
-                aes.Key = s_aes128OneShotKey;
-
-                // Even though we have set the instance to use CFB, the Cbc one shots should
-                // always be done in CBC.
-                aes.FeedbackSize = 8;
-                aes.Mode = CipherMode.CFB;
-                aes.Padding = padding == PaddingMode.None ? PaddingMode.PKCS7 : PaddingMode.None;
-
-                byte[] encrypted = aes.EncryptCbc(plaintext, s_aes128OneShotIv, padding);
-                byte[] decrypted = aes.DecryptCbc(encrypted, s_aes128OneShotIv, padding);
-
-                AssertPlaintexts(plaintext, decrypted, padding);
-
-                decrypted = aes.DecryptCbc(ciphertext, s_aes128OneShotIv, padding);
-                encrypted = aes.EncryptCbc(decrypted, s_aes128OneShotIv, padding);
-
-                AssertCiphertexts(ciphertext, encrypted, padding, aes.BlockSize / 8);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(CbcTestCases))]
-        public static void TryDecryptCbc_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
-        {
-            if (plaintext.Length == 0)
-            {
-                // Can't have a ciphertext length shorter than zero.
-                return;
-            }
-
-            using (Aes aes = AesFactory.Create())
-            {
-                aes.Key = s_aes128OneShotKey;
-
-                Span<byte> destinationBuffer = new byte[plaintext.Length - 1];
-
-                bool result = aes.TryDecryptCbc(ciphertext, s_aes128OneShotIv, destinationBuffer, out int bytesWritten, padding);
-                Assert.False(result, "TryDecryptCbc");
-                Assert.Equal(0, bytesWritten);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(CbcTestCases))]
-        public static void TryEncryptCbc_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
-        {
-            if (ciphertext.Length == 0)
-            {
-                // Can't have a too small buffer for zero.
-                return;
-            }
-
-            using (Aes aes = AesFactory.Create())
-            {
-                aes.Key = s_aes128OneShotKey;
-
-                Span<byte> destinationBuffer = new byte[ciphertext.Length - 1];
-
-                bool result = aes.TryEncryptCbc(plaintext, s_aes128OneShotIv, destinationBuffer, out int bytesWritten, padding);
-                Assert.False(result, "TryEncryptCbc");
-                Assert.Equal(0, bytesWritten);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(CbcTestCases))]
-        public static void TryDecryptCbc_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
-        {
-            using (Aes aes = AesFactory.Create())
-            {
-                aes.Key = s_aes128OneShotKey;
-
-                int expectedPlaintextSize = padding == PaddingMode.Zeros ? ciphertext.Length : plaintext.Length;
-                Span<byte> destinationBuffer = new byte[expectedPlaintextSize];
-
-                bool result = aes.TryDecryptCbc(ciphertext, s_aes128OneShotIv, destinationBuffer, out int bytesWritten, padding);
-                Assert.True(result, "TryDecryptCbc");
-                Assert.Equal(destinationBuffer.Length, bytesWritten);
-
-                AssertPlaintexts(plaintext, destinationBuffer.ToArray(), padding);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(CbcTestCases))]
-        public static void TryEncryptCbc_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
-        {
-            using (Aes aes = AesFactory.Create())
-            {
-                aes.Key = s_aes128OneShotKey;
-
-                int expectedCiphertextSize = aes.GetCiphertextLengthCbc(plaintext.Length, padding);
-                Span<byte> destinationBuffer = new byte[expectedCiphertextSize];
-
-                bool result = aes.TryEncryptCbc(plaintext, s_aes128OneShotIv, destinationBuffer, out int bytesWritten, padding);
-                Assert.True(result, "TryEncryptCbc");
-                Assert.Equal(expectedCiphertextSize, bytesWritten);
-
-                AssertCiphertexts(ciphertext, destinationBuffer.ToArray(), padding, aes.BlockSize / 8);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(CbcTestCases))]
-        public static void TryDecryptCbc_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
-        {
-            using (Aes aes = AesFactory.Create())
-            {
-                aes.Key = s_aes128OneShotKey;
-                int expectedPlaintextSize = padding == PaddingMode.Zeros ? ciphertext.Length : plaintext.Length;
-
-                Span<byte> largeBuffer = new byte[expectedPlaintextSize + 10];
-                Span<byte> destinationBuffer = largeBuffer.Slice(0, expectedPlaintextSize);
-                largeBuffer.Fill(0xCC);
-
-                bool result = aes.TryDecryptCbc(
-                    ciphertext,
-                    s_aes128OneShotIv,
-                    destinationBuffer,
-                    out int bytesWritten,
-                    padding);
-
-                Assert.True(result, "TryDecryptCbc");
-                Assert.Equal(destinationBuffer.Length, bytesWritten);
-
-                AssertPlaintexts(plaintext, destinationBuffer.ToArray(), padding);
-
-                Span<byte> excess = largeBuffer.Slice(destinationBuffer.Length);
-                AssertExtensions.FilledWith<byte>(0xCC, excess);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(CbcTestCases))]
-        public static void TryEncryptCbc_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
-        {
-            using (Aes aes = AesFactory.Create())
-            {
-                aes.Key = s_aes128OneShotKey;
-
-                Span<byte> largeBuffer = new byte[ciphertext.Length + 10];
-                Span<byte> destinationBuffer = largeBuffer.Slice(0, ciphertext.Length);
-                largeBuffer.Fill(0xCC);
-
-                bool result = aes.TryEncryptCbc(
-                    plaintext,
-                    s_aes128OneShotIv,
-                    destinationBuffer,
-                    out int bytesWritten,
-                    padding);
-
-                Assert.True(result, "TryEncryptCbc");
-                Assert.Equal(destinationBuffer.Length, bytesWritten);
-
-                AssertCiphertexts(ciphertext, destinationBuffer.ToArray(), padding, aes.BlockSize / 8);
-                AssertExtensions.FilledWith<byte>(0xCC, largeBuffer.Slice(ciphertext.Length));
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(CbcTestCases))]
-        public static void TryDecryptCbc_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
-        {
-            (int plaintextOffset, int ciphertextOffset)[] offsets =
-            {
-                (0, 0), (8, 0), (0, 8), (8, 8),
-            };
-
-            foreach ((int plaintextOffset, int ciphertextOffset) in offsets)
-            {
-                using (Aes aes = AesFactory.Create())
+                byte[] decrypted = mode switch
                 {
-                    aes.Key = s_aes128OneShotKey;
-
-                    int expectedPlaintextSize = padding == PaddingMode.Zeros ? ciphertext.Length : plaintext.Length;
-                    int destinationSize = Math.Max(expectedPlaintextSize, ciphertext.Length) + Math.Max(plaintextOffset, ciphertextOffset);
-                    Span<byte> buffer = new byte[destinationSize];
-                    Span<byte> destinationBuffer = buffer.Slice(plaintextOffset, expectedPlaintextSize);
-                    Span<byte> ciphertextBuffer = buffer.Slice(ciphertextOffset, ciphertext.Length);
-                    ciphertext.AsSpan().CopyTo(ciphertextBuffer);
-
-                    bool result = aes.TryDecryptCbc(
-                        ciphertextBuffer,
-                        s_aes128OneShotIv,
-                        destinationBuffer,
-                        out int bytesWritten,
-                        padding);
-
-                    Assert.True(result, "TryDecryptCbc");
-                    Assert.Equal(destinationBuffer.Length, bytesWritten);
-
-                    AssertPlaintexts(plaintext, destinationBuffer.ToArray(), padding);
-                    Assert.True(destinationBuffer.Overlaps(ciphertextBuffer) || plaintext.Length == 0 || ciphertext.Length == 0);
-                }
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(CbcTestCases))]
-        public static void TryEncryptCbc_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
-        {
-            (int plaintextOffset, int ciphertextOffset)[] offsets =
-            {
-                (0, 0), (8, 0), (0, 8), (8, 8),
-            };
-
-            foreach ((int plaintextOffset, int ciphertextOffset) in offsets)
-            {
-                using (Aes aes = AesFactory.Create())
-                {
-                    aes.Key = s_aes128OneShotKey;
-
-                    int destinationSize = ciphertext.Length + Math.Max(plaintextOffset, ciphertextOffset);
-                    Span<byte> buffer = new byte[destinationSize];
-                    Span<byte> destinationBuffer = buffer.Slice(ciphertextOffset, ciphertext.Length);
-                    Span<byte> plaintextBuffer = buffer.Slice(plaintextOffset, plaintext.Length);
-                    plaintext.AsSpan().CopyTo(plaintextBuffer);
-
-                    bool result = aes.TryEncryptCbc(
-                        plaintextBuffer,
-                        s_aes128OneShotIv,
-                        destinationBuffer,
-                        out int bytesWritten,
-                        padding);
-
-                    Assert.True(result, "TryEncryptCbc");
-                    Assert.Equal(destinationBuffer.Length, bytesWritten);
-
-                    AssertCiphertexts(ciphertext, destinationBuffer.ToArray(), padding, aes.BlockSize / 8);
-                    Assert.True(destinationBuffer.Overlaps(plaintextBuffer) || plaintext.Length == 0 || ciphertext.Length == 0);
-                }
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(CbcTestCases))]
-        public static void DecryptCbc_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
-        {
-            using (Aes aes = AesFactory.Create())
-            {
-                aes.Key = s_aes128OneShotKey;
-                byte[] decrypted = aes.DecryptCbc(ciphertext.AsSpan(), s_aes128OneShotIv.AsSpan(), padding);
+                    CipherMode.ECB => aes.DecryptEcb(ciphertext.AsSpan(), padding),
+                    CipherMode.CBC => aes.DecryptCbc(ciphertext.AsSpan(), s_aes128OneShotIv.AsSpan(), padding),
+                    _ => throw new NotImplementedException(),
+                };
 
                 AssertPlaintexts(plaintext, decrypted, padding);
             }
         }
 
         [Theory]
-        [MemberData(nameof(CbcTestCases))]
-        public static void EncryptCbc_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        [MemberData(nameof(TestCases))]
+        public static void EncryptOneShot_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode)
         {
             using (Aes aes = AesFactory.Create())
             {
                 aes.Key = s_aes128OneShotKey;
-                byte[] encrypted = aes.EncryptCbc(plaintext.AsSpan(), s_aes128OneShotIv.AsSpan(), padding);
+                byte[] encrypted = mode switch
+                {
+                    CipherMode.ECB => aes.EncryptEcb(plaintext.AsSpan(), padding),
+                    CipherMode.CBC => aes.EncryptCbc(plaintext.AsSpan(), s_aes128OneShotIv.AsSpan(), padding),
+                    _ => throw new NotImplementedException(),
+                };
 
                 AssertCiphertexts(ciphertext, encrypted, padding, aes.BlockSize / 8);
             }
         }
 
         [Theory]
-        [MemberData(nameof(CbcTestCases))]
-        public static void DecryptCbc_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        [MemberData(nameof(TestCases))]
+        public static void DecryptOneShot_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode)
         {
             using (Aes aes = AesFactory.Create())
             {
                 aes.Key = s_aes128OneShotKey;
-                byte[] decrypted = aes.DecryptCbc(ciphertext, s_aes128OneShotIv, padding);
+                byte[] decrypted = mode switch
+                {
+                    CipherMode.ECB => aes.DecryptEcb(ciphertext, padding),
+                    CipherMode.CBC => aes.DecryptCbc(ciphertext, s_aes128OneShotIv, padding),
+                    _ => throw new NotImplementedException(),
+                };
 
                 AssertPlaintexts(plaintext, decrypted, padding);
             }
         }
 
         [Theory]
-        [MemberData(nameof(CbcTestCases))]
-        public static void EncryptCbc_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding)
+        [MemberData(nameof(TestCases))]
+        public static void EncryptOneShot_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode)
         {
             using (Aes aes = AesFactory.Create())
             {
                 aes.Key = s_aes128OneShotKey;
-                byte[] encrypted = aes.EncryptCbc(plaintext, s_aes128OneShotIv, padding);
+                byte[] encrypted = mode switch
+                {
+                    CipherMode.ECB => aes.EncryptEcb(plaintext, padding),
+                    CipherMode.CBC => aes.EncryptCbc(plaintext, s_aes128OneShotIv, padding),
+                    _ => throw new NotImplementedException(),
+                };
 
                 AssertCiphertexts(ciphertext, encrypted, padding, aes.BlockSize / 8);
             }
@@ -616,7 +410,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
-        public static IEnumerable<object[]> CbcTestCases
+        public static IEnumerable<object[]> TestCases
         {
             get
             {
@@ -639,6 +433,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.PKCS7,
+                    CipherMode.CBC,
                 };
 
                 yield return new object[]
@@ -658,6 +453,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.None,
+                    CipherMode.CBC,
                 };
 
                 yield return new object[]
@@ -677,6 +473,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.Zeros,
+                    CipherMode.CBC,
                 };
 
                 yield return new object[]
@@ -698,6 +495,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.ANSIX923,
+                    CipherMode.CBC,
                 };
 
                 yield return new object[]
@@ -719,6 +517,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.ISO10126,
+                    CipherMode.CBC,
                 };
 
                 // plaintext requires padding
@@ -742,6 +541,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.PKCS7,
+                    CipherMode.CBC,
                 };
 
                 yield return new object[]
@@ -764,6 +564,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.Zeros,
+                    CipherMode.CBC,
                 };
 
                 yield return new object[]
@@ -786,6 +587,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.ANSIX923,
+                    CipherMode.CBC,
                 };
 
                 yield return new object[]
@@ -808,6 +610,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.ISO10126,
+                    CipherMode.CBC,
                 };
 
                 yield return new object[]
@@ -819,6 +622,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     Array.Empty<byte>(),
 
                     PaddingMode.Zeros,
+                    CipherMode.CBC,
                 };
 
                 yield return new object[]
@@ -830,6 +634,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     Array.Empty<byte>(),
 
                     PaddingMode.None,
+                    CipherMode.CBC,
                 };
 
                 yield return new object[]
@@ -845,14 +650,10 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.PKCS7,
+                    CipherMode.CBC,
                 };
-            }
-        }
 
-        public static IEnumerable<object[]> EcbTestCases
-        {
-            get
-            {
+                // ECB test cases
                 // plaintext requires no padding
                 yield return new object[]
                 {
@@ -873,6 +674,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.PKCS7,
+                    CipherMode.ECB,
                 };
 
                 yield return new object[]
@@ -892,6 +694,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.None,
+                    CipherMode.ECB,
                 };
 
                 yield return new object[]
@@ -911,6 +714,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.Zeros,
+                    CipherMode.ECB,
                 };
 
                 yield return new object[]
@@ -932,6 +736,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.ANSIX923,
+                    CipherMode.ECB,
                 };
 
                 yield return new object[]
@@ -953,6 +758,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.ISO10126,
+                    CipherMode.ECB,
                 };
 
                 // plaintext requires padding
@@ -976,6 +782,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.PKCS7,
+                    CipherMode.ECB,
                 };
 
                 yield return new object[]
@@ -998,6 +805,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.Zeros,
+                    CipherMode.ECB,
                 };
 
                 yield return new object[]
@@ -1020,6 +828,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.ANSIX923,
+                    CipherMode.ECB,
                 };
 
                 yield return new object[]
@@ -1042,6 +851,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.ISO10126,
+                    CipherMode.ECB,
                 };
 
                 yield return new object[]
@@ -1053,6 +863,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     Array.Empty<byte>(),
 
                     PaddingMode.Zeros,
+                    CipherMode.ECB,
                 };
 
                 yield return new object[]
@@ -1064,6 +875,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     Array.Empty<byte>(),
 
                     PaddingMode.None,
+                    CipherMode.ECB,
                 };
 
                 yield return new object[]
@@ -1079,6 +891,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     },
 
                     PaddingMode.PKCS7,
+                    CipherMode.ECB,
                 };
             }
         }
