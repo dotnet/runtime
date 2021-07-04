@@ -34,7 +34,6 @@
 #include "tieredcompilation.h"
 
 #include "codeversion.h"
-#include "frozenobjectheap.h"
 
 class BaseDomain;
 class SystemDomain;
@@ -42,6 +41,7 @@ class AppDomain;
 class CompilationDomain;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
+class FrozenObjectHeap;
 class MngStdInterfacesInfo;
 class DomainAssembly;
 class LoadLevelLimiter;
