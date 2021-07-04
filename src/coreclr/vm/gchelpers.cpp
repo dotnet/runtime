@@ -902,7 +902,6 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap)
                 orString->SetMethodTable(g_pStringClass);
                 orString->SetStringLength(cchStringLength);
 
-                // Do we need to perform "PublishObject" here?
                 PublishObjectAndNotify(orString, GC_ALLOC_NO_FLAGS);
                 orStringRef = ObjectToSTRINGREF(orString);
             }

@@ -12,23 +12,21 @@
 class FrozenObjectHeap
 {
 public:
-    bool Init(CrstExplicitInit crst, size_t fohSize = FOH_DEFAULT_SIZE);
-
+    FrozenObjectHeap();
+    ~FrozenObjectHeap();
     Object* AllocateObject(size_t objectSize);
-
     bool IsInHeap(Object* object);
 
-    ~FrozenObjectHeap();
-
 private:
+    bool Init(size_t fohSize = FOH_DEFAULT_SIZE);
+
     uint8_t* m_pStart;
     uint8_t* m_pCurrent;
     uint8_t* m_pCommited;
     size_t m_Size;
     size_t m_PageSize;
-    void* m_SegmentHandle;
+    segment_handle m_SegmentHandle;
     CrstExplicitInit m_Crst;
-
     INDEBUG(size_t m_ObjectsCount);
 };
 
