@@ -5,9 +5,7 @@
 #define _FROZENOBJECTHEAP_H
 
 #include "common.h"
-
-#define FOX_MAX_OBJECT_SIZE 2 * 1024
-#define FOH_DEFAULT_SIZE    1 * 1024 * 1024
+#include "gcinterface.h"
 
 class FrozenObjectHeap
 {
@@ -18,7 +16,7 @@ public:
     bool IsInHeap(Object* object);
 
 private:
-    bool Init(size_t fohSize = FOH_DEFAULT_SIZE);
+    bool Initialize();
 
     uint8_t* m_pStart;
     uint8_t* m_pCurrent;
@@ -27,6 +25,7 @@ private:
     size_t m_PageSize;
     segment_handle m_SegmentHandle;
     CrstExplicitInit m_Crst;
+    bool m_FailedToInit;
     INDEBUG(size_t m_ObjectsCount);
 };
 

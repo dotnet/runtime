@@ -902,7 +902,7 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap)
                 orString->SetMethodTable(g_pStringClass);
                 orString->SetStringLength(cchStringLength);
 
-                PublishObjectAndNotify(orString, GC_ALLOC_NO_FLAGS);
+                // PublishObjectAndNotify(orString, GC_ALLOC_NO_FLAGS);
                 orStringRef = ObjectToSTRINGREF(orString);
             }
         }

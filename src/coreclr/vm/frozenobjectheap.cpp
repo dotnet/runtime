@@ -9,10 +9,10 @@ FrozenObjectHeap::FrozenObjectHeap():
     m_pCurrent(nullptr),
     m_pCommited(nullptr),
     m_Size(0),
-    m_PageSize(0),
     m_SegmentHandle(nullptr),
     m_ObjectsCount(0)
 {
+    m_PageSize = GetOsPageSize();
     m_Crst.Init(CrstFrozenObjectHeap, CRST_UNSAFE_ANYMODE);
 }
 
@@ -29,35 +29,33 @@ FrozenObjectHeap::~FrozenObjectHeap()
     }
 }
 
-bool FrozenObjectHeap::Init(size_t fohSize)
+bool FrozenObjectHeap::Initialize()
 {
-    m_PageSize = GetOsPageSize();
-    _ASSERT(fohSize >= m_PageSize);
+    m_Size = m_PageSize * 1024;
+
+    _ASSERT(m_PageSize > MIN_OBJECT_SIZE);
     _ASSERT(m_SegmentHandle == nullptr);
     _ASSERT(m_pStart == nullptr);
 
     // TODO: Implement COMMIT on demand.
-    void* alloc = ClrVirtualAllocAligned(nullptr, fohSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, m_PageSize);
-
+    void* alloc = ClrVirtualAllocAligned(nullptr, m_Size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, m_PageSize);
+    ZeroMemory(alloc, m_Size);
     if (alloc != nullptr)
     {
-        segment_info seginfo{};
-        seginfo.pvMem = m_pStart;
-        seginfo.ibFirstObject = sizeof(ObjHeader);
-        seginfo.ibAllocated = m_Size;
-        seginfo.ibCommit = seginfo.ibAllocated;
-        seginfo.ibReserved = seginfo.ibAllocated;
+        segment_info si{};
+        si.pvMem = m_pStart;
+        si.ibFirstObject = sizeof(ObjHeader);
+        si.ibAllocated = m_Size;
+        si.ibCommit = m_Size;
+        si.ibReserved = m_Size;
 
-        m_SegmentHandle = GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&seginfo);
+        m_SegmentHandle = GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&si);
         if (m_SegmentHandle != nullptr)
         {
             m_pStart = static_cast<uint8_t*>(alloc);
             m_pCurrent = m_pStart;
             m_pCommited = m_pStart;
-            m_Size = fohSize;
-
             INDEBUG(m_ObjectsCount = 0);
-
             ASSERT((intptr_t)m_pCurrent % DATA_ALIGNMENT == 0);
             return true;
         }
@@ -79,9 +77,14 @@ Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
         return nullptr;
     }
 
-    if ((m_pStart == nullptr) && !Init())
+    if (m_pStart == nullptr)
     {
-        return nullptr;
+        // m_Size > 0 means we already tried to init and it failed.
+        // so bail out to avoid doing Alloc again.
+        if ((m_Size > 0) || !Initialize())
+        {
+            return nullptr;
+        }
     }
 
     _ASSERT(m_pStart != nullptr);
@@ -98,9 +101,9 @@ Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
     }
 
     INDEBUG(m_ObjectsCount++);
-    m_pCurrent = obj + OBJECT_BASESIZE + objectSize;
+    m_pCurrent = obj + sizeof(ObjHeader) + objectSize;
     ZeroMemory(obj, objectSize); // is it needed?
-    return reinterpret_cast<Object*>(obj + OBJECT_BASESIZE);
+    return reinterpret_cast<Object*>(obj + sizeof(ObjHeader));
 }
 
 bool FrozenObjectHeap::IsInHeap(Object* object)
