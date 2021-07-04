@@ -33,12 +33,10 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         internal sealed class ThreadPoolValueTaskSource : IThreadPoolWorkItem, IValueTaskSource<int>, IValueTaskSource<long>
         {
-            // Whether to put the operation on a local ThreadPool queue.
-            private const bool PreferLocal = true;
-
             private readonly SafeFileHandle _fileHandle;
             private ManualResetValueTaskSourceCore<long> _source;
             private Operation _operation = Operation.None;
+            private ExecutionContext? _context;
 
             // These fields store the parameters for the operation.
             // The first two are common for all kinds of operations.
@@ -80,7 +78,7 @@ namespace Microsoft.Win32.SafeHandles
             int IValueTaskSource<int>.GetResult(short token) => (int) GetResultAndRelease(token);
             long IValueTaskSource<long>.GetResult(short token) => GetResultAndRelease(token);
 
-            void IThreadPoolWorkItem.Execute()
+            private void ExecuteInternal()
             {
                 Debug.Assert(_operation >= Operation.Read && _operation <= Operation.WriteGather);
 
@@ -137,6 +135,24 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
+            void IThreadPoolWorkItem.Execute()
+            {
+                if (_context == null || _context.IsDefault)
+                {
+                    ExecuteInternal();
+                }
+                else
+                {
+                    ExecutionContext.RunForThreadPoolUnsafe(_context, static x => x.ExecuteInternal(), this);
+                }
+            }
+
+            private void QueueToThreadPool()
+            {
+                _context = ExecutionContext.Capture();
+                ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: true);
+            }
+
             public ValueTask<int> QueueRead(Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
             {
                 ValidateInvariants();
@@ -145,7 +161,7 @@ namespace Microsoft.Win32.SafeHandles
                 _singleSegment = buffer;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
-                ThreadPool.UnsafeQueueUserWorkItem(this, PreferLocal);
+                QueueToThreadPool();
 
                 return new ValueTask<int>(this, _source.Version);
             }
@@ -158,7 +174,7 @@ namespace Microsoft.Win32.SafeHandles
                 _singleSegment = buffer;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
-                ThreadPool.UnsafeQueueUserWorkItem(this, PreferLocal);
+                QueueToThreadPool();
 
                 return new ValueTask<int>(this, _source.Version);
             }
@@ -171,7 +187,7 @@ namespace Microsoft.Win32.SafeHandles
                 _multiSegmentCollection = buffers;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
-                ThreadPool.UnsafeQueueUserWorkItem(this, PreferLocal);
+                QueueToThreadPool();
 
                 return new ValueTask<long>(this, _source.Version);
             }
@@ -184,7 +200,7 @@ namespace Microsoft.Win32.SafeHandles
                 _multiSegmentCollection = buffers;
                 _fileOffset = fileOffset;
                 _cancellationToken = cancellationToken;
-                ThreadPool.UnsafeQueueUserWorkItem(this, PreferLocal);
+                QueueToThreadPool();
 
                 return new ValueTask<long>(this, _source.Version);
             }
