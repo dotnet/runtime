@@ -822,6 +822,21 @@ eventpipe_fire_method_events (
 }
 
 static
+inline
+bool
+include_method (MonoMethod *method)
+{
+	if (!method) {
+		return false;
+	} else if (!m_method_is_wrapper (method)) {
+		return true;
+	} else {
+		WrapperInfo *wrapper = mono_marshal_get_wrapper_info (method);
+		return (wrapper && wrapper->subtype == WRAPPER_SUBTYPE_PINVOKE) ? true : false;
+	}
+}
+
+static
 void
 eventpipe_fire_method_events_func (
 	MonoJitInfo *ji,
@@ -832,7 +847,7 @@ eventpipe_fire_method_events_func (
 
 	if (ji && !ji->is_trampoline && !ji->async) {
 		MonoMethod *method = jinfo_get_method (ji);
-		if (method && !m_method_is_wrapper (method))
+		if (include_method (method))
 			eventpipe_fire_method_events (ji, method, events_data);
 	}
 }
@@ -1080,7 +1095,7 @@ eventpipe_walk_managed_stack_for_thread (
 					ep_stack_contents_append (stack_walk_data->stack_contents, (uintptr_t)((uint8_t*)_ep_rt_mono_monitor_enter_method), _ep_rt_mono_monitor_enter_method);
 				} else if (_ep_rt_mono_monitor_enter_v4_method && in_monitor_enter_v4_frame (wrapper)) {
 					ep_stack_contents_append (stack_walk_data->stack_contents, (uintptr_t)((uint8_t*)_ep_rt_mono_monitor_enter_v4_method), _ep_rt_mono_monitor_enter_v4_method);
-				} else if (wrapper && wrapper->subtype == WRAPPER_SUBTYPE_PINVOKE && frame->type == FRAME_TYPE_MANAGED) {
+				} else if (wrapper && wrapper->subtype == WRAPPER_SUBTYPE_PINVOKE) {
 					ep_stack_contents_append (stack_walk_data->stack_contents, (uintptr_t)((uint8_t*)frame->ji->code_start + frame->native_offset), method);
 				}
 			} else if (method && !m_method_is_wrapper (method)) {
@@ -2760,8 +2775,7 @@ profiler_jit_begin (
 	MonoProfiler *prof,
 	MonoMethod *method)
 {
-	if (method && !m_method_is_wrapper (method))
-		ep_rt_mono_write_event_jit_start (method);
+	ep_rt_mono_write_event_jit_start (method);
 }
 
 static
@@ -2780,10 +2794,8 @@ profiler_jit_done (
 	MonoMethod *method,
 	MonoJitInfo *ji)
 {
-	if (method && !m_method_is_wrapper (method)) {
-		ep_rt_mono_write_event_method_load (method, ji);
-		ep_rt_mono_write_event_method_il_to_native_map (method, ji);
-	}
+	ep_rt_mono_write_event_method_load (method, ji);
+	ep_rt_mono_write_event_method_il_to_native_map (method, ji);
 }
 
 static
@@ -2926,8 +2938,7 @@ profiler_jit_code_buffer (
 	MonoProfilerCodeBufferType type,
 	const void *data)
 {
-	if (data && !m_method_is_wrapper ((MonoMethod *)data))
-		ep_rt_mono_write_event_method_jit_memory_allocated_for_code ((const uint8_t *)buffer, size, type, data);
+	ep_rt_mono_write_event_method_jit_memory_allocated_for_code ((const uint8_t *)buffer, size, type, data);
 }
 
 void
