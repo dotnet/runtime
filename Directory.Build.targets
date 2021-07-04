@@ -77,7 +77,7 @@
           Condition="'@(NETStandardCompatError)' != ''"
           Inputs="%(NETStandardCompatError.Identity)"
           Outputs="unused"
-          BeforeTargets="GetFiles">
+          BeforeTargets="_GetPackageFiles;GetFiles">
     <PropertyGroup>
       <_NETStandardCompatErrorFilePath>$(BaseIntermediateOutputPath)netstandardcompaterrors\%(NETStandardCompatError.Identity)\$(PackageId).targets</_NETStandardCompatErrorFilePath>
       <_NETStandardCompatErrorFileTarget>NETStandardCompatError_$(PackageId.Replace('.', '_'))_$([System.String]::new('%(NETStandardCompatError.Supported)').Replace('.', '_'))</_NETStandardCompatErrorFileTarget>
