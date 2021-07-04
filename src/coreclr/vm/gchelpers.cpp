@@ -826,7 +826,7 @@ OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle elementType, BOOL bAll
     return AllocateSzArray(arrayType, (INT32) cElements, flags);
 }
 
-STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenObjHeap)
+STRINGREF AllocateString(DWORD cchStringLength)
 {
     CONTRACTL {
         THROWS;
@@ -853,28 +853,13 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenObjHeap)
     _ASSERTE(totalSize > cchStringLength);
 
     GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
-    StringObject* orString = nullptr;
 
-    // Try to allocate the string in Frozen Object Heap.
-    if (preferFrozenObjHeap)
-    {
-        FrozenObjectHeap* foh = SystemDomain::GetSegmentWithFrozenObjects();
-        if (foh != nullptr)
-        {
-            orString = (StringObject*)foh->AllocateObject(totalSize);
-            // if FOH is null, full, or object is too big - fallback to normal allocation.
-        }
-    }
+    SetTypeHandleOnThreadForAlloc(TypeHandle(g_pStringClass));
 
-    if (orString == nullptr)
-    {
-        SetTypeHandleOnThreadForAlloc(TypeHandle(g_pStringClass));
+    if (totalSize >= g_pConfig->GetGCLOHThreshold())
+        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-        if (totalSize >= g_pConfig->GetGCLOHThreshold())
-            flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
-
-        orString = (StringObject*)(Alloc(totalSize, flags));
-    }
+    StringObject* orString = (StringObject*)Alloc(totalSize, flags);
 
     // Initialize Object
     orString->SetMethodTable(g_pStringClass);
@@ -882,6 +867,47 @@ STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenObjHeap)
 
     PublishObjectAndNotify(orString, flags);
     return ObjectToSTRINGREF(orString);
+
+}
+
+STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    STRINGREF orStringRef;
+    StringObject* orString = nullptr;
+
+    // Limit the maximum string size to <2GB to mitigate risk of security issues caused by 32-bit integer
+    // overflows in buffer size calculations.
+    //
+    // If the value below is changed, also change AllocateUtf8String.
+    if (cchStringLength > 0x3FFFFFDF)
+        ThrowOutOfMemory();
+
+    SIZE_T totalSize = PtrAlign(StringObject::GetSize(cchStringLength));
+    _ASSERTE(totalSize > cchStringLength);
+
+    if (preferFrozenHeap)
+    {
+        FrozenObjectHeap* foh = SystemDomain::GetSegmentWithFrozenObjects();
+        if (foh != nullptr)
+        {
+            orString = (StringObject*)foh->AllocateObject(totalSize);
+            orString->SetMethodTable(g_pStringClass);
+            orString->SetStringLength(cchStringLength);
+            PublishObjectAndNotify(orString, GC_ALLOC_NO_FLAGS);
+            orStringRef = ObjectToSTRINGREF(orString);
+        }
+    }
+    if (orString == nullptr)
+    {
+        orStringRef = AllocateString(cchStringLength);
+    }
+    return orStringRef;
 }
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION

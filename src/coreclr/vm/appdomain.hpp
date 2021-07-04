@@ -2795,6 +2795,7 @@ private:
 
     static GlobalStringLiteralMap *m_pGlobalStringLiteralMap;
     static FrozenObjectHeap       *m_FrozenObjects;
+    static CrstExplicitInit        m_FrozenObjectsCrst;
 
     static ULONG       s_dNumAppDomains;  // Maintain a count of children app domains.
 

@@ -3,21 +3,29 @@
 
 #include "frozenobjectheap.h"
 #include "memorypool.h"
+#include "memorypool.h"
 
-bool FrozenObjectHeap::Init(size_t fohSize)
+bool FrozenObjectHeap::Init(CrstExplicitInit crst, size_t fohSize)
 {
-    _ASSERT(fohSize > (FOX_MAX_OBJECT_SIZE * 2));
+    m_PageSize = GetOsPageSize();
+    _ASSERT(fohSize >= m_PageSize);
 
-    // TODO: remove commit
-    void* alloc = ClrVirtualAlloc(nullptr, fohSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    // TODO: Implement COMMIT on demand.
+    void* alloc = ClrVirtualAllocAligned(nullptr, fohSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE, m_PageSize);
+    ZeroMemory(alloc, fohSize); // will remove it.
+
     if (alloc != nullptr)
     {
         m_SegmentHandle = GCInterface::RegisterFrozenSegment(alloc, fohSize);
         if (m_SegmentHandle != nullptr)
         {
+            m_Crst = crst;
             m_pStart = static_cast<uint8_t*>(alloc);
             m_pCurrent = m_pStart;
+            m_pCommited = m_pStart;
             m_Size = fohSize;
+
+            ASSERT((intptr_t)m_pCurrent % DATA_ALIGNMENT == 0);
             return true;
         }
     }
@@ -26,11 +34,16 @@ bool FrozenObjectHeap::Init(size_t fohSize)
 
 Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
 {
-    if (objectSize > FOX_MAX_OBJECT_SIZE)
+    CrstHolder ch(&m_Crst);
+
+    if (objectSize > m_PageSize)
     {
-        // object is to big
+        // Since FrozenObjectHeap is just an optimization, let's not fill it with large objects.
         return nullptr;
     }
+
+    _ASSERT(IS_ALIGNED(objectSize, DATA_ALIGNMENT));
+    _ASSERT(IS_ALIGNED(m_pCurrent, DATA_ALIGNMENT));
 
     uint8_t* obj = ALIGN_UP(m_pCurrent, DATA_ALIGNMENT);
     if ((obj + objectSize + OBJHEADER_SIZE) > (m_pStart + m_Size))
@@ -38,8 +51,9 @@ Object* FrozenObjectHeap::AllocateObject(size_t objectSize)
         // heap is full
         return nullptr;
     }
+
     m_pCurrent = obj + OBJECT_BASESIZE + objectSize;
-    ZeroMemory(obj, objectSize);
+    ZeroMemory(obj, objectSize); // is it needed?
     return reinterpret_cast<Object*>(obj + OBJECT_BASESIZE);
 }
 

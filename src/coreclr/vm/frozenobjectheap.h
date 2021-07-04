@@ -12,7 +12,7 @@
 class FrozenObjectHeap
 {
 public:
-    bool Init(size_t fohSize = FOH_DEFAULT_SIZE);
+    bool Init(CrstExplicitInit crst, size_t fohSize = FOH_DEFAULT_SIZE);
 
     Object* AllocateObject(size_t objectSize);
 
@@ -23,8 +23,11 @@ public:
 private:
     uint8_t* m_pStart;
     uint8_t* m_pCurrent;
+    uint8_t* m_pCommited;
     size_t m_Size;
+    size_t m_PageSize;
     void* m_SegmentHandle;
+    CrstExplicitInit m_Crst;
 };
 
 #endif // _FROZENOBJECTHEAP_H

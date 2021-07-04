@@ -443,7 +443,6 @@ static void LogStringLiteral(__in_z const char* action, EEStringData *pStringDat
 }
 #endif
 
-
 STRINGREF AllocateStringObject(EEStringData *pStringData, bool preferFrozenObjHeap)
 {
     CONTRACTL
