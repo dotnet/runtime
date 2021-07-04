@@ -440,6 +440,9 @@ ep_rt_mono_thread_get_or_create (void);
 void *
 ep_rt_mono_thread_attach (bool background_thread);
 
+void *
+ep_rt_mono_thread_attach_2 (bool background_thread, EventPipeThreadType thread_type);
+
 void
 ep_rt_mono_thread_detach (void);
 
@@ -1124,6 +1127,41 @@ ep_rt_mono_thread_attach (bool background_thread)
 	}
 
 	return thread;
+}
+
+void *
+ep_rt_mono_thread_attach_2 (bool background_thread, EventPipeThreadType thread_type)
+{
+	void *result = ep_rt_mono_thread_attach (background_thread);
+	if (result && thread_type == EP_THREAD_TYPE_SAMPLING) {
+		// Increase sampling thread priority, accepting failures.
+#ifdef HOST_WIN32
+		SetThreadPriority (GetCurrentThread (), THREAD_PRIORITY_HIGHEST);
+#elif _POSIX_PRIORITY_SCHEDULING
+		int policy;
+		int priority;
+		struct sched_param param;
+		int schedparam_result = pthread_getschedparam (pthread_self (), &policy, &param);
+		if (schedparam_result == 0) {
+			// Attempt to switch the thread to real time scheduling. This will not
+			// necessarily work on all OSs; for example, most Linux systems will give
+			// us EPERM here unless configured to allow this.
+			priority = param.sched_priority;
+			param.sched_priority = sched_get_priority_max (SCHED_RR);
+			if (param.sched_priority != -1) {
+				schedparam_result = pthread_setschedparam (pthread_self (), SCHED_RR, &param);
+				if (schedparam_result != 0) {
+					// Fallback, attempt to increase to max priority using current policy.
+					param.sched_priority = sched_get_priority_max (policy);
+					if (param.sched_priority != -1 && param.sched_priority != priority)
+						pthread_setschedparam (pthread_self (), policy, &param);
+				}
+			}
+		}
+#endif
+	}
+
+	return result;
 }
 
 void
