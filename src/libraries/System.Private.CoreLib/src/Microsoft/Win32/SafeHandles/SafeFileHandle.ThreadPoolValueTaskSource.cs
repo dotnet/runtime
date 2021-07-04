@@ -120,6 +120,7 @@ namespace Microsoft.Win32.SafeHandles
                 finally
                 {
                     _operation = Operation.None;
+                    _context = null;
                     _cancellationToken = default;
                     _singleSegment = default;
                     _multiSegmentCollection = null;
