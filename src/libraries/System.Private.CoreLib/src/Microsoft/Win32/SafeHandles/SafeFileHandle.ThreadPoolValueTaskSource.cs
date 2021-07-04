@@ -33,11 +33,12 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         internal sealed class ThreadPoolValueTaskSource : IThreadPoolWorkItem, IValueTaskSource<int>, IValueTaskSource<long>
         {
-            private ManualResetValueTaskSourceCore<long> _source;
-            private readonly SafeFileHandle _fileHandle;
-            private Operation _operation = Operation.None;
-
+            // Whether to put the operation on a local ThreadPool queue.
             private const bool PreferLocal = true;
+
+            private readonly SafeFileHandle _fileHandle;
+            private ManualResetValueTaskSourceCore<long> _source;
+            private Operation _operation = Operation.None;
 
             // These fields store the parameters for the operation.
             // The first two are common for all kinds of operations.
@@ -51,6 +52,13 @@ namespace Microsoft.Win32.SafeHandles
             internal ThreadPoolValueTaskSource(SafeFileHandle fileHandle)
             {
                 _fileHandle = fileHandle;
+            }
+
+            [Conditional("DEBUG")]
+            private void ValidateInvariants()
+            {
+                Operation op = _operation;
+                Debug.Assert(op == Operation.None, $"An operation was queued before the previous {op}'s completion.");
             }
 
             private long GetResultAndRelease(short token)
@@ -131,7 +139,7 @@ namespace Microsoft.Win32.SafeHandles
 
             public ValueTask<int> QueueRead(Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
             {
-                Debug.Assert(_operation == Operation.None, "An operation was queued before the previous one's completion.");
+                ValidateInvariants();
 
                 _operation = Operation.Read;
                 _singleSegment = buffer;
@@ -144,7 +152,7 @@ namespace Microsoft.Win32.SafeHandles
 
             public ValueTask<int> QueueWrite(ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
             {
-                Debug.Assert(_operation == Operation.None, "An operation was queued before the previous one's completion.");
+                ValidateInvariants();
 
                 _operation = Operation.Write;
                 _singleSegment = buffer;
@@ -157,7 +165,7 @@ namespace Microsoft.Win32.SafeHandles
 
             public ValueTask<long> QueueReadScatter(IReadOnlyList<Memory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)
             {
-                Debug.Assert(_operation == Operation.None, "An operation was queued before the previous one's completion.");
+                ValidateInvariants();
 
                 _operation = Operation.ReadScatter;
                 _multiSegmentCollection = buffers;
@@ -170,7 +178,7 @@ namespace Microsoft.Win32.SafeHandles
 
             public ValueTask<long> QueueWriteGather(IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)
             {
-                Debug.Assert(_operation == Operation.None, "An operation was queued before the previous one's completion.");
+                ValidateInvariants();
 
                 _operation = Operation.WriteGather;
                 _multiSegmentCollection = buffers;
