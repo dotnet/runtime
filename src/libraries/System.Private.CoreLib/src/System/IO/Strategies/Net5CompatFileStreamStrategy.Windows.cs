@@ -374,7 +374,7 @@ namespace System.IO.Strategies
                     if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                         ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(_fileHandle));
 
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _fileHandle.Path);
                 }
             }
             Debug.Assert(r >= 0, "FileStream's ReadNative is likely broken.");
@@ -578,7 +578,7 @@ namespace System.IO.Strategies
                     // to a handle opened asynchronously.
                     if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                         throw new IOException(SR.IO_FileTooLongOrHandleNotSync);
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _fileHandle.Path);
                 }
             }
             Debug.Assert(r >= 0, "FileStream's WriteCore is likely broken.");
@@ -776,7 +776,7 @@ namespace System.IO.Strategies
                     }
                     else
                     {
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _fileHandle.Path);
                     }
                 }
                 else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
@@ -978,7 +978,7 @@ namespace System.IO.Strategies
                     }
                     else
                     {
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _fileHandle.Path);
                     }
                 }
                 else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING

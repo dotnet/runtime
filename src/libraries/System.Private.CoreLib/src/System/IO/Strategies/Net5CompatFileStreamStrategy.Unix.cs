@@ -108,7 +108,7 @@ namespace System.IO.Strategies
 
                         if (SafeFileHandle.t_lastCloseErrorInfo != null)
                         {
-                            throw Interop.GetExceptionForIoErrno(SafeFileHandle.t_lastCloseErrorInfo.GetValueOrDefault(), _path, isDirectory: false);
+                            throw Interop.GetExceptionForIoErrno(SafeFileHandle.t_lastCloseErrorInfo.GetValueOrDefault(), _fileHandle.Path, isDirectory: false);
                         }
                     }
                 }
@@ -156,7 +156,7 @@ namespace System.IO.Strategies
                         // doesn't support synchronization.  In such cases there's nothing to flush.
                         break;
                     default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, _path, isDirectory: false);
+                        throw Interop.GetExceptionForIoErrno(errorInfo, _fileHandle.Path, isDirectory: false);
                 }
             }
         }
@@ -604,14 +604,14 @@ namespace System.IO.Strategies
             Debug.Assert(fileHandle.CanSeek);
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
 
-            long pos = FileStreamHelpers.CheckFileCall(Interop.Sys.LSeek(fileHandle, offset, (Interop.Sys.SeekWhence)(int)origin), _path); // SeekOrigin values are the same as Interop.libc.SeekWhence values
+            long pos = FileStreamHelpers.CheckFileCall(Interop.Sys.LSeek(fileHandle, offset, (Interop.Sys.SeekWhence)(int)origin), fileHandle.Path); // SeekOrigin values are the same as Interop.libc.SeekWhence values
             _filePosition = pos;
             return pos;
         }
 
         private int CheckFileCall(int result, bool ignoreNotSupported = false)
         {
-            FileStreamHelpers.CheckFileCall(result, _path, ignoreNotSupported);
+            FileStreamHelpers.CheckFileCall(result, _fileHandle?.Path, ignoreNotSupported);
 
             return result;
         }

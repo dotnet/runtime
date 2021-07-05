@@ -19,9 +19,6 @@ namespace System.IO.Strategies
         /// <summary>Whether the file is opened for reading, writing, or both.</summary>
         private readonly FileAccess _access;
 
-        /// <summary>The path to the opened file.</summary>
-        private readonly string? _path;
-
         /// <summary>The next available byte to be read from the _buffer.</summary>
         private int _readPos;
 
@@ -82,7 +79,6 @@ namespace System.IO.Strategies
         {
             string fullPath = Path.GetFullPath(path);
 
-            _path = fullPath;
             _access = access;
             _bufferLength = bufferSize;
 
@@ -293,7 +289,7 @@ namespace System.IO.Strategies
             }
         }
 
-        internal override string Name => _path ?? SR.IO_UnknownFileName;
+        internal override string Name => _fileHandle.Path ?? SR.IO_UnknownFileName;
 
         internal override bool IsAsync => _useAsyncIO;
 
