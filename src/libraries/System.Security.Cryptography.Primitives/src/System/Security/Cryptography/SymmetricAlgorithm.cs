@@ -715,6 +715,7 @@ namespace System.Security.Cryptography
         public byte[] DecryptCbc(ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> iv, PaddingMode paddingMode = PaddingMode.PKCS7)
         {
             CheckPaddingMode(paddingMode);
+            CheckInitializationVectorSize(iv);
 
             // CBC is more typically used with padding so the resulting plaintext is
             // unlikely to be the same size as the ciphertext. So we rent since we are
@@ -767,6 +768,7 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode = PaddingMode.PKCS7)
         {
             CheckPaddingMode(paddingMode);
+            CheckInitializationVectorSize(iv);
 
             if (!TryDecryptCbcCore(ciphertext, iv, destination, paddingMode, out int written))
             {
@@ -802,6 +804,7 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode = PaddingMode.PKCS7)
         {
             CheckPaddingMode(paddingMode);
+            CheckInitializationVectorSize(iv);
             return TryDecryptCbcCore(ciphertext, iv, destination, paddingMode, out bytesWritten);
         }
 
@@ -856,6 +859,7 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode = PaddingMode.PKCS7)
         {
             CheckPaddingMode(paddingMode);
+            CheckInitializationVectorSize(iv);
 
             int ciphertextLength = GetCiphertextLengthCbc(plaintext.Length, paddingMode);
 
@@ -903,6 +907,7 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode = PaddingMode.PKCS7)
         {
             CheckPaddingMode(paddingMode);
+            CheckInitializationVectorSize(iv);
 
             if (!TryEncryptCbcCore(plaintext, iv, destination, paddingMode, out int written))
             {
@@ -938,6 +943,7 @@ namespace System.Security.Cryptography
             PaddingMode paddingMode = PaddingMode.PKCS7)
         {
             CheckPaddingMode(paddingMode);
+            CheckInitializationVectorSize(iv);
 
             return TryEncryptCbcCore(plaintext, iv, destination, paddingMode, out bytesWritten);
         }
@@ -1056,6 +1062,12 @@ namespace System.Security.Cryptography
         {
             if (paddingMode < PaddingMode.None || paddingMode > PaddingMode.ISO10126)
                 throw new ArgumentOutOfRangeException(nameof(paddingMode), SR.Cryptography_InvalidPaddingMode);
+        }
+
+        private void CheckInitializationVectorSize(ReadOnlySpan<byte> iv)
+        {
+            if (iv.Length != BlockSize >> 3)
+                throw new ArgumentException(SR.Cryptography_InvalidIVSize, nameof(iv));
         }
 
         protected CipherMode ModeValue;
