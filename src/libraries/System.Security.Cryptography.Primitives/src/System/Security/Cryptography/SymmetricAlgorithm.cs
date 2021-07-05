@@ -680,6 +680,10 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
         /// <exception cref="CryptographicException">
         ///   The ciphertext could not be decrypted successfully.
         /// </exception>
@@ -705,6 +709,10 @@ namespace System.Security.Cryptography
         /// <returns>The decrypted plaintext data.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   The ciphertext could not be decrypted successfully.
@@ -752,6 +760,10 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
         /// <exception cref="CryptographicException">
         ///   The ciphertext could not be decrypted successfully.
         /// </exception>
@@ -790,6 +802,10 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
         /// <exception cref="CryptographicException">
         ///   The ciphertext could not be decrypted successfully.
         /// </exception>
@@ -821,6 +837,10 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
         /// <exception cref="CryptographicException">
         ///   <see cref="TryEncryptEcbCore" /> could not encrypt the plaintext.
         /// </exception>
@@ -846,6 +866,10 @@ namespace System.Security.Cryptography
         /// <returns>The encrypted ciphertext data.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <see cref="TryEncryptEcbCore" /> could not encrypt the plaintext.
@@ -891,6 +915,10 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
         /// <exception cref="CryptographicException">
         ///   The plaintext could not be encrypted successfully.
         /// </exception>
@@ -928,6 +956,10 @@ namespace System.Security.Cryptography
         /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the encrypted data; otherwise, <see langword="false" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   The plaintext could not be encrypted successfully.
