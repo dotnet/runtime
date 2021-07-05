@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.1;netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
@@ -24,6 +24,8 @@
     <Compile Include="Blocks\JoinBlock.cs" />
     <Compile Include="Blocks\TransformBlock.cs" />
     <Compile Include="Blocks\TransformManyBlock.cs" />
+    <Compile Include="Blocks\TransformManyBlock.IAsyncEnumerable.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
     <Compile Include="Blocks\WriteOnceBlock.cs" />
     <Compile Include="Internal\ActionOnDispose.cs" />
     <Compile Include="Internal\Common.cs" />

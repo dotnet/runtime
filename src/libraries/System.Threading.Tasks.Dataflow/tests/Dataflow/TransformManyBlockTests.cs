@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Threading.Tasks.Dataflow.Tests
 {
-    public class TransformManyBlockTests
+    public partial class TransformManyBlockTests
     {
         [Fact]
         public async Task TestCtor()
