@@ -26,7 +26,7 @@ namespace System.IO.Strategies
             _share = share;
             _exposedHandle = true;
 
-            handle.InitThreadPoolBindingIfNeeded();
+            handle.EnsureThreadPoolBindingInitialized();
 
             if (handle.CanSeek)
             {
@@ -140,22 +140,14 @@ namespace System.IO.Strategies
             }
         }
 
-        // ReadByte and WriteByte methods are used only when the user has disabled buffering on purpose
-        // their performance is going to be horrible
-        // TODO: should we consider adding a new event provider and log an event so it can be detected?
-        public override int ReadByte()
+        public override unsafe int ReadByte()
         {
-            Span<byte> buffer = stackalloc byte[1];
-            int bytesRead = Read(buffer);
-            return bytesRead == 1 ? buffer[0] : -1;
+            byte b;
+            return Read(new Span<byte>(&b, 1)) != 0 ? b : -1;
         }
 
-        public override void WriteByte(byte value)
-        {
-            Span<byte> buffer = stackalloc byte[1];
-            buffer[0] = value;
-            Write(buffer);
-        }
+        public override unsafe void WriteByte(byte value) =>
+            Write(new ReadOnlySpan<byte>(&value, 1));
 
         // this method just disposes everything (no buffer, no need to flush)
         public override ValueTask DisposeAsync()
@@ -264,6 +256,51 @@ namespace System.IO.Strategies
             {
                 _filePosition = value;
             }
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => ReadSpan(new Span<byte>(buffer, offset, count));
+
+        public override int Read(Span<byte> buffer) => ReadSpan(buffer);
+
+        private unsafe int ReadSpan(Span<byte> destination)
+        {
+            if (_fileHandle.IsClosed)
+            {
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            }
+            else if ((_access & FileAccess.Read) == 0)
+            {
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
+            }
+
+            int r = RandomAccess.ReadAtOffset(_fileHandle, destination, _filePosition, _path);
+            Debug.Assert(r >= 0, $"RandomAccess.ReadAtOffset returned {r}.");
+            _filePosition += r;
+
+            return r;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+            => WriteSpan(new ReadOnlySpan<byte>(buffer, offset, count));
+
+        public override void Write(ReadOnlySpan<byte> buffer) => WriteSpan(buffer);
+
+        private unsafe void WriteSpan(ReadOnlySpan<byte> source)
+        {
+            if (_fileHandle.IsClosed)
+            {
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            }
+            else if ((_access & FileAccess.Write) == 0)
+            {
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
+            }
+
+            int r = RandomAccess.WriteAtOffset(_fileHandle, source, _filePosition, _path);
+            Debug.Assert(r >= 0, $"RandomAccess.WriteAtOffset returned {r}.");
+            _filePosition += r;
+
+            UpdateLengthOnChangePosition();
         }
     }
 }

@@ -11,23 +11,17 @@ namespace System.Globalization
         // split from GlobalizationMode so the whole class can be trimmed when Invariant=true.
         private static partial class Settings
         {
-            internal static readonly bool PredefinedCulturesOnly = AppContextConfigHelper.GetBooleanConfig("System.Globalization.PredefinedCulturesOnly", "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY");
-            internal static bool Invariant { get; } = GetInvariantSwitchValue();
+            internal static bool Invariant { get; } = AppContextConfigHelper.GetBooleanConfig("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+            internal static bool PredefinedCulturesOnly { get; } = AppContextConfigHelper.GetBooleanConfig("System.Globalization.PredefinedCulturesOnly", "DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", Invariant);
         }
 
         // Note: Invariant=true and Invariant=false are substituted at different levels in the ILLink.Substitutions file.
         // This allows for the whole Settings nested class to be trimmed when Invariant=true, and allows for the Settings
         // static cctor (on Unix) to be preserved when Invariant=false.
         internal static bool Invariant => Settings.Invariant;
-
-        internal static bool PredefinedCulturesOnly => !Invariant && Settings.PredefinedCulturesOnly;
-
-        private static bool GetInvariantSwitchValue() =>
-            AppContextConfigHelper.GetBooleanConfig("System.Globalization.Invariant", "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
-
+        internal static bool PredefinedCulturesOnly => Settings.PredefinedCulturesOnly;
         private static bool TryGetAppLocalIcuSwitchValue([NotNullWhen(true)] out string? value) =>
             TryGetStringValue("System.Globalization.AppLocalIcu", "DOTNET_SYSTEM_GLOBALIZATION_APPLOCALICU", out value);
-
         private static bool TryGetStringValue(string switchName, string envVariable, [NotNullWhen(true)] out string? value)
         {
             value = AppContext.GetData(switchName) as string;
