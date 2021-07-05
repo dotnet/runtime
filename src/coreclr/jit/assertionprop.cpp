@@ -1369,6 +1369,24 @@ DONE_ASSERTION:
     return optAddAssertion(&assertion);
 }
 
+//------------------------------------------------------------------------
+// optTryExtractSubrangeAssertion: Extract the bounds of the value a tree produces.
+//
+// Generates [0..1] ranges for relops, [T_MIN..T_MAX] for small-typed indirections
+// and casts to small types.
+//
+// Arguments:
+//    source    - tree producing the value
+//    pLoBound  - out parameter for the lower bound
+//    pHiBound  - out parameter for the upper bound
+//
+// Return Value:
+//    "true" if the "source" computes a value narrower than the range of TYP_INT.
+//    "false" otherwise.
+//
+// Notes:
+//   The out parameters are only written to if the function returns "true".
+//
 bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, ssize_t* pLoBound, ssize_t* pHiBound)
 {
     var_types sourceType = TYP_UNDEF;
