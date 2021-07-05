@@ -12661,8 +12661,7 @@ DONE_MORPHING_CHILDREN:
 
             // Skip optimization if non-NEG operand is constant.
             // Both op1 and op2 are not constant because it was already checked above.
-            if (opts.OptimizationEnabled() && fgGlobalMorph &&
-                (((op1->gtFlags & GTF_EXCEPT) == 0) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
+            if (opts.OptimizationEnabled() && fgGlobalMorph)
             {
                 // a - -b = > a + b
                 // SUB(a, (NEG(b)) => ADD(a, b)
@@ -12687,7 +12686,7 @@ DONE_MORPHING_CHILDREN:
                 // -a - -b = > b - a
                 // SUB(NEG(a), (NEG(b)) => SUB(b, a)
 
-                if (op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
+                if (op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG) && gtCanSwapOrder(op1, op2))
                 {
                     // tree: SUB
                     // op1: NEG
@@ -12886,15 +12885,14 @@ DONE_MORPHING_CHILDREN:
                     }
                 }
 
-                if (opts.OptimizationEnabled() && fgGlobalMorph &&
-                    (((op1->gtFlags & GTF_EXCEPT) == 0) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
+                if (opts.OptimizationEnabled() && fgGlobalMorph)
                 {
                     // - a + b = > b - a
                     // ADD((NEG(a), b) => SUB(b, a)
 
                     // Skip optimization if non-NEG operand is constant.
-                    if (op1->OperIs(GT_NEG) && !op2->OperIs(GT_NEG) &&
-                        !(op2->IsCnsIntOrI() && varTypeIsIntegralOrI(typ)))
+                    if (op1->OperIs(GT_NEG) && !op2->OperIs(GT_NEG) && !op2->IsIntegralConst() &&
+                        gtCanSwapOrder(op1, op2))
                     {
                         // tree: ADD
                         // op1: NEG
