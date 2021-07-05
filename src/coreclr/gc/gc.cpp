@@ -20254,6 +20254,7 @@ void gc_heap::update_collection_counts ()
         }
 
         dd_gc_clock (dd) = dd_gc_clock (dd0);
+        dd_previous_time_clock (dd) = dd_time_clock (dd);
         dd_time_clock (dd) = now;
     }
 }
@@ -36701,6 +36702,7 @@ bool gc_heap::init_dynamic_data()
         dynamic_data* dd = dynamic_data_of (i);
         dd->gc_clock = 0;
         dd->time_clock = now;
+        dd->previous_time_clock = now;
         dd->current_size = 0;
         dd->promoted_size = 0;
         dd->collection_count = 0;
@@ -36726,21 +36728,17 @@ float gc_heap::surv_to_growth (float cst, float limit, float max_limit)
 //not be correct (collection happened too soon). Correct with a linear estimation based on the previous
 //value of the budget
 static size_t linear_allocation_model (float allocation_fraction, size_t new_allocation,
-                                       size_t previous_desired_allocation, size_t collection_count)
+                                       size_t previous_desired_allocation, float time_since_previous_collection_secs)
 {
     if ((allocation_fraction < 0.95) && (allocation_fraction > 0.0))
     {
+        const float decay_time = 5*60.0f; // previous desired allocation expires over 5 minutes
+        float decay_factor = (decay_time <= time_since_previous_collection_secs) ?
+                                0 :
+                                ((decay_time - time_since_previous_collection_secs) / decay_time);
         dprintf (2, ("allocation fraction: %d", (int)(allocation_fraction/100.0)));
-        new_allocation = (size_t)(allocation_fraction*new_allocation + (1.0-allocation_fraction)*previous_desired_allocation);
+        new_allocation = (size_t)(allocation_fraction*new_allocation + (1.0-allocation_fraction)*decay_factor*previous_desired_allocation);
     }
-#if 0
-    size_t smoothing = 3; // exponential smoothing factor
-    if (smoothing  > collection_count)
-        smoothing  = collection_count;
-    new_allocation = new_allocation / smoothing + ((previous_desired_allocation / smoothing) * (smoothing-1));
-#else
-    UNREFERENCED_PARAMETER(collection_count);
-#endif //0
     return new_allocation;
 }
 
@@ -36767,6 +36765,9 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
         float     f = 0;
         size_t    max_size = dd_max_size (dd);
         size_t    new_allocation = 0;
+        float     time_since_previous_collection_secs = (dd_time_clock (dd) - dd_previous_time_clock (dd))*1e-6f;
+
+
         float allocation_fraction = (float) (dd_desired_allocation (dd) - dd_gc_new_allocation (dd)) / (float) (dd_desired_allocation (dd));
 
         if (gen_number >= max_generation)
@@ -36793,7 +36794,7 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                 new_allocation  =  max((new_size - current_size), min_gc_size);
 
                 new_allocation = linear_allocation_model (allocation_fraction, new_allocation,
-                                                          dd_desired_allocation (dd), dd_collection_count (dd));
+                                                          dd_desired_allocation (dd), time_since_previous_collection_secs);
 
                 if (
 #ifdef BGC_SERVO_TUNING
@@ -36845,7 +36846,7 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                                       max ((current_size/4), min_gc_size));
 
                 new_allocation = linear_allocation_model (allocation_fraction, new_allocation,
-                                                          dd_desired_allocation (dd), dd_collection_count (dd));
+                                                          dd_desired_allocation (dd), time_since_previous_collection_secs);
 
             }
         }
@@ -36857,7 +36858,7 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
             new_allocation = (size_t) min (max ((f * (survivors)), min_gc_size), max_size);
 
             new_allocation = linear_allocation_model (allocation_fraction, new_allocation,
-                                                      dd_desired_allocation (dd), dd_collection_count (dd));
+                                                      dd_desired_allocation (dd), time_since_previous_collection_secs);
 
             if (gen_number == 0)
             {
