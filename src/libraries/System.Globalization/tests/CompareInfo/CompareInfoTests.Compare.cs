@@ -240,7 +240,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u3060", "\u30C0", CompareOptions.IgnoreCase, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "c", "C", CompareOptions.IgnoreKanaType, -1 };
 
-            // Japanese Dakuten/Handakuten
+            // Japanese [semi-]voiced sound mark
             yield return new object[] { s_invariantCompare, "\u306F", "\u3070", CompareOptions.IgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "\u306F", "\u3071", CompareOptions.IgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "\u3070", "\u3071", CompareOptions.IgnoreCase, -1 };
