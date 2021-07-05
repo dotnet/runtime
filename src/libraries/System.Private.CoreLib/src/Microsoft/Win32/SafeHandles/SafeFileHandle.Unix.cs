@@ -12,7 +12,6 @@ namespace Microsoft.Win32.SafeHandles
     {
         // not using bool? as it's not thread safe
         private volatile NullableBool _canSeek = NullableBool.Undefined;
-        private string? _path;
         private bool _deleteOnClose;
 
         public SafeFileHandle() : this(ownsHandle: true)
@@ -38,6 +37,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(path != null);
             SafeFileHandle handle = Interop.Sys.Open(path, flags, mode);
+            handle._path = path;
 
             if (handle.IsInvalid)
             {
@@ -53,7 +53,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 bool isDirectory = (error.Error == Interop.Error.ENOENT) &&
                     ((flags & Interop.Sys.OpenFlags.O_CREAT) != 0
-                    || !DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path!))!));
+                    || !DirectoryExists(System.IO.Path.GetDirectoryName(System.IO.Path.TrimEndingDirectorySeparator(path!))!));
 
                 Interop.CheckIo(
                     error.Error,
@@ -246,7 +246,6 @@ namespace Microsoft.Win32.SafeHandles
 
         private void Init(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
-            _path = path;
             IsAsync = (options & FileOptions.Asynchronous) != 0;
             _deleteOnClose = (options & FileOptions.DeleteOnClose) != 0;
 

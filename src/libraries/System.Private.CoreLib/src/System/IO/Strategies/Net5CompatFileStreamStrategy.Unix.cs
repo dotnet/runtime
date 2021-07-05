@@ -66,7 +66,7 @@ namespace System.IO.Strategies
             get
             {
                 // Get the length of the file as reported by the OS
-                long length = RandomAccess.GetFileLength(_fileHandle, _path);
+                long length = RandomAccess.GetFileLength(_fileHandle);
 
                 // But we may have buffered some data to be written that puts our length
                 // beyond what the OS is aware of.  Update accordingly.
