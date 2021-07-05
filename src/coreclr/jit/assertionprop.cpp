@@ -1399,11 +1399,7 @@ bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, ssize_t* pLoBound
             return false;
     }
 
-    if (varTypeIsSmall(sourceType)
-#ifdef TARGET_64BIT
-        || (sourceType == TYP_INT) || (sourceType == TYP_UINT)
-#endif
-        )
+    if (varTypeIsSmall(sourceType))
     {
         *pLoBound = AssertionDsc::GetLowerBoundForIntegralType(sourceType);
         *pHiBound = AssertionDsc::GetUpperBoundForIntegralType(sourceType);
