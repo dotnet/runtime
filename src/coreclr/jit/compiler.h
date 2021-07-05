@@ -9236,11 +9236,7 @@ public:
         bool compDbgInfo;   // Gather debugging info?
         bool compDbgEnC;
 
-#ifdef PROFILING_SUPPORTED
-        bool compNoPInvokeInlineCB;
-#else
-        static const bool compNoPInvokeInlineCB;
-#endif
+        bool compNoPInvokeInline;
 
 #ifdef DEBUG
         bool compGcChecks; // Check arguments and return values to ensure they are sane
