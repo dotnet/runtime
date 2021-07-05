@@ -8785,9 +8785,6 @@ calli_end:
 					}
 				}
 
-				/* Instancing jagged arrays should not end up here since ctor (int32, int32) for an array with rank 1 represents length and lbound. */
-				g_assert (!(rank == 1 && fsig->param_count == 2 && m_class_get_rank (m_class_get_element_class (cmethod->klass))));
-
 				/* Regular case, rank > 4 or legnth, lbound specified per rank. */
 				if (function == MONO_JIT_ICALL_ZeroIsReserved) {
 					// FIXME Maximum value of param_count? Realistically 64. Fits in imm?

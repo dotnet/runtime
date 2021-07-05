@@ -1493,6 +1493,9 @@ mono_array_new_checked (MonoClass *eclass, uintptr_t n, MonoError *error);
 MONO_COMPONENT_API MonoArray*
 mono_array_new_full_checked (MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
 
+MonoArray*
+mono_array_new_jagged_checked (MonoClass *klass, int n, uintptr_t *lengths, MonoError *error);
+
 ICALL_EXPORT
 MonoArray*
 ves_icall_array_new_specific (MonoVTable *vtable, uintptr_t n);
