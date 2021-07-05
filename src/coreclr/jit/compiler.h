@@ -7431,6 +7431,9 @@ public:
                                       GenTree*         op2,
                                       optAssertionKind assertionKind,
                                       bool             helperCallArgs = false);
+
+    bool optTryExtractSubrangeAssertion(GenTree* source, ssize_t* pLoBound, ssize_t* pHiBound);
+
     void optCreateComplementaryAssertion(AssertionIndex assertionIndex,
                                          GenTree*       op1,
                                          GenTree*       op2,
