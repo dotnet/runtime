@@ -91,20 +91,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Runs long")]
         [Fact]
-        public async Task LowBandwidthDelayProduct_ClientStreamReceiveWindowStopsScaling()
-        {
-            int maxCredit = await TestClientWindowScalingAsync(
-                TimeSpan.Zero,
-                TimeSpan.FromMilliseconds(30),
-                1 * 1024 * 1024,
-                _output);
-
-            // Expect the client receive window to stay below 1MB:
-            Assert.True(maxCredit < 1024 * 1024);
-        }
-
-        [OuterLoop("Runs long")]
-        [Fact]
         public void DisableDynamicWindowScaling_HighBandwidthDelayProduct_WindowRemainsConstant()
         {
             static async Task RunTest()
