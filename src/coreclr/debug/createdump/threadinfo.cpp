@@ -179,7 +179,7 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess)
                 // Get and save more detail information for the crash report if enabled
                 if (m_crashInfo.CrashReport())
                 {
-                    GatherStackFrames(pStackwalk);
+                    GatherStackFrames(&context, pStackwalk);
                 }
 
                 // Unwind all the native frames after the managed frame
@@ -193,10 +193,10 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess)
 }
 
 void
-ThreadInfo::GatherStackFrames(IXCLRDataStackWalk* pStackwalk)
+ThreadInfo::GatherStackFrames(CONTEXT* pContext, IXCLRDataStackWalk* pStackwalk)
 {
     uint64_t ip = 0, sp = 0;
-    GetFrameLocation(&context, &ip, &sp);
+    GetFrameLocation(pContext, &ip, &sp);
 
     uint64_t moduleAddress = 0;
     mdMethodDef token = 0;

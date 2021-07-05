@@ -46,7 +46,7 @@ DumpWriter::WriteCrashReport(JsonWriter& writer)
     writer.WriteValue("architecture", "arm64");
 #endif
     std::string version;
-    assert(strcmp(sccsid, "@(#)Version ") == 0);
+    assert(strncmp(sccsid, "@(#)Version ", 12) == 0);
     version.append(sccsid + 12);    // skip "@(#)Version "
     version.append(" ");            // the analyzer requires a space after the version
     writer.WriteValue("version", version.c_str());

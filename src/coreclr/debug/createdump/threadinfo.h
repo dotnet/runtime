@@ -122,7 +122,7 @@ public:
 
 private:
     void UnwindNativeFrames(CONTEXT* pContext);
-    void GatherStackFrames(IXCLRDataStackWalk* pStackwalk);
+    void GatherStackFrames(CONTEXT* pContext, IXCLRDataStackWalk* pStackwalk);
     void AddStackFrame(const StackFrame& frame);
 #ifndef __APPLE__
     bool GetRegistersWithPTrace();
