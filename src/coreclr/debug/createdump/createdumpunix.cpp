@@ -44,7 +44,8 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     // Write the crash report json file if enabled
     if (crashReport)
     {
-        dumpWriter.WriteCrashReport(dumpPath);
+        CrashReportWriter crashReportWriter(*crashInfo);
+        crashReportWriter.WriteCrashReport(dumpPath);
     }
     printf("Writing %s to file %s\n", dumpType, dumpPath.c_str());
 

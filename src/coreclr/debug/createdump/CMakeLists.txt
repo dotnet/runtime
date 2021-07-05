@@ -60,6 +60,7 @@ else(CLR_CMAKE_HOST_WIN32)
         threadinfo.cpp
         datatarget.cpp
         dumpwriter.cpp
+        crashreportwriter.cpp
         jsonwriter.cpp
     )
 

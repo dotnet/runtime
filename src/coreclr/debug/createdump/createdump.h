@@ -97,8 +97,9 @@ typedef int T_CONTEXT;
 #include "stackframe.h"
 #include "threadinfo.h"
 #include "memoryregion.h"
-#include "jsonwriter.h"
 #include "crashinfo.h"
+#include "jsonwriter.h"
+#include "crashreportwriter.h"
 #include "dumpwriter.h"
 #endif
 
