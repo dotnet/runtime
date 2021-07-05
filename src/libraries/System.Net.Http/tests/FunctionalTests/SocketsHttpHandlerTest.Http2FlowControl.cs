@@ -75,32 +75,46 @@ namespace System.Net.Http.Functional.Tests
         }
 
 
-        [OuterLoop("Runs long")]
-        [Fact]
-        public async Task HighBandwidthDelayProduct_ClientStreamReceiveWindowWindowScalesUp()
+        //[OuterLoop("Runs long")]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(15)]
+        [InlineData(30)]
+        [InlineData(60)]
+        [InlineData(120)]
+        public async Task HighBandwidthDelayProduct_ClientStreamReceiveWindowWindowScalesUp(int networkDelayMs)
         {
             int maxCredit = await TestClientWindowScalingAsync(
-                TimeSpan.FromMilliseconds(30),
+                TimeSpan.FromMilliseconds(networkDelayMs),
                 TimeSpan.Zero,
                 2 * 1024 * 1024,
                 _output);
 
             // Expect the client receive window to grow over 1MB:
-            Assert.True(maxCredit > 1024 * 1024);
+            string result = maxCredit > 1024 * 1024 ? "SUCCESS" : "FAILED";
+            throw new Exception($"{result} maxCredit: {maxCredit}");
         }
 
-        [OuterLoop("Runs long")]
-        [Fact]
-        public async Task LowBandwidthDelayProduct_ClientStreamReceiveWindowStopsScaling()
+        //[OuterLoop("Runs long")]
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(15)]
+        [InlineData(30)]
+        [InlineData(60)]
+        [InlineData(120)]
+        public async Task LowBandwidthDelayProduct_ClientStreamReceiveWindowStopsScaling(int bandwidthSimDelayMs)
         {
             int maxCredit = await TestClientWindowScalingAsync(
                 TimeSpan.Zero,
-                TimeSpan.FromMilliseconds(15),
+                TimeSpan.FromMilliseconds(bandwidthSimDelayMs),
                 2 * 1024 * 1024,
                 _output);
 
             // Expect the client receive window to stay below 1MB:
-            Assert.True(maxCredit < 1024 * 1024);
+            string result = maxCredit < 1024 * 1024 ? "SUCCESS" : "FAILED";
+            throw new Exception($"{result} maxCredit: {maxCredit}");
         }
 
         [OuterLoop("Runs long")]

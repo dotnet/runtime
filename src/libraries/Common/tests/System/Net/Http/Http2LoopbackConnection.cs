@@ -245,7 +245,6 @@ namespace System.Net.Test.Common
             }
             else if (_transparentPingResponse && !pingFrame.AckFlag)
             {
-                bool shutdownOccured = false;
                 try
                 {
                     await SendPingAckAsync(pingFrame.Data);
@@ -253,9 +252,8 @@ namespace System.Net.Test.Common
                 catch (IOException ex) when (_expectClientDisconnect && ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown)
                 {
                     // couldn't send PING ACK, because client is already disconnected
-                    shutdownOccured = true;
+                    _transparentPingResponse = false;
                 }
-                _transparentPingResponse = !shutdownOccured;
                 return true;
             }
             return false;
