@@ -55,7 +55,7 @@ namespace System.Globalization
                 // to something that will AV.
                 numberBuffer.overrideDigits = (char*)0x1;
             }
-            if (!Number.TryStringToNumber(s, styles, ref numberBuffer, receiver, numberFormatInfo, parseDecimal: false))
+            if (!Number.TryStringToNumber(s, styles, ref numberBuffer, receiver, numberFormatInfo))
             {
                 precision = default(int);
                 scale = default(int);

@@ -356,7 +356,7 @@ namespace System.Globalization
                 return ret;
             }
 
-            private static unsafe bool ParseNumber(ref char* str, char* strEnd, NumberStyles options, ref NumberBuffer number, StringBuilder? sb, NumberFormatInfo numfmt, bool parseDecimal)
+            private static unsafe bool ParseNumber(ref char* str, char* strEnd, NumberStyles options, ref NumberBuffer number, StringBuilder? sb, NumberFormatInfo numfmt)
             {
                 Debug.Assert(str != null);
                 Debug.Assert(strEnd != null);
@@ -457,7 +457,7 @@ namespace System.Globalization
                                     dig[digCount++] = ch;
                                 }
 
-                                if (ch != '0' || parseDecimal)
+                                if (ch != '0')
                                 {
                                     digEnd = digCount;
                                 }
@@ -567,10 +567,6 @@ namespace System.Globalization
                     {
                         if ((state & StateNonZero) == 0)
                         {
-                            if (!parseDecimal)
-                            {
-                                number.scale = 0;
-                            }
                             if ((state & StateDecimal) == 0)
                             {
                                 number.sign = false;
@@ -597,14 +593,14 @@ namespace System.Globalization
                 return true;
             }
 
-            internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
+            internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt)
             {
                 Debug.Assert(numfmt != null);
 
                 fixed (char* stringPointer = &MemoryMarshal.GetReference(str))
                 {
                     char* p = stringPointer;
-                    if (!ParseNumber(ref p, p + str.Length, options, ref number, sb, numfmt, parseDecimal)
+                    if (!ParseNumber(ref p, p + str.Length, options, ref number, sb, numfmt)
                         || (p - stringPointer < str.Length && !TrailingZeros(str, (int)(p - stringPointer))))
                     {
                         return false;
