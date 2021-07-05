@@ -1231,12 +1231,21 @@ namespace System.IO
                 return _stream.Seek(offset, origin);
             }
 
-            long newPos = origin switch
+            long newPos;
+            switch (origin)
             {
-                SeekOrigin.Begin => offset,
-                SeekOrigin.Current => Position + offset,
-                _ => _stream.Length + offset
-            };
+                case SeekOrigin.Begin:
+                    newPos = offset;
+                    break;
+                case SeekOrigin.Current:
+                    newPos = Position + offset;
+                    break;
+                case SeekOrigin.End:
+                    newPos = _stream.Length + offset;
+                    break;
+                default:
+                    throw new ArgumentException(SR.Argument_InvalidSeekOrigin);
+            }
 
             SetPositionForRead(newPos);
             return newPos;
