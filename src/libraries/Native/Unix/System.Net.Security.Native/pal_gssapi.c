@@ -22,7 +22,7 @@
 
 #if defined(GSS_SHIM)
 #include <dlfcn.h>
-#include <stdatomic.h>
+#include "pal_atomic.h"
 #endif
 
 c_static_assert(PAL_GSS_C_DELEG_FLAG == GSS_C_DELEG_FLAG);
@@ -98,6 +98,8 @@ typedef struct gss_shim_t
 // static storage for all method pointers
 static gss_shim_t s_gss_shim;
 
+static void* volatile s_gssLib = NULL;
+
 // reference to the shim storage.
 // NOTE: the shim reference is published after all indirection pointers are initialized.
 //       when we read the indirection pointers, we do that via the shim reference.
@@ -109,11 +111,17 @@ static void init_gss_shim()
     void* lib = dlopen(gssLibraryName, RTLD_LAZY);
     if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", gssLibraryName, dlerror()); abort(); }
 
+    // check is someone else has opened and published s_gssLib already
+    if (!pal_atomic_cas_ptr(&s_gssLib, lib, NULL))
+    {
+        dlclose(lib);
+    }
+
     // initialize indirection pointers for all functions, like:
-    //   s_gss_shim.gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(lib, "gss_accept_sec_context");
+    //   s_gss_shim.gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(s_gssLib, "gss_accept_sec_context");
     //   if (s_gss_shim.gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", gssLibraryName, dlerror()); abort(); }
 #define PER_FUNCTION_BLOCK(fn) \
-    s_gss_shim.fn##_ptr = (TYPEOF(fn)*)dlsym(lib, #fn); \
+    s_gss_shim.fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn); \
     if (s_gss_shim.fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gssLibraryName, dlerror()); abort(); }
 
     FOR_ALL_GSS_FUNCTIONS
@@ -121,7 +129,6 @@ static void init_gss_shim()
 
     // publish the shim pointer
     __atomic_store_n(&s_gss_shim_ptr, &s_gss_shim, __ATOMIC_RELEASE);
-    dlclose(lib);
 }
 
 static gss_shim_t* get_gss_shim()
