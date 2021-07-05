@@ -25,7 +25,7 @@ namespace System.Drawing
             return base.CanConvertTo(context, destinationType);
         }
 
-        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object? value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             // we must be able to convert from short names and long names
             string? strFormat = value as string;

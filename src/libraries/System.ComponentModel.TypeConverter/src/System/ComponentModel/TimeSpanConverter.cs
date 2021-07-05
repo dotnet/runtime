@@ -36,7 +36,7 @@ namespace System.ComponentModel
         /// Converts the given object to a <see cref='System.TimeSpan'/>
         /// object.
         /// </summary>
-        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object? value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string text)
             {

@@ -72,7 +72,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the specified value object to an enumeration object.
         /// </summary>
-        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object? value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string strValue)
             {

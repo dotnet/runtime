@@ -24,7 +24,7 @@ namespace System.ComponentModel
             }
 
             PropertyName = propertyName;
-            ReceiverTypeName = receiverType.AssemblyQualifiedName!; // TODO-NULLABLE: ReceiverTypeName should be guarded against nulls
+            ReceiverTypeName = receiverType.AssemblyQualifiedName!;
         }
 
         /// <summary>

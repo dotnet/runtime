@@ -614,7 +614,7 @@ namespace System.Data.OleDb
                 return ((typeof(string) == sourceType) || base.CanConvertFrom(context, sourceType));
             }
 
-            public override object? ConvertFrom(ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value)
+            public override object? ConvertFrom(ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value)
             {
                 string? svalue = (value as string);
                 if (null != svalue)

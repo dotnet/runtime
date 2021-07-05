@@ -35,7 +35,7 @@ namespace System.ComponentModel
         /// Converts the given value object to a <see cref='System.DateTime'/>
         /// object.
         /// </summary>
-        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object? value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string text)
             {

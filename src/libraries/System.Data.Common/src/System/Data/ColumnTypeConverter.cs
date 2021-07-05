@@ -108,7 +108,7 @@ namespace System.Data
             sourceType == typeof(string) ||
             base.CanConvertTo(context, sourceType);
 
-        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object? value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value != null && value.GetType() == typeof(string))
             {
@@ -123,7 +123,7 @@ namespace System.Data
                 return typeof(string);
             }
 
-            return base.ConvertFrom(context, culture, value);
+            return base.ConvertFrom(context, culture, value!);
         }
 
         /// <summary>

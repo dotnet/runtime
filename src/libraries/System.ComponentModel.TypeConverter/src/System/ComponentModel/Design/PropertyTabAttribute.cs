@@ -153,7 +153,6 @@ namespace System.ComponentModel
             return false;
         }
 
-        // TODO-NULLABLE: other should most likely be nullable but will throw NRE
         public bool Equals(PropertyTabAttribute other)
         {
             if (other == (object)this)

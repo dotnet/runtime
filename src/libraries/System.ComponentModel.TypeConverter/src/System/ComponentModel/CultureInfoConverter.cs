@@ -61,7 +61,7 @@ namespace System.ComponentModel
         /// Converts the specified value object to a <see cref='System.Globalization.CultureInfo'/>
         /// object.
         /// </summary>
-        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object? value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             // Only when GetCultureName returns culture.Name, we use CultureInfoMapper
             // (Since CultureInfoMapper will transfer Culture.DisplayName to Culture.Name).

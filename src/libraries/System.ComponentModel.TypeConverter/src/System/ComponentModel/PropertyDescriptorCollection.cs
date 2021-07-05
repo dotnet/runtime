@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-// TODO-NULLABLE: This class needs more attention. Many APIs allow null properties but some other don't expect it (i.e. Find).
 namespace System.ComponentModel
 {
     /// <summary>
@@ -21,7 +20,7 @@ namespace System.ComponentModel
 
         private IDictionary? _cachedFoundProperties;
         private bool _cachedIgnoreCase;
-        private PropertyDescriptor?[] _properties;
+        private PropertyDescriptor[] _properties;
         private readonly string[]? _namedSort;
         private readonly IComparer? _comparer;
         private bool _propsOwned;
@@ -58,7 +57,7 @@ namespace System.ComponentModel
             _readOnly = readOnly;
         }
 
-        private PropertyDescriptorCollection(PropertyDescriptor?[] properties, int propCount, string[]? namedSort, IComparer? comparer)
+        private PropertyDescriptorCollection(PropertyDescriptor[] properties, int propCount, string[]? namedSort, IComparer? comparer)
         {
             _propsOwned = false;
             if (namedSort != null)
@@ -208,7 +207,7 @@ namespace System.ComponentModel
                 {
                     if (ignoreCase)
                     {
-                        if (string.Equals(_properties[i]!.Name, name, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(_properties[i].Name, name, StringComparison.OrdinalIgnoreCase))
                         {
                             _cachedFoundProperties[name] = _properties[i];
                             p = _properties[i];
@@ -217,7 +216,7 @@ namespace System.ComponentModel
                     }
                     else
                     {
-                        if (_properties[i]!.Name.Equals(name))
+                        if (_properties[i].Name.Equals(name))
                         {
                             _cachedFoundProperties[name] = _properties[i];
                             p = _properties[i];
@@ -274,7 +273,7 @@ namespace System.ComponentModel
             {
                 Array.Copy(_properties, index + 1, _properties, index, Count - index - 1);
             }
-            _properties[Count - 1] = null;
+            _properties[Count - 1] = null!;
             Count--;
         }
 
@@ -292,7 +291,7 @@ namespace System.ComponentModel
         /// Sorts the members of this PropertyDescriptorCollection. Any specified NamedSort arguments will
         /// be applied first, followed by sort using the specified IComparer.
         /// </summary>
-        public virtual PropertyDescriptorCollection Sort(string[] names)
+        public virtual PropertyDescriptorCollection Sort(string[]? names)
         {
             return new PropertyDescriptorCollection(_properties, Count, names, _comparer);
         }
@@ -301,7 +300,7 @@ namespace System.ComponentModel
         /// Sorts the members of this PropertyDescriptorCollection. Any specified NamedSort arguments will
         /// be applied first, followed by sort using the specified IComparer.
         /// </summary>
-        public virtual PropertyDescriptorCollection Sort(string[] names, IComparer comparer)
+        public virtual PropertyDescriptorCollection Sort(string[]? names, IComparer? comparer)
         {
             return new PropertyDescriptorCollection(_properties, Count, names, comparer);
         }
@@ -310,7 +309,7 @@ namespace System.ComponentModel
         /// Sorts the members of this PropertyDescriptorCollection, using the specified IComparer to compare,
         /// the PropertyDescriptors contained in the collection.
         /// </summary>
-        public virtual PropertyDescriptorCollection Sort(IComparer comparer)
+        public virtual PropertyDescriptorCollection Sort(IComparer? comparer)
         {
             return new PropertyDescriptorCollection(_properties, Count, _namedSort, comparer);
         }
@@ -361,7 +360,7 @@ namespace System.ComponentModel
                 {
                     if (propList[i] != null)
                     {
-                        _properties[foundCount++] = propList[i];
+                        _properties[foundCount++] = propList[i]!;
                     }
                 }
 

@@ -20,7 +20,7 @@ namespace System.Drawing
                 || destinationType == typeof(Image) || destinationType == typeof(Bitmap);
         }
 
-        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object? value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             return value is byte[] bytes ? new Icon(new MemoryStream(bytes)) : base.ConvertFrom(context, culture, value);
         }

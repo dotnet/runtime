@@ -246,7 +246,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a value indicating whether the given value object is valid for this type.
         /// </summary>
-        public override bool IsValid(ITypeDescriptorContext? context, object? value)
+        public override bool IsValid(ITypeDescriptorContext? context, object value)
         {
             if (UnderlyingTypeConverter != null)
             {
