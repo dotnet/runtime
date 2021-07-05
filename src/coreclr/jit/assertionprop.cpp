@@ -885,8 +885,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     memset(&assertion, 0, sizeof(AssertionDsc));
     assert(assertion.assertionKind == OAK_INVALID);
 
-    var_types toType;
-
     if (op1->gtOper == GT_ARR_BOUNDS_CHECK)
     {
         if (assertionKind == OAK_NO_THROW)
@@ -1087,11 +1085,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             switch (op2->gtOper)
             {
                 optOp2Kind op2Kind;
-                //
-                //  No Assertion
-                //
-                default:
-                    goto DONE_ASSERTION; // Don't make an assertion
 
                 //
                 //  Constant Assertions
@@ -1170,8 +1163,9 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     // Ok everything has been set and the assertion looks good
                     //
                     assertion.assertionKind = assertionKind;
+
+                    goto DONE_ASSERTION;
                 }
-                break;
 
                 //
                 //  Copy Assertions
@@ -1220,103 +1214,41 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     assertion.op2.vn         = vnStore->VNConservativeNormalValue(op2->gtVNPair);
                     assertion.op2.lcl.ssaNum = op2->AsLclVarCommon()->GetSsaNum();
 
-                    //
                     // Ok everything has been set and the assertion looks good
-                    //
                     assertion.assertionKind = assertionKind;
+
+                    goto DONE_ASSERTION;
                 }
-                break;
 
-                //  Subrange Assertions
-                case GT_EQ:
-                case GT_NE:
-                case GT_LT:
-                case GT_LE:
-                case GT_GT:
-                case GT_GE:
+                default:
+                    break;
+            }
 
-                    /* Assigning the result of a RELOP, we can add a boolean subrange assertion */
-
-                    toType = TYP_BOOL;
-                    goto SUBRANGE_COMMON;
-
-                case GT_CLS_VAR:
-
-                    /* Assigning the result of an indirection into a LCL_VAR, see if we can add a subrange assertion */
-
-                    toType = op2->gtType;
-                    goto SUBRANGE_COMMON;
-
-                case GT_LCL_FLD:
-
-                    /* Assigning the result of an indirection into a LCL_VAR, see if we can add a subrange assertion */
-
-                    toType = op2->gtType;
-                    goto SUBRANGE_COMMON;
-
-                case GT_IND:
-
-                    /* Assigning the result of an indirection into a LCL_VAR, see if we can add a subrange assertion */
-
-                    toType = op2->gtType;
-                    goto SUBRANGE_COMMON;
-
-                case GT_CAST:
+            // Try and see if we can make a subrange assertion.
+            if (((assertionKind == OAK_SUBRANGE) || (assertionKind == OAK_EQUAL)))
+            {
+                // Keep the casts on small struct fields.
+                if (op2->OperIs(GT_CAST) && lvaTable[lclNum].lvIsStructField && lvaTable[lclNum].lvNormalizeOnLoad())
                 {
-                    if (lvaTable[lclNum].lvIsStructField && lvaTable[lclNum].lvNormalizeOnLoad())
-                    {
-                        // Keep the cast on small struct fields.
-                        goto DONE_ASSERTION; // Don't make an assertion
-                    }
+                    goto DONE_ASSERTION;
+                }
 
-                    toType = op2->CastToType();
+                if (varTypeIsFloating(op1))
+                {
+                    // In global assertion propagation, we make "tentative" assertions
+                    // for trees like the following: CAST(type <- LCL_VAR). In this
+                    // scenario "op1" is the LCL_VAR and the purpose of this is
+                    // to prove, via implied assertions, that the cast can be removed.
+                    // Obviously, this is not useful for casts from floating point, so
+                    // don't make such assertions for them.
+                    goto DONE_ASSERTION;
+                }
 
-                    // Casts to TYP_UINT produce the same ranges as casts to TYP_INT,
-                    // except in overflow cases which we do not yet handle. To avoid
-                    // issues with the propagation code dropping, e. g., CAST_OVF(uint <- int)
-                    // based on an assertion created from CAST(uint <- ulong), normalize the
-                    // type for the range here. Note that TYP_ULONG theoretically has the same
-                    // problem, but we do not create assertions for it.
-                    // TODO-Cleanup: this assertion is not useful - this code exists to preserve
-                    // previous behavior. Refactor it to stop generating such assertions.
-                    if (toType == TYP_UINT)
-                    {
-                        toType = TYP_INT;
-                    }
-                SUBRANGE_COMMON:
-                    if ((assertionKind != OAK_SUBRANGE) && (assertionKind != OAK_EQUAL))
-                    {
-                        goto DONE_ASSERTION; // Don't make an assertion
-                    }
-
-                    if (varTypeIsFloating(op1->TypeGet()))
-                    {
-                        // We don't make assertions on a cast from floating point
-                        goto DONE_ASSERTION;
-                    }
-
-                    switch (toType)
-                    {
-                        case TYP_BOOL:
-                        case TYP_BYTE:
-                        case TYP_UBYTE:
-                        case TYP_SHORT:
-                        case TYP_USHORT:
-#ifdef TARGET_64BIT
-                        case TYP_UINT:
-                        case TYP_INT:
-#endif // TARGET_64BIT
-                            assertion.op2.u2.loBound = AssertionDsc::GetLowerBoundForIntegralType(toType);
-                            assertion.op2.u2.hiBound = AssertionDsc::GetUpperBoundForIntegralType(toType);
-                            break;
-
-                        default:
-                            goto DONE_ASSERTION; // Don't make an assertion
-                    }
+                if (optTryExtractSubrangeAssertion(op2, &assertion.op2.u2.loBound, &assertion.op2.u2.hiBound))
+                {
                     assertion.op2.kind      = O2K_SUBRANGE;
                     assertion.assertionKind = OAK_SUBRANGE;
                 }
-                break;
             }
         } // else // !helperCallArgs
     }     // if (op1->gtOper == GT_LCL_VAR)
@@ -1433,7 +1365,52 @@ DONE_ASSERTION:
     // Now add the assertion to our assertion table
     noway_assert(assertion.op1.kind != O1K_INVALID);
     noway_assert((assertion.op1.kind == O1K_ARR_BND) || (assertion.op2.kind != O2K_INVALID));
+
     return optAddAssertion(&assertion);
+}
+
+bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, ssize_t* pLoBound, ssize_t* pHiBound)
+{
+    var_types sourceType = TYP_UNDEF;
+
+    switch (source->OperGet())
+    {
+        case GT_EQ:
+        case GT_NE:
+        case GT_LT:
+        case GT_LE:
+        case GT_GT:
+        case GT_GE:
+            sourceType = TYP_BOOL;
+            break;
+
+        case GT_CLS_VAR:
+        case GT_LCL_FLD:
+        case GT_IND:
+            sourceType = source->TypeGet();
+            break;
+
+        case GT_CAST:
+            sourceType = source->AsCast()->CastToType();
+            break;
+
+        default:
+            return false;
+    }
+
+    if (varTypeIsSmall(sourceType)
+#ifdef TARGET_64BIT
+        || (sourceType == TYP_INT) || (sourceType == TYP_UINT)
+#endif
+        )
+    {
+        *pLoBound = AssertionDsc::GetLowerBoundForIntegralType(sourceType);
+        *pHiBound = AssertionDsc::GetUpperBoundForIntegralType(sourceType);
+
+        return true;
+    }
+
+    return false;
 }
 
 /*****************************************************************************
