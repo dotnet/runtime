@@ -92,7 +92,236 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         {
             get
             {
-                // plaintext requires no padding
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                        0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x29, 0x30, 0x13, 0x97, 0xCD, 0x5E, 0x30, 0x2C,
+                        0xED, 0x11, 0x65, 0xA8, 0xF3, 0xA0, 0x11, 0x42,
+                        0xD0, 0x53, 0x1B, 0xB2, 0x55, 0xC0, 0x65, 0x8D,
+                    },
+
+                    PaddingMode.PKCS7,
+                    CipherMode.CBC,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                        0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x29, 0x30, 0x13, 0x97, 0xCD, 0x5E, 0x30, 0x2C,
+                        0xED, 0x11, 0x65, 0xA8, 0xF3, 0xA0, 0x11, 0x42,
+                    },
+
+                    PaddingMode.None,
+                    CipherMode.CBC,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                        0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x29, 0x30, 0x13, 0x97, 0xCD, 0x5E, 0x30, 0x2C,
+                        0xED, 0x11, 0x65, 0xA8, 0xF3, 0xA0, 0x11, 0x42,
+                    },
+
+                    PaddingMode.Zeros,
+                    CipherMode.CBC,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                        0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x29, 0x30, 0x13, 0x97, 0xCD, 0x5E, 0x30, 0x2C,
+                        0xED, 0x11, 0x65, 0xA8, 0xF3, 0xA0, 0x11, 0x42,
+                        0x26, 0xA4, 0x0F, 0x7F, 0x69, 0x53, 0xEE, 0xF1,
+                    },
+
+                    PaddingMode.ANSIX923,
+                    CipherMode.CBC,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                        0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x29, 0x30, 0x13, 0x97, 0xCD, 0x5E, 0x30, 0x2C,
+                        0xED, 0x11, 0x65, 0xA8, 0xF3, 0xA0, 0x11, 0x42,
+                        0x4F, 0xE1, 0xDF, 0x40, 0xE8, 0x30, 0x80, 0xB3,
+                    },
+
+                    PaddingMode.ISO10126,
+                    CipherMode.CBC,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x99, 0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8,
+                        0x89, 0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83,
+                        0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x57, 0xB9, 0x91, 0xCF, 0x46, 0x03, 0x2B, 0x45,
+                        0x2A, 0x59, 0x19, 0xB3, 0x97, 0x7A, 0xC7, 0x73,
+                        0x69, 0xD7, 0xBD, 0x06, 0x3A, 0x3B, 0x40, 0x87,
+                    },
+
+                    PaddingMode.PKCS7,
+                    CipherMode.CBC,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x99, 0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8,
+                        0x89, 0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83,
+                        0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x57, 0xB9, 0x91, 0xCF, 0x46, 0x03, 0x2B, 0x45,
+                        0x2A, 0x59, 0x19, 0xB3, 0x97, 0x7A, 0xC7, 0x73,
+                        0x71, 0xB4, 0x8D, 0x6C, 0xDD, 0x98, 0x83, 0x55,
+                    },
+
+                    PaddingMode.Zeros,
+                    CipherMode.CBC,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x99, 0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8,
+                        0x89, 0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83,
+                        0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x57, 0xB9, 0x91, 0xCF, 0x46, 0x03, 0x2B, 0x45,
+                        0x2A, 0x59, 0x19, 0xB3, 0x97, 0x7A, 0xC7, 0x73,
+                        0xAE, 0xF8, 0x98, 0x2C, 0xB3, 0x71, 0x9F, 0xDF,
+                    },
+
+                    PaddingMode.ANSIX923,
+                    CipherMode.CBC,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x99, 0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8,
+                        0x89, 0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83,
+                        0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x57, 0xB9, 0x91, 0xCF, 0x46, 0x03, 0x2B, 0x45,
+                        0x2A, 0x59, 0x19, 0xB3, 0x97, 0x7A, 0xC7, 0x73,
+                        0x5B, 0xFE, 0xD3, 0x3F, 0xDA, 0xBC, 0x15, 0x29,
+                    },
+
+                    PaddingMode.ISO10126,
+                    CipherMode.CBC,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    Array.Empty<byte>(),
+
+                    // ciphertext
+                    Array.Empty<byte>(),
+
+                    PaddingMode.Zeros,
+                    CipherMode.CBC,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    Array.Empty<byte>(),
+
+                    // ciphertext
+                    Array.Empty<byte>(),
+
+                    PaddingMode.None,
+                    CipherMode.CBC,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    Array.Empty<byte>(),
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x49, 0xD5, 0xE1, 0x5E, 0x17, 0x12, 0x23, 0xCF
+                    },
+
+                    PaddingMode.PKCS7,
+                    CipherMode.CBC,
+                };
+
                 yield return new object[]
                 {
                     // plaintext
