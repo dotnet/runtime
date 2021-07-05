@@ -14,7 +14,6 @@ namespace System.Net.Sockets
 {
     public partial class Socket
     {
-        //private static readonly bool s_osSupportsReuseUnicastPort = IsReuseUnicastPortSupported();
         private static CachedSerializedEndPoint? s_cachedAnyEndPoint;
         private static CachedSerializedEndPoint? s_cachedAnyV6EndPoint;
         private static CachedSerializedEndPoint? s_cachedMappedAnyV6EndPoint;
