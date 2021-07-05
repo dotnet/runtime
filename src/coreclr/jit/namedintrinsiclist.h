@@ -73,6 +73,11 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_Threading_Interlocked_And,
     NI_System_Threading_Interlocked_Or,
+    NI_System_Threading_Interlocked_CompareExchange,
+    NI_System_Threading_Interlocked_Exchange,
+    NI_System_Threading_Interlocked_ExchangeAdd,
+    NI_System_Threading_Interlocked_MemoryBarrier,
+    NI_System_Threading_Interlocked_ReadMemoryBarrier,
 
 #ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
