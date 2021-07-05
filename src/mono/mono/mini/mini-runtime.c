@@ -2680,7 +2680,7 @@ jit_compile_method_with_opt_cb (gpointer arg)
 	params->code = mono_jit_compile_method_with_opt (params->method, params->opt, params->jit_only, params->error);
 }
 
-gpointer
+static gpointer
 jit_compile_method_with_opt (JitCompileMethodWithOptCallbackData *params)
 {
 	MonoLMFExt ext;
