@@ -1398,10 +1398,6 @@ LONG Compiler::s_compMethodsCount = 0; // to produce unique label names
 bool Compiler::s_dspMemStats = false;
 #endif
 
-#ifndef PROFILING_SUPPORTED
-const bool Compiler::Options::compNoPInvokeInlineCB = false;
-#endif
-
 /*****************************************************************************
  *
  *  One time initialization code
@@ -3251,9 +3247,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     s_dspMemStats = (JitConfig.DisplayMemStats() != 0);
 #endif
 
-#ifdef PROFILING_SUPPORTED
-    opts.compNoPInvokeInlineCB = jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_NO_PINVOKE_INLINE);
+    opts.compNoPInvokeInline = jitFlags->IsSet(JitFlags::JIT_FLAG_NO_PINVOKE_INLINE);
 
+#ifdef PROFILING_SUPPORTED
     // Cache the profiler handle
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE))
     {

@@ -12931,7 +12931,7 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE);
 
     if (CORProfilerTrackTransitions())
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE);
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_NO_PINVOKE_INLINE);
 #endif // PROFILING_SUPPORTED
 
     // Set optimization flags

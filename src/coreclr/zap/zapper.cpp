@@ -1130,7 +1130,7 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
     m_pOpt->m_compilerFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
     m_pOpt->m_compilerFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE);
     m_pOpt->m_compilerFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE);
-    m_pOpt->m_compilerFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE);
+    m_pOpt->m_compilerFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_NO_PINVOKE_INLINE);
 
     // We track debug info all the time in the ngen image
     m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
@@ -1144,7 +1144,7 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
     if (pVersionInfo->wCodegenFlags & CORCOMPILE_CODEGEN_PROFILING)
     {
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE);
-        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE);
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_NO_PINVOKE_INLINE);
         m_pOpt->m_ngenProfileImage = true;
     }
 

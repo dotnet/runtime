@@ -2318,6 +2318,8 @@ public:
         m_wasTier0 = true;
     }
 
+    virtual CORJIT_FLAGS GetJitCompilationFlags() override;
+
     virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse) override;
 };
 #endif // DACCESS_COMPILE

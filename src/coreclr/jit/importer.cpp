@@ -7147,7 +7147,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
 bool Compiler::impCanPInvokeInline()
 {
     return getInlinePInvokeEnabled() && (!opts.compDbgCode) && (compCodeOpt() != SMALL_CODE) &&
-           (!opts.compNoPInvokeInlineCB) // profiler is preventing inline pinvoke
+           (!opts.compNoPInvokeInline) // JIT flag is preventing inline pinvoke
         ;
 }
 
