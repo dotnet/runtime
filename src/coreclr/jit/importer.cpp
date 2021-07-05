@@ -19073,17 +19073,30 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
 
     // If the call site has profile data, report the relative frequency of the site.
     //
-    if ((pInlineInfo != nullptr) && pInlineInfo->iciBlock->hasProfileWeight())
+    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveProfileData() && pInlineInfo->iciBlock->hasProfileWeight())
     {
-        double callSiteWeight = (double)pInlineInfo->iciBlock->bbWeight;
-        double entryWeight    = (double)impInlineRoot()->fgFirstBB->bbWeight;
+        BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
+        BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
+        BasicBlock::weight_t profileFreq    = entryWeight == 0.0f ? 0.0f : callSiteWeight / entryWeight;
 
         assert(callSiteWeight >= 0);
         assert(entryWeight >= 0);
 
+        BasicBlock::weight_t sufficientSamples = 1000.0f;
+
+        if (!rootCompiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) ||
+            ((callSiteWeight + entryWeight) > sufficientSamples))
+        {
+            // Let's not report profiles for methods with insufficient samples during prejitting.
+            inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
+            inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, profileFreq);
+        }
+    }
+    else if ((pInlineInfo == nullptr) && rootCompiler->fgHaveProfileData())
+    {
+        // Simulate a hot callsite for PrejitRoot mode.
         inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
-        double frequency = entryWeight == 0.0 ? 0.0 : callSiteWeight / entryWeight;
-        inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, frequency);
+        inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, 1.0);
     }
 }
 
