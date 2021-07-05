@@ -212,21 +212,29 @@ namespace System.IO
                 {
                     FlushWrite();
                     _stream!.Seek(value, SeekOrigin.Begin);
+                    return;
                 }
-                else
-                {
-                    long beginStreamPos = _stream!.Position - _readLen;
-                    if (beginStreamPos <= value && value < _stream!.Position)
-                    {
-                        _readPos = (int)(value - beginStreamPos);
-                    }
-                    else
-                    {
-                        _readPos = 0;
-                        _readLen = 0;
-                        _stream!.Seek(value, SeekOrigin.Begin);
-                    }
-                }
+
+                SetPositionForRead(value);
+            }
+        }
+
+        // If the destination position is still within the data currently in the buffer, we want to keep the buffer data and continue using it.
+        // Otherwise we will throw away the buffer. This can only happen on read.
+        private void SetPositionForRead(long newPos)
+        {
+            long bufferBeginPos = _stream!.Position - _readLen;
+
+            // If the new position is still in the buffer, then we can keep using the buffer:
+            if (bufferBeginPos <= newPos && newPos < _stream!.Position)
+            {
+                _readPos = (int)(newPos - bufferBeginPos);
+            }
+            else
+            { // The new position is not in the buffer range. Loose the buffer.
+                _readPos = 0;
+                _readLen = 0;
+                _stream!.Seek(newPos, SeekOrigin.Begin);
             }
         }
 
@@ -1223,38 +1231,14 @@ namespace System.IO
                 return _stream.Seek(offset, origin);
             }
 
-            // The buffer is either empty or we have a buffered read.
-
-            if (_readLen - _readPos > 0 && origin == SeekOrigin.Current)
+            long newPos = origin switch
             {
-                // If we have bytes in the read buffer, adjust the seek offset to account for the resulting difference
-                // between this stream's position and the underlying stream's position.
-                offset -= (_readLen - _readPos);
-            }
+                SeekOrigin.Begin => offset,
+                SeekOrigin.Current => Position + offset,
+                _ => _stream.Length + offset
+            };
 
-            long oldPos = Position;
-            Debug.Assert(oldPos == _stream.Position + (_readPos - _readLen));
-
-            long newPos = _stream.Seek(offset, origin);
-
-            // If the seek destination is still within the data currently in the buffer, we want to keep the buffer data and continue using it.
-            // Otherwise we will throw away the buffer. This can only happen on read, as we flushed write data above.
-
-            // The offset of the new/updated seek pointer within _buffer:
-            _readPos = (int)(newPos - (oldPos - _readPos));
-
-            // If the offset of the updated seek pointer in the buffer is still legal, then we can keep using the buffer:
-            if (0 <= _readPos && _readPos < _readLen)
-            {
-                // Adjust the seek pointer of the underlying stream to reflect the amount of useful bytes in the read buffer:
-                _stream.Seek(_readLen - _readPos, SeekOrigin.Current);
-            }
-            else
-            {  // The offset of the updated seek pointer is not a legal offset. Loose the buffer.
-                _readPos = _readLen = 0;
-            }
-
-            Debug.Assert(newPos == Position, "newPos (=" + newPos + ") == Position (=" + Position + ")");
+            SetPositionForRead(newPos);
             return newPos;
         }
 
