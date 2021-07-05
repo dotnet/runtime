@@ -4319,7 +4319,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // want to make this *not* make the var address-taken -- but atomic instructions
                 // on a local are probably pretty useless anyway, so we probably don't care.
 
-                op1 = gtNewOperNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG, genActualType(callType), op1, op2);
+                op1 = gtNewOperNode(ni == NI_System_Threading_Interlocked_ExchangeAdd ? GT_XADD : GT_XCHG,
+                                    genActualType(callType), op1, op2);
                 op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
                 retNode = op1;
                 break;
