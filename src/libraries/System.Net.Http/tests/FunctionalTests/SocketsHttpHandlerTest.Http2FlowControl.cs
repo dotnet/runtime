@@ -95,8 +95,8 @@ namespace System.Net.Http.Functional.Tests
         {
             int maxCredit = await TestClientWindowScalingAsync(
                 TimeSpan.Zero,
-                TimeSpan.FromMilliseconds(15),
-                2 * 1024 * 1024,
+                TimeSpan.FromMilliseconds(30),
+                1 * 1024 * 1024,
                 _output);
 
             // Expect the client receive window to stay below 1MB:
