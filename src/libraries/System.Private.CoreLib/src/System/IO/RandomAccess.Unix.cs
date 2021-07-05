@@ -24,7 +24,7 @@ namespace System.IO
             return status.Size;
         }
 
-        private static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
+        internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
@@ -34,7 +34,7 @@ namespace System.IO
             }
         }
 
-        private static unsafe long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
+        internal static unsafe long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
         {
             MemoryHandle[] handles = new MemoryHandle[buffers.Count];
             Span<Interop.Sys.IOVector> vectors = buffers.Count <= IovStackThreshold ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffers.Count];
@@ -74,7 +74,7 @@ namespace System.IO
             long fileOffset, CancellationToken cancellationToken)
             => ScheduleSyncReadScatterAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
 
-        private static unsafe int WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
+        internal static unsafe int WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
@@ -84,7 +84,7 @@ namespace System.IO
             }
         }
 
-        private static unsafe long WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
+        internal static unsafe long WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
         {
             MemoryHandle[] handles = new MemoryHandle[buffers.Count];
             Span<Interop.Sys.IOVector> vectors = buffers.Count <= IovStackThreshold ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffers.Count ];

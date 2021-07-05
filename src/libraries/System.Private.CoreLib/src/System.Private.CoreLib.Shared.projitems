@@ -61,6 +61,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeHandleMinusOneIsInvalid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.ThreadPoolValueTaskSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AccessViolationException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Action.cs" />
@@ -1517,7 +1519,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleFileName.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetModuleFileName.cs</Link>
     </Compile>
-	<Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcessMemoryInfo.cs">
@@ -1775,7 +1777,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Win32\RegistryKey.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.ValueTaskSource.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.OverlappedValueTaskSource.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
