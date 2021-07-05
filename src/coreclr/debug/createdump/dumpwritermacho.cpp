@@ -46,6 +46,7 @@ DumpWriter::WriteCrashReport(JsonWriter& writer)
     writer.WriteValue("architecture", "arm64");
 #endif
     std::string version;
+    assert(strcmp(sccsid, "@(#)Version ") == 0);
     version.append(sccsid + 12);    // skip "@(#)Version "
     version.append(" ");            // the analyzer requires a space after the version
     writer.WriteValue("version", version.c_str());
@@ -154,7 +155,7 @@ DumpWriter::WriteStackFrame(JsonWriter& writer, const StackFrame& frame)
     }
     if (frame.ModuleAddress() != 0)
     {
-        const ModuleInfo* moduleInfo = m_crashInfo.GetModuleInfo(frame.ModuleAddress());
+        const ModuleInfo* moduleInfo = m_crashInfo.GetModuleInfoFromBaseAddress(frame.ModuleAddress());
         if (moduleInfo != nullptr)
         {
             std::string moduleName = GetFileName(moduleInfo->ModuleName());

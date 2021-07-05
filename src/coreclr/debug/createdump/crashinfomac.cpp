@@ -298,8 +298,8 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                 // Add this module segment to the module mappings list
                 m_moduleMappings.insert(moduleRegion);
 
-                // Add module segment ip to module info lookup
-                AddModuleAddress(start, end, module.BaseAddress());
+                // Add this module segment to the set used by the thread unwinding to lookup the module base address for an ip.
+                AddModuleAddressRange(start, end, module.BaseAddress());
             }
             else
             {

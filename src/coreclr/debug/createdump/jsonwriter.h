@@ -12,7 +12,7 @@ private:
     int m_indent;
     bool m_comma;
 
-    void Write(std::string& text);
+    void Write(const std::string& text);
     void Write(const char* buffer);
     void Indent(std::string& text);
     void WriteSeperator(std::string& text);

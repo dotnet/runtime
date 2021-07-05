@@ -80,10 +80,10 @@ public:
     bool GatherCrashInfo(MINIDUMP_TYPE minidumpType);
     bool ReadMemory(void* address, void* buffer, size_t size);                          // read memory and add to dump
     bool ReadProcessMemory(void* address, void* buffer, size_t size, size_t* read);     // read raw memory
-    uint64_t GetBaseAddress(uint64_t ip);
-    uint64_t GetBaseAddress(const char* moduleName);
-    const ModuleInfo* GetModuleInfo(uint64_t baseAddress);
-    void AddModuleAddress(uint64_t startAddress, uint64_t endAddress, uint64_t baseAddress);
+    uint64_t GetBaseAddressFromAddress(uint64_t address);
+    uint64_t GetBaseAddressFromName(const char* moduleName);
+    const ModuleInfo* GetModuleInfoFromBaseAddress(uint64_t baseAddress);
+    void AddModuleAddressRange(uint64_t startAddress, uint64_t endAddress, uint64_t baseAddress);
     void AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* pClrDataModule, const std::string& moduleName);
     void InsertMemoryRegion(uint64_t address, size_t size);
     static const MemoryRegion* SearchMemoryRegions(const std::set<MemoryRegion>& regions, const MemoryRegion& search);

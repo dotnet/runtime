@@ -41,7 +41,7 @@ public:
     virtual ~DumpWriter();
     bool OpenDump(const char* dumpFileName);
     bool WriteDump();
-    void WriteCrashReport(std::string& dumpFileName);
+    void WriteCrashReport(const std::string& dumpFileName);
     static bool WriteData(int fd, const void* buffer, size_t length);
 
 private:

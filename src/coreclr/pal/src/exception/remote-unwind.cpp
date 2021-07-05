@@ -1388,20 +1388,20 @@ StepWithCompactNoEncoding(const libunwindInfo* info)
     // We get here because we found the function the IP is in the compact unwind info, but the encoding is 0. This
     // usually ends the unwind but here we check that the function is a syscall "wrapper" and assume there is no
     // frame and pop the return address.
-    uint16_t syscall;
-    unw_word_t addr = info->Context->Rip - sizeof(syscall);
-    if (!ReadValue16(info, &addr, &syscall)) {
+    uint16_t opcode;
+    unw_word_t addr = info->Context->Rip - sizeof(opcode);
+    if (!ReadValue16(info, &addr, &opcode)) {
         return false;
     }
     // Is the IP pointing just after a "syscall" opcode?
-    if (syscall != AMD64_SYSCALL_OPCODE) {
+    if (opcode != AMD64_SYSCALL_OPCODE) {
         // There are cases where the IP points one byte after the syscall; not sure why.
-        addr = info->Context->Rip - sizeof(syscall) + 1;
-        if (!ReadValue16(info, &addr, &syscall)) {
+        addr = info->Context->Rip - sizeof(opcode) + 1;
+        if (!ReadValue16(info, &addr, &opcode)) {
             return false;
         }
         // Is the IP pointing just after a "syscall" opcode + 1?
-        if (syscall != AMD64_SYSCALL_OPCODE) {
+        if (opcode != AMD64_SYSCALL_OPCODE) {
             ERROR("StepWithCompactNoEncoding: not in syscall wrapper function\n");
             return false;
         }

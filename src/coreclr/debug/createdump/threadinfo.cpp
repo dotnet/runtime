@@ -40,22 +40,6 @@ ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size)
 }
 
 void
-ThreadInfo::AddStackFrame(const StackFrame& frame)
-{
-    const auto& found = m_frames.find(frame);
-    if (found == m_frames.end())
-    {
-        TRACE("Unwind: sp %p ip %p off %08x mod %p%c\n",
-            (void*)frame.StackPointer(),
-            (void*)frame.ReturnAddress(),
-            frame.NativeOffset(),
-            (void*)frame.ModuleAddress(),
-            frame.IsManaged() ? '*' : ' ');
-        m_frames.insert(frame);
-    }
-}
-
-void
 ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
 {
     uint64_t previousSp = 0;
@@ -96,7 +80,7 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
         m_crashInfo.InsertMemoryRegion(ip - PAGE_SIZE, PAGE_SIZE * 2);
 
         // Look up the ip address to get the module base address
-        uint64_t baseAddress = m_crashInfo.GetBaseAddress(ip);
+        uint64_t baseAddress = m_crashInfo.GetBaseAddressFromAddress(ip);
         if (baseAddress == 0) {
             TRACE_VERBOSE("Unwind: module base not found ip %p\n", (void*)ip);
             break;
@@ -195,71 +179,7 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess)
                 // Get and save more detail information for the crash report if enabled
                 if (m_crashInfo.CrashReport())
                 {
-                    uint64_t ip = 0, sp = 0;
-                    GetFrameLocation(&context, &ip, &sp);
-
-                    uint64_t moduleAddress = 0;
-                    mdMethodDef token = 0;
-                    uint32_t nativeOffset = 0;
-                    uint32_t ilOffset = 0;
-
-                    ReleaseHolder<IXCLRDataFrame> pFrame;
-                    if (SUCCEEDED(pStackwalk->GetFrame(&pFrame)))
-                    {
-                        CLRDataSimpleFrameType simpleType;
-                        CLRDataDetailedFrameType detailedType;
-                        pFrame->GetFrameType(&simpleType, &detailedType);
-
-                        if ((simpleType & (CLRDATA_SIMPFRAME_MANAGED_METHOD | CLRDATA_SIMPFRAME_RUNTIME_MANAGED_CODE)) != 0)
-                        {
-                            ReleaseHolder<IXCLRDataMethodInstance> pMethod;
-                            if (SUCCEEDED(pFrame->GetMethodInstance(&pMethod)))
-                            {
-                                ReleaseHolder<IXCLRDataModule> pModule;
-                                if (SUCCEEDED(pMethod->GetTokenAndScope(&token, &pModule)))
-                                {
-                                    DacpGetModuleData moduleData;
-                                    if (SUCCEEDED(moduleData.Request(pModule)))
-                                    {
-                                        moduleAddress = moduleData.LoadedPEAddress;
-                                    }
-                                    else
-                                    {
-                                        TRACE("Unwind: DacpGetModuleData.Request sp %p ip %p FAILED\n", (void*)sp, (void*)ip);
-                                    }
-                                }
-                                else
-                                {
-                                    TRACE("Unwind: GetTokenAndScope sp %p ip %p FAILED\n", (void*)sp, (void*)ip);
-                                }
-                                if (FAILED(pMethod->GetILOffsetsByAddress(ip, 1, NULL, &ilOffset)))
-                                {
-                                    TRACE("Unwind: GetILOffsetsByAddress sp %p ip %p FAILED\n", (void*)sp, (void*)ip);
-                                }
-                                CLRDATA_ADDRESS startAddress;
-                                if (SUCCEEDED(pMethod->GetRepresentativeEntryAddress(&startAddress)))
-                                {
-                                    nativeOffset = ip - startAddress;
-                                }
-                                else
-                                {
-                                    TRACE("Unwind: GetRepresentativeEntryAddress sp %p ip %p FAILED\n", (void*)sp, (void*)ip);
-                                }
-                            }
-                            else
-                            {
-                                TRACE("Unwind: GetMethodInstance sp %p ip %p FAILED\n", (void*)sp, (void*)ip);
-                            }
-                        }
-                        else
-                        {
-                            TRACE("Unwind: simpleType %08x detailedType %08x\n", simpleType, detailedType);
-                        }
-                    }
-
-                    // Add managed stack frame for the crash info notes
-                    StackFrame frame(moduleAddress, ip, sp, nativeOffset, token, ilOffset);
-                    AddStackFrame(frame);
+                    GatherStackFrames(pStackwalk);
                 }
 
                 // Unwind all the native frames after the managed frame
@@ -270,6 +190,92 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess)
     }
 
     return true;
+}
+
+void
+ThreadInfo::GatherStackFrames(IXCLRDataStackWalk* pStackwalk)
+{
+    uint64_t ip = 0, sp = 0;
+    GetFrameLocation(&context, &ip, &sp);
+
+    uint64_t moduleAddress = 0;
+    mdMethodDef token = 0;
+    uint32_t nativeOffset = 0;
+    uint32_t ilOffset = 0;
+
+    ReleaseHolder<IXCLRDataFrame> pFrame;
+    if (SUCCEEDED(pStackwalk->GetFrame(&pFrame)))
+    {
+        CLRDataSimpleFrameType simpleType;
+        CLRDataDetailedFrameType detailedType;
+        pFrame->GetFrameType(&simpleType, &detailedType);
+
+        if ((simpleType & (CLRDATA_SIMPFRAME_MANAGED_METHOD | CLRDATA_SIMPFRAME_RUNTIME_MANAGED_CODE)) != 0)
+        {
+            ReleaseHolder<IXCLRDataMethodInstance> pMethod;
+            if (SUCCEEDED(pFrame->GetMethodInstance(&pMethod)))
+            {
+                ReleaseHolder<IXCLRDataModule> pModule;
+                if (SUCCEEDED(pMethod->GetTokenAndScope(&token, &pModule)))
+                {
+                    DacpGetModuleData moduleData;
+                    if (SUCCEEDED(moduleData.Request(pModule)))
+                    {
+                        moduleAddress = moduleData.LoadedPEAddress;
+                    }
+                    else
+                    {
+                        TRACE("Unwind: DacpGetModuleData.Request sp %p ip %p FAILED\n", (void*)sp, (void*)ip);
+                    }
+                }
+                else
+                {
+                    TRACE("Unwind: GetTokenAndScope sp %p ip %p FAILED\n", (void*)sp, (void*)ip);
+                }
+                if (FAILED(pMethod->GetILOffsetsByAddress(ip, 1, NULL, &ilOffset)))
+                {
+                    TRACE("Unwind: GetILOffsetsByAddress sp %p ip %p FAILED\n", (void*)sp, (void*)ip);
+                }
+                CLRDATA_ADDRESS startAddress;
+                if (SUCCEEDED(pMethod->GetRepresentativeEntryAddress(&startAddress)))
+                {
+                    nativeOffset = ip - startAddress;
+                }
+                else
+                {
+                    TRACE("Unwind: GetRepresentativeEntryAddress sp %p ip %p FAILED\n", (void*)sp, (void*)ip);
+                }
+            }
+            else
+            {
+                TRACE("Unwind: GetMethodInstance sp %p ip %p FAILED\n", (void*)sp, (void*)ip);
+            }
+        }
+        else
+        {
+            TRACE("Unwind: simpleType %08x detailedType %08x\n", simpleType, detailedType);
+        }
+    }
+
+    // Add managed stack frame for the crash info notes
+    StackFrame frame(moduleAddress, ip, sp, nativeOffset, token, ilOffset);
+    AddStackFrame(frame);
+}
+
+void
+ThreadInfo::AddStackFrame(const StackFrame& frame)
+{
+    const auto& found = m_frames.find(frame);
+    if (found == m_frames.end())
+    {
+        TRACE("Unwind: sp %p ip %p off %08x mod %p%c\n",
+            (void*)frame.StackPointer(),
+            (void*)frame.ReturnAddress(),
+            frame.NativeOffset(),
+            (void*)frame.ModuleAddress(),
+            frame.IsManaged() ? '*' : ' ');
+        m_frames.insert(frame);
+    }
 }
 
 void

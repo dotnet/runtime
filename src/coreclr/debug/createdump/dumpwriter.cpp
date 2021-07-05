@@ -33,7 +33,7 @@ DumpWriter::OpenDump(const char* dumpFileName)
 }
 
 void
-DumpWriter::WriteCrashReport(std::string& dumpFileName)
+DumpWriter::WriteCrashReport(const std::string& dumpFileName)
 {
     std::string crashReportFile(dumpFileName);
     crashReportFile.append(".crashreport.json");
@@ -49,7 +49,7 @@ DumpWriter::WriteCrashReport(std::string& dumpFileName)
     }
     catch (const std::exception& e)
     {
-        fprintf(stderr, "Writing the crash reprot file FAILED\n");
+        fprintf(stderr, "Writing the crash report file FAILED\n");
 
         // Delete the partial json file on error
         remove(crashReportFile.c_str());

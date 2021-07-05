@@ -19,7 +19,7 @@ JsonWriter::~JsonWriter()
     }
 }
 
-void JsonWriter::Write(std::string& text)
+void JsonWriter::Write(const std::string& text)
 {
     if (!DumpWriter::WriteData(m_fd, (void*)text.c_str(), text.length()))
     {

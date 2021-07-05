@@ -409,9 +409,9 @@ CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const
 // Returns the module base address for the IP or 0. Used by the thread unwind code.
 //
 uint64_t
-CrashInfo::GetBaseAddress(uint64_t ip)
+CrashInfo::GetBaseAddressFromAddress(uint64_t address)
 {
-    MemoryRegion search(0, ip, ip, 0);
+    MemoryRegion search(0, address, address, 0);
     const MemoryRegion* found = SearchMemoryRegions(m_moduleAddresses, search);
     if (found == nullptr) {
         return 0;
@@ -424,12 +424,17 @@ CrashInfo::GetBaseAddress(uint64_t ip)
 // Returns the module base address for the given module name or 0 if not found.
 //
 uint64_t
-CrashInfo::GetBaseAddress(const char* moduleName)
+CrashInfo::GetBaseAddressFromName(const char* moduleName)
 {
     for (const ModuleInfo& moduleInfo : m_moduleInfos)
     {
         std::string name = GetFileName(moduleInfo.ModuleName());
-        if (strcmp(name.c_str(), moduleName) == 0)
+#ifdef __APPLE__
+        // Module names are case insenstive on MacOS
+        if (strcasecmp(name.c_str(), moduleName) == 0)
+#else
+        if (name.compare(moduleName) == 0)
+#endif
         {
             return moduleInfo.BaseAddress();
         }
@@ -441,7 +446,7 @@ CrashInfo::GetBaseAddress(const char* moduleName)
 // Return the module info for the base address
 //
 const ModuleInfo*
-CrashInfo::GetModuleInfo(uint64_t baseAddress)
+CrashInfo::GetModuleInfoFromBaseAddress(uint64_t baseAddress)
 {
     ModuleInfo search(baseAddress);
     const auto& found = m_moduleInfos.find(search);
@@ -456,7 +461,7 @@ CrashInfo::GetModuleInfo(uint64_t baseAddress)
 // Adds module address range for IP lookup
 //
 void
-CrashInfo::AddModuleAddress(uint64_t startAddress, uint64_t endAddress, uint64_t baseAddress)
+CrashInfo::AddModuleAddressRange(uint64_t startAddress, uint64_t endAddress, uint64_t baseAddress)
 {
     // Add module segment to base address lookup
     MemoryRegion region(0, startAddress, endAddress, baseAddress);
@@ -749,7 +754,8 @@ GetFileName(const std::string& fileName)
 }
 
 //
-// Format a std::string
+// Formats a std::string with printf syntax. The final formated string is limited
+// to MAX_LONGPATH (1024) chars. Returns an empty string on any error.
 //
 std::string
 FormatString(const char* format, ...)
@@ -757,10 +763,9 @@ FormatString(const char* format, ...)
     ArrayHolder<char> buffer = new char[MAX_LONGPATH + 1];
     va_list args;
     va_start(args, format);
-    vsprintf_s(buffer, MAX_LONGPATH, format, args);
-    fflush(stdout);
+    int result = vsprintf_s(buffer, MAX_LONGPATH, format, args);
     va_end(args);
-    return std::string(buffer);
+    return result > 0 ? std::string(buffer) : std::string();
 }
 
 //

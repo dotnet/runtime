@@ -96,7 +96,7 @@ DumpDataTarget::GetImageBase(
     int length = WideCharToMultiByte(CP_ACP, 0, moduleName, -1, tempModuleName, sizeof(tempModuleName), NULL, NULL);
     if (length > 0)
     {
-        *baseAddress = m_crashInfo.GetBaseAddress(tempModuleName);
+        *baseAddress = m_crashInfo.GetBaseAddressFromName(tempModuleName);
     }
 
     return *baseAddress != 0 ? S_OK : E_FAIL;

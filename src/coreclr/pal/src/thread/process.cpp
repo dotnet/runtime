@@ -1336,6 +1336,8 @@ static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode, BOOL bTerminateUncon
             // abort() has the semantics that
             // (1) it doesn't run atexit handlers
             // (2) can invoke CrashReporter or produce a coredump, which is appropriate for TerminateProcess calls
+            // The code in the synchmanager.cpp line 1684 sets the exit code to this special value. The Watson analyzer
+            // needs to know that the process was terminated with a SIGTERM.
             PROCAbort(uExitCode == (128 + SIGTERM) ? SIGTERM : SIGABRT);
         }
         else

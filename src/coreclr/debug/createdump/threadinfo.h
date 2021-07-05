@@ -121,8 +121,9 @@ public:
 #endif // __APPLE__
 
 private:
-    void AddStackFrame(const StackFrame& frame);
     void UnwindNativeFrames(CONTEXT* pContext);
+    void GatherStackFrames(IXCLRDataStackWalk* pStackwalk);
+    void AddStackFrame(const StackFrame& frame);
 #ifndef __APPLE__
     bool GetRegistersWithPTrace();
 #endif
