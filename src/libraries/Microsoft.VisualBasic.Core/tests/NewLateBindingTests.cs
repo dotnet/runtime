@@ -94,7 +94,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             static object[] CreateData(string memberName, object[] arguments, Type[] typeArguments, string expectedValue) => new object[] { memberName, arguments, typeArguments, expectedValue };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51834", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         [MemberData(nameof(LateCall_OptionalValues_Data))]
         public void LateCall_OptionalValues(string memberName, object[] arguments, Type[] typeArguments, string expectedValue)
@@ -112,6 +112,23 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
                 CopyBack: null,
                 IgnoreReturn: true);
             Assert.Equal(expectedValue, actualValue);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [InlineData("F8", new object[] { 1, 2, 3, 4, 5, 6, 7, -1 }, null, "System.Int32, 7, -1")]
+        [InlineData("F8", new object[] { 1, 2, 3, 4, 5, 6, 7, Type.Missing }, null, "System.Int32, 7, 8")]
+        [InlineData("F8", new object[] { 1, 2, 3, 4, 5, 6, Type.Missing, Type.Missing }, null, "System.Reflection.Missing, null, 8")]
+        public void LateCall_OptionalValues_WithInterpretingOnly(string memberName, object[] arguments, Type[] typeArguments, string expectedValue)
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => NewLateBinding.LateCall(
+                Instance: new OptionalValuesType(),
+                Type: null,
+                MemberName: memberName,
+                Arguments: arguments,
+                ArgumentNames: null,
+                TypeArguments: typeArguments,
+                CopyBack: null,
+                IgnoreReturn: true));
         }
     }
 }

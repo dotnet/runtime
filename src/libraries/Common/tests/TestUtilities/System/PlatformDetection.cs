@@ -68,6 +68,7 @@ namespace System
         public static bool IsNotUsingLimitedCultures => IsNotMobile;
 
         public static bool IsLinqExpressionsBuiltWithIsInterpretingOnly => s_LinqExpressionsBuiltWithIsInterpretingOnly.Value;
+        public static bool IsNotLinqExpressionsBuiltWithIsInterpretingOnly => !IsLinqExpressionsBuiltWithIsInterpretingOnly;
         private static readonly Lazy<bool> s_LinqExpressionsBuiltWithIsInterpretingOnly = new Lazy<bool>(GetLinqExpressionsBuiltWithIsInterpretingOnly);
         private static bool GetLinqExpressionsBuiltWithIsInterpretingOnly() 
         {            
