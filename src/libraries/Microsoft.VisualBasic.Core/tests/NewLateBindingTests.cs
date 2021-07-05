@@ -113,32 +113,5 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
                 IgnoreReturn: true);
             Assert.Equal(expectedValue, actualValue);
         }
-
-        public static IEnumerable<object[]> LateCall_OptionalValues_WithInterpretingOnly_Data()
-        {
-            // If System.Type.Missing is used for a parameter with type parameter type,
-            // System.Reflection.Missing is used in type inference. This matches .NET Framework behavior.
-
-            yield return CreateData("F8", new object[] { 1, 2, 3, 4, 5, 6, 7, -1 }, null);
-            yield return CreateData("F8", new object[] { 1, 2, 3, 4, 5, 6, 7, Type.Missing }, null);
-            yield return CreateData("F8", new object[] { 1, 2, 3, 4, 5, 6, Type.Missing, Type.Missing }, null);
-
-            static object[] CreateData(string memberName, object[] arguments, Type[] typeArguments) => new object[] { memberName, arguments, typeArguments };
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly))]
-        [MemberData(nameof(LateCall_OptionalValues_WithInterpretingOnly_Data))]
-        public void LateCall_OptionalValues_WithInterpretingOnly_Throws_PNSE(string memberName, object[] arguments, Type[] typeArguments)
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => NewLateBinding.LateCall(
-                Instance: new OptionalValuesType(),
-                Type: null,
-                MemberName: memberName,
-                Arguments: arguments,
-                ArgumentNames: null,
-                TypeArguments: typeArguments,
-                CopyBack: null,
-                IgnoreReturn: true));
-        }
     }
 }
