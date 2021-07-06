@@ -55,7 +55,7 @@ namespace System.Threading.Tasks
         /// </summary>
         RanToCompletion,
         /// <summary>
-        /// The task acknowledged cancellation by throwing an OperationCanceledException with its own CancellationToken
+        /// The  task acknowledged cancellation by throwing an OperationCanceledException with its own CancellationToken
         /// while the token was in signaled state, or the task's CancellationToken was already signaled before the
         /// task started executing.
         /// </summary>

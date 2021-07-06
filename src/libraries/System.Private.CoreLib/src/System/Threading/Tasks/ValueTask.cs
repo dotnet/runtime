@@ -293,14 +293,14 @@ namespace System.Threading.Tasks
                 object? obj = _obj;
                 Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
 
-                if (obj == null)
-                {
-                    return true;
-                }
-
                 if (obj is Task t)
                 {
                     return t.IsCompleted;
+                }
+
+                if (obj == null)
+                {
+                    return true;
                 }
 
                 return Unsafe.As<IValueTaskSource>(obj).GetStatus(_token) != ValueTaskSourceStatus.Pending;
