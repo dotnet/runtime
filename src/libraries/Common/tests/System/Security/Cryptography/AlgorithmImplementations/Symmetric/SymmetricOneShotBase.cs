@@ -43,6 +43,7 @@ namespace System.Security.Cryptography.Tests
                 };
 
                 AssertPlaintexts(plaintext, decrypted, padding);
+                AssertCiphertexts(encrypted, ciphertext, padding, alg.BlockSize / 8);
 
                 decrypted = mode switch
                 {
@@ -57,6 +58,7 @@ namespace System.Security.Cryptography.Tests
                     _ => throw new NotImplementedException(),
                 };
 
+                AssertPlaintexts(plaintext, decrypted, padding);
                 AssertCiphertexts(ciphertext, encrypted, padding, alg.BlockSize / 8);
             }
         }
@@ -133,7 +135,7 @@ namespace System.Security.Cryptography.Tests
                 Assert.True(result, "TryDecrypt");
                 Assert.Equal(destinationBuffer.Length, bytesWritten);
 
-                AssertPlaintexts(plaintext, destinationBuffer.ToArray(), padding);
+                AssertPlaintexts(plaintext, destinationBuffer, padding);
             }
         }
 
@@ -161,7 +163,7 @@ namespace System.Security.Cryptography.Tests
                 Assert.True(result, "TryEncrypt");
                 Assert.Equal(expectedCiphertextSize, bytesWritten);
 
-                AssertCiphertexts(ciphertext, destinationBuffer.ToArray(), padding, alg.BlockSize / 8);
+                AssertCiphertexts(ciphertext, destinationBuffer, padding, alg.BlockSize / 8);
             }
         }
 
@@ -187,7 +189,7 @@ namespace System.Security.Cryptography.Tests
                 Assert.True(result, "TryDecrypt");
                 Assert.Equal(destinationBuffer.Length, bytesWritten);
 
-                AssertPlaintexts(plaintext, destinationBuffer.ToArray(), padding);
+                AssertPlaintexts(plaintext, destinationBuffer, padding);
 
                 Span<byte> excess = largeBuffer.Slice(destinationBuffer.Length);
                 AssertExtensions.FilledWith<byte>(0xCC, excess);
@@ -215,7 +217,7 @@ namespace System.Security.Cryptography.Tests
                 Assert.True(result, "TryEncrypt");
                 Assert.Equal(destinationBuffer.Length, bytesWritten);
 
-                AssertCiphertexts(ciphertext, destinationBuffer.ToArray(), padding, alg.BlockSize / 8);
+                AssertCiphertexts(ciphertext, destinationBuffer, padding, alg.BlockSize / 8);
                 AssertExtensions.FilledWith<byte>(0xCC, largeBuffer.Slice(ciphertext.Length));
             }
         }
@@ -250,7 +252,7 @@ namespace System.Security.Cryptography.Tests
                     Assert.True(result, "TryDecrypt");
                     Assert.Equal(destinationBuffer.Length, bytesWritten);
 
-                    AssertPlaintexts(plaintext, destinationBuffer.ToArray(), padding);
+                    AssertPlaintexts(plaintext, destinationBuffer, padding);
                     Assert.True(destinationBuffer.Overlaps(ciphertextBuffer) || plaintext.Length == 0 || ciphertext.Length == 0);
                 }
             }
@@ -285,7 +287,7 @@ namespace System.Security.Cryptography.Tests
                     Assert.True(result, "TryEncrypt");
                     Assert.Equal(destinationBuffer.Length, bytesWritten);
 
-                    AssertCiphertexts(ciphertext, destinationBuffer.ToArray(), padding, alg.BlockSize / 8);
+                    AssertCiphertexts(ciphertext, destinationBuffer, padding, alg.BlockSize / 8);
                     Assert.True(destinationBuffer.Overlaps(plaintextBuffer) || plaintext.Length == 0 || ciphertext.Length == 0);
                 }
             }
@@ -383,29 +385,29 @@ namespace System.Security.Cryptography.Tests
             Assert.Empty(missingMethods);
         }
 
-        private static void AssertPlaintexts(byte[] expected, byte[] actual, PaddingMode padding)
+        private static void AssertPlaintexts(ReadOnlySpan<byte> expected, ReadOnlySpan<byte> actual, PaddingMode padding)
         {
             if (padding == PaddingMode.Zeros)
             {
-                Assert.Equal(expected, actual[..expected.Length]);
-                AssertExtensions.FilledWith<byte>(0, actual.AsSpan(actual.Length));
+                AssertExtensions.SequenceEqual(expected, actual.Slice(0, expected.Length));
+                AssertExtensions.FilledWith<byte>(0, actual.Slice(actual.Length));
             }
             else
             {
-                Assert.Equal(expected, actual);
+                AssertExtensions.SequenceEqual(expected, actual);
             }
         }
 
-        private static void AssertCiphertexts(byte[] expected, byte[] actual, PaddingMode padding, int blockSizeBytes)
+        private static void AssertCiphertexts(ReadOnlySpan<byte> expected, ReadOnlySpan<byte> actual, PaddingMode padding, int blockSizeBytes)
         {
             if (padding == PaddingMode.ISO10126)
             {
                 // The padding is random, so we can't check the exact ciphertext.
-                Assert.Equal(actual[..^blockSizeBytes], expected[..^blockSizeBytes]);
+                AssertExtensions.SequenceEqual(expected[..^blockSizeBytes], actual[..^blockSizeBytes]);
             }
             else
             {
-                Assert.Equal(actual, expected);
+                AssertExtensions.SequenceEqual(expected, actual);
             }
         }
     }
