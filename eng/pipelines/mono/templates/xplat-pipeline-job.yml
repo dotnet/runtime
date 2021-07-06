@@ -90,6 +90,12 @@ jobs:
     - name: nativeTestArtifactRootFolderPath
       value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
 
+    - name: workloadPackagesPath
+      value: $(Build.SourcesDirectory)/artifacts/workloadPackages
+
+    - name: workloadArtifactsPath
+      value: $(Build.SourcesDirectory)/artifacts/workloads
+
     - name: liveRuntimeBuildConfigUpper
       ${{ if eq(parameters.liveRuntimeBuildConfig, 'release') }}:
         value: 'Release'
