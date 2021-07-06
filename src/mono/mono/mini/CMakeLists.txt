@@ -382,39 +382,40 @@ if(NOT DISABLE_SHARED_LIBS)
     set_target_properties(monosgen-shared-dac PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME}-dac)
   endif()
 
-
-  if(TARGET_DARWIN)
-    string(REPLACE ";" "*" mono-components-objects-nowhitespace "${mono-components-objects}")
-    string(REPLACE ";" "*" mono-components-stub-objects-nowhitespace "${mono-components-stub-objects}")
-    list(APPEND FrameworkConfig Mono.release Mono.debug)
-    list(APPEND ComponentsObjects "${mono-components-objects-nowhitespace}" "${mono-components-stub-objects-nowhitespace}")
-    foreach(frameworkconfig componentsobjects IN ZIP_LISTS FrameworkConfig ComponentsObjects)
-      if("${componentsobjects}" STREQUAL "")
-        #components list is empty, use stubs instead
-        set(componentsobjects "${mono-components-stub-objects-nowhitespace}")
-      endif()
-      add_library(${frameworkconfig} SHARED $<TARGET_OBJECTS:monosgen-objects>)
-      target_compile_definitions(${frameworkconfig} PRIVATE -DMONO_DLL_EXPORT)
-      target_sources(${frameworkconfig} PRIVATE $<TARGET_OBJECTS:eglib_objects>)
-      target_link_libraries(${frameworkconfig} PRIVATE ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
-      if(ICU_LDFLAGS)
-        set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
-      endif()
-      if(STATIC_ICU)
-        set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINKER_LANGUAGE CXX)
-      endif ()
-      set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
-      string(REPLACE "*" ";" componentsobjects-whitespace "${componentsobjects}")
-      target_sources(${frameworkconfig} PRIVATE "${componentsobjects-whitespace}")
-      set_target_properties(${frameworkconfig} PROPERTIES
-        FRAMEWORK TRUE
-        FRAMEWORK_VERSION C
-        MACOSX_FRAMEWORK_IDENTIFIER net.dot.mono-framework
-      )
-      install(TARGETS ${frameworkconfig}
-        FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      )
-    endforeach()
+  if(BUILD_DARWIN_FRAMEWORKS)
+    if(TARGET_DARWIN)
+      string(REPLACE ";" "*" mono-components-objects-nowhitespace "${mono-components-objects}")
+      string(REPLACE ";" "*" mono-components-stub-objects-nowhitespace "${mono-components-stub-objects}")
+      list(APPEND FrameworkConfig Mono.release Mono.debug)
+      list(APPEND ComponentsObjects "${mono-components-objects-nowhitespace}" "${mono-components-stub-objects-nowhitespace}")
+      foreach(frameworkconfig componentsobjects IN ZIP_LISTS FrameworkConfig ComponentsObjects)
+        if("${componentsobjects}" STREQUAL "")
+          #components list is empty, use stubs instead
+          set(componentsobjects "${mono-components-stub-objects-nowhitespace}")
+        endif()
+        add_library(${frameworkconfig} SHARED $<TARGET_OBJECTS:monosgen-objects>)
+        target_compile_definitions(${frameworkconfig} PRIVATE -DMONO_DLL_EXPORT)
+        target_sources(${frameworkconfig} PRIVATE $<TARGET_OBJECTS:eglib_objects>)
+        target_link_libraries(${frameworkconfig} PRIVATE ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+        if(ICU_LDFLAGS)
+          set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
+        endif()
+        if(STATIC_ICU)
+          set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINKER_LANGUAGE CXX)
+        endif ()
+        set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
+        string(REPLACE "*" ";" componentsobjects-whitespace "${componentsobjects}")
+        target_sources(${frameworkconfig} PRIVATE "${componentsobjects-whitespace}")
+        set_target_properties(${frameworkconfig} PROPERTIES
+          FRAMEWORK TRUE
+          FRAMEWORK_VERSION C
+          MACOSX_FRAMEWORK_IDENTIFIER net.dot.mono-framework
+        )
+        install(TARGETS ${frameworkconfig}
+          FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        )
+      endforeach()
+    endif()
   endif()
 endif()
 
