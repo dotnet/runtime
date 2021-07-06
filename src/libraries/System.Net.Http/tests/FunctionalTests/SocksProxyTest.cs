@@ -140,7 +140,9 @@ namespace System.Net.Http.Functional.Tests
                     {
                         UseSsl = useSsl,
                         Address = host == "::1" ? IPAddress.IPv6Loopback : IPAddress.Loopback
-                    });
+                    },
+                    times: times,
+                    s: s);
             }
             catch (Exception ex)
             {

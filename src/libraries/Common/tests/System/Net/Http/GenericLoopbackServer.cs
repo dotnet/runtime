@@ -11,6 +11,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Threading;
+using System.Diagnostics;
 
 namespace System.Net.Test.Common
 {
@@ -20,7 +21,7 @@ namespace System.Net.Test.Common
     public abstract class LoopbackServerFactory
     {
         public abstract GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null);
-        public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null);
+        public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null, List<(int, long)> times = null, Stopwatch s = null);
 
         public abstract Task<GenericLoopbackConnection> CreateConnectionAsync(SocketWrapper socket, Stream stream, GenericLoopbackOptions options = null);
 
@@ -28,15 +29,52 @@ namespace System.Net.Test.Common
 
         // Common helper methods
 
-        public Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
+        public Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null, List<(int, long)> times = null, Stopwatch s = null)
         {
-            return CreateServerAsync(async (server, uri) =>
+            times?.Add((100, s.ElapsedMilliseconds));
+            var server = CreateServerAsync(async (server, uri) =>
             {
-                Task clientTask = Task.Run(() => clientFunc(uri));
-                Task serverTask = Task.Run(() => serverFunc(server));
+                times?.Add((101, s.ElapsedMilliseconds));
+                Task clientTask = Task.Run(async () =>
+                {
+                    times?.Add((300, s.ElapsedMilliseconds));
+                    try
+                    {
+                        times?.Add((301, s.ElapsedMilliseconds));
+                        await clientFunc(uri);
+                        times?.Add((302, s.ElapsedMilliseconds));
+                    }
+                    catch
+                    {
+                        times?.Add((303, s.ElapsedMilliseconds));
+                        throw;
+                    }
+                    times?.Add((304, s.ElapsedMilliseconds));
+                });
+                times?.Add((102, s.ElapsedMilliseconds));
+                Task serverTask = Task.Run(async () =>
+                {
+                    times?.Add((400, s.ElapsedMilliseconds));
+                    try
+                    {
+                        times?.Add((401, s.ElapsedMilliseconds));
+                        await serverFunc(server);
+                        times?.Add((402, s.ElapsedMilliseconds));
+                    }
+                    catch
+                    {
+                        times?.Add((403, s.ElapsedMilliseconds));
+                        throw;
+                    }
+                    times?.Add((404, s.ElapsedMilliseconds));
+                });
+                times?.Add((103, s.ElapsedMilliseconds));
 
                 await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed().ConfigureAwait(false);
-            }, options: options).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
+                times?.Add((104, s.ElapsedMilliseconds));
+            }, options: options, times: times, s: s).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout + 5000));
+            times?.Add((200, s.ElapsedMilliseconds));
+            return server;
         }
     }
 
