@@ -244,7 +244,7 @@
       <_EmBuilder Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.bat</_EmBuilder>
       <_EmBuilder Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.py</_EmBuilder>
       <_EmccCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_EmccCompileRsp>
-      <_EmccLocalFlags>--cache "$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'emscripten-cache'))"</_EmccLocalFlags>
+      <_EmccLocalFlags>--cache $([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'emscripten-cache'))</_EmccLocalFlags>
     </PropertyGroup>
 
     <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
