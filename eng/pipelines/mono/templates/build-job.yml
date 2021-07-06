@@ -146,7 +146,7 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: ./build$(scriptExt) -subset mono$(msCorDbi) -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) $(DarwinFrameworks))
+      - script: ./build$(scriptExt) -subset mono$(msCorDbi) -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter) $(DarwinFrameworks)
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: build$(scriptExt) -subset mono$(msCorDbi) -c $(buildConfig) -arch $(archType) $(osOverride) -ci $(officialBuildIdArg) $(aotCrossParameter) $(llvmParameter)
