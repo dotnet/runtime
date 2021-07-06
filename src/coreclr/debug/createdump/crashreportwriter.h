@@ -18,10 +18,6 @@ public:
     virtual ~CrashReportWriter();
     void WriteCrashReport(const std::string& dumpFileName);
 
-private:
-    bool OpenWriter(const char* fileName);
-    void CloseWriter();
-
     void WriteValue(const char* key, const char* value);
     void WriteValueBool(const char* key, bool value);
     void WriteValue32(const char* key, uint32_t value);
@@ -31,8 +27,11 @@ private:
     void OpenArray(const char* key);
     void CloseArray();
 
-    void WriteCrashReport(JsonWriter& writer);
-    void WriteStackFrame(JsonWriter& writer, const StackFrame& frame);
+private:
+    bool OpenWriter(const char* fileName);
+    void CloseWriter();
+    void WriteCrashReport();
+    void WriteStackFrame(const StackFrame& frame);
     void Write(const std::string& text);
     void Write(const char* buffer);
     void Indent(std::string& text);

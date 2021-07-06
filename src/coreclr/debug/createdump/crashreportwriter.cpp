@@ -176,8 +176,8 @@ CrashReportWriter::WriteCrashReport()
     {
         WriteValue("ExceptionType", exceptionType);
     }
-    WriteSysctl("kern.osproductversion", this, "OSVersion");
-    WriteSysctl("hw.model", this, "SystemModel");
+    WriteSysctl("kern.osproductversion", *this, "OSVersion");
+    WriteSysctl("hw.model", *this, "SystemModel");
     WriteValue("SystemManufacturer", "apple");
     CloseObject();              // parameters
 }
