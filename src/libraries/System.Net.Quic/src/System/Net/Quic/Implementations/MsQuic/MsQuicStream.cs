@@ -26,12 +26,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Used to check if StartAsync has been called.
         private bool _started;
 
-        // Used by the class to indicate that the stream is readable.
-        private bool _canRead;
-
-        // Used by the class to indicate that the stream is writable.
-        private bool _canWrite;
-
         private int _disposed;
 
         private sealed class State
@@ -86,9 +80,11 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal MsQuicStream(MsQuicConnection.State connectionState, SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
         {
             _state.Handle = streamHandle;
-            _canRead = true;
-            _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             _started = true;
+            if (flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL))
+            {
+                _state.SendState = SendState.Closed;
+            }
 
             _state.StateGCHandle = GCHandle.Alloc(_state);
             try
@@ -116,7 +112,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 NetEventSource.Info(
                     _state,
-                    $"[Stream#{_state.GetHashCode()}] inbound {(_canWrite ? "bi" : "uni")}directional stream created " +
+                    $"[Stream#{_state.GetHashCode()}] inbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
                         $"in Connection#{_state.ConnectionState.GetHashCode()}.");
             }
         }
@@ -126,9 +122,11 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             Debug.Assert(connectionState.Handle != null);
 
-            _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
-            _canWrite = true;
             _state.StateGCHandle = GCHandle.Alloc(_state);
+            if (flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL))
+            {
+                _state.ReadState = ReadState.Closed;
+            }
 
             try
             {
@@ -164,14 +162,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 NetEventSource.Info(
                     _state,
-                    $"[Stream#{_state.GetHashCode()}] outbound {(_canRead ? "bi" : "uni")}directional stream created " +
+                    $"[Stream#{_state.GetHashCode()}] outbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
                         $"in Connection#{_state.ConnectionState.GetHashCode()}.");
             }
         }
 
-        internal override bool CanRead => _canRead;
+        internal override bool CanRead => _disposed == 0 && _state.ReadState < ReadState.Aborted;
 
-        internal override bool CanWrite => _canWrite;
+        internal override bool CanWrite => _disposed == 0 && _state.SendState < SendState.Aborted;
 
         internal override long StreamId
         {
@@ -238,9 +236,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private async ValueTask<CancellationTokenRegistration> HandleWriteStartState(CancellationToken cancellationToken)
         {
-            if (!_canWrite)
+            if (_state.SendState == SendState.Closed)
             {
                 throw new InvalidOperationException(SR.net_quic_writing_notallowed);
+            }
+            else if ( _state.SendState == SendState.Aborted)
+            {
+                throw new OperationCanceledException(cancellationToken);
             }
 
             if (cancellationToken.IsCancellationRequested)
@@ -326,7 +328,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            if (!_canRead)
+            if (_state.ReadState == ReadState.Closed)
             {
                 throw new InvalidOperationException(SR.net_quic_reading_notallowed);
             }
@@ -430,12 +432,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override void AbortRead(long errorCode)
         {
             ThrowIfDisposed();
-            Debug.Assert(errorCode != 0);
 
             lock (_state)
             {
                 _state.ReadState = ReadState.Aborted;
-                _canRead = false;
             }
 
             StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, errorCode);
@@ -444,15 +444,19 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override void AbortWrite(long errorCode)
         {
             ThrowIfDisposed();
-            Debug.Assert(errorCode != 0);
 
             bool shouldComplete = false;
 
             lock (_state)
             {
-                if (!_canWrite)
+                if (_state.SendState >= SendState.Aborted)
                 {
+                    // No need to abort again.
                     return;
+                }
+                else if (_state.SendState == SendState.None)
+                {
+                    _state.SendState = SendState.Aborted;
                 }
 
                 if (_state.ShutdownWriteState == ShutdownWriteState.None)
@@ -460,8 +464,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                     _state.ShutdownWriteState = ShutdownWriteState.Canceled;
                     shouldComplete = true;
                 }
-
-                _canWrite = false;
             }
 
             if (shouldComplete)
@@ -477,7 +479,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             uint status = MsQuicApi.Api.StreamShutdownDelegate(_state.Handle, flags, errorCode);
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamShutdown failed.");
-            _canWrite = false;
         }
 
         internal override async ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
@@ -555,7 +556,11 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override void Shutdown()
         {
             ThrowIfDisposed();
-            _canWrite = false;
+
+            lock (_state)
+            {
+                _state.SendState = SendState.Finished;
+            }
 
             // it is ok to send shutdown several times, MsQuic will ignore it
             StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
@@ -632,12 +637,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             bool releaseHandles = false;
             lock (_state)
             {
-                if (_canWrite && _state.ShutdownWriteState == ShutdownWriteState.None)
+                if (_state.SendState < SendState.Aborted)
                 {
                     callShutdown = true;
                 }
 
-                if (_canRead && _state.ReadState != ReadState.Aborted && _state.ReadState != ReadState.ReadsCompleted)
+                if (_state.ReadState < ReadState.ReadsCompleted)
                 {
                     abortRead = true;
                     _state.ReadState = ReadState.Aborted;
@@ -655,9 +660,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                     _state.ShutdownState = ShutdownState.Finished;
                 }
             }
-
-            _canRead = false;
-            _canWrite = false;
 
             if (callShutdown)
             {
@@ -1322,7 +1324,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             /// <summary>
             /// Connection was closed, either by user or by the peer.
             /// </summary>
-            ConnectionClosed
+            ConnectionClosed,
+
+            /// <summary>
+            /// Stream is closed for reading.
+            /// </summary>
+            Closed
         }
 
         private enum ShutdownWriteState
@@ -1348,7 +1355,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             Pending,
             Aborted,
             Finished,
-            ConnectionClosed
+            ConnectionClosed,
+            Closed
         }
     }
 }

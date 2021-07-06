@@ -119,10 +119,10 @@ namespace System.Net.Quic.Tests
         public async Task WaitForAvailableUnidirectionStreamsAsyncWorks()
         {
             using QuicListener listener = CreateQuicListener(maxUnidirectionalStreams: 1);
-            QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
 
             ValueTask clientTask = clientConnection.ConnectAsync();
-            QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
             await clientTask;
             listener.Dispose();
 
@@ -140,8 +140,6 @@ namespace System.Net.Quic.Tests
             newStream.Dispose();
 
             await waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(10));
-            serverConnection.Dispose();
-            clientConnection.Dispose();
         }
 
         [Fact]
