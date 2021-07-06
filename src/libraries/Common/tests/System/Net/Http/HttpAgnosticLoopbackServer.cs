@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -206,7 +207,7 @@ namespace System.Net.Test.Common
             return httpOptions;
         }
 
-        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
+        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null, List<(int, long)> times = null, Stopwatch s = null)
         {
             using (var server = CreateServer(options))
             {
