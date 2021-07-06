@@ -149,261 +149,261 @@ namespace System
             return TimeZoneInfoResult.Success;
         }
 
-        internal static string[] GetTimeZoneIds()
+        private static string[] GetTimeZoneIds()
         {
             return tzData.GetTimeZoneIds();
         }
-    }
 
-    [StructLayout(LayoutKind.Sequential, Pack=1)]
-    internal unsafe struct AndroidTzDataHeader
-    {
-        public fixed byte signature[12];
-        public int indexOffset;
-        public int dataOffset;
-    }
-
-    [StructLayout(LayoutKind.Sequential, Pack=1)]
-    internal unsafe struct AndroidTzDataEntry
-    {
-        public fixed byte id[40];
-        public int byteOffset;
-        public int length;
-        public int rawUtcOffset;
-    }
-
-    /*
-     * Android v4.3 Timezone support infrastructure.
-     *
-     * This is a C# port of libcore.util.ZoneInfoDB:
-     *
-     *    https://android.googlesource.com/platform/libcore/+/master/luni/src/main/java/libcore/util/ZoneInfoDB.java
-     *
-     * This is needed in order to read Android v4.3 tzdata files.
-     *
-     * Android 10+ moved the up-to-date tzdata location to a module updatable via the Google Play Store and the
-     * database location changed (https://source.android.com/devices/architecture/modular-system/runtime#time-zone-data-interactions)
-     * The older locations still exist (at least the `/system/usr/share/zoneinfo` one) but they won't be updated.
-     */
-    internal sealed class AndroidTzData
-    {
-        internal static readonly string[] Paths = new string[] {
-            GetApexTimeDataRoot() + "/etc/tz/tzdata", // Android 10+, TimeData module where the updates land
-            GetApexRuntimeRoot() + "/etc/tz/tzdata",  // Android 10+, Fallback location if the above isn't found or corrupted
-            Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/tzdata",
-            Environment.GetEnvironmentVariable("ANDROID_ROOT") + "/usr/share/zoneinfo/tzdata",
-        };
-
-        private string tzdataPath;
-        private Stream? data;
-
-        private string[]? ids;
-        private int[]? byteOffsets;
-        private int[]? lengths;
-
-        public AndroidTzData()
+        /*
+        * Android v4.3 Timezone support infrastructure.
+        *
+        * This is a C# port of libcore.util.ZoneInfoDB:
+        *
+        *    https://android.googlesource.com/platform/libcore/+/master/luni/src/main/java/libcore/util/ZoneInfoDB.java
+        *
+        * This is needed in order to read Android v4.3 tzdata files.
+        *
+        * Android 10+ moved the up-to-date tzdata location to a module updatable via the Google Play Store and the
+        * database location changed (https://source.android.com/devices/architecture/modular-system/runtime#time-zone-data-interactions)
+        * The older locations still exist (at least the `/system/usr/share/zoneinfo` one) but they won't be updated.
+        */
+        private sealed class AndroidTzData
         {
-            foreach (var path in Paths)
+            [StructLayout(LayoutKind.Sequential, Pack=1)]
+            private unsafe struct AndroidTzDataHeader
             {
-                if (LoadData(path))
+                public fixed byte signature[12];
+                public int indexOffset;
+                public int dataOffset;
+            }
+
+            [StructLayout(LayoutKind.Sequential, Pack=1)]
+            private unsafe struct AndroidTzDataEntry
+            {
+                public fixed byte id[40];
+                public int byteOffset;
+                public int length;
+                public int rawUtcOffset;
+            }
+
+            private static readonly string[] Paths = new string[] {
+                GetApexTimeDataRoot() + "/etc/tz/tzdata", // Android 10+, TimeData module where the updates land
+                GetApexRuntimeRoot() + "/etc/tz/tzdata",  // Android 10+, Fallback location if the above isn't found or corrupted
+                Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/tzdata",
+                Environment.GetEnvironmentVariable("ANDROID_ROOT") + "/usr/share/zoneinfo/tzdata",
+            };
+
+            private string tzdataPath;
+            private Stream? data;
+
+            private string[]? ids;
+            private int[]? byteOffsets;
+            private int[]? lengths;
+
+            public AndroidTzData()
+            {
+                foreach (var path in Paths)
                 {
-                    tzdataPath = path;
-                    return;
+                    if (LoadData(path))
+                    {
+                        tzdataPath = path;
+                        return;
+                    }
+                }
+
+                tzdataPath = "/";
+                ids = new[]{ "GMT" };
+            }
+
+            private static string GetApexTimeDataRoot()
+            {
+                string? ret = Environment.GetEnvironmentVariable("ANDROID_TZDATA_ROOT");
+                if (!string.IsNullOrEmpty(ret)) {
+                    return ret;
+                }
+
+                return "/apex/com.android.tzdata";
+            }
+
+            private static string GetApexRuntimeRoot()
+            {
+                string? ret = Environment.GetEnvironmentVariable("ANDROID_RUNTIME_ROOT");
+                if (!string.IsNullOrEmpty(ret))
+                {
+                    return ret;
+                }
+
+                return "/apex/com.android.runtime";
+            }
+
+            private bool LoadData(string path)
+            {
+                if (!File.Exists(path))
+                {
+                    return false;
+                }
+
+                try
+                {
+                    data = File.OpenRead(path);
+                }
+                catch (IOException)
+                {
+                    return false;
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return false;
+                }
+
+                try
+                {
+                    ReadHeader();
+                    return true;
+                }
+                catch
+                {
+                    return false;
                 }
             }
 
-            tzdataPath = "/";
-            ids = new[]{ "GMT" };
-        }
-
-        private static string GetApexTimeDataRoot()
-        {
-            string? ret = Environment.GetEnvironmentVariable("ANDROID_TZDATA_ROOT");
-            if (!string.IsNullOrEmpty(ret)) {
-                return ret;
-            }
-
-            return "/apex/com.android.tzdata";
-        }
-
-        private static string GetApexRuntimeRoot()
-        {
-            string? ret = Environment.GetEnvironmentVariable("ANDROID_RUNTIME_ROOT");
-            if (!string.IsNullOrEmpty(ret))
+            private unsafe void ReadHeader()
             {
-                return ret;
-            }
+                int size   = Math.Max(Marshal.SizeOf(typeof(AndroidTzDataHeader)), Marshal.SizeOf(typeof(AndroidTzDataEntry)));
+                var buffer = new byte[size];
+                var header = ReadAt<AndroidTzDataHeader>(0, buffer);
 
-            return "/apex/com.android.runtime";
-        }
+                header.indexOffset = NetworkToHostOrder(header.indexOffset);
+                header.dataOffset = NetworkToHostOrder(header.dataOffset);
 
-        private bool LoadData(string path)
-        {
-            if (!File.Exists(path))
-            {
-                return false;
-            }
+                sbyte* s = (sbyte*)header.signature;
+                string magic = new string(s, 0, 6, Encoding.ASCII);
 
-            try
-            {
-                data = File.OpenRead(path);
-            }
-            catch (IOException)
-            {
-                return false;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return false;
-            }
+                if (magic != "tzdata" || header.signature[11] != 0)
+                {
+                    var b = new StringBuilder();
+                    b.Append("bad tzdata magic:");
+                    for (int i = 0; i < 12; ++i) {
+                        b.Append(' ').Append(((byte)s[i]).ToString("x2"));
+                    }
 
-            try
-            {
-                ReadHeader();
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private unsafe void ReadHeader()
-        {
-            int size   = Math.Max(Marshal.SizeOf(typeof(AndroidTzDataHeader)), Marshal.SizeOf(typeof(AndroidTzDataEntry)));
-            var buffer = new byte[size];
-            var header = ReadAt<AndroidTzDataHeader>(0, buffer);
-
-            header.indexOffset = NetworkToHostOrder(header.indexOffset);
-            header.dataOffset = NetworkToHostOrder(header.dataOffset);
-
-            sbyte* s = (sbyte*)header.signature;
-            string magic = new string(s, 0, 6, Encoding.ASCII);
-
-            if (magic != "tzdata" || header.signature[11] != 0)
-            {
-                var b = new StringBuilder();
-                b.Append("bad tzdata magic:");
-                for (int i = 0; i < 12; ++i) {
-                    b.Append(' ').Append(((byte)s[i]).ToString("x2"));
+                    //TODO: Put strings in resource file
+                    throw new InvalidOperationException("bad tzdata magic: " + b.ToString());
                 }
 
-                //TODO: Put strings in resource file
-                throw new InvalidOperationException("bad tzdata magic: " + b.ToString());
+                ReadIndex(header.indexOffset, header.dataOffset, buffer);
             }
 
-            ReadIndex(header.indexOffset, header.dataOffset, buffer);
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2087:UnrecognizedReflectionPattern",
-            Justification = "Implementation detail of Android TimeZone")]
-        private unsafe T ReadAt<T>(long position, byte[] buffer)
-            where T : struct
-        {
-            int size = Marshal.SizeOf(typeof(T));
-            if (buffer.Length < size)
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2087:UnrecognizedReflectionPattern",
+                Justification = "Implementation detail of Android TimeZone")]
+            private unsafe T ReadAt<T>(long position, byte[] buffer)
+                where T : struct
             {
-                //TODO: Put strings in resource file
-                throw new InvalidOperationException("Internal error: buffer too small");
-            }
-
-            data!.Position = position;
-            int r;
-            if ((r = data!.Read(buffer, 0, size)) < size)
-            {
-                //TODO: Put strings in resource file
-                throw new InvalidOperationException(
-                        string.Format("Error reading '{0}': read {1} bytes, expected {2}", tzdataPath, r, size));
-            }
-
-            fixed (byte* b = buffer)
-            {
-                return (T)Marshal.PtrToStructure((IntPtr)b, typeof(T))!;
-            }
-        }
-
-        private static int NetworkToHostOrder(int value)
-        {
-            if (!BitConverter.IsLittleEndian)
-                return value;
-
-            return
-                (((value >> 24) & 0xFF) |
-                    ((value >> 08) & 0xFF00) |
-                    ((value << 08) & 0xFF0000) |
-                    ((value << 24)));
-        }
-
-        private static unsafe int GetStringLength(sbyte* s, int maxLength)
-        {
-            int len;
-            for (len = 0; len < maxLength; len++, s++)
-            {
-                if (*s == 0)
-                    break;
-            }
-            return len;
-        }
-
-        private unsafe void ReadIndex(int indexOffset, int dataOffset, byte[] buffer)
-        {
-            int indexSize = dataOffset - indexOffset;
-            int entrySize = Marshal.SizeOf(typeof(AndroidTzDataEntry));
-            int entryCount = indexSize / entrySize;
-
-            byteOffsets = new int[entryCount];
-            ids = new string[entryCount];
-            lengths = new int[entryCount];
-
-            for (int i = 0; i < entryCount; ++i)
-            {
-                var entry = ReadAt<AndroidTzDataEntry>(indexOffset + (entrySize*i), buffer);
-                var p = (sbyte*)entry.id;
-
-                byteOffsets![i] = NetworkToHostOrder(entry.byteOffset) + dataOffset;
-                ids![i] = new string(p, 0, GetStringLength(p, 40), Encoding.ASCII);
-                lengths![i] = NetworkToHostOrder(entry.length);
-
-                if (lengths![i] < Marshal.SizeOf(typeof(AndroidTzDataHeader)))
+                int size = Marshal.SizeOf(typeof(T));
+                if (buffer.Length < size)
                 {
                     //TODO: Put strings in resource file
-                    throw new InvalidOperationException("Length in index file < sizeof(tzhead)");
+                    throw new InvalidOperationException("private error: buffer too small");
                 }
-            }
-        }
 
-        public string[] GetTimeZoneIds()
-        {
-            return ids!;
-        }
-
-        public byte[] GetTimeZoneData(string id)
-        {
-            int i = Array.BinarySearch(ids!, id, StringComparer.Ordinal);
-            if (i < 0)
-            {
-                //TODO: Put strings in resource file
-                throw new InvalidOperationException("Error finding the timezone id");
-            }
-
-            int offset = byteOffsets![i];
-            int length = lengths![i];
-            var buffer = new byte[length];
-
-            lock (data!)
-            {
-                data!.Position = offset;
+                data!.Position = position;
                 int r;
-                if ((r = data!.Read(buffer, 0, buffer.Length)) < buffer.Length)
+                if ((r = data!.Read(buffer, 0, size)) < size)
                 {
                     //TODO: Put strings in resource file
                     throw new InvalidOperationException(
-                            string.Format("Unable to fully read from file '{0}' at offset {1} length {2}; read {3} bytes expected {4}.",
-                                tzdataPath, offset, length, r, buffer.Length));
+                            string.Format("Error reading '{0}': read {1} bytes, expected {2}", tzdataPath, r, size));
+                }
+
+                fixed (byte* b = buffer)
+                {
+                    return (T)Marshal.PtrToStructure((IntPtr)b, typeof(T))!;
                 }
             }
 
-            return buffer;
+            private static int NetworkToHostOrder(int value)
+            {
+                if (!BitConverter.IsLittleEndian)
+                    return value;
+
+                return
+                    (((value >> 24) & 0xFF) |
+                        ((value >> 08) & 0xFF00) |
+                        ((value << 08) & 0xFF0000) |
+                        ((value << 24)));
+            }
+
+            private static unsafe int GetStringLength(sbyte* s, int maxLength)
+            {
+                int len;
+                for (len = 0; len < maxLength; len++, s++)
+                {
+                    if (*s == 0)
+                        break;
+                }
+                return len;
+            }
+
+            private unsafe void ReadIndex(int indexOffset, int dataOffset, byte[] buffer)
+            {
+                int indexSize = dataOffset - indexOffset;
+                int entrySize = Marshal.SizeOf(typeof(AndroidTzDataEntry));
+                int entryCount = indexSize / entrySize;
+
+                byteOffsets = new int[entryCount];
+                ids = new string[entryCount];
+                lengths = new int[entryCount];
+
+                for (int i = 0; i < entryCount; ++i)
+                {
+                    var entry = ReadAt<AndroidTzDataEntry>(indexOffset + (entrySize*i), buffer);
+                    var p = (sbyte*)entry.id;
+
+                    byteOffsets![i] = NetworkToHostOrder(entry.byteOffset) + dataOffset;
+                    ids![i] = new string(p, 0, GetStringLength(p, 40), Encoding.ASCII);
+                    lengths![i] = NetworkToHostOrder(entry.length);
+
+                    if (lengths![i] < Marshal.SizeOf(typeof(AndroidTzDataHeader)))
+                    {
+                        //TODO: Put strings in resource file
+                        throw new InvalidOperationException("Length in index file < sizeof(tzhead)");
+                    }
+                }
+            }
+
+            public string[] GetTimeZoneIds()
+            {
+                return ids!;
+            }
+
+            public byte[] GetTimeZoneData(string id)
+            {
+                int i = Array.BinarySearch(ids!, id, StringComparer.Ordinal);
+                if (i < 0)
+                {
+                    //TODO: Put strings in resource file
+                    throw new InvalidOperationException("Error finding the timezone id");
+                }
+
+                int offset = byteOffsets![i];
+                int length = lengths![i];
+                var buffer = new byte[length];
+
+                lock (data!)
+                {
+                    data!.Position = offset;
+                    int r;
+                    if ((r = data!.Read(buffer, 0, buffer.Length)) < buffer.Length)
+                    {
+                        //TODO: Put strings in resource file
+                        throw new InvalidOperationException(
+                                string.Format("Unable to fully read from file '{0}' at offset {1} length {2}; read {3} bytes expected {4}.",
+                                    tzdataPath, offset, length, r, buffer.Length));
+                    }
+                }
+
+                return buffer;
+            }
         }
     }
 }
