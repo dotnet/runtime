@@ -485,6 +485,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData("\t23:59:59")] // Otherwise valid but has invalid json character
         [InlineData("\\t23:59:59")] // Otherwise valid but has leading whitespace
         [InlineData("23:59:59   ")] // Otherwise valid but has trailing whitespace
         [InlineData("24:00:00")]
