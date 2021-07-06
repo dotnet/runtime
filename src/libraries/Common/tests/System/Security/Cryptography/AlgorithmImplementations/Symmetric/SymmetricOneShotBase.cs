@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Tests
     public abstract class SymmetricOneShotBase
     {
         protected abstract byte[] Key { get; }
-        protected abstract byte[] Iv { get; }
+        protected abstract byte[] IV { get; }
         protected abstract SymmetricAlgorithm CreateAlgorithm();
 
         protected void OneShotRoundtripTest(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode)
@@ -31,13 +31,13 @@ namespace System.Security.Cryptography.Tests
                 byte[] encrypted = mode switch
                 {
                     CipherMode.ECB => alg.EncryptEcb(plaintext, padding),
-                    CipherMode.CBC => alg.EncryptCbc(plaintext, Iv, padding),
+                    CipherMode.CBC => alg.EncryptCbc(plaintext, IV, padding),
                     _ => throw new NotImplementedException(),
                 };
                 byte[] decrypted = mode switch
                 {
                     CipherMode.ECB => alg.DecryptEcb(encrypted, padding),
-                    CipherMode.CBC => alg.DecryptCbc(encrypted, Iv, padding),
+                    CipherMode.CBC => alg.DecryptCbc(encrypted, IV, padding),
                     _ => throw new NotImplementedException(),
                 };
 
@@ -46,13 +46,13 @@ namespace System.Security.Cryptography.Tests
                 decrypted = mode switch
                 {
                     CipherMode.ECB => alg.DecryptEcb(ciphertext, padding),
-                    CipherMode.CBC => alg.DecryptCbc(ciphertext, Iv, padding),
+                    CipherMode.CBC => alg.DecryptCbc(ciphertext, IV, padding),
                     _ => throw new NotImplementedException(),
                 };
                 encrypted = mode switch
                 {
                     CipherMode.ECB => alg.EncryptEcb(decrypted, padding),
-                    CipherMode.CBC => alg.EncryptCbc(decrypted, Iv, padding),
+                    CipherMode.CBC => alg.EncryptCbc(decrypted, IV, padding),
                     _ => throw new NotImplementedException(),
                 };
 
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Tests
                 bool result = mode switch
                 {
                     CipherMode.ECB => alg.TryDecryptEcb(ciphertext, destinationBuffer, padding, out bytesWritten),
-                    CipherMode.CBC => alg.TryDecryptCbc(ciphertext, Iv, destinationBuffer, out bytesWritten, padding),
+                    CipherMode.CBC => alg.TryDecryptCbc(ciphertext, IV, destinationBuffer, out bytesWritten, padding),
                     _ => throw new NotImplementedException(),
                 };
 
@@ -105,7 +105,7 @@ namespace System.Security.Cryptography.Tests
                 bool result = mode switch
                 {
                     CipherMode.ECB => alg.TryEncryptEcb(plaintext, destinationBuffer, padding, out bytesWritten),
-                    CipherMode.CBC => alg.TryEncryptCbc(plaintext, Iv, destinationBuffer, out bytesWritten, padding),
+                    CipherMode.CBC => alg.TryEncryptCbc(plaintext, IV, destinationBuffer, out bytesWritten, padding),
                     _ => throw new NotImplementedException(),
                 };
                 Assert.False(result, "TryEncrypt");
@@ -126,7 +126,7 @@ namespace System.Security.Cryptography.Tests
                 bool result = mode switch
                     {
                         CipherMode.ECB => alg.TryDecryptEcb(ciphertext, destinationBuffer, padding, out bytesWritten),
-                        CipherMode.CBC => alg.TryDecryptCbc(ciphertext, Iv, destinationBuffer, out bytesWritten, padding),
+                        CipherMode.CBC => alg.TryDecryptCbc(ciphertext, IV, destinationBuffer, out bytesWritten, padding),
                         _ => throw new NotImplementedException(),
                     };
                 Assert.True(result, "TryDecrypt");
@@ -154,7 +154,7 @@ namespace System.Security.Cryptography.Tests
                 bool result = mode switch
                 {
                     CipherMode.ECB => alg.TryEncryptEcb(plaintext, destinationBuffer, padding, out bytesWritten),
-                    CipherMode.CBC => alg.TryEncryptCbc(plaintext, Iv, destinationBuffer, out bytesWritten, padding),
+                    CipherMode.CBC => alg.TryEncryptCbc(plaintext, IV, destinationBuffer, out bytesWritten, padding),
                     _ => throw new NotImplementedException(),
                 };
                 Assert.True(result, "TryEncrypt");
@@ -179,7 +179,7 @@ namespace System.Security.Cryptography.Tests
                 bool result = mode switch
                 {
                     CipherMode.ECB => alg.TryDecryptEcb(ciphertext, destinationBuffer, padding, out bytesWritten),
-                    CipherMode.CBC => alg.TryDecryptCbc(ciphertext, Iv, destinationBuffer, out bytesWritten, padding),
+                    CipherMode.CBC => alg.TryDecryptCbc(ciphertext, IV, destinationBuffer, out bytesWritten, padding),
                     _ => throw new NotImplementedException(),
                 };
 
@@ -207,7 +207,7 @@ namespace System.Security.Cryptography.Tests
                 bool result = mode switch
                 {
                     CipherMode.ECB => alg.TryEncryptEcb(plaintext, destinationBuffer, padding, out bytesWritten),
-                    CipherMode.CBC => alg.TryEncryptCbc(plaintext, Iv, destinationBuffer, out bytesWritten, padding),
+                    CipherMode.CBC => alg.TryEncryptCbc(plaintext, IV, destinationBuffer, out bytesWritten, padding),
                     _ => throw new NotImplementedException(),
                 };
 
@@ -243,7 +243,7 @@ namespace System.Security.Cryptography.Tests
                     bool result = mode switch
                     {
                         CipherMode.ECB => alg.TryDecryptEcb(ciphertextBuffer, destinationBuffer, padding, out bytesWritten),
-                        CipherMode.CBC => alg.TryDecryptCbc(ciphertextBuffer, Iv, destinationBuffer, out bytesWritten, padding),
+                        CipherMode.CBC => alg.TryDecryptCbc(ciphertextBuffer, IV, destinationBuffer, out bytesWritten, padding),
                         _ => throw new NotImplementedException(),
                     };
                     Assert.True(result, "TryDecrypt");
@@ -278,7 +278,7 @@ namespace System.Security.Cryptography.Tests
                     bool result = mode switch
                     {
                         CipherMode.ECB => alg.TryEncryptEcb(plaintextBuffer, destinationBuffer, padding, out bytesWritten),
-                        CipherMode.CBC => alg.TryEncryptCbc(plaintextBuffer, Iv, destinationBuffer, out bytesWritten, padding),
+                        CipherMode.CBC => alg.TryEncryptCbc(plaintextBuffer, IV, destinationBuffer, out bytesWritten, padding),
                         _ => throw new NotImplementedException(),
                     };
                     Assert.True(result, "TryEncrypt");
@@ -298,7 +298,7 @@ namespace System.Security.Cryptography.Tests
                 byte[] decrypted = mode switch
                 {
                     CipherMode.ECB => alg.DecryptEcb(ciphertext.AsSpan(), padding),
-                    CipherMode.CBC => alg.DecryptCbc(ciphertext.AsSpan(), Iv.AsSpan(), padding),
+                    CipherMode.CBC => alg.DecryptCbc(ciphertext.AsSpan(), IV.AsSpan(), padding),
                     _ => throw new NotImplementedException(),
                 };
 
@@ -314,7 +314,7 @@ namespace System.Security.Cryptography.Tests
                 byte[] encrypted = mode switch
                 {
                     CipherMode.ECB => alg.EncryptEcb(plaintext.AsSpan(), padding),
-                    CipherMode.CBC => alg.EncryptCbc(plaintext.AsSpan(), Iv.AsSpan(), padding),
+                    CipherMode.CBC => alg.EncryptCbc(plaintext.AsSpan(), IV.AsSpan(), padding),
                     _ => throw new NotImplementedException(),
                 };
 
@@ -330,7 +330,7 @@ namespace System.Security.Cryptography.Tests
                 byte[] decrypted = mode switch
                 {
                     CipherMode.ECB => alg.DecryptEcb(ciphertext, padding),
-                    CipherMode.CBC => alg.DecryptCbc(ciphertext, Iv, padding),
+                    CipherMode.CBC => alg.DecryptCbc(ciphertext, IV, padding),
                     _ => throw new NotImplementedException(),
                 };
 
@@ -346,7 +346,7 @@ namespace System.Security.Cryptography.Tests
                 byte[] encrypted = mode switch
                 {
                     CipherMode.ECB => alg.EncryptEcb(plaintext, padding),
-                    CipherMode.CBC => alg.EncryptCbc(plaintext, Iv, padding),
+                    CipherMode.CBC => alg.EncryptCbc(plaintext, IV, padding),
                     _ => throw new NotImplementedException(),
                 };
 

@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
                 0x2F, 0x78, 0x10, 0x68, 0x06, 0xA6, 0x35, 0x50,
             };
 
-        protected override byte[] Iv => new byte[]
+        protected override byte[] IV => new byte[]
             {
                 0x01, 0x01, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08
             };
