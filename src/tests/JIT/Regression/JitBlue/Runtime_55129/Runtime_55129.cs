@@ -3,14 +3,14 @@
 
 using System.Runtime.CompilerServices;
 
-public class Program
+public class Runtime_55129
 {
     public static int Main()
     {
         int result = 100;
-        if (!Program1.Run())
+        if (!Runtime_55129_1.Run())
             result |= 1;
-        if (!Program2.Run())
+        if (!Runtime_55129_2.Run())
             result |= 2;
         return result;
     }
@@ -18,7 +18,7 @@ public class Program
 
 // These tests failed because of a missing zero extension because a peephole
 // did not handle that 'movsxd' would sign extend.
-public class Program1
+public class Runtime_55129_1
 {
     static I s_i = new C();
     static short s_7;
@@ -66,7 +66,7 @@ class C1
     public ulong F1;
 }
 
-public class Program2
+public class Runtime_55129_2
 {
     static int[] s_2 = new int[] { -1 };
     static C0 s_4 = new C0();
