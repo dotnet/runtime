@@ -173,7 +173,7 @@ namespace System
             e = null;
 
             // mono/mono FindSystemTimeZoneById suggests Local scenario
-            value = id == "Local" ? GetLocalTimeZoneCore() : GetTimeZone(id, id);
+            value = id == LocalId ? GetLocalTimeZoneCore() : GetTimeZone(id, id);
 
             if (value == null)
             {
