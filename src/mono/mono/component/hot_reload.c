@@ -1145,7 +1145,7 @@ hot_reload_get_method_debug_information (MonoImage *image_dppdb, int idx)
 			const char *ptr = mono_metadata_blob_heap (image_dppdb, cols [MONO_METHODBODY_SEQ_POINTS]);
 			return ptr;
 		}
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb encmap i=%d: token=0x%08x (table=%s): %d", i, map_token, mono_meta_table_name (token_table));
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb encmap i=%d: token=0x%08x (table=%s)", i, map_token, mono_meta_table_name (token_table));
 	}
 	return NULL;
 }
