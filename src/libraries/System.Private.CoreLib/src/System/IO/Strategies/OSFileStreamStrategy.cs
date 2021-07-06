@@ -128,8 +128,6 @@ namespace System.IO.Strategies
 
         internal sealed override bool IsClosed => _fileHandle.IsClosed;
 
-        internal sealed override bool IsPipe => _fileHandle.IsPipe;
-
         // Flushing is the responsibility of BufferedFileStreamStrategy
         internal sealed override SafeFileHandle SafeFileHandle
         {
@@ -265,7 +263,7 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
-            int r = RandomAccess.ReadAtOffset(_fileHandle, buffer, CanSeek ? _filePosition : -1);
+            int r = RandomAccess.ReadAtOffset(_fileHandle, buffer, _filePosition);
             Debug.Assert(r >= 0, $"RandomAccess.ReadAtOffset returned {r}.");
             _filePosition += r;
 
@@ -289,7 +287,7 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
-            int r = RandomAccess.WriteAtOffset(_fileHandle, buffer, CanSeek ? _filePosition : -1);
+            int r = RandomAccess.WriteAtOffset(_fileHandle, buffer, _filePosition);
             Debug.Assert(r >= 0, $"RandomAccess.WriteAtOffset returned {r}.");
             _filePosition += r;
 

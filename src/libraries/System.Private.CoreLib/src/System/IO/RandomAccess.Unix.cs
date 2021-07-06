@@ -28,7 +28,10 @@ namespace System.IO
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                int result = fileOffset >= 0 ?
+                // The Windows implementation uses ReadFile, which ignores the offset if the handle
+                // isn't seekable.  We do the same manually with PRead vs Read, in order to enable
+                // the function to be used by FileStream for all the same situations.
+                int result = handle.CanSeek ?
                     Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset) :
                     Interop.Sys.Read(handle, bufPtr, buffer.Length);
                 FileStreamHelpers.CheckFileCall(result, handle.Path);
@@ -80,7 +83,10 @@ namespace System.IO
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                int result = fileOffset >= 0 ?
+                // The Windows implementation uses WriteFile, which ignores the offset if the handle
+                // isn't seekable.  We do the same manually with PWrite vs Write, in order to enable
+                // the function to be used by FileStream for all the same situations.
+                int result = handle.CanSeek ?
                     Interop.Sys.PWrite(handle, bufPtr, buffer.Length, fileOffset) :
                     Interop.Sys.Write(handle, bufPtr, buffer.Length);
                 FileStreamHelpers.CheckFileCall(result, handle.Path);

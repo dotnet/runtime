@@ -316,7 +316,7 @@ namespace System.IO.Strategies
 
             // If we are reading from a device with no clear EOF like a
             // serial port or a pipe, this will cause us to block incorrectly.
-            if (!_fileHandle.IsPipe)
+            if (_fileHandle.CanSeek)
             {
                 // If we hit the end of the buffer and didn't have enough bytes, we must
                 // read some more from the underlying stream.  However, if we got
@@ -581,7 +581,7 @@ namespace System.IO.Strategies
 
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
 
-            if (_fileHandle.IsPipe)
+            if (!_fileHandle.CanSeek)
             {
                 // Pipes are tricky, at least when you have 2 different pipes
                 // that you want to use simultaneously.  When redirecting stdout
@@ -612,7 +612,7 @@ namespace System.IO.Strategies
                 }
             }
 
-            Debug.Assert(!_fileHandle.IsPipe, "Should not be a pipe.");
+            Debug.Assert(_fileHandle.CanSeek, "Should be seekable");
 
             // Handle buffering.
             if (_writePos > 0) FlushWriteBuffer();
@@ -791,12 +791,12 @@ namespace System.IO.Strategies
         {
             Debug.Assert(_useAsyncIO);
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
-            Debug.Assert(!_fileHandle.IsPipe || (_readPos == 0 && _readLength == 0), "Win32FileStream must not have buffered data here!  Pipes should be unidirectional.");
+            Debug.Assert(_fileHandle.CanSeek || (_readPos == 0 && _readLength == 0), "Win32FileStream must not have buffered data here!  Pipes should be unidirectional.");
 
             if (!CanWrite) ThrowHelper.ThrowNotSupportedException_UnwritableStream();
 
             bool writeDataStoredInBuffer = false;
-            if (!_fileHandle.IsPipe) // avoid async buffering with pipes, as doing so can lead to deadlocks (see comments in ReadInternalAsyncCore)
+            if (_fileHandle.CanSeek) // avoid async buffering with non-seekable files (e.g. pipes), as doing so can lead to deadlocks (see comments in ReadInternalAsyncCore)
             {
                 // Ensure the buffer is clear for writing
                 if (_writePos == 0)
