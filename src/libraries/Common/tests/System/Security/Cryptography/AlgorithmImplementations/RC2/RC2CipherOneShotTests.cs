@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.RC2.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class RC2CipherOneShotTests : SymmetricOneShotBase
     {
         protected override byte[] Key => new byte[]

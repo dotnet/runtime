@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Des.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class DesCipherOneShotTests : SymmetricOneShotBase
     {
         protected override byte[] Key => new byte[]

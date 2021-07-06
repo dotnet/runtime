@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Aes.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class AesCipherOneShotTests : SymmetricOneShotBase
     {
         protected override byte[] Key =>
