@@ -308,7 +308,6 @@ typedef struct {
 } EventInfo;
 
 typedef struct {
-	/* For EVENT_KIND_EXCEPTION */
 	MonoImage *image;
 	gconstpointer meta_bytes;
 	int meta_len;
