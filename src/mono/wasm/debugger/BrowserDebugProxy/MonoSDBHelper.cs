@@ -84,7 +84,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         UserBreak = 15,
         UserLog = 16,
         Crash = 17,
-        EnCUpdate = 18,
+        EnC = 18,
         MethodUpdate = 19
     }
 

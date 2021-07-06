@@ -689,6 +689,56 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return false;
         }
+
+        private async Task<bool> ProcessEnC(SessionId sessionId, ExecutionContext context, MonoBinaryReader ret_debugger_cmd_reader, CancellationToken token)
+        {
+            int moduleId = ret_debugger_cmd_reader.ReadInt32();
+            int meta_size = ret_debugger_cmd_reader.ReadInt32();
+            byte[] meta_buf = ret_debugger_cmd_reader.ReadBytes(meta_size);
+            int pdb_size = ret_debugger_cmd_reader.ReadInt32();
+            byte[] pdb_buf = ret_debugger_cmd_reader.ReadBytes(pdb_size);
+
+            var assembly_name = await sdbHelper.GetAssemblyNameFromModule(sessionId, moduleId, token);
+            DebugStore store = await LoadStore(sessionId, token);
+            AssemblyInfo asm = store.GetAssemblyByName(assembly_name);
+            foreach (var method in store.EnC(sessionId, asm, meta_buf, pdb_buf))
+                await ResetBreakpoint(sessionId, method, token);
+            return true;
+        }
+
+        private async Task<bool> SendBreakpointsOfMethodUpdated(SessionId sessionId, ExecutionContext context, MonoBinaryReader ret_debugger_cmd_reader, CancellationToken token)
+        {
+            var method_id = ret_debugger_cmd_reader.ReadInt32();
+            var method_token = await sdbHelper.GetMethodToken(sessionId, method_id, token);
+            var assembly_id = await sdbHelper.GetAssemblyIdFromMethod(sessionId, method_id, token);
+            var assembly_name = await sdbHelper.GetAssemblyName(sessionId, assembly_id, token);
+            var method_name = await sdbHelper.GetMethodName(sessionId, method_id, token);
+            DebugStore store = await LoadStore(sessionId, token);
+            AssemblyInfo asm = store.GetAssemblyByName(assembly_name);
+            if (asm == null)
+            {
+                assembly_name = await sdbHelper.GetAssemblyNameFull(sessionId, assembly_id, token);
+                asm = store.GetAssemblyByName(assembly_name);
+                if (asm == null)
+                {
+                    return true;
+                }
+            }
+            MethodInfo method = asm.GetMethodByToken(method_token);
+            if (method == null)
+            {
+                return true;
+            }
+            foreach (var req in context.BreakpointRequests.Values)
+            {
+                if (req.Method != null && req.Method.Assembly.Id == method.Assembly.Id && req.Method.Token == method.Token)
+                {
+                    await SetBreakpoint(sessionId, context.store, req, true, token);
+                }
+            }
+            return true;
+        }
+
         private async Task<bool> SendCallStack(SessionId sessionId, ExecutionContext context, string reason, int thread_id, Breakpoint bp, JObject data, IEnumerable<JObject> orig_callframes, CancellationToken token)
         {
             var callFrames = new List<object>();
@@ -846,60 +896,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     case EventKind.MethodUpdate:
                     {
-                        var method_id = ret_debugger_cmd_reader.ReadInt32();
-                        var method_token = await sdbHelper.GetMethodToken(sessionId, method_id, token);
-                        var assembly_id = await sdbHelper.GetAssemblyIdFromMethod(sessionId, method_id, token);
-                        var assembly_name = await sdbHelper.GetAssemblyName(sessionId, assembly_id, token);
-                        var method_name = await sdbHelper.GetMethodName(sessionId, method_id, token);
-                        DebugStore store = await LoadStore(sessionId, token);
-                        AssemblyInfo asm = store.GetAssemblyByName(assembly_name);
-                        if (asm == null)
-                        {
-                            assembly_name = await sdbHelper.GetAssemblyNameFull(sessionId, assembly_id, token);
-                            asm = store.GetAssemblyByName(assembly_name);
-                            if (asm == null)
-                            {
-                                await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                                return true;
-                            }
-                        }
-                        MethodInfo method = asm.GetMethodByToken(method_token);
-                        if (method == null)
-                        {
-                            await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                            return true;
-                        }
-                        foreach (var req in context.BreakpointRequests.Values)
-                        {
-                            if (req.Method != null && req.Method.Assembly.Id == method.Assembly.Id && req.Method.Token == method.Token)
-                            {
-                                await SetBreakpoint(sessionId, context.store, req, true, token);
-                            }
-                        }
+                        var ret = await SendBreakpointsOfMethodUpdated(sessionId, context, ret_debugger_cmd_reader, token);
                         await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                        return true;
+                        return ret;
                     }
-                    case EventKind.EnCUpdate:
+                    case EventKind.EnC:
                     {
-                        int moduleId = ret_debugger_cmd_reader.ReadInt32();
-                        int meta_size = ret_debugger_cmd_reader.ReadInt32();
-                        byte[] meta_buf = ret_debugger_cmd_reader.ReadBytes(meta_size);
-                        int pdb_size = ret_debugger_cmd_reader.ReadInt32();
-                        byte[] pdb_buf = ret_debugger_cmd_reader.ReadBytes(pdb_size);
-
-                        var assembly_name = await sdbHelper.GetAssemblyNameFromModule(sessionId, moduleId, token);
-                        DebugStore store = await LoadStore(sessionId, token);
-                        AssemblyInfo asm = store.GetAssemblyByName(assembly_name);
-                        try {
-                            foreach (var method in store.EnCUpdate(sessionId, asm, meta_buf, pdb_buf))
-                                await ResetBreakpoint(sessionId, method, token);
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine(e);
-                        }
+                        var ret = await ProcessEnC(sessionId, context, ret_debugger_cmd_reader, token);
                         await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                        return true;
+                        return ret;
                     }
                     case EventKind.Exception:
                     {
@@ -1267,7 +1272,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             await sdbHelper.SetProtocolVersion(sessionId, token);
             await sdbHelper.EnableReceiveRequests(sessionId, EventKind.UserBreak, token);
-            await sdbHelper.EnableReceiveRequests(sessionId, EventKind.EnCUpdate, token);
+            await sdbHelper.EnableReceiveRequests(sessionId, EventKind.EnC, token);
             await sdbHelper.EnableReceiveRequests(sessionId, EventKind.MethodUpdate, token);
 
             DebugStore store = await LoadStore(sessionId, token);

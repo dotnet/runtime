@@ -241,13 +241,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             lineNumber = line,
             columnNumber = column
         };
-
-        internal bool IsEnCMethod()
-        {
-            if (CliLocation != null)
-                return CliLocation.Method.IsEnCMethod;
-            return false;
-        }
     }
 
     internal class SourceId
@@ -541,7 +534,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             Populate();
         }
 
-        public bool EnCUpdate(byte[] meta, byte[] pdb)
+        public bool EnC(byte[] meta, byte[] pdb)
         {
             var asmStream = new MemoryStream(meta);
             MetadataReader asmMetadataReader = MetadataReaderProvider.FromMetadataStream(asmStream).GetMetadataReader();
@@ -902,9 +895,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             public Task<byte[][]> Data { get; set; }
         }
 
-        public IEnumerable<MethodInfo> EnCUpdate(SessionId sessionId, AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
+        public IEnumerable<MethodInfo> EnC(SessionId sessionId, AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
         {
-            asm.EnCUpdate(meta_data, pdb_data);
+            asm.EnC(meta_data, pdb_data);
             foreach (var method in asm.Methods)
             {
                 if (method.Value.IsEnCMethod)
