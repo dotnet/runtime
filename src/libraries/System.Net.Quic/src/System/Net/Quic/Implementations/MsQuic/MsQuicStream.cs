@@ -265,11 +265,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _started = true;
             }
 
-            // if token was already cancelled, this would execute syncronously
+            // if token was already cancelled, this would execute synchronously
             CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
                 var state = (State)s!;
                 bool shouldComplete = false;
+
                 lock (state)
                 {
                     if (state.SendState == SendState.None || state.SendState == SendState.Pending)
@@ -449,12 +450,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             lock (_state)
             {
-                if (_state.SendState >= SendState.Aborted)
-                {
-                    // No need to abort again.
-                    return;
-                }
-                else if (_state.SendState == SendState.None)
+                if (_state.SendState < SendState.Aborted)
                 {
                     _state.SendState = SendState.Aborted;
                 }
