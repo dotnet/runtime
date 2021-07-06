@@ -13,7 +13,27 @@ namespace System
     {
         private const string TimeZoneFileName = "tzdata";
 
-        private static AndroidTzData tzData = new AndroidTzData();
+        private static AndroidTzData? tzData;
+        private static readonly object tzDataLock = new object();
+
+        private static AndroidTzData atzData
+        {
+            get
+            {
+                if (tzData == null)
+                {
+                    lock (tzDataLock)
+                    {
+                        if (tzData == null)
+                        {
+                        tzData = new AndroidTzData();
+                        }
+                    }
+                }
+
+                return tzData;
+            }
+        }
 
         // This should be called when name begins with GMT
         private static int ParseGMTNumericZone(string name)
@@ -98,7 +118,7 @@ namespace System
 
             try
             {
-                byte[] buffer = tzData.GetTimeZoneData(name);
+                byte[] buffer = atzData.GetTimeZoneData(name);
                 return GetTimeZoneFromTzData(buffer, id);
             }
             catch
@@ -186,7 +206,7 @@ namespace System
 
         private static string[] GetTimeZoneIds()
         {
-            return tzData.GetTimeZoneIds();
+            return atzData.GetTimeZoneIds();
         }
 
         /*
