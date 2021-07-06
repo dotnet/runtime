@@ -23,7 +23,7 @@ namespace System.IO
         {
             ValidateInput(handle, fileOffset: 0);
 
-            return GetFileLength(handle, path: null);
+            return GetFileLength(handle);
         }
 
         /// <summary>

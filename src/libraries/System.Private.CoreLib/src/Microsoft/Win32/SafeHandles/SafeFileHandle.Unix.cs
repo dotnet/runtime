@@ -12,6 +12,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         // not using bool? as it's not thread safe
         private volatile NullableBool _canSeek = NullableBool.Undefined;
+        private bool _deleteOnClose;
 
         public SafeFileHandle() : this(ownsHandle: true)
         {
@@ -36,6 +37,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(path != null);
             SafeFileHandle handle = Interop.Sys.Open(path, flags, mode);
+            handle._path = path;
 
             if (handle.IsInvalid)
             {
@@ -51,7 +53,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 bool isDirectory = (error.Error == Interop.Error.ENOENT) &&
                     ((flags & Interop.Sys.OpenFlags.O_CREAT) != 0
-                    || !DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path!))!));
+                    || !DirectoryExists(System.IO.Path.GetDirectoryName(System.IO.Path.TrimEndingDirectorySeparator(path!))!));
 
                 Interop.CheckIo(
                     error.Error,
@@ -116,6 +118,17 @@ namespace Microsoft.Win32.SafeHandles
             // try to release the lock before we close the handle. (If it's not locked, there's no behavioral
             // problem trying to unlock it.)
             Interop.Sys.FLock(handle, Interop.Sys.LockOperations.LOCK_UN); // ignore any errors
+
+            // If DeleteOnClose was requested when constructed, delete the file now.
+            // (Unix doesn't directly support DeleteOnClose, so we mimic it here.)
+            if (_deleteOnClose)
+            {
+                // Since we still have the file open, this will end up deleting
+                // it (assuming we're the only link to it) once it's closed, but the
+                // name will be removed immediately.
+                Debug.Assert(_path is not null);
+                Interop.Sys.Unlink(_path); // ignore errors; it's valid that the path may no longer exist
+            }
 
             // Close the descriptor. Although close is documented to potentially fail with EINTR, we never want
             // to retry, as the descriptor could actually have been closed, been subsequently reassigned, and
@@ -234,6 +247,7 @@ namespace Microsoft.Win32.SafeHandles
         private void Init(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
             IsAsync = (options & FileOptions.Asynchronous) != 0;
+            _deleteOnClose = (options & FileOptions.DeleteOnClose) != 0;
 
             // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
             // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,

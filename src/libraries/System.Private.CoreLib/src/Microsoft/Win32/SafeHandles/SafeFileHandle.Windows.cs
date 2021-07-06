@@ -103,6 +103,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
 
+            fileHandle._path = fullPath;
             fileHandle._fileOptions = options;
             return fileHandle;
         }

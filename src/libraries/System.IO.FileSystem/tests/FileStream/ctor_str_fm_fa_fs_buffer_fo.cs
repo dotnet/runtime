@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.IO.Tests
@@ -79,7 +80,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileOptions.DeleteOnClose)]
         [InlineData(FileOptions.DeleteOnClose | FileOptions.Asynchronous)]
-        public virtual void DeleteOnClose_FileDeletedAfterClose(FileOptions options)
+        public void DeleteOnClose_FileDeletedAfterClose(FileOptions options)
         {
             string path = GetTestFilePath();
             Assert.False(File.Exists(path));
@@ -88,6 +89,38 @@ namespace System.IO.Tests
                 Assert.True(File.Exists(path));
             }
             Assert.False(File.Exists(path));
+        }
+
+        [Theory]
+        [InlineData(FileOptions.DeleteOnClose)]
+        [InlineData(FileOptions.DeleteOnClose | FileOptions.Asynchronous)]
+        public void DeleteOnClose_FileDeletedAfterSafeHandleRelease(FileOptions options)
+        {
+            string path = GetTestFilePath();
+            Assert.False(File.Exists(path));
+
+            using (FileStream fs = CreateFileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 0x1000, options))
+            {
+                Assert.True(File.Exists(path));
+
+                bool added = false;
+                try
+                {
+                    fs.SafeFileHandle.DangerousAddRef(ref added);
+
+                    fs.Dispose();
+                    Assert.True(File.Exists(path));
+                }
+                finally
+                {
+                    if (added)
+                    {
+                        fs.SafeFileHandle.DangerousRelease();
+                    }
+
+                    Assert.False(File.Exists(path));
+                }
+            }
         }
     }
 }

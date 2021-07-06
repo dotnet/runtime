@@ -95,7 +95,7 @@ namespace System.IO.Strategies
                 _filePosition = positionBefore;
             }
 
-            return SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, _path);
+            return SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, _fileHandle.Path);
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask; // no buffering = nothing to flush
@@ -131,7 +131,7 @@ namespace System.IO.Strategies
             try
             {
                 await FileStreamHelpers
-                    .AsyncModeCopyToAsync(_fileHandle, _path, CanSeek, _filePosition, destination, bufferSize, cancellationToken)
+                    .AsyncModeCopyToAsync(_fileHandle, CanSeek, _filePosition, destination, bufferSize, cancellationToken)
                     .ConfigureAwait(false);
             }
             finally
