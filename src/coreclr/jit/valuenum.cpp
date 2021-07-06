@@ -3327,8 +3327,8 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
     {
         var_types castFromType = TypeOfVN(arg0VN);
 
-        // By policy, we do not fold overflowing conversions from floating-point types,
-        // as the result the C++ compiler gives us does not always match our own codegen.
+        // By policy, we do not fold conversions from floating-point types that result in
+        // overflow, as the value the C++ compiler gives us does not always match our own codegen.
         if ((func == VNF_CastOvf) || varTypeIsFloating(castFromType))
         {
             var_types castToType;
