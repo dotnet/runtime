@@ -11,6 +11,7 @@ namespace System.IO.Strategies
     internal abstract class WindowsFileStreamStrategy : FileStreamStrategy
     {
         protected readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
+        protected readonly string? _path; // The path to the opened file.
         private readonly FileAccess _access; // What file was opened for.
         private readonly FileShare _share;
 
@@ -31,7 +32,7 @@ namespace System.IO.Strategies
             {
                 // given strategy was created out of existing handle, so we have to perform
                 // a syscall to get the current handle offset
-                _filePosition = FileStreamHelpers.Seek(handle, 0, SeekOrigin.Current);
+                _filePosition = FileStreamHelpers.Seek(handle, _path, 0, SeekOrigin.Current);
             }
             else
             {
@@ -45,6 +46,7 @@ namespace System.IO.Strategies
         {
             string fullPath = Path.GetFullPath(path);
 
+            _path = fullPath;
             _access = access;
             _share = share;
 
@@ -78,12 +80,12 @@ namespace System.IO.Strategies
             {
                 if (_share > FileShare.Read || _exposedHandle)
                 {
-                    return RandomAccess.GetFileLength(_fileHandle);
+                    return RandomAccess.GetFileLength(_fileHandle, _path);
                 }
 
                 if (_length < 0)
                 {
-                    _length = RandomAccess.GetFileLength(_fileHandle);
+                    _length = RandomAccess.GetFileLength(_fileHandle, _path);
                 }
 
                 return _length;
@@ -113,7 +115,7 @@ namespace System.IO.Strategies
             set => _filePosition = value;
         }
 
-        internal sealed override string Name => _fileHandle.Path ?? SR.IO_UnknownFileName;
+        internal sealed override string Name => _path ?? SR.IO_UnknownFileName;
 
         internal sealed override bool IsClosed => _fileHandle.IsClosed;
 
@@ -128,7 +130,7 @@ namespace System.IO.Strategies
                 {
                     // Update the file offset before exposing it since it's possible that
                     // in memory position is out-of-sync with the actual file position.
-                    FileStreamHelpers.Seek(_fileHandle, _filePosition, SeekOrigin.Begin);
+                    FileStreamHelpers.Seek(_fileHandle, _path, _filePosition, SeekOrigin.Begin);
                 }
 
                 _exposedHandle = true;
@@ -177,7 +179,7 @@ namespace System.IO.Strategies
         {
             if (flushToDisk && CanWrite)
             {
-                FileStreamHelpers.FlushToDisk(_fileHandle);
+                FileStreamHelpers.FlushToDisk(_fileHandle, _path);
             }
         }
 
@@ -216,9 +218,9 @@ namespace System.IO.Strategies
             return pos;
         }
 
-        internal sealed override void Lock(long position, long length) => FileStreamHelpers.Lock(_fileHandle, position, length);
+        internal sealed override void Lock(long position, long length) => FileStreamHelpers.Lock(_fileHandle, _path, position, length);
 
-        internal sealed override void Unlock(long position, long length) => FileStreamHelpers.Unlock(_fileHandle, position, length);
+        internal sealed override void Unlock(long position, long length) => FileStreamHelpers.Unlock(_fileHandle, _path, position, length);
 
         private void Init(FileMode mode, string originalPath)
         {
@@ -247,7 +249,7 @@ namespace System.IO.Strategies
         {
             Debug.Assert(value >= 0, "value >= 0");
 
-            FileStreamHelpers.SetFileLength(_fileHandle, value);
+            FileStreamHelpers.SetFileLength(_fileHandle, _path, value);
             _length = value;
 
             if (_filePosition > value)
@@ -271,7 +273,7 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
-            int r = RandomAccess.ReadAtOffset(_fileHandle, destination, _filePosition);
+            int r = RandomAccess.ReadAtOffset(_fileHandle, destination, _filePosition, _path);
             Debug.Assert(r >= 0, $"RandomAccess.ReadAtOffset returned {r}.");
             _filePosition += r;
 
@@ -294,7 +296,7 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
-            int r = RandomAccess.WriteAtOffset(_fileHandle, source, _filePosition);
+            int r = RandomAccess.WriteAtOffset(_fileHandle, source, _filePosition, _path);
             Debug.Assert(r >= 0, $"RandomAccess.WriteAtOffset returned {r}.");
             _filePosition += r;
 

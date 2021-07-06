@@ -16,23 +16,23 @@ namespace System.IO
     {
         private static readonly IOCompletionCallback s_callback = AllocateCallback();
 
-        internal static unsafe long GetFileLength(SafeFileHandle handle)
+        internal static unsafe long GetFileLength(SafeFileHandle handle, string? path)
         {
             Interop.Kernel32.FILE_STANDARD_INFO info;
 
             if (!Interop.Kernel32.GetFileInformationByHandleEx(handle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
+                throw Win32Marshal.GetExceptionForLastWin32Error(path);
             }
 
             return info.EndOfFile;
         }
 
-        internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
+        internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset, string? path = null)
         {
             if (handle.IsAsync)
             {
-                return ReadSyncUsingAsyncHandle(handle, buffer, fileOffset);
+                return ReadSyncUsingAsyncHandle(handle, buffer, fileOffset, path);
             }
 
             NativeOverlapped overlapped = GetNativeOverlappedForSyncHandle(handle, fileOffset);
@@ -55,12 +55,12 @@ namespace System.IO
                         // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
                         return 0;
                     default:
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
                 }
             }
         }
 
-        private static unsafe int ReadSyncUsingAsyncHandle(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
+        private static unsafe int ReadSyncUsingAsyncHandle(SafeFileHandle handle, Span<byte> buffer, long fileOffset, string? path)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
@@ -105,7 +105,7 @@ namespace System.IO
                             return 0;
 
                         default:
-                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
+                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
                     }
                 }
             }
@@ -120,11 +120,11 @@ namespace System.IO
             }
         }
 
-        internal static unsafe int WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
+        internal static unsafe int WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset, string? path = null)
         {
             if (handle.IsAsync)
             {
-                return WriteSyncUsingAsyncHandle(handle, buffer, fileOffset);
+                return WriteSyncUsingAsyncHandle(handle, buffer, fileOffset, path);
             }
 
             NativeOverlapped overlapped = GetNativeOverlappedForSyncHandle(handle, fileOffset);
@@ -141,12 +141,12 @@ namespace System.IO
                     case Interop.Errors.ERROR_NO_DATA: // EOF on a pipe
                         return 0;
                     default:
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
                 }
             }
         }
 
-        private static unsafe int WriteSyncUsingAsyncHandle(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
+        private static unsafe int WriteSyncUsingAsyncHandle(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset, string? path)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
@@ -193,7 +193,7 @@ namespace System.IO
                             throw new IOException(SR.IO_FileTooLong);
 
                         default:
-                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
+                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
                     }
                 }
             }
@@ -469,7 +469,7 @@ namespace System.IO
                         default:
                             // Error. Callback will not be called.
                             vts.Dispose();
-                            return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path));
+                            return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode));
                     }
                 }
             }

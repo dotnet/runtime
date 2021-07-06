@@ -44,7 +44,7 @@ namespace Microsoft.Win32.SafeHandles
             internal static readonly IOCompletionCallback s_ioCallback = IOCallback;
 
             internal readonly PreAllocatedOverlapped _preallocatedOverlapped;
-            internal readonly SafeFileHandle _fileHandle;
+            private readonly SafeFileHandle _fileHandle;
             internal MemoryHandle _memoryHandle;
             internal ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
             private NativeOverlapped* _overlapped;
