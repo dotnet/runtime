@@ -3,6 +3,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides classes that support storage of multiple data objects in a single container.</PackageDescription>
     <!-- Suppress `string.Contains(char)` offers better performance than `string.Contains(string)` to avoid ifdefs.-->
     <NoWarn>$(NoWarn);CA1847</NoWarn>
   </PropertyGroup>
@@ -52,5 +54,9 @@
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="WindowsBase" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 </Project>

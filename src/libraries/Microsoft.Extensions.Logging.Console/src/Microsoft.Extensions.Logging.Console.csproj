@@ -47,7 +47,8 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Configuration\src\Microsoft.Extensions.Logging.Configuration.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\src\Microsoft.Extensions.Options.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
+    <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" DonotUseInboxVersion="true" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">

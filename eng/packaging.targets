@@ -60,7 +60,7 @@
     <ItemGroup>
       <TfmSpecificPackageFile Include="@(SatelliteDllsProjectOutputGroupOutput);
                             @(BuiltProjectOutputGroupOutput)">
-        <PackagePath>runtimes/$(_runtimeOS)/lib/$(TargetFrameworkWithoutSuffix)</PackagePath>
+        <PackagePath>runtimes/$(PackageTargetRuntime)/lib/$(TargetFrameworkWithoutSuffix)</PackagePath>
       </TfmSpecificPackageFile>
     </ItemGroup>
   </Target>
@@ -74,7 +74,7 @@
 
     <ItemGroup Condition="Exists('$(RuntimeSymbolPath)')">
       <TfmSpecificDebugSymbolsFile Include="$(RuntimeSymbolPath)">
-        <TargetPath>/runtimes/$(_runtimeOS)/lib/$(TargetFrameworkWithoutSuffix)/$(TargetName).pdb</TargetPath>
+        <TargetPath>/runtimes/$(PackageTargetRuntime)/lib/$(TargetFrameworkWithoutSuffix)/$(TargetName).pdb</TargetPath>
         <TargetFramework>$(TargetFrameworkWithoutSuffix)</TargetFramework>
       </TfmSpecificDebugSymbolsFile>
     </ItemGroup>
