@@ -35,12 +35,9 @@ public:
     virtual ~DumpWriter();
     bool OpenDump(const char* dumpFileName);
     bool WriteDump();
-    void WriteCrashReport(const std::string& dumpFileName);
     static bool WriteData(int fd, const void* buffer, size_t length);
 
 private:
-    void WriteCrashReport(JsonWriter& writer);
-    void WriteStackFrame(JsonWriter& writer, const StackFrame& frame);
     void BuildSegmentLoadCommands();
     void BuildThreadLoadCommands();
     bool WriteHeader(uint64_t* pFileOffset);

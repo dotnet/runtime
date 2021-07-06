@@ -41,11 +41,9 @@ public:
     virtual ~DumpWriter();
     bool OpenDump(const char* dumpFileName);
     bool WriteDump();
-    void WriteCrashReport(const std::string& dumpFileName);
     static bool WriteData(int fd, const void* buffer, size_t length);
 
 private:
-    void WriteCrashReport(JsonWriter& writer);
     bool WriteProcessInfo();
     bool WriteAuxv();
     size_t GetNTFileInfoSize(size_t* alignmentBytes = nullptr);

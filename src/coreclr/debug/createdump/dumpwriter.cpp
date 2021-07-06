@@ -32,30 +32,6 @@ DumpWriter::OpenDump(const char* dumpFileName)
     return true;
 }
 
-void
-DumpWriter::WriteCrashReport(const std::string& dumpFileName)
-{
-    std::string crashReportFile(dumpFileName);
-    crashReportFile.append(".crashreport.json");
-    printf("Writing crash report to file %s\n", crashReportFile.c_str());
-    try
-    {
-        JsonWriter writer;
-        if (!writer.OpenWriter(crashReportFile.c_str())) {
-            return;
-        }
-        WriteCrashReport(writer);
-        writer.CloseWriter();
-    }
-    catch (const std::exception& e)
-    {
-        fprintf(stderr, "Writing the crash report file FAILED\n");
-
-        // Delete the partial json file on error
-        remove(crashReportFile.c_str());
-    }
-}
-
 // Write all of the given buffer, handling short writes and EINTR. Return true iff successful.
 bool
 DumpWriter::WriteData(int fd, const void* buffer, size_t length)

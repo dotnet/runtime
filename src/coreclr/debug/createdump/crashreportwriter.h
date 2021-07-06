@@ -13,4 +13,5 @@ public:
 
 private:
     void WriteCrashReport(JsonWriter& writer);
+    void WriteStackFrame(JsonWriter& writer, const StackFrame& frame);
 };

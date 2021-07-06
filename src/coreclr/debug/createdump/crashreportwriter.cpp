@@ -69,7 +69,7 @@ WriteSysctl(const char* sysctlname, JsonWriter& writer, const char* valueName)
 }
 
 void
-DumpWriter::WriteCrashReport(JsonWriter& writer)
+CrashReportWriter::WriteCrashReport(JsonWriter& writer)
 {
     const char* exceptionType = nullptr;
     writer.OpenSection("payload");
@@ -176,7 +176,7 @@ DumpWriter::WriteCrashReport(JsonWriter& writer)
 }
 
 void
-DumpWriter::WriteStackFrame(JsonWriter& writer, const StackFrame& frame)
+CrashReportWriter::WriteStackFrame(JsonWriter& writer, const StackFrame& frame)
 { 
     writer.OpenArrayEntry();
     writer.WriteValueBool("is_managed", frame.IsManaged());
@@ -214,7 +214,7 @@ DumpWriter::WriteStackFrame(JsonWriter& writer, const StackFrame& frame)
 #else // __APPLE__
 
 void
-DumpWriter::WriteCrashReport(JsonWriter& writer)
+CrashReportWriter::WriteCrashReport(JsonWriter& writer)
 {
 }
 
