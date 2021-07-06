@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
@@ -35,35 +36,117 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            await LoopbackServerFactory.CreateClientAndServerAsync(
-                async uri =>
-                {
-                    using LoopbackSocksServer proxy = useAuth ? LoopbackSocksServer.Create("DOTNET", "424242") : LoopbackSocksServer.Create();
-                    using HttpClientHandler handler = CreateHttpClientHandler();
-                    using HttpClient client = CreateHttpClient(handler);
+            List<(int, long)> times = new();
+            Stopwatch s = Stopwatch.StartNew();
 
-                    handler.Proxy = new WebProxy($"{scheme}://127.0.0.1:{proxy.Port}");
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
-                    if (useAuth)
+            try
+            {
+                times.Add((0, s.ElapsedMilliseconds));
+                await LoopbackServerFactory.CreateClientAndServerAsync(
+                    async uri =>
                     {
-                        handler.Proxy.Credentials = new NetworkCredential("DOTNET", "424242");
-                    }
+                        times.Add((10, s.ElapsedMilliseconds));
+                        LoopbackSocksServer proxy = useAuth ? LoopbackSocksServer.Create("DOTNET", "424242") : LoopbackSocksServer.Create();
+                        try
+                        {
+                            times.Add((11, s.ElapsedMilliseconds));
+                            HttpClientHandler handler = CreateHttpClientHandler();
+                            try
+                            {
+                                times.Add((12, s.ElapsedMilliseconds));
+                                HttpClient client = CreateHttpClient(handler);
+                                try
+                                {
+                                    times.Add((13, s.ElapsedMilliseconds));
 
-                    uri = new UriBuilder(uri) { Host = host }.Uri;
+                                    handler.Proxy = new WebProxy($"{scheme}://127.0.0.1:{proxy.Port}");
+                                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
-                    HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+                                    if (useAuth)
+                                    {
+                                        handler.Proxy.Credentials = new NetworkCredential("DOTNET", "424242");
+                                    }
 
-                    using HttpResponseMessage response = await client.SendAsync(TestAsync, request);
-                    string responseString = await response.Content.ReadAsStringAsync();
-                    Assert.Equal("Echo", responseString);
-                },
-                async server => await server.HandleRequestAsync(content: "Echo"),
-                options: new GenericLoopbackOptions
-                {
-                    UseSsl = useSsl,
-                    Address = host == "::1" ? IPAddress.IPv6Loopback : IPAddress.Loopback
-                });
+                                    uri = new UriBuilder(uri) { Host = host }.Uri;
+
+                                    HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+
+                                    times.Add((14, s.ElapsedMilliseconds));
+
+                                    HttpResponseMessage response = await client.SendAsync(TestAsync, request);
+                                    try
+                                    {
+                                        times.Add((15, s.ElapsedMilliseconds));
+                                        string responseString = await response.Content.ReadAsStringAsync();
+                                        times.Add((16, s.ElapsedMilliseconds));
+                                        Assert.Equal("Echo", responseString);
+                                        times.Add((17, s.ElapsedMilliseconds));
+                                    }
+                                    catch
+                                    {
+                                        times.Add((43, s.ElapsedMilliseconds));
+                                        throw;
+                                    }
+                                    finally
+                                    {
+                                        times.Add((36, s.ElapsedMilliseconds));
+                                        response.Dispose();
+                                        times.Add((37, s.ElapsedMilliseconds));
+                                    }
+                                }
+                                catch
+                                {
+                                    times.Add((42, s.ElapsedMilliseconds));
+                                    throw;
+                                }
+                                finally
+                                {
+                                    times.Add((34, s.ElapsedMilliseconds));
+                                    client.Dispose();
+                                    times.Add((35, s.ElapsedMilliseconds));
+                                }
+                            }
+                            catch
+                            {
+                                times.Add((41, s.ElapsedMilliseconds));
+                                throw;
+                            }
+                            finally
+                            {
+                                times.Add((32, s.ElapsedMilliseconds));
+                                //handler.Dispose();
+                                times.Add((33, s.ElapsedMilliseconds));
+                            }
+                        }
+                        catch
+                        {
+                            times.Add((40, s.ElapsedMilliseconds));
+                            throw;
+                        }
+                        finally
+                        {
+                            times.Add((30, s.ElapsedMilliseconds));
+                            proxy.Dispose();
+                            times.Add((31, s.ElapsedMilliseconds));
+                        }
+                    },
+                    async server =>
+                    {
+                        times.Add((20, s.ElapsedMilliseconds));
+                        await server.HandleRequestAsync(content: "Echo");
+                        times.Add((21, s.ElapsedMilliseconds));
+                    },
+                    options: new GenericLoopbackOptions
+                    {
+                        UseSsl = useSsl,
+                        Address = host == "::1" ? IPAddress.IPv6Loopback : IPAddress.Loopback
+                    });
+            }
+            catch (Exception ex)
+            {
+                times.Add((1, s.ElapsedMilliseconds));
+                throw new Exception(string.Join('\n', times.Select(t => $"{t.Item1,2} {t.Item2}")), ex);
+            }
         }
 
         public static IEnumerable<object[]> TestExceptionalAsync_MemberData()

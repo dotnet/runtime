@@ -151,37 +151,72 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_AddMultipleCookieHeaders_CookiesSent()
         {
-            await LoopbackServerFactory.CreateClientAndServerAsync(
-                async uri =>
-                {
-                    using (HttpClient client = CreateHttpClient())
-                    {
-                        var requestMessage = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
-                        requestMessage.Headers.Add("Cookie", "A=1");
-                        requestMessage.Headers.Add("Cookie", "B=2");
-                        requestMessage.Headers.Add("Cookie", "C=3");
+            List<(int, long)> times = new();
+            Stopwatch s = Stopwatch.StartNew();
 
-                        await client.SendAsync(TestAsync, requestMessage)
-                            .WaitAsync(TimeSpan.FromSeconds(10));
-                    }
-                },
-                async server =>
-                {
-                    HttpRequestData requestData = await server.HandleRequestAsync()
-                        .WaitAsync(TimeSpan.FromSeconds(15));
+            try
+            {
+                times.Add((0, s.ElapsedMilliseconds));
+
+                await LoopbackServerFactory.CreateClientAndServerAsync(
+                    async uri =>
+                    {
+                        times.Add((10, s.ElapsedMilliseconds));
+                        HttpClient client = CreateHttpClient();
+                        times.Add((11, s.ElapsedMilliseconds));
+                        try
+                        {
+                            var requestMessage = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
+                            requestMessage.Headers.Add("Cookie", "A=1");
+                            requestMessage.Headers.Add("Cookie", "B=2");
+                            requestMessage.Headers.Add("Cookie", "C=3");
+                            times.Add((12, s.ElapsedMilliseconds));
+
+                            await client.SendAsync(TestAsync, requestMessage)
+                                .WaitAsync(TimeSpan.FromSeconds(10));
+
+                            times.Add((13, s.ElapsedMilliseconds));
+                        }
+                        catch
+                        {
+                            times.Add((14, s.ElapsedMilliseconds));
+                            throw;
+                        }
+                        finally
+                        {
+                            times.Add((15, s.ElapsedMilliseconds));
+                            client.Dispose();
+                        }
+                    },
+                    async server =>
+                    {
+                        times.Add((20, s.ElapsedMilliseconds));
+
+                        HttpRequestData requestData = await server.HandleRequestAsync()
+                            .WaitAsync(TimeSpan.FromSeconds(15));
+
+                        times.Add((21, s.ElapsedMilliseconds));
 
                     // Multiple Cookie header values are treated as any other header values and are
                     // concatenated using ", " as the separator.
 
                     string cookieHeaderValue = requestData.GetSingleHeaderValue("Cookie");
 
-                    var cookieValues = cookieHeaderValue.Split(new string[] { ", " }, StringSplitOptions.None);
-                    Assert.Contains("A=1", cookieValues);
-                    Assert.Contains("B=2", cookieValues);
-                    Assert.Contains("C=3", cookieValues);
-                    Assert.Equal(3, cookieValues.Count());
-                },
-                millisecondsTimeout: 300_000);
+                        var cookieValues = cookieHeaderValue.Split(new string[] { ", " }, StringSplitOptions.None);
+                        Assert.Contains("A=1", cookieValues);
+                        Assert.Contains("B=2", cookieValues);
+                        Assert.Contains("C=3", cookieValues);
+                        Assert.Equal(3, cookieValues.Count());
+
+                        times.Add((22, s.ElapsedMilliseconds));
+                    },
+                    millisecondsTimeout: 300_000);
+            }
+            catch (Exception ex)
+            {
+                times.Add((1, s.ElapsedMilliseconds));
+                throw new Exception(string.Join('\n', times.Select(t => $"{t.Item1,2} {t.Item2}")), ex);
+            }
         }
 
         private string GetCookieValue(HttpRequestData request)
