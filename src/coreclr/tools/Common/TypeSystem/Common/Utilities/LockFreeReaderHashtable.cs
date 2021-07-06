@@ -245,20 +245,14 @@ namespace Internal.TypeSystem
             if (sentinel == null)
                 return null;
 
-            TValue value = Volatile.Read(ref hashtable[tableIndex]);
+            var sw = new SpinWait();
             while (true)
             {
-                for (int i = 0; (i < 10000) && value == sentinel; i++)
-                {
-                    value = Volatile.Read(ref hashtable[tableIndex]);
-                }
+                TValue value = Volatile.Read(ref hashtable[tableIndex]);
                 if (value != sentinel)
-                    break;
-
-                Task.Delay(1).Wait();
+                    return value;
+                sw.SpinOnce();
             }
-
-            return value;
         }
 
         /// <summary>

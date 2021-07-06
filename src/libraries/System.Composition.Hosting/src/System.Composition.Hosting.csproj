@@ -2,6 +2,12 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <SetIsTrimmable>false</SetIsTrimmable>
+    <IsPackable>true</IsPackable>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <PackageDescription>Provides Managed Extensibility Framework types that are useful to developers of extensible applications, or hosts.
+
+Commonly Used Types:
+System.Composition.Hosting.CompositionHost</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
@@ -48,5 +54,9 @@
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System.ComponentModel.Composition" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 </Project>

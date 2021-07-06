@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -14,6 +15,13 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct SByte : IComparable, IConvertible, ISpanFormattable, IComparable<sbyte>, IEquatable<sbyte>
+#if FEATURE_GENERIC_MATH
+#pragma warning disable SA1001
+        , IBinaryInteger<sbyte>,
+          IMinMaxValue<sbyte>,
+          ISignedNumber<sbyte>
+#pragma warning restore SA1001
+#endif // FEATURE_GENERIC_MATH
     {
         private readonly sbyte m_value; // Do not rename (binary serialization)
 
@@ -283,5 +291,737 @@ namespace System
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
+
+#if FEATURE_GENERIC_MATH
+        //
+        // IAdditionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IAdditionOperators<sbyte, sbyte, sbyte>.operator +(sbyte left, sbyte right)
+            => (sbyte)(left + right);
+
+        // [RequiresPreviewFeatures]
+        // static checked sbyte IAdditionOperators<sbyte, sbyte, sbyte>.operator +(sbyte left, sbyte right)
+        //     => checked((sbyte)(left + right));
+
+        //
+        // IAdditiveIdentity
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IAdditiveIdentity<sbyte, sbyte>.AdditiveIdentity => 0;
+
+        //
+        // IBinaryInteger
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IBinaryInteger<sbyte>.LeadingZeroCount(sbyte value)
+            => (sbyte)(BitOperations.LeadingZeroCount((byte)value) - 16);
+
+        [RequiresPreviewFeatures]
+        static sbyte IBinaryInteger<sbyte>.PopCount(sbyte value)
+            => (sbyte)BitOperations.PopCount((byte)value);
+
+        [RequiresPreviewFeatures]
+        static sbyte IBinaryInteger<sbyte>.RotateLeft(sbyte value, sbyte rotateAmount)
+            => (sbyte)((value << (rotateAmount & 7)) | (value >> ((8 - rotateAmount) & 7)));
+
+        [RequiresPreviewFeatures]
+        static sbyte IBinaryInteger<sbyte>.RotateRight(sbyte value, sbyte rotateAmount)
+            => (sbyte)((value >> (rotateAmount & 7)) | (value << ((8 - rotateAmount) & 7)));
+
+        [RequiresPreviewFeatures]
+        static sbyte IBinaryInteger<sbyte>.TrailingZeroCount(sbyte value)
+            => (sbyte)(BitOperations.TrailingZeroCount(value << 24) - 24);
+
+        //
+        // IBinaryNumber
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IBinaryNumber<sbyte>.IsPow2(sbyte value)
+            => BitOperations.IsPow2(value);
+
+        [RequiresPreviewFeatures]
+        static sbyte IBinaryNumber<sbyte>.Log2(sbyte value)
+        {
+            if (value < 0)
+            {
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+            }
+            return (sbyte)BitOperations.Log2((byte)value);
+        }
+
+        //
+        // IBitwiseOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IBitwiseOperators<sbyte, sbyte, sbyte>.operator &(sbyte left, sbyte right)
+            => (sbyte)(left & right);
+
+        [RequiresPreviewFeatures]
+        static sbyte IBitwiseOperators<sbyte, sbyte, sbyte>.operator |(sbyte left, sbyte right)
+            => (sbyte)(left | right);
+
+        [RequiresPreviewFeatures]
+        static sbyte IBitwiseOperators<sbyte, sbyte, sbyte>.operator ^(sbyte left, sbyte right)
+            => (sbyte)(left ^ right);
+
+        [RequiresPreviewFeatures]
+        static sbyte IBitwiseOperators<sbyte, sbyte, sbyte>.operator ~(sbyte value)
+            => (sbyte)(~value);
+
+        //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<sbyte, sbyte>.operator <(sbyte left, sbyte right)
+            => left < right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<sbyte, sbyte>.operator <=(sbyte left, sbyte right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<sbyte, sbyte>.operator >(sbyte left, sbyte right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<sbyte, sbyte>.operator >=(sbyte left, sbyte right)
+            => left >= right;
+
+        //
+        // IDecrementOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IDecrementOperators<sbyte>.operator --(sbyte value)
+            => value--;
+
+        // [RequiresPreviewFeatures]
+        // static checked sbyte IDecrementOperators<sbyte>.operator --(sbyte value)
+        //     => checked(value--);
+
+        //
+        // IDivisionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IDivisionOperators<sbyte, sbyte, sbyte>.operator /(sbyte left, sbyte right)
+            => (sbyte)(left / right);
+
+        // [RequiresPreviewFeatures]
+        // static checked sbyte IDivisionOperators<sbyte, sbyte, sbyte>.operator /(sbyte left, sbyte right)
+        //     => checked((sbyte)(left / right));
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<sbyte, sbyte>.operator ==(sbyte left, sbyte right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<sbyte, sbyte>.operator !=(sbyte left, sbyte right)
+            => left != right;
+
+        //
+        // IIncrementOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IIncrementOperators<sbyte>.operator ++(sbyte value)
+            => value++;
+
+        // [RequiresPreviewFeatures]
+        // static checked sbyte IIncrementOperators<sbyte>.operator ++(sbyte value)
+        //     => checked(value++);
+
+        //
+        // IMinMaxValue
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IMinMaxValue<sbyte>.MinValue => MinValue;
+
+        [RequiresPreviewFeatures]
+        static sbyte IMinMaxValue<sbyte>.MaxValue => MaxValue;
+
+        //
+        // IModulusOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IModulusOperators<sbyte, sbyte, sbyte>.operator %(sbyte left, sbyte right)
+            => (sbyte)(left % right);
+
+        // [RequiresPreviewFeatures]
+        // static checked sbyte IModulusOperators<sbyte, sbyte, sbyte>.operator %(sbyte left, sbyte right)
+        //     => checked((sbyte)(left % right));
+
+        //
+        // IMultiplicativeIdentity
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IMultiplicativeIdentity<sbyte, sbyte>.MultiplicativeIdentity => 1;
+
+        //
+        // IMultiplyOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IMultiplyOperators<sbyte, sbyte, sbyte>.operator *(sbyte left, sbyte right)
+            => (sbyte)(left * right);
+
+        // [RequiresPreviewFeatures]
+        // static checked sbyte IMultiplyOperators<sbyte, sbyte, sbyte>.operator *(sbyte left, sbyte right)
+        //     => checked((sbyte)(left * right));
+
+        //
+        // INumber
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte INumber<sbyte>.One => 1;
+
+        [RequiresPreviewFeatures]
+        static sbyte INumber<sbyte>.Zero => 0;
+
+        [RequiresPreviewFeatures]
+        static sbyte INumber<sbyte>.Abs(sbyte value)
+            => Math.Abs(value);
+
+        [RequiresPreviewFeatures]
+        static sbyte INumber<sbyte>.Clamp(sbyte value, sbyte min, sbyte max)
+            => Math.Clamp(value, min, max);
+
+        [RequiresPreviewFeatures]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static sbyte INumber<sbyte>.Create<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return checked((sbyte)(byte)(object)value);
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return checked((sbyte)(char)(object)value);
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return checked((sbyte)(decimal)(object)value);
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return checked((sbyte)(double)(object)value);
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return checked((sbyte)(short)(object)value);
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return checked((sbyte)(int)(object)value);
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return checked((sbyte)(long)(object)value);
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return checked((sbyte)(nint)(object)value);
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return checked((sbyte)(float)(object)value);
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return checked((sbyte)(ushort)(object)value);
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return checked((sbyte)(uint)(object)value);
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return checked((sbyte)(ulong)(object)value);
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return checked((sbyte)(nuint)(object)value);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static sbyte INumber<sbyte>.CreateSaturating<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                var actualValue = (byte)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (sbyte)actualValue;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                var actualValue = (char)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (sbyte)actualValue;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                var actualValue = (decimal)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (sbyte)actualValue;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                var actualValue = (double)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (sbyte)actualValue;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                var actualValue = (short)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (sbyte)actualValue;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                var actualValue = (int)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (sbyte)actualValue;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                var actualValue = (long)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (sbyte)actualValue;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                var actualValue = (nint)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (sbyte)actualValue;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                var actualValue = (float)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (sbyte)actualValue;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                var actualValue = (ushort)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (sbyte)actualValue;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                var actualValue = (uint)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (sbyte)actualValue;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                var actualValue = (ulong)(object)value;
+                return (actualValue > (uint)MaxValue) ? MaxValue : (sbyte)actualValue;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                var actualValue = (nuint)(object)value;
+                return (actualValue > (uint)MaxValue) ? MaxValue : (sbyte)actualValue;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static sbyte INumber<sbyte>.CreateTruncating<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (sbyte)(byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (sbyte)(char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (sbyte)(decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (sbyte)(double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (sbyte)(short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (sbyte)(int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (sbyte)(long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (sbyte)(nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (sbyte)(float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (sbyte)(ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (sbyte)(uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (sbyte)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (sbyte)(nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures]
+        static (sbyte Quotient, sbyte Remainder) INumber<sbyte>.DivRem(sbyte left, sbyte right)
+            => Math.DivRem(left, right);
+
+        [RequiresPreviewFeatures]
+        static sbyte INumber<sbyte>.Max(sbyte x, sbyte y)
+            => Math.Max(x, y);
+
+        [RequiresPreviewFeatures]
+        static sbyte INumber<sbyte>.Min(sbyte x, sbyte y)
+            => Math.Min(x, y);
+
+        [RequiresPreviewFeatures]
+        static sbyte INumber<sbyte>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static sbyte INumber<sbyte>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures]
+        static sbyte INumber<sbyte>.Sign(sbyte value)
+            => (sbyte)Math.Sign(value);
+
+        [RequiresPreviewFeatures]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumber<sbyte>.TryCreate<TOther>(TOther value, out sbyte result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                var actualValue = (byte)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (sbyte)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                var actualValue = (char)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (sbyte)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                var actualValue = (decimal)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (sbyte)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                var actualValue = (double)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (sbyte)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                var actualValue = (short)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (sbyte)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                var actualValue = (int)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (sbyte)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                var actualValue = (long)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (sbyte)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                var actualValue = (nint)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (sbyte)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                result = (sbyte)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                var actualValue = (float)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (sbyte)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                var actualValue = (ushort)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (sbyte)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                var actualValue = (uint)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (sbyte)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                var actualValue = (ulong)(object)value;
+
+                if (actualValue > (uint)MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (sbyte)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                var actualValue = (nuint)(object)value;
+
+                if (actualValue > (uint)MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (sbyte)actualValue;
+                return true;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                result = default;
+                return false;
+            }
+        }
+
+        [RequiresPreviewFeatures]
+        static bool INumber<sbyte>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out sbyte result)
+            => TryParse(s, style, provider, out result);
+
+        [RequiresPreviewFeatures]
+        static bool INumber<sbyte>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out sbyte result)
+            => TryParse(s, style, provider, out result);
+
+        //
+        // IParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IParseable<sbyte>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
+
+        [RequiresPreviewFeatures]
+        static bool IParseable<sbyte>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out sbyte result)
+            => TryParse(s, NumberStyles.Integer, provider, out result);
+
+        //
+        // IShiftOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IShiftOperators<sbyte, sbyte>.operator <<(sbyte value, int shiftAmount)
+            => (sbyte)(value << shiftAmount);
+
+        [RequiresPreviewFeatures]
+        static sbyte IShiftOperators<sbyte, sbyte>.operator >>(sbyte value, int shiftAmount)
+            => (sbyte)(value >> shiftAmount);
+
+        // [RequiresPreviewFeatures]
+        // static sbyte IShiftOperators<sbyte, sbyte>.operator >>>(sbyte value, int shiftAmount)
+        //     => (sbyte)((byte)value >> shiftAmount);
+
+        //
+        // ISignedNumber
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte ISignedNumber<sbyte>.NegativeOne => -1;
+
+        //
+        // ISpanParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte ISpanParseable<sbyte>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+            => Parse(s, NumberStyles.Integer, provider);
+
+        [RequiresPreviewFeatures]
+        static bool ISpanParseable<sbyte>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out sbyte result)
+            => TryParse(s, NumberStyles.Integer, provider, out result);
+
+        //
+        // ISubtractionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte ISubtractionOperators<sbyte, sbyte, sbyte>.operator -(sbyte left, sbyte right)
+            => (sbyte)(left - right);
+
+        // [RequiresPreviewFeatures]
+        // static checked sbyte ISubtractionOperators<sbyte, sbyte, sbyte>.operator -(sbyte left, sbyte right)
+        //     => checked((sbyte)(left - right));
+
+        //
+        // IUnaryNegationOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IUnaryNegationOperators<sbyte, sbyte>.operator -(sbyte value)
+            => (sbyte)(-value);
+
+        // [RequiresPreviewFeatures]
+        // static checked sbyte IUnaryNegationOperators<sbyte, sbyte>.operator -(sbyte value)
+        //     => checked((sbyte)(-value));
+
+        //
+        // IUnaryPlusOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static sbyte IUnaryPlusOperators<sbyte, sbyte>.operator +(sbyte value)
+            => (sbyte)(+value);
+
+        // [RequiresPreviewFeatures]
+        // static checked sbyte IUnaryPlusOperators<sbyte, sbyte>.operator +(sbyte value)
+        //     => checked((sbyte)(+value));
+#endif // FEATURE_GENERIC_MATH
     }
 }

@@ -10,13 +10,15 @@
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateTargetOS">
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">OSX</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('ILLUMOS'))">illumos</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('SOLARIS'))">Solaris</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSUnixLike())">Linux</TargetOS>
-    <TargetOS Condition="'$(TargetOS)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">windows</TargetOS>
+    <_hostOS>Linux</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">OSX</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('ILLUMOS'))">illumos</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('SOLARIS'))">Solaris</_hostOS>
+    <_hostOS Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">windows</_hostOS>
+    <_hostOS Condition="'$(TargetOS)' == 'Browser'">Browser</_hostOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">$(_hostOS)</TargetOS>
     <TargetsMobile Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser'">true</TargetsMobile>
   </PropertyGroup>
 
@@ -115,16 +117,13 @@
          the build system to use browser/ios/android as the _runtimeOS for produced package RIDs. -->
     <_runtimeOS Condition="'$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</_runtimeOS>
 
-    <_runtimeOSVersionIndex>$(_runtimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
-    <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(_runtimeOS.SubString(0, $(_runtimeOSVersionIndex)))</_runtimeOSFamily>
-
     <_portableOS>linux</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'linux-musl'">linux-musl</_portableOS>
-    <_portableOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_portableOS>
-    <_portableOS Condition="'$(_runtimeOSFamily)' == 'win' or '$(_runtimeOS)' == 'win' or '$(TargetOS)' == 'windows'">win</_portableOS>
-    <_portableOS Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">freebsd</_portableOS>
-    <_portableOS Condition="'$(_runtimeOSFamily)' == 'illumos'">illumos</_portableOS>
-    <_portableOS Condition="'$(_runtimeOSFamily)' == 'Solaris'">solaris</_portableOS>
+    <_portableOS Condition="'$(_hostOS)' == 'OSX'">osx</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'win' or '$(TargetOS)' == 'windows'">win</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'FreeBSD' or '$(TargetOS)' == 'FreeBSD'">freebsd</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'illumos' or '$(TargetOS)' == 'illumos'">illumos</_portableOS>
+    <_portableOS Condition="'$(_runtimeOS)' == 'Solaris' or '$(TargetOS)' == 'Solaris'">solaris</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'Browser'">browser</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'maccatalyst'">maccatalyst</_portableOS>
     <_portableOS Condition="'$(_runtimeOS)' == 'ios'">ios</_portableOS>
@@ -135,16 +134,12 @@
 
     <_runtimeOS Condition="$(_runtimeOS.StartsWith('tizen'))">linux</_runtimeOS>
     <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
-
-    <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
-    <_portableOS Condition="'$(TargetOS)' == 'Unix' and '$(_runtimeOSFamily)' != 'osx' and '$(_runtimeOSFamily)' != 'FreeBSD' and '$(_runtimeOS)' != 'linux-musl' and '$(_runtimeOSFamily)' != 'illumos' and '$(_runtimeOSFamily)' != 'Solaris'">linux</_portableOS>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateRID">
+    <_toolRuntimeRID Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)-$(_hostArch)</_toolRuntimeRID>
     <_toolRuntimeRID Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(_runtimeOS)-x64</_toolRuntimeRID>
     <_toolRuntimeRID Condition="'$(_toolRuntimeRID)' == ''">$(_runtimeOS)-$(_hostArch)</_toolRuntimeRID>
-    <!-- We build linux-musl-arm on a ubuntu container, so we can't use the toolset build for alpine runtime. We need to use portable linux RID for our toolset in order to be able to use it. -->
-    <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'linux-musl' and $(TargetArchitecture.StartsWith('arm')) and !$(_hostArch.StartsWith('arm'))">linux-x64</_toolRuntimeRID>
 
     <!-- There are no WebAssembly tools, so use the default ones -->
     <_toolRuntimeRID Condition="'$(_runtimeOS)' == 'browser'">linux-x64</_toolRuntimeRID>
@@ -164,26 +159,12 @@
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(_toolRuntimeRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
     <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</_packageRID>
+    <_packageRID Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)-$(TargetArchitecture)</_packageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(_packageRID)</PackageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(_runtimeOS)-$(TargetArchitecture)</PackageRID>
 
-    <_outputRID Condition="'$(TargetOS)' == 'windows'">win-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'OSX'">osx-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'Linux'">linux-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'FreeBSD'">freebsd-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'NetBSD'">netbsd-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'illumos'">illumos-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'Solaris'">solaris-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'MacCatalyst'">maccatalyst-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'iOS'">ios-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'iOSSimulator'">iossimulator-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'tvOS'">tvos-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'tvOSSimulator'">tvossimulator-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'Android'">android-$(TargetArchitecture)</_outputRID>
-    <_outputRID Condition="'$(TargetOS)' == 'Browser'">browser-$(TargetArchitecture)</_outputRID>
-
     <OutputRid Condition="'$(OutputRid)' == ''">$(PackageRID)</OutputRid>
-    <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_outputRID)</OutputRid>
+    <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateTargetOSName" Condition="'$(SkipInferTargetOSName)' != 'true'">
