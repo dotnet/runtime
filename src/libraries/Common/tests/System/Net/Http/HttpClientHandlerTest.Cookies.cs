@@ -161,12 +161,14 @@ namespace System.Net.Http.Functional.Tests
                         requestMessage.Headers.Add("Cookie", "B=2");
                         requestMessage.Headers.Add("Cookie", "C=3");
 
-                        await client.SendAsync(TestAsync, requestMessage);
+                        await client.SendAsync(TestAsync, requestMessage)
+                            .WaitAsync(TimeSpan.FromSeconds(10));
                     }
                 },
                 async server =>
                 {
-                    HttpRequestData requestData = await server.HandleRequestAsync();
+                    HttpRequestData requestData = await server.HandleRequestAsync()
+                        .WaitAsync(TimeSpan.FromSeconds(15));
 
                     // Multiple Cookie header values are treated as any other header values and are
                     // concatenated using ", " as the separator.
@@ -178,7 +180,8 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains("B=2", cookieValues);
                     Assert.Contains("C=3", cookieValues);
                     Assert.Equal(3, cookieValues.Count());
-                });
+                },
+                millisecondsTimeout: 300_000);
         }
 
         private string GetCookieValue(HttpRequestData request)
