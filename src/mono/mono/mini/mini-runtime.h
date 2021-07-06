@@ -197,6 +197,7 @@ struct MonoJitTlsData {
 #define MONO_LMFEXT_DEBUGGER_INVOKE 1
 #define MONO_LMFEXT_INTERP_EXIT 2
 #define MONO_LMFEXT_INTERP_EXIT_WITH_CTX 3
+#define MONO_LMFEXT_JIT_ENTRY 4
 
 /*
  * The MonoLMF structure is arch specific, it includes at least these fields.
