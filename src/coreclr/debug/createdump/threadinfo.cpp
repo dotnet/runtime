@@ -265,8 +265,8 @@ ThreadInfo::GatherStackFrames(CONTEXT* pContext, IXCLRDataStackWalk* pStackwalk)
 void
 ThreadInfo::AddStackFrame(const StackFrame& frame)
 {
-    const auto& found = m_frames.find(frame);
-    if (found == m_frames.end())
+    std::pair<std::set<StackFrame>::iterator,bool> result = m_frames.insert(frame);
+    if (result.second)
     {
         TRACE("Unwind: sp %p ip %p off %08x mod %p%c\n",
             (void*)frame.StackPointer(),
@@ -274,7 +274,6 @@ ThreadInfo::AddStackFrame(const StackFrame& frame)
             frame.NativeOffset(),
             (void*)frame.ModuleAddress(),
             frame.IsManaged() ? '*' : ' ');
-        m_frames.insert(frame);
     }
 }
 

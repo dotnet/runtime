@@ -9,9 +9,9 @@ private:
 public:
     CrashReportWriter(CrashInfo& crashInfo);
     virtual ~CrashReportWriter();
-    void WriteCrashReport(const std::string& dumpFileName);
+    void WriteCrashReport(const std::string& dumpFileName) const;
 
 private:
-    void WriteCrashReport(JsonWriter& writer);
-    void WriteStackFrame(JsonWriter& writer, const StackFrame& frame);
+    void WriteCrashReport(JsonWriter& writer) const;
+    void WriteStackFrame(JsonWriter& writer, const StackFrame& frame) const;
 };

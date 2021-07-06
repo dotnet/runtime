@@ -21,7 +21,7 @@ CrashReportWriter::~CrashReportWriter()
 // Write the crash report info to the json file
 //
 void
-CrashReportWriter::WriteCrashReport(const std::string& dumpFileName)
+CrashReportWriter::WriteCrashReport(const std::string& dumpFileName) const
 {
     std::string crashReportFile(dumpFileName);
     crashReportFile.append(".crashreport.json");
@@ -69,13 +69,13 @@ WriteSysctl(const char* sysctlname, JsonWriter& writer, const char* valueName)
 }
 
 void
-CrashReportWriter::WriteCrashReport(JsonWriter& writer)
+CrashReportWriter::WriteCrashReport(JsonWriter& writer) const
 {
     const char* exceptionType = nullptr;
-    writer.OpenSection("payload");
+    writer.OpenObject("payload");
     writer.WriteValue("protocol_version", "0.0.7");
 
-    writer.OpenSection("configuration");
+    writer.OpenObject("configuration");
 #if defined(__x86_64__)
     writer.WriteValue("architecture", "amd64");
 #elif defined(__aarch64__)
@@ -86,12 +86,12 @@ CrashReportWriter::WriteCrashReport(JsonWriter& writer)
     version.append(sccsid + 12);    // skip "@(#)Version "
     version.append(" ");            // the analyzer requires a space after the version
     writer.WriteValue("version", version.c_str());
-    writer.CloseSection();          // configuration
+    writer.CloseObject();           // configuration
 
     writer.OpenArray("threads");
     for (const ThreadInfo* thread : m_crashInfo.Threads())
     {
-        writer.OpenArrayEntry();
+        writer.OpenObject();
         bool crashed = false;
         if (thread->ManagedExceptionObject() != 0)
         {
@@ -147,11 +147,11 @@ CrashReportWriter::WriteCrashReport(JsonWriter& writer)
             writer.WriteValue("managed_exception_type", thread->ManagedExceptionType().c_str());
         }
         writer.WriteValue64("native_thread_id", thread->Tid());
-        writer.OpenSection("ctx");
+        writer.OpenObject("ctx");
         writer.WriteValue64("IP", thread->GetInstructionPointer());
         writer.WriteValue64("SP", thread->GetStackPointer());
         writer.WriteValue64("BP", thread->GetFramePointer());
-        writer.CloseSection();      // ctx
+        writer.CloseObject();       // ctx
 
         writer.OpenArray("unmanaged_frames");
         for (const StackFrame& frame : thread->StackFrames())
@@ -159,12 +159,12 @@ CrashReportWriter::WriteCrashReport(JsonWriter& writer)
             WriteStackFrame(writer, frame);
         }
         writer.CloseArray();        // unmanaged_frames
-        writer.CloseArrayEntry();
+        writer.CloseObject();
     }
     writer.CloseArray();            // threads
-    writer.CloseSection();          // payload
+    writer.CloseObject();           // payload
 
-    writer.OpenSection("parameters");
+    writer.OpenObject("parameters");
     if (exceptionType != nullptr)
     {
         writer.WriteValue("ExceptionType", exceptionType);
@@ -172,13 +172,13 @@ CrashReportWriter::WriteCrashReport(JsonWriter& writer)
     WriteSysctl("kern.osproductversion", writer, "OSVersion");
     WriteSysctl("hw.model", writer, "SystemModel");
     writer.WriteValue("SystemManufacturer", "apple");
-    writer.CloseSection();          // parameters
+    writer.CloseObject();           // parameters
 }
 
 void
-CrashReportWriter::WriteStackFrame(JsonWriter& writer, const StackFrame& frame)
+CrashReportWriter::WriteStackFrame(JsonWriter& writer, const StackFrame& frame) const
 { 
-    writer.OpenArrayEntry();
+    writer.OpenObject();
     writer.WriteValueBool("is_managed", frame.IsManaged());
     writer.WriteValue64("module_address", frame.ModuleAddress());
     writer.WriteValue64("stack_pointer", frame.StackPointer());
@@ -208,13 +208,13 @@ CrashReportWriter::WriteStackFrame(JsonWriter& writer, const StackFrame& frame)
             }
         }
     }
-    writer.CloseArrayEntry();
+    writer.CloseObject();
 }
 
 #else // __APPLE__
 
 void
-CrashReportWriter::WriteCrashReport(JsonWriter& writer)
+CrashReportWriter::WriteCrashReport(JsonWriter& writer) const
 {
 }
 

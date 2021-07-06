@@ -16,8 +16,8 @@ private:
     void Write(const char* buffer);
     void Indent(std::string& text);
     void WriteSeperator(std::string& text);
-    void OpenBlock(const char* name, char marker);
-    void CloseBlock(char marker);
+    void OpenValue(const char* key, char marker);
+    void CloseValue(char marker);
 
 public:
     JsonWriter();
@@ -28,10 +28,8 @@ public:
     void WriteValueBool(const char* key, bool value);
     void WriteValue32(const char* key, uint32_t value);
     void WriteValue64(const char* key, uint64_t value);
-    void OpenSection(const char* sectionName);
-    void CloseSection();
-    void OpenArray(const char* arrayName);
+    void OpenObject(const char* key = nullptr);
+    void CloseObject();
+    void OpenArray(const char* key);
     void CloseArray();
-    void OpenArrayEntry();
-    void CloseArrayEntry();
 };

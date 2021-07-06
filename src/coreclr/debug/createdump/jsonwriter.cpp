@@ -49,14 +49,14 @@ void JsonWriter::WriteSeperator(std::string& text)
     Indent(text);
 }
 
-void JsonWriter::OpenBlock(const char* name, char marker)
+void JsonWriter::OpenValue(const char* key, char marker)
 {
     std::string text;
     WriteSeperator(text);
-    if (name != nullptr)
+    if (key != nullptr)
     {
         text.append("\"");
-        text.append(name);
+        text.append(key);
         text.append("\" : ");
     }
     text.append(1, marker);
@@ -66,7 +66,7 @@ void JsonWriter::OpenBlock(const char* name, char marker)
     Write(text);
 }
 
-void JsonWriter::CloseBlock(char marker)
+void JsonWriter::CloseValue(char marker)
 {
     std::string text;
     text.append(1, '\n');
@@ -128,32 +128,22 @@ void JsonWriter::WriteValue64(const char* key, uint64_t value)
     WriteValue(key, buffer);
 }
 
-void JsonWriter::OpenSection(const char* sectionName)
+void JsonWriter::OpenObject(const char* key)
 {
-    OpenBlock(sectionName, '{');
+    OpenValue(key, '{');
 }
 
-void JsonWriter::CloseSection()
+void JsonWriter::CloseObject()
 {
-    CloseBlock('}');
+    CloseValue('}');
 }
 
-void JsonWriter::OpenArray(const char* arrayName)
+void JsonWriter::OpenArray(const char* key)
 {
-    OpenBlock(arrayName, '[');
+    OpenValue(key, '[');
 }
 
 void JsonWriter::CloseArray()
 {
-    CloseBlock(']');
-}
-
-void JsonWriter::OpenArrayEntry()
-{
-    OpenBlock(nullptr, '{');
-}
-
-void JsonWriter::CloseArrayEntry()
-{
-    CloseBlock('}');
+    CloseValue(']');
 }
