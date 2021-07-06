@@ -110,21 +110,7 @@ namespace System.Net.Http
             }
         }
 
-        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            try
-            {
-                return await SendAsync2(request, cancellationToken).ConfigureAwait(false);
-            }
-            catch (Exception ex) when (ex is not HttpRequestException && !ex.Message.Contains("hello") &&
-                Environment.StackTrace.Contains("PlaintextStreamFilter_ExceptionDuringCallback_ThrowsHttpRequestExceptionWithInnerException", StringComparison.OrdinalIgnoreCase))
-            {
-                Debug.Fail(ex.ToString());
-                throw;
-            }
-        }
-
-        private Task<HttpResponseMessage> SendAsync2(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (ShouldLogDiagnostics(request, out Activity? activity))
             {
