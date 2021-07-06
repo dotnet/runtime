@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Strategies
 {
-    // this type serves some basic functionality that is common for Async and Sync Windows File Stream Strategies
-    internal abstract class WindowsFileStreamStrategy : FileStreamStrategy
+    // this type serves some basic functionality that is common for native OS File Stream Strategies
+    internal abstract class OSFileStreamStrategy : FileStreamStrategy
     {
         protected readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
         private readonly FileAccess _access; // What file was opened for.
@@ -19,7 +20,7 @@ namespace System.IO.Strategies
         private long _length = -1; // When the file is locked for writes (_share <= FileShare.Read) cache file length in-memory, negative means that hasn't been fetched.
         private bool _exposedHandle; // created from handle, or SafeFileHandle was used and the handle got exposed
 
-        internal WindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
+        internal OSFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
         {
             _access = access;
             _share = share;
@@ -41,7 +42,7 @@ namespace System.IO.Strategies
             _fileHandle = handle;
         }
 
-        internal WindowsFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+        internal OSFileStreamStrategy(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
             string fullPath = Path.GetFullPath(path);
 
@@ -52,7 +53,16 @@ namespace System.IO.Strategies
 
             try
             {
-                Init(mode, path);
+                FileStreamHelpers.ValidateFileTypeForNonExtendedPaths(_fileHandle, path);
+
+                if (mode == FileMode.Append && CanSeek)
+                {
+                    _appendStart = _filePosition = Length;
+                }
+                else
+                {
+                    _appendStart = -1;
+                }
             }
             catch
             {
@@ -70,16 +80,17 @@ namespace System.IO.Strategies
 
         public sealed override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
-        // When the file is locked for writes we can cache file length in memory
-        // and avoid subsequent native calls which are expensive.
         public unsafe sealed override long Length
         {
             get
             {
-                if (_share > FileShare.Read || _exposedHandle)
+                if (!OperatingSystem.IsWindows() || _share > FileShare.Read || _exposedHandle)
                 {
                     return RandomAccess.GetFileLength(_fileHandle);
                 }
+
+                // On Windows, when the file is locked for writes we can cache file length
+                // in memory and avoid subsequent native calls which are expensive.
 
                 if (_length < 0)
                 {
@@ -94,7 +105,7 @@ namespace System.IO.Strategies
         {
             // Do not update the cached length if the file is not locked
             // or if the length hasn't been fetched.
-            if (_share > FileShare.Read || _length < 0 || _exposedHandle)
+            if (!OperatingSystem.IsWindows() || _share > FileShare.Read || _length < 0 || _exposedHandle)
             {
                 Debug.Assert(_length < 0);
                 return;
@@ -107,7 +118,7 @@ namespace System.IO.Strategies
         }
 
         /// <summary>Gets or sets the position within the current stream</summary>
-        public override long Position
+        public sealed override long Position
         {
             get => _filePosition;
             set => _filePosition = value;
@@ -138,17 +149,8 @@ namespace System.IO.Strategies
             }
         }
 
-        public override unsafe int ReadByte()
-        {
-            byte b;
-            return Read(new Span<byte>(&b, 1)) != 0 ? b : -1;
-        }
-
-        public override unsafe void WriteByte(byte value) =>
-            Write(new ReadOnlySpan<byte>(&value, 1));
-
         // this method just disposes everything (no buffer, no need to flush)
-        public override ValueTask DisposeAsync()
+        public sealed override ValueTask DisposeAsync()
         {
             if (_fileHandle != null && !_fileHandle.IsClosed)
             {
@@ -162,16 +164,18 @@ namespace System.IO.Strategies
         internal sealed override void DisposeInternal(bool disposing) => Dispose(disposing);
 
         // this method just disposes everything (no buffer, no need to flush)
-        protected override void Dispose(bool disposing)
+        protected sealed override void Dispose(bool disposing)
         {
-            if (_fileHandle != null && !_fileHandle.IsClosed)
+            if (disposing && _fileHandle != null && !_fileHandle.IsClosed)
             {
                 _fileHandle.ThreadPoolBinding?.Dispose();
                 _fileHandle.Dispose();
             }
         }
 
-        public sealed override void Flush() => Flush(flushToDisk: false); // we have nothing to flush as there is no buffer here
+        public sealed override void Flush() { }  // no buffering = nothing to flush
+
+        public sealed override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask; // no buffering = nothing to flush
 
         internal sealed override void Flush(bool flushToDisk)
         {
@@ -203,7 +207,7 @@ namespace System.IO.Strategies
             else
             {
                 // keep throwing the same exception we did when seek was causing actual offset change
-                throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_INVALID_PARAMETER);
+                FileStreamHelpers.ThrowInvalidArgument(_fileHandle);
             }
 
             // Prevent users from overwriting data in a file that was opened in append mode.
@@ -216,24 +220,9 @@ namespace System.IO.Strategies
             return pos;
         }
 
-        internal sealed override void Lock(long position, long length) => FileStreamHelpers.Lock(_fileHandle, position, length);
+        internal sealed override void Lock(long position, long length) => FileStreamHelpers.Lock(_fileHandle, CanWrite, position, length);
 
         internal sealed override void Unlock(long position, long length) => FileStreamHelpers.Unlock(_fileHandle, position, length);
-
-        private void Init(FileMode mode, string originalPath)
-        {
-            FileStreamHelpers.ValidateFileTypeForNonExtendedPaths(_fileHandle, originalPath);
-
-            // For Append mode...
-            if (mode == FileMode.Append)
-            {
-                _appendStart = _filePosition = Length;
-            }
-            else
-            {
-                _appendStart = -1;
-            }
-        }
 
         public sealed override void SetLength(long value)
         {
@@ -256,11 +245,16 @@ namespace System.IO.Strategies
             }
         }
 
-        public override int Read(byte[] buffer, int offset, int count) => ReadSpan(new Span<byte>(buffer, offset, count));
+        public sealed override unsafe int ReadByte()
+        {
+            byte b;
+            return Read(new Span<byte>(&b, 1)) != 0 ? b : -1;
+        }
 
-        public override int Read(Span<byte> buffer) => ReadSpan(buffer);
+        public sealed override int Read(byte[] buffer, int offset, int count) =>
+            Read(new Span<byte>(buffer, offset, count));
 
-        private unsafe int ReadSpan(Span<byte> destination)
+        public sealed override int Read(Span<byte> buffer)
         {
             if (_fileHandle.IsClosed)
             {
@@ -271,19 +265,20 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
-            int r = RandomAccess.ReadAtOffset(_fileHandle, destination, _filePosition);
+            int r = RandomAccess.ReadAtOffset(_fileHandle, buffer, CanSeek ? _filePosition : -1);
             Debug.Assert(r >= 0, $"RandomAccess.ReadAtOffset returned {r}.");
             _filePosition += r;
 
             return r;
         }
 
-        public override void Write(byte[] buffer, int offset, int count)
-            => WriteSpan(new ReadOnlySpan<byte>(buffer, offset, count));
+        public sealed override unsafe void WriteByte(byte value) =>
+            Write(new ReadOnlySpan<byte>(&value, 1));
 
-        public override void Write(ReadOnlySpan<byte> buffer) => WriteSpan(buffer);
+        public override void Write(byte[] buffer, int offset, int count) =>
+            Write(new ReadOnlySpan<byte>(buffer, offset, count));
 
-        private unsafe void WriteSpan(ReadOnlySpan<byte> source)
+        public sealed override void Write(ReadOnlySpan<byte> buffer)
         {
             if (_fileHandle.IsClosed)
             {
@@ -294,7 +289,7 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
-            int r = RandomAccess.WriteAtOffset(_fileHandle, source, _filePosition);
+            int r = RandomAccess.WriteAtOffset(_fileHandle, buffer, CanSeek ? _filePosition : -1);
             Debug.Assert(r >= 0, $"RandomAccess.WriteAtOffset returned {r}.");
             _filePosition += r;
 

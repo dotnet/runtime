@@ -179,8 +179,6 @@ namespace System.IO.Strategies
             }
         }
 
-        private void FlushOSBuffer() => FileStreamHelpers.FlushToDisk(_fileHandle);
-
         // Returns a task that flushes the internal write buffer
         private Task FlushWriteAsync(CancellationToken cancellationToken)
         {
@@ -464,16 +462,6 @@ namespace System.IO.Strategies
                 Debug.Assert(pos == Position, "Seek optimization: pos != Position!  Buffer math was mangled.");
             }
             return pos;
-        }
-
-        // This doesn't do argument checking.  Necessary for SetLength, which must
-        // set the file pointer beyond the end of the file. This will update the
-        // internal position
-        private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
-        {
-            Debug.Assert(fileHandle.CanSeek, "fileHandle.CanSeek");
-
-            return _filePosition = FileStreamHelpers.Seek(fileHandle, offset, origin, closeInvalidHandle);
         }
 
         partial void OnBufferAllocated()
@@ -1044,8 +1032,6 @@ namespace System.IO.Strategies
                 return base.CopyToAsync(destination, bufferSize, cancellationToken);
             }
 
-            ValidateCopyToArguments(destination, bufferSize);
-
             // Fail if the file was closed
             if (_fileHandle.IsClosed)
             {
@@ -1113,7 +1099,7 @@ namespace System.IO.Strategies
             }
         }
 
-        internal override void Lock(long position, long length) => FileStreamHelpers.Lock(_fileHandle, position, length);
+        internal override void Lock(long position, long length) => FileStreamHelpers.Lock(_fileHandle, CanWrite, position, length);
 
         internal override void Unlock(long position, long length) => FileStreamHelpers.Unlock(_fileHandle, position, length);
     }

@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Strategies;
+using System.Threading;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -27,6 +28,12 @@ namespace Microsoft.Win32.SafeHandles
         public bool IsAsync { get; private set; }
 
         internal bool CanSeek => !IsClosed && GetCanSeek();
+
+        internal bool IsPipe => false;
+
+        internal ThreadPoolBoundHandle? ThreadPoolBinding => null;
+
+        internal void EnsureThreadPoolBindingInitialized() { /* nop */ }
 
         /// <summary>Opens the specified file with the requested flags and mode.</summary>
         /// <param name="path">The path to the file.</param>

@@ -878,7 +878,6 @@ namespace System.IO.Strategies
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            ValidateCopyToArguments(destination, bufferSize);
             EnsureNotClosed();
             EnsureCanRead();
 
@@ -921,7 +920,6 @@ namespace System.IO.Strategies
 
         public override void CopyTo(Stream destination, int bufferSize)
         {
-            ValidateCopyToArguments(destination, bufferSize);
             EnsureNotClosed();
             EnsureCanRead();
 
