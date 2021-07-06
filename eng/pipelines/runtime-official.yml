@@ -155,7 +155,7 @@ stages:
       - Browser_wasm
       jobParameters:
         buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig) /p:ForNode=true
-        nameSuffix: AllSubsets_Mono
+        nameSuffix: AllSubsets_Mono_NodeJS
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:

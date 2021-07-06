@@ -324,7 +324,7 @@ jobs:
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono
+      nameSuffix: AllSubsets_Mono_NodeJS
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:ForNode=true /p:JSEngine=NodeJS
       timeoutInMinutes: 180
       condition: >-
@@ -409,7 +409,7 @@ jobs:
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_EAT
+      nameSuffix: AllSubsets_Mono_EAT_NodeJS
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=false /p:ForNode=true /p:JSEngine=NodeJS
       timeoutInMinutes: 180
       condition: >-
@@ -493,7 +493,7 @@ jobs:
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_AOT
+      nameSuffix: AllSubsets_Mono_AOT_NodeJS
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=true /p:ForNode=true /p:JSEngine=NodeJS
       timeoutInMinutes: 180
       condition: >-
@@ -600,7 +600,7 @@ jobs:
         value: 200
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_RuntimeTests_Node
+      nameSuffix: AllSubsets_Mono_RuntimeTests_NodeJS
       buildArgs: -s mono+libs -c $(_BuildConfig) /p:ForNode=true
       timeoutInMinutes: 180
       condition: >-
