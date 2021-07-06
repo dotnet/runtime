@@ -1013,7 +1013,7 @@ var BindingSupportLib = {
 			// ensure the indirect values are 8-byte aligned so that aligned loads and stores will work
 			var indirectBaseOffset = ((((args_marshal.length * 4) + 7) / 8) | 0) * 8;
 
-			var closure = {};
+			var closure = {Module: Module};
 			var indirectLocalOffset = 0;
 
 			body.push (
@@ -1090,6 +1090,7 @@ var BindingSupportLib = {
 
 			argumentNames = ["existingBuffer", "rootBuffer", "method", "args"];
 			closure = {
+				Module: Module,
 				converter: compiledFunction
 			};
 			body = [
@@ -1343,6 +1344,7 @@ var BindingSupportLib = {
 				converter = this._compile_converter_for_marshal_string (args_marshal);
 
 			var closure = {
+				Module: Module,
 				library_mono: MONO,
 				binding_support: this,
 				method: method,

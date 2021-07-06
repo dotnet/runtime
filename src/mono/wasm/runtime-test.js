@@ -350,13 +350,12 @@ var Module = {
 	},
 };
 
-globalThis.Module = Module; // needed so that dotnet.js can access the module
-
 var App = {
 	/** Runs the tests (runtime is now loaded and running)
 	 * @type {() => void}
 	 */
 	init: function () {
+
 		const wasm_set_main_args = Module.cwrap ('mono_wasm_set_main_args', 'void', ['number', 'number']);
 		const wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
 
@@ -455,8 +454,7 @@ var App = {
 		}
 	}
 };
-
-globalThis.App = App; // needed so that dotnet.js can access the App
+globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly
 
 // load the config and runtime files which will start the runtime init and subsiquently the tests
 // uses promise chain as loading is async but we can't use await here
