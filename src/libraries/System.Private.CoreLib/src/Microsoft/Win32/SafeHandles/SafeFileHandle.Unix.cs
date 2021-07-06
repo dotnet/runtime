@@ -8,10 +8,11 @@ using System.IO.Strategies;
 
 namespace Microsoft.Win32.SafeHandles
 {
-    public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         // not using bool? as it's not thread safe
         private volatile NullableBool _canSeek = NullableBool.Undefined;
+        private bool _deleteOnClose;
         private bool _releaseLock;
 
         public SafeFileHandle() : this(ownsHandle: true)
@@ -22,11 +23,6 @@ namespace Microsoft.Win32.SafeHandles
             : base(ownsHandle)
         {
             SetHandle(new IntPtr(-1));
-        }
-
-        public SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle) : this(ownsHandle)
-        {
-            SetHandle(preexistingHandle);
         }
 
         public bool IsAsync { get; private set; }
@@ -42,6 +38,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(path != null);
             SafeFileHandle handle = Interop.Sys.Open(path, flags, mode);
+            handle._path = path;
 
             if (handle.IsInvalid)
             {
@@ -57,7 +54,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 bool isDirectory = (error.Error == Interop.Error.ENOENT) &&
                     ((flags & Interop.Sys.OpenFlags.O_CREAT) != 0
-                    || !DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path!))!));
+                    || !DirectoryExists(System.IO.Path.GetDirectoryName(System.IO.Path.TrimEndingDirectorySeparator(path!))!));
 
                 Interop.CheckIo(
                     error.Error,
@@ -125,6 +122,17 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Interop.Sys.FLock(handle, Interop.Sys.LockOperations.LOCK_UN); // ignore any errors
                 _releaseLock = false;
+            }
+
+            // If DeleteOnClose was requested when constructed, delete the file now.
+            // (Unix doesn't directly support DeleteOnClose, so we mimic it here.)
+            if (_deleteOnClose)
+            {
+                // Since we still have the file open, this will end up deleting
+                // it (assuming we're the only link to it) once it's closed, but the
+                // name will be removed immediately.
+                Debug.Assert(_path is not null);
+                Interop.Sys.Unlink(_path); // ignore errors; it's valid that the path may no longer exist
             }
 
             // Close the descriptor. Although close is documented to potentially fail with EINTR, we never want
@@ -244,6 +252,7 @@ namespace Microsoft.Win32.SafeHandles
         private void Init(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
             IsAsync = (options & FileOptions.Asynchronous) != 0;
+            _deleteOnClose = (options & FileOptions.DeleteOnClose) != 0;
 
             if (FileStreamHelpers.UseNet5CompatStrategy || share == FileShare.None)
             {
