@@ -9,6 +9,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.CommandLine.Experimental" Version="0.3.0-alpha.19577.1" />
-    <PackageReference Include="System.IO.Pipelines" Version="6.0.0-preview.7.21352.8" />
+    <PackageReference Include="System.IO.Pipelines" Version="6.0.0-preview.5.21301.5" />
   </ItemGroup>
 </Project>
