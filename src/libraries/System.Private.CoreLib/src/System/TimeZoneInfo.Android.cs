@@ -125,13 +125,48 @@ namespace System
             return Utc;
         }
 
-        // TODO could check all paths in AndroidTzData.Paths, or we move the functions that call this into `TimeZoneInfo.Unix.cs`
+        private static string GetApexTimeDataRoot()
+        {
+            string? ret = Environment.GetEnvironmentVariable("ANDROID_TZDATA_ROOT");
+            if (!string.IsNullOrEmpty(ret))
+            {
+                return ret;
+            }
+
+            return "/apex/com.android.tzdata";
+        }
+
+        private static string GetApexRuntimeRoot()
+        {
+            string? ret = Environment.GetEnvironmentVariable("ANDROID_RUNTIME_ROOT");
+            if (!string.IsNullOrEmpty(ret))
+            {
+                return ret;
+            }
+
+            return "/apex/com.android.runtime";
+        }
+
         private static string GetTimeZoneDirectory()
         {
+            // Android 10+, TimeData module where the updates land
+            if (File.Exists(Path.Combine(GetApexTimeDataRoot() + "/etc/tz/", TimeZoneFileName)))
+            {
+                return GetApexTimeDataRoot() + "/etc/tz/";
+            }
+            // Android 10+, Fallback location if the above isn't found or corrupted
+            if (File.Exists(Path.Combine(GetApexRuntimeRoot() + "/etc/tz/", TimeZoneFileName)))
+            {
+                return GetApexRuntimeRoot() + "/etc/tz/";
+            }
+            if (File.Exists(Path.Combine(Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/", TimeZoneFileName)))
+            {
+                return Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/";
+            }
+
             return Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory;
         }
 
-        //TODO: TryGetTimeZoneFromLocalMachine maps to FindSystemTimeZoneByIdCore in mono/mono implementation
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
             value = null;
@@ -175,6 +210,7 @@ namespace System
                 public fixed byte signature[12];
                 public int indexOffset;
                 public int dataOffset;
+                // Do we need zoneTabOFfset? Whats the format of tzdata now vs during mono/mono implementation.
             }
 
             [StructLayout(LayoutKind.Sequential, Pack=1)]
@@ -186,92 +222,20 @@ namespace System
                 public int rawUtcOffset;
             }
 
-            private static readonly string[] Paths = new string[] {
-                GetApexTimeDataRoot() + "/etc/tz/tzdata", // Android 10+, TimeData module where the updates land
-                GetApexRuntimeRoot() + "/etc/tz/tzdata",  // Android 10+, Fallback location if the above isn't found or corrupted
-                Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/tzdata",
-                Environment.GetEnvironmentVariable("ANDROID_ROOT") + "/usr/share/zoneinfo/tzdata",
-            };
-
-            private string tzdataPath;
-            private Stream? data;
-
             private string[]? ids;
             private int[]? byteOffsets;
             private int[]? lengths;
 
             public AndroidTzData()
             {
-                foreach (var path in Paths)
-                {
-                    if (LoadData(path))
-                    {
-                        tzdataPath = path;
-                        return;
-                    }
-                }
-
-                tzdataPath = "/";
-                ids = new[]{ "GMT" };
+                ReadHeader(GetTimeZoneDirectory() + TimeZoneFileName);
             }
 
-            private static string GetApexTimeDataRoot()
-            {
-                string? ret = Environment.GetEnvironmentVariable("ANDROID_TZDATA_ROOT");
-                if (!string.IsNullOrEmpty(ret)) {
-                    return ret;
-                }
-
-                return "/apex/com.android.tzdata";
-            }
-
-            private static string GetApexRuntimeRoot()
-            {
-                string? ret = Environment.GetEnvironmentVariable("ANDROID_RUNTIME_ROOT");
-                if (!string.IsNullOrEmpty(ret))
-                {
-                    return ret;
-                }
-
-                return "/apex/com.android.runtime";
-            }
-
-            private bool LoadData(string path)
-            {
-                if (!File.Exists(path))
-                {
-                    return false;
-                }
-
-                try
-                {
-                    data = File.OpenRead(path);
-                }
-                catch (IOException)
-                {
-                    return false;
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    return false;
-                }
-
-                try
-                {
-                    ReadHeader();
-                    return true;
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-
-            private unsafe void ReadHeader()
+            private unsafe void ReadHeader(string tzFilePath)
             {
                 int size   = Math.Max(Marshal.SizeOf(typeof(AndroidTzDataHeader)), Marshal.SizeOf(typeof(AndroidTzDataEntry)));
                 var buffer = new byte[size];
-                var header = ReadAt<AndroidTzDataHeader>(0, buffer);
+                var header = ReadAt<AndroidTzDataHeader>(tzFilePath, 0, buffer);
 
                 header.indexOffset = NetworkToHostOrder(header.indexOffset);
                 header.dataOffset = NetworkToHostOrder(header.dataOffset);
@@ -290,13 +254,15 @@ namespace System
                     //TODO: Put strings in resource file
                     throw new InvalidOperationException("bad tzdata magic: " + b.ToString());
                 }
+                // What exactly are we considering bad tzdata? Seems like if it doesnt start with "tzdata" or if the signature is filled.
+                // How does filling the AndroidTzDataHeader work? Shouldn't signature be filled up, so its always != 0?
 
-                ReadIndex(header.indexOffset, header.dataOffset, buffer);
+                ReadIndex(tzFilePath, header.indexOffset, header.dataOffset, buffer);
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2087:UnrecognizedReflectionPattern",
                 Justification = "Implementation detail of Android TimeZone")]
-            private unsafe T ReadAt<T>(long position, byte[] buffer)
+            private unsafe T ReadAt<T>(string tzFilePath, long position, byte[] buffer)
                 where T : struct
             {
                 int size = Marshal.SizeOf(typeof(T));
@@ -306,18 +272,21 @@ namespace System
                     throw new InvalidOperationException("private error: buffer too small");
                 }
 
-                data!.Position = position;
-                int r;
-                if ((r = data!.Read(buffer, 0, size)) < size)
+                using (FileStream fs = File.OpenRead(tzFilePath))
                 {
-                    //TODO: Put strings in resource file
-                    throw new InvalidOperationException(
-                            string.Format("Error reading '{0}': read {1} bytes, expected {2}", tzdataPath, r, size));
-                }
+                    fs.Position = position;
+                    int numBytesRead;
+                    if ((numBytesRead = fs.Read(buffer, 0, size)) < size)
+                    {
+                        //TODO: Put strings in resource file
+                        throw new InvalidOperationException(
+                                string.Format("Error reading '{0}': read {1} bytes, expected {2}", GetTimeZoneDirectory() + TimeZoneFileName, numBytesRead, size));
+                    }
 
-                fixed (byte* b = buffer)
-                {
-                    return (T)Marshal.PtrToStructure((IntPtr)b, typeof(T))!;
+                    fixed (byte* b = buffer)
+                    {
+                        return (T)Marshal.PtrToStructure((IntPtr)b, typeof(T))!; // Is ! the right way to handle Unboxing a possibly null value. Should there be some check instead?
+                    }
                 }
             }
 
@@ -344,7 +313,8 @@ namespace System
                 return len;
             }
 
-            private unsafe void ReadIndex(int indexOffset, int dataOffset, byte[] buffer)
+            // What does the TZdata index look like?
+            private unsafe void ReadIndex(string tzFilePath, int indexOffset, int dataOffset, byte[] buffer)
             {
                 int indexSize = dataOffset - indexOffset;
                 int entrySize = Marshal.SizeOf(typeof(AndroidTzDataEntry));
@@ -356,7 +326,7 @@ namespace System
 
                 for (int i = 0; i < entryCount; ++i)
                 {
-                    var entry = ReadAt<AndroidTzDataEntry>(indexOffset + (entrySize*i), buffer);
+                    var entry = ReadAt<AndroidTzDataEntry>(tzFilePath, indexOffset + (entrySize*i), buffer);
                     var p = (sbyte*)entry.id;
 
                     byteOffsets![i] = NetworkToHostOrder(entry.byteOffset) + dataOffset;
@@ -388,17 +358,18 @@ namespace System
                 int offset = byteOffsets![i];
                 int length = lengths![i];
                 var buffer = new byte[length];
-
-                lock (data!)
+                // Do we need to lock to prevent multithreading issues like the mono/mono implementation?
+                var tzFilePath = GetTimeZoneDirectory() + TimeZoneFileName;
+                using (FileStream fs = File.OpenRead(tzFilePath))
                 {
-                    data!.Position = offset;
-                    int r;
-                    if ((r = data!.Read(buffer, 0, buffer.Length)) < buffer.Length)
+                    fs.Position = offset;
+                    int numBytesRead;
+                    if ((numBytesRead = fs.Read(buffer, 0, buffer.Length)) < buffer.Length)
                     {
                         //TODO: Put strings in resource file
                         throw new InvalidOperationException(
                                 string.Format("Unable to fully read from file '{0}' at offset {1} length {2}; read {3} bytes expected {4}.",
-                                    tzdataPath, offset, length, r, buffer.Length));
+                                    tzFilePath, offset, length, numBytesRead, buffer.Length));
                     }
                 }
 
