@@ -1408,7 +1408,7 @@ metadata_update_count_updates (MonoImage *base)
 }
 
 static gpointer
-get_method_ppdb_update_rva (MonoImage *image_base, BaselineInfo *base_info, uint32_t idx)
+get_method_update_rva (MonoImage *image_base, BaselineInfo *base_info, uint32_t idx, gboolean is_pdb)
 {
 	gpointer loc = NULL;
 	uint32_t cur = hot_reload_get_thread_generation ();
@@ -1422,38 +1422,13 @@ get_method_ppdb_update_rva (MonoImage *image_base, BaselineInfo *base_info, uint
 		g_assert (delta_info);
 		if (delta_info->generation > cur)
 			break;
-		if (delta_info->method_ppdb_table_update) {
-			gpointer result = g_hash_table_lookup (delta_info->method_ppdb_table_update, GUINT_TO_POINTER (idx));
-			/* if it's not in the table of a later generation, the
-			 * later generation didn't modify the method
-			 */
-			if (result != NULL) {
-				loc = result;
-				generation = delta_info->generation;
-			}
-		}
-	}
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "method lookup idx=0x%08x returned gen=%d ppdb=%p", idx, generation, loc);
-	return loc;
-}
-
-static gpointer
-get_method_update_rva (MonoImage *image_base, BaselineInfo *base_info, uint32_t idx)
-{
-	gpointer loc = NULL;
-	uint32_t cur = hot_reload_get_thread_generation ();
-	int generation = -1;
-	
-	/* Go through all the updates that the current thread can see and see
-	 * if they updated the method.	Keep the latest visible update */
-	for (GList *ptr = base_info->delta_image; ptr != NULL; ptr = ptr->next) {
-		MonoImage *image_delta = (MonoImage*) ptr->data;
-		DeltaInfo *delta_info = delta_info_lookup (image_delta);
-		g_assert (delta_info);
-		if (delta_info->generation > cur)
-			break;
-		if (delta_info->method_table_update) {
-			gpointer result = g_hash_table_lookup (delta_info->method_table_update, GUINT_TO_POINTER (idx));
+		GHashTable *table = NULL;
+		if (is_pdb)
+			table = delta_info->method_ppdb_table_update;
+		else
+			table = delta_info->method_table_update;
+		if (table) {
+			gpointer result = g_hash_table_lookup (table, GUINT_TO_POINTER (idx));
 			/* if it's not in the table of a later generation, the
 			 * later generation didn't modify the method
 			 */
@@ -1478,7 +1453,7 @@ hot_reload_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx)
 	if (G_UNLIKELY (info->method_table_update)) {
 		uint32_t gen = GPOINTER_TO_UINT (g_hash_table_lookup (info->method_table_update, GUINT_TO_POINTER (idx)));
 		if (G_UNLIKELY (gen > 0)) {
-			loc = get_method_ppdb_update_rva (base_image, info, idx);
+			loc = get_method_update_rva (base_image, info, idx, TRUE);
 		}
 	}
 	return loc;
@@ -1495,7 +1470,7 @@ hot_reload_get_updated_method_rva (MonoImage *base_image, uint32_t idx)
 	if (G_UNLIKELY (info->method_table_update)) {
 		uint32_t gen = GPOINTER_TO_UINT (g_hash_table_lookup (info->method_table_update, GUINT_TO_POINTER (idx)));
 		if (G_UNLIKELY (gen > 0)) {
-			loc = get_method_update_rva (base_image, info, idx);
+			loc = get_method_update_rva (base_image, info, idx, FALSE);
 		}
 	}
 	return loc;
