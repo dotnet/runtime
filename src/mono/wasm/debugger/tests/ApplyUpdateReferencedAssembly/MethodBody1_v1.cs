@@ -8,10 +8,26 @@ namespace ApplyUpdateReferencedAssembly
 {
     public class MethodBody1 {
         public static string StaticMethod1 () {
-            Console.WriteLine("v1");
-            double b = 15;
+                Console.WriteLine("v1");
+                double b = 15;
+                Debugger.Break();
+                return "NEW STRING";
+        }
+    }
+
+    public class MethodBody2 {
+        public static string StaticMethod1 () {
+            Console.WriteLine("original");
+            int a = 10;
             Debugger.Break();
-            Console.WriteLine("passei v1");
+            return "OLD STRING";
+        }
+    }
+
+    public class MethodBody3 {
+        public static string StaticMethod3 () {
+            float b = 15;
+            Console.WriteLine("v1");
             return "NEW STRING";
         }
     }

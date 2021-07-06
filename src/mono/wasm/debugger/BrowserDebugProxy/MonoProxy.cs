@@ -349,7 +349,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 case "Debugger.removeBreakpoint":
                     {
-                        await RemoveBreakpoint(id, args, token);
+                        await RemoveBreakpoint(id, args, false, token);
                         break;
                     }
 
@@ -844,6 +844,63 @@ namespace Microsoft.WebAssembly.Diagnostics
                 int thread_id = ret_debugger_cmd_reader.ReadInt32();
                 switch (event_kind)
                 {
+                    case EventKind.MethodUpdate:
+                    {
+                        var method_id = ret_debugger_cmd_reader.ReadInt32();
+                        var method_token = await sdbHelper.GetMethodToken(sessionId, method_id, token);
+                        var assembly_id = await sdbHelper.GetAssemblyIdFromMethod(sessionId, method_id, token);
+                        var assembly_name = await sdbHelper.GetAssemblyName(sessionId, assembly_id, token);
+                        var method_name = await sdbHelper.GetMethodName(sessionId, method_id, token);
+                        DebugStore store = await LoadStore(sessionId, token);
+                        AssemblyInfo asm = store.GetAssemblyByName(assembly_name);
+                        if (asm == null)
+                        {
+                            assembly_name = await sdbHelper.GetAssemblyNameFull(sessionId, assembly_id, token);
+                            asm = store.GetAssemblyByName(assembly_name);
+                            if (asm == null)
+                            {
+                                await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                return true;
+                            }
+                        }
+                        MethodInfo method = asm.GetMethodByToken(method_token);
+                        if (method == null)
+                        {
+                            await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                            return true;
+                        }
+                        foreach (var req in context.BreakpointRequests.Values)
+                        {
+                            if (req.Method != null && req.Method.Assembly.Id == method.Assembly.Id && req.Method.Token == method.Token)
+                            {
+                                await SetBreakpoint(sessionId, context.store, req, true, token);
+                            }
+                        }
+                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                        return true;
+                    }
+                    case EventKind.EnCUpdate:
+                    {
+                        int moduleId = ret_debugger_cmd_reader.ReadInt32();
+                        int meta_size = ret_debugger_cmd_reader.ReadInt32();
+                        byte[] meta_buf = ret_debugger_cmd_reader.ReadBytes(meta_size);
+                        int pdb_size = ret_debugger_cmd_reader.ReadInt32();
+                        byte[] pdb_buf = ret_debugger_cmd_reader.ReadBytes(pdb_size);
+
+                        var assembly_name = await sdbHelper.GetAssemblyNameFromModule(sessionId, moduleId, token);
+                        DebugStore store = await LoadStore(sessionId, token);
+                        AssemblyInfo asm = store.GetAssemblyByName(assembly_name);
+                        try {
+                            foreach (var method in store.EnCUpdate(sessionId, asm, meta_buf, pdb_buf))
+                                await ResetBreakpoint(sessionId, method, token);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(e);
+                        }
+                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                        return true;
+                    }
                     case EventKind.Exception:
                     {
                         string reason = "exception";
@@ -1209,7 +1266,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 await sdbHelper.EnableExceptions(sessionId, "uncaught", token);
 
             await sdbHelper.SetProtocolVersion(sessionId, token);
-            await sdbHelper.EnableReceiveUserBreakRequest(sessionId, token);
+            await sdbHelper.EnableReceiveRequests(sessionId, EventKind.UserBreak, token);
+            await sdbHelper.EnableReceiveRequests(sessionId, EventKind.EnCUpdate, token);
+            await sdbHelper.EnableReceiveRequests(sessionId, EventKind.MethodUpdate, token);
 
             DebugStore store = await LoadStore(sessionId, token);
 
@@ -1218,7 +1277,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             return store;
         }
 
-        private async Task RemoveBreakpoint(MessageId msg_id, JObject args, CancellationToken token)
+        private async Task ResetBreakpoint(SessionId msg_id, MethodInfo method, CancellationToken token)
+        {
+            ExecutionContext context = GetContext(msg_id);
+            foreach (var req in context.BreakpointRequests.Values)
+            {
+                if (req.Method != null)
+                {
+                    if (req.Method.Assembly.Id == method.Assembly.Id && req.Method.Token == method.Token) {
+                        await RemoveBreakpoint(msg_id, JObject.FromObject(new {breakpointId = req.Id}), true, token);
+                    }
+                }
+            }
+        }
+
+        private async Task RemoveBreakpoint(SessionId msg_id, JObject args, bool isEnCReset, CancellationToken token)
         {
             string bpid = args?["breakpointId"]?.Value<string>();
 
@@ -1232,10 +1305,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (breakpoint_removed)
                 {
                     bp.RemoteId = -1;
-                    bp.State = BreakpointState.Disabled;
+                    if (isEnCReset)
+                        bp.State = BreakpointState.Pending;
+                    else
+                        bp.State = BreakpointState.Disabled;
                 }
             }
-            context.BreakpointRequests.Remove(bpid);
+            if (!isEnCReset)
+                context.BreakpointRequests.Remove(bpid);
+            else
+                breakpointRequest.Locations = new List<Breakpoint>();
         }
 
         private async Task SetBreakpoint(SessionId sessionId, DebugStore store, BreakpointRequest req, bool sendResolvedEvent, CancellationToken token)
@@ -1263,6 +1342,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (IGrouping<SourceId, SourceLocation> sourceId in locations)
             {
                 SourceLocation loc = sourceId.First();
+                req.Method = loc.CliLocation.Method;
                 Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, req.Condition, token);
 
                 // If we didn't successfully enable the breakpoint

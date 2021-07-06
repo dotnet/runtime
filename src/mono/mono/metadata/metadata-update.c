@@ -73,9 +73,12 @@ mono_image_relative_delta_index (MonoImage *image_dmeta, int token)
 }
 
 void
-mono_image_load_enc_delta (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error)
+mono_image_load_enc_delta (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb, uint32_t dpdb_len, MonoError *error)
 {
-	mono_component_hot_reload ()->apply_changes (base_image, dmeta, dmeta_len, dil, dil_len, error);
+	mono_component_hot_reload ()->apply_changes (base_image, dmeta, dmeta_len, dil, dil_len, dpdb, dpdb_len, error);
+	if (is_ok (error)) {
+		mono_component_debugger ()->send_enc_delta (base_image, dmeta, dmeta_len, dpdb, dpdb_len);
+	}
 }
 
 static void
@@ -106,6 +109,12 @@ gpointer
 mono_metadata_update_get_updated_method_rva (MonoImage *base_image, uint32_t idx)
 {
         return mono_component_hot_reload ()->get_updated_method_rva (base_image, idx);
+}
+
+gpointer
+mono_metadata_update_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx)
+{
+	return mono_component_hot_reload ()->get_updated_method_ppdb (base_image, idx);
 }
 
 gboolean

@@ -6,12 +6,29 @@ using System;
 namespace ApplyUpdateReferencedAssembly
 {
     public class MethodBody1 {
-        public static string StaticMethod1 () {
+        public static string StaticMethod1 ()
+        {
             Console.WriteLine("v2");
             bool c = true;
             Debugger.Break();
-            Console.WriteLine("passei v2");
             return "NEWEST STRING";
+        }
+    }
+
+    public class MethodBody2 {
+        public static string StaticMethod1 () {
+            Console.WriteLine("original");
+            int a = 10;
+            Debugger.Break();
+            return "OLD STRING";
+        }
+    }
+
+    public class MethodBody3 {
+        public static string StaticMethod3 () {
+				bool c = true;
+				Console.WriteLine("v2");
+				return "NEWEST STRING";
         }
     }
 }

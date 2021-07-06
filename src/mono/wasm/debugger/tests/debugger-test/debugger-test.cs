@@ -604,7 +604,7 @@ public class LoadDebuggerTestALC {
             Console.WriteLine($"Loaded - {loadedAssembly}");
 
         }
-        public static void RunMethod()
+        public static void RunMethod(string className, string methodName)
         {
             var ty = typeof(System.Reflection.Metadata.AssemblyExtensions);
             var mi = ty.GetMethod("GetApplyUpdateCapabilities", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, Array.Empty<Type>());
@@ -617,20 +617,20 @@ public class LoadDebuggerTestALC {
             if (String.IsNullOrEmpty(caps))
                 return;
 
-            var myType = loadedAssembly.GetType("ApplyUpdateReferencedAssembly.MethodBody1");
-            var myMethod = myType.GetMethod("StaticMethod1");
+            var myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
+            var myMethod = myType.GetMethod(methodName);
             myMethod.Invoke(null, null);
 
             ApplyUpdate(loadedAssembly, 1);
 
-            myType = loadedAssembly.GetType("ApplyUpdateReferencedAssembly.MethodBody1");
-            myMethod = myType.GetMethod("StaticMethod1");
+            myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
+            myMethod = myType.GetMethod(methodName);
             myMethod.Invoke(null, null);
 
             ApplyUpdate(loadedAssembly, 2);
 
-            myType = loadedAssembly.GetType("ApplyUpdateReferencedAssembly.MethodBody1");
-            myMethod = myType.GetMethod("StaticMethod1");
+            myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
+            myMethod = myType.GetMethod(methodName);
             myMethod.Invoke(null, null);
         }
 

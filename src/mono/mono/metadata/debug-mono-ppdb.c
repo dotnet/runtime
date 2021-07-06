@@ -456,6 +456,66 @@ mono_ppdb_is_embedded (MonoPPDBFile *ppdb)
 	return ppdb->is_embedded;
 }
 
+void 
+mono_ppdb_get_seq_points_enc (const char* ptr, MonoSymSeqPoint **seq_points, int *n_seq_points)
+{
+	GArray *sps;
+	MonoSymSeqPoint sp;
+	int iloffset = 0;
+	int start_line = 0;
+	int start_col = 0;
+	int delta_cols = 0;
+	gboolean first_non_hidden = TRUE;
+	int adv_line, adv_col;
+	int size = mono_metadata_decode_blob_size (ptr, &ptr);
+	const char* end = ptr + size;
+	sps = g_array_new (FALSE, TRUE, sizeof (MonoSymSeqPoint));
+	mono_metadata_decode_value (ptr, &ptr);
+	while (ptr < end) {
+		int delta_il = mono_metadata_decode_value (ptr, &ptr);
+		iloffset += delta_il;
+
+		int delta_lines = mono_metadata_decode_value (ptr, &ptr);
+		if (delta_lines == 0)
+			delta_cols = mono_metadata_decode_value (ptr, &ptr);
+		else
+			delta_cols = mono_metadata_decode_signed_value (ptr, &ptr);
+
+		if (delta_lines == 0 && delta_cols == 0) {
+			/* Hidden sequence point */
+			continue;
+		}
+
+		if (first_non_hidden) {
+			start_line = mono_metadata_decode_value (ptr, &ptr);
+			start_col = mono_metadata_decode_value (ptr, &ptr);
+		} else {
+			adv_line = mono_metadata_decode_signed_value (ptr, &ptr);
+			adv_col = mono_metadata_decode_signed_value (ptr, &ptr);
+			start_line += adv_line;
+			start_col += adv_col;
+		}
+		first_non_hidden = FALSE;
+
+		memset (&sp, 0, sizeof (sp));
+		sp.il_offset = iloffset;
+		sp.line = start_line;
+		sp.column = start_col;
+		sp.end_line = start_line + delta_lines;
+		sp.end_column = start_col + delta_cols;
+
+		g_array_append_val (sps, sp);
+	}
+
+	if (n_seq_points) {
+		*n_seq_points = sps->len;
+		g_assert (seq_points);
+		*seq_points = g_new (MonoSymSeqPoint, sps->len);
+		memcpy (*seq_points, sps->data, sps->len * sizeof (MonoSymSeqPoint));
+	}
+
+	g_array_free (sps, TRUE);
+}
 void
 mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points)
 {

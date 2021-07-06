@@ -11,7 +11,23 @@ namespace ApplyUpdateReferencedAssembly
             Console.WriteLine("original");
             int a = 10;
             Debugger.Break();
-            Console.WriteLine("passei do break");
+            return "OLD STRING";
+        }
+    }
+
+    public class MethodBody2 {
+        public static string StaticMethod1 () {
+            Console.WriteLine("original");
+            int a = 10;
+            Debugger.Break();
+            return "OLD STRING";
+        }
+    }
+
+    public class MethodBody3 {
+        public static string StaticMethod3 () {
+            int a = 10;
+            Console.WriteLine("original");
             return "OLD STRING";
         }
     }

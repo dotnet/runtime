@@ -1041,7 +1041,7 @@ namespace DebuggerTests
             return await insp.WaitFor(Inspector.PAUSE);
         }
 
-        internal async Task<JObject> LoadAssemblyAndTestHotReload(string asm_file, string pdb_file, string asm_file_hot_reload)
+        internal async Task<JObject> LoadAssemblyAndTestHotReload(string asm_file, string pdb_file, string asm_file_hot_reload, string class_name, string method_name)
         {
             // Simulate loading an assembly into the framework
             byte[] bytes = File.ReadAllBytes(asm_file);
@@ -1083,7 +1083,7 @@ namespace DebuggerTests
             Thread.Sleep(1000);
             var run_method = JObject.FromObject(new
             {
-                expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] TestHotReload:RunMethod'); }, 1);"
+                expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] TestHotReload:RunMethod', '" + class_name + "', '" + method_name + "'); }, 1);"
             });
 
             await cli.SendCommand("Runtime.evaluate", run_method, token);
