@@ -6,11 +6,11 @@
 // This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
 
-CrashInfo::CrashInfo(pid_t pid, bool crashReport, pid_t crashThread, uint32_t signal) :
+CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t signal) :
     m_ref(1),
     m_pid(pid),
     m_ppid(-1),
-    m_crashReport(crashReport),
+    m_gatherFrames(gatherFrames),
     m_crashThread(crashThread),
     m_signal(signal)
 {

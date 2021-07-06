@@ -46,7 +46,7 @@ private:
     pid_t m_pid;                                    // pid
     pid_t m_ppid;                                   // parent pid
     pid_t m_tgid;                                   // process group
-    bool m_crashReport;                             // if true, crash reporting enabled
+    bool m_gatherFrames;                            // if true, add the native and managed stack frames to the thread info
     pid_t m_crashThread;                            // crashing thread id or 0 if none
     uint32_t m_signal;                              // crash signal code or 0 if none
     std::string m_name;                             // exe name
@@ -71,7 +71,7 @@ private:
     std::set<ModuleInfo> m_moduleInfos;             // module infos (base address and module name)
 
 public:
-    CrashInfo(pid_t pid, bool crashReport, pid_t crashThread, uint32_t signal);
+    CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t signal);
     virtual ~CrashInfo();
 
     bool Initialize();
@@ -94,7 +94,7 @@ public:
 #ifdef __APPLE__
     inline vm_map_t Task() const { return m_task; }
 #endif
-    inline const bool CrashReport() const { return m_crashReport; }
+    inline const bool GatherFrames() const { return m_gatherFrames; }
     inline const pid_t CrashThread() const { return m_crashThread; }
     inline const uint32_t Signal() const { return m_signal; }
     inline const std::string& Name() const { return m_name; }

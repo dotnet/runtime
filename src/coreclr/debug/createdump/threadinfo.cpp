@@ -93,7 +93,7 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
             break;
         }
 
-        if (m_crashInfo.CrashReport())
+        if (m_crashInfo.GatherFrames())
         {
             // Add stack frame for the crash report. The function start returned by the unwinder is for
             // "ip" and not for the new context returned in pContext.
@@ -177,7 +177,7 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess)
                 }
 
                 // Get and save more detail information for the crash report if enabled
-                if (m_crashInfo.CrashReport())
+                if (m_crashInfo.GatherFrames())
                 {
                     GatherStackFrames(&context, pStackwalk);
                 }
