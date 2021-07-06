@@ -32,13 +32,12 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (!JsonHelpers.IsInRangeInclusive(sequenceLength, MinimumTimeSpanFormatLength, maximumLength))
                 {
-                    throw ThrowHelper.GetFormatException();
+                    throw ThrowHelper.GetFormatException(DataType.TimeSpan);
                 }
 
-                Span<byte> stackSpan = stackalloc byte[(int)sequenceLength];
-
+                Span<byte> stackSpan = stackalloc byte[isEscaped ? MaximumEscapedTimeSpanFormatLength : MaximumTimeSpanFormatLength];
                 valueSequence.CopyTo(stackSpan);
-                source = stackSpan;
+                source = stackSpan.Slice(0, (int)sequenceLength);
             }
             else
             {
@@ -46,7 +45,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (!JsonHelpers.IsInRangeInclusive(source.Length, MinimumTimeSpanFormatLength, maximumLength))
                 {
-                    throw ThrowHelper.GetFormatException();
+                    throw ThrowHelper.GetFormatException(DataType.TimeSpan);
                 }
             }
 
@@ -64,6 +63,14 @@ namespace System.Text.Json.Serialization.Converters
                 Debug.Assert(!source.IsEmpty);
             }
 
+            byte firstChar = source[0];
+            if (!JsonHelpers.IsDigit(firstChar) && firstChar != '-')
+            {
+                // Note: Utf8Parser.TryParse allows for leading whitespace so we
+                // need to exclude that case here.
+                throw ThrowHelper.GetFormatException(DataType.TimeSpan);
+            }
+
             bool result = Utf8Parser.TryParse(source, out TimeSpan tmpValue, out int bytesConsumed, 'c');
 
             // Note: Utf8Parser.TryParse will return true for invalid input so
@@ -76,7 +83,7 @@ namespace System.Text.Json.Serialization.Converters
                 return tmpValue;
             }
 
-            throw ThrowHelper.GetFormatException();
+            throw ThrowHelper.GetFormatException(DataType.TimeSpan);
         }
 
         public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)

@@ -451,6 +451,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData("23:59:59")]
+        [InlineData("\\u002D23:59:59", "-23:59:59")]
         [InlineData("\\u0032\\u0033\\u003A\\u0035\\u0039\\u003A\\u0035\\u0039", "23:59:59")]
         [InlineData("23:59:59.9", "23:59:59.9000000")]
         [InlineData("23:59:59.9999999")]
@@ -484,6 +485,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData("\\t23:59:59")] // Otherwise valid but has leading whitespace
+        [InlineData("23:59:59   ")] // Otherwise valid but has trailing whitespace
         [InlineData("24:00:00")]
         [InlineData("\\u0032\\u0034\\u003A\\u0030\\u0030\\u003A\\u0030\\u0030")]
         [InlineData("00:60:00")]
