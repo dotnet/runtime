@@ -1581,7 +1581,7 @@ namespace Internal.TypeSystem.Interop
 
     class AnsiStringMarshaller : Marshaller
     {
-        const int MAX_LOCAL_BUFFER_LENGTH = 256; // TODO: Is this accurate on all platforms?
+        const int MAX_LOCAL_BUFFER_LENGTH = 260 + 1; // MAX_PATH + 1 
 
         private ILLocalVariable _localBuffer = default;
 
