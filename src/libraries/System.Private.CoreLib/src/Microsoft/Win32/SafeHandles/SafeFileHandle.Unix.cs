@@ -64,7 +64,7 @@ namespace Microsoft.Win32.SafeHandles
 
             // Make sure it's not a directory; we do this after opening it once we have a file descriptor
             // to avoid race conditions.
-            // 
+            //
             // We can omit the check when write access is requested. open will have failed with EISDIR.
             if ((flags & (Interop.Sys.OpenFlags.O_WRONLY | Interop.Sys.OpenFlags.O_RDWR)) == 0)
             {
