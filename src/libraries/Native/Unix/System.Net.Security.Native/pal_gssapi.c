@@ -20,7 +20,7 @@
 #include <assert.h>
 #include <string.h>
 
-#if defined(GSS_SHIM)
+#if defined(GSS_DYNAMIC_LIB)
 #include <dlfcn.h>
 #include "pal_atomic.h"
 #endif
@@ -53,7 +53,7 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = ARRAY_SIZE(gss_ntlm_oid_
                                               .elements = gss_ntlm_oid_value};
 #endif
 
-#if defined(GSS_SHIM)
+#if defined(GSS_DYNAMIC_LIB)
 
 #define FOR_ALL_GSS_FUNCTIONS \
     PER_FUNCTION_BLOCK(gss_accept_sec_context) \
@@ -108,8 +108,8 @@ static gss_shim_t* volatile s_gss_shim_ptr = NULL;
 
 static void init_gss_shim()
 {
-    void* lib = dlopen(gssLibraryName, RTLD_LAZY);
-    if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", gssLibraryName, dlerror()); abort(); }
+    void* lib = dlopen(GSS_DYNAMIC_LIB, RTLD_LAZY);
+    if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", GSS_DYNAMIC_LIB, dlerror()); abort(); }
 
     // check is someone else has opened and published s_gssLib already
     if (!pal_atomic_cas_ptr(&s_gssLib, lib, NULL))
@@ -119,10 +119,10 @@ static void init_gss_shim()
 
     // initialize indirection pointers for all functions, like:
     //   s_gss_shim.gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(s_gssLib, "gss_accept_sec_context");
-    //   if (s_gss_shim.gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", gssLibraryName, dlerror()); abort(); }
+    //   if (s_gss_shim.gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", GSS_DYNAMIC_LIB, dlerror()); abort(); }
 #define PER_FUNCTION_BLOCK(fn) \
     s_gss_shim.fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn); \
-    if (s_gss_shim.fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gssLibraryName, dlerror()); abort(); }
+    if (s_gss_shim.fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", GSS_DYNAMIC_LIB, dlerror()); abort(); }
 
     FOR_ALL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
@@ -151,7 +151,6 @@ static gss_shim_t* get_gss_shim()
 #define gss_display_name(...)               get_gss_shim()->gss_display_name_ptr(__VA_ARGS__)
 #define gss_display_status(...)             get_gss_shim()->gss_display_status_ptr(__VA_ARGS__)
 #define gss_import_name(...)                get_gss_shim()->gss_import_name_ptr(__VA_ARGS__)
-#define gss_indicate_mechs(...)             get_gss_shim()->gss_indicate_mechs_ptr(__VA_ARGS__)
 #define gss_init_sec_context(...)           get_gss_shim()->gss_init_sec_context_ptr(__VA_ARGS__)
 #define gss_inquire_context(...)            get_gss_shim()->gss_inquire_context_ptr(__VA_ARGS__)
 #define gss_oid_equal(...)                  get_gss_shim()->gss_oid_equal_ptr(__VA_ARGS__)
@@ -171,7 +170,34 @@ static gss_shim_t* get_gss_shim()
 #define GSS_C_NT_HOSTBASED_SERVICE              *get_gss_shim()->GSS_C_NT_HOSTBASED_SERVICE_ptr
 #define gss_mech_krb5                           *get_gss_shim()->gss_mech_krb5_ptr
 
-#endif // GSS_SHIM
+// NB: Managed side may call IsNtlmInstalled, which in turn calls `gss_indicate_mechs` to probe for support and
+//     treat all all exceptions same as `false`. Our own tests and platform detection do that.
+//     So we will not abort if API is not there for `gss_indicate_mechs_ptr`, and return a failure code instead.
+static bool probe_gss_api()
+{
+    if (s_gss_shim_ptr)
+    {
+        return true;
+    }
+
+    void* lib = dlopen(GSS_DYNAMIC_LIB, RTLD_LAZY);
+    if (lib == NULL)
+    {
+        return false;
+    }
+
+    // check is someone else has opened and published s_gssLib already
+    if (!pal_atomic_cas_ptr(&s_gssLib, lib, NULL))
+    {
+        dlclose(lib);
+    }
+
+    return true;
+}
+
+#define gss_indicate_mechs(...)             (probe_gss_api() ? get_gss_shim()->gss_indicate_mechs_ptr(__VA_ARGS__) : GSS_S_UNAVAILABLE)
+
+#endif // GSS_DYNAMIC_LIB
 
 // transfers ownership of the underlying data from gssBuffer to PAL_GssBuffer
 static void NetSecurityNative_MoveBuffer(gss_buffer_t gssBuffer, PAL_GssBuffer* targetBuffer)
@@ -670,7 +696,7 @@ uint32_t NetSecurityNative_IsNtlmInstalled()
 
     uint32_t majorStatus;
     uint32_t minorStatus;
-    gss_OID_set mechSet;
+    gss_OID_set mechSet = NULL;
     gss_OID_desc oid;
     uint32_t foundNtlm = 0;
 
