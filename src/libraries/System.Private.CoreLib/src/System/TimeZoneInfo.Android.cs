@@ -91,7 +91,7 @@ namespace System
             {
                 return new TimeZoneInfo(id, TimeSpan.FromSeconds(0), id, name, name, null, disableDaylightSavingTime:true);
             }
-            if (name.StartsWith("GMT"))
+            if (name.StartsWith("GMT", StringComparison.Ordinal))
             {
                 return new TimeZoneInfo(id, TimeSpan.FromSeconds(ParseGMTNumericZone(name)), id, name, name, null, disableDaylightSavingTime:true);
             }
