@@ -17,10 +17,10 @@ namespace System.IO
         // that get stackalloced in the Linux kernel.
         private const int IovStackThreshold = 8;
 
-        internal static long GetFileLength(SafeFileHandle handle, string? path)
+        internal static long GetFileLength(SafeFileHandle handle)
         {
             int result = Interop.Sys.FStat(handle, out Interop.Sys.FileStatus status);
-            FileStreamHelpers.CheckFileCall(result, path);
+            FileStreamHelpers.CheckFileCall(result, handle.Path);
             return status.Size;
         }
 
@@ -29,7 +29,7 @@ namespace System.IO
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
                 int result = Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset);
-                FileStreamHelpers.CheckFileCall(result, path: null);
+                FileStreamHelpers.CheckFileCall(result, handle.Path);
                 return result;
             }
         }
@@ -64,7 +64,7 @@ namespace System.IO
                 }
             }
 
-            return FileStreamHelpers.CheckFileCall(result, path: null);
+            return FileStreamHelpers.CheckFileCall(result, handle.Path);
         }
 
         private static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
@@ -79,7 +79,7 @@ namespace System.IO
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
                 int result = Interop.Sys.PWrite(handle, bufPtr, buffer.Length, fileOffset);
-                FileStreamHelpers.CheckFileCall(result, path: null);
+                FileStreamHelpers.CheckFileCall(result, handle.Path);
                 return  result;
             }
         }
@@ -114,7 +114,7 @@ namespace System.IO
                 }
             }
 
-            return FileStreamHelpers.CheckFileCall(result, path: null);
+            return FileStreamHelpers.CheckFileCall(result, handle.Path);
         }
 
         private static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
