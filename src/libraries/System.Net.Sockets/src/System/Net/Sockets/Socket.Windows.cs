@@ -256,10 +256,10 @@ namespace System.Net.Sockets
                 ref optionValue,
                 sizeof(int));
 
-            if (NetEventSource.Log.IsEnabled() && error != SocketError.Success)
+            if (error != SocketError.Success)
             {
                 error = SocketPal.GetLastSocketError();
-                NetEventSource.Info($"Enabling SO_REUSE_UNICASTPORT failed with error code: {error}");
+                UpdateStatusAfterSocketErrorAndThrowException(error);
             }
         }
 
