@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Security.Cryptography;
 using Test.Cryptography;
@@ -352,6 +353,34 @@ namespace System.Security.Cryptography.Tests
 
                 AssertCiphertexts(ciphertext, encrypted, padding, alg.BlockSize / 8);
             }
+        }
+
+        [Fact]
+        public void DerivedTypesDefineTest()
+        {
+            const string TestSuffix = "Test";
+            Type implType = GetType();
+            Type defType = typeof(SymmetricOneShotBase);
+            List<string> missingMethods = new List<string>();
+
+            foreach (MethodInfo info in defType.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic))
+            {
+                if (info.IsFamily && info.Name.EndsWith(TestSuffix, StringComparison.Ordinal))
+                {
+                    string targetMethodName = info.Name[..^TestSuffix.Length];
+
+                    MethodInfo info2 = implType.GetMethod(
+                        targetMethodName,
+                        BindingFlags.Instance | BindingFlags.Public);
+
+                    if (info2 is null)
+                    {
+                        missingMethods.Add(targetMethodName);
+                    }
+                }
+            }
+
+            Assert.Empty(missingMethods);
         }
 
         private static void AssertPlaintexts(byte[] expected, byte[] actual, PaddingMode padding)
