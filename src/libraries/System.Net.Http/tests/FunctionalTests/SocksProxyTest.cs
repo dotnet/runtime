@@ -36,7 +36,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            List<(int, long)> times = new();
+            List<(int, long)> times = new List<(int, long)>();
             Stopwatch s = Stopwatch.StartNew();
 
             try

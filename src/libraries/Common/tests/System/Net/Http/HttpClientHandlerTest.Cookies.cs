@@ -151,7 +151,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_AddMultipleCookieHeaders_CookiesSent()
         {
-            List<(int, long)> times = new();
+            List<(int, long)> times = new List<(int, long)>();
             Stopwatch s = Stopwatch.StartNew();
 
             try
