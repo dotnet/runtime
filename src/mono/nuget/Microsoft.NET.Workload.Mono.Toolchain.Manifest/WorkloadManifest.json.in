@@ -1,5 +1,8 @@
 {
   "version": "${WorkloadVersion}",
+  "depends-on": {
+    "Microsoft.NET.Workload.Emscripten": "${EmscriptenVersion}"
+  },
   "workloads": {
     "microsoft-net-sdk-blazorwebassembly-aot": {
       "description": "Browser Runtime native performance tools",
@@ -11,7 +14,7 @@
         "Microsoft.NET.Runtime.Emscripten.Python",
         "Microsoft.NET.Runtime.Emscripten.Sdk"
       ],
-      "extends": [ "microsoft-net-runtime-mono-tooling" ],
+      "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
     "microsoft-net-runtime-android": {
@@ -266,34 +269,5 @@
       "kind": "framework",
       "version": "${PackageVersion}"
     },
-    "Microsoft.NET.Runtime.Emscripten.Node" : {
-      "kind": "Sdk",
-      "version": "${EmscriptenVersion}",
-      "alias-to": {
-        "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.23.Node.win-x64",
-        "linux-x64": "Microsoft.NET.Runtime.Emscripten.2.0.23.Node.linux-x64",
-        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.23.Node.osx-x64",
-        "osx-arm64": "Microsoft.NET.Runtime.Emscripten.2.0.23.Node.osx-x64"
-      }
-    },
-    "Microsoft.NET.Runtime.Emscripten.Python" : {
-      "kind": "Sdk",
-      "version": "${EmscriptenVersion}",
-      "alias-to": {
-        "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.23.Python.win-x64",
-        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.23.Python.osx-x64",
-        "osx-arm64": "Microsoft.NET.Runtime.Emscripten.2.0.23.Python.osx-x64"
-      }
-    },
-    "Microsoft.NET.Runtime.Emscripten.Sdk" : {
-      "kind": "Sdk",
-      "version": "${EmscriptenVersion}",
-      "alias-to": {
-        "win-x64": "Microsoft.NET.Runtime.Emscripten.2.0.23.Sdk.win-x64",
-        "linux-x64": "Microsoft.NET.Runtime.Emscripten.2.0.23.Sdk.linux-x64",
-        "osx-x64": "Microsoft.NET.Runtime.Emscripten.2.0.23.Sdk.osx-x64",
-        "osx-arm64": "Microsoft.NET.Runtime.Emscripten.2.0.23.Sdk.osx-x64"
-      }
-    }
   }
 }
