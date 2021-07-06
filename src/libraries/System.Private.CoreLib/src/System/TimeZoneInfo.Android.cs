@@ -280,7 +280,7 @@ namespace System
                     {
                         //TODO: Put strings in resource file
                         throw new InvalidOperationException(
-                                string.Format("Error reading '{0}': read {1} bytes, expected {2}", GetTimeZoneDirectory() + TimeZoneFileName, numBytesRead, size));
+                                string.Format("Error reading '{0}': read {1} bytes, expected {2}", tzFilePath, numBytesRead, size));
                     }
 
                     fixed (byte* b = buffer)
