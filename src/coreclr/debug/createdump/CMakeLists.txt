@@ -61,7 +61,6 @@ else(CLR_CMAKE_HOST_WIN32)
         datatarget.cpp
         dumpwriter.cpp
         crashreportwriter.cpp
-        jsonwriter.cpp
     )
 
 if(CLR_CMAKE_HOST_OSX)
