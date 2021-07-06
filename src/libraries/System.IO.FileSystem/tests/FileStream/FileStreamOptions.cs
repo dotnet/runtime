@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Xunit;
@@ -135,13 +136,22 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new FileStreamOptions { BufferSize = -1 });
         }
 
+        public static IEnumerable<object[]> GetSettingsArePropagatedArguments()
+        {
+            yield return new object[] { FileMode.Create, FileAccess.Write, FileOptions.None };
+            yield return new object[] { FileMode.Open, FileAccess.Read, FileOptions.None };
+            yield return new object[] { FileMode.Create, FileAccess.ReadWrite, FileOptions.None };
+
+            if (PlatformDetection.IsAsyncFileIOSupported)
+            {
+                yield return new object[] { FileMode.Create, FileAccess.Write, FileOptions.Asynchronous };
+                yield return new object[] { FileMode.Open, FileAccess.Read, FileOptions.Asynchronous };
+                yield return new object[] { FileMode.Create, FileAccess.ReadWrite, FileOptions.Asynchronous };
+            }
+        }
+
         [Theory]
-        [InlineData(FileMode.Create, FileAccess.Write, FileOptions.None)]
-        [InlineData(FileMode.Create, FileAccess.Write, FileOptions.Asynchronous)]
-        [InlineData(FileMode.Open, FileAccess.Read, FileOptions.None)]
-        [InlineData(FileMode.Open, FileAccess.Read, FileOptions.Asynchronous)]
-        [InlineData(FileMode.Create, FileAccess.ReadWrite, FileOptions.None)]
-        [InlineData(FileMode.Create, FileAccess.ReadWrite, FileOptions.Asynchronous)]
+        [MemberData(nameof(GetSettingsArePropagatedArguments))]
         public void SettingsArePropagated(FileMode mode, FileAccess access, FileOptions fileOptions)
         {
             string filePath = GetTestFilePath();

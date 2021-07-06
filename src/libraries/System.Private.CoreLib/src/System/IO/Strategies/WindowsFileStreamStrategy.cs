@@ -11,7 +11,6 @@ namespace System.IO.Strategies
     internal abstract class WindowsFileStreamStrategy : FileStreamStrategy
     {
         protected readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
-        protected readonly string? _path; // The path to the opened file.
         private readonly FileAccess _access; // What file was opened for.
         private readonly FileShare _share;
 
@@ -26,13 +25,13 @@ namespace System.IO.Strategies
             _share = share;
             _exposedHandle = true;
 
-            handle.InitThreadPoolBindingIfNeeded();
+            handle.EnsureThreadPoolBindingInitialized();
 
             if (handle.CanSeek)
             {
                 // given strategy was created out of existing handle, so we have to perform
                 // a syscall to get the current handle offset
-                _filePosition = FileStreamHelpers.Seek(handle, _path, 0, SeekOrigin.Current);
+                _filePosition = FileStreamHelpers.Seek(handle, 0, SeekOrigin.Current);
             }
             else
             {
@@ -46,7 +45,6 @@ namespace System.IO.Strategies
         {
             string fullPath = Path.GetFullPath(path);
 
-            _path = fullPath;
             _access = access;
             _share = share;
 
@@ -80,12 +78,12 @@ namespace System.IO.Strategies
             {
                 if (_share > FileShare.Read || _exposedHandle)
                 {
-                    return RandomAccess.GetFileLength(_fileHandle, _path);
+                    return RandomAccess.GetFileLength(_fileHandle);
                 }
 
                 if (_length < 0)
                 {
-                    _length = RandomAccess.GetFileLength(_fileHandle, _path);
+                    _length = RandomAccess.GetFileLength(_fileHandle);
                 }
 
                 return _length;
@@ -115,7 +113,7 @@ namespace System.IO.Strategies
             set => _filePosition = value;
         }
 
-        internal sealed override string Name => _path ?? SR.IO_UnknownFileName;
+        internal sealed override string Name => _fileHandle.Path ?? SR.IO_UnknownFileName;
 
         internal sealed override bool IsClosed => _fileHandle.IsClosed;
 
@@ -130,7 +128,7 @@ namespace System.IO.Strategies
                 {
                     // Update the file offset before exposing it since it's possible that
                     // in memory position is out-of-sync with the actual file position.
-                    FileStreamHelpers.Seek(_fileHandle, _path, _filePosition, SeekOrigin.Begin);
+                    FileStreamHelpers.Seek(_fileHandle, _filePosition, SeekOrigin.Begin);
                 }
 
                 _exposedHandle = true;
@@ -140,22 +138,14 @@ namespace System.IO.Strategies
             }
         }
 
-        // ReadByte and WriteByte methods are used only when the user has disabled buffering on purpose
-        // their performance is going to be horrible
-        // TODO: should we consider adding a new event provider and log an event so it can be detected?
-        public override int ReadByte()
+        public override unsafe int ReadByte()
         {
-            Span<byte> buffer = stackalloc byte[1];
-            int bytesRead = Read(buffer);
-            return bytesRead == 1 ? buffer[0] : -1;
+            byte b;
+            return Read(new Span<byte>(&b, 1)) != 0 ? b : -1;
         }
 
-        public override void WriteByte(byte value)
-        {
-            Span<byte> buffer = stackalloc byte[1];
-            buffer[0] = value;
-            Write(buffer);
-        }
+        public override unsafe void WriteByte(byte value) =>
+            Write(new ReadOnlySpan<byte>(&value, 1));
 
         // this method just disposes everything (no buffer, no need to flush)
         public override ValueTask DisposeAsync()
@@ -187,7 +177,7 @@ namespace System.IO.Strategies
         {
             if (flushToDisk && CanWrite)
             {
-                FileStreamHelpers.FlushToDisk(_fileHandle, _path);
+                FileStreamHelpers.FlushToDisk(_fileHandle);
             }
         }
 
@@ -226,9 +216,9 @@ namespace System.IO.Strategies
             return pos;
         }
 
-        internal sealed override void Lock(long position, long length) => FileStreamHelpers.Lock(_fileHandle, _path, position, length);
+        internal sealed override void Lock(long position, long length) => FileStreamHelpers.Lock(_fileHandle, position, length);
 
-        internal sealed override void Unlock(long position, long length) => FileStreamHelpers.Unlock(_fileHandle, _path, position, length);
+        internal sealed override void Unlock(long position, long length) => FileStreamHelpers.Unlock(_fileHandle, position, length);
 
         private void Init(FileMode mode, string originalPath)
         {
@@ -257,13 +247,58 @@ namespace System.IO.Strategies
         {
             Debug.Assert(value >= 0, "value >= 0");
 
-            FileStreamHelpers.SetFileLength(_fileHandle, _path, value);
+            FileStreamHelpers.SetFileLength(_fileHandle, value);
             _length = value;
 
             if (_filePosition > value)
             {
                 _filePosition = value;
             }
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => ReadSpan(new Span<byte>(buffer, offset, count));
+
+        public override int Read(Span<byte> buffer) => ReadSpan(buffer);
+
+        private unsafe int ReadSpan(Span<byte> destination)
+        {
+            if (_fileHandle.IsClosed)
+            {
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            }
+            else if ((_access & FileAccess.Read) == 0)
+            {
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
+            }
+
+            int r = RandomAccess.ReadAtOffset(_fileHandle, destination, _filePosition);
+            Debug.Assert(r >= 0, $"RandomAccess.ReadAtOffset returned {r}.");
+            _filePosition += r;
+
+            return r;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+            => WriteSpan(new ReadOnlySpan<byte>(buffer, offset, count));
+
+        public override void Write(ReadOnlySpan<byte> buffer) => WriteSpan(buffer);
+
+        private unsafe void WriteSpan(ReadOnlySpan<byte> source)
+        {
+            if (_fileHandle.IsClosed)
+            {
+                ThrowHelper.ThrowObjectDisposedException_FileClosed();
+            }
+            else if ((_access & FileAccess.Write) == 0)
+            {
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
+            }
+
+            int r = RandomAccess.WriteAtOffset(_fileHandle, source, _filePosition);
+            Debug.Assert(r >= 0, $"RandomAccess.WriteAtOffset returned {r}.");
+            _filePosition += r;
+
+            UpdateLengthOnChangePosition();
         }
     }
 }

@@ -97,17 +97,10 @@ typedef struct {
 #define MONO_ARCH_LLVM_TARGET_LAYOUT "e-m:e-p:32:32-i64:64-n32:64-S128"
 #define MONO_ARCH_LLVM_TARGET_TRIPLE "wasm32-unknown-emscripten"
 
-void mono_wasm_debugger_init (void);
-
 // sdks/wasm/driver.c is C and uses this
 G_EXTERN_C void mono_wasm_enable_debugging (int log_level);
 
-void mono_wasm_breakpoint_hit (void);
 void mono_wasm_set_timeout (int timeout, int id);
-
-void mono_wasm_single_step_hit (void);
-void mono_wasm_breakpoint_hit (void);
-void mono_wasm_user_break (void);
 
 int mono_wasm_assembly_already_added (const char *assembly_name);
 void mono_wasm_print_stack_trace (void);

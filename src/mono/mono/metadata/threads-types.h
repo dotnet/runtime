@@ -80,7 +80,7 @@ typedef enum {
 	MONO_THREAD_CREATE_FLAGS_SMALL_STACK	= 0x08,
 } MonoThreadCreateFlags;
 
-MonoInternalThread*
+MONO_COMPONENT_API MonoInternalThread*
 mono_thread_create_internal (MonoThreadStart func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
 
 MonoInternalThreadHandle
@@ -197,11 +197,11 @@ MONO_PROFILER_API MonoInternalThread *mono_thread_internal_current (void);
 MonoInternalThreadHandle
 mono_thread_internal_current_handle (void);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_internal_abort (MonoInternalThread *thread);
 void mono_thread_internal_suspend_for_shutdown (MonoInternalThread *thread);
 
-void mono_thread_internal_reset_abort (MonoInternalThread *thread);
+MONO_COMPONENT_API void mono_thread_internal_reset_abort (MonoInternalThread *thread);
 
 void mono_thread_internal_unhandled_exception (MonoObject* exc);
 
@@ -299,7 +299,7 @@ uint32_t mono_alloc_special_static_data (uint32_t static_type, uint32_t size, ui
 ICALL_EXTERN_C
 void*    mono_get_special_static_data   (uint32_t offset);
 
-gpointer mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 offset);
+MONO_COMPONENT_API gpointer mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 offset);
 
 void
 mono_thread_resume_interruption (gboolean exec);
@@ -344,7 +344,7 @@ mono_thread_internal_current_is_attached (void);
 void
 mono_thread_internal_describe (MonoInternalThread *internal, GString *str);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_internal_is_current (MonoInternalThread *internal);
 
 gboolean
