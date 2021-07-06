@@ -462,8 +462,19 @@ CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))
 CONFIG_INTEGER(JitExtDefaultPolicy, W("JitExtDefaultPolicy"), 1)
 CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, W("JitExtDefaultPolicyMaxIL"), 0x64)
 CONFIG_INTEGER(JitExtDefaultPolicyMaxBB, W("JitExtDefaultPolicyMaxBB"), 7)
+
+// Inliner uses the following formula for PGO-driven decisions:
+//
+//    BM = BM * ((1.0 - ProfTrust) + ProfWeight * ProfScale)
+//
+// Where BM is a benefit multiplier composed from various observations (e.g. "const arg makes a branch foldable").
+// If a profile data can be trusted for 100% we can safely just give up on inlining anything inside cold blocks 
+// (except the cases where inlining in cold blocks improves type info/escape analysis for the whole caller).
+// It improves JIT's TP and makes prejitted code smaller.
+// The default value here is set to zero because our built-in profile just can't be 100% suitable for all cases.
+// Currently, we can't tell in JIT what was the source of it.
+CONFIG_INTEGER(JitExtDefaultPolicyProfTrust, W("JitExtDefaultPolicyProfTrust"), 0x0)
 CONFIG_INTEGER(JitExtDefaultPolicyProfScale, W("JitExtDefaultPolicyProfScale"), 0x2A)
-CONFIG_INTEGER(JitExtDefaultPolicyProfTrust, W("JitExtDefaultPolicyProfTrust"), 0x7)
 
 CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 CONFIG_INTEGER(JitInlinePolicyProfile, W("JitInlinePolicyProfile"), 0)
