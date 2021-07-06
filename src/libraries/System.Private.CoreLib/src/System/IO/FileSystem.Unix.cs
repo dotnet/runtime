@@ -556,63 +556,61 @@ namespace System.IO
 
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
-            // throws if the current link file does not exist
-            Interop.CheckIo(Interop.Sys.LStat(linkPath, out Interop.Sys.FileStatus info), linkPath, isDirectory);
-
-            if ((info.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFLNK)
-            {
-                return null;
-            }
-
-            ValueStringBuilder sb = new(stackalloc char[Interop.DefaultPathBufferSize]);
+            ValueStringBuilder sb = new(Interop.DefaultPathBufferSize);
             sb.Append(linkPath);
 
-            if (returnFinalTarget)
+            string? linkTarget = GetLinkTarget(linkPath, isDirectory: false /* Irrelevant in Unix */);
+            if (linkTarget == null)
             {
-                int visitCount = 0;
-                while (true)
+                sb.Dispose();
+                Interop.Error error = Interop.Sys.GetLastError();
+                // Not a link, return null
+                if (error == Interop.Error.EINVAL)
                 {
-                    if (!TryGetLinkTarget(ref sb))
-                    {
-                        // We finally found the final target: either
-                        // this file does not exist (broken links are acceptable)
-                        // or this file is not a link
-                        break;
-                    }
-
-                    visitCount++;
-                    if (visitCount > MaxFollowedLinks)
-                    {
-                        // We went over the limit and couldn't reach the final target
-                        throw new IOException(SR.Format(SR.IO_TooManySymbolicLinkLevels, linkPath));
-                    }
+                    return null;
                 }
+
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(error), linkPath, isDirectory);
+            }
+
+            if (!returnFinalTarget)
+            {
+                GetLinkTargetFullPath(ref sb, linkTarget);
             }
             else
             {
-                TryGetLinkTarget(ref sb);
+                string? current = linkTarget;
+                int visitCount = 1;
+
+                while (current != null)
+                {
+                    if (visitCount > MaxFollowedLinks)
+                    {
+                        sb.Dispose();
+                        // We went over the limit and couldn't reach the final target
+                        throw new IOException(SR.Format(SR.IO_TooManySymbolicLinkLevels, linkPath));
+                    }
+
+                    GetLinkTargetFullPath(ref sb, current);
+                    current = GetLinkTarget(sb.AsSpan(), isDirectory: false);
+                    visitCount++;
+                }
             }
 
             Debug.Assert(sb.Length > 0);
+            linkTarget = sb.ToString(); // ToString disposes
 
             return isDirectory ?
-                    new DirectoryInfo(sb.ToString()) :
-                    new FileInfo(sb.ToString()); // ToString disposes
+                    new DirectoryInfo(linkTarget) :
+                    new FileInfo(linkTarget);
 
-            static bool TryGetLinkTarget(ref ValueStringBuilder sb)
+            // In case of link target being relative:
+            // Preserve the full path of the directory of the previous path
+            // so the final target is returned with a valid full path
+            static void GetLinkTargetFullPath(ref ValueStringBuilder sb, ReadOnlySpan<char> linkTarget)
             {
-                string? linkTarget = GetLinkTarget(sb.AsSpan(), isDirectory: false /* Irrelevant in Unix */);
-                if (string.IsNullOrEmpty(linkTarget))
+                if (PathInternal.IsPartiallyQualified(linkTarget))
                 {
-                    // Either linkPath does not exist
-                    // or linkPath is not a link
-                    return false;
-                }
-
-                if (PathInternal.IsPartiallyQualified(linkTarget.AsSpan()))
-                {
-                    // Preserve the full path of the directory of the previous file
-                    // so the final target is returned with a valid full path
                     sb.Length = Path.GetDirectoryNameOffset(sb.AsSpan());
                     sb.Append(PathInternal.DirectorySeparatorChar);
                 }
@@ -620,9 +618,7 @@ namespace System.IO
                 {
                     sb.Length = 0;
                 }
-                sb.Append(linkTarget.AsSpan());
-
-                return true;
+                sb.Append(linkTarget);
             }
         }
     }
