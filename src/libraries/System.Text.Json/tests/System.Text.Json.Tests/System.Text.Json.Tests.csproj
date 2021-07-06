@@ -187,6 +187,7 @@
     <Compile Include="Utf8JsonReaderTests.TryGet.Date.cs" />
     <Compile Include="Utf8JsonReaderTests.ValueTextEquals.cs" />
     <Compile Include="Utf8JsonWriterTests.cs" />
+    <Compile Include="Utf8JsonWriterTests.WriteRaw.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />

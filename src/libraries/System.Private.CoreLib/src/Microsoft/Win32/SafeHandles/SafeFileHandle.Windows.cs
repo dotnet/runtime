@@ -20,11 +20,6 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
-        public SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle)
-        {
-            SetHandle(preexistingHandle);
-        }
-
         public bool IsAsync => (GetFileOptions() & FileOptions.Asynchronous) != 0;
 
         internal bool CanSeek => !IsClosed && GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
@@ -108,6 +103,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
 
+            fileHandle._path = fullPath;
             fileHandle._fileOptions = options;
             return fileHandle;
         }

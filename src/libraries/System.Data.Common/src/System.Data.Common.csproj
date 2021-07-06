@@ -183,6 +183,9 @@
     <Compile Include="System\Data\Common\DataTableMappingCollection.cs" />
     <Compile Include="System\Data\Common\DateTimeOffsetStorage.cs" />
     <Compile Include="System\Data\Common\DateTimeStorage.cs" />
+    <Compile Include="System\Data\Common\DbBatch.cs" />
+    <Compile Include="System\Data\Common\DbBatchCommand.cs" />
+    <Compile Include="System\Data\Common\DbBatchCommandCollection.cs" />
     <Compile Include="System\Data\Common\DbColumn.cs" />
     <Compile Include="System\Data\Common\DbCommand.cs">
       <SubType>Component</SubType>
