@@ -4,12 +4,11 @@
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
-    /// Reserved to be used by the compiler to emit new types
-    /// rather than updating them when applying metadata updates
+    /// Indicates a type should be replaced rather than updated when applying metadata updates.
     /// </summary>
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false)]
-    public class EditMetadataByCreatingNewTypeAttribute : Attribute
+    public sealed class EditMetadataByCreatingNewTypeAttribute : Attribute
     {
     }
 }
