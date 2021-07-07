@@ -138,4 +138,7 @@
   <data name="NotWriteableStream" xml:space="preserve">
     <value>The base stream is not writeable.</value>
   </data>
+  <data name="net_Websockets_InvalidPayloadLength" xml:space="preserve">
+    <value>The WebSocket received a frame with an invalid payload length.</value>
+  </data>
 </root>
