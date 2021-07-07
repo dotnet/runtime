@@ -777,9 +777,9 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static byte IBinaryInteger<byte>.PopCount(byte value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static byte IBinaryInteger<byte>.RotateLeft(byte value, byte rotateAmount) { throw null; }
+        static byte IBinaryInteger<byte>.RotateLeft(byte value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static byte IBinaryInteger<byte>.RotateRight(byte value, byte rotateAmount) { throw null; }
+        static byte IBinaryInteger<byte>.RotateRight(byte value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static byte IBinaryInteger<byte>.TrailingZeroCount(byte value) { throw null; }
 
@@ -997,9 +997,9 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static char IBinaryInteger<char>.PopCount(char value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static char IBinaryInteger<char>.RotateLeft(char value, char rotateAmount) { throw null; }
+        static char IBinaryInteger<char>.RotateLeft(char value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static char IBinaryInteger<char>.RotateRight(char value, char rotateAmount) { throw null; }
+        static char IBinaryInteger<char>.RotateRight(char value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static char IBinaryInteger<char>.TrailingZeroCount(char value) { throw null; }
 
@@ -3379,8 +3379,8 @@ namespace System
     {
         static abstract TSelf LeadingZeroCount(TSelf value);
         static abstract TSelf PopCount(TSelf value);
-        static abstract TSelf RotateLeft(TSelf value, TSelf rotateAmount);
-        static abstract TSelf RotateRight(TSelf value, TSelf rotateAmount);
+        static abstract TSelf RotateLeft(TSelf value, int rotateAmount);
+        static abstract TSelf RotateRight(TSelf value, int rotateAmount);
         static abstract TSelf TrailingZeroCount(TSelf value);
     }
     [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
@@ -3760,9 +3760,9 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static short IBinaryInteger<short>.PopCount(short value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static short IBinaryInteger<short>.RotateLeft(short value, short rotateAmount) { throw null; }
+        static short IBinaryInteger<short>.RotateLeft(short value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static short IBinaryInteger<short>.RotateRight(short value, short rotateAmount) { throw null; }
+        static short IBinaryInteger<short>.RotateRight(short value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static short IBinaryInteger<short>.TrailingZeroCount(short value) { throw null; }
 
@@ -4118,9 +4118,9 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static long IBinaryInteger<long>.PopCount(long value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static long IBinaryInteger<long>.RotateLeft(long value, long rotateAmount) { throw null; }
+        static long IBinaryInteger<long>.RotateLeft(long value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static long IBinaryInteger<long>.RotateRight(long value, long rotateAmount) { throw null; }
+        static long IBinaryInteger<long>.RotateRight(long value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static long IBinaryInteger<long>.TrailingZeroCount(long value) { throw null; }
 
@@ -4306,9 +4306,9 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static nint IBinaryInteger<nint>.PopCount(nint value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static nint IBinaryInteger<nint>.RotateLeft(nint value, nint rotateAmount) { throw null; }
+        static nint IBinaryInteger<nint>.RotateLeft(nint value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static nint IBinaryInteger<nint>.RotateRight(nint value, nint rotateAmount) { throw null; }
+        static nint IBinaryInteger<nint>.RotateRight(nint value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static nint IBinaryInteger<nint>.TrailingZeroCount(nint value) { throw null; }
 
@@ -5269,9 +5269,9 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static sbyte IBinaryInteger<sbyte>.PopCount(sbyte value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static sbyte IBinaryInteger<sbyte>.RotateLeft(sbyte value, sbyte rotateAmount) { throw null; }
+        static sbyte IBinaryInteger<sbyte>.RotateLeft(sbyte value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static sbyte IBinaryInteger<sbyte>.RotateRight(sbyte value, sbyte rotateAmount) { throw null; }
+        static sbyte IBinaryInteger<sbyte>.RotateRight(sbyte value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static sbyte IBinaryInteger<sbyte>.TrailingZeroCount(sbyte value) { throw null; }
 
@@ -6979,9 +6979,9 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static ushort IBinaryInteger<ushort>.PopCount(ushort value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static ushort IBinaryInteger<ushort>.RotateLeft(ushort value, ushort rotateAmount) { throw null; }
+        static ushort IBinaryInteger<ushort>.RotateLeft(ushort value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static ushort IBinaryInteger<ushort>.RotateRight(ushort value, ushort rotateAmount) { throw null; }
+        static ushort IBinaryInteger<ushort>.RotateRight(ushort value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static ushort IBinaryInteger<ushort>.TrailingZeroCount(ushort value) { throw null; }
 
@@ -7156,9 +7156,9 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static uint IBinaryInteger<uint>.PopCount(uint value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static uint IBinaryInteger<uint>.RotateLeft(uint value, uint rotateAmount) { throw null; }
+        static uint IBinaryInteger<uint>.RotateLeft(uint value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static uint IBinaryInteger<uint>.RotateRight(uint value, uint rotateAmount) { throw null; }
+        static uint IBinaryInteger<uint>.RotateRight(uint value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static uint IBinaryInteger<uint>.TrailingZeroCount(uint value) { throw null; }
 
@@ -7333,9 +7333,9 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static ulong IBinaryInteger<ulong>.PopCount(ulong value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static ulong IBinaryInteger<ulong>.RotateLeft(ulong value, ulong rotateAmount) { throw null; }
+        static ulong IBinaryInteger<ulong>.RotateLeft(ulong value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static ulong IBinaryInteger<ulong>.RotateRight(ulong value, ulong rotateAmount) { throw null; }
+        static ulong IBinaryInteger<ulong>.RotateRight(ulong value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static ulong IBinaryInteger<ulong>.TrailingZeroCount(ulong value) { throw null; }
 
@@ -7515,9 +7515,9 @@ namespace System
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static nuint IBinaryInteger<nuint>.PopCount(nuint value) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static nuint IBinaryInteger<nuint>.RotateLeft(nuint value, nuint rotateAmount) { throw null; }
+        static nuint IBinaryInteger<nuint>.RotateLeft(nuint value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static nuint IBinaryInteger<nuint>.RotateRight(nuint value, nuint rotateAmount) { throw null; }
+        static nuint IBinaryInteger<nuint>.RotateRight(nuint value, int rotateAmount) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         static nuint IBinaryInteger<nuint>.TrailingZeroCount(nuint value) { throw null; }
 
