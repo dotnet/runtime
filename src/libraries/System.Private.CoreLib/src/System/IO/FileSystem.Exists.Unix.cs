@@ -54,6 +54,9 @@ namespace System.IO
                 return false;
             }
 
+            // Something exists at this path. Return false for a directory and true for everything else.
+
+            // When the path is a link, get its target info.
             if ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK)
             {
                 if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
