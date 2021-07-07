@@ -77,7 +77,7 @@ namespace JsonToItemsTaskFactory
 
         public Type TaskType => typeof(JsonToItemsTask);
 
-        public bool Initialize (string taskName, IDictionary<string, TaskPropertyInfo> parameterGroup, string? taskBody, IBuildEngine taskFactoryLoggingHost)
+        public bool Initialize(string taskName, IDictionary<string, TaskPropertyInfo> parameterGroup, string? taskBody, IBuildEngine taskFactoryLoggingHost)
         {
             _taskName = taskName;
             if (taskBody != null && taskBody.StartsWith("debug", StringComparison.InvariantCultureIgnoreCase))
@@ -174,7 +174,7 @@ namespace JsonToItemsTaskFactory
             {
                 if (jsonFilePath == null)
                 {
-                    Log.LogError("no JsonFilePath specified");
+                    Log.LogError($"no {nameof(JsonFilePath)} specified");
                     return false;
                 }
                 if (!TryGetJson (jsonFilePath, out var json))
@@ -316,7 +316,7 @@ namespace JsonToItemsTaskFactory
         public class JsonModelRoot
         {
             [JsonConverter(typeof(CaseInsensitiveDictionaryConverter))]
-            public Dictionary<string, string>?  Properties {get; set;}
+            public Dictionary<string, string>? Properties {get; set;}
             public Dictionary<string, JsonModelItem[]>? Items {get; set;}
 
             public JsonModelRoot() {}

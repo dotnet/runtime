@@ -95,7 +95,7 @@
     },
     "Microsoft.NET.Runtime.MonoTargets.Sdk": {
       "kind": "Sdk",
-      "version":  "${PackageVersion}"
+      "version": "${PackageVersion}"
     },
     "Microsoft.NET.Runtime.WebAssembly.Sdk": {
       "kind": "Sdk",
