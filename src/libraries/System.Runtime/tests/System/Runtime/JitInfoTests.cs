@@ -17,9 +17,14 @@ namespace System.Runtime.Tests
         {
             Func<string> theFunc = () => "JIT compile this!";
             Assert.True(theFunc().Equals("JIT compile this!"));
-            Assert.True(System.Runtime.JitInfo.GetCompilationTime() > TimeSpan.Zero);
-            Assert.True(System.Runtime.JitInfo.GetCompiledILBytes() > 0);
-            Assert.True(System.Runtime.JitInfo.GetCompiledMethodCount() > 0);
+
+            TimeSpan compilationTime = System.Runtime.JitInfo.GetCompilationTime();
+            long compiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes();
+            long compiledMethodCount = System.Runtime.JitInfo.GetCompiledMethodCount();
+
+            Assert.True(compilationTime > TimeSpan.Zero, $"Compilation time not greater than 0! ({compilationTime})");
+            Assert.True(compiledILBytes > 0, $"Compiled IL bytes not greater than 0! ({compiledILBytes})");
+            Assert.True(compiledMethodCount > 0, $"Compiled method count not greater than 0! ({compiledMethodCount})");
         }
 
         [Fact]
@@ -55,13 +60,13 @@ namespace System.Runtime.Tests
             t1.Join();
             t2.Join();
 
-            Assert.True(t1_compilationTime > TimeSpan.Zero);
-            Assert.True(t1_compiledILBytes > 0);
-            Assert.True(t1_compiledMethodCount > 0);
+            Assert.True(t1_compilationTime > TimeSpan.Zero, $"Thread 1 compilation time not greater than 0! ({t1_compilationTime})");
+            Assert.True(t1_compiledILBytes > 0, $"Thread 1 compiled IL bytes not greater than 0! ({t1_compiledILBytes})");
+            Assert.True(t1_compiledMethodCount > 0, $"Thread 1 compiled method count not greater than 0! ({t1_compiledMethodCount})");
 
-            Assert.True(t2_compilationTime > TimeSpan.Zero);
-            Assert.True(t2_compiledILBytes > 0);
-            Assert.True(t2_compiledMethodCount > 0);
+            Assert.True(t2_compilationTime > TimeSpan.Zero, $"Thread 2 compilation time not greater than 0! ({t2_compilationTime})");
+            Assert.True(t2_compiledILBytes > 0, $"Thread 2 compiled IL bytes not greater than 0! ({t2_compiledILBytes})");
+            Assert.True(t2_compiledMethodCount > 0, $"Thread 3 compiled method count not greater than 0! ({t2_compiledMethodCount}");
         }
     }
 }
