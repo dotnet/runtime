@@ -391,7 +391,7 @@ if(NOT DISABLE_SHARED_LIBS)
       # for a temporary replacement character, allowing the full lists to be treated as single entries
       string(REPLACE ";" "*" mono-components-objects-nowhitespace "${mono-components-objects}")
       string(REPLACE ";" "*" mono-components-stub-objects-nowhitespace "${mono-components-stub-objects}")
-      list(APPEND FrameworkConfig Mono.release Mono.debug)
+      list(APPEND FrameworkConfig Mono.debug Mono.release)
       list(APPEND ComponentsObjects "${mono-components-objects-nowhitespace}" "${mono-components-stub-objects-nowhitespace}")
       foreach(frameworkconfig componentsobjects IN ZIP_LISTS FrameworkConfig ComponentsObjects)
         if("${componentsobjects}" STREQUAL "")
