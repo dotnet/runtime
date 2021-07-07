@@ -96,7 +96,7 @@ namespace JsonToItemsTaskFactory
         public ITask CreateTask(IBuildEngine taskFactoryLoggingHost)
         {
             var log = new TaskLoggingHelper(taskFactoryLoggingHost, _taskName);
-            if (_logDebugTask) log.LogMessage("CreateTask called");
+            if (_logDebugTask) log.LogMessage(MessageImportance.Low, "CreateTask called");
             return new JsonToItemsTask(_taskName!, _logDebugTask);
         }
 
@@ -104,7 +104,6 @@ namespace JsonToItemsTaskFactory
 
         internal bool ValidateParameterGroup(IDictionary<string, TaskPropertyInfo> parameterGroup, TaskLoggingHelper log)
         {
-            bool hasErrors = false;
             var taskName = _taskName ?? "";
             foreach (var kvp in parameterGroup)
             {
@@ -113,20 +112,17 @@ namespace JsonToItemsTaskFactory
                 if (string.Equals(propName, nameof(JsonFilePath), StringComparison.InvariantCultureIgnoreCase))
                 {
                     log.LogError($"Task {taskName}: {nameof(JsonFilePath)} parameter must not be declared. It is implicitly added by the task.");
-                    hasErrors = true;
                     continue;
                 }
 
                 if (!propInfo.Output)
                 {
                     log.LogError($"Task {taskName}: parameter {propName} is not an output. All parameters except {nameof(JsonFilePath)} must be outputs");
-                    hasErrors = true;
                     continue;
                 }
                 if (propInfo.Required)
                 {
                     log.LogError($"Task {taskName}: parameter {propName} is an output but is marked required. That's not supported.");
-                    hasErrors = true;
                 }
                 if (typeof(ITaskItem[]).IsAssignableFrom(propInfo.PropertyType))
                     continue; // ok, an item list
@@ -134,9 +130,8 @@ namespace JsonToItemsTaskFactory
                     continue; // ok, a string property
 
                 log.LogError($"Task {taskName}: parameter {propName} is not an output of type System.String or Microsoft.Build.Framework.ITaskItem[]");
-                hasErrors = true;
             }
-            return !hasErrors;
+            return !log.HasLoggedErrors;
         }
 
         public class JsonToItemsTask : IGeneratedTask
@@ -206,7 +201,7 @@ namespace JsonToItemsTaskFactory
                     json = JsonSerializer.DeserializeAsync<JsonModelRoot>(file, JsonOptions).AsTask().Result;
                     if (json == null)
                     {
-                        Log.LogError("Failed to deserialize Json file");
+                        Log.LogError($"Failed to deserialize json from file {jsonFilePath}");
                         return false;
                     }
                     return true;
@@ -222,27 +217,27 @@ namespace JsonToItemsTaskFactory
             {
                 if (json.Properties != null)
                 {
-                    Log.LogMessage("json has properties: ");
+                    Log.LogMessage(MessageImportance.Low, "json has properties: ");
                     foreach (var property in json.Properties)
                     {
-                        Log.LogMessage($"  {property.Key} = {property.Value}");
+                        Log.LogMessage(MessageImportance.Low, $"  {property.Key} = {property.Value}");
                     }
                 }
                 if (json.Items != null)
                 {
-                    Log.LogMessage("items: ");
+                    Log.LogMessage(MessageImportance.Low, "items: ");
                     foreach (var item in json.Items)
                     {
-                        Log.LogMessage($"  {item.Key} = [");
+                        Log.LogMessage(MessageImportance.Low, $"  {item.Key} = [");
                         foreach (var value in item.Value)
                         {
-                            Log.LogMessage($"    {value.Identity}");
+                            Log.LogMessage(MessageImportance.Low, $"    {value.Identity}");
                             if (value.Metadata != null)
                             {
-                                Log.LogMessage("       and some metadata, too");
+                                Log.LogMessage(MessageImportance.Low, "       and some metadata, too");
                             }
                         }
-                        Log.LogMessage("  ]");
+                        Log.LogMessage(MessageImportance.Low, "  ]");
                     }
                 }
             }
@@ -252,12 +247,12 @@ namespace JsonToItemsTaskFactory
                 bool isItem = false;
                 if (typeof(ITaskItem[]).IsAssignableFrom(property.PropertyType))
                 {
-                    if (_logDebugTask) Log.LogMessage("GetPropertyValue called with @({0})", property.Name);
+                    if (_logDebugTask) Log.LogMessage(MessageImportance.Low, "GetPropertyValue called with @({0})", property.Name);
                     isItem = true;
                 }
                 else
                 {
-                    if (_logDebugTask) Log.LogMessage("GetPropertyValue called with $({0})", property.Name);
+                    if (_logDebugTask) Log.LogMessage(MessageImportance.Low, "GetPropertyValue called with $({0})", property.Name);
                 }
                 if (!isItem)
                 {
@@ -302,7 +297,7 @@ namespace JsonToItemsTaskFactory
 
             public void SetPropertyValue(TaskPropertyInfo property, object? value)
             {
-                if (_logDebugTask) Log.LogMessage("SetPropertyValue called with {0}", property.Name);
+                if (_logDebugTask) Log.LogMessage(MessageImportance.Low, "SetPropertyValue called with {0}", property.Name);
                 if (property.Name == "JsonFilePath")
                 {
                     jsonFilePath = (string)value!;
