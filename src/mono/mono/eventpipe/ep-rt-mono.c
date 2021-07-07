@@ -16,6 +16,7 @@
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/gc-internals.h>
@@ -4051,7 +4052,7 @@ get_assembly_data (
 	*module_id = 0;
 
 	if (assembly)
-		*module_id = (uint64_t)mono_assembly_get_image (assembly);
+		*module_id = (uint64_t)mono_assembly_get_image_internal (assembly);
 
 	if (assembly && assembly_name)
 		*assembly_name = (ep_char8_t *)mono_stringify_assembly_name (&assembly->aname);
@@ -4294,8 +4295,8 @@ mono_profiler_exception_throw (
 
 	uint64_t type_id = 0;
 
-	if (exc && mono_object_get_class(exc))
-		type_id = (uint64_t)m_class_get_byval_arg (mono_object_get_class(exc));
+	if (exc && mono_object_class(exc))
+		type_id = (uint64_t)m_class_get_byval_arg (mono_object_class(exc));
 
 	FireEtwMonoProfilerExceptionThrow (
 		clr_instance_get_id (),
@@ -4319,8 +4320,8 @@ mono_profiler_exception_clause (
 
 	uint64_t type_id = 0;
 
-	if (exc && mono_object_get_class(exc))
-		type_id = (uint64_t)m_class_get_byval_arg (mono_object_get_class(exc));
+	if (exc && mono_object_class(exc))
+		type_id = (uint64_t)m_class_get_byval_arg (mono_object_class(exc));
 
 	FireEtwMonoProfilerExceptionClause (
 		clr_instance_get_id (),
