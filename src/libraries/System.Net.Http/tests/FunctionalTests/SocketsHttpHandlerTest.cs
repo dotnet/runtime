@@ -2876,14 +2876,18 @@ namespace System.Net.Http.Functional.Tests
 
                     using HttpClient client = CreateHttpClient(handler);
 
-                    HttpRequestException hre = await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.SendAsync(requestMessage));
+                    HttpRequestException hre =
+                        await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.SendAsync(requestMessage))
+                            .WaitAsync(TimeSpan.FromSeconds(10));
+
                     Assert.Equal(e, hre.InnerException);
                 },
                 async server =>
                 {
                     try
                     {
-                        await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
+                        await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo")
+                            .WaitAsync(TimeSpan.FromSeconds(15));
                     }
                     catch { }
                 }, options: options);
