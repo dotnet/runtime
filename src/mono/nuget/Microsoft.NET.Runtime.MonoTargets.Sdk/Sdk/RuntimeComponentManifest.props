@@ -7,7 +7,7 @@
     <ParameterGroup>
       <_MonoRuntimeComponentSharedLibExt ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
       <_MonoRuntimeComponentStaticLibExt ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <_MonoRuntimeComponentCurrentLinking ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+      <_MonoRuntimeComponentLinking ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
       <_MonoRuntimeAvailableComponents ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
     </ParameterGroup>
   </UsingTask>
