@@ -12,9 +12,13 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public partial class SocketOptionNameTest
+    public class SocketOptionNameTest : MemberDatas
     {
         private static bool SocketsReuseUnicastPortSupport => Capability.SocketsReuseUnicastPortSupport().HasValue;
+
+        // Capability.SocketsReuseUnicastPortSupport() returns null if capability support is unclear,
+        // true is returned on Windows 10+.
+        private static bool SocketsReuseUnicastPortOptionExists => Capability.SocketsReuseUnicastPortSupport() == true;
 
         [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
         public void ReuseUnicastPort_CreateSocketGetOption()
@@ -48,6 +52,27 @@ namespace System.Net.Sockets.Tests
                     Assert.Throws<SocketException>(() => socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 1));
                 }
             }
+        }
+
+        [ConditionalTheory(nameof(SocketsReuseUnicastPortOptionExists))]
+        [MemberData(nameof(Loopbacks))]
+        public async Task ConnectAsync_Enables_ReuseUnicastPort(IPAddress listenAddress)
+        {
+            using var listener = new Socket(listenAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            int port = listener.BindToAnonymousPort(listenAddress);
+            listener.Listen();
+            
+            Task<Socket> acceptTask = listener.AcceptAsync();
+            IPEndPoint ep = new IPEndPoint(listenAddress, port);
+            using var socket = new Socket(listenAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+            // The option should be enabled after an asynchronous connect call:
+            await socket.ConnectAsync(ep);
+            int optionValue = (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort);
+            Assert.Equal(1, optionValue);
+
+            // Close the accept socket:
+            (await acceptTask).Dispose();
         }
 
         [Fact]
