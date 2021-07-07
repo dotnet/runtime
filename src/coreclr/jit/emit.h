@@ -350,8 +350,9 @@ struct insGroup
     }
 
 #ifdef DEBUG
-    BasicBlock* igBlock; // The BasicBlock that generated code into this insGroup.
-#endif                   // DEBUG
+    BasicBlock* lastGeneratedBlock;     // The last block that generated code into this insGroup.
+    jitstd::list<BasicBlock*> igBlocks; // All the blocks that generated code into this insGroup.
+#endif
 
 }; // end of struct insGroup
 

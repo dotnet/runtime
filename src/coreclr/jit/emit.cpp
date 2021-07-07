@@ -1524,6 +1524,14 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
     emitCurIGinsCnt++;
 
+#ifdef DEBUG
+    if (emitComp->compCurBB != emitCurIG->lastGeneratedBlock)
+    {
+        emitCurIG->igBlocks.push_back(emitComp->compCurBB);
+        emitCurIG->lastGeneratedBlock = emitComp->compCurBB;
+    }
+#endif // DEBUG
+
     return id;
 }
 
@@ -2534,9 +2542,6 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
 
 #ifdef DEBUG
     JITDUMP("Mapped " FMT_BB " to %s\n", block->bbNum, emitLabelString(emitCurIG));
-
-    assert(emitCurIG->igBlock == nullptr);
-    emitCurIG->igBlock = block;
 
     if (EMIT_GC_VERBOSE)
     {
@@ -3638,12 +3643,6 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
     {
         const char* separator = "";
 
-        if (jitdump && (ig->igBlock != nullptr))
-        {
-            printf("%s%s", separator, ig->igBlock->dspToString());
-            separator = ", ";
-        }
-
         if (jitdump)
         {
             printf("%soffs=%06XH, size=%04XH", separator, ig->igOffs, ig->igSize);
@@ -3686,6 +3685,15 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
             separator = ", ";
         }
 #endif // FEATURE_LOOP_ALIGN
+
+        if (jitdump && !ig->igBlocks.empty())
+        {
+            for (auto block : ig->igBlocks)
+            {
+                printf("%s%s", separator, block->dspToString());
+                separator = ", ";
+            }
+        }
 
         emitDispIGflags(ig->igFlags);
 
@@ -8028,7 +8036,9 @@ void emitter::emitInitIG(insGroup* ig)
 #endif
 
 #ifdef DEBUG
-    ig->igBlock = nullptr;
+    ig->lastGeneratedBlock = nullptr;
+    // Explicitly call the constructor, since IGs don't actually have a constructor.
+    ig->igBlocks.jitstd::list<BasicBlock*>::list(emitComp->getAllocator(CMK_LoopOpt));
 #endif
 }
 
@@ -8094,6 +8104,11 @@ void emitter::emitNxtIG(bool extend)
 
     // We've created a new IG; no need to force another one.
     emitForceNewIG = false;
+
+#ifdef DEBUG
+    // We haven't written any code into the IG yet, so clear our record of the last block written to the IG.
+    emitCurIG->lastGeneratedBlock = nullptr;
+#endif
 }
 
 /*****************************************************************************
