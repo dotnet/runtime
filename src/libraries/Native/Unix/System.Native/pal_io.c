@@ -1391,6 +1391,7 @@ int64_t SystemNative_GetFileSystemType(intptr_t fd)
     struct statfs statfsArgs;
     return fstatfs(ToFileDescriptor(fd), &statfsArgs) == -1 ? -1 : statfsArgs.f_type;
 #else
+    // since this is just best effort, we return 0 if fstatfs is not supported
     return 0;
 #endif
 }
