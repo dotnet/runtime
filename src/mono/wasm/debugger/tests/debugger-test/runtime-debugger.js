@@ -29,8 +29,8 @@ var Module = {
 		*/
 
 		Module.config.environment_variables = {
-            "DOTNET_MODIFIABLE_ASSEMBLIES": "debug"
-        };
+			"DOTNET_MODIFIABLE_ASSEMBLIES": "debug"
+		};
 		MONO.mono_load_runtime_and_bcl_args (Module.config)
 	},
 };
