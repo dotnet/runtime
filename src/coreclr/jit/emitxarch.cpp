@@ -4292,6 +4292,38 @@ bool emitter::IsMovInstruction(instruction ins)
     }
 }
 
+//------------------------------------------------------------------------
+// IsJccInstruction: Determine if an instruction is a conditional jump instruction.
+//
+// Arguments:
+//    ins       -- The instruction being checked
+//
+// Return Value:
+//    true if the instruction qualifies; otherwise, false
+//
+bool emitter::IsJccInstruction(instruction ins)
+{
+    return ((ins >= INS_jo) && (ins <= INS_jg)) || ((ins >= INS_l_jo) && (ins <= INS_l_jg));
+}
+
+//------------------------------------------------------------------------
+// IsJmpInstruction: Determine if an instruction is a jump instruction but NOT a conditional jump instruction.
+//
+// Arguments:
+//    ins       -- The instruction being checked
+//
+// Return Value:
+//    true if the instruction qualifies; otherwise, false
+//
+bool emitter::IsJmpInstruction(instruction ins)
+{
+    return
+#ifdef TARGET_AMD64
+        (ins == INS_rex_jmp) ||
+#endif
+        (ins == INS_i_jmp) || (ins == INS_jmp) || (ins == INS_l_jmp);
+}
+
 //----------------------------------------------------------------------------------------
 // IsRedundantMov:
 //    Check if the current `mov` instruction is redundant and can be omitted.

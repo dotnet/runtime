@@ -773,7 +773,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     memcpy(id, emitCurIGfreeBase, sz);
 
 #ifdef DEBUG
-    if (false && emitComp->verbose) // this is not useful in normal dumps (hence it is normally under if (false)
+    if (false && emitComp->verbose) // this is not useful in normal dumps (hence it is normally under if (false))
     {
         // If there's an error during emission, we may want to connect the post-copy address
         // of an instrDesc with the pre-copy address (the one that was originally created).  This
@@ -3786,10 +3786,6 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     size_t is;
 
-#ifdef DEBUG
-    size_t beforeAddr = (size_t)*dp;
-#endif
-
     /* Record the beginning offset of the instruction */
 
     BYTE* curInsAdr = *dp;
@@ -3874,51 +3870,6 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
         printf("%s at %u: Expected size = %u , actual size = %u\n", emitIfName(id->idInsFmt()),
                id->idDebugOnlyInfo()->idNum, is, emitSizeOfInsDsc(id));
         assert(is == emitSizeOfInsDsc(id));
-    }
-
-    // Print the alignment boundary
-    if ((emitComp->opts.disAsm || emitComp->verbose) && (emitComp->opts.disAddr || emitComp->opts.disAlignment))
-    {
-        size_t currAddr         = (size_t)*dp;
-        size_t lastBoundaryAddr = currAddr & ~((size_t)emitComp->opts.compJitAlignLoopBoundary - 1);
-
-        // draw boundary if beforeAddr was before the lastBoundary.
-        if (beforeAddr < lastBoundaryAddr)
-        {
-            printf("; ");
-            instruction currIns = id->idIns();
-
-#if defined(TARGET_XARCH)
-
-            // https://www.intel.com/content/dam/support/us/en/documents/processors/mitigations-jump-conditional-code-erratum.pdf
-            bool isJccAffectedIns =
-                ((currIns >= INS_i_jmp && currIns < INS_align) || (currIns == INS_call) || (currIns == INS_ret));
-
-            instrDesc* nextId = id;
-            castto(nextId, BYTE*) += is;
-            instruction nextIns = nextId->idIns();
-            if ((currIns == INS_cmp) || (currIns == INS_test) || (currIns == INS_add) || (currIns == INS_sub) ||
-                (currIns == INS_and) || (currIns == INS_inc) || (currIns == INS_dec))
-            {
-                isJccAffectedIns |= (nextIns >= INS_i_jmp && nextIns < INS_align);
-            }
-#else
-            bool isJccAffectedIns = false;
-#endif
-
-            // Indicate if instruction is at at 32B boundary or is splitted
-            unsigned bytesCrossedBoundary = (currAddr & (emitComp->opts.compJitAlignLoopBoundary - 1));
-            if ((bytesCrossedBoundary != 0) || (isJccAffectedIns && bytesCrossedBoundary == 0))
-            {
-                printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d)", codeGen->genInsName(id->idIns()),
-                       bytesCrossedBoundary);
-            }
-            else
-            {
-                printf("...............................");
-            }
-            printf(" %dB boundary ...............................\n", (emitComp->opts.compJitAlignLoopBoundary));
-        }
     }
 #endif // DEBUG
 
@@ -6014,9 +5965,97 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
         emitCurIG = ig;
 
-        for (unsigned cnt = ig->igInsCnt; cnt; cnt--)
+        for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
         {
+#ifdef DEBUG
+            size_t     curInstrAddr = (size_t)cp;
+            instrDesc* curInstrDesc = id;
+#endif
+
             castto(id, BYTE*) += emitIssue1Instr(ig, id, &cp);
+
+#ifdef DEBUG
+            // Print the alignment boundary
+            if ((emitComp->opts.disAsm || emitComp->verbose) && (emitComp->opts.disAddr || emitComp->opts.disAlignment))
+            {
+                size_t      afterInstrAddr   = (size_t)cp;
+                instruction curIns           = curInstrDesc->idIns();
+                bool        isJccAffectedIns = false;
+
+#if defined(TARGET_XARCH)
+
+                // Determine if this instruction is part of a set that matches the Intel jcc erratum characteristic
+                // described here:
+                // https://www.intel.com/content/dam/support/us/en/documents/processors/mitigations-jump-conditional-code-erratum.pdf
+                // This is the case when a jump instruction crosses a 32-byte boundary, or ends on a 32-byte boundary.
+                // "Jump instruction" in this case includes conditional jump (jcc), macro-fused op-jcc (where 'op' is
+                // one of cmp, test, add, sub, and, inc, or dec), direct unconditional jump, indirect jump,
+                // direct/indirect call, and return.
+
+                size_t jccAlignBoundary     = 32;
+                size_t jccAlignBoundaryMask = jccAlignBoundary - 1;
+                size_t jccLastBoundaryAddr  = afterInstrAddr & ~jccAlignBoundaryMask;
+
+                if (curInstrAddr < jccLastBoundaryAddr)
+                {
+                    isJccAffectedIns = IsJccInstruction(curIns) || IsJmpInstruction(curIns) || (curIns == INS_call) ||
+                                       (curIns == INS_ret);
+
+                    // For op-Jcc there are two cases: (1) curIns is the jcc, in which case the above condition
+                    // already covers us. (2) curIns is the `op` and the next instruction is the `jcc`. Note that
+                    // we will never have a `jcc` as the first instruction of a group, so we don't need to worry
+                    // about looking ahead to the next group after a an `op` of `op-Jcc`.
+
+                    if (!isJccAffectedIns && (cnt > 1))
+                    {
+                        // The current `id` is valid, namely, there is another instruction in this group.
+                        instruction nextIns = id->idIns();
+                        if (((curIns == INS_cmp) || (curIns == INS_test) || (curIns == INS_add) ||
+                             (curIns == INS_sub) || (curIns == INS_and) || (curIns == INS_inc) ||
+                             (curIns == INS_dec)) &&
+                            IsJccInstruction(nextIns))
+                        {
+                            isJccAffectedIns = true;
+                        }
+                    }
+
+                    if (isJccAffectedIns)
+                    {
+                        unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & jccAlignBoundaryMask);
+                        printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d ; jcc erratum) %dB boundary "
+                               "...............................\n",
+                               codeGen->genInsName(curIns), bytesCrossedBoundary, jccAlignBoundary);
+                    }
+                }
+
+#endif // TARGET_XARCH
+
+                // Jcc affected instruction boundaries were printed above; handle other cases here.
+                if (!isJccAffectedIns)
+                {
+                    size_t alignBoundaryMask = (size_t)emitComp->opts.compJitAlignLoopBoundary - 1;
+                    size_t lastBoundaryAddr  = afterInstrAddr & ~alignBoundaryMask;
+
+                    // draw boundary if beforeAddr was before the lastBoundary.
+                    if (curInstrAddr < lastBoundaryAddr)
+                    {
+                        // Indicate if instruction is at the alignment boundary or is split
+                        unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & alignBoundaryMask);
+                        if (bytesCrossedBoundary != 0)
+                        {
+                            printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d)", codeGen->genInsName(curIns),
+                                   bytesCrossedBoundary);
+                        }
+                        else
+                        {
+                            printf("; ...............................");
+                        }
+                        printf(" %dB boundary ...............................\n",
+                               emitComp->opts.compJitAlignLoopBoundary);
+                    }
+                }
+            }
+#endif // DEBUG
         }
 
 #ifdef DEBUG

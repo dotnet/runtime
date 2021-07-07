@@ -98,6 +98,9 @@ static bool IsMovInstruction(instruction ins);
 bool IsRedundantMov(
     instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects);
 
+static bool IsJccInstruction(instruction ins);
+static bool IsJmpInstruction(instruction ins);
+
 bool AreUpper32BitsZero(regNumber reg);
 
 bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps);
