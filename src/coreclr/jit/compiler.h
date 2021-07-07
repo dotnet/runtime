@@ -3406,6 +3406,8 @@ public:
     void lvaSetVarLiveInOutOfHandler(unsigned varNum);
     bool lvaVarDoNotEnregister(unsigned varNum);
 
+    void lvInitializeDoNotEnregFlag();
+
     bool lvaEnregEHVars;
     bool lvaEnregMultiRegVars;
 

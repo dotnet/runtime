@@ -1588,6 +1588,26 @@ bool Compiler::lvaVarDoNotEnregister(unsigned varNum)
     return varDsc->lvDoNotEnregister;
 }
 
+//------------------------------------------------------------------------
+// lvInitializeDoNotEnregFlag: a helper to initialize `lvDoNotEnregister` flag
+//    for locals that were created before the compiler decided its optimization level.
+//
+// Assumptions:
+//    There were no temp vars created so far, only actual IL locals, arguments etc.
+//
+void Compiler::lvInitializeDoNotEnregFlag()
+{
+    JITDUMP("Switching locals to another optimization level, resetting lvDoNotEnregister flag.\n")
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+    {
+        assert(!lvaVarDoNotEnregister(lclNum));
+        if (!compEnregLocals())
+        {
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_NoRegVars));
+        }
+    }
+}
+
 /*****************************************************************************
  * Returns the handle to the class of the local variable varNum
  */
@@ -2582,10 +2602,7 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
     varDsc->lvDoNotEnregister = 1;
 
 #ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nLocal V%02u should not be enregistered because: ", varNum);
-    }
+    JITDUMP("\nLocal V%02u should not be enregistered because: ", varNum);
     switch (reason)
     {
         case DNER_AddrExposed:
@@ -3511,6 +3528,13 @@ void Compiler::lvaSortByRefCount()
             varDsc->lvTracked = 0;
         }
 #endif
+
+#if defined(DEBUG)
+        if (!compEnregLocals())
+        {
+            assert(varDsc->lvDoNotEnregister);
+        }
+#endif // DEBUG
 
         //  Are we not optimizing and we have exception handlers?
         //   if so mark all args and locals "do not enregister".

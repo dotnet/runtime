@@ -4069,6 +4069,8 @@ _SetMinOpts:
 #endif
 
     fgCanRelocateEHRegions = true;
+
+    lvInitializeDoNotEnregFlag();
 }
 
 #ifdef TARGET_ARMARCH
