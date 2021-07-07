@@ -70,8 +70,7 @@
         <TargetPath>runtimes/$(RuntimeIdentifier)/native/include/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>
 
-      <!-- FIXME: Can this condition be '$(RuntimeFlavor)' == 'mono' and not TargetsMobile? We will want this for desktop mono runtime packs too -->
-      <RuntimeFiles Condition="'$(TargetsMobile)' == 'true'"
+      <RuntimeFiles Condition="'$(RuntimeFlavor)' == 'mono'"
                     Include="$(MonoArtifactsPath)\build\**\*.*"
                     ExcludeFromDataFiles="true">
         <TargetPath>runtimes/$(RuntimeIdentifier)/build/%(RecursiveDir)</TargetPath>
