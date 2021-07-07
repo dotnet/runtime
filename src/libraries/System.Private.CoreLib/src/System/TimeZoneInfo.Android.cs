@@ -11,27 +11,27 @@ namespace System
 {
     public sealed partial class TimeZoneInfo
     {
-        private const string TimeZoneFileName = "tzdata";
+        private const string _timeZoneFileName = "tzdata";
 
-        private static AndroidTzData? tzData;
-        private static readonly object tzDataLock = new object();
+        private static AndroidTzData? s_tzData;
+        private static readonly object s_tzDataLock = new object();
 
-        private static AndroidTzData atzData
+        private static AndroidTzData s_atzData
         {
             get
             {
-                if (tzData == null)
+                if (s_tzData == null)
                 {
-                    lock (tzDataLock)
+                    lock (s_tzDataLock)
                     {
-                        if (tzData == null)
+                        if (s_tzData == null)
                         {
-                        tzData = new AndroidTzData();
+                            s_tzData = new AndroidTzData();
                         }
                     }
                 }
 
-                return tzData;
+                return s_tzData;
             }
         }
 
@@ -118,7 +118,7 @@ namespace System
 
             try
             {
-                byte[] buffer = atzData.GetTimeZoneData(name);
+                byte[] buffer = s_atzData.GetTimeZoneData(name);
                 return GetTimeZoneFromTzData(buffer, id);
             }
             catch
@@ -130,10 +130,10 @@ namespace System
 
         private static TimeZoneInfo GetLocalTimeZoneCore()
         {
-            var id = Interop.Sys.GetDefaultTimeZone();
+            string? id = Interop.Sys.GetDefaultTimeZone();
             if (!string.IsNullOrEmpty(id))
             {
-                var defaultTimeZone = GetTimeZone(id, id);
+                TimeZoneInfo? defaultTimeZone = GetTimeZone(id, id);
 
                 if (defaultTimeZone != null)
                 {
@@ -170,21 +170,21 @@ namespace System
         private static string GetTimeZoneDirectory()
         {
             // Android 10+, TimeData module where the updates land
-            if (File.Exists(Path.Combine(GetApexTimeDataRoot() + "/etc/tz/", TimeZoneFileName)))
+            if (File.Exists(Path.Combine(GetApexTimeDataRoot() + "/etc/tz/", _timeZoneFileName)))
             {
                 return GetApexTimeDataRoot() + "/etc/tz/";
             }
             // Android 10+, Fallback location if the above isn't found or corrupted
-            if (File.Exists(Path.Combine(GetApexRuntimeRoot() + "/etc/tz/", TimeZoneFileName)))
+            if (File.Exists(Path.Combine(GetApexRuntimeRoot() + "/etc/tz/", _timeZoneFileName)))
             {
                 return GetApexRuntimeRoot() + "/etc/tz/";
             }
-            if (File.Exists(Path.Combine(Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/", TimeZoneFileName)))
+            if (File.Exists(Path.Combine(Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/", _timeZoneFileName)))
             {
                 return Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/";
             }
 
-            return Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory;
+            return Environment.GetEnvironmentVariable("ANDROID_ROOT") + _defaultTimeZoneDirectory;
         }
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
@@ -197,7 +197,7 @@ namespace System
 
             if (value == null)
             {
-                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, GetTimeZoneDirectory() + TimeZoneFileName));
+                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, GetTimeZoneDirectory() + _timeZoneFileName));
                 return TimeZoneInfoResult.TimeZoneNotFoundException; // Mono/mono throws TimeZoneNotFoundException, runtime throws InvalidTimeZoneException
             }
 
@@ -206,7 +206,7 @@ namespace System
 
         private static string[] GetTimeZoneIds()
         {
-            return atzData.GetTimeZoneIds();
+            return s_atzData.GetTimeZoneIds();
         }
 
         /*
@@ -242,20 +242,20 @@ namespace System
                 public int rawUtcOffset;
             }
 
-            private string[]? ids;
-            private int[]? byteOffsets;
-            private int[]? lengths;
+            private string[]? _ids;
+            private int[]? _byteOffsets;
+            private int[]? _lengths;
 
             public AndroidTzData()
             {
-                ReadHeader(GetTimeZoneDirectory() + TimeZoneFileName);
+                ReadHeader(GetTimeZoneDirectory() + _timeZoneFileName);
             }
 
             private unsafe void ReadHeader(string tzFilePath)
             {
                 int size   = Math.Max(Marshal.SizeOf(typeof(AndroidTzDataHeader)), Marshal.SizeOf(typeof(AndroidTzDataEntry)));
                 var buffer = new byte[size];
-                var header = ReadAt<AndroidTzDataHeader>(tzFilePath, 0, buffer);
+                AndroidTzDataHeader header = ReadAt<AndroidTzDataHeader>(tzFilePath, 0, buffer);
 
                 header.indexOffset = NetworkToHostOrder(header.indexOffset);
                 header.dataOffset = NetworkToHostOrder(header.dataOffset);
@@ -340,20 +340,20 @@ namespace System
                 int entrySize = Marshal.SizeOf(typeof(AndroidTzDataEntry));
                 int entryCount = indexSize / entrySize;
 
-                byteOffsets = new int[entryCount];
-                ids = new string[entryCount];
-                lengths = new int[entryCount];
+                _byteOffsets = new int[entryCount];
+                _ids = new string[entryCount];
+                _lengths = new int[entryCount];
 
                 for (int i = 0; i < entryCount; ++i)
                 {
-                    var entry = ReadAt<AndroidTzDataEntry>(tzFilePath, indexOffset + (entrySize*i), buffer);
+                    AndroidTzDataEntry entry = ReadAt<AndroidTzDataEntry>(tzFilePath, indexOffset + (entrySize*i), buffer);
                     var p = (sbyte*)entry.id;
 
-                    byteOffsets![i] = NetworkToHostOrder(entry.byteOffset) + dataOffset;
-                    ids![i] = new string(p, 0, GetStringLength(p, 40), Encoding.ASCII);
-                    lengths![i] = NetworkToHostOrder(entry.length);
+                    _byteOffsets![i] = NetworkToHostOrder(entry.byteOffset) + dataOffset;
+                    _ids![i] = new string(p, 0, GetStringLength(p, 40), Encoding.ASCII);
+                    _lengths![i] = NetworkToHostOrder(entry.length);
 
-                    if (lengths![i] < Marshal.SizeOf(typeof(AndroidTzDataHeader)))
+                    if (_lengths![i] < Marshal.SizeOf(typeof(AndroidTzDataHeader)))
                     {
                         //TODO: Put strings in resource file
                         throw new InvalidOperationException("Length in index file < sizeof(tzhead)");
@@ -363,23 +363,23 @@ namespace System
 
             public string[] GetTimeZoneIds()
             {
-                return ids!;
+                return _ids!;
             }
 
             public byte[] GetTimeZoneData(string id)
             {
-                int i = Array.BinarySearch(ids!, id, StringComparer.Ordinal);
+                int i = Array.BinarySearch(_ids!, id, StringComparer.Ordinal);
                 if (i < 0)
                 {
                     //TODO: Put strings in resource file
                     throw new InvalidOperationException("Error finding the timezone id");
                 }
 
-                int offset = byteOffsets![i];
-                int length = lengths![i];
+                int offset = _byteOffsets![i];
+                int length = _lengths![i];
                 var buffer = new byte[length];
                 // Do we need to lock to prevent multithreading issues like the mono/mono implementation?
-                var tzFilePath = GetTimeZoneDirectory() + TimeZoneFileName;
+                string tzFilePath = GetTimeZoneDirectory() + _timeZoneFileName;
                 using (FileStream fs = File.OpenRead(tzFilePath))
                 {
                     fs.Position = offset;

@@ -12,9 +12,9 @@ namespace System
 {
     public sealed partial class TimeZoneInfo
     {
-        private const string TimeZoneFileName = "zone.tab";
-        private const string TimeZoneDirectoryEnvironmentVariable = "TZDIR";
-        private const string TimeZoneEnvironmentVariable = "TZ";
+        private const string _timeZoneFileName = "zone.tab";
+        private const string _timeZoneDirectoryEnvironmentVariable = "TZDIR";
+        private const string _timeZoneEnvironmentVariable = "TZ";
 
         private static TimeZoneInfo GetLocalTimeZoneCore()
         {
@@ -78,7 +78,7 @@ namespace System
 
             try
             {
-                using (StreamReader sr = new StreamReader(Path.Combine(GetTimeZoneDirectory(), TimeZoneFileName), Encoding.UTF8))
+                using (StreamReader sr = new StreamReader(Path.Combine(GetTimeZoneDirectory(), _timeZoneFileName), Encoding.UTF8))
                 {
                     string? zoneTabFileLine;
                     while ((zoneTabFileLine = sr.ReadLine()) != null)
@@ -124,7 +124,7 @@ namespace System
 
         private static string? GetTzEnvironmentVariable()
         {
-            string? result = Environment.GetEnvironmentVariable(TimeZoneEnvironmentVariable);
+            string? result = Environment.GetEnvironmentVariable(_timeZoneEnvironmentVariable);
             if (!string.IsNullOrEmpty(result))
             {
                 if (result[0] == ':')
@@ -447,11 +447,11 @@ namespace System
 
         private static string GetTimeZoneDirectory()
         {
-            string? tzDirectory = Environment.GetEnvironmentVariable(TimeZoneDirectoryEnvironmentVariable);
+            string? tzDirectory = Environment.GetEnvironmentVariable(_timeZoneDirectoryEnvironmentVariable);
 
             if (tzDirectory == null)
             {
-                tzDirectory = DefaultTimeZoneDirectory;
+                tzDirectory = _defaultTimeZoneDirectory;
             }
             else if (!tzDirectory.EndsWith(Path.DirectorySeparatorChar))
             {
