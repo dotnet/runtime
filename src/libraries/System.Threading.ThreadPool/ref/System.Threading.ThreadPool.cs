@@ -22,6 +22,7 @@ namespace System.Threading
         public static long PendingWorkItemCount { get { throw null; } }
         public static int ThreadCount { get { throw null; } }
         [System.ObsoleteAttribute("ThreadPool.BindHandle(IntPtr) has been deprecated.  Please use ThreadPool.BindHandle(SafeHandle) instead.", false)]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static bool BindHandle(System.IntPtr osHandle) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static bool BindHandle(System.Runtime.InteropServices.SafeHandle osHandle) { throw null; }
@@ -43,6 +44,7 @@ namespace System.Threading
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads) { throw null; }
         public static bool SetMinThreads(int workerThreads, int completionPortThreads) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public unsafe static bool UnsafeQueueNativeOverlapped(System.Threading.NativeOverlapped* overlapped) { throw null; }
         public static bool UnsafeQueueUserWorkItem(System.Threading.IThreadPoolWorkItem callBack, bool preferLocal) { throw null; }
         public static bool UnsafeQueueUserWorkItem(System.Threading.WaitCallback callBack, object? state) { throw null; }

@@ -14,16 +14,16 @@ namespace System.Drawing
     ///
     /// Supports IStream and IPicture COM interfaces.
     /// </summary>
-    internal unsafe class DrawingComWrappers : ComWrappers
+    internal unsafe partial class DrawingCom : ComWrappers
     {
         private const int S_OK = (int)Interop.HRESULT.S_OK;
         private static readonly Guid IID_IStream = new Guid(0x0000000C, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
 
         private static readonly ComInterfaceEntry* s_wrapperEntry = InitializeComInterfaceEntry();
 
-        internal static DrawingComWrappers Instance { get; } = new DrawingComWrappers();
+        internal static DrawingCom Instance { get; } = new DrawingCom();
 
-        private DrawingComWrappers() { }
+        private DrawingCom() { }
 
         private static ComInterfaceEntry* InitializeComInterfaceEntry()
         {
@@ -31,7 +31,7 @@ namespace System.Drawing
 
             IntPtr iStreamVtbl = IStreamVtbl.Create(fpQueryInterface, fpAddRef, fpRelease);
 
-            ComInterfaceEntry* wrapperEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(DrawingComWrappers), sizeof(ComInterfaceEntry));
+            ComInterfaceEntry* wrapperEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(DrawingCom), sizeof(ComInterfaceEntry));
             wrapperEntry->IID = IID_IStream;
             wrapperEntry->Vtable = iStreamVtbl;
             return wrapperEntry;
@@ -64,6 +64,27 @@ namespace System.Drawing
         protected override void ReleaseObjects(IEnumerable objects)
         {
             throw new NotImplementedException();
+        }
+
+        internal static IStreamWrapper GetComWrapper(Interop.Ole32.IStream stream)
+        {
+            IntPtr streamWrapperPtr = Instance.GetOrCreateComInterfaceForObject(stream, CreateComInterfaceFlags.None);
+
+            Guid streamIID = IID_IStream;
+            int result = Marshal.QueryInterface(streamWrapperPtr, ref streamIID, out IntPtr streamPtr);
+
+            Marshal.Release(streamWrapperPtr);
+
+            ThrowExceptionForHR(result);
+
+            return new IStreamWrapper(streamPtr);
+        }
+
+        internal static void ThrowExceptionForHR(int errorCode)
+        {
+            // Pass -1 for errorInfo to indicate that Windows' GetErrorInfo shouldn't be called, and only
+            // throw the Exception corresponding to the specified errorCode.
+            Marshal.ThrowExceptionForHR(errorCode, errorInfo: new IntPtr(-1));
         }
 
         internal static class IStreamVtbl
@@ -159,16 +180,13 @@ namespace System.Drawing
                 try
                 {
                     Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
-                    Interop.Ole32.IStream pstmStream = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)pstm);
 
-                    inst.CopyTo(pstmStream, cb, pcbRead, pcbWritten);
+                    return (int)inst.CopyTo(pstm, cb, pcbRead, pcbWritten);
                 }
                 catch (Exception e)
                 {
                     return e.HResult;
                 }
-
-                return S_OK;
             }
 
             [UnmanagedCallersOnly]
@@ -250,23 +268,16 @@ namespace System.Drawing
             [UnmanagedCallersOnly]
             private static int Clone(IntPtr thisPtr, IntPtr* ppstm)
             {
-                if (ppstm == null)
-                {
-                    return (int)Interop.HRESULT.STG_E_INVALIDPOINTER;
-                }
-
                 try
                 {
                     Interop.Ole32.IStream inst = ComInterfaceDispatch.GetInstance<Interop.Ole32.IStream>((ComInterfaceDispatch*)thisPtr);
 
-                    *ppstm = Instance.GetOrCreateComInterfaceForObject(inst.Clone(), CreateComInterfaceFlags.None);
+                    return (int)inst.Clone(ppstm);
                 }
                 catch (Exception e)
                 {
                     return e.HResult;
                 }
-
-                return S_OK;
             }
         }
 
@@ -297,7 +308,7 @@ namespace System.Drawing
             {
                 // Get the IStream implementation, since the ComWrappers runtime returns a pointer to the IUnknown interface implementation
                 Guid streamIID = IID_IStream;
-                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(pstm, ref streamIID, out IntPtr pstmImpl));
+                ThrowExceptionForHR(Marshal.QueryInterface(pstm, ref streamIID, out IntPtr pstmImpl));
 
                 try
                 {

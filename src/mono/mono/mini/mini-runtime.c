@@ -87,6 +87,7 @@
 
 #include "mini-gc.h"
 #include "mini-llvm.h"
+#include "llvm-runtime.h"
 #include "lldb.h"
 #include "mini-runtime.h"
 #include "interp/interp.h"
@@ -2664,13 +2665,54 @@ lookup_start:
 	return p;
 }
 
+typedef struct {
+	MonoMethod *method;
+	guint32 opt;
+	gboolean jit_only;
+	MonoError *error;
+	gpointer code;
+} JitCompileMethodWithOptCallbackData;
+
+static void
+jit_compile_method_with_opt_cb (gpointer arg)
+{
+	JitCompileMethodWithOptCallbackData *params = (JitCompileMethodWithOptCallbackData *)arg;
+	params->code = mono_jit_compile_method_with_opt (params->method, params->opt, params->jit_only, params->error);
+}
+
+static gpointer
+jit_compile_method_with_opt (JitCompileMethodWithOptCallbackData *params)
+{
+	MonoLMFExt ext;
+
+	memset (&ext, 0, sizeof (MonoLMFExt));
+	ext.kind = MONO_LMFEXT_JIT_ENTRY;
+	mono_push_lmf (&ext);
+
+	gboolean thrown = FALSE;
+#if defined(ENABLE_LLVM_RUNTIME) || defined(ENABLE_LLVM)
+	mono_llvm_cpp_catch_exception (jit_compile_method_with_opt_cb, params, &thrown);
+#else
+	jit_compile_method_with_opt_cb (params);
+#endif
+
+	mono_pop_lmf (&ext.lmf);
+
+	return !thrown ? params->code : NULL;
+}
+
 gpointer
 mono_jit_compile_method (MonoMethod *method, MonoError *error)
 {
-	gpointer code;
+	JitCompileMethodWithOptCallbackData params;
 
-	code = mono_jit_compile_method_with_opt (method, mono_get_optimizations_for_method (method, default_opt), FALSE, error);
-	return code;
+	params.method = method;
+	params.opt = mono_get_optimizations_for_method (method, default_opt);
+	params.jit_only = FALSE;
+	params.error = error;
+	params.code = NULL;
+
+	return jit_compile_method_with_opt (&params);
 }
 
 /*
@@ -2681,10 +2723,15 @@ mono_jit_compile_method (MonoMethod *method, MonoError *error)
 gpointer
 mono_jit_compile_method_jit_only (MonoMethod *method, MonoError *error)
 {
-	gpointer code;
+	JitCompileMethodWithOptCallbackData params;
 
-	code = mono_jit_compile_method_with_opt (method, mono_get_optimizations_for_method (method, default_opt), TRUE, error);
-	return code;
+	params.method = method;
+	params.opt = mono_get_optimizations_for_method (method, default_opt);
+	params.jit_only = TRUE;
+	params.error = error;
+	params.code = NULL;
+
+	return jit_compile_method_with_opt (&params);
 }
 
 /*

@@ -178,7 +178,7 @@
           DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BundleTimezones">
 
     <PropertyGroup>
-      <EmccConfigurationFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1</EmccConfigurationFlags>
+      <EmccConfigurationFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DENABLE_NETCORE=1 -DDEBUG=1</EmccConfigurationFlags>
       <EmccConfigurationFlags Condition="'$(Configuration)' == 'Release'">-Oz -DENABLE_NETCORE=1</EmccConfigurationFlags>
       <StripCmd>&quot;$(EMSDK_PATH)/upstream/bin/wasm-opt&quot; --strip-dwarf &quot;$(NativeBinDir)dotnet.wasm&quot; -o &quot;$(NativeBinDir)dotnet.wasm&quot;</StripCmd>
       <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
