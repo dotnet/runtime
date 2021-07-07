@@ -66,4 +66,11 @@ target_link_libraries(
     "-lc++"
     "-liconv"
 %NativeLibrariesToLink%
+    "-L.."
+    "-lmonosgen-2.0"
+)
+
+add_custom_command(
+  TARGET %ProjectName% POST_BUILD
+  COMMAND install_name_tool -add_rpath @executable_path/. "$<TARGET_FILE:%ProjectName%>"
 )
