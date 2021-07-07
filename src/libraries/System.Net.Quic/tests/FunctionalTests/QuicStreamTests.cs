@@ -561,7 +561,7 @@ namespace System.Net.Quic.Tests
                     {
                         await ReadUntilAborted().WaitAsync(TimeSpan.FromSeconds(3));
                     }
-                    catch (QuicStreamAbortedException) { }
+                    catch { }
 
                     await stream.ShutdownCompleted();
                 }

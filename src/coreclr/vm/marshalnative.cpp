@@ -1064,7 +1064,7 @@ FCIMPL2(Object*, MarshalNative::InternalCreateWrapperOfType, Object* objUNSAFE, 
         MethodTable::InterfaceMapIterator it = pNewWrapMT->IterateInterfaceMap();
         while (it.Next())
         {
-            MethodTable *pItfMT = it.GetInterface();
+            MethodTable *pItfMT = it.GetInterfaceApprox(); // ComImport interfaces cannot be generic
             if (pItfMT->IsComImport())
             {
                 if (!Object::SupportsInterface(gc.obj, pItfMT))

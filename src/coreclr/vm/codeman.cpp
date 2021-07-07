@@ -2685,7 +2685,11 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
         pCodeHdr = ((CodeHeader *)pCode) - 1;
 
         *pAllocatedSize = sizeof(CodeHeader) + totalSize;
-#define FEATURE_WXORX        
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+#define FEATURE_WXORX
+#endif
+
 #ifdef FEATURE_WXORX
         pCodeHdrRW = (CodeHeader *)new BYTE[*pAllocatedSize];
 #else

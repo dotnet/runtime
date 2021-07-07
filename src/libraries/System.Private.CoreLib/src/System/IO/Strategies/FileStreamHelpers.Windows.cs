@@ -60,15 +60,15 @@ namespace System.IO.Strategies
         internal static FileStreamStrategy EnableBufferingIfNeeded(WindowsFileStreamStrategy strategy, int bufferSize)
             => bufferSize > 1 ? new BufferedFileStreamStrategy(strategy, bufferSize) : strategy;
 
-        internal static void FlushToDisk(SafeFileHandle handle, string? path)
+        internal static void FlushToDisk(SafeFileHandle handle)
         {
             if (!Interop.Kernel32.FlushFileBuffers(handle))
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error(path);
+                throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
             }
         }
 
-        internal static long Seek(SafeFileHandle handle, string? path, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
+        internal static long Seek(SafeFileHandle handle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
         {
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End, "origin >= SeekOrigin.Begin && origin <= SeekOrigin.End");
 
@@ -76,11 +76,11 @@ namespace System.IO.Strategies
             {
                 if (closeInvalidHandle)
                 {
-                    throw Win32Marshal.GetExceptionForWin32Error(GetLastWin32ErrorAndDisposeHandleIfInvalid(handle), path);
+                    throw Win32Marshal.GetExceptionForWin32Error(GetLastWin32ErrorAndDisposeHandleIfInvalid(handle), handle.Path);
                 }
                 else
                 {
-                    throw Win32Marshal.GetExceptionForLastWin32Error(path);
+                    throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
                 }
             }
 
@@ -116,7 +116,7 @@ namespace System.IO.Strategies
             return errorCode;
         }
 
-        internal static void Lock(SafeFileHandle handle, string? path, long position, long length)
+        internal static void Lock(SafeFileHandle handle, long position, long length)
         {
             int positionLow = unchecked((int)(position));
             int positionHigh = unchecked((int)(position >> 32));
@@ -125,11 +125,11 @@ namespace System.IO.Strategies
 
             if (!Interop.Kernel32.LockFile(handle, positionLow, positionHigh, lengthLow, lengthHigh))
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error(path);
+                throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
             }
         }
 
-        internal static void Unlock(SafeFileHandle handle, string? path, long position, long length)
+        internal static void Unlock(SafeFileHandle handle, long position, long length)
         {
             int positionLow = unchecked((int)(position));
             int positionHigh = unchecked((int)(position >> 32));
@@ -138,7 +138,7 @@ namespace System.IO.Strategies
 
             if (!Interop.Kernel32.UnlockFile(handle, positionLow, positionHigh, lengthLow, lengthHigh))
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error(path);
+                throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
             }
         }
 
@@ -168,7 +168,7 @@ namespace System.IO.Strategies
             }
         }
 
-        internal static unsafe void SetFileLength(SafeFileHandle handle, string? path, long length)
+        internal static unsafe void SetFileLength(SafeFileHandle handle, long length)
         {
             var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
             {
@@ -184,13 +184,38 @@ namespace System.IO.Strategies
                 int errorCode = Marshal.GetLastPInvokeError();
                 if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                     throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_FileLengthTooBig);
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
             }
         }
 
 
+        internal static unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, NativeOverlapped* overlapped, out int errorCode)
+        {
+            Debug.Assert(handle != null, "handle != null");
 
-        internal static async Task AsyncModeCopyToAsync(SafeFileHandle handle, string? path, bool canSeek, long filePosition, Stream destination, int bufferSize, CancellationToken cancellationToken)
+            int r;
+            int numBytesRead = 0;
+
+            fixed (byte* p = &MemoryMarshal.GetReference(bytes))
+            {
+                r = overlapped == null
+                    ? Interop.Kernel32.ReadFile(handle, p, bytes.Length, out numBytesRead, overlapped)
+                    : Interop.Kernel32.ReadFile(handle, p, bytes.Length, IntPtr.Zero, overlapped);
+            }
+
+            if (r == 0)
+            {
+                errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                return -1;
+            }
+            else
+            {
+                errorCode = 0;
+                return numBytesRead;
+            }
+        }
+
+        internal static async Task AsyncModeCopyToAsync(SafeFileHandle handle, bool canSeek, long filePosition, Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             // For efficiency, we avoid creating a new task and associated state for each asynchronous read.
             // Instead, we create a single reusable awaitable object that will be triggered when an await completes
@@ -265,7 +290,7 @@ namespace System.IO.Strategies
                             }
 
                             // Kick off the read.
-                            synchronousSuccess = RandomAccess.ReadFileNative(handle, copyBuffer, false, readAwaitable._nativeOverlapped, out errorCode) >= 0;
+                            synchronousSuccess = ReadFileNative(handle, copyBuffer, readAwaitable._nativeOverlapped, out errorCode) >= 0;
                         }
 
                         // If the operation did not synchronously succeed, it either failed or initiated the asynchronous operation.
@@ -285,7 +310,7 @@ namespace System.IO.Strategies
                                     break;
                                 default:
                                     // Everything else is an error (and there won't be a callback).
-                                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+                                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
                             }
                         }
 
@@ -302,7 +327,7 @@ namespace System.IO.Strategies
                             case Interop.Errors.ERROR_OPERATION_ABORTED: // canceled
                                 throw new OperationCanceledException(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
                             default: // error
-                                throw Win32Marshal.GetExceptionForWin32Error((int)readAwaitable._errorCode, path);
+                                throw Win32Marshal.GetExceptionForWin32Error((int)readAwaitable._errorCode, handle.Path);
                         }
 
                         // Successful operation.  If we got zero bytes, we're done: exit the read/write loop.

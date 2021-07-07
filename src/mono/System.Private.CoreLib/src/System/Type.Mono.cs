@@ -152,6 +152,7 @@ namespace System
             return left.Equals(right);
         }
 
+        [Intrinsic]
         public static bool operator !=(Type? left, Type? right)
         {
             return !(left == right);

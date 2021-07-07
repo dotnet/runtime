@@ -83,6 +83,7 @@
     <Compile Include="System\FormattableStringTests.cs" />
     <Compile Include="System\FormatExceptionTests.cs" />
     <Compile Include="System\GCTests.cs" />
+    <Compile Include="System\GenericMathTests.cs" />
     <Compile Include="System\GuidTests.cs" />
     <Compile Include="System\HalfTests.cs" />
     <Compile Include="System\HandleTests.cs" />
@@ -90,6 +91,7 @@
     <Compile Include="System\IndexOutOfRangeExceptionTests.cs" />
     <Compile Include="System\IndexTests.cs" />
     <Compile Include="System\Int16Tests.cs" />
+    <Compile Include="System\Int32GenericMathTests.cs" />
     <Compile Include="System\Int32Tests.cs" />
     <Compile Include="System\Int64Tests.cs" />
     <Compile Include="System\IntPtrTests.cs" />
@@ -218,6 +220,7 @@
     <Compile Include="System\Reflection\TypeDelegatorTests.cs" />
     <Compile Include="System\Reflection\TypeTests.Get.CornerCases.cs" />
     <Compile Include="System\Reflection\TypeTests.GetMember.cs" />
+    <Compile Include="System\Runtime\DependentHandleTests.cs" />
     <Compile Include="System\Runtime\MemoryFailPointTests.cs" />
     <Compile Include="System\Runtime\NgenServicingAttributesTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\AttributesTests.cs" />
@@ -236,6 +239,7 @@
     <Compile Include="System\Security\SecurityAttributeTests.cs" />
     <Compile Include="System\Security\SecurityExceptionTests.cs" />
     <Compile Include="System\Text\StringBuilderTests.cs" />
+    <Compile Include="System\Threading\PeriodicTimerTests.cs" />
     <Compile Include="System\Threading\WaitHandleTests.cs" />
     <Compile Include="System\Type\TypePropertyTests.cs" />
     <Compile Include="System\Type\TypeTests.cs" />

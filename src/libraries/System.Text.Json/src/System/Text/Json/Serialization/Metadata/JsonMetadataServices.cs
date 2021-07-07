@@ -93,7 +93,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="options">The <see cref="JsonSerializerOptions"/> to initialize the metadata with.</param>
         /// <param name="createObjectFunc">Provides a mechanism to create an instance of the class or struct when deserializing.</param>
         /// <param name="propInitFunc">Provides a mechanism to initialize metadata for properties and fields of the class or struct.</param>
-        /// <param name="serializeFunc">Provides a serialization implementation for instances of the class or struct which assumes options specified by <see cref="JsonSerializerOptionsAttribute"/>.</param>
+        /// <param name="serializeFunc">Provides a serialization implementation for instances of the class or struct which assumes options specified by <see cref="JsonSourceGenerationOptionsAttribute"/>.</param>
         /// <param name="numberHandling">Specifies how number properties and fields should be processed when serializing and deserializing.</param>
         /// <typeparam name="T">The type of the class or struct.</typeparam>
         /// <exception cref="InvalidOperationException">Thrown when <paramref name="options"/> and <paramref name="propInitFunc"/> are both null.</exception>

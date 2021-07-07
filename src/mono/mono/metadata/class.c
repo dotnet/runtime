@@ -3523,8 +3523,10 @@ mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc,
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 	/* FIXME test for interfaces with variant generic arguments */
-	mono_class_init_internal (klass);
-	mono_class_init_internal (klassc);
+	if (check_interfaces) {
+		mono_class_init_internal (klass);
+		mono_class_init_internal (klassc);
+	}
 	
 	if (check_interfaces && MONO_CLASS_IS_INTERFACE_INTERNAL (klassc) && !MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, m_class_get_interface_id (klassc)))

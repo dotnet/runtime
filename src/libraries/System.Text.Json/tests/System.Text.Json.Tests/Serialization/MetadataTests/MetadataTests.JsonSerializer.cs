@@ -15,11 +15,11 @@ namespace System.Text.Json.Tests.Serialization
         {
             WeatherForecastWithPOCOs expected = CreateWeatherForecastWithPOCOs();
             string json = await Serializer.SerializeWrapper(expected, JsonContext.Default.WeatherForecastWithPOCOs);
-            WeatherForecastWithPOCOs actual = await Deserializer.DeserializeWrapper(json, JsonContext.Default.WeatherForecastWithPOCOs);
+            WeatherForecastWithPOCOs actual = await Serializer.DeserializeWrapper(json, JsonContext.Default.WeatherForecastWithPOCOs);
             VerifyWeatherForecastWithPOCOs(expected, actual);
 
             json = await Serializer.SerializeWrapper(actual, typeof(WeatherForecastWithPOCOs), JsonContext.Default);
-            actual = (WeatherForecastWithPOCOs)await Deserializer.DeserializeWrapper(json, typeof(WeatherForecastWithPOCOs), JsonContext.Default);
+            actual = (WeatherForecastWithPOCOs)await Serializer.DeserializeWrapper(json, typeof(WeatherForecastWithPOCOs), JsonContext.Default);
             VerifyWeatherForecastWithPOCOs(expected, actual);
         }
 
