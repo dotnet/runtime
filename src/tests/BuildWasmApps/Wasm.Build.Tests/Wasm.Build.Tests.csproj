@@ -21,6 +21,8 @@
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
     <_RunScriptEnvVars Condition="'$(OS)' != 'Windows_NT'" Include="WasmBuildSupportDir=%24{HELIX_CORRELATION_PAYLOAD}/build" />
     <_RunScriptEnvVars Condition="'$(OS)' == 'Windows_NT'" Include="WasmBuildSupportDir=%HELIX_CORRELATION_PAYLOAD%/build" />
+
+    <_RunScriptEnvVars Include="FROZEN_CACHE=true" />
   </ItemGroup>
 
   <ItemGroup>
