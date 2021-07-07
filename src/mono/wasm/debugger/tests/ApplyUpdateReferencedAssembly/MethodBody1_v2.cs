@@ -26,9 +26,9 @@ namespace ApplyUpdateReferencedAssembly
 
     public class MethodBody3 {
         public static string StaticMethod3 () {
-				bool c = true;
-				Console.WriteLine("v2");
-				return "NEWEST STRING";
+            bool c = true;
+            Console.WriteLine("v2");
+            return "NEWEST STRING";
         }
     }
 }
