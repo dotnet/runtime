@@ -149,7 +149,6 @@ namespace System.Text.Json.Serialization.Tests
         {
             public int MyInt { get; set; }
 
-            [JsonConstructor]
             public MyClassWithSmallConstructor(int myInt)
             {
                 MyInt = myInt;
@@ -229,7 +228,6 @@ namespace System.Text.Json.Serialization.Tests
             public int MyInt4 { get; set; }
             public int MyInt5 { get; set; }
 
-            [JsonConstructor]
             public MyClassWithLargeConstructor(int myInt1, int myInt2, int myInt3, int myInt4, int myInt5)
             {
                 MyInt1 = myInt1;
