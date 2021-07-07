@@ -1062,7 +1062,7 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(index)}={index}, {nameof(value)}={value}");
 
             int bytesWritten;
-            while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexing(index, value, headerBuffer.AvailableSpan, out bytesWritten))
+            while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexing(index, value, valueEncoding: null, headerBuffer.AvailableSpan, out bytesWritten))
             {
                 headerBuffer.EnsureAvailableSpace(headerBuffer.AvailableLength + 1);
             }
