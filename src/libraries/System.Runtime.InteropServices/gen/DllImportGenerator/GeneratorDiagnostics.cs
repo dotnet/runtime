@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
@@ -15,6 +16,22 @@ namespace Microsoft.Interop
             params object[] args)
         {
             IEnumerable<Location> locationsInSource = symbol.Locations.Where(l => l.IsInSource);
+            if (!locationsInSource.Any())
+                return Diagnostic.Create(descriptor, Location.None, args);
+
+            return Diagnostic.Create(
+                descriptor,
+                location: locationsInSource.First(),
+                additionalLocations: locationsInSource.Skip(1),
+                messageArgs: args);
+        }
+
+        public static Diagnostic CreateDiagnostic(
+            this ImmutableArray<Location> locations,
+            DiagnosticDescriptor descriptor,
+            params object[] args)
+        {
+            IEnumerable<Location> locationsInSource = locations.Where(l => l.IsInSource);
             if (!locationsInSource.Any())
                 return Diagnostic.Create(descriptor, Location.None, args);
 

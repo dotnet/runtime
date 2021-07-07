@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Testing;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
@@ -825,6 +827,57 @@ static class Test
 ";
             await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(NativeTypeMustBeBlittableRule).WithLocation(0).WithArguments("Native", "S"));
+        }
+
+        [Fact]
+        public async Task NonBlittableNativeTypeOnMarshalUsingParameter_MultipleCompilations_ReportsDiagnostic_WithLocation()
+        {
+            string source1 = @"
+using System;
+using System.Runtime.InteropServices;
+
+public struct S
+{
+    public string s;
+}
+
+public struct Native
+{
+    private string value;
+
+    public Native(S s) : this()
+    {
+    }
+
+    public S ToManaged() => new S();
+}
+";
+            Compilation compilation1 = await TestUtils.CreateCompilation(source1);
+
+            string source2 = @"
+using System;
+using System.Runtime.InteropServices;
+
+static class Test
+{
+    static void Foo([{|#0:MarshalUsing(typeof(Native))|}] S s)
+    {}
+}
+";
+            var test = new Verifiers.CSharpCodeFixVerifier<Microsoft.Interop.Analyzers.ManualTypeMarshallingAnalyzer, EmptyCodeFixProvider>.Test
+            {
+                ExpectedDiagnostics =
+                {
+                    VerifyCS.Diagnostic(NativeTypeMustBeBlittableRule).WithLocation(0).WithArguments("Native", "S")
+                },
+                SolutionTransforms =
+                {
+                    (solution, projectId) => solution.AddMetadataReference(projectId, compilation1.ToMetadataReference())
+                },
+                TestCode = source2
+            };
+
+            await test.RunAsync();
         }
 
         [Fact]
