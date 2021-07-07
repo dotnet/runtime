@@ -94,7 +94,7 @@ void EEClass::Destruct(MethodTable * pOwningMT)
 #ifdef PROFILING_SUPPORTED
     // If profiling, then notify the class is getting unloaded.
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackClasses());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackClasses());
         {
             // Calls to the profiler callback may throw, or otherwise fail, if
             // the profiler AVs/throws an unhandled exception/etc. We don't want
@@ -115,7 +115,7 @@ void EEClass::Destruct(MethodTable * pOwningMT)
             {
                 GCX_PREEMP();
 
-                g_profControlBlock.pProfInterface->ClassUnloadStarted((ClassID) pOwningMT);
+                (&g_profControlBlock)->ClassUnloadStarted((ClassID) pOwningMT);
             }
             EX_CATCH
             {
@@ -125,7 +125,7 @@ void EEClass::Destruct(MethodTable * pOwningMT)
             }
             EX_END_CATCH(RethrowTerminalExceptions);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -178,7 +178,7 @@ void EEClass::Destruct(MethodTable * pOwningMT)
 #ifdef PROFILING_SUPPORTED
     // If profiling, then notify the class is getting unloaded.
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackClasses());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackClasses());
         {
             // See comments in the call to ClassUnloadStarted for details on this
             // FAULT_NOT_FATAL marker and exception swallowing.
@@ -186,14 +186,14 @@ void EEClass::Destruct(MethodTable * pOwningMT)
             EX_TRY
             {
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->ClassUnloadFinished((ClassID) pOwningMT, S_OK);
+                (&g_profControlBlock)->ClassUnloadFinished((ClassID) pOwningMT, S_OK);
             }
             EX_CATCH
             {
             }
             EX_END_CATCH(RethrowTerminalExceptions);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -1170,12 +1170,13 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
                 continue;
 
             // Locate the MethodTable defining the pParentMD.
-            while (pParentMT->GetCanonicalMethodTable() != pParentMD->GetMethodTable())
+            MethodTable* pDefinitionParentMT = pParentMT;
+            while (pDefinitionParentMT->GetCanonicalMethodTable() != pParentMD->GetMethodTable())
             {
-                pParentMT = pParentMT->GetParentMethodTable();
+                pDefinitionParentMT = pDefinitionParentMT->GetParentMethodTable();
             }
 
-            SigTypeContext context1(pParentMT->GetInstantiation(), pMD->GetMethodInstantiation());
+            SigTypeContext context1(pDefinitionParentMT->GetInstantiation(), pMD->GetMethodInstantiation());
             MetaSig methodSig1(pParentMD);
             TypeHandle hType1 = methodSig1.GetReturnProps().GetTypeHandleThrowing(pParentMD->GetModule(), &context1, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
 
@@ -1902,7 +1903,8 @@ TypeHandle MethodTable::GetDefItfForComClassItf()
     InterfaceMapIterator it = IterateInterfaceMap();
     if (it.Next())
     {
-        return TypeHandle(it.GetInterface());
+        // Can use GetInterfaceApprox, as there are no generic default interfaces
+        return TypeHandle(it.GetInterfaceApprox()); 
     }
     else
     {

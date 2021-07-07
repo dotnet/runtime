@@ -2520,12 +2520,14 @@ static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
         MethodTable::InterfaceMapIterator intIt = pMT->IterateInterfaceMapFrom(intfIndex);
 
         // If the number of slots is 0, then no need to proceed
-        if (intIt.GetInterface()->GetNumVirtuals() != 0)
+        MethodTable* pItf = intIt.GetInterfaceApprox();
+        if (pItf->GetNumVirtuals() != 0)
         {
             MethodDesc *pClsMD = NULL;
+            _ASSERTE(!pItf->HasInstantiation());
 
             // Find the implementation for the first slot of the interface
-            DispatchSlot impl(pMT->FindDispatchSlot(intIt.GetInterface()->GetTypeID(), 0, FALSE /* throwOnConflict */));
+            DispatchSlot impl(pMT->FindDispatchSlot(pItf->GetTypeID(), 0, FALSE /* throwOnConflict */));
             CONSISTENCY_CHECK(!impl.IsNull());
 
             // Get the MethodDesc for this slot in the class
@@ -3725,7 +3727,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
 #ifdef PROFILING_SUPPORTED
     // Notify profiler of the CCW, so it can avoid double-counting.
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackCCW());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
 #if defined(_DEBUG)
         WCHAR rIID[40]; // {00000000-0000-0000-0000-000000000000}
         GuidToLPWSTR(m_IID, rIID, lengthof(rIID));
@@ -3735,11 +3737,11 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%#x, IID:{%08x-...}, vTbl:%#08x\n",
              pItfClass, m_IID.Data1, pUnkVtable));
 #endif
-        g_profControlBlock.pProfInterface->COMClassicVTableCreated((ClassID) TypeHandle(pItfClass).AsPtr(),
+        (&g_profControlBlock)->COMClassicVTableCreated((ClassID) TypeHandle(pItfClass).AsPtr(),
                                                                    m_IID,
                                                                    pUnkVtable,
                                                                    m_cbSlots+cbExtraSlots);
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
    }
 #endif // PROFILING_SUPPORTED
 
@@ -3991,7 +3993,7 @@ ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHan
     MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
     while (it.Next())
     {
-        MethodTable *pItfMT = it.GetInterface();
+        MethodTable *pItfMT = it.GetInterface(pMT);
         AppendInterface(pItfMT);
     }
 
@@ -4858,7 +4860,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         // Notify profiler of the CCW, so it can avoid double-counting.
         if (pTemplate->SupportsIClassX())
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackCCW());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
             // When under the profiler, we'll eagerly generate the IClassX CMT.
             pTemplate->GetClassComMT();
 
@@ -4880,11 +4882,11 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
             LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated TypeHandle:%#x, IID:{%08x-...}, vTbl:%#08x\n",
                  thClass.AsPtr(), IClassXIID.Data1, pComVtable));
 #endif
-            g_profControlBlock.pProfInterface->COMClassicVTableCreated(
+            (&g_profControlBlock)->COMClassicVTableCreated(
                 (ClassID) thClass.AsPtr(), IClassXIID, pComVtable,
                 pTemplate->m_pClassComMT->m_cbSlots +
                     ComMethodTable::GetNumExtraSlots(pTemplate->m_pClassComMT->GetInterfaceType()));
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
 #endif // PROFILING_SUPPORTED
         RETURN pTemplate;

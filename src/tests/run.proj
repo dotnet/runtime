@@ -604,6 +604,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <MonoAotOption Include="mattr=lzcnt" />
       <MonoAotOption Include="mattr=bmi" />
       <MonoAotOption Include="mattr=bmi2" />
+      <MonoAotOption Include="mattr=pclmul" />
+      <MonoAotOption Include="mattr=aes" />
     </ItemGroup>
     <PropertyGroup>
       <MonoAotOptions>@(MonoAotOption->'%(Identity)', ',')</MonoAotOptions>
@@ -646,6 +648,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x64'">x86_64</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'x86'">x86</AndroidAbi>
+      <MonoInterp>false</MonoInterp>
+      <MonoInterp Condition="'$(RuntimeVariant)' == 'monointerpreter'">true</MonoInterp>
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppDir)" />
@@ -681,14 +685,16 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         ProjectName="$(Category)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
         StripDebugSymbols="$(StripDebugSymbols)"
+        ForceInterpreter="$(MonoInterp)"
         AppDir="$(BuildDir)"
         OutputDir="$(AppDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>
     <Move SourceFiles="$(ApkBundlePath)" DestinationFiles="$(FinalApkPath)" />
-    <Message Importance="High" Text="Apk:       $(FinalApkPath)"/>
-    <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
+    <Message Importance="High" Text="Apk:        $(FinalApkPath)"/>
+    <Message Importance="High" Text="PackageId:  $(ApkPackageId)"/>
+    <Message Importance="High" Text="MonoInterp: $(MonoInterp)"/>
     <!-- delete the BuildDir in CI builds to save disk space on build agents since they're no longer needed -->
     <RemoveDir Condition="'$(ContinuousIntegrationBuild)' == 'true'" Directories="$(BuildDir)" />
   </Target>

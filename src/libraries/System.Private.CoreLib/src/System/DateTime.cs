@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System
 {
@@ -44,6 +45,17 @@ namespace System
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly partial struct DateTime : IComparable, ISpanFormattable, IConvertible, IComparable<DateTime>, IEquatable<DateTime>, ISerializable
+#if FEATURE_GENERIC_MATH
+#pragma warning disable SA1001
+        , IAdditionOperators<DateTime, TimeSpan, DateTime>,
+          IAdditiveIdentity<DateTime, TimeSpan>,
+          IComparisonOperators<DateTime, DateTime>,
+          IMinMaxValue<DateTime>,
+          ISpanParseable<DateTime>,
+          ISubtractionOperators<DateTime, TimeSpan, DateTime>,
+          ISubtractionOperators<DateTime, DateTime, TimeSpan>
+#pragma warning restore SA1001
+#endif // FEATURE_GENERIC_MATH
     {
         // Number of 100ns ticks per time unit
         private const long TicksPerMillisecond = 10000;
@@ -1503,5 +1515,113 @@ namespace System
             result = new DateTime(ticks);
             return true;
         }
+
+#if FEATURE_GENERIC_MATH
+        //
+        // IAdditionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static DateTime IAdditionOperators<DateTime, TimeSpan, DateTime>.operator +(DateTime left, TimeSpan right)
+            => left + right;
+
+        // [RequiresPreviewFeatures]
+        // static checked DateTime IAdditionOperators<DateTime, TimeSpan, DateTime>.operator +(DateTime left, TimeSpan right)
+        //     => checked(left + right);
+
+        //
+        // IAdditiveIdentity
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeSpan IAdditiveIdentity<DateTime, TimeSpan>.AdditiveIdentity
+            => default;
+
+        //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateTime, DateTime>.operator <(DateTime left, DateTime right)
+            => left < right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateTime, DateTime>.operator <=(DateTime left, DateTime right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateTime, DateTime>.operator >(DateTime left, DateTime right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<DateTime, DateTime>.operator >=(DateTime left, DateTime right)
+            => left >= right;
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<DateTime, DateTime>.operator ==(DateTime left, DateTime right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<DateTime, DateTime>.operator !=(DateTime left, DateTime right)
+            => left != right;
+
+        //
+        // IMinMaxValue
+        //
+
+        [RequiresPreviewFeatures]
+        static DateTime IMinMaxValue<DateTime>.MinValue => MinValue;
+
+        [RequiresPreviewFeatures]
+        static DateTime IMinMaxValue<DateTime>.MaxValue => MaxValue;
+
+        //
+        // IParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static DateTime IParseable<DateTime>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
+
+        [RequiresPreviewFeatures]
+        static bool IParseable<DateTime>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateTime result)
+            => TryParse(s, provider, DateTimeStyles.None, out result);
+
+        //
+        // ISpanParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static DateTime ISpanParseable<DateTime>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+            => Parse(s, provider, DateTimeStyles.None);
+
+        [RequiresPreviewFeatures]
+        static bool ISpanParseable<DateTime>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateTime result)
+            => TryParse(s, provider, DateTimeStyles.None, out result);
+
+        //
+        // ISubtractionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static DateTime ISubtractionOperators<DateTime, TimeSpan, DateTime>.operator -(DateTime left, TimeSpan right)
+            => left - right;
+
+        // [RequiresPreviewFeatures]
+        // static checked DateTime ISubtractionOperators<DateTime, TimeSpan, DateTime>.operator -(DateTime left, TimeSpan right)
+        //     => checked(left - right);
+
+        [RequiresPreviewFeatures]
+        static TimeSpan ISubtractionOperators<DateTime, DateTime, TimeSpan>.operator -(DateTime left, DateTime right)
+            => left - right;
+
+        // [RequiresPreviewFeatures]
+        // static checked TimeSpan ISubtractionOperators<DateTime, DateTime, TimeSpan>.operator -(DateTime left, DateTime right)
+        //     => checked(left - right);
+#endif // FEATURE_GENERIC_MATH
     }
 }

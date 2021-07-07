@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Text;
@@ -14,6 +12,9 @@ using System.Threading;
 using System.Threading.Tasks;
 
 #if MS_IO_REDIST
+using System;
+using System.IO;
+
 namespace Microsoft.IO
 #else
 namespace System.IO
@@ -362,52 +363,6 @@ namespace System.IO
                 return bytes;
             }
         }
-
-#if !MS_IO_REDIST
-        private static byte[] ReadAllBytesUnknownLength(FileStream fs)
-        {
-            byte[]? rentedArray = null;
-            Span<byte> buffer = stackalloc byte[512];
-            try
-            {
-                int bytesRead = 0;
-                while (true)
-                {
-                    if (bytesRead == buffer.Length)
-                    {
-                        uint newLength = (uint)buffer.Length * 2;
-                        if (newLength > MaxByteArrayLength)
-                        {
-                            newLength = (uint)Math.Max(MaxByteArrayLength, buffer.Length + 1);
-                        }
-
-                        byte[] tmp = ArrayPool<byte>.Shared.Rent((int)newLength);
-                        buffer.CopyTo(tmp);
-                        if (rentedArray != null)
-                        {
-                            ArrayPool<byte>.Shared.Return(rentedArray);
-                        }
-                        buffer = rentedArray = tmp;
-                    }
-
-                    Debug.Assert(bytesRead < buffer.Length);
-                    int n = fs.Read(buffer.Slice(bytesRead));
-                    if (n == 0)
-                    {
-                        return buffer.Slice(0, bytesRead).ToArray();
-                    }
-                    bytesRead += n;
-                }
-            }
-            finally
-            {
-                if (rentedArray != null)
-                {
-                    ArrayPool<byte>.Shared.Return(rentedArray);
-                }
-            }
-        }
-#endif
 
         public static void WriteAllBytes(string path, byte[] bytes)
         {

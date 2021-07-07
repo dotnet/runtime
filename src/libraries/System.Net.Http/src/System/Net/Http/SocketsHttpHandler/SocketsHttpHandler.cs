@@ -394,21 +394,6 @@ namespace System.Net.Http
             }
         }
 
-        /// <summary>
-        /// Gets or sets the QUIC implementation to be used for HTTP3 requests.
-        /// </summary>
-        public QuicImplementationProvider? QuicImplementationProvider
-        {
-            // !!! NOTE !!!
-            // This is temporary and will not ship.
-            get => _settings._quicImplementationProvider;
-            set
-            {
-                CheckDisposedOrStarted();
-                _settings._quicImplementationProvider = value;
-            }
-        }
-
         public IDictionary<string, object?> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object?>());
 

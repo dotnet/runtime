@@ -1718,8 +1718,8 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
 }
 
 #ifdef FEATURE_MERGE_JIT_AND_ENGINE
-EXTERN_C void __stdcall jitStartup(ICorJitHost* host);
-EXTERN_C ICorJitCompiler* __stdcall getJit();
+EXTERN_C void jitStartup(ICorJitHost* host);
+EXTERN_C ICorJitCompiler* getJit();
 #endif // FEATURE_MERGE_JIT_AND_ENGINE
 
 BOOL EEJitManager::LoadJIT()
@@ -2685,7 +2685,11 @@ void EEJitManager::allocCode(MethodDesc* pMD, size_t blockSize, size_t reserveFo
         pCodeHdr = ((CodeHeader *)pCode) - 1;
 
         *pAllocatedSize = sizeof(CodeHeader) + totalSize;
-#define FEATURE_WXORX        
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+#define FEATURE_WXORX
+#endif
+
 #ifdef FEATURE_WXORX
         pCodeHdrRW = (CodeHeader *)new BYTE[*pAllocatedSize];
 #else

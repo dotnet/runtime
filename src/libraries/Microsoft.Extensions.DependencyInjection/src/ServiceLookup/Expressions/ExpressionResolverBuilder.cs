@@ -117,11 +117,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return ScopeParameter;
         }
 
-        protected override Expression VisitServiceScopeFactory(ServiceScopeFactoryCallSite serviceScopeFactoryCallSite, object context)
-        {
-            return Expression.Constant(serviceScopeFactoryCallSite.Value);
-        }
-
         protected override Expression VisitFactory(FactoryCallSite factoryCallSite, object context)
         {
             return Expression.Invoke(Expression.Constant(factoryCallSite.Factory), ScopeParameter);

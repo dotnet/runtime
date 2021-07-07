@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Fakes;
 using Microsoft.Extensions.DependencyInjection.Specification;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
@@ -81,6 +82,70 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        public void MultipleServicesAreOrdered(int numberOfServices)
+        {
+            // Arrange
+            var collection = new ServiceCollection();
+
+            var serviceDescriptors = new[] {
+                ServiceDescriptor.Singleton<ICustomService, CustomService1>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService2>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService3>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService4>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService5>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService6>()
+            };
+
+            var serviceTypes = new[]
+            {
+                typeof(CustomService1),
+                typeof(CustomService2),
+                typeof(CustomService3),
+                typeof(CustomService4),
+                typeof(CustomService5),
+                typeof(CustomService6),
+            };
+
+            foreach (var sd in serviceDescriptors.Take(numberOfServices))
+            {
+                collection.Add(sd);
+            }
+
+            var provider = collection.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateOnBuild = true
+            });
+
+            // Act and Assert
+            var customServices = provider.GetService<IEnumerable<ICustomService>>().ToArray();
+
+            Assert.Equal(numberOfServices, customServices.Length);
+
+            for (int i = 0; i < numberOfServices; i++)
+            {
+                Assert.IsAssignableFrom(serviceTypes[i], customServices[i]);
+            }
+        }
+
+        interface ICustomService
+        {
+
+        }
+
+        class CustomService1 : ICustomService { }
+        class CustomService2 : ICustomService { }
+        class CustomService3 : ICustomService { }
+        class CustomService4 : ICustomService { }
+        class CustomService5 : ICustomService { }
+        class CustomService6 : ICustomService { }
+
+        [Theory]
         // GenericTypeDefintion, Abstract GenericTypeDefintion
         [InlineData(typeof(IFakeOpenGenericService<>), typeof(AbstractFakeOpenGenericService<>))]
         // GenericTypeDefintion, Interface GenericTypeDefintion
@@ -121,11 +186,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
             get
             {
-				Type serviceType = typeof(IFakeOpenGenericService<>);
-				// Service type is GenericTypeDefintion, implementation type is ConstructedGenericType
-                yield return new object[] {serviceType, typeof(ClassWithNoConstraints<string>), $"Open generic service type '{serviceType}' requires registering an open generic implementation type."};
-				// Service type is GenericTypeDefintion, implementation type has different generic type definition arity
-                yield return new object[] {serviceType, typeof(FakeOpenGenericServiceWithTwoTypeArguments<,>), $"Arity of open generic service type '{serviceType}' does not equal arity of open generic implementation type '{typeof(FakeOpenGenericServiceWithTwoTypeArguments<,>)}'."};
+                Type serviceType = typeof(IFakeOpenGenericService<>);
+                // Service type is GenericTypeDefintion, implementation type is ConstructedGenericType
+                yield return new object[] { serviceType, typeof(ClassWithNoConstraints<string>), $"Open generic service type '{serviceType}' requires registering an open generic implementation type." };
+                // Service type is GenericTypeDefintion, implementation type has different generic type definition arity
+                yield return new object[] { serviceType, typeof(FakeOpenGenericServiceWithTwoTypeArguments<,>), $"Arity of open generic service type '{serviceType}' does not equal arity of open generic implementation type '{typeof(FakeOpenGenericServiceWithTwoTypeArguments<,>)}'." };
             }
         }
 
@@ -566,8 +631,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                         sb.Append("4");
                     }
 
-                // Let Thread 1 over take Thread 2
-                Thing1 value = lazy.Value;
+                    // Let Thread 1 over take Thread 2
+                    Thing1 value = lazy.Value;
                     return value;
                 });
                 services.AddSingleton<Thing2>();
@@ -631,7 +696,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                     sb.Append("3");
                     mreForThread2.Set();   // Now that thread 1 holds lazy lock, allow thread 2 to continue
 
-                thing3 = sp.GetRequiredService<Thing3>();
+                    thing3 = sp.GetRequiredService<Thing3>();
                     return new Thing4(thing3);
                 });
 
@@ -1012,7 +1077,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        private class FakeMultipleServiceWithIEnumerableDependency: IFakeMultipleService
+        private class FakeMultipleServiceWithIEnumerableDependency : IFakeMultipleService
         {
             public FakeMultipleServiceWithIEnumerableDependency(IEnumerable<IFakeService> fakeServices)
             {
@@ -1125,7 +1190,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<A>>().Value, sp.GetRequiredService<A>());
         }
-        
+
         [Theory]
         [InlineData(ServiceProviderMode.Default)]
         [InlineData(ServiceProviderMode.Dynamic)]

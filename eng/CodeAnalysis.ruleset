@@ -126,6 +126,7 @@
     <Rule Id="CA1844" Action="Warning" />       <!-- Provide memory-based overrides of async methods when subclassing 'Stream' -->
     <Rule Id="CA1845" Action="Warning" />       <!-- Use span-based 'string.Concat' -->
     <Rule Id="CA1846" Action="Warning" />       <!-- Prefer 'AsSpan' over 'Substring' -->
+    <Rule Id="CA1847" Action="Warning" />       <!-- Use char literal for a single character lookup -->
     <Rule Id="CA2000" Action="None" />          <!-- Dispose objects before losing scope -->
     <Rule Id="CA2002" Action="None" />          <!-- Do not lock on objects with weak identity -->
     <Rule Id="CA2007" Action="Warning" />       <!-- Consider calling ConfigureAwait on the awaited task -->

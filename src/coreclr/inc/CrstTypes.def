@@ -433,7 +433,7 @@ Crst SingleUseLock
 End
 
 Crst UnwindInfoTableLock
-	AcquiredAfter StubUnwindInfoHeapSegments SingleUseLock
+    AcquiredAfter StubUnwindInfoHeapSegments SingleUseLock
     AcquiredBefore StressLog
 End
 

@@ -270,10 +270,10 @@ void ProfilerCallAssemblyUnloadStarted(Assembly* assemblyUnloaded)
 {
     WRAPPER_NO_CONTRACT;
     {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
+        BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
         GCX_PREEMP();
-        g_profControlBlock.pProfInterface->AssemblyUnloadStarted((AssemblyID)assemblyUnloaded);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AssemblyUnloadStarted((AssemblyID)assemblyUnloaded);
+        END_PROFILER_CALLBACK();
     }
 }
 
@@ -281,10 +281,10 @@ void ProfilerCallAssemblyUnloadFinished(Assembly* assemblyUnloaded)
 {
     WRAPPER_NO_CONTRACT;
     {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
+        BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
         GCX_PREEMP();
-        g_profControlBlock.pProfInterface->AssemblyUnloadFinished((AssemblyID) assemblyUnloaded, S_OK);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AssemblyUnloadFinished((AssemblyID) assemblyUnloaded, S_OK);
+        END_PROFILER_CALLBACK();
     }
 }
 #endif
@@ -347,10 +347,10 @@ Assembly * Assembly::Create(
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAssemblyLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
         GCX_COOP();
-        g_profControlBlock.pProfInterface->AssemblyLoadStarted((AssemblyID)(Assembly *) pAssembly);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AssemblyLoadStarted((AssemblyID)(Assembly *) pAssembly);
+        END_PROFILER_CALLBACK();
     }
 
     // Need TRY/HOOK instead of holder so we can get HR of exception thrown for profiler callback
@@ -363,11 +363,11 @@ Assembly * Assembly::Create(
     EX_HOOK
     {
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackAssemblyLoads());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
             GCX_COOP();
-            g_profControlBlock.pProfInterface->AssemblyLoadFinished((AssemblyID)(Assembly *) pAssembly,
+            (&g_profControlBlock)->AssemblyLoadFinished((AssemblyID)(Assembly *) pAssembly,
                                                                     GET_EXCEPTION()->GetHR());
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
     EX_END_HOOK;

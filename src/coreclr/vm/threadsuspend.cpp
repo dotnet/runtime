@@ -401,12 +401,12 @@ retry:
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
         if (str == STR_Success)
         {
-            g_profControlBlock.pProfInterface->RuntimeThreadSuspended((ThreadID)this);
+            (&g_profControlBlock)->RuntimeThreadSuspended((ThreadID)this);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -456,12 +456,12 @@ DWORD Thread::ResumeThread()
     }
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
         if ((res != 0) && (res != (DWORD)-1))
         {
-            g_profControlBlock.pProfInterface->RuntimeThreadResumed((ThreadID)this);
+            (&g_profControlBlock)->RuntimeThreadResumed((ThreadID)this);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif
     return res;
@@ -2142,12 +2142,12 @@ void Thread::RareDisablePreemptiveGC()
                 // If profiler desires GC events, notify it that this thread is waiting until the GC is over
                 // Do not send suspend notifications for debugger suspensions
                 {
-                    BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+                    BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
                     if (!(m_State & TS_DebugSuspendPending))
                     {
-                        g_profControlBlock.pProfInterface->RuntimeThreadSuspended((ThreadID)this);
+                        (&g_profControlBlock)->RuntimeThreadSuspended((ThreadID)this);
                     }
-                    END_PIN_PROFILER();
+                    END_PROFILER_CALLBACK();
                 }
 #endif // PROFILING_SUPPORTED
 
@@ -2168,9 +2168,9 @@ void Thread::RareDisablePreemptiveGC()
 #ifdef PROFILING_SUPPORTED
                 // Let the profiler know that this thread is resuming
                 {
-                    BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-                    g_profControlBlock.pProfInterface->RuntimeThreadResumed((ThreadID)this);
-                    END_PIN_PROFILER();
+                    BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
+                    (&g_profControlBlock)->RuntimeThreadResumed((ThreadID)this);
+                    END_PROFILER_CALLBACK();
                 }
 #endif // PROFILING_SUPPORTED
             }
@@ -3226,12 +3226,12 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     // If the profiler desires information about GCs, then let it know that one
     // is starting.
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
         _ASSERTE(reason != ThreadSuspend::SUSPEND_FOR_DEBUGGER);
         _ASSERTE(reason != ThreadSuspend::SUSPEND_FOR_DEBUGGER_SWEEP);
 
         {
-            g_profControlBlock.pProfInterface->RuntimeSuspendStarted(
+            (&g_profControlBlock)->RuntimeSuspendStarted(
                 GCSuspendReasonToProfSuspendReason(reason));
         }
         if (pCurThread)
@@ -3239,9 +3239,9 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
             // Notify the profiler that the thread that is actually doing the GC is 'suspended',
             // meaning that it is doing stuff other than run the managed code it was before the
             // GC started.
-            g_profControlBlock.pProfInterface->RuntimeThreadSuspended((ThreadID)pCurThread);
+            (&g_profControlBlock)->RuntimeThreadSuspended((ThreadID)pCurThread);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -3588,9 +3588,9 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 #ifdef PROFILING_SUPPORTED
     // If a profiler is keeping track of GC events, notify it
     {
-    BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-    g_profControlBlock.pProfInterface->RuntimeSuspendFinished();
-    END_PIN_PROFILER();
+    BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
+    (&g_profControlBlock)->RuntimeSuspendFinished();
+    END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -3711,12 +3711,12 @@ void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded)
 #ifdef PROFILING_SUPPORTED
     // Need to give resume event for the GC thread
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
         if (pCurThread)
         {
-            g_profControlBlock.pProfInterface->RuntimeThreadResumed((ThreadID)pCurThread);
+            (&g_profControlBlock)->RuntimeThreadResumed((ThreadID)pCurThread);
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -3739,10 +3739,10 @@ void ThreadSuspend::ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded)
     // This thread is logically "resuming" from a GC now.  Tell the profiler.
     //
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
         GCX_PREEMP();
-        g_profControlBlock.pProfInterface->RuntimeResumeFinished();
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->RuntimeResumeFinished();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -5481,9 +5481,9 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
     // corresponding call to RuntimeSuspendStarted is done at a lower architectural layer,
     // in ThreadSuspend::SuspendRuntime.
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackSuspends());
-        g_profControlBlock.pProfInterface->RuntimeResumeStarted();
-        END_PIN_PROFILER();
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackSuspends());
+        (&g_profControlBlock)->RuntimeResumeStarted();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 

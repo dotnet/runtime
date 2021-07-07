@@ -33,7 +33,7 @@ class ExecutableWriterHolder
         if (m_addressRX != NULL)
         {
             // TODO: mapping / unmapping for targets using double memory mapping  will be added with the double mapped allocator addition 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_OSX) && defined(HOST_ARM64) && !defined(DACCESS_COMPILE)
             PAL_JitWriteProtect(false);
 #endif
         }
@@ -63,7 +63,7 @@ public:
     {
         m_addressRX = addressRX;
         m_addressRW = addressRX;
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_OSX) && defined(HOST_ARM64) && !defined(DACCESS_COMPILE)
         PAL_JitWriteProtect(true);
 #endif
     }

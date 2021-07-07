@@ -122,9 +122,6 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 #ifdef TARGET_AMD64
     // This will be set before final frame layout.
     compiler->compVSQuirkStackPaddingNeeded = 0;
-
-    // Set to true if we perform the Quirk that fixes the PPP issue
-    compiler->compQuirkForPPPflag = false;
 #endif // TARGET_AMD64
 
     //  Initialize the IP-mapping logic.
@@ -7454,7 +7451,7 @@ void CodeGen::genFnProlog()
     // Establish the AMD64 frame pointer after the OS-reported prolog.
     if (doubleAlignOrFramePointerUsed())
     {
-        bool reportUnwindData = compiler->compLocallocUsed || compiler->opts.compDbgEnC;
+        const bool reportUnwindData = compiler->compLocallocUsed || compiler->opts.compDbgEnC;
         genEstablishFramePointer(compiler->codeGen->genSPtoFPdelta(), reportUnwindData);
     }
 #endif // TARGET_AMD64
@@ -8147,7 +8144,31 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     /* Compute the size in bytes we've pushed/popped */
 
-    if (!doubleAlignOrFramePointerUsed())
+    bool removeEbpFrame = doubleAlignOrFramePointerUsed();
+
+#ifdef TARGET_AMD64
+    // We only remove the EBP frame using the frame pointer (using `lea rsp, [rbp + const]`)
+    // if we reported the frame pointer in the prolog. The Windows x64 unwinding ABI specifically
+    // disallows this `lea` form:
+    //
+    //    See https://docs.microsoft.com/en-us/cpp/build/prolog-and-epilog?view=msvc-160#epilog-code
+    //
+    //    "When a frame pointer is not used, the epilog must use add RSP,constant to deallocate the fixed part of the
+    //    stack. It may not use lea RSP,constant[RSP] instead. This restriction exists so the unwind code has fewer
+    //    patterns to recognize when searching for epilogs."
+    //
+    // Otherwise, we must use `add RSP, constant`, as stated. So, we need to use the same condition
+    // as genFnProlog() used in determining whether to report the frame pointer in the unwind data.
+    // This is a subset of the `doubleAlignOrFramePointerUsed()` cases.
+    //
+    if (removeEbpFrame)
+    {
+        const bool reportUnwindData = compiler->compLocallocUsed || compiler->opts.compDbgEnC;
+        removeEbpFrame              = removeEbpFrame && reportUnwindData;
+    }
+#endif // TARGET_AMD64
+
+    if (!removeEbpFrame)
     {
         // We have an ESP frame */
 
@@ -8176,6 +8197,15 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         }
 
         genPopCalleeSavedRegisters();
+
+#ifdef TARGET_AMD64
+        // In the case where we have an RSP frame, and no frame pointer reported in the OS unwind info,
+        // but we do have a pushed frame pointer and established frame chain, we do need to pop RBP.
+        if (doubleAlignOrFramePointerUsed())
+        {
+            inst_RV(INS_pop, REG_EBP, TYP_I_IMPL);
+        }
+#endif // TARGET_AMD64
 
         // Extra OSR adjust to get to where RBP was saved by the original frame, and
         // restore RBP.
@@ -11700,7 +11730,8 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveRange::dumpVariableLiveRa
     const CodeGenInterface* codeGen) const
 {
     codeGen->dumpSiVarLoc(&m_VarLocation);
-    printf(" [ ");
+
+    printf(" [");
     m_StartEmitLocation.Print(codeGen->GetCompiler()->compMethodID);
     printf(", ");
     if (m_EndEmitLocation.Valid())
@@ -11709,9 +11740,9 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveRange::dumpVariableLiveRa
     }
     else
     {
-        printf("NON_CLOSED_RANGE");
+        printf("...");
     }
-    printf(" ]; ");
+    printf("]");
 }
 
 // Dump "VariableLiveRange" when code has been generated and we have the assembly native offset of each "emitLocation"
@@ -11727,7 +11758,7 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveRange::dumpVariableLiveRa
     // If this is an open "VariableLiveRange", "m_EndEmitLocation" is non-valid and print -1
     UNATIVE_OFFSET endAssemblyOffset = m_EndEmitLocation.Valid() ? m_EndEmitLocation.CodeOffset(emit) : -1;
 
-    printf(" [%X , %X )", m_StartEmitLocation.CodeOffset(emit), m_EndEmitLocation.CodeOffset(emit));
+    printf(" [%X, %X)", m_StartEmitLocation.CodeOffset(emit), m_EndEmitLocation.CodeOffset(emit));
 }
 
 //------------------------------------------------------------------------
@@ -11971,25 +12002,31 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::updateLiveRan
 void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::dumpAllRegisterLiveRangesForBlock(
     emitter* emit, const CodeGenInterface* codeGen) const
 {
-    printf("[");
+    bool first = true;
     for (LiveRangeListIterator it = m_VariableLiveRanges->begin(); it != m_VariableLiveRanges->end(); it++)
     {
+        if (!first)
+        {
+            printf("; ");
+        }
         it->dumpVariableLiveRange(emit, codeGen);
+        first = false;
     }
-    printf("]\n");
 }
 
 void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::dumpRegisterLiveRangesForBlockBeforeCodeGenerated(
     const CodeGenInterface* codeGen) const
 {
-    noway_assert(codeGen != nullptr);
-
-    printf("[");
+    bool first = true;
     for (LiveRangeListIterator it = m_VariableLifeBarrier->getStartForDump(); it != m_VariableLiveRanges->end(); it++)
     {
+        if (!first)
+        {
+            printf("; ");
+        }
         it->dumpVariableLiveRange(codeGen);
+        first = false;
     }
-    printf("]\n");
 }
 
 // Returns true if a live range for this variable has been recorded
@@ -12428,41 +12465,33 @@ void CodeGenInterface::VariableLiveKeeper::psiClosePrologVariableRanges()
 #ifdef DEBUG
 void CodeGenInterface::VariableLiveKeeper::dumpBlockVariableLiveRanges(const BasicBlock* block)
 {
-    // "block" will be dereferenced
-    noway_assert(block != nullptr);
+    assert(block != nullptr);
 
     bool hasDumpedHistory = false;
 
-    if (m_Compiler->verbose)
+    printf("\nVariable Live Range History Dump for " FMT_BB "\n", block->bbNum);
+
+    if (m_Compiler->opts.compDbgInfo)
     {
-        printf("////////////////////////////////////////\n");
-        printf("////////////////////////////////////////\n");
-        printf("Variable Live Range History Dump for Block %d \n", block->bbNum);
-
-        if (m_Compiler->opts.compDbgInfo)
+        for (unsigned int varNum = 0; varNum < m_LiveDscCount; varNum++)
         {
-            for (unsigned int varNum = 0; varNum < m_LiveDscCount; varNum++)
-            {
-                VariableLiveDescriptor* varLiveDsc = m_vlrLiveDsc + varNum;
+            VariableLiveDescriptor* varLiveDsc = m_vlrLiveDsc + varNum;
 
-                if (varLiveDsc->hasVarLiveRangesFromLastBlockToDump())
-                {
-                    hasDumpedHistory = true;
-                    printf("IL Var Num %d:\n", m_Compiler->compMap2ILvarNum(varNum));
-                    varLiveDsc->dumpRegisterLiveRangesForBlockBeforeCodeGenerated(m_Compiler->codeGen);
-                    varLiveDsc->endBlockLiveRanges();
-                }
+            if (varLiveDsc->hasVarLiveRangesFromLastBlockToDump())
+            {
+                hasDumpedHistory = true;
+                m_Compiler->gtDispLclVar(varNum, false);
+                printf(": ");
+                varLiveDsc->dumpRegisterLiveRangesForBlockBeforeCodeGenerated(m_Compiler->codeGen);
+                varLiveDsc->endBlockLiveRanges();
+                printf("\n");
             }
         }
+    }
 
-        if (!hasDumpedHistory)
-        {
-            printf("..None..\n");
-        }
-
-        printf("////////////////////////////////////////\n");
-        printf("////////////////////////////////////////\n");
-        printf("End Generating code for Block %d \n", block->bbNum);
+    if (!hasDumpedHistory)
+    {
+        printf("..None..\n");
     }
 }
 
@@ -12470,35 +12499,91 @@ void CodeGenInterface::VariableLiveKeeper::dumpLvaVariableLiveRanges() const
 {
     bool hasDumpedHistory = false;
 
-    if (m_Compiler->verbose)
+    printf("VARIABLE LIVE RANGES:\n");
+
+    if (m_Compiler->opts.compDbgInfo)
     {
-        printf("////////////////////////////////////////\n");
-        printf("////////////////////////////////////////\n");
-        printf("PRINTING VARIABLE LIVE RANGES:\n");
-
-        if (m_Compiler->opts.compDbgInfo)
+        for (unsigned int varNum = 0; varNum < m_LiveDscCount; varNum++)
         {
-            for (unsigned int varNum = 0; varNum < m_LiveDscCount; varNum++)
-            {
-                VariableLiveDescriptor* varLiveDsc = m_vlrLiveDsc + varNum;
+            VariableLiveDescriptor* varLiveDsc = m_vlrLiveDsc + varNum;
 
-                if (varLiveDsc->hasVarLiveRangesToDump())
-                {
-                    hasDumpedHistory = true;
-                    printf("IL Var Num %d:\n", m_Compiler->compMap2ILvarNum(varNum));
-                    varLiveDsc->dumpAllRegisterLiveRangesForBlock(m_Compiler->GetEmitter(), m_Compiler->codeGen);
-                }
+            if (varLiveDsc->hasVarLiveRangesToDump())
+            {
+                hasDumpedHistory = true;
+                m_Compiler->gtDispLclVar(varNum, false);
+                printf(": ");
+                varLiveDsc->dumpAllRegisterLiveRangesForBlock(m_Compiler->GetEmitter(), m_Compiler->codeGen);
+                printf("\n");
             }
         }
+    }
 
-        if (!hasDumpedHistory)
-        {
-            printf("..None..\n");
-        }
-
-        printf("////////////////////////////////////////\n");
-        printf("////////////////////////////////////////\n");
+    if (!hasDumpedHistory)
+    {
+        printf("..None..\n");
     }
 }
 #endif // DEBUG
 #endif // USING_VARIABLE_LIVE_RANGE
+
+//-----------------------------------------------------------------------------
+// genPoisonFrame: Generate code that places a recognizable value into address exposed variables.
+//
+// Remarks:
+//   This function emits code to poison address exposed non-zero-inited local variables. We expect this function
+//   to be called when emitting code for the scratch BB that comes right after the prolog.
+//   The variables are poisoned using 0xcdcdcdcd.
+void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
+{
+    assert(compiler->compShouldPoisonFrame());
+    assert((regLiveIn & genRegMask(REG_SCRATCH)) == 0);
+
+    // The first time we need to poison something we will initialize a register to the largest immediate cccccccc that
+    // we can fit.
+    bool hasPoisonImm = false;
+    for (unsigned varNum = 0; varNum < compiler->info.compLocalsCount; varNum++)
+    {
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+        if (varDsc->lvIsParam || varDsc->lvMustInit || !varDsc->lvAddrExposed)
+        {
+            continue;
+        }
+
+        assert(varDsc->lvOnFrame);
+
+        if (!hasPoisonImm)
+        {
+#ifdef TARGET_64BIT
+            genSetRegToIcon(REG_SCRATCH, (ssize_t)0xcdcdcdcdcdcdcdcd, TYP_LONG);
+#else
+            genSetRegToIcon(REG_SCRATCH, (ssize_t)0xcdcdcdcd, TYP_INT);
+#endif
+            hasPoisonImm = true;
+        }
+
+// For 64-bit we check if the local is 8-byte aligned. For 32-bit, we assume everything is always 4-byte aligned.
+#ifdef TARGET_64BIT
+        bool fpBased;
+        int  addr = compiler->lvaFrameAddress((int)varNum, &fpBased);
+#else
+        int addr = 0;
+#endif
+        int size = (int)compiler->lvaLclSize(varNum);
+        int end  = addr + size;
+        for (int offs = addr; offs < end;)
+        {
+#ifdef TARGET_64BIT
+            if ((offs % 8) == 0 && end - offs >= 8)
+            {
+                GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, (int)varNum, offs - addr);
+                offs += 8;
+                continue;
+            }
+#endif
+
+            assert((offs % 4) == 0 && end - offs >= 4);
+            GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, REG_SCRATCH, (int)varNum, offs - addr);
+            offs += 4;
+        }
+    }
+}

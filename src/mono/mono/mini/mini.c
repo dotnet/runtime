@@ -71,7 +71,6 @@
 #include "jit-icalls.h"
 
 #include "mini-gc.h"
-#include "debugger-agent.h"
 #include "llvm-runtime.h"
 #include "mini-llvm.h"
 #include "lldb.h"
@@ -2940,13 +2939,18 @@ remove_empty_finally_pass (MonoCompile *cfg)
 				}
 			}
 			if (empty) {
-				bb->flags &= ~BB_EXCEPTION_HANDLER;
+				/* Nullify OP_START_HANDLER */
 				NULLIFY_INS (first);
 				last = mono_bb_last_inst (bb, 0);
 				if (last->opcode == OP_ENDFINALLY)
 					NULLIFY_INS (last);
 				if (cfg->verbose_level > 1)
 					g_print ("removed empty finally clause %d.\n", i);
+
+				/* Mark the handler bb as not used anymore */
+				bb = cfg->cil_offset_to_bb [clause->handler_offset];
+				bb->flags &= ~BB_EXCEPTION_HANDLER;
+
 				cfg->clause_is_dead [i] = TRUE;
 				remove_call_handler = TRUE;
 			}
@@ -2956,17 +2960,13 @@ remove_empty_finally_pass (MonoCompile *cfg)
 	if (remove_call_handler) {
 		/* Remove OP_CALL_HANDLER opcodes pointing to the removed finally blocks */
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			MonoInst *handler_ins = NULL;
 			MONO_BB_FOR_EACH_INS (bb, ins) {
 				if (ins->opcode == OP_CALL_HANDLER && ins->inst_target_bb && !(ins->inst_target_bb->flags & BB_EXCEPTION_HANDLER)) {
-					handler_ins = ins;
+					NULLIFY_INS (ins);
+					for (MonoInst *ins2 = ins->next; ins2; ins2 = ins2->next)
+						NULLIFY_INS (ins2);
 					break;
 				}
-			}
-			if (handler_ins) {
-				handler_ins->opcode = OP_BR;
-				for (ins = handler_ins->next; ins; ins = ins->next)
-					NULLIFY_INS (ins);
 			}
 		}
 	}
@@ -3059,6 +3059,23 @@ is_simd_supported (MonoCompile *cfg)
 		return FALSE;
 #endif
 	return TRUE;
+}
+
+/* Determine how an rgctx is passed to a method */
+MonoRgctxAccess
+mini_get_rgctx_access_for_method (MonoMethod *method)
+{
+	/* gshared dim methods use an mrgctx */
+	if (mini_method_is_default_method (method))
+		return MONO_RGCTX_ACCESS_MRGCTX;
+
+	if (mono_method_get_context (method)->method_inst)
+		return MONO_RGCTX_ACCESS_MRGCTX;
+
+	if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass))
+		return MONO_RGCTX_ACCESS_VTABLE;
+
+	return MONO_RGCTX_ACCESS_THIS;
 }
 
 /*
@@ -3206,6 +3223,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	cfg->interp_entry_only = interp_entry_only;
 	if (try_generic_shared)
 		cfg->gshared = TRUE;
+	if (cfg->gshared)
+		cfg->rgctx_access = mini_get_rgctx_access_for_method (cfg->method);
 	cfg->compile_llvm = try_llvm;
 	cfg->token_info_hash = g_hash_table_new (NULL, NULL);
 	if (cfg->compile_aot)
@@ -3307,7 +3326,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		if (COMPILE_LLVM (cfg)) {
 			mono_llvm_check_method_supported (cfg);
 			if (cfg->disable_llvm) {
-				if (cfg->verbose_level >= (cfg->llvm_only ? 0 : 1)) {
+				if (cfg->verbose_level > 0) {
 					//nm = mono_method_full_name (cfg->method, TRUE);
 					printf ("LLVM failed for '%s.%s': %s\n", m_class_get_name (method->klass), method->name, cfg->exception_message);
 					//g_free (nm);
@@ -3523,6 +3542,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->opt &= ~MONO_OPT_BRANCH;
 	}
 
+	cfg->after_method_to_ir = TRUE;
+
 	/* todo: remove code when we have verified that the liveness for try/catch blocks
 	 * works perfectly 
 	 */
@@ -3596,8 +3617,19 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		mono_cfg_dump_ir (cfg, "if_conversion");
 	}
 
-	// This still causes failures
 	remove_empty_finally_pass (cfg);
+
+	if (cfg->llvm_only && cfg->interp && !cfg->method->wrapper_type && !interp_entry_only) {
+		/* Disable llvm if there are still finally clauses left */
+		for (int i = 0; i < cfg->header->num_clauses; ++i) {
+			MonoExceptionClause *clause = &header->clauses [i];
+			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY && !cfg->clause_is_dead [i]) {
+				cfg->exception_message = g_strdup ("finally clause.");
+				cfg->disable_llvm = TRUE;
+				break;
+			}
+		}
+	}
 
 	mono_threads_safepoint ();
 
@@ -3848,7 +3880,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		if (!cfg->disable_llvm)
 			mono_llvm_emit_method (cfg);
 		if (cfg->disable_llvm) {
-			if (cfg->verbose_level >= (cfg->llvm_only ? 0 : 1)) {
+			if (cfg->verbose_level > 0) {
 				//nm = mono_method_full_name (cfg->method, TRUE);
 				printf ("LLVM failed for '%s.%s': %s\n", m_class_get_name (method->klass), method->name, cfg->exception_message);
 				//g_free (nm);

@@ -124,6 +124,7 @@ struct InterpMethod {
 	MonoType *rtype;
 	MonoType **param_types;
 	MonoJitInfo *jinfo;
+	MonoFtnDesc *ftndesc;
 
 	guint32 locals_size;
 	guint32 alloca_size;

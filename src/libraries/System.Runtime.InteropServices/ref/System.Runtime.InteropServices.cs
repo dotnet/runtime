@@ -760,6 +760,27 @@ namespace System.Runtime.InteropServices
         public static bool TryLoad(string libraryPath, out System.IntPtr handle) { throw null; }
         public static bool TryLoad(string libraryName, System.Reflection.Assembly assembly, System.Runtime.InteropServices.DllImportSearchPath? searchPath, out System.IntPtr handle) { throw null; }
     }
+    public static unsafe partial class NativeMemory
+    {
+        [System.CLSCompliantAttribute(false)]
+        public static void* AlignedAlloc(nuint byteCount, nuint alignment) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void AlignedFree(void* ptr) { }
+        [System.CLSCompliantAttribute(false)]
+        public static void* AlignedRealloc(void* ptr, nuint byteCount, nuint alignment) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void* Alloc(nuint byteCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void* Alloc(nuint elementCount, nuint elementSize) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void* AllocZeroed(nuint byteCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void* AllocZeroed(nuint elementCount, nuint elementSize) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void Free(void* ptr) { }
+        [System.CLSCompliantAttribute(false)]
+        public static void* Realloc(void* ptr, nuint byteCount) { throw null; }
+    }
     public readonly struct NFloat : IEquatable<NFloat>
     {
         public NFloat(float value) { }

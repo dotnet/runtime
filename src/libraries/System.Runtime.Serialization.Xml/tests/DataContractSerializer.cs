@@ -1394,6 +1394,30 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_RootNameAndNamespaceThroughSettings()
+    {
+        var xmlDictionary = new XmlDictionary();
+        var obj = new MyOtherType() { Str = "Hello" };
+        var settings = new DataContractSerializerSettings() { RootName = xmlDictionary.Add("ChangedRoot"), RootNamespace = xmlDictionary.Add("http://changedNamespace") };
+        Func<DataContractSerializer> serializerFactory = () => new DataContractSerializer(typeof(MyOtherType), settings);
+        string baselineXml = @"<ChangedRoot xmlns=""http://changedNamespace"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><a:Str>Hello</a:Str></ChangedRoot>";
+        var result = DataContractSerializerHelper.SerializeAndDeserialize(obj, baselineXml, serializerFactory: serializerFactory);
+        Assert.Equal("Hello", result.Str);
+    }
+
+    [Fact]
+    public static void DCS_RootNameWithoutNamespaceThroughSettings()
+    {
+        var xmlDictionary = new XmlDictionary();
+        var obj = new MyOtherType() { Str = "Hello" };
+        var settings = new DataContractSerializerSettings() { RootName = xmlDictionary.Add("ChangedRoot") };
+        Func<DataContractSerializer> serializerFactory = () => new DataContractSerializer(typeof(MyOtherType), settings);
+        string baselineXml = @"<ChangedRoot xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><a:Str>Hello</a:Str></ChangedRoot>";
+        var result = DataContractSerializerHelper.SerializeAndDeserialize(obj, baselineXml, serializerFactory: serializerFactory);
+        Assert.Equal("Hello", result.Str);
+    }
+
+    [Fact]
     public static void DCS_KnownTypesThroughConstructor()
     {
         //Constructor# 5

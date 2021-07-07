@@ -33,7 +33,6 @@ namespace System.Text.Json.SourceGeneration
         /// <param name="executionContext"></param>
         public void Execute(GeneratorExecutionContext executionContext)
         {
-            //if (!Diagnostics.Debugger.IsAttached) { Diagnostics.Debugger.Launch(); };
             SyntaxReceiver receiver = (SyntaxReceiver)executionContext.SyntaxReceiver;
             List<ClassDeclarationSyntax>? contextClasses = receiver.ClassDeclarationSyntaxList;
             if (contextClasses == null)

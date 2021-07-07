@@ -2438,15 +2438,15 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
 
 bool GenTree::gtIsValid64RsltMul()
 {
-    if ((gtOper != GT_MUL) || !(gtFlags & GTF_MUL_64RSLT))
+    if (!OperIs(GT_MUL) || !Is64RsltMul())
     {
         return false;
     }
 
-    GenTree* op1 = AsOp()->gtOp1;
-    GenTree* op2 = AsOp()->gtOp2;
+    GenTree* op1 = AsOp()->gtGetOp1();
+    GenTree* op2 = AsOp()->gtGetOp2();
 
-    if (TypeGet() != TYP_LONG || op1->TypeGet() != TYP_LONG || op2->TypeGet() != TYP_LONG)
+    if (!TypeIs(TYP_LONG) || !op1->TypeIs(TYP_LONG) || !op2->TypeIs(TYP_LONG))
     {
         return false;
     }
@@ -2456,26 +2456,30 @@ bool GenTree::gtIsValid64RsltMul()
         return false;
     }
 
-    // op1 has to be conv.i8(i4Expr)
-    if ((op1->gtOper != GT_CAST) || (genActualType(op1->CastFromType()) != TYP_INT))
+    // op1 has to be CAST(long <- int).
+    if (!(op1->OperIs(GT_CAST) && genActualTypeIsInt(op1->AsCast()->CastOp())))
     {
         return false;
     }
 
-    // op2 has to be conv.i8(i4Expr)
-    if ((op2->gtOper != GT_CAST) || (genActualType(op2->CastFromType()) != TYP_INT))
+    // op2 has to be CAST(long <- int) or a suitably small constant.
+    if (!(op2->OperIs(GT_CAST) && genActualTypeIsInt(op2->AsCast()->CastOp())) &&
+        !(op2->IsIntegralConst() && FitsIn<int32_t>(op2->AsIntConCommon()->IntegralValue())))
     {
         return false;
     }
 
-    // The signedness of both casts must be the same
-    if (((op1->gtFlags & GTF_UNSIGNED) != 0) != ((op2->gtFlags & GTF_UNSIGNED) != 0))
+    // Both operands must extend the same way.
+    bool op1ZeroExtends = op1->IsUnsigned();
+    bool op2ZeroExtends = op2->OperIs(GT_CAST) ? op2->IsUnsigned() : op2->AsIntConCommon()->IntegralValue() >= 0;
+    bool op2AnyExtensionIsSuitable = op2->IsIntegralConst() && op2ZeroExtends;
+    if ((op1ZeroExtends != op2ZeroExtends) && !op2AnyExtensionIsSuitable)
     {
         return false;
     }
 
-    // Do unsigned mul iff both the casts are unsigned
-    if (((op1->gtFlags & GTF_UNSIGNED) != 0) != ((gtFlags & GTF_UNSIGNED) != 0))
+    // Do unsigned mul iff both operands are zero-extending.
+    if (op1->IsUnsigned() != IsUnsigned())
     {
         return false;
     }
@@ -6490,7 +6494,7 @@ GenTreeCall* Compiler::gtNewCallNode(
     return node;
 }
 
-GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs))
+GenTreeLclVar* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs))
 {
     assert(type != TYP_VOID);
     // We need to ensure that all struct values are normalized.
@@ -6510,7 +6514,7 @@ GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSE
         assert((type == varDsc->lvType) || simd12ToSimd16Widening ||
                (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (varDsc->lvType == TYP_BYREF)));
     }
-    GenTree* node = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(ILoffs));
+    GenTreeLclVar* node = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(ILoffs));
 
     /* Cannot have this assert because the inliner uses this function
      * to add temporaries */
@@ -6520,7 +6524,7 @@ GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSE
     return node;
 }
 
-GenTree* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs))
+GenTreeLclVar* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs))
 {
     // We need to ensure that all struct values are normalized.
     // It might be nice to assert this in general, but we have assignments of int to long.
@@ -6534,7 +6538,7 @@ GenTree* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSE
     }
     // This local variable node may later get transformed into a large node
     assert(GenTree::s_gtNodeSizes[LargeOpOpcode()] > GenTree::s_gtNodeSizes[GT_LCL_VAR]);
-    GenTree* node =
+    GenTreeLclVar* node =
         new (this, LargeOpOpcode()) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(ILoffs) DEBUGARG(/*largeNode*/ true));
     return node;
 }
@@ -7392,6 +7396,7 @@ GenTree* Compiler::gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg
 GenTree* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
 {
     assert(arg != nullptr);
+    assert(type != TYP_STRUCT);
 
     GenTree* node = nullptr;
 #if defined(TARGET_ARM)
@@ -14453,46 +14458,26 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                         break;
 
                     case GT_CAST:
+                        f1 = forceCastToFloat(d1);
 
-                        if (tree->gtOverflow() &&
-                            ((op1->TypeIs(TYP_DOUBLE) && CheckedOps::CastFromDoubleOverflows(d1, tree->CastToType())) ||
-                             (op1->TypeIs(TYP_FLOAT) &&
-                              CheckedOps::CastFromFloatOverflows(forceCastToFloat(d1), tree->CastToType()))))
+                        if ((op1->TypeIs(TYP_DOUBLE) && CheckedOps::CastFromDoubleOverflows(d1, tree->CastToType())) ||
+                            (op1->TypeIs(TYP_FLOAT) && CheckedOps::CastFromFloatOverflows(f1, tree->CastToType())))
                         {
+                            // The conversion overflows. The ECMA spec says, in III 3.27, that
+                            // "...if overflow occurs converting a floating point type to an integer, ...,
+                            // the value returned is unspecified."  However, it would at least be
+                            // desirable to have the same value returned for casting an overflowing
+                            // constant to an int as would be obtained by passing that constant as
+                            // a parameter and then casting that parameter to an int type.
+
+                            // Don't fold overflowing converions, as the value returned by
+                            // JIT's codegen doesn't always match with the C compiler's cast result.
+                            // We want the behavior to be the same with or without folding.
+
                             return tree;
                         }
 
                         assert(tree->TypeIs(genActualType(tree->CastToType())));
-
-                        if ((op1->TypeIs(TYP_FLOAT) && !_finite(forceCastToFloat(d1))) ||
-                            (op1->TypeIs(TYP_DOUBLE) && !_finite(d1)))
-                        {
-                            // The floating point constant is not finite.  The ECMA spec says, in
-                            // III 3.27, that "...if overflow occurs converting a floating point type
-                            // to an integer, ..., the value returned is unspecified."  However, it would
-                            // at least be desirable to have the same value returned for casting an overflowing
-                            // constant to an int as would obtained by passing that constant as a parameter
-                            // then casting that parameter to an int type.  We will assume that the C compiler's
-                            // cast logic will yield the desired result (and trust testing to tell otherwise).
-                            // Cross-compilation is an issue here; if that becomes an important scenario, we should
-                            // capture the target-specific values of overflow casts to the various integral types as
-                            // constants in a target-specific function.
-                            CLANG_FORMAT_COMMENT_ANCHOR;
-
-                            // Don't fold conversions of +inf/-inf to integral value on all platforms
-                            // as the value returned by JIT helper doesn't match with the C compiler's cast result.
-                            // We want the behavior to be same with or without folding.
-                            return tree;
-                        }
-
-                        if (d1 <= -1.0 && varTypeIsUnsigned(tree->CastToType()))
-                        {
-                            // Don't fold conversions of these cases becasue the result is unspecified per ECMA spec
-                            // and the native math doing the fold doesn't match the run-time computation on all
-                            // platforms.
-                            // We want the behavior to be same with or without folding.
-                            return tree;
-                        }
 
                         switch (tree->CastToType())
                         {
@@ -16607,7 +16592,27 @@ GenTreeLclVarCommon* GenTree::IsLocalAddrExpr()
     return nullptr;
 }
 
-bool GenTree::IsLocalAddrExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, FieldSeqNode** pFldSeq)
+//------------------------------------------------------------------------
+// IsLocalAddrExpr: finds if "this" is an address of a local var/fld.
+//
+// Arguments:
+//    comp - a compiler instance;
+//    pLclVarTree - [out] sets to the node indicating the local variable if found;
+//    pFldSeq - [out] sets to the field sequence representing the field, else null;
+//    pOffset - [out](optional) sets to the sum offset of the lcl/fld if found,
+//              note it does not include pLclVarTree->GetLclOffs().
+//
+// Returns:
+//    Returns true if "this" represents the address of a local, or a field of a local.
+//
+// Notes:
+//    It is mostly used for optimizations but assertion propogation depends on it for correctness.
+//    So if this function does not recognize a def of a LCL_VAR we can have an incorrect optimization.
+//
+bool GenTree::IsLocalAddrExpr(Compiler*             comp,
+                              GenTreeLclVarCommon** pLclVarTree,
+                              FieldSeqNode**        pFldSeq,
+                              ssize_t*              pOffset /* = nullptr */)
 {
     if (OperGet() == GT_ADDR)
     {
@@ -16641,23 +16646,33 @@ bool GenTree::IsLocalAddrExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree,
     {
         if (AsOp()->gtOp1->OperGet() == GT_CNS_INT)
         {
-            if (AsOp()->gtOp1->AsIntCon()->gtFieldSeq == nullptr)
+            GenTreeIntCon* cnst = AsOp()->gtOp1->AsIntCon();
+            if (cnst->gtFieldSeq == nullptr)
             {
                 return false;
             }
             // Otherwise, prepend this field to whatever we've already accumulated outside in.
-            *pFldSeq = comp->GetFieldSeqStore()->Append(AsOp()->gtOp1->AsIntCon()->gtFieldSeq, *pFldSeq);
-            return AsOp()->gtOp2->IsLocalAddrExpr(comp, pLclVarTree, pFldSeq);
+            *pFldSeq = comp->GetFieldSeqStore()->Append(cnst->gtFieldSeq, *pFldSeq);
+            if (pOffset != nullptr)
+            {
+                *pOffset += cnst->IconValue();
+            }
+            return AsOp()->gtOp2->IsLocalAddrExpr(comp, pLclVarTree, pFldSeq, pOffset);
         }
         else if (AsOp()->gtOp2->OperGet() == GT_CNS_INT)
         {
-            if (AsOp()->gtOp2->AsIntCon()->gtFieldSeq == nullptr)
+            GenTreeIntCon* cnst = AsOp()->gtOp2->AsIntCon();
+            if (cnst->gtFieldSeq == nullptr)
             {
                 return false;
             }
             // Otherwise, prepend this field to whatever we've already accumulated outside in.
-            *pFldSeq = comp->GetFieldSeqStore()->Append(AsOp()->gtOp2->AsIntCon()->gtFieldSeq, *pFldSeq);
-            return AsOp()->gtOp1->IsLocalAddrExpr(comp, pLclVarTree, pFldSeq);
+            *pFldSeq = comp->GetFieldSeqStore()->Append(cnst->gtFieldSeq, *pFldSeq);
+            if (pOffset != nullptr)
+            {
+                *pOffset += cnst->IconValue();
+            }
+            return AsOp()->gtOp1->IsLocalAddrExpr(comp, pLclVarTree, pFldSeq, pOffset);
         }
     }
     // Otherwise...

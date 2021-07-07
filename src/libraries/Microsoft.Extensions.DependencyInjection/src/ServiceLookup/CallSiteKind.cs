@@ -19,10 +19,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         Transient,
 
-        CreateInstance,
-
-        ServiceScopeFactory,
-
         Singleton
     }
 }

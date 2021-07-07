@@ -123,7 +123,7 @@ DWORD GetCurrentExceptionCode()
 // disable PROFILING_SUPPORTED for crossgen because of it affects data layout and FCall tables.
 //
 
-UINT_PTR EEToProfInterfaceImpl::EEFunctionIDMapper(FunctionID funcId, BOOL * pbHookFunction)
+UINT_PTR EEToProfInterfaceImpl::EEFunctionIDMapper(FunctionID funcId, BOOL *pbHookFunction)
 {
     UNREACHABLE();
 }
@@ -267,6 +267,11 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc *  pMD, MethodTable * 
 }
 
 void CrawlFrame::GetExactGenericInstantiations(Instantiation *pClassInst, Instantiation *pMethodInst)
+{
+    UNREACHABLE();
+}
+
+void SetObjectReferenceUnchecked(OBJECTREF *dst,OBJECTREF ref)
 {
     UNREACHABLE();
 }

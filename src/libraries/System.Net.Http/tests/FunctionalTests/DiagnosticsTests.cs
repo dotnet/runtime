@@ -17,8 +17,6 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    using Configuration = System.Net.Test.Common.Configuration;
-
     public abstract class DiagnosticsTest : HttpClientHandlerTestBase
     {
         private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
@@ -163,14 +161,17 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), TestAsync.ToString()).Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1477", TestPlatforms.AnyUnix)]
-        [OuterLoop("Uses external servers")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void SendAsync_HttpTracingEnabled_Succeeds(bool useSsl)
         {
-            RemoteExecutor.Invoke(async (useVersion, useSslString) =>
+            if (useSsl && UseVersion == HttpVersion.Version20 && !PlatformDetection.SupportsAlpn)
+            {
+                return;
+            }
+
+            RemoteExecutor.Invoke(async (useVersion, useSsl, testAsync) =>
             {
                 using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Http", EventLevel.Verbose))
                 {
@@ -178,28 +179,10 @@ namespace System.Net.Http.Functional.Tests
                     await listener.RunWithCallbackAsync(events.Enqueue, async () =>
                     {
                         // Exercise various code paths to get coverage of tracing
-                        using (HttpClient client = CreateHttpClient(useVersion))
-                        {
-                            // Do a get to a loopback server
-                            await LoopbackServer.CreateServerAsync(async (server, url) =>
-                            {
-                                await TestHelper.WhenAllCompletedOrAnyFailed(
-                                    server.AcceptConnectionSendResponseAndCloseAsync(),
-                                    client.GetAsync(url));
-                            });
-
-                            // Do a post to a remote server
-                            byte[] expectedData = Enumerable.Range(0, 20000).Select(i => unchecked((byte)i)).ToArray();
-                            Uri remoteServer = bool.Parse(useSslString)
-                                ? Configuration.Http.SecureRemoteEchoServer
-                                : Configuration.Http.RemoteEchoServer;
-                            var content = new ByteArrayContent(expectedData);
-                            content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(expectedData);
-                            using (HttpResponseMessage response = await client.PostAsync(remoteServer, content))
-                            {
-                                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                            }
-                        }
+                        await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                            async uri => await GetAsync(useVersion, testAsync, uri),
+                            async server => await server.HandleRequestAsync(),
+                            options: new GenericLoopbackOptions { UseSsl = bool.Parse(useSsl) });
                     });
 
                     // We don't validate receiving specific events, but rather that we do at least
@@ -209,7 +192,7 @@ namespace System.Net.Http.Functional.Tests
                         ev => ev.EventId == 0); // make sure there are no event source error messages
                     Assert.InRange(events.Count, 1, int.MaxValue);
                 }
-            }, UseVersion.ToString(), useSsl.ToString()).Dispose();
+            }, UseVersion.ToString(), useSsl.ToString(), TestAsync.ToString()).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -979,11 +962,10 @@ namespace System.Net.Http.Functional.Tests
 
         private static async Task<(HttpRequestMessage, HttpResponseMessage)> GetAsync(string useVersion, string testAsync, Uri uri, CancellationToken cancellationToken = default)
         {
-            using HttpClient client = CreateHttpClient(useVersion);
-            var request = new HttpRequestMessage(HttpMethod.Get, uri)
-            {
-                Version = Version.Parse(useVersion)
-            };
+            HttpClientHandler handler = CreateHttpClientHandler(useVersion);
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            using var client = new HttpClient(handler);
+            var request = CreateRequest(HttpMethod.Get, uri, Version.Parse(useVersion), exactVersion: true);
             return (request, await client.SendAsync(bool.Parse(testAsync), request, cancellationToken));
         }
     }

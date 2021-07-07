@@ -156,7 +156,8 @@ event_pipe_enable (
 		format,
 		rundown_requested,
 		stream,
-		sync_callback);
+		sync_callback,
+        NULL);
 
 	if (config_providers) {
 		for (int i = 0; i < providers_len; ++i) {

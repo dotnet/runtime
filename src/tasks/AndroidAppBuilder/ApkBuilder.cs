@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.Build.Framework;
 
 public class ApkBuilder
@@ -122,18 +123,29 @@ public class ApkBuilder
             throw new ArgumentException($"{buildToolsFolder} was not found.");
         }
 
-        var assemblerFiles = new List<string>();
+        var assemblerFiles = new StringBuilder();
+        var assemblerFilesToLink = new StringBuilder();
         foreach (ITaskItem file in Assemblies)
         {
             // use AOT files if available
             var obj = file.GetMetadata("AssemblerFile");
+            var llvmObj = file.GetMetadata("LlvmObjectFile");
+
             if (!string.IsNullOrEmpty(obj))
             {
-                assemblerFiles.Add(obj);
+                var name = Path.GetFileNameWithoutExtension(obj);
+                assemblerFiles.AppendLine($"add_library({name} OBJECT {obj})");
+                assemblerFilesToLink.AppendLine($"    {name}");
+            }
+
+            if (!string.IsNullOrEmpty(llvmObj))
+            {
+                var name = Path.GetFileNameWithoutExtension(llvmObj);
+                assemblerFilesToLink.AppendLine($"    {llvmObj}");
             }
         }
 
-        if (ForceAOT && !assemblerFiles.Any())
+        if (ForceAOT && assemblerFiles.Length == 0)
         {
             throw new InvalidOperationException("Need list of AOT files.");
         }
@@ -261,12 +273,9 @@ public class ApkBuilder
             nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
         }
 
-        string aotSources = "";
-        foreach (string asm in assemblerFiles)
-        {
-            // these libraries are linked via modules.c
-            aotSources += $"    {asm}{Environment.NewLine}";
-        }
+        nativeLibraries += assemblerFilesToLink.ToString();
+
+        string aotSources = assemblerFiles.ToString();
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
             .Replace("%MonoInclude%", monoRuntimeHeaders)
@@ -486,7 +495,7 @@ public class ApkBuilder
     {
         string? buildTools = Directory.GetDirectories(Path.Combine(androidSdkDir, "build-tools"))
             .Select(Path.GetFileName)
-            .Where(file => !file!.Contains("-"))
+            .Where(file => !file!.Contains('-'))
             .Select(file => { Version.TryParse(Path.GetFileName(file), out Version? version); return version; })
             .OrderByDescending(v => v)
             .FirstOrDefault()?.ToString();

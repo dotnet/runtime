@@ -18,16 +18,29 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <NativeRuntimeAsset Include="$(MonoAotCrossDir)$(TargetCrossRid)\**" TargetPath="tools/" />
+    <_ToolFile Include="$(MonoAotCrossDir)$(TargetCrossRid)\**" />
+    <NativeRuntimeAsset Include="@(_ToolFile)" TargetPath="tools/" />
     <NativeRuntimeAsset Include="$(MonoAotCrossDir)$(TargetCrossRid).Sdk.props" TargetPath="Sdk/Sdk.props" />
+    <NativeRuntimeAsset Condition="!$([MSBuild]::IsOsPlatform('Windows'))" Include="$(MonoAotCrossDir)Microsoft.NETCore.App.MonoCrossAOT.UnixFilePermissions.xml" TargetPath="data/UnixFilePermissions.xml" />
   </ItemGroup>
 
-  <Target Name="WriteAotSdkProps" BeforeTargets="ValidateProperties">
+  <Target Name="WriteTemplateFiles" BeforeTargets="ValidateProperties">
     <ItemGroup>
       <_SdkPropsProperties Condition="!$([MSBuild]::IsOsPlatform('Windows'))" Include="ExeSuffix" Value="" />
       <_SdkPropsProperties Condition="$([MSBuild]::IsOsPlatform('Windows'))" Include="ExeSuffix" Value=".exe" />
       <_SdkPropsProperties Include="TargetRid" Value="$(TargetCrossRid)" />
     </ItemGroup>
+    <PropertyGroup>
+      <_PermissionsFiles>@(_ToolFile -> '&lt;File Path=&quot;tools/%(RecursiveDir)%(FileName)%(Extension)&quot; Permission=&quot;755&quot; /&gt;', ' ')</_PermissionsFiles>
+    </PropertyGroup>
+    <ItemGroup>
+      <_PermissionsProperties Include="PermissionsProperties" Value="$(_PermissionsFiles)" />
+    </ItemGroup>
+    <GenerateFileFromTemplate
+      Condition="!$([MSBuild]::IsOsPlatform('Windows'))"
+      TemplateFile="Microsoft.NETCore.App.MonoCrossAOT.UnixFilePermissions.xml.in"
+      Properties="@(_PermissionsProperties)"
+      OutputPath="$(MonoAotCrossDir)Microsoft.NETCore.App.MonoCrossAOT.UnixFilePermissions.xml" />
     <GenerateFileFromTemplate
       TemplateFile="Microsoft.NETCore.App.MonoCrossAOT.Sdk.props.in"
       Properties="@(_SdkPropsProperties)"

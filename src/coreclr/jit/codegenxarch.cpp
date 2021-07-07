@@ -2752,26 +2752,47 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         src = src->AsUnOp()->gtGetOp1();
     }
 
+    unsigned size = node->GetLayout()->GetSize();
+
+    // An SSE mov that accesses data larger than 8 bytes may be implemented using
+    // multiple memory accesses. Hence, the JIT must not use such stores when
+    // INITBLK zeroes a struct that contains GC pointers and can be observed by
+    // other threads (i.e. when dstAddr is not an address of a local).
+    // For example, this can happen when initializing a struct field of an object.
+    const bool canUse16BytesSimdMov = !node->IsOnHeapAndContainsReferences();
+
+#ifdef TARGET_AMD64
+    // On Amd64 the JIT will not use SIMD stores for such structs and instead
+    // will always allocate a GP register for src node.
+    const bool willUseSimdMov = canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES);
+#else
+    // On X86 the JIT will use movq for structs that are larger than 16 bytes
+    // since it is more beneficial than using two mov-s from a GP register.
+    const bool willUseSimdMov = (size >= 16);
+#endif
+
     if (!src->isContained())
     {
         srcIntReg = genConsumeReg(src);
     }
     else
     {
-        // If src is contained then it must be 0 and the size must be a multiple
-        // of XMM_REGSIZE_BYTES so initialization can use only SSE2 instructions.
+        // If src is contained then it must be 0.
         assert(src->IsIntegralConst(0));
-        assert((node->GetLayout()->GetSize() % XMM_REGSIZE_BYTES) == 0);
+        assert(willUseSimdMov);
+#ifdef TARGET_AMD64
+        assert(size % 16 == 0);
+#else
+        assert(size % 8 == 0);
+#endif
     }
 
     emitter* emit = GetEmitter();
-    unsigned size = node->GetLayout()->GetSize();
 
     assert(size <= INT32_MAX);
     assert(dstOffset < (INT32_MAX - static_cast<int>(size)));
 
-    // Fill as much as possible using SSE2 stores.
-    if (size >= XMM_REGSIZE_BYTES)
+    if (willUseSimdMov)
     {
         regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
@@ -2791,9 +2812,25 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 #endif
         }
 
-        instruction simdMov = simdUnalignedMovIns();
-        for (unsigned regSize = XMM_REGSIZE_BYTES; size >= regSize; size -= regSize, dstOffset += regSize)
+        instruction simdMov      = simdUnalignedMovIns();
+        unsigned    regSize      = XMM_REGSIZE_BYTES;
+        unsigned    bytesWritten = 0;
+
+        while (bytesWritten < size)
         {
+#ifdef TARGET_X86
+            if (!canUse16BytesSimdMov || (bytesWritten + regSize > size))
+            {
+                simdMov = INS_movq;
+                regSize = 8;
+            }
+#endif
+            if (bytesWritten + regSize > size)
+            {
+                assert(srcIntReg != REG_NA);
+                break;
+            }
+
             if (dstLclNum != BAD_VAR_NUM)
             {
                 emit->emitIns_S_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
@@ -2803,11 +2840,12 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                 emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
                                     dstAddrIndexScale, dstOffset);
             }
+
+            dstOffset += regSize;
+            bytesWritten += regSize;
         }
 
-        // TODO-CQ-XArch: On x86 we could initialize 8 byte at once by using MOVQ instead of two 4 byte MOV stores.
-        // On x64 it may also be worth zero initializing a 4/8 byte remainder using MOVD/MOVQ, that avoids the need
-        // to allocate a GPR just for the remainder.
+        size -= bytesWritten;
     }
 
     // Fill the remainder using normal stores.
@@ -4604,7 +4642,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
             // The VM doesn't allow such large array elements but let's be sure.
             noway_assert(scale <= INT32_MAX);
 #else  // !TARGET_64BIT
-            tmpReg              = node->GetSingleTempReg();
+            tmpReg = node->GetSingleTempReg();
 #endif // !TARGET_64BIT
 
             GetEmitter()->emitIns_R_I(emitter::inst3opImulForReg(tmpReg), EA_PTRSIZE, indexReg,

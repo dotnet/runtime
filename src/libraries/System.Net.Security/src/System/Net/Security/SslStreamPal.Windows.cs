@@ -313,7 +313,7 @@ namespace System.Net.Security
             }
         }
 
-        public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteSslContext? securityContext, byte[] buffer, ref int offset, ref int count)
+        public static unsafe SecurityStatusPal DecryptMessage(SafeDeleteSslContext? securityContext, Span<byte> buffer, out int offset, out int count)
         {
             const int NumSecBuffers = 4; // data + empty + empty + empty
             fixed (byte* bufferPtr = buffer)
@@ -321,8 +321,8 @@ namespace System.Net.Security
                 Interop.SspiCli.SecBuffer* unmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[NumSecBuffers];
                 Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[0];
                 dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
-                dataBuffer->pvBuffer = (IntPtr)bufferPtr + offset;
-                dataBuffer->cbBuffer = count;
+                dataBuffer->pvBuffer = (IntPtr)bufferPtr;
+                dataBuffer->cbBuffer = buffer.Length;
 
                 for (int i = 1; i < NumSecBuffers; i++)
                 {
@@ -341,6 +341,7 @@ namespace System.Net.Security
                 // Decrypt may repopulate the sec buffers, likely with header + data + trailer + empty.
                 // We need to find the data.
                 count = 0;
+                offset = 0;
                 for (int i = 0; i < NumSecBuffers; i++)
                 {
                     // Successfully decoded data and placed it at the following position in the buffer,
@@ -351,6 +352,7 @@ namespace System.Net.Security
                         offset = (int)((byte*)unmanagedBuffer[i].pvBuffer - bufferPtr);
                         count = unmanagedBuffer[i].cbBuffer;
 
+                        // output is ignored on Windows. We always decrypt in place and we set outputOffset to indicate where the data start.
                         Debug.Assert(offset >= 0 && count >= 0, $"Expected offset and count greater than 0, got {offset} and {count}");
                         Debug.Assert(checked(offset + count) <= buffer.Length, $"Expected offset+count <= buffer.Length, got {offset}+{count}>={buffer.Length}");
 
