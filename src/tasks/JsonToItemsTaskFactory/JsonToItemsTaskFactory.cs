@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -198,10 +199,11 @@ namespace JsonToItemsTaskFactory
                         json = null;
                         return false;
                     }
-                    json = JsonSerializer.DeserializeAsync<JsonModelRoot>(file, JsonOptions).AsTask().Result;
+                    json = GetJsonAsync(jsonFilePath, file).Result;
                     if (json == null)
                     {
-                        Log.LogError($"Failed to deserialize json from file {jsonFilePath}");
+                        // the async task may have already caught an exception and logged it.
+                        if (!Log.HasLoggedErrors) Log.LogError($"Failed to deserialize json from file {jsonFilePath}");
                         return false;
                     }
                     return true;
@@ -211,6 +213,21 @@ namespace JsonToItemsTaskFactory
                     if (file != null)
                         file.Dispose();
                 }
+            }
+
+            public async Task<JsonModelRoot?> GetJsonAsync(string jsonFilePath, FileStream file)
+            {
+                JsonModelRoot? json = null;
+                try
+                {
+                    json = await JsonSerializer.DeserializeAsync<JsonModelRoot>(file, JsonOptions).ConfigureAwait(false);
+                }
+                catch (JsonException e)
+                {
+                    Log.LogError($"Failed to deserialize json from file '{jsonFilePath}', JSON Path: {e.Path}, Line: {e.LineNumber}, Position: {e.BytePositionInLine}");
+                    Log.LogErrorFromException(e, showStackTrace: false, showDetail: true, file: null);
+                }
+                return json;
             }
 
             internal void LogParsedJson (JsonModelRoot json)
