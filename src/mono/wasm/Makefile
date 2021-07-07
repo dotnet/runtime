@@ -71,7 +71,7 @@ MONO_LIBS = \
 	$(ICU_LIBDIR)/libicuuc.a \
 	$(ICU_LIBDIR)/libicui18n.a
 
-EMCC_DEBUG_FLAGS =-g -Os -s ASSERTIONS=1 -DDEBUG=1
+EMCC_DEBUG_FLAGS =-g -Os -s -DDEBUG=1
 EMCC_RELEASE_FLAGS=-Oz
 
 ifeq ($(NOSTRIP),)
