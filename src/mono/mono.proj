@@ -821,9 +821,9 @@
           Condition="'$(MonoGenerateOffsetsOSGroups)' == '' and ('$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true')"/>
 
     <Copy SourceFiles="@(_MonoRuntimeBuildArtifacts)"
-	  DestinationFiles="@(_MonoRuntimeBuildArtifacts->'$(RuntimeBinDir)build\%(RecursiveDir)%(Filename)%(Extension)')"
-	  SkipUnchangedFiles="true"
-	  Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" />
+          DestinationFiles="@(_MonoRuntimeBuildArtifacts->'$(RuntimeBinDir)build\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" />
 
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(MonoGenerateOffsetsOSGroups)' == '' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="install_name_tool -id @rpath/$(MonoFileName) $(RuntimeBinDir)$(MonoFileName)" />
   </Target>
