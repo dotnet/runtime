@@ -110,7 +110,7 @@ word aligned or size is not a multiple of word size.
 */
 void mono_gc_bzero_atomic (void *dest, size_t size);
 void mono_gc_bzero_aligned (void *dest, size_t size);
-void mono_gc_memmove_atomic (void *dest, const void *src, size_t size);
+MONO_COMPONENT_API void mono_gc_memmove_atomic (void *dest, const void *src, size_t size);
 void mono_gc_memmove_aligned (void *dest, const void *src, size_t size);
 
 FILE *mono_gc_get_logfile (void);

@@ -41,5 +41,9 @@ namespace System.Data.Common
         /// A standard SQL 5-character return code, or <see langword="null" />.
         /// </returns>
         public virtual string? SqlState => null;
+
+        public DbBatchCommand? BatchCommand => DbBatchCommand;
+
+        protected virtual DbBatchCommand? DbBatchCommand => null;
     }
 }

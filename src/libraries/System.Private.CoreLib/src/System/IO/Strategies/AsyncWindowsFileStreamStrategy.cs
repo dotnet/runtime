@@ -52,7 +52,7 @@ namespace System.IO.Strategies
                 _filePosition += destination.Length;
             }
 
-            (SafeFileHandle.ValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncReadFile(_fileHandle, destination, positionBefore, cancellationToken);
+            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncReadFile(_fileHandle, destination, positionBefore, cancellationToken);
             return vts != null
                 ? new ValueTask<int>(vts, vts.Version)
                 : (errorCode == 0) ? ValueTask.FromResult(0) : ValueTask.FromException<int>(HandleIOError(positionBefore, errorCode));
@@ -81,7 +81,7 @@ namespace System.IO.Strategies
                 UpdateLengthOnChangePosition();
             }
 
-            (SafeFileHandle.ValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncWriteFile(_fileHandle, source, positionBefore, cancellationToken);
+            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncWriteFile(_fileHandle, source, positionBefore, cancellationToken);
             return vts != null
                 ? new ValueTask(vts, vts.Version)
                 : (errorCode == 0) ? ValueTask.CompletedTask : ValueTask.FromException(HandleIOError(positionBefore, errorCode));
@@ -95,7 +95,7 @@ namespace System.IO.Strategies
                 _filePosition = positionBefore;
             }
 
-            return SafeFileHandle.ValueTaskSource.GetIOError(errorCode, _path);
+            return SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, _fileHandle.Path);
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask; // no buffering = nothing to flush
@@ -131,7 +131,7 @@ namespace System.IO.Strategies
             try
             {
                 await FileStreamHelpers
-                    .AsyncModeCopyToAsync(_fileHandle, _path, CanSeek, _filePosition, destination, bufferSize, cancellationToken)
+                    .AsyncModeCopyToAsync(_fileHandle, CanSeek, _filePosition, destination, bufferSize, cancellationToken)
                     .ConfigureAwait(false);
             }
             finally

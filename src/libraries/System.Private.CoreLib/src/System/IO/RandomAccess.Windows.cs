@@ -16,23 +16,23 @@ namespace System.IO
     {
         private static readonly IOCompletionCallback s_callback = AllocateCallback();
 
-        internal static unsafe long GetFileLength(SafeFileHandle handle, string? path)
+        internal static unsafe long GetFileLength(SafeFileHandle handle)
         {
             Interop.Kernel32.FILE_STANDARD_INFO info;
 
             if (!Interop.Kernel32.GetFileInformationByHandleEx(handle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error(path);
+                throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
             }
 
             return info.EndOfFile;
         }
 
-        internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset, string? path = null)
+        internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {
             if (handle.IsAsync)
             {
-                return ReadSyncUsingAsyncHandle(handle, buffer, fileOffset, path);
+                return ReadSyncUsingAsyncHandle(handle, buffer, fileOffset);
             }
 
             NativeOverlapped overlapped = GetNativeOverlappedForSyncHandle(handle, fileOffset);
@@ -55,12 +55,12 @@ namespace System.IO
                         // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
                         return 0;
                     default:
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
                 }
             }
         }
 
-        private static unsafe int ReadSyncUsingAsyncHandle(SafeFileHandle handle, Span<byte> buffer, long fileOffset, string? path)
+        private static unsafe int ReadSyncUsingAsyncHandle(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
@@ -105,7 +105,7 @@ namespace System.IO
                             return 0;
 
                         default:
-                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
                     }
                 }
             }
@@ -120,11 +120,11 @@ namespace System.IO
             }
         }
 
-        internal static unsafe int WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset, string? path = null)
+        internal static unsafe int WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
         {
             if (handle.IsAsync)
             {
-                return WriteSyncUsingAsyncHandle(handle, buffer, fileOffset, path);
+                return WriteSyncUsingAsyncHandle(handle, buffer, fileOffset);
             }
 
             NativeOverlapped overlapped = GetNativeOverlappedForSyncHandle(handle, fileOffset);
@@ -141,12 +141,12 @@ namespace System.IO
                     case Interop.Errors.ERROR_NO_DATA: // EOF on a pipe
                         return 0;
                     default:
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
                 }
             }
         }
 
-        private static unsafe int WriteSyncUsingAsyncHandle(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset, string? path)
+        private static unsafe int WriteSyncUsingAsyncHandle(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
@@ -193,7 +193,7 @@ namespace System.IO
                             throw new IOException(SR.IO_FileTooLong);
 
                         default:
-                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, path);
+                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
                     }
                 }
             }
@@ -213,17 +213,17 @@ namespace System.IO
                 ? Map(QueueAsyncReadFile(handle, buffer, fileOffset, cancellationToken))
                 : ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
 
-        private static ValueTask<int> Map((SafeFileHandle.ValueTaskSource? vts, int errorCode) tuple)
+        private static ValueTask<int> Map((SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) tuple)
             => tuple.vts != null
                 ? new ValueTask<int>(tuple.vts, tuple.vts.Version)
                 : tuple.errorCode == 0 ? ValueTask.FromResult(0) : ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(tuple.errorCode));
 
-        internal static unsafe (SafeFileHandle.ValueTaskSource? vts, int errorCode) QueueAsyncReadFile(
+        internal static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncReadFile(
             SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
-            SafeFileHandle.ValueTaskSource vts = handle.GetValueTaskSource();
+            SafeFileHandle.OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset);
@@ -274,12 +274,12 @@ namespace System.IO
                 ? Map(QueueAsyncWriteFile(handle, buffer, fileOffset, cancellationToken))
                 : ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
 
-        internal static unsafe (SafeFileHandle.ValueTaskSource? vts, int errorCode) QueueAsyncWriteFile(
+        internal static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncWriteFile(
             SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
-            SafeFileHandle.ValueTaskSource vts = handle.GetValueTaskSource();
+            SafeFileHandle.OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset);
@@ -318,7 +318,7 @@ namespace System.IO
             return (vts, -1);
         }
 
-        private static long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
+        internal static long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
         {
             long total = 0;
 
@@ -340,7 +340,7 @@ namespace System.IO
             return total;
         }
 
-        private static long WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
+        internal static long WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
         {
             long total = 0;
 
@@ -439,7 +439,7 @@ namespace System.IO
         {
             handle.EnsureThreadPoolBindingInitialized();
 
-            SafeFileHandle.ValueTaskSource vts = handle.GetValueTaskSource();
+            SafeFileHandle.OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(Memory<byte>.Empty, fileOffset);
@@ -469,7 +469,7 @@ namespace System.IO
                         default:
                             // Error. Callback will not be called.
                             vts.Dispose();
-                            return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode));
+                            return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path));
                     }
                 }
             }
@@ -595,7 +595,7 @@ namespace System.IO
         {
             handle.EnsureThreadPoolBindingInitialized();
 
-            SafeFileHandle.ValueTaskSource vts = handle.GetValueTaskSource();
+            SafeFileHandle.OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(ReadOnlyMemory<byte>.Empty, fileOffset);
@@ -618,7 +618,7 @@ namespace System.IO
                         vts.Dispose();
                         return errorCode == Interop.Errors.ERROR_NO_DATA // EOF on a pipe. IO callback will not be called.
                             ? ValueTask.FromResult<int>(0)
-                            : ValueTask.FromException<int>(SafeFileHandle.ValueTaskSource.GetIOError(errorCode, path: null));
+                            : ValueTask.FromException<int>(SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, path: null));
                     }
                 }
             }

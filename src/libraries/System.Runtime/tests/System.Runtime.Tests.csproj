@@ -81,6 +81,7 @@
     <Compile Include="System\FormattableStringTests.cs" />
     <Compile Include="System\FormatExceptionTests.cs" />
     <Compile Include="System\GCTests.cs" />
+    <Compile Include="System\GenericMathTests.cs" />
     <Compile Include="System\GuidTests.cs" />
     <Compile Include="System\HalfTests.cs" />
     <Compile Include="System\HandleTests.cs" />
@@ -88,6 +89,7 @@
     <Compile Include="System\IndexOutOfRangeExceptionTests.cs" />
     <Compile Include="System\IndexTests.cs" />
     <Compile Include="System\Int16Tests.cs" />
+    <Compile Include="System\Int32GenericMathTests.cs" />
     <Compile Include="System\Int32Tests.cs" />
     <Compile Include="System\Int64Tests.cs" />
     <Compile Include="System\IntPtrTests.cs" />

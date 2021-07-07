@@ -7874,10 +7874,20 @@ bool Compiler::impTailCallRetTypeCompatible(var_types                callerRetTy
                                             CORINFO_CLASS_HANDLE     calleeRetTypeClass,
                                             CorInfoCallConvExtension calleeCallConv)
 {
-    // Note that we can not relax this condition with genActualType() as the
-    // calling convention dictates that the caller of a function with a small
-    // typed return value is responsible for normalizing the return val.
+    // Early out if the types are the same.
     if (callerRetType == calleeRetType)
+    {
+        return true;
+    }
+
+    // For integral types the managed calling convention dictates that callee
+    // will widen the return value to 4 bytes, so we can allow implicit widening
+    // in managed to managed tailcalls when dealing with <= 4 bytes.
+    bool isManaged =
+        (callerCallConv == CorInfoCallConvExtension::Managed) && (calleeCallConv == CorInfoCallConvExtension::Managed);
+
+    if (isManaged && varTypeIsIntegral(callerRetType) && varTypeIsIntegral(calleeRetType) &&
+        (genTypeSize(callerRetType) <= 4) && (genTypeSize(calleeRetType) <= genTypeSize(callerRetType)))
     {
         return true;
     }
@@ -8672,7 +8682,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {
         // We set up the unmanaged call by linking the frame, disabling GC, etc
-        // This needs to be cleaned up on return
+        // This needs to be cleaned up on return.
+        // In addition, native calls have different normalization rules than managed code
+        // (managed calling convention always widens return values in the callee)
         if (canTailCall)
         {
             canTailCall             = false;
@@ -19061,17 +19073,30 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
 
     // If the call site has profile data, report the relative frequency of the site.
     //
-    if ((pInlineInfo != nullptr) && pInlineInfo->iciBlock->hasProfileWeight())
+    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveProfileData() && pInlineInfo->iciBlock->hasProfileWeight())
     {
-        double callSiteWeight = (double)pInlineInfo->iciBlock->bbWeight;
-        double entryWeight    = (double)impInlineRoot()->fgFirstBB->bbWeight;
+        BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
+        BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
+        BasicBlock::weight_t profileFreq    = entryWeight == 0.0f ? 0.0f : callSiteWeight / entryWeight;
 
         assert(callSiteWeight >= 0);
         assert(entryWeight >= 0);
 
+        BasicBlock::weight_t sufficientSamples = 1000.0f;
+
+        if (!rootCompiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) ||
+            ((callSiteWeight + entryWeight) > sufficientSamples))
+        {
+            // Let's not report profiles for methods with insufficient samples during prejitting.
+            inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
+            inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, profileFreq);
+        }
+    }
+    else if ((pInlineInfo == nullptr) && rootCompiler->fgHaveProfileData())
+    {
+        // Simulate a hot callsite for PrejitRoot mode.
         inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
-        double frequency = entryWeight == 0.0 ? 0.0 : callSiteWeight / entryWeight;
-        inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, frequency);
+        inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, 1.0);
     }
 }
 
