@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <xplatform.h>
+#ifdef _WIN32
 #include <ComHelpers.h>
 #include <inspectable.h>
 #include <WeakReference.h>
+#endif //_WIN32
 
 namespace
 {

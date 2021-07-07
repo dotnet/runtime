@@ -28,6 +28,12 @@
 #define _COM_Outptr_
 #undef _Inout_
 #define _Inout_
+#define __RPC__out
+#define __RPC__in
+#define __RPC__deref_out
+#define __RPC__deref_out_opt
+#define __RPC__deref_out_ecount_full_opt(x)
+#define __RPC_unique_pointer
 
 
 #define E_POINTER                        _HRESULT_TYPEDEF_(0x80004003L)
@@ -35,6 +41,14 @@
 #define S_FALSE                          _HRESULT_TYPEDEF_(0x00000001L)
 #define E_OUTOFMEMORY                    _HRESULT_TYPEDEF_(0x8007000EL)
 #define E_NOTIMPL   0x80004001
+
+// Declaring a handle dummy struct for HSTRING the same way DECLARE_HANDLE does.
+typedef struct HSTRING__{
+    int unused;
+} HSTRING__;
+
+// Declare the HSTRING handle for C/C++
+typedef __RPC_unique_pointer HSTRING__* HSTRING;
 
 typedef unsigned __int64 UINT64, *PUINT64;
 typedef unsigned short USHORT;
@@ -203,6 +217,99 @@ struct IDispatch : public IUnknown
 
 };
 
+typedef /* [v1_enum] */ 
+enum TrustLevel
+    {
+        BaseTrust	= 0,
+        PartialTrust	= ( BaseTrust + 1 ) ,
+        FullTrust	= ( PartialTrust + 1 ) 
+    } 	TrustLevel;
+
+//AF86E2E0-B12D-4c6a-9C5A-D7AA65101E90
+const IID IID_IInspectable = { 0xaf86e2e0, 0xb12d, 0x4c6a, { 0x9c, 0x5a, 0xd7, 0xaa, 0x65, 0x10, 0x1e, 0x90} };
+
+MIDL_INTERFACE("AF86E2E0-B12D-4c6a-9C5A-D7AA65101E90")
+IInspectable : public IUnknown
+{
+public:
+    virtual HRESULT STDMETHODCALLTYPE GetIids(
+        /* [out] */ __RPC__out ULONG * iidCount,
+        /* [size_is][size_is][out] */ __RPC__deref_out_ecount_full_opt(*iidCount) IID * *iids) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE GetRuntimeClassName(
+        /* [out] */ __RPC__deref_out_opt HSTRING * className) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE GetTrustLevel(
+        /* [out] */ __RPC__out TrustLevel * trustLevel) = 0;
+};
+
+
+//00000037-0000-0000-C000-000000000046
+const IID IID_IWeakReference = { 0x00000037, 0x0000, 0x0000, { 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46} };
+
+MIDL_INTERFACE("00000037-0000-0000-C000-000000000046")
+IWeakReference : public IUnknown
+{
+public:
+    virtual HRESULT STDMETHODCALLTYPE Resolve(
+        /* [in] */ __RPC__in REFIID riid,
+        /* [iid_is][out] */ __RPC__deref_out IInspectable **objectReference) = 0;
+
+};
+
+//00000038-0000-0000-C000-000000000046
+const IID IID_IWeakReferenceSource = { 0x00000038, 0x0000, 0x0000, { 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46} };
+
+MIDL_INTERFACE("00000038-0000-0000-C000-000000000046")
+IWeakReferenceSource : public IUnknown
+{
+public:
+    virtual HRESULT STDMETHODCALLTYPE GetWeakReference(
+        /* [retval][out] */ __RPC__deref_out_opt IWeakReference * *weakReference) = 0;
+};
+
+
+namespace Internal
+{
+    template<typename I>
+    HRESULT __QueryInterfaceImpl(
+        /* [in] */ REFIID riid,
+        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject,
+        /* [in] */ I obj)
+    {
+        //__uuidof(I) doesn't work on linux, so needed types are checked
+        if (riid == __uuidof(IInspectable) || riid == __uuidof(IWeakReference) || riid == __uuidof(IWeakReferenceSource))
+        {
+            *ppvObject = static_cast<I>(obj);
+        }
+        else
+        {
+            *ppvObject = nullptr;
+            return E_NOINTERFACE;
+        }
+
+        return S_OK;
+    }
+
+    template<typename I1, typename ...IR>
+    HRESULT __QueryInterfaceImpl(
+        /* [in] */ REFIID riid,
+        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject,
+        /* [in] */ I1 i1,
+        /* [in] */ IR... remain)
+    {
+        //__uuidof(I1) doesn't work on linux, so needed types are checked
+        if (riid == __uuidof(IInspectable) || riid == __uuidof(IWeakReference) || riid == __uuidof(IWeakReferenceSource) )
+        {
+            *ppvObject = static_cast<I1>(i1);
+            return S_OK;
+        }
+
+        return __QueryInterfaceImpl(riid, ppvObject, remain...);
+    }
+}
+
+
 // Implementation of IUnknown operations
 class UnknownImpl
 {
@@ -232,11 +339,9 @@ public:
         }
         else
         {
-            //Temporary commented: to be managed with templates (_uuidof(T) needed) or with 
-            // dedicated if-logic over well-know types
-            //HRESULT hr = Internal::__QueryInterfaceImpl(riid, ppvObject, i1, remain...);
-            //if (hr != S_OK)
-            //    return hr;
+            HRESULT hr = Internal::__QueryInterfaceImpl(riid, ppvObject, i1, remain...);
+            if (hr != S_OK)
+                return hr;
         }
 
         DoAddRef();
