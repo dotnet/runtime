@@ -353,7 +353,7 @@ namespace JsonToItemsTaskFactory
                     case JsonTokenType.String:
                         var stringItem = reader.GetString();
                         if (string.IsNullOrEmpty(stringItem))
-                            throw new Exception ("deserialized json string item was null or the empty string");
+                            throw new JsonException ("deserialized json string item was null or the empty string");
                         return new JsonModelItem(stringItem!, metadata: null);
                     case JsonTokenType.StartObject:
                         var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(ref reader, options);
@@ -361,12 +361,12 @@ namespace JsonToItemsTaskFactory
                             return null!;
                         var idict = new Dictionary<string, string> (dict, StringComparer.OrdinalIgnoreCase);
                         if  (!idict.TryGetValue("Identity", out var identity) || string.IsNullOrEmpty(identity))
-                            throw new Exception ("deserialized json dictionary item did not have a non-empty Identity metadata");
+                            throw new JsonException ("deserialized json dictionary item did not have a non-empty Identity metadata");
                         else
                             idict.Remove("Identity");
                         return new JsonModelItem(identity, metadata: idict);
                     default:
-                        throw new Exception();
+                        throw new NotSupportedException();
                 }
             }
             public override void Write(Utf8JsonWriter writer, JsonModelItem value, JsonSerializerOptions options)
