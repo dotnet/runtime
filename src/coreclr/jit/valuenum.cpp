@@ -3012,7 +3012,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
         case TYP_FLOAT:
         {
             float arg0Val = GetConstantSingle(arg0VN);
-            assert(!checkedCast || !CheckedOps::CastFromFloatOverflows(arg0Val, castToType));
+            assert(!CheckedOps::CastFromFloatOverflows(arg0Val, castToType));
 
             switch (castToType)
             {
@@ -3054,7 +3054,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
         case TYP_DOUBLE:
         {
             double arg0Val = GetConstantDouble(arg0VN);
-            assert(!checkedCast || !CheckedOps::CastFromDoubleOverflows(arg0Val, castToType));
+            assert(!CheckedOps::CastFromDoubleOverflows(arg0Val, castToType));
 
             switch (castToType)
             {
@@ -3322,26 +3322,32 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
         }
     }
 
-    // Is this a checked cast that will always throw an exception?
-    if (func == VNF_CastOvf)
+    // Is this a checked cast that will always throw an exception or one with an implementation-defined result?
+    if (VNFuncIsNumericCast(func))
     {
-        var_types castToType;
-        bool      fromUnsigned;
-        GetCastOperFromVN(arg1VN, &castToType, &fromUnsigned);
         var_types castFromType = TypeOfVN(arg0VN);
 
-        switch (castFromType)
+        // By policy, we do not fold conversions from floating-point types that result in
+        // overflow, as the value the C++ compiler gives us does not always match our own codegen.
+        if ((func == VNF_CastOvf) || varTypeIsFloating(castFromType))
         {
-            case TYP_INT:
-                return !CheckedOps::CastFromIntOverflows(GetConstantInt32(arg0VN), castToType, fromUnsigned);
-            case TYP_LONG:
-                return !CheckedOps::CastFromLongOverflows(GetConstantInt64(arg0VN), castToType, fromUnsigned);
-            case TYP_FLOAT:
-                return !CheckedOps::CastFromFloatOverflows(GetConstantSingle(arg0VN), castToType);
-            case TYP_DOUBLE:
-                return !CheckedOps::CastFromDoubleOverflows(GetConstantDouble(arg0VN), castToType);
-            default:
-                return false;
+            var_types castToType;
+            bool      fromUnsigned;
+            GetCastOperFromVN(arg1VN, &castToType, &fromUnsigned);
+
+            switch (castFromType)
+            {
+                case TYP_INT:
+                    return !CheckedOps::CastFromIntOverflows(GetConstantInt32(arg0VN), castToType, fromUnsigned);
+                case TYP_LONG:
+                    return !CheckedOps::CastFromLongOverflows(GetConstantInt64(arg0VN), castToType, fromUnsigned);
+                case TYP_FLOAT:
+                    return !CheckedOps::CastFromFloatOverflows(GetConstantSingle(arg0VN), castToType);
+                case TYP_DOUBLE:
+                    return !CheckedOps::CastFromDoubleOverflows(GetConstantDouble(arg0VN), castToType);
+                default:
+                    return false;
+            }
         }
     }
 

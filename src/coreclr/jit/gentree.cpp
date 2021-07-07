@@ -14458,46 +14458,26 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                         break;
 
                     case GT_CAST:
+                        f1 = forceCastToFloat(d1);
 
-                        if (tree->gtOverflow() &&
-                            ((op1->TypeIs(TYP_DOUBLE) && CheckedOps::CastFromDoubleOverflows(d1, tree->CastToType())) ||
-                             (op1->TypeIs(TYP_FLOAT) &&
-                              CheckedOps::CastFromFloatOverflows(forceCastToFloat(d1), tree->CastToType()))))
+                        if ((op1->TypeIs(TYP_DOUBLE) && CheckedOps::CastFromDoubleOverflows(d1, tree->CastToType())) ||
+                            (op1->TypeIs(TYP_FLOAT) && CheckedOps::CastFromFloatOverflows(f1, tree->CastToType())))
                         {
+                            // The conversion overflows. The ECMA spec says, in III 3.27, that
+                            // "...if overflow occurs converting a floating point type to an integer, ...,
+                            // the value returned is unspecified."  However, it would at least be
+                            // desirable to have the same value returned for casting an overflowing
+                            // constant to an int as would be obtained by passing that constant as
+                            // a parameter and then casting that parameter to an int type.
+
+                            // Don't fold overflowing converions, as the value returned by
+                            // JIT's codegen doesn't always match with the C compiler's cast result.
+                            // We want the behavior to be the same with or without folding.
+
                             return tree;
                         }
 
                         assert(tree->TypeIs(genActualType(tree->CastToType())));
-
-                        if ((op1->TypeIs(TYP_FLOAT) && !_finite(forceCastToFloat(d1))) ||
-                            (op1->TypeIs(TYP_DOUBLE) && !_finite(d1)))
-                        {
-                            // The floating point constant is not finite.  The ECMA spec says, in
-                            // III 3.27, that "...if overflow occurs converting a floating point type
-                            // to an integer, ..., the value returned is unspecified."  However, it would
-                            // at least be desirable to have the same value returned for casting an overflowing
-                            // constant to an int as would obtained by passing that constant as a parameter
-                            // then casting that parameter to an int type.  We will assume that the C compiler's
-                            // cast logic will yield the desired result (and trust testing to tell otherwise).
-                            // Cross-compilation is an issue here; if that becomes an important scenario, we should
-                            // capture the target-specific values of overflow casts to the various integral types as
-                            // constants in a target-specific function.
-                            CLANG_FORMAT_COMMENT_ANCHOR;
-
-                            // Don't fold conversions of +inf/-inf to integral value on all platforms
-                            // as the value returned by JIT helper doesn't match with the C compiler's cast result.
-                            // We want the behavior to be same with or without folding.
-                            return tree;
-                        }
-
-                        if (d1 <= -1.0 && varTypeIsUnsigned(tree->CastToType()))
-                        {
-                            // Don't fold conversions of these cases becasue the result is unspecified per ECMA spec
-                            // and the native math doing the fold doesn't match the run-time computation on all
-                            // platforms.
-                            // We want the behavior to be same with or without folding.
-                            return tree;
-                        }
 
                         switch (tree->CastToType())
                         {
