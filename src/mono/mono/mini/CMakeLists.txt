@@ -384,6 +384,11 @@ if(NOT DISABLE_SHARED_LIBS)
 
   if(BUILD_DARWIN_FRAMEWORKS)
     if(TARGET_DARWIN)
+      # In cmake, you cannot have list entries which contain a space or semicolon - those are considered
+      # record separators (i.e. a list of list(APPEND foo "a" "b;c" "d e") is a five entry list of values
+      # a, b, c, d and e.
+      # So, in order to treat the components lists as single list entries, swap out the ; character
+      # for a temporary replacement character, allowing the full lists to be treated as single entries
       string(REPLACE ";" "*" mono-components-objects-nowhitespace "${mono-components-objects}")
       string(REPLACE ";" "*" mono-components-stub-objects-nowhitespace "${mono-components-stub-objects}")
       list(APPEND FrameworkConfig Mono.release Mono.debug)
