@@ -192,7 +192,7 @@ if(NOT MONO_CROSS_COMPILE)
   endif()
   # Write a component-manifest.props file in the artifacts/obj/mono/<host>/build/ directory
   # without the ../.. the file would go in artifacts/obj/mono/<host>/mono/mini
-  configure_file( "${MONO_COMPONENT_PATH}/component-manifest.json.in" "../../build/component-manifest.json")
+  configure_file( "${MONO_COMPONENT_PATH}/RuntimeComponentManifest.json.in" "../../build/RuntimeComponentManifest.json")
 endif()
 
 # component tests

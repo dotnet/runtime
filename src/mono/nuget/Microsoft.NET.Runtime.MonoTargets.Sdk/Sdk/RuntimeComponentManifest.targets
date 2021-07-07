@@ -2,7 +2,7 @@
   <Target Name="_MonoReadAvailableComponentsManifest">
     <Error Condition="'%(ResolvedRuntimePack.PackageDirectory)' == ''"
            Text="Empty ResolvedRuntimePack.PackageDirectory while trying to read runtime components manifest" />
-    <MonoRuntimeComponentsReadManifestTask JsonFilePath="%(ResolvedRuntimePack.PackageDirectory)\runtimes\$(RuntimeIdentifier)\build\component-manifest.json">
+    <MonoRuntimeComponentsReadManifestTask JsonFilePath="%(ResolvedRuntimePack.PackageDirectory)\runtimes\$(RuntimeIdentifier)\build\RuntimeComponentManifest.json">
       <Output TaskParameter="_MonoRuntimeComponentSharedLibExt" ItemName="_MonoRuntimeComponentSharedLibExt" />
       <Output TaskParameter="_MonoRuntimeComponentStaticLibExt" ItemName="_MonoRuntimeComponentStaticLibExt" />
       <Output TaskParameter="_MonoRuntimeComponentLinking" ItemName="_MonoRuntimeComponentLinking" />
