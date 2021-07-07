@@ -17,7 +17,7 @@ namespace System.IO.Strategies
 
         protected long _filePosition;
         private long _appendStart; // When appending, prevent overwriting file.
-        private long _length = -1; // When the file is locked for writes (_share <= FileShare.Read) cache file length in-memory, negative means that hasn't been fetched.
+        private long _length = -1; // When the file is locked for writes on Windows (_share <= FileShare.Read) cache file length in-memory, negative means that hasn't been fetched.
         private bool _exposedHandle; // created from handle, or SafeFileHandle was used and the handle got exposed
 
         internal OSFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
@@ -84,7 +84,7 @@ namespace System.IO.Strategies
         {
             get
             {
-                if (!OperatingSystem.IsWindows() || _share > FileShare.Read || _exposedHandle)
+                if (!LengthCachingSupported)
                 {
                     return RandomAccess.GetFileLength(_fileHandle);
                 }
@@ -105,7 +105,7 @@ namespace System.IO.Strategies
         {
             // Do not update the cached length if the file is not locked
             // or if the length hasn't been fetched.
-            if (!OperatingSystem.IsWindows() || _share > FileShare.Read || _length < 0 || _exposedHandle)
+            if (!LengthCachingSupported || _length < 0)
             {
                 Debug.Assert(_length < 0);
                 return;
@@ -116,6 +116,8 @@ namespace System.IO.Strategies
                 _length = _filePosition;
             }
         }
+
+        private bool LengthCachingSupported => OperatingSystem.IsWindows() && _share <= FileShare.Read && !_exposedHandle;
 
         /// <summary>Gets or sets the position within the current stream</summary>
         public sealed override long Position
@@ -235,7 +237,10 @@ namespace System.IO.Strategies
             Debug.Assert(value >= 0, "value >= 0");
 
             FileStreamHelpers.SetFileLength(_fileHandle, value);
-            _length = value;
+            if (LengthCachingSupported)
+            {
+                _length = value;
+            }
 
             if (_filePosition > value)
             {
