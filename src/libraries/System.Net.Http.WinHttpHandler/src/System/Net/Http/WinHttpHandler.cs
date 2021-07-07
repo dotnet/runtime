@@ -876,7 +876,6 @@ namespace System.Net.Http
             Debug.Assert(state.RequestHandle != null);
             Debug.Assert(state.Handler != null);
             Debug.Assert(state.Tcs != null);
-            Debug.Assert(_sessionHandle != null);
 
             if (state.CancellationToken.IsCancellationRequested)
             {
@@ -890,6 +889,7 @@ namespace System.Net.Http
             try
             {
                 EnsureSessionHandleExists(state);
+                Debug.Assert(_sessionHandle != null);
 
                 SetEnableHttp2PlusClientCertificate(state.RequestMessage.RequestUri, state.RequestMessage.Version);
 
