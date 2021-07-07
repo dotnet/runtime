@@ -1124,6 +1124,9 @@ set_update_method (MonoImage *image_base, BaselineInfo *base_info, uint32_t gene
 static const char *
 hot_reload_get_method_debug_information (MonoImage *image_dppdb, int idx)
 {
+	if (!image_dppdb)
+		return NULL;
+		
 	MonoTableInfo *table_encmap = &image_dppdb->tables [MONO_TABLE_ENCMAP];
 	int rows = table_info_get_rows (table_encmap);
 	for (int i = 0; i < rows ; ++i) {
@@ -1305,11 +1308,15 @@ hot_reload_apply_changes (MonoImage *image_base, gconstpointer dmeta_bytes, uint
 	/* makes a copy of dil_bytes_orig */
 	gpointer dil_bytes = open_dil_data (image_base, dil_bytes_orig, dil_length);
 
-	MonoImage *image_dpdb = image_open_dmeta_from_data (image_base, generation, dpdb_bytes_orig, dpdb_length);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image string size: 0x%08x", image_dpdb->heap_strings.size);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image user string size: 0x%08x", image_dpdb->heap_us.size);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image blob heap addr: %p", image_dpdb->heap_blob.data);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image blob heap size: 0x%08x", image_dpdb->heap_blob.size);
+	MonoImage *image_dpdb = NULL;
+	if (dpdb_length > 0)
+	{
+		MonoImage *image_dpdb = image_open_dmeta_from_data (image_base, generation, dpdb_bytes_orig, dpdb_length);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image string size: 0x%08x", image_dpdb->heap_strings.size);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image user string size: 0x%08x", image_dpdb->heap_us.size);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image blob heap addr: %p", image_dpdb->heap_blob.data);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pdb image blob heap size: 0x%08x", image_dpdb->heap_blob.size);
+	}
 
 	BaselineInfo *base_info = baseline_info_lookup_or_add (image_base);
 

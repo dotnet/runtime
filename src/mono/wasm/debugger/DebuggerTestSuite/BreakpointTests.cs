@@ -327,7 +327,7 @@ namespace DebuggerTests
         public async Task DebugHotReloadMethodAddBreakpoint()
         {
             int line = 30;
-            await SetBreakpoint(".*/MethodBody1.cs$", line, 0, use_regex: true);
+            await SetBreakpoint(".*/MethodBody1.cs$", line, 12, use_regex: true);
             var pause_location = await LoadAssemblyAndTestHotReload(
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
@@ -336,11 +336,11 @@ namespace DebuggerTests
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, "StaticMethod3");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 29, 12, "StaticMethod3");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "b", 15);
 
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 4, "StaticMethod3");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 29, 12, "StaticMethod3");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckBool(locals, "c", true);
         }

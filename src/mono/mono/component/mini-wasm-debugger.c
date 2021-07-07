@@ -143,9 +143,9 @@ handle_multiple_ss_requests (void) {
 static void
 mono_wasm_enable_debugging_internal (int debug_level)
 {
+	log_level = debug_level;
 	PRINT_DEBUG_MSG (1, "DEBUGGING ENABLED\n");
 	debugger_enabled = TRUE;
-	log_level = debug_level;
 }
 
 static void
