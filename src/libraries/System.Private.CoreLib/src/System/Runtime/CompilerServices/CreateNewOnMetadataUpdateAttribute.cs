@@ -8,7 +8,7 @@ namespace System.Runtime.CompilerServices
     /// </summary>
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false)]
-    public sealed class EditMetadataByCreatingNewTypeAttribute : Attribute
+    public sealed class CreateNewOnMetadataUpdateAttribute : Attribute
     {
     }
 }

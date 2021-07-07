@@ -28,7 +28,7 @@ namespace System.Reflection.Metadata
 namespace System.Runtime.CompilerServices
 {
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false)]
-    public sealed class EditMetadataByCreatingNewTypeAttribute : System.Attribute
+    public sealed class CreateNewOnMetadataUpdateAttribute : System.Attribute
     {
     }
 }
