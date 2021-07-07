@@ -338,6 +338,8 @@ namespace Microsoft.Win32.SafeHandles
                 case 0xFF534D42: // CIFS_MAGIC_NUMBER
                 case 0x517B: // SMB_SUPER_MAGIC
                     return false; // LOCK_SH is not OK when writing to NFS, CIFS or SMB
+                case -1: // error
+                    return false; // assume we should not acquire the lock if we don't know the File System
                 default:
                     return true; // in all other situations it should be OK
             }
