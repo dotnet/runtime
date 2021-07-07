@@ -1241,7 +1241,7 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
 void emitter::perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacteristics* pResult)
 {
 #ifdef DEBUG
-    printf("PerfScore: unhandled instruction: %s, format %s", codeGen->genInsName(id->idIns()),
+    printf("PerfScore: unhandled instruction: %s, format %s", codeGen->genInsDisplayName(id),
            emitIfName(id->idInsFmt()));
     assert(!"PerfScore: unhandled instruction");
 #endif
@@ -6024,7 +6024,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                         unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & jccAlignBoundaryMask);
                         printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d ; jcc erratum) %dB boundary "
                                "...............................\n",
-                               codeGen->genInsName(curIns), bytesCrossedBoundary, jccAlignBoundary);
+                               codeGen->genInsDisplayName(curInstrDesc), bytesCrossedBoundary, jccAlignBoundary);
                     }
                 }
 
@@ -6043,8 +6043,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                         unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & alignBoundaryMask);
                         if (bytesCrossedBoundary != 0)
                         {
-                            printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d)", codeGen->genInsName(curIns),
-                                   bytesCrossedBoundary);
+                            printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d)",
+                                   codeGen->genInsDisplayName(curInstrDesc), bytesCrossedBoundary);
                         }
                         else
                         {
