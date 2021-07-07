@@ -332,7 +332,7 @@ namespace JsonToItemsTaskFactory
 
         public class CaseInsensitiveDictionaryConverter : JsonConverter<Dictionary<string, string>>
         {
-            public override Dictionary<string, string> Read (ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            public override Dictionary<string, string>? Read (ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(ref reader, options);
                 if (dict == null)
@@ -346,7 +346,7 @@ namespace JsonToItemsTaskFactory
         {
             public JsonModelItemConverter() {}
 
-            public override JsonModelItem Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            public override JsonModelItem? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 switch (reader.TokenType)
                 {
