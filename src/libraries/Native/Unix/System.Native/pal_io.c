@@ -1386,10 +1386,10 @@ int64_t SystemNative_GetFileSystemType(intptr_t fd)
 {
 #if HAVE_STATFS64
     struct statfs64 statfsArgs;
-    return fstatfs64(ToFileDescriptor(fd), &statfsArgs) == -1 ? -1 : statfsArgs.f_type;
+    return fstatfs64(ToFileDescriptor(fd), &statfsArgs) == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
 #elif HAVE_STATFS
     struct statfs statfsArgs;
-    return fstatfs(ToFileDescriptor(fd), &statfsArgs) == -1 ? -1 : statfsArgs.f_type;
+    return fstatfs(ToFileDescriptor(fd), &statfsArgs) == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
 #else
     // since this is just best effort, we return 0 if fstatfs is not supported
     return 0;
