@@ -69,7 +69,7 @@ namespace JsonToItemsTaskFactory
         private TaskPropertyInfo[]? _taskProperties;
         private string? _taskName;
 
-        private bool logDebugTask;
+        private bool _logDebugTask;
 
         public JsonToItemsTaskFactory() {}
 
@@ -81,7 +81,7 @@ namespace JsonToItemsTaskFactory
         {
             _taskName = taskName;
             if (taskBody != null && taskBody.StartsWith("debug", StringComparison.InvariantCultureIgnoreCase))
-                logDebugTask = true;
+                _logDebugTask = true;
             var log = new TaskLoggingHelper(taskFactoryLoggingHost, _taskName);
             if (!ValidateParameterGroup (parameterGroup, log))
                 return false;
@@ -91,18 +91,18 @@ namespace JsonToItemsTaskFactory
             return true;
         }
 
-        public TaskPropertyInfo[] GetTaskParameters () => _taskProperties!;
+        public TaskPropertyInfo[] GetTaskParameters() => _taskProperties!;
 
-        public ITask CreateTask (IBuildEngine taskFactoryLoggingHost)
+        public ITask CreateTask(IBuildEngine taskFactoryLoggingHost)
         {
             var log = new TaskLoggingHelper(taskFactoryLoggingHost, _taskName);
-            if (logDebugTask) log.LogMessage("CreateTask called");
-            return new JsonToItemsTask(_taskName!, logDebugTask);
+            if (_logDebugTask) log.LogMessage("CreateTask called");
+            return new JsonToItemsTask(_taskName!, _logDebugTask);
         }
 
-        public void CleanupTask (ITask task) {}
+        public void CleanupTask(ITask task) {}
 
-        internal bool ValidateParameterGroup (IDictionary<string, TaskPropertyInfo> parameterGroup, TaskLoggingHelper log)
+        internal bool ValidateParameterGroup(IDictionary<string, TaskPropertyInfo> parameterGroup, TaskLoggingHelper log)
         {
             bool hasErrors = false;
             var taskName = _taskName ?? "";
@@ -148,7 +148,7 @@ namespace JsonToItemsTaskFactory
             private TaskLoggingHelper? _log;
             private TaskLoggingHelper Log { get => _log!; set { _log = value; } }
 
-            private void SetBuildEngine (IBuildEngine buildEngine)
+            private void SetBuildEngine(IBuildEngine buildEngine)
             {
                 Log = new TaskLoggingHelper(buildEngine, TaskName);
             }
@@ -160,14 +160,14 @@ namespace JsonToItemsTaskFactory
                         };
             private string? jsonFilePath;
 
-            private readonly bool logDebugTask; // print stuff to the log for debugging the task
+            private readonly bool _logDebugTask; // print stuff to the log for debugging the task
 
             private JsonModelRoot? jsonModel;
             public string TaskName {get;}
             public JsonToItemsTask(string taskName, bool logDebugTask = false)
             {
                 TaskName = taskName;
-                this.logDebugTask = logDebugTask;
+                _logDebugTask = logDebugTask;
             }
 
             public bool Execute()
@@ -177,12 +177,12 @@ namespace JsonToItemsTaskFactory
                     Log.LogError($"no {nameof(JsonFilePath)} specified");
                     return false;
                 }
-                if (!TryGetJson (jsonFilePath, out var json))
+                if (!TryGetJson(jsonFilePath, out var json))
                     return false;
 
-                if (logDebugTask)
+                if (_logDebugTask)
                 {
-                    LogParsedJson (json);
+                    LogParsedJson(json);
                 }
                 jsonModel = json;
                 return true;
@@ -206,7 +206,7 @@ namespace JsonToItemsTaskFactory
                     json = JsonSerializer.DeserializeAsync<JsonModelRoot>(file, JsonOptions).AsTask().Result;
                     if (json == null)
                     {
-                        Log.LogError ("Failed to deserialize Json file");
+                        Log.LogError("Failed to deserialize Json file");
                         return false;
                     }
                     return true;
@@ -222,7 +222,7 @@ namespace JsonToItemsTaskFactory
             {
                 if (json.Properties != null)
                 {
-                    Log.LogMessage ("json has properties: ");
+                    Log.LogMessage("json has properties: ");
                     foreach (var property in json.Properties)
                     {
                         Log.LogMessage($"  {property.Key} = {property.Value}");
@@ -247,17 +247,17 @@ namespace JsonToItemsTaskFactory
                 }
             }
 
-            public object? GetPropertyValue (TaskPropertyInfo property)
+            public object? GetPropertyValue(TaskPropertyInfo property)
             {
                 bool isItem = false;
-                if (typeof(ITaskItem[]).IsAssignableFrom (property.PropertyType))
+                if (typeof(ITaskItem[]).IsAssignableFrom(property.PropertyType))
                 {
-                    if (logDebugTask) Log.LogMessage("GetPropertyValue called with @({0})", property.Name);
+                    if (_logDebugTask) Log.LogMessage("GetPropertyValue called with @({0})", property.Name);
                     isItem = true;
                 }
                 else
                 {
-                    if (logDebugTask) Log.LogMessage("GetPropertyValue called with $({0})", property.Name);
+                    if (_logDebugTask) Log.LogMessage("GetPropertyValue called with $({0})", property.Name);
                 }
                 if (!isItem)
                 {
@@ -272,7 +272,7 @@ namespace JsonToItemsTaskFactory
                 {
                     if (jsonModel?.Items != null && jsonModel.Items.TryGetValue(property.Name, out var itemModels))
                     {
-                        return ConvertItems (itemModels);
+                        return ConvertItems(itemModels);
                     }
 
                 }
@@ -300,15 +300,15 @@ namespace JsonToItemsTaskFactory
                 return items;
             }
 
-            public void SetPropertyValue (TaskPropertyInfo property, object? value)
+            public void SetPropertyValue(TaskPropertyInfo property, object? value)
             {
-                if (logDebugTask) Log.LogMessage("SetPropertyValue called with {0}", property.Name);
+                if (_logDebugTask) Log.LogMessage("SetPropertyValue called with {0}", property.Name);
                 if (property.Name == "JsonFilePath")
                 {
                     jsonFilePath = (string)value!;
                 }
                 else
-                    throw new Exception ($"JsonToItemsTask {TaskName} cannot set property {property.Name}");
+                    throw new Exception($"JsonToItemsTask {TaskName} cannot set property {property.Name}");
             }
 
         }
@@ -332,14 +332,14 @@ namespace JsonToItemsTaskFactory
 
         public class CaseInsensitiveDictionaryConverter : JsonConverter<Dictionary<string, string>>
         {
-            public override Dictionary<string, string>? Read (ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            public override Dictionary<string, string>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(ref reader, options);
                 if (dict == null)
                     return null!;
                 return new Dictionary<string, string>(dict, StringComparer.OrdinalIgnoreCase);
             }
-            public override void Write (Utf8JsonWriter writer, Dictionary<string, string>? value, JsonSerializerOptions options) =>
+            public override void Write(Utf8JsonWriter writer, Dictionary<string, string>? value, JsonSerializerOptions options) =>
                 JsonSerializer.Serialize(writer, value, options);
         }
         public  class JsonModelItemConverter : JsonConverter<JsonModelItem>
