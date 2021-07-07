@@ -297,6 +297,11 @@ var Module = {
 	 */
 	preInit: async function() {
 		await Module.MONO.mono_wasm_load_config("./mono-config.json"); // sets Module.config implicitly
+
+		// setup the globalThis pollyfill as it is known as global in node
+		if (is_node) {
+			global.globalThis = global;
+		}
 	},
 
 	/** Called after an exception occurs during execution
