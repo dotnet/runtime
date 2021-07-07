@@ -257,8 +257,8 @@
   "author": "Microsoft",
   "license": "MIT",
   "dependencies": {
-    "perf_hooks": "0.0.1",
-    "ws": "^7.5.0"
+    "ws": "^7.5.0",
+    "utf-8-validate": "^5.0.2"
   }
 }'
       Overwrite="true"
