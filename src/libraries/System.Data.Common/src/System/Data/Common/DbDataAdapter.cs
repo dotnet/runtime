@@ -288,7 +288,7 @@ namespace System.Data.Common
             throw ADP.NotSupported();
         }
 
-        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public DataTable? FillSchema(DataTable dataTable, SchemaType schemaType)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchema|API> {0}, dataTable, schemaType={1}", ObjectID, schemaType);
@@ -304,7 +304,7 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public override DataTable[] FillSchema(DataSet dataSet, SchemaType schemaType)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchema|API> {0}, dataSet, schemaType={1}", ObjectID, schemaType);
@@ -324,7 +324,7 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public DataTable[] FillSchema(DataSet dataSet, SchemaType schemaType, string srcTable)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchema|API> {0}, dataSet, schemaType={1}, srcTable={2}", ObjectID, (int)schemaType, srcTable);
@@ -340,7 +340,7 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("IDataReader's (built from command) schema table types cannot be statically analyzed.")]
         protected virtual DataTable[] FillSchema(DataSet dataSet, SchemaType schemaType, IDbCommand command, string srcTable, CommandBehavior behavior)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchema|API> {0}, dataSet, schemaType, command, srcTable, behavior={1}", ObjectID, behavior);
@@ -371,7 +371,7 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("IDataReader's (built from command) schema table types cannot be statically analyzed.")]
         protected virtual DataTable? FillSchema(DataTable dataTable, SchemaType schemaType, IDbCommand command, CommandBehavior behavior)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.FillSchema|API> {0}, dataTable, schemaType, command, behavior={1}", ObjectID, behavior);
@@ -403,7 +403,7 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("IDataReader's (built from command) schema table types cannot be statically analyzed.")]
         private object? FillSchemaInternal(DataSet? dataset, DataTable? datatable, SchemaType schemaType, IDbCommand command, string srcTable, CommandBehavior behavior)
         {
             object? dataTables = null;
@@ -841,13 +841,13 @@ namespace System.Data.Common
             throw ADP.NotSupported();
         }
 
-        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public override int Update(DataSet dataSet)
         {
             return Update(dataSet, DbDataAdapter.DefaultSourceTableName);
         }
 
-        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public int Update(DataRow[] dataRows)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Update|API> {0}, dataRows[]", ObjectID);
@@ -886,7 +886,7 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public int Update(DataTable dataTable)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Update|API> {0}, dataTable", ObjectID);
@@ -919,7 +919,7 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public int Update(DataSet dataSet, string srcTable)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Update|API> {0}, dataSet, srcTable='{1}'", ObjectID, srcTable);
@@ -960,7 +960,7 @@ namespace System.Data.Common
             }
         }
 
-        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         protected virtual int Update(DataRow[] dataRows, DataTableMapping tableMapping)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbDataAdapter.Update|API> {0}, dataRows[], tableMapping", ObjectID);
@@ -1530,7 +1530,7 @@ namespace System.Data.Common
 
                         if (getData && (0 != dataReader.RecordsAffected))
                         {
-                            SchemaMapping mapping = new SchemaMapping(this, null, rowUpdatedEvent.Row.Table, readerHandler, false, SchemaType.Mapped, rowUpdatedEvent.TableMapping.SourceTable, true);
+                            SchemaMapping mapping = new SchemaMapping(this, null, rowUpdatedEvent.Row.Table, readerHandler, false, SchemaType.Mapped, rowUpdatedEvent.TableMapping.SourceTable, true, null, null);
 
                             if ((null != mapping.DataTable) && (null != mapping.DataValues))
                             {

@@ -10,11 +10,11 @@ namespace System.Data
         MissingMappingAction MissingMappingAction { get; set; }
         MissingSchemaAction MissingSchemaAction { get; set; }
         ITableMappingCollection TableMappings { get; }
-        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         DataTable[] FillSchema(DataSet dataSet, SchemaType schemaType);
         int Fill(DataSet dataSet);
         IDataParameter[] GetFillParameters();
-        [RequiresUnreferencedCode("DataTypes of schema table cannot be statically analyzed.")]
+        [RequiresUnreferencedCode("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         int Update(DataSet dataSet);
     }
 }

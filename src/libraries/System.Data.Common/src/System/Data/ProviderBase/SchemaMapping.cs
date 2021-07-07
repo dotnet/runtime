@@ -56,12 +56,6 @@ namespace System.Data.ProviderBase
 
         private readonly LoadOption _loadOption;
 
-        [RequiresUnreferencedCode("dataReader schema table rows DataTypes type cannot be statically analyzed.")]
-        internal SchemaMapping(DataAdapter adapter, DataSet? dataset, DataTable? datatable, DataReaderContainer dataReader, bool keyInfo,
-                                    SchemaType schemaType, string? sourceTableName, bool gettingData)
-            : this(adapter, dataset, datatable, dataReader, keyInfo, schemaType, sourceTableName, gettingData, null, null)
-        { }
-
         [RequiresUnreferencedCode("chapterValue and dataReader schema table rows DataTypes type cannot be statically analyzed.")]
         internal SchemaMapping(DataAdapter adapter, DataSet? dataset, DataTable? datatable, DataReaderContainer dataReader, bool keyInfo,
                                     SchemaType schemaType, string? sourceTableName, bool gettingData,
