@@ -42,6 +42,8 @@ namespace System.Net.Security.Tests
 
     public class SslStreamNetworkStreamTest : IClassFixture<CertificateSetup>
     {
+        private static bool SupportsRenegotiation => TestConfiguration.SupportsRenegotiation;
+
         readonly ITestOutputHelper _output;
         readonly CertificateSetup certificates;
 
@@ -172,7 +174,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [ConditionalTheory(nameof(SupportsRenegotiation))]
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
@@ -246,7 +248,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [ConditionalTheory(nameof(SupportsRenegotiation))]
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
@@ -355,7 +357,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [ConditionalFact(nameof(SupportsRenegotiation))]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsync_ServerDontDrainClientData()
         {
