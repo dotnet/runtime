@@ -283,10 +283,9 @@ namespace JsonToItemsTaskFactory
                     var item = new TaskItem(itemModel.Identity);
                     if (itemModel.Metadata != null)
                     {
+                        // assume Identity key was already removed in JsonModelItem
                         foreach (var metadata in itemModel.Metadata)
                         {
-                            if (string.Equals(metadata.Key, "Identity", StringComparison.OrdinalIgnoreCase))
-                                continue;
                             item.SetMetadata(metadata.Key, metadata.Value);
                         }
                     }
@@ -320,9 +319,15 @@ namespace JsonToItemsTaskFactory
         [JsonConverter(typeof(JsonModelItemConverter))]
         public class JsonModelItem
         {
-            public string? Identity {get; set;}
+            public string Identity {get;}
             // n.b. will  be deserialized case insensitive
-            public Dictionary<string, string>? Metadata {get;  set; }
+            public Dictionary<string, string>? Metadata {get;}
+
+            public JsonModelItem(string identity, Dictionary<string, string>? metadata)
+            {
+                Identity = identity;
+                Metadata = metadata;
+            }
         }
 
         public class CaseInsensitiveDictionaryConverter : JsonConverter<Dictionary<string, string>>
@@ -346,18 +351,20 @@ namespace JsonToItemsTaskFactory
                 switch (reader.TokenType)
                 {
                     case JsonTokenType.String:
-                        return new JsonModelItem { Identity = reader.GetString() };
+                        var stringItem = reader.GetString();
+                        if (string.IsNullOrEmpty(stringItem))
+                            throw new Exception ("deserialized json string item was null or the empty string");
+                        return new JsonModelItem(stringItem!, metadata: null);
                     case JsonTokenType.StartObject:
-                        var item = new JsonModelItem();
                         var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(ref reader, options);
                         if (dict == null)
                             return null!;
                         var idict = new Dictionary<string, string> (dict, StringComparer.OrdinalIgnoreCase);
-                        if  (!idict.TryGetValue("Identity", out var identity) || identity == null)
-                            throw new Exception ("deserialized json dictionary item did not have an Identity metadata");
-                        item.Identity = identity;
-                        item.Metadata = idict;
-                        return item;
+                        if  (!idict.TryGetValue("Identity", out var identity) || string.IsNullOrEmpty(identity))
+                            throw new Exception ("deserialized json dictionary item did not have a non-empty Identity metadata");
+                        else
+                            idict.Remove("Identity");
+                        return new JsonModelItem(identity, metadata: idict);
                     default:
                         throw new Exception();
                 }
@@ -365,7 +372,7 @@ namespace JsonToItemsTaskFactory
             public override void Write(Utf8JsonWriter writer, JsonModelItem value, JsonSerializerOptions options)
             {
                 if (value.Metadata == null)
-                    JsonSerializer.Serialize(writer, value.Identity!);
+                    JsonSerializer.Serialize(writer, value.Identity);
                 else
                     JsonSerializer.Serialize(writer, value.Metadata); /* assumes Identity is in there */
             }
