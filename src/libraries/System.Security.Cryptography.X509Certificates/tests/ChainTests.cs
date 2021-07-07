@@ -988,11 +988,17 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
                         // Clear UntrustedRoot, if it happened.
                         allFlags &= ~X509ChainStatusFlags.UntrustedRoot;
 
-                        Assert.Equal(
-                            X509ChainStatusFlags.NotSignatureValid,
-                            allFlags);
-
-                        Assert.Equal(3, chain.ChainElements.Count);
+                        // The chain result can either be PartialChain or NotSignatureValid.
+                        // If the flags are PartialChain, then move on.
+                        // If the flags are not PartialChain, we make sure the result is
+                        // NotSignatureValid.
+                        // In the case of PartialChain, we don't care how many certificates
+                        // are in the chain.
+                        if (allFlags != X509ChainStatusFlags.PartialChain)
+                        {
+                            Assert.Equal(X509ChainStatusFlags.NotSignatureValid, allFlags);
+                            Assert.Equal(3, chain.ChainElements.Count);
+                        }
 
                         Assert.False(valid, $"Chain is valid on execution {iter}");
                     }

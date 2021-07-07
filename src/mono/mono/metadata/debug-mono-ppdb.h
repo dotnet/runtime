@@ -38,7 +38,7 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo);
 MonoDebugMethodAsyncInfo*
 mono_ppdb_lookup_method_async_debug_info (MonoDebugMethodInfo *minfo);
 
-MonoImage *
+MONO_COMPONENT_API MonoImage *
 mono_ppdb_get_image (MonoPPDBFile *ppdb);
 
 char *

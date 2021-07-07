@@ -24,13 +24,14 @@
 #include "mini.h"
 #include "mini-arm.h"
 #include "mini-runtime.h"
-#include "debugger-agent.h"
 #include "jit-icalls.h"
 
 #ifndef DISABLE_INTERPRETER
 #include "interp/interp.h"
 #endif
 #include "mono/utils/mono-tls-inline.h"
+
+#include <mono/metadata/components.h>
 
 void
 mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
@@ -810,9 +811,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		if (single_step)
-			*(gpointer*)code = (gpointer)mini_get_dbg_callbacks ()->single_step_from_context;
+			*(gpointer*)code = (gpointer)mono_component_debugger ()->single_step_from_context;
 		else
-			*(gpointer*)code = (gpointer)mini_get_dbg_callbacks ()->breakpoint_from_context;
+			*(gpointer*)code = (gpointer)mono_component_debugger ()->breakpoint_from_context;
 		code += 4;
 		ARM_BLX_REG (code, ARMREG_IP);
 	}

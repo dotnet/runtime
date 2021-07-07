@@ -340,7 +340,12 @@ namespace System.Reflection
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
 
             StackAllocedArguments stackArgs = default;
-            Span<object?> arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, sig);
+            Span<object?> arguments = default;
+            if (actualCount != 0)
+            {
+                arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, sig);
+            }
+
             object? retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, sig, false, wrapExceptions);
 
             // copy out. This should be made only if ByRef are present.
@@ -394,7 +399,12 @@ namespace System.Reflection
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
 
             StackAllocedArguments stackArgs = default;
-            Span<object?> arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, sig);
+            Span<object?> arguments = default;
+            if (actualCount != 0)
+            {
+                arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, sig);
+            }
+
             object retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, true, wrapExceptions)!; // ctor must return non-null
 
             // copy out. This should be made only if ByRef are present.

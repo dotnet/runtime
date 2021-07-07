@@ -744,6 +744,7 @@ namespace System.Dynamic.Runtime.Tests
 
         // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass012.regclass012
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55051", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public static void CalledFrom_ForExpressionBody()
         {
             dynamic mc = new MemberClass();
@@ -757,6 +758,7 @@ namespace System.Dynamic.Runtime.Tests
 
         // ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.regclass.regclass012a.regclass012a
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55051", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public static void CalledFrom_ForExpressionConditions()
         {
             dynamic mc = new MemberClass();

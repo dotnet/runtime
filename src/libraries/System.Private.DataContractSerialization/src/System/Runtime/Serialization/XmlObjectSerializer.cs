@@ -355,7 +355,7 @@ namespace System.Runtime.Serialization
             reader.MoveToElement();
             if (name != null) // root name set explicitly
             {
-                return reader.IsStartElement(name, ns!); // https://github.com/dotnet/runtime/issues/41395
+                return reader.IsStartElement(name, ns ?? XmlDictionaryString.Empty);
             }
             else
             {

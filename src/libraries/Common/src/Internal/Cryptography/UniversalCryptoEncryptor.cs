@@ -56,6 +56,33 @@ namespace Internal.Cryptography
             return buffer;
         }
 
+        public override bool TransformOneShot(ReadOnlySpan<byte> input, Span<byte> output, out int bytesWritten)
+        {
+            int ciphertextLength = GetCiphertextLength(input.Length);
+
+            if (output.Length < ciphertextLength)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            // Copy the input to the output, and apply padding if required. This will not throw since the
+            // output length has already been checked, and PadBlock will not copy from input to output
+            // until it has checked that it will be able to apply padding correctly.
+            int padWritten = PadBlock(input, output);
+
+            // Do an in-place encrypt. All of our implementations support this, either natively
+            // or making a temporary buffer themselves if in-place is not supported by the native
+            // implementation.
+            Span<byte> paddedOutput = output.Slice(0, padWritten);
+            bytesWritten = BasicSymmetricCipher.TransformFinal(paddedOutput, paddedOutput);
+
+            // After padding, we should have an even number of blocks, and the same applies
+            // to the transform.
+            Debug.Assert(padWritten == bytesWritten);
+            return true;
+        }
+
         private int GetCiphertextLength(int plaintextLength)
         {
             Debug.Assert(plaintextLength >= 0);

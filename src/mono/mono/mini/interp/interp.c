@@ -72,9 +72,10 @@
 #include <mono/mini/llvm-runtime.h>
 #include <mono/mini/llvmonly-runtime.h>
 #include <mono/mini/jit-icalls.h>
-#include <mono/mini/debugger-agent.h>
 #include <mono/mini/ee.h>
 #include <mono/mini/trace.h>
+
+#include <mono/metadata/components.h>
 
 #ifdef TARGET_ARM
 #include <mono/mini/mini-arm.h>
@@ -3286,7 +3287,7 @@ main_loop:
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAK)
 			++ip;
-			do_debugger_tramp (mini_get_dbg_callbacks ()->user_break, frame);
+			do_debugger_tramp (mono_component_debugger ()->user_break, frame);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAKPOINT)
 			++ip;
@@ -7325,7 +7326,7 @@ static int num_methods;
 const int opcount_threshold = 100000;
 
 static void
-interp_add_imethod (gpointer method)
+interp_add_imethod (gpointer method, gpointer user_data)
 {
 	InterpMethod *imethod = (InterpMethod*) method;
 	if (imethod->opcounts > opcount_threshold)
@@ -7351,7 +7352,7 @@ interp_print_method_counts (void)
 
 	jit_mm_lock (jit_mm);
 	imethods = (InterpMethod**) malloc (jit_mm->interp_code_hash.num_entries * sizeof (InterpMethod*));
-	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, interp_add_imethod);
+	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, interp_add_imethod, NULL);
 	jit_mm_unlock (jit_mm);
 
 	qsort (imethods, num_methods, sizeof (InterpMethod*), imethod_opcount_comparer);
@@ -7372,7 +7373,7 @@ interp_set_optimizations (guint32 opts)
 }
 
 static void
-invalidate_transform (gpointer imethod_)
+invalidate_transform (gpointer imethod_, gpointer user_data)
 {
 	InterpMethod *imethod = (InterpMethod *) imethod_;
 	imethod->transformed = FALSE;
@@ -7451,11 +7452,36 @@ interp_invalidate_transformed (void)
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 
 	jit_mm_lock (jit_mm);
-	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, invalidate_transform);
+	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, invalidate_transform, NULL);
 	jit_mm_unlock (jit_mm);
 
 	if (need_stw_restart)
 		mono_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC);
+}
+
+typedef struct {
+	InterpJitInfoFunc func;
+	gpointer user_data;
+} InterpJitInfoFuncUserData;
+
+static void
+interp_call_jit_info_func (gpointer imethod, gpointer user_data)
+{
+	InterpJitInfoFuncUserData *data = (InterpJitInfoFuncUserData *)user_data;
+	data->func (((InterpMethod *)imethod)->jinfo, data->user_data);
+}
+
+static void
+interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
+{
+	InterpJitInfoFuncUserData data = {func, user_data};
+
+	// FIXME: Enumerate all memory managers
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+
+	jit_mm_lock (jit_mm);
+	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, interp_call_jit_info_func, &data);
+	jit_mm_unlock (jit_mm);
 }
 
 static void

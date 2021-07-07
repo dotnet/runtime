@@ -235,7 +235,7 @@ namespace System.Text.Json.Serialization.Metadata
             T value = Get!(obj);
 
             if (
-#if NET6_0_OR_GREATER
+#if NET5_0_OR_GREATER
                 !typeof(T).IsValueType && // treated as a constant by recent versions of the JIT.
 #else
                 !Converter.IsValueType &&

@@ -92,7 +92,7 @@ typedef struct {
 void            mono_debugger_lock                          (void);
 void            mono_debugger_unlock                        (void);
 
-void
+MONO_COMPONENT_API void
 mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file,
 			   GPtrArray **source_file_list, int **source_files,
 			   MonoSymSeqPoint **seq_points, int *n_seq_points);
@@ -100,16 +100,16 @@ mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file,
 MONO_API void
 mono_debug_free_locals (MonoDebugLocalsInfo *info);
 
-void
+MONO_COMPONENT_API void
 mono_debug_free_method_async_debug_info (MonoDebugMethodAsyncInfo *info);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_debug_image_has_debug_info (MonoImage *image);
 
 MonoDebugSourceLocation *
 mono_debug_lookup_source_location_by_il (MonoMethod *method, guint32 il_offset, MonoDomain *domain);
 
-char*
+MONO_COMPONENT_API char*
 mono_debug_image_get_sourcelink (MonoImage *image);
 
 #endif /* __DEBUG_INTERNALS_H__ */

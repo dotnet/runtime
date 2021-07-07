@@ -611,7 +611,7 @@ namespace System.Threading
                     waiterNode = nextWaiterNode)
                 {
                     // Signaling a waiter will unregister the waiter node, so keep the next node before trying
-                    nextWaiterNode = waiterNode.Next;
+                    nextWaiterNode = waiterNode.NextThread;
 
                     waiterNode.WaitInfo.TrySignalToSatisfyWait(waiterNode, isAbandonedMutex: false);
                 }
@@ -635,7 +635,7 @@ namespace System.Threading
                 {
                     // Signaling a waiter will unregister the waiter node, but it may only abort the wait without satisfying the
                     // wait, in which case we would try to signal another waiter. So, keep the next node before trying.
-                    nextWaiterNode = waiterNode.Next;
+                    nextWaiterNode = waiterNode.NextThread;
 
                     if (waiterNode.WaitInfo.TrySignalToSatisfyWait(waiterNode, isAbandonedMutex: false))
                     {
@@ -689,7 +689,7 @@ namespace System.Threading
                     waiterNode = nextWaiterNode)
                 {
                     // Signaling the waiter will unregister the waiter node, so keep the next node before trying
-                    nextWaiterNode = waiterNode.Next;
+                    nextWaiterNode = waiterNode.NextThread;
 
                     if (waiterNode.WaitInfo.TrySignalToSatisfyWait(waiterNode, isAbandonedMutex: false) && --count == 0)
                     {
@@ -753,7 +753,7 @@ namespace System.Threading
                 {
                     // Signaling a waiter will unregister the waiter node, but it may only abort the wait without satisfying the
                     // wait, in which case we would try to signal another waiter. So, keep the next node before trying.
-                    nextWaiterNode = waiterNode.Next;
+                    nextWaiterNode = waiterNode.NextThread;
 
                     ThreadWaitInfo waitInfo = waiterNode.WaitInfo;
                     if (waitInfo.TrySignalToSatisfyWait(waiterNode, isAbandoned))

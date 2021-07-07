@@ -7874,10 +7874,20 @@ bool Compiler::impTailCallRetTypeCompatible(var_types                callerRetTy
                                             CORINFO_CLASS_HANDLE     calleeRetTypeClass,
                                             CorInfoCallConvExtension calleeCallConv)
 {
-    // Note that we can not relax this condition with genActualType() as the
-    // calling convention dictates that the caller of a function with a small
-    // typed return value is responsible for normalizing the return val.
+    // Early out if the types are the same.
     if (callerRetType == calleeRetType)
+    {
+        return true;
+    }
+
+    // For integral types the managed calling convention dictates that callee
+    // will widen the return value to 4 bytes, so we can allow implicit widening
+    // in managed to managed tailcalls when dealing with <= 4 bytes.
+    bool isManaged =
+        (callerCallConv == CorInfoCallConvExtension::Managed) && (calleeCallConv == CorInfoCallConvExtension::Managed);
+
+    if (isManaged && varTypeIsIntegral(callerRetType) && varTypeIsIntegral(calleeRetType) &&
+        (genTypeSize(callerRetType) <= 4) && (genTypeSize(calleeRetType) <= genTypeSize(callerRetType)))
     {
         return true;
     }
@@ -8672,7 +8682,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {
         // We set up the unmanaged call by linking the frame, disabling GC, etc
-        // This needs to be cleaned up on return
+        // This needs to be cleaned up on return.
+        // In addition, native calls have different normalization rules than managed code
+        // (managed calling convention always widens return values in the callee)
         if (canTailCall)
         {
             canTailCall             = false;
@@ -18921,36 +18933,34 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         inlineResult->Note(InlineObservation::CALLSITE_NONGENERIC_CALLS_GENERIC);
     }
 
-    if (pInlineInfo != nullptr)
+    // Inspect callee's arguments (and the actual values at the callsite for them)
+    CORINFO_SIG_INFO        sig    = info.compMethodInfo->args;
+    CORINFO_ARG_LIST_HANDLE sigArg = sig.args;
+
+    GenTreeCall::Use* argUse = pInlineInfo == nullptr ? nullptr : pInlineInfo->iciCall->AsCall()->gtCallArgs;
+
+    for (unsigned i = 0; i < info.compMethodInfo->args.numArgs; i++)
     {
-        // Inspect callee's arguments (and the actual values at the callsite for them)
-        CORINFO_SIG_INFO        sig    = info.compMethodInfo->args;
-        CORINFO_ARG_LIST_HANDLE sigArg = sig.args;
+        CORINFO_CLASS_HANDLE sigClass;
+        CorInfoType          corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
+        GenTree*             argNode = argUse == nullptr ? nullptr : argUse->GetNode()->gtSkipPutArgType();
 
-        GenTreeCall::Use* argUse = pInlineInfo->iciCall->AsCall()->gtCallArgs;
-
-        for (unsigned i = 0; i < info.compMethodInfo->args.numArgs; i++)
+        if (corType == CORINFO_TYPE_CLASS)
         {
-            assert(argUse != nullptr);
+            sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
+        }
+        else if (corType == CORINFO_TYPE_VALUECLASS)
+        {
+            inlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT);
+        }
+        else if (corType == CORINFO_TYPE_BYREF)
+        {
+            sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
+            corType  = info.compCompHnd->getChildType(sigClass, &sigClass);
+        }
 
-            CORINFO_CLASS_HANDLE sigClass;
-            CorInfoType          corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
-            GenTree*             argNode = argUse->GetNode()->gtSkipPutArgType();
-
-            if (corType == CORINFO_TYPE_CLASS)
-            {
-                sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
-            }
-            else if (corType == CORINFO_TYPE_VALUECLASS)
-            {
-                inlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT);
-            }
-            else if (corType == CORINFO_TYPE_BYREF)
-            {
-                sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
-                corType  = info.compCompHnd->getChildType(sigClass, &sigClass);
-            }
-
+        if (argNode != nullptr)
+        {
             bool                 isExact   = false;
             bool                 isNonNull = false;
             CORINFO_CLASS_HANDLE argCls    = gtGetClassHandle(argNode, &isExact, &isNonNull);
@@ -18978,10 +18988,9 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
             {
                 inlineResult->Note(InlineObservation::CALLSITE_ARG_CONST);
             }
-
-            sigArg = info.compCompHnd->getArgNext(sigArg);
             argUse = argUse->GetNext();
         }
+        sigArg = info.compCompHnd->getArgNext(sigArg);
     }
 
     // Note if the callee's return type is a value type
@@ -18998,6 +19007,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         {
             inlineResult->Note(InlineObservation::CALLEE_CLASS_PROMOTABLE);
         }
+        inlineResult->Note(InlineObservation::CALLEE_CLASS_VALUETYPE);
     }
 
 #ifdef FEATURE_SIMD
@@ -19063,21 +19073,30 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
 
     // If the call site has profile data, report the relative frequency of the site.
     //
-    if ((pInlineInfo != nullptr) && pInlineInfo->iciBlock->hasProfileWeight())
+    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveProfileData() && pInlineInfo->iciBlock->hasProfileWeight())
     {
-        double callSiteWeight = (double)pInlineInfo->iciBlock->bbWeight;
-        double entryWeight    = (double)impInlineRoot()->fgFirstBB->bbWeight;
+        BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
+        BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
+        BasicBlock::weight_t profileFreq    = entryWeight == 0.0f ? 0.0f : callSiteWeight / entryWeight;
 
         assert(callSiteWeight >= 0);
         assert(entryWeight >= 0);
 
-        if (entryWeight != 0)
-        {
-            inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
+        BasicBlock::weight_t sufficientSamples = 1000.0f;
 
-            double frequency = callSiteWeight / entryWeight;
-            inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, frequency);
+        if (!rootCompiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) ||
+            ((callSiteWeight + entryWeight) > sufficientSamples))
+        {
+            // Let's not report profiles for methods with insufficient samples during prejitting.
+            inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
+            inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, profileFreq);
         }
+    }
+    else if ((pInlineInfo == nullptr) && rootCompiler->fgHaveProfileData())
+    {
+        // Simulate a hot callsite for PrejitRoot mode.
+        inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
+        inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, 1.0);
     }
 }
 
@@ -20626,14 +20645,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             return compOpportunisticallyDependsOn(InstructionSet_SSE41);
 
         case NI_System_Math_FusedMultiplyAdd:
-        {
-            // AMD64/x86 has FMA3 instructions to directly compute fma. However, in
-            // the scenario where it is supported we should have generated GT_HWINTRINSIC
-            // nodes in place of the GT_INTRINSIC node.
-
-            assert(!compIsaSupportedDebugOnly(InstructionSet_FMA));
-            return false;
-        }
+            return compOpportunisticallyDependsOn(InstructionSet_FMA);
 
         default:
             return false;
@@ -20649,14 +20661,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             return true;
 
         case NI_System_Math_FusedMultiplyAdd:
-        {
-            // ARM64 has AdvSimd instructions to directly compute fma. However, in
-            // the scenario where it is supported we should have generated GT_HWINTRINSIC
-            // nodes in place of the GT_INTRINSIC node.
-
-            assert(!compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
-            return false;
-        }
+            return compOpportunisticallyDependsOn(InstructionSet_AdvSimd);
 
         default:
             return false;

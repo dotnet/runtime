@@ -61,8 +61,7 @@ namespace Internal.Cryptography
             if (rgbKey == null)
                 throw new ArgumentNullException(nameof(rgbKey));
 
-            long keySize = rgbKey.Length * (long)BitsPerByte;
-            if (keySize > int.MaxValue || !((int)keySize).IsLegalSize(LegalKeySizes))
+            if (!ValidKeySize(rgbKey.Length, out int keySize))
                 throw new ArgumentException(SR.Cryptography_InvalidKeySize, nameof(rgbKey));
 
             if (rgbIV != null)
@@ -77,8 +76,62 @@ namespace Internal.Cryptography
                 ValidateCFBFeedbackSize(FeedbackSize);
             }
 
-            int effectiveKeySize = EffectiveKeySizeValue == 0 ? (int)keySize : EffectiveKeySize;
+            int effectiveKeySize = EffectiveKeySizeValue == 0 ? keySize : EffectiveKeySize;
             return CreateTransformCore(Mode, Padding, rgbKey, effectiveKeySize, rgbIV, BlockSize / BitsPerByte, FeedbackSize / BitsPerByte, GetPaddingSize(), encrypting);
+        }
+
+        protected override bool TryDecryptEcbCore(
+            ReadOnlySpan<byte> ciphertext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            if (!ValidKeySize(Key.Length, out int keySize))
+                throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
+
+            int effectiveKeySize = EffectiveKeySizeValue == 0 ? keySize : EffectiveKeySize;
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.ECB,
+                paddingMode,
+                Key,
+                effectiveKeyLength: effectiveKeySize,
+                iv: null,
+                blockSize: BlockSize / BitsPerByte,
+                0, /*feedback size */
+                paddingSize: BlockSize / BitsPerByte,
+                encrypting: false);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryEncryptEcbCore(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            if (!ValidKeySize(Key.Length, out int keySize))
+                throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
+
+            int effectiveKeySize = EffectiveKeySizeValue == 0 ? keySize : EffectiveKeySize;
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.ECB,
+                paddingMode,
+                Key,
+                effectiveKeyLength: effectiveKeySize,
+                iv: null,
+                blockSize: BlockSize / BitsPerByte,
+                0, /*feedback size */
+                paddingSize: BlockSize / BitsPerByte,
+                encrypting: true);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
         }
 
         private static void ValidateCFBFeedbackSize(int feedback)
@@ -90,6 +143,18 @@ namespace Internal.Cryptography
         private int GetPaddingSize()
         {
             return BlockSize / BitsPerByte;
+        }
+
+        private bool ValidKeySize(int keySizeBytes, out int keySizeBits)
+        {
+            if (keySizeBytes > (int.MaxValue / BitsPerByte))
+            {
+                keySizeBits = 0;
+                return false;
+            }
+
+            keySizeBits = keySizeBytes << 3;
+            return keySizeBits.IsLegalSize(LegalKeySizes);
         }
     }
 }

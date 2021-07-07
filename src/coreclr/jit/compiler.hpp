@@ -1516,7 +1516,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 inline bool Compiler::lvaHaveManyLocals() const
 {
-    return (lvaCount >= lclMAX_TRACKED);
+    return (lvaCount >= (unsigned)JitConfig.JitMaxLocalsToTrack());
 }
 
 /*****************************************************************************
@@ -1584,6 +1584,11 @@ inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* re
     lvaTable[tempNum].lvType    = TYP_UNDEF;
     lvaTable[tempNum].lvIsTemp  = shortLifetime;
     lvaTable[tempNum].lvOnFrame = true;
+
+    if (!compEnregLocals())
+    {
+        lvaSetVarDoNotEnregister(tempNum DEBUGARG(Compiler::DNER_NoRegVars));
+    }
 
     // If we've started normal ref counting, bump the ref count of this
     // local, as we no longer do any incremental counting, and we presume

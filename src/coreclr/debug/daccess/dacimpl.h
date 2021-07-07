@@ -839,7 +839,8 @@ class ClrDataAccess
       public ISOSDacInterface7,
       public ISOSDacInterface8,
       public ISOSDacInterface9,
-      public ISOSDacInterface10
+      public ISOSDacInterface10,
+      public ISOSDacInterface11
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1213,6 +1214,16 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRESS *managedObject, int *refCount);
     virtual HRESULT STDMETHODCALLTYPE IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappersRCW);
     virtual HRESULT STDMETHODCALLTYPE GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRESS *identity);
+
+    // ISOSDacInterface11
+    virtual HRESULT STDMETHODCALLTYPE IsTrackedType(
+        CLRDATA_ADDRESS objAddr,
+        BOOL *isTrackedType,
+        BOOL *hasTaggedMemory);
+    virtual HRESULT STDMETHODCALLTYPE GetTaggedMemory(
+        CLRDATA_ADDRESS objAddr,
+        CLRDATA_ADDRESS *taggedMemory,
+        size_t *taggedMemorySizeInBytes);
     //
     // ClrDataAccess.
     //

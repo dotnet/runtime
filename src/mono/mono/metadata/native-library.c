@@ -493,12 +493,11 @@ static MonoDl *
 netcore_probe_for_module_variations (const char *mdirname, const char *file_name, int raw_flags)
 {
 	void *iter = NULL;
-	char *full_name;
+	char *full_name = NULL;
 	MonoDl *module = NULL;
 
-	// FIXME: this appears to search *.dylib twice for some reason
-	while ((full_name = mono_dl_build_path (mdirname, file_name, &iter)) && module == NULL) {
-		char *error_msg;
+	while (module == NULL && (full_name = mono_dl_build_path (mdirname, file_name, &iter))) {
+		char *error_msg = NULL;
 		module = mono_dl_open_full (full_name, MONO_DL_LAZY, raw_flags, &error_msg);
 		if (!module) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, error_msg);
@@ -506,7 +505,6 @@ netcore_probe_for_module_variations (const char *mdirname, const char *file_name
 		}
 		g_free (full_name);
 	}
-	g_free (full_name);
 
 	return module;
 }

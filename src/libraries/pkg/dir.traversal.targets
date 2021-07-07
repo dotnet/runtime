@@ -47,18 +47,18 @@
 
   <PropertyGroup>
     <TraversalBuildDependsOn>
-      FilterProjectsPackageRID;
+      FilterProjectsOutputRid;
       $(TraversalBuildDependsOn);
     </TraversalBuildDependsOn>
   </PropertyGroup>
 
-  <!-- When @(BuildRID) is set, filter the set of projects down to only those applicable to $(PackageRID) -->
-  <Target Name="FilterProjectsPackageRID" Condition="'@(BuildRID)' != ''">
+  <!-- When @(BuildRID) is set, filter the set of projects down to only those applicable to $(OutputRid) -->
+  <Target Name="FilterProjectsOutputRid" Condition="'@(BuildRID)' != ''">
     <ItemGroup>
       <!-- Build identity package, when SkipBuildIdentityPackage is not set -->
       <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '' and '$(SkipBuildIdentityPackage)' != 'true'" />
       <!-- Build packages for current RID, when SkipBuildRuntimePackage is not set -->
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(PackageRID)' and '$(SkipBuildRuntimePackage)' != 'true'" />
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(OutputRid)' and '$(SkipBuildRuntimePackage)' != 'true'" />
     </ItemGroup>
 
     <ItemGroup>

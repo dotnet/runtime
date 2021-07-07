@@ -91,10 +91,10 @@ namespace System.Diagnostics.Tracing
         [ThreadStatic]
         private static WriteEventErrorCode s_returnCode; // The last return code
 
-        private const int s_basicTypeAllocationBufferSize = 16;
-        private const int s_etwMaxNumberArguments = 128;
-        private const int s_etwAPIMaxRefObjCount = 8;
-        private const int s_traceEventMaximumSize = 65482;
+        private const int BasicTypeAllocationBufferSize = 16;
+        private const int EtwMaxNumberArguments = 128;
+        private const int EtwAPIMaxRefObjCount = 8;
+        private const int TraceEventMaximumSize = 65482;
 
         public enum WriteEventErrorCode : int
         {
@@ -776,7 +776,7 @@ namespace System.Diagnostics.Tracing
 
                 // then the array parameters
                 dataDescriptor++;
-                dataBuffer += s_basicTypeAllocationBufferSize;
+                dataBuffer += BasicTypeAllocationBufferSize;
                 dataDescriptor->Size = (uint)blobRet.Length;
             }
             else if (data is IntPtr)
@@ -935,7 +935,7 @@ namespace System.Diagnostics.Tracing
 
             // advance buffers
             dataDescriptor++;
-            dataBuffer += s_basicTypeAllocationBufferSize;
+            dataBuffer += BasicTypeAllocationBufferSize;
 
             return (object?)sRet ?? (object?)blobRet;
         }
@@ -975,7 +975,7 @@ namespace System.Diagnostics.Tracing
         // <UsesUnsafeCode Name="Local v7 of type: Char*" />
         // <ReferencesCritical Name="Method: EncodeObject(Object&, EventData*, Byte*):String" Ring="1" />
         // </SecurityKernel>
-        internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, params object?[] eventPayload)
+        internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, object?[] eventPayload)
         {
             WriteEventErrorCode status = WriteEventErrorCode.NoError;
 
@@ -983,7 +983,7 @@ namespace System.Diagnostics.Tracing
             {
                 int argCount = eventPayload.Length;
 
-                if (argCount > s_etwMaxNumberArguments)
+                if (argCount > EtwMaxNumberArguments)
                 {
                     s_returnCode = WriteEventErrorCode.TooManyArgs;
                     return false;
@@ -992,13 +992,23 @@ namespace System.Diagnostics.Tracing
                 uint totalEventSize = 0;
                 int index;
                 int refObjIndex = 0;
-                List<int> refObjPosition = new List<int>(s_etwAPIMaxRefObjCount);
-                List<object?> dataRefObj = new List<object?>(s_etwAPIMaxRefObjCount);
+
+#if ES_BUILD_STANDALONE
+                int[] refObjPosition = new int[EtwAPIMaxRefObjCount];
+                object?[] dataRefObj = new object?[EtwAPIMaxRefObjCount];
+#else
+                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(EightObjects)}");
+                EightObjects eightObjectStack = default;
+                Span<int> refObjPosition = stackalloc int[EtwAPIMaxRefObjCount];
+                Span<object?> dataRefObj = new Span<object?>(ref eightObjectStack._arg0, EtwAPIMaxRefObjCount);
+#endif
+
                 EventData* userData = stackalloc EventData[2 * argCount];
                 for (int i = 0; i < 2 * argCount; i++)
                     userData[i] = default;
-                EventData* userDataPtr = (EventData*)userData;
-                byte* dataBuffer = stackalloc byte[s_basicTypeAllocationBufferSize * 2 * argCount]; // Assume 16 chars for non-string argument
+
+                EventData* userDataPtr = userData;
+                byte* dataBuffer = stackalloc byte[BasicTypeAllocationBufferSize * 2 * argCount]; // Assume 16 chars for non-string argument
                 byte* currentBuffer = dataBuffer;
 
                 //
@@ -1020,15 +1030,32 @@ namespace System.Diagnostics.Tracing
                             int idx = (int)(userDataPtr - userData - 1);
                             if (!(supportedRefObj is string))
                             {
-                                if (eventPayload.Length + idx + 1 - index > s_etwMaxNumberArguments)
+                                if (eventPayload.Length + idx + 1 - index > EtwMaxNumberArguments)
                                 {
                                     s_returnCode = WriteEventErrorCode.TooManyArgs;
                                     return false;
                                 }
                                 hasNonStringRefArgs = true;
                             }
-                            dataRefObj.Add(supportedRefObj);
-                            refObjPosition.Add(idx);
+
+                            if (refObjIndex >= dataRefObj.Length)
+                            {
+#if ES_BUILD_STANDALONE
+                                Array.Resize(ref dataRefObj, dataRefObj.Length * 2);
+                                Array.Resize(ref refObjPosition, refObjPosition.Length * 2);
+#else
+                                Span<object?> newDataRefObj = new object?[dataRefObj.Length * 2];
+                                dataRefObj.CopyTo(newDataRefObj);
+                                dataRefObj = newDataRefObj;
+
+                                Span<int> newRefObjPosition = new int[refObjPosition.Length * 2];
+                                refObjPosition.CopyTo(newRefObjPosition);
+                                refObjPosition = newRefObjPosition;
+#endif
+                            }
+
+                            dataRefObj[refObjIndex] = supportedRefObj;
+                            refObjPosition[refObjIndex] = idx;
                             refObjIndex++;
                         }
                     }
@@ -1042,22 +1069,23 @@ namespace System.Diagnostics.Tracing
                 // update argCount based on actual number of arguments written to 'userData'
                 argCount = (int)(userDataPtr - userData);
 
-                if (totalEventSize > s_traceEventMaximumSize)
+                if (totalEventSize > TraceEventMaximumSize)
                 {
                     s_returnCode = WriteEventErrorCode.EventTooBig;
                     return false;
                 }
 
                 // the optimized path (using "fixed" instead of allocating pinned GCHandles
-                if (!hasNonStringRefArgs && (refObjIndex < s_etwAPIMaxRefObjCount))
+                if (!hasNonStringRefArgs && (refObjIndex <= EtwAPIMaxRefObjCount))
                 {
                     // Fast path: at most 8 string arguments
 
                     // ensure we have at least s_etwAPIMaxStringCount in dataString, so that
                     // the "fixed" statement below works
-                    while (refObjIndex < s_etwAPIMaxRefObjCount)
+                    while (refObjIndex < EtwAPIMaxRefObjCount)
                     {
-                        dataRefObj.Add(null);
+                        dataRefObj[refObjIndex] = null;
+                        refObjPosition[refObjIndex] = -1;
                         ++refObjIndex;
                     }
 
@@ -1067,7 +1095,7 @@ namespace System.Diagnostics.Tracing
                     fixed (char* v0 = (string?)dataRefObj[0], v1 = (string?)dataRefObj[1], v2 = (string?)dataRefObj[2], v3 = (string?)dataRefObj[3],
                             v4 = (string?)dataRefObj[4], v5 = (string?)dataRefObj[5], v6 = (string?)dataRefObj[6], v7 = (string?)dataRefObj[7])
                     {
-                        userDataPtr = (EventData*)userData;
+                        userDataPtr = userData;
                         if (dataRefObj[0] != null)
                         {
                             userDataPtr[refObjPosition[0]].Ptr = (ulong)v0;
@@ -1107,7 +1135,7 @@ namespace System.Diagnostics.Tracing
                 else
                 {
                     // Slow path: use pinned handles
-                    userDataPtr = (EventData*)userData;
+                    userDataPtr = userData;
 
                     GCHandle[] rgGCHandle = new GCHandle[refObjIndex];
                     for (int i = 0; i < refObjIndex; ++i)
@@ -1144,6 +1172,23 @@ namespace System.Diagnostics.Tracing
 
             return true;
         }
+
+#if !ES_BUILD_STANDALONE
+        /// <summary>Workaround for inability to stackalloc object[EtwAPIMaxRefObjCount == 8].</summary>
+        private struct EightObjects
+        {
+            internal object? _arg0;
+#pragma warning disable CA1823, CS0169, IDE0051
+            private object? _arg1;
+            private object? _arg2;
+            private object? _arg3;
+            private object? _arg4;
+            private object? _arg5;
+            private object? _arg6;
+            private object? _arg7;
+#pragma warning restore CA1823, CS0169, IDE0051
+        }
+#endif
 
         /// <summary>
         /// WriteEvent, method to be used by generated code on a derived class

@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
@@ -370,22 +371,29 @@ namespace ILCompiler
 
             if (_typeRefsInCompilationModuleSet == null)
             {
-                _typeRefsInCompilationModuleSet = new Dictionary<TypeDesc, ModuleToken>();
-
-                foreach (var module in _compilationModuleSet)
+                lock(_compilationModuleSet)
                 {
-                    EcmaModule ecmaModule = (EcmaModule)module;
-                    foreach (var typeRefHandle in ecmaModule.MetadataReader.TypeReferences)
+                    if (_typeRefsInCompilationModuleSet == null)
                     {
-                        try
+                        var typeRefsInCompilationModuleSet = new Dictionary<TypeDesc, ModuleToken>();
+
+                        foreach (var module in _compilationModuleSet)
                         {
-                            TypeDesc typeFromTypeRef = ecmaModule.GetType(typeRefHandle);
-                            if (!_typeRefsInCompilationModuleSet.ContainsKey(typeFromTypeRef))
+                            EcmaModule ecmaModule = (EcmaModule)module;
+                            foreach (var typeRefHandle in ecmaModule.MetadataReader.TypeReferences)
                             {
-                                _typeRefsInCompilationModuleSet.Add(typeFromTypeRef, new ModuleToken(ecmaModule, typeRefHandle));
+                                try
+                                {
+                                    TypeDesc typeFromTypeRef = ecmaModule.GetType(typeRefHandle);
+                                    if (!typeRefsInCompilationModuleSet.ContainsKey(typeFromTypeRef))
+                                    {
+                                        typeRefsInCompilationModuleSet.Add(typeFromTypeRef, new ModuleToken(ecmaModule, typeRefHandle));
+                                    }
+                                }
+                                catch (TypeSystemException) { }
                             }
                         }
-                        catch (TypeSystemException) { }
+                        Volatile.Write(ref _typeRefsInCompilationModuleSet, typeRefsInCompilationModuleSet);
                     }
                 }
             }

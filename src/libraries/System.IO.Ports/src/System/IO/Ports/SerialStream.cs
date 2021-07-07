@@ -10,7 +10,12 @@ using System.Net.Sockets;
 
 namespace System.IO.Ports
 {
+// Issue https://github.com/dotnet/runtime/issues/54916
+// 'SerialStream' overrides array-based 'ReadAsync' but does not override memory-based 'ReadAsync'. Consider overriding memory-based 'ReadAsync' to improve performance.
+// 'SerialStream' overrides array-based 'WriteAsync' but does not override memory-based 'WriteAsync'. Consider overriding memory-based 'WriteAsync' to improve performance.
+#pragma warning disable CA1844
     internal sealed partial class SerialStream : Stream
+#pragma warning restore CA1844
     {
         private const int MaxDataBits = 8;
         private const int MinDataBits = 5;

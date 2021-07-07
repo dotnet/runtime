@@ -2429,6 +2429,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		// We do a reference comparison only if we know both operands are runtime type
 		// (they originate from object.GetType or ldftn + GetTypeFromHandle)
 		*op = MINT_CEQ_P;
+	} else if (in_corlib && target_method->klass == mono_defaults.systemtype_class && !strcmp (target_method->name, "op_Inequality") &&
+			td->sp [-1].klass == mono_defaults.runtimetype_class && td->sp [-2].klass == mono_defaults.runtimetype_class) {
+		*op = MINT_CNE_P;
 	} else if (in_corlib && target_method->klass == mono_defaults.object_class) {
 		if (!strcmp (tm, "InternalGetHashCode")) {
 			*op = MINT_INTRINS_GET_HASHCODE;
@@ -8508,17 +8511,30 @@ retry:
 			} else if (opcode == MINT_LDOBJ_VT) {
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
 				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
+					int ldsize = ins->data [0];
 					int local = ldloca->sregs [0];
-					// Replace LDLOCA + LDOBJ_VT with MOV_VT
-					ins->opcode = MINT_MOV_VT;
 					local_ref_count [sregs [0]]--;
-					sregs [0] = local;
 
+					if (ldsize == td->locals [local].size) {
+						// Replace LDLOCA + LDOBJ_VT with MOV_VT
+						ins->opcode = MINT_MOV_VT;
+						sregs [0] = local;
+						needs_retry = TRUE;
+					} else {
+						// This loads just a part of the local valuetype
+						ins = interp_insert_ins (td, ins, MINT_MOV_OFF);
+						interp_ins_set_dreg (ins, ins->prev->dreg);
+						interp_ins_set_sreg (ins, local);
+						ins->data [0] = 0;
+						ins->data [1] = MINT_TYPE_VT;
+						ins->data [2] = ldsize;
+
+						interp_clear_ins (ins->prev);
+					}
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/ldobj_vt pair :\n\t");
 						dump_interp_inst (ins);
 					}
-					needs_retry = TRUE;
 				}
 			} else if (MINT_IS_STFLD (opcode) && ins->data [0] == 0) {
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
@@ -9757,7 +9773,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		mono_runtime_print_stats ();
 	}
 
-	MonoJitMemoryManager *jit_mm = jit_mm_for_method (imethod->method);
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 	jit_mm_lock (jit_mm);
 	if (!g_hash_table_lookup (jit_mm->seq_points, imethod->method))
 		g_hash_table_insert (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);

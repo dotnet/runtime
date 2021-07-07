@@ -676,6 +676,7 @@ namespace System.Data
     [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataTableEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.ToolboxItemAttribute(false)]
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetDataTableSchema")]
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors)]
     public partial class DataTable : System.ComponentModel.MarshalByValueComponent, System.ComponentModel.IListSource, System.ComponentModel.ISupportInitialize, System.ComponentModel.ISupportInitializeNotification, System.Runtime.Serialization.ISerializable, System.Xml.Serialization.IXmlSerializable
     {
         protected internal bool fInitInProgress;
@@ -1743,6 +1744,7 @@ namespace System.Data.Common
         Start = 1,
         End = 2,
     }
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public partial class DataAdapter : System.ComponentModel.Component, System.Data.IDataAdapter
     {
         protected DataAdapter() { }
@@ -1919,6 +1921,56 @@ namespace System.Data.Common
         System.Data.ITableMapping System.Data.ITableMappingCollection.Add(string sourceTableName, string dataSetTableName) { throw null; }
         System.Data.ITableMapping System.Data.ITableMappingCollection.GetByDataSetTable(string dataSetTableName) { throw null; }
     }
+    public abstract class DbBatch : System.IDisposable, System.IAsyncDisposable
+    {
+        public System.Data.Common.DbBatchCommandCollection BatchCommands { get { throw null; } }
+        protected abstract System.Data.Common.DbBatchCommandCollection DbBatchCommands { get; }
+        public abstract int Timeout { get; set; }
+        public System.Data.Common.DbConnection? Connection { get; set; }
+        protected abstract System.Data.Common.DbConnection? DbConnection { get; set; }
+        public System.Data.Common.DbTransaction? Transaction { get; set; }
+        protected abstract System.Data.Common.DbTransaction? DbTransaction { get; set; }
+        public System.Data.Common.DbDataReader ExecuteReader(System.Data.CommandBehavior behavior = System.Data.CommandBehavior.Default) { throw null; }
+        protected abstract System.Data.Common.DbDataReader ExecuteDbDataReader(System.Data.CommandBehavior behavior);
+        public System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteReaderAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteReaderAsync(System.Data.CommandBehavior behavior, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        protected abstract System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteDbDataReaderAsync(System.Data.CommandBehavior behavior, System.Threading.CancellationToken cancellationToken);
+        public abstract int ExecuteNonQuery();
+        public abstract System.Threading.Tasks.Task<int> ExecuteNonQueryAsync(System.Threading.CancellationToken cancellationToken = default);
+        public abstract object? ExecuteScalar();
+        public abstract System.Threading.Tasks.Task<object?> ExecuteScalarAsync(System.Threading.CancellationToken cancellationToken = default);
+        public abstract void Prepare();
+        public abstract System.Threading.Tasks.Task PrepareAsync(System.Threading.CancellationToken cancellationToken = default);
+        public abstract void Cancel();
+        public System.Data.Common.DbBatchCommand CreateBatchCommand() { throw null; }
+        protected abstract System.Data.Common.DbBatchCommand CreateDbBatchCommand();
+        public virtual void Dispose() { throw null; }
+        public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+    }
+    public abstract class DbBatchCommand
+    {
+        public abstract string CommandText { get; set; }
+        public abstract CommandType CommandType { get; set; }
+        public abstract int RecordsAffected { get; }
+        public DbParameterCollection Parameters { get { throw null; } }
+        protected abstract DbParameterCollection DbParameterCollection { get; }
+    }
+    public abstract class DbBatchCommandCollection : System.Collections.Generic.IList<DbBatchCommand>
+    {
+        public abstract System.Collections.Generic.IEnumerator<System.Data.Common.DbBatchCommand> GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public abstract void Add(System.Data.Common.DbBatchCommand item);
+        public abstract void Clear();
+        public abstract bool Contains(System.Data.Common.DbBatchCommand item);
+        public abstract void CopyTo(System.Data.Common.DbBatchCommand[] array, int arrayIndex);
+        public abstract bool Remove(System.Data.Common.DbBatchCommand item);
+        public abstract int Count { get; }
+        public abstract bool IsReadOnly { get; }
+        public abstract int IndexOf(DbBatchCommand item);
+        public abstract void Insert(int index, DbBatchCommand item);
+        public abstract void RemoveAt(int index);
+        public abstract DbBatchCommand this[int index] { get; set; }
+    }
     public abstract partial class DbColumn
     {
         protected DbColumn() { }
@@ -2077,6 +2129,9 @@ namespace System.Data.Common
         public virtual System.Threading.Tasks.Task ChangeDatabaseAsync(string databaseName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public abstract void Close();
         public virtual System.Threading.Tasks.Task CloseAsync() { throw null; }
+        public virtual bool CanCreateBatch { get { throw null; } }
+        public System.Data.Common.DbBatch CreateBatch() { throw null; }
+        protected virtual System.Data.Common.DbBatch CreateDbBatch() { throw null; }
         public System.Data.Common.DbCommand CreateCommand() { throw null; }
         protected abstract System.Data.Common.DbCommand CreateDbCommand();
         public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
@@ -2095,6 +2150,7 @@ namespace System.Data.Common
         System.Data.IDbTransaction System.Data.IDbConnection.BeginTransaction(System.Data.IsolationLevel isolationLevel) { throw null; }
         System.Data.IDbCommand System.Data.IDbConnection.CreateCommand() { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
     public partial class DbConnectionStringBuilder : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.ComponentModel.ICustomTypeDescriptor
     {
         public DbConnectionStringBuilder() { }
@@ -2130,6 +2186,7 @@ namespace System.Data.Common
         protected internal void ClearPropertyDescriptors() { }
         public virtual bool ContainsKey(string keyword) { throw null; }
         public virtual bool EquivalentTo(System.Data.Common.DbConnectionStringBuilder connectionStringBuilder) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         protected virtual void GetProperties(System.Collections.Hashtable propertyDescriptors) { }
         public virtual bool Remove(string keyword) { throw null; }
         public virtual bool ShouldSerialize(string keyword) { throw null; }
@@ -2367,6 +2424,8 @@ namespace System.Data.Common
         protected DbException(string? message, int errorCode) { }
         public virtual bool IsTransient { get { throw null; } }
         public virtual string? SqlState { get { throw null; } }
+        public System.Data.Common.DbBatchCommand? BatchCommand { get { throw null; } }
+        protected virtual System.Data.Common.DbBatchCommand? DbBatchCommand { get { throw null; } }
     }
     public static partial class DbMetaDataCollectionNames
     {
@@ -2528,9 +2587,12 @@ namespace System.Data.Common
     public abstract partial class DbProviderFactory
     {
         protected DbProviderFactory() { }
+        public virtual bool CanCreateBatch { get { throw null; } }
         public virtual bool CanCreateCommandBuilder { get { throw null; } }
         public virtual bool CanCreateDataAdapter { get { throw null; } }
         public virtual bool CanCreateDataSourceEnumerator { get { throw null; } }
+        public virtual System.Data.Common.DbBatch CreateBatch() { throw null; }
+        public virtual System.Data.Common.DbBatchCommand CreateBatchCommand() { throw null; }
         public virtual System.Data.Common.DbCommand? CreateCommand() { throw null; }
         public virtual System.Data.Common.DbCommandBuilder? CreateCommandBuilder() { throw null; }
         public virtual System.Data.Common.DbConnection? CreateConnection() { throw null; }

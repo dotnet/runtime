@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Hosting
         public const string CreateHostBuilder = nameof(CreateHostBuilder);
 
         // The amount of time we wait for the diagnostic source events to fire
-        private static readonly TimeSpan s_defaultWaitTimeout = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan s_defaultWaitTimeout = Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(5);
 
         public static Func<string[], TWebHost>? ResolveWebHostFactory<TWebHost>(Assembly assembly)
         {
@@ -44,10 +44,10 @@ namespace Microsoft.Extensions.Hosting
         // 3. Give the caller a chance to execute logic to mutate the IHostBuilder
         // 4. Resolve the instance of the applications's IHost
         // 5. Allow the caller to determine if the entry point has completed
-        public static Func<string[], object>? ResolveHostFactory(Assembly assembly, 
-                                                                 TimeSpan? waitTimeout = null, 
-                                                                 bool stopApplication = true, 
-                                                                 Action<object>? configureHostBuilder = null, 
+        public static Func<string[], object>? ResolveHostFactory(Assembly assembly,
+                                                                 TimeSpan? waitTimeout = null,
+                                                                 bool stopApplication = true,
+                                                                 Action<object>? configureHostBuilder = null,
                                                                  Action<Exception?>? entrypointCompleted = null)
         {
             if (assembly.EntryPoint is null)
@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.Hosting
                 {
                     return null;
                 }
-                
+
                 // We're using a version >= 6 so the events can fire. If they don't fire
                 // then it's because the application isn't using the hosting APIs
             }
@@ -178,8 +178,8 @@ namespace Microsoft.Extensions.Hosting
 
             private readonly TaskCompletionSource<object> _hostTcs = new();
             private IDisposable? _disposable;
-            private Action<object>? _configure;
-            private Action<Exception?>? _entrypointCompleted;
+            private readonly Action<object>? _configure;
+            private readonly Action<Exception?>? _entrypointCompleted;
             private static readonly AsyncLocal<HostingListener> _currentListener = new();
 
             public HostingListener(string[] args, MethodInfo entryPoint, TimeSpan waitTimeout, bool stopApplication, Action<object>? configure, Action<Exception?>? entrypointCompleted)

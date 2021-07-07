@@ -6,6 +6,7 @@ set(MONO_EVENTPIPE_GEN_INCLUDE_PATH "${CMAKE_CURRENT_BINARY_DIR}/eventpipe")
 
 set(MONO_HOT_RELOAD_COMPONENT_NAME "hot_reload")
 set(MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME "diagnostics_tracing")
+set(MONO_DEBUGGER_COMPONENT_NAME "debugger")
 
 # a list of every component.
 set(components "")
@@ -13,6 +14,27 @@ set(components "")
 # the sources for each individiable component define a new
 # component_name-sources list for each component, and a
 # component_name-stub-sources list for the component stub.
+
+# debugger
+list(APPEND components
+  ${MONO_DEBUGGER_COMPONENT_NAME}
+)
+set(${MONO_DEBUGGER_COMPONENT_NAME}-sources
+  ${MONO_COMPONENT_PATH}/debugger.c
+  ${MONO_COMPONENT_PATH}/debugger.h
+  ${MONO_COMPONENT_PATH}/debugger-agent.c
+  ${MONO_COMPONENT_PATH}/debugger-agent.h
+  ${MONO_COMPONENT_PATH}/debugger-engine.c
+  ${MONO_COMPONENT_PATH}/debugger-engine.h
+  ${MONO_COMPONENT_PATH}/debugger-state-machine.h
+  ${MONO_COMPONENT_PATH}/debugger-state-machine.c
+  ${MONO_COMPONENT_PATH}/mini-wasm-debugger.c
+  ${MONO_COMPONENT_PATH}/debugger-protocol.h
+  ${MONO_COMPONENT_PATH}/debugger-protocol.c
+  )
+set(${MONO_DEBUGGER_COMPONENT_NAME}-stub-sources
+  ${MONO_COMPONENT_PATH}/debugger-stub.c
+  )
 
 # hot_reload
 list(APPEND components

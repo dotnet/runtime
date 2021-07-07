@@ -14,6 +14,8 @@ In some occasions we may want to include a library in the shared framework, but 
 
 Libraries included in the shared framework should ensure all direct and transitive assembly references are also included in the shared framework. This will be validated as part of the build and errors raised if any dependencies are unsatisfied.
 
+Source generators and analyzers can be included in the shared framework by specifying `IsNetCoreAppAnalyzer`.  These projects should specify `AnalyzerLanguage` as mentioned [below](#analyzers--source-generators).
+
 Removing a library from the shared framework is a breaking change and should be avoided.
 
 ## Transport package
@@ -25,6 +27,8 @@ Transport packages are non-shipping packages that dotnet/runtime produces in ord
 This package represents the set of libraries which are produced in dotnet/runtime and ship in the ASP.NETCore shared framework. We produce a transport package so that we can easily share reference assemblies and implementation configurations that might not be present in NuGet packages that also ship.
 
 To add a library to the ASP.NETCore shared framework, that library should set the `IsAspNetCoreApp` property for its `ref` and `src` project. This is typically done in the library's `Directory.Build.props`, for example https://github.com/dotnet/runtime/blob/98ac23212e6017c615e7e855e676fc43c8e44cb8/src/libraries/Microsoft.Extensions.Logging.Abstractions/Directory.Build.props#L4.
+
+Source generators and analyzers can be included in the ASP.NETCore shared framework by specifying `IsAspNetCoreAppAnalyzer`.  These projects should specify `AnalyzerLanguage` as mentioned [below](#analyzers--source-generators).
 
 Libraries included in this transport package should ensure all direct and transitive assembly references are also included in either the ASP.NETCore shared framework or the .NETCore shared framework. This is not validated in dotnet/runtime at the moment: https://github.com/dotnet/runtime/issues/52562
 

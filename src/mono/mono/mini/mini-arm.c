@@ -29,7 +29,6 @@
 #include "mini-arm.h"
 #include "cpu-arm.h"
 #include "ir-emit.h"
-#include "debugger-agent.h"
 #include "mini-gc.h"
 #include "mini-runtime.h"
 #include "aot-runtime.h"
@@ -873,6 +872,8 @@ mono_arch_init (void)
 	   have a way to properly detect CPU features on it. */
 	thumb_supported = TRUE;
 	iphone_abi = TRUE;
+#elif defined(TARGET_ANDROID)
+	thumb_supported = TRUE;
 #else
 	thumb_supported = mono_hwcap_arm_has_thumb;
 	thumb2_supported = mono_hwcap_arm_has_thumb2;

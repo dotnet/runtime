@@ -25,6 +25,7 @@
   <!-- Allow P2Ps that target a source project to build against the corresponding ref project. -->
   <Target Name="AnnotateTargetPathWithTargetPlatformMonikerWithReferenceAssembly"
           Condition="'$(HasMatchingContract)' == 'true'"
+          DependsOnTargets="ResolveProjectReferences"
           AfterTargets="GetTargetPathWithTargetPlatformMoniker">
     <ItemGroup>
       <TargetPathWithTargetPlatformMoniker ReferenceAssembly="@(ResolvedMatchingContract)" />

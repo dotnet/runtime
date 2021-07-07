@@ -501,7 +501,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(DotNet.GreatestVersionHostFxrFilePath))
             {
-                registeredInstallLocationOverride.SetInstallLocation(_regDir, RepoDirectories.BuildArchitecture);
+                registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] { (RepoDirectories.BuildArchitecture, _regDir) });
 
                 // Add SDK versions
                 AddAvailableSdkVersions(_regSdkBaseDir, "9999.0.4");

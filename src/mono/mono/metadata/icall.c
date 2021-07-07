@@ -4459,26 +4459,27 @@ fail:
 }
 
 MonoStringHandle
-ves_icall_System_Reflection_RuntimeAssembly_get_code_base (MonoReflectionAssemblyHandle assembly, MonoBoolean escaped, MonoError *error)
+ves_icall_System_Reflection_RuntimeAssembly_get_code_base (MonoReflectionAssemblyHandle assembly, MonoError *error)
 {
 	MonoAssembly *mass = MONO_HANDLE_GETVAL (assembly, assembly);
-	gchar *absolute;
 	
-	if (g_path_is_absolute (mass->image->name)) {
-		absolute = g_strdup (mass->image->name);
+	/* return NULL for bundled assemblies in single-file scenarios */
+	const char* filename = m_image_get_filename (mass->image);
+
+	if (!filename)
+		return NULL_HANDLE_STRING;
+
+	gchar *absolute;
+	if (g_path_is_absolute (filename)) {
+		absolute = g_strdup (filename);
 	} else {
-		absolute = g_build_filename (mass->basedir, mass->image->name, (const char*)NULL);
+		absolute = g_build_filename (mass->basedir, filename, (const char*)NULL);
 	}
 
 	mono_icall_make_platform_path (absolute);
 
-	gchar *uri;
-	if (escaped) {
-		uri = g_filename_to_uri (absolute, NULL, NULL);
-	} else {
-		const gchar *prepend = mono_icall_get_file_path_prefix (absolute);
-		uri = g_strconcat (prepend, absolute, (const char*)NULL);
-	}
+	const gchar *prepend = mono_icall_get_file_path_prefix (absolute);
+	gchar *uri = g_strconcat (prepend, absolute, (const char*)NULL);
 
 	g_free (absolute);
 
@@ -5787,9 +5788,11 @@ ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 	mono_error_set_pending_exception (error);
 }
 
-gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (void)
+gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (gint32 just_component_check)
 {
-        return mono_metadata_update_available ();
+	// if just_component_check is true, we only care whether the hot_reload component is enabled,
+	// not whether the environment is appropriately setup to apply updates.
+	return mono_metadata_update_available () && (just_component_check || mono_metadata_update_enabled (NULL));
 }
 
 MonoBoolean

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -19,6 +19,8 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Remove="..\**\*.Unix.cs" />
     <Compile Remove="..\**\*.Browser.cs" />
+    <!-- .NET 5 did not support async file IO for device interfaces -->
+    <Compile Remove="..\FileStream\FileStreamConformanceTests.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs" Link="Common\Interop\Windows\Interop.FILE_STANDARD_INFO.cs" />
@@ -37,6 +39,8 @@
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
     <Content Include="..\DirectoryInfo\test-dir\dummy.txt" Link="test-dir\dummy.txt" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
+             Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />

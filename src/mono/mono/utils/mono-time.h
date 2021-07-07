@@ -17,7 +17,7 @@
 gint64 mono_msec_boottime (void);
 
 /* Returns the number of milliseconds ticks from unspecified time: this should be monotonic */
-gint64 mono_msec_ticks (void);
+MONO_COMPONENT_API gint64 mono_msec_ticks (void);
 
 /* Returns the number of 100ns ticks from unspecified time: this should be monotonic */
 MONO_COMPONENT_API gint64 mono_100ns_ticks (void);

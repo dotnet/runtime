@@ -700,7 +700,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // after the first liveness analysis - either by optimizations or by Lowering, and the tracked
     // set won't be recomputed until after Lowering (and this constructor is called prior to Lowering),
     // so we don't want to check that yet.
-    enregisterLocalVars = ((compiler->opts.compFlags & CLFLG_REGVAR) != 0);
+    enregisterLocalVars = compiler->compEnregLocals();
 #ifdef TARGET_ARM64
     availableIntRegs = (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd);
 #else
@@ -1448,7 +1448,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     {
         return false;
     }
-    assert((compiler->opts.compFlags & CLFLG_REGVAR) != 0);
+    assert(compiler->compEnregLocals());
 
     if (!varDsc->lvTracked)
     {
@@ -2467,7 +2467,7 @@ void LinearScan::dumpVarRefPositions(const char* title)
                 printf("  (Interval %d)\n", interval->intervalIndex);
                 for (RefPosition* ref = interval->firstRefPosition; ref != nullptr; ref = ref->nextRefPosition)
                 {
-                    ref->dump();
+                    ref->dump(this);
                 }
             }
             else
@@ -4346,7 +4346,7 @@ void LinearScan::dumpRefPositions(const char* str)
     printf("------------\n");
     for (RefPosition& refPos : refPositions)
     {
-        refPos.dump();
+        refPos.dump(this);
     }
 }
 #endif // DEBUG
@@ -8895,7 +8895,7 @@ const char* LinearScan::getScoreName(RegisterScore score)
     }
 }
 
-void RefPosition::dump()
+void RefPosition::dump(LinearScan* linearScan)
 {
     printf("<RefPosition #%-3u @%-3u", rpNum, nodeLocation);
 
@@ -8969,6 +8969,8 @@ void RefPosition::dump()
     {
         printf(" regOptional");
     }
+
+    printf(" wt=%.2f", linearScan->getWeight(this));
     printf(">\n");
 }
 

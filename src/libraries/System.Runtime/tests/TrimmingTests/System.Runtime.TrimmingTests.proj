@@ -15,7 +15,7 @@
       <ExtraTrimmerArgs>--feature System.Globalization.Invariant false</ExtraTrimmerArgs>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
-      <ExtraTrimmerArgs>--feature System.Globalization.Invariant true</ExtraTrimmerArgs>
+      <ExtraTrimmerArgs>--feature System.Globalization.Invariant true --feature System.Globalization.PredefinedCulturesOnly true</ExtraTrimmerArgs>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
       <!-- There is a bug with the linker where it is corrupting the pdbs while trimming

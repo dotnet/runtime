@@ -4,6 +4,7 @@
     <ProjectReference Include="..\src\System.Resources.Extensions.csproj">
       <SupportedFramework>uap10.0.16299;net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

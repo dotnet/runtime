@@ -530,6 +530,15 @@ ep_rt_mono_thread_setup (bool background_thread)
 static
 inline
 void
+ep_rt_mono_thread_setup_2 (bool background_thread, EventPipeThreadType thread_type)
+{
+	extern void * ep_rt_mono_thread_attach_2 (bool background_thread, EventPipeThreadType thread_type);
+	ep_rt_mono_thread_attach_2 (background_thread, thread_type);
+}
+
+static
+inline
+void
 ep_rt_mono_thread_teardown (void)
 {
 	extern void ep_rt_mono_thread_detach (void);
@@ -1233,7 +1242,7 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_mono_start_func)
 {
 	rt_mono_thread_params_internal_t *thread_params = (rt_mono_thread_params_internal_t *)data;
 
-	ep_rt_mono_thread_setup (thread_params->background_thread);
+	ep_rt_mono_thread_setup_2 (thread_params->background_thread, thread_params->thread_params.thread_type);
 
 	thread_params->thread_params.thread = ep_rt_thread_get_handle ();
 	mono_thread_start_return_t result = thread_params->thread_params.thread_func (thread_params);

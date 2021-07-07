@@ -206,7 +206,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpRequestData requestData = await connection.ReadRequestDataAsync();                
                 string requestContent = requestData.Body is null ? (string)null : Encoding.ASCII.GetString(requestData.Body);
                 Assert.Equal(clientContent, requestContent);
-                await connection.SendResponseAsync(HttpStatusCode.OK, body: serverContent);
+                await connection.SendResponseAsync(HttpStatusCode.OK, content: serverContent);
             }, new Http2Options() { UseSsl = false });
         }
 
@@ -900,6 +900,39 @@ namespace System.Net.Http.Functional.Tests
                     {
                         sendTask
                     }.WhenAllOrAnyFailed(TestHelper.PassingTestTimeoutMilliseconds));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task GoAwayFrame_RequestWithBody_ServerDisconnect_AbortStreamsAndThrowIOException()
+        {
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                var request = new HttpRequestMessage(HttpMethod.Post, server.Address);
+                request.Version = new Version(2, 0);
+                var content = new string('*', 300);
+                var stream = new CustomContent.SlowTestStream(Encoding.UTF8.GetBytes(content), null, count: 60);
+                request.Content = new CustomContent(stream);
+
+                Task<HttpResponseMessage> sendTask = client.SendAsync(request);
+
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
+                await connection.SendDefaultResponseHeadersAsync(streamId);
+
+                await connection.SendGoAway(0, errorCode: ProtocolErrors.PROTOCOL_ERROR);
+
+                // Expect client to detect that server has disconnected and throw an exception
+                var exception = await Assert.ThrowsAnyAsync<HttpRequestException>(() =>
+                    new Task[]
+                    {
+                        sendTask
+                    }.WhenAllOrAnyFailed(TestHelper.PassingTestTimeoutMilliseconds));
+
+                Assert.IsType<IOException>(exception.InnerException);
+                Assert.NotNull(exception.InnerException.InnerException);
+                Assert.Contains("PROTOCOL_ERROR", exception.InnerException.InnerException.Message);
             }
         }
 
@@ -2790,8 +2823,8 @@ namespace System.Net.Http.Functional.Tests
                     // Trying to read on the response stream should fail now, and client should ignore any data received
                     await AssertProtocolErrorForIOExceptionAsync(SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId), ProtocolErrors.ENHANCE_YOUR_CALM);
 
-                    // Attempting to write on the request body should now fail with OperationCanceledException.
-                    Exception e = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
+                    // Attempting to write on the request body should now fail with IOException.
+                    Exception e = await Assert.ThrowsAnyAsync<IOException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
 
                     // Propagate the exception to the request stream serialization task.
                     // This allows the request processing to complete.

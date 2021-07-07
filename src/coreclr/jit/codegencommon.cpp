@@ -122,9 +122,6 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 #ifdef TARGET_AMD64
     // This will be set before final frame layout.
     compiler->compVSQuirkStackPaddingNeeded = 0;
-
-    // Set to true if we perform the Quirk that fixes the PPP issue
-    compiler->compQuirkForPPPflag = false;
 #endif // TARGET_AMD64
 
     //  Initialize the IP-mapping logic.
@@ -12528,3 +12525,65 @@ void CodeGenInterface::VariableLiveKeeper::dumpLvaVariableLiveRanges() const
 }
 #endif // DEBUG
 #endif // USING_VARIABLE_LIVE_RANGE
+
+//-----------------------------------------------------------------------------
+// genPoisonFrame: Generate code that places a recognizable value into address exposed variables.
+//
+// Remarks:
+//   This function emits code to poison address exposed non-zero-inited local variables. We expect this function
+//   to be called when emitting code for the scratch BB that comes right after the prolog.
+//   The variables are poisoned using 0xcdcdcdcd.
+void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
+{
+    assert(compiler->compShouldPoisonFrame());
+    assert((regLiveIn & genRegMask(REG_SCRATCH)) == 0);
+
+    // The first time we need to poison something we will initialize a register to the largest immediate cccccccc that
+    // we can fit.
+    bool hasPoisonImm = false;
+    for (unsigned varNum = 0; varNum < compiler->info.compLocalsCount; varNum++)
+    {
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+        if (varDsc->lvIsParam || varDsc->lvMustInit || !varDsc->lvAddrExposed)
+        {
+            continue;
+        }
+
+        assert(varDsc->lvOnFrame);
+
+        if (!hasPoisonImm)
+        {
+#ifdef TARGET_64BIT
+            genSetRegToIcon(REG_SCRATCH, (ssize_t)0xcdcdcdcdcdcdcdcd, TYP_LONG);
+#else
+            genSetRegToIcon(REG_SCRATCH, (ssize_t)0xcdcdcdcd, TYP_INT);
+#endif
+            hasPoisonImm = true;
+        }
+
+// For 64-bit we check if the local is 8-byte aligned. For 32-bit, we assume everything is always 4-byte aligned.
+#ifdef TARGET_64BIT
+        bool fpBased;
+        int  addr = compiler->lvaFrameAddress((int)varNum, &fpBased);
+#else
+        int addr = 0;
+#endif
+        int size = (int)compiler->lvaLclSize(varNum);
+        int end  = addr + size;
+        for (int offs = addr; offs < end;)
+        {
+#ifdef TARGET_64BIT
+            if ((offs % 8) == 0 && end - offs >= 8)
+            {
+                GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, (int)varNum, offs - addr);
+                offs += 8;
+                continue;
+            }
+#endif
+
+            assert((offs % 4) == 0 && end - offs >= 4);
+            GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, REG_SCRATCH, (int)varNum, offs - addr);
+            offs += 4;
+        }
+    }
+}

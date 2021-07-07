@@ -65,42 +65,38 @@ namespace System.Reflection
             return parameterTypes;
         }
 
-        private protected Span<object?> CheckArguments(ref StackAllocedArguments stackArgs, object?[]? parameters, Binder? binder,
+        private protected Span<object?> CheckArguments(ref StackAllocedArguments stackArgs, ReadOnlySpan<object?> parameters, Binder? binder,
             BindingFlags invokeAttr, CultureInfo? culture, Signature sig)
         {
             Debug.Assert(Unsafe.SizeOf<StackAllocedArguments>() == StackAllocedArguments.MaxStackAllocArgCount * Unsafe.SizeOf<object>(),
                 "MaxStackAllocArgCount not properly defined.");
+            Debug.Assert(!parameters.IsEmpty);
 
-            Span<object?> copyOfParameters = default;
+            // We need to perform type safety validation against the incoming arguments, but we also need
+            // to be resilient against the possibility that some other thread (or even the binder itself!)
+            // may mutate the array after we've validated the arguments but before we've properly invoked
+            // the method. The solution is to copy the arguments to a different, not-user-visible buffer
+            // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
+            // considered user-visible to threads which may still be holding on to returned instances.
 
-            if (parameters is not null)
+            Span<object?> copyOfParameters = (parameters.Length <= StackAllocedArguments.MaxStackAllocArgCount)
+                    ? MemoryMarshal.CreateSpan(ref stackArgs._arg0, parameters.Length)
+                    : new Span<object?>(new object?[parameters.Length]);
+
+            ParameterInfo[]? p = null;
+            for (int i = 0; i < parameters.Length; i++)
             {
-                // We need to perform type safety validation against the incoming arguments, but we also need
-                // to be resilient against the possibility that some other thread (or even the binder itself!)
-                // may mutate the array after we've validated the arguments but before we've properly invoked
-                // the method. The solution is to copy the arguments to a different, not-user-visible buffer
-                // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
-                // considered user-visible to threads which may still be holding on to returned instances.
+                object? arg = parameters[i];
+                RuntimeType argRT = sig.Arguments[i];
 
-                copyOfParameters = (parameters.Length <= StackAllocedArguments.MaxStackAllocArgCount)
-                        ? MemoryMarshal.CreateSpan(ref stackArgs._arg0, parameters.Length)
-                        : new Span<object?>(new object?[parameters.Length]);
-
-                ParameterInfo[]? p = null;
-                for (int i = 0; i < parameters.Length; i++)
+                if (arg == Type.Missing)
                 {
-                    object? arg = parameters[i];
-                    RuntimeType argRT = sig.Arguments[i];
-
-                    if (arg == Type.Missing)
-                    {
-                        p ??= GetParametersNoCopy();
-                        if (p[i].DefaultValue == System.DBNull.Value)
-                            throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
-                        arg = p[i].DefaultValue!;
-                    }
-                    copyOfParameters[i] = argRT.CheckValue(arg, binder, culture, invokeAttr);
+                    p ??= GetParametersNoCopy();
+                    if (p[i].DefaultValue == System.DBNull.Value)
+                        throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
+                    arg = p[i].DefaultValue!;
                 }
+                copyOfParameters[i] = argRT.CheckValue(arg, binder, culture, invokeAttr);
             }
 
             return copyOfParameters;

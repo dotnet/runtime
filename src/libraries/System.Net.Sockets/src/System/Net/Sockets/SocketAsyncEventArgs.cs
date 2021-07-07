@@ -74,7 +74,6 @@ namespace System.Net.Sockets
         private Socket? _currentSocket;
         private bool _userSocket; // if false when performing Connect, _currentSocket should be disposed
         private bool _disposeCalled;
-        private protected bool _disableTelemetry;
 
         // Controls thread safety via Interlocked.
         private const int Configuring = -1;
@@ -202,7 +201,7 @@ namespace System.Net.Sockets
 
         private void OnCompletedInternal()
         {
-            if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
+            if (SocketsTelemetry.Log.IsEnabled()) AfterConnectAcceptTelemetry();
 
             OnCompleted(this);
         }
@@ -813,11 +812,8 @@ namespace System.Net.Sockets
                     }
 
                     // Complete the operation.
-                    if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry)
-                    {
-                        LogBytesTransferEvents(_connectSocket?.SocketType, SocketAsyncOperation.Connect, internalArgs.BytesTransferred);
-                        AfterConnectAcceptTelemetry();
-                    }
+                    if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(_connectSocket?.SocketType, SocketAsyncOperation.Connect, internalArgs.BytesTransferred);
+
                     Complete();
 
                     // Clean up after our temporary arguments.
@@ -842,12 +838,7 @@ namespace System.Net.Sockets
             private ManualResetValueTaskSourceCore<bool> _mrvtsc;
             private int _isCompleted;
 
-            public MultiConnectSocketAsyncEventArgs() : base(unsafeSuppressExecutionContextFlow: false)
-            {
-                // Instances of this type are an implementation detail of an overarching connect operation.
-                // We don't want to emit telemetry specific to operations on this inner instance.
-                _disableTelemetry = true;
-            }
+            public MultiConnectSocketAsyncEventArgs() : base(unsafeSuppressExecutionContextFlow: false) { }
 
             public void GetResult(short token) => _mrvtsc.GetResult(token);
             public ValueTaskSourceStatus GetStatus(short token) => _mrvtsc.GetStatus(token);
@@ -968,7 +959,7 @@ namespace System.Net.Sockets
                     break;
             }
 
-            if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) LogBytesTransferEvents(_currentSocket?.SocketType, _completedOperation, bytesTransferred);
+            if (SocketsTelemetry.Log.IsEnabled()) LogBytesTransferEvents(_currentSocket?.SocketType, _completedOperation, bytesTransferred);
 
             Complete();
         }
@@ -1003,7 +994,7 @@ namespace System.Net.Sockets
                 FinishOperationSyncFailure(socketError, bytesTransferred, flags);
             }
 
-            if (SocketsTelemetry.Log.IsEnabled() && !_disableTelemetry) AfterConnectAcceptTelemetry();
+            if (SocketsTelemetry.Log.IsEnabled()) AfterConnectAcceptTelemetry();
         }
 
         private static void LogBytesTransferEvents(SocketType? socketType, SocketAsyncOperation operation, int bytesTransferred)

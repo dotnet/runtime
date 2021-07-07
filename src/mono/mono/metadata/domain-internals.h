@@ -80,7 +80,7 @@ mono_install_runtime_load  (MonoLoadFunc func);
 MonoDomain*
 mono_runtime_load (const char *filename, const char *runtime_version);
 
-void
+MONO_COMPONENT_API void
 mono_runtime_quit_internal (void);
 
 void
@@ -136,7 +136,7 @@ mono_runtime_register_runtimeconfig_json_properties (MonovmRuntimeConfigArgument
 void
 mono_runtime_install_appctx_properties (void);
 
-void 
+MONO_COMPONENT_API void 
 mono_domain_set_fast (MonoDomain *domain);
 
 G_END_DECLS

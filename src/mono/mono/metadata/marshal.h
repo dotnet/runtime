@@ -209,7 +209,8 @@ typedef enum {
 	AOT_INIT_METHOD = 0,
 	AOT_INIT_METHOD_GSHARED_MRGCTX = 1,
 	AOT_INIT_METHOD_GSHARED_THIS = 2,
-	AOT_INIT_METHOD_GSHARED_VTABLE = 3
+	AOT_INIT_METHOD_GSHARED_VTABLE = 3,
+	AOT_INIT_METHOD_NUM = 4
 } MonoAotInitSubtype;
 
 typedef struct {
@@ -402,7 +403,7 @@ mono_type_to_stind (MonoType *type);
 
 /* functions to create various architecture independent helper functions */
 
-MonoMethod *
+MONO_COMPONENT_API MonoMethod *
 mono_marshal_method_from_wrapper (MonoMethod *wrapper);
 
 WrapperInfo*

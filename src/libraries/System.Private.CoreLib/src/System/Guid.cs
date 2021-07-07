@@ -19,6 +19,12 @@ namespace System
     [NonVersionable] // This only applies to field layout
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly partial struct Guid : ISpanFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>
+#if FEATURE_GENERIC_MATH
+#pragma warning disable SA1001
+        , IComparisonOperators<Guid, Guid>,
+          ISpanParseable<Guid>
+#pragma warning restore SA1001
+#endif // FEATURE_GENERIC_MATH
     {
         public static readonly Guid Empty;
 
@@ -1161,5 +1167,291 @@ namespace System
             // Like with the IFormattable implementation, provider is ignored.
             return TryFormat(destination, out charsWritten, format);
         }
+
+#if FEATURE_GENERIC_MATH
+        //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Guid, Guid>.operator <(Guid left, Guid right)
+        {
+            if (left._a != right._a)
+            {
+                return (uint)left._a < (uint)right._a;
+            }
+
+            if (left._b != right._b)
+            {
+                return (uint)left._b < (uint)right._b;
+            }
+
+            if (left._c != right._c)
+            {
+                return (uint)left._c < (uint)right._c;
+            }
+
+            if (left._d != right._d)
+            {
+                return left._d < right._d;
+            }
+
+            if (left._e != right._e)
+            {
+                return left._e < right._e;
+            }
+
+            if (left._f != right._f)
+            {
+                return left._f < right._f;
+            }
+
+            if (left._g != right._g)
+            {
+                return left._g < right._g;
+            }
+
+            if (left._h != right._h)
+            {
+                return left._h < right._h;
+            }
+
+            if (left._i != right._i)
+            {
+                return left._i < right._i;
+            }
+
+            if (left._j != right._j)
+            {
+                return left._j < right._j;
+            }
+
+            if (left._k != right._k)
+            {
+                return left._k < right._k;
+            }
+
+            return false;
+        }
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Guid, Guid>.operator <=(Guid left, Guid right)
+        {
+            if (left._a != right._a)
+            {
+                return (uint)left._a < (uint)right._a;
+            }
+
+            if (left._b != right._b)
+            {
+                return (uint)left._b < (uint)right._b;
+            }
+
+            if (left._c != right._c)
+            {
+                return (uint)left._c < (uint)right._c;
+            }
+
+            if (left._d != right._d)
+            {
+                return left._d < right._d;
+            }
+
+            if (left._e != right._e)
+            {
+                return left._e < right._e;
+            }
+
+            if (left._f != right._f)
+            {
+                return left._f < right._f;
+            }
+
+            if (left._g != right._g)
+            {
+                return left._g < right._g;
+            }
+
+            if (left._h != right._h)
+            {
+                return left._h < right._h;
+            }
+
+            if (left._i != right._i)
+            {
+                return left._i < right._i;
+            }
+
+            if (left._j != right._j)
+            {
+                return left._j < right._j;
+            }
+
+            if (left._k != right._k)
+            {
+                return left._k < right._k;
+            }
+
+            return true;
+        }
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Guid, Guid>.operator >(Guid left, Guid right)
+        {
+            if (left._a != right._a)
+            {
+                return (uint)left._a > (uint)right._a;
+            }
+
+            if (left._b != right._b)
+            {
+                return (uint)left._b > (uint)right._b;
+            }
+
+            if (left._c != right._c)
+            {
+                return (uint)left._c > (uint)right._c;
+            }
+
+            if (left._d != right._d)
+            {
+                return left._d > right._d;
+            }
+
+            if (left._e != right._e)
+            {
+                return left._e > right._e;
+            }
+
+            if (left._f != right._f)
+            {
+                return left._f > right._f;
+            }
+
+            if (left._g != right._g)
+            {
+                return left._g > right._g;
+            }
+
+            if (left._h != right._h)
+            {
+                return left._h > right._h;
+            }
+
+            if (left._i != right._i)
+            {
+                return left._i > right._i;
+            }
+
+            if (left._j != right._j)
+            {
+                return left._j > right._j;
+            }
+
+            if (left._k != right._k)
+            {
+                return left._k > right._k;
+            }
+
+            return false;
+        }
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<Guid, Guid>.operator >=(Guid left, Guid right)
+        {
+            if (left._a != right._a)
+            {
+                return (uint)left._a > (uint)right._a;
+            }
+
+            if (left._b != right._b)
+            {
+                return (uint)left._b > (uint)right._b;
+            }
+
+            if (left._c != right._c)
+            {
+                return (uint)left._c > (uint)right._c;
+            }
+
+            if (left._d != right._d)
+            {
+                return left._d > right._d;
+            }
+
+            if (left._e != right._e)
+            {
+                return left._e > right._e;
+            }
+
+            if (left._f != right._f)
+            {
+                return left._f > right._f;
+            }
+
+            if (left._g != right._g)
+            {
+                return left._g > right._g;
+            }
+
+            if (left._h != right._h)
+            {
+                return left._h > right._h;
+            }
+
+            if (left._i != right._i)
+            {
+                return left._i > right._i;
+            }
+
+            if (left._j != right._j)
+            {
+                return left._j > right._j;
+            }
+
+            if (left._k != right._k)
+            {
+                return left._k > right._k;
+            }
+
+            return true;
+        }
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<Guid, Guid>.operator ==(Guid left, Guid right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<Guid, Guid>.operator !=(Guid left, Guid right)
+            => left != right;
+
+        //
+        // IParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static Guid IParseable<Guid>.Parse(string s, IFormatProvider? provider)
+            => Parse(s);
+
+        [RequiresPreviewFeatures]
+        static bool IParseable<Guid>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Guid result)
+            => TryParse(s, out result);
+
+        //
+        // ISpanParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static Guid ISpanParseable<Guid>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+            => Parse(s);
+
+        [RequiresPreviewFeatures]
+        static bool ISpanParseable<Guid>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Guid result)
+            => TryParse(s, out result);
+#endif // FEATURE_GENERIC_MATH
     }
 }

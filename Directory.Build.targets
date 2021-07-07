@@ -54,7 +54,9 @@
     <PackageDescription Condition="'$(PackageDescription)' == '' and '$(UseRuntimePackageDisclaimer)' == 'true'">$(RuntimePackageDisclaimer)</PackageDescription>
     <!-- Keep in sync as required by the Packaging SDK in Arcade. -->
     <Description>$(PackageDescription)</Description>
+    <!-- BeforePack hook should be removed after porting all the projects to dotnet pack. -->
     <BeforePack>$(BeforePack);AddNETStandardCompatErrorFileForPackaging</BeforePack>
+    <GenerateNuspecDependsOn>AddNETStandardCompatErrorFileForPackaging;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
   </PropertyGroup>
 
   <!-- Remove when https://github.com/NuGet/Home/issues/10405 is implemented and consumed. -->
@@ -76,8 +78,7 @@
   <Target Name="AddNETStandardCompatErrorFileForPackaging"
           Condition="'@(NETStandardCompatError)' != ''"
           Inputs="%(NETStandardCompatError.Identity)"
-          Outputs="unused"
-          BeforeTargets="GetFiles">
+          Outputs="unused">
     <PropertyGroup>
       <_NETStandardCompatErrorFilePath>$(BaseIntermediateOutputPath)netstandardcompaterrors\%(NETStandardCompatError.Identity)\$(PackageId).targets</_NETStandardCompatErrorFilePath>
       <_NETStandardCompatErrorFileTarget>NETStandardCompatError_$(PackageId.Replace('.', '_'))_$([System.String]::new('%(NETStandardCompatError.Supported)').Replace('.', '_'))</_NETStandardCompatErrorFileTarget>

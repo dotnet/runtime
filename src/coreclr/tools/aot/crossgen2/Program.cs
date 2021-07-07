@@ -517,7 +517,6 @@ namespace ILCompiler
 
                     List<EcmaModule> inputModules = new List<EcmaModule>();
                     List<EcmaModule> rootingModules = new List<EcmaModule>();
-                    Guid? inputModuleMvid = null;
 
                     foreach (var inputFile in inFilePaths)
                     {
@@ -526,10 +525,6 @@ namespace ILCompiler
                         rootingModules.Add(module);
                         versionBubbleModulesHash.Add(module);
 
-                        if (!_commandLineOptions.Composite && !inputModuleMvid.HasValue)
-                        {
-                            inputModuleMvid = module.MetadataReader.GetGuid(module.MetadataReader.GetModuleDefinition().Mvid);
-                        }
 
                         if (!_commandLineOptions.CompositeOrInputBubble)
                         {
@@ -687,7 +682,7 @@ namespace ILCompiler
                         .UseMapFile(_commandLineOptions.Map)
                         .UseMapCsvFile(_commandLineOptions.MapCsv)
                         .UsePdbFile(_commandLineOptions.Pdb, _commandLineOptions.PdbPath)
-                        .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath, inputModuleMvid)
+                        .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath, _commandLineOptions.PerfMapFormatVersion)
                         .UseProfileFile(jsonProfile != null)
                         .UseParallelism(_commandLineOptions.Parallelism)
                         .UseProfileData(profileDataManager)

@@ -91,6 +91,8 @@ namespace System
             }
         }
 
+        public static bool IsAsyncFileIOSupported => !IsBrowser && !(IsWindows && IsMonoRuntime); // https://github.com/dotnet/runtime/issues/34582
+
         public static bool IsLineNumbersSupported => true;
 
         public static bool IsInContainer => GetIsInContainer();

@@ -33,6 +33,12 @@ namespace System.Linq
         public static TSource? FirstOrDefault<TSource>(this IEnumerable<TSource> source) =>
             source.TryGetFirst(out _);
 
+        /// <summary>Returns the first element of a sequence, or a default value if the sequence contains no elements.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">The <see cref="IEnumerable{T}" /> to return the first element of.</param>
+        /// <param name="defaultValue">The default value to return if the sequence is empty.</param>
+        /// <returns><paramref name="defaultValue" /> if <paramref name="source" /> is empty; otherwise, the first element in <paramref name="source" />.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source, TSource defaultValue)
         {
             TSource? first = source.TryGetFirst(out bool found);
@@ -42,6 +48,13 @@ namespace System.Linq
         public static TSource? FirstOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate) =>
             source.TryGetFirst(predicate, out _);
 
+        /// <summary>Returns the first element of the sequence that satisfies a condition or a default value if no such element is found.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">An <see cref="IEnumerable{T}" /> to return an element from.</param>
+        /// <param name="predicate">A function to test each element for a condition.</param>
+        /// <param name="defaultValue">The default value to return if the sequence is empty.</param>
+        /// <returns><paramref name="defaultValue" /> if <paramref name="source" /> is empty or if no element passes the test specified by <paramref name="predicate" />; otherwise, the first element in <paramref name="source" /> that passes the test specified by <paramref name="predicate" />.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> or <paramref name="predicate" /> is <see langword="null" />.</exception>
         public static TSource FirstOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, TSource defaultValue)
         {
             TSource? first = source.TryGetFirst(predicate, out bool found);

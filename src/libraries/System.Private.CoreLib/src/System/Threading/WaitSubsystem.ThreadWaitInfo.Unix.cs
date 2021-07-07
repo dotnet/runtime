@@ -641,6 +641,21 @@ namespace System.Threading
                     }
                 }
 
+                // Like Next, but skip nodes registered on the same thread.
+                public WaitedListNode? NextThread
+                {
+                    get
+                    {
+                        s_lock.VerifyIsLocked();
+                        WaitedListNode? ret = _next;
+                        while (ret != null && ReferenceEquals(ret._waitInfo, _waitInfo))
+                        {
+                            ret = ret._next;
+                        }
+                        return ret;
+                    }
+                }
+
                 public void RegisterWait(WaitableObject waitableObject)
                 {
                     s_lock.VerifyIsLocked();

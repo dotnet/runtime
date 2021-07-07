@@ -215,6 +215,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
+
             using CancellationTokenRegistration registration = await HandleWriteStartState(cancellationToken).ConfigureAwait(false);
 
             await SendReadOnlyMemoryAsync(buffer, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
@@ -227,6 +228,19 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (!_canWrite)
             {
                 throw new InvalidOperationException(SR.net_quic_writing_notallowed);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                lock (_state)
+                {
+                    if (_state.SendState == SendState.None || _state.SendState == SendState.Pending)
+                    {
+                        _state.SendState = SendState.Aborted;
+                    }
+                }
+
+                throw new System.OperationCanceledException(cancellationToken);
             }
 
             // Make sure start has completed
@@ -302,6 +316,19 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (!_canRead)
             {
                 throw new InvalidOperationException(SR.net_quic_reading_notallowed);
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                lock (_state)
+                {
+                    if (_state.ReadState == ReadState.None)
+                    {
+                        _state.ReadState = ReadState.Aborted;
+                    }
+                }
+
+                throw new System.OperationCanceledException(cancellationToken);
             }
 
             if (NetEventSource.Log.IsEnabled())

@@ -10,25 +10,25 @@ namespace System.Reflection.Context.Virtual
     // Represents a func-based 'PropertyInfo'
     internal sealed partial class VirtualPropertyInfo : VirtualPropertyBase
     {
-        private readonly PropertyGetter _getter;
-        private readonly PropertySetter _setter;
+        private readonly PropertyGetter? _getter;
+        private readonly PropertySetter? _setter;
         private readonly IEnumerable<Attribute> _attributes;
 
         public VirtualPropertyInfo(
             string name,
             Type propertyType,
-            Func<object, object> getter,
-            Action<object, object> setter,
-            IEnumerable<Attribute> propertyAttributes,
-            IEnumerable<Attribute> getterAttributes,
-            IEnumerable<Attribute> setterAttributes,
+            Func<object, object?>? getter,
+            Action<object, object?>? setter,
+            IEnumerable<Attribute>? propertyAttributes,
+            IEnumerable<Attribute>? getterAttributes,
+            IEnumerable<Attribute>? setterAttributes,
             CustomReflectionContext context)
             : base(propertyType, name, context)
         {
             if (getter == null && setter == null)
                 throw new ArgumentException(SR.ArgumentNull_GetterOrSetterMustBeSpecified);
 
-            CustomType rcType = propertyType as CustomType;
+            CustomType? rcType = propertyType as CustomType;
             if (rcType == null || rcType.ReflectionContext != context)
                 throw new ArgumentException(SR.Argument_PropertyTypeFromDifferentContext);
 
@@ -41,14 +41,14 @@ namespace System.Reflection.Context.Virtual
             _attributes = propertyAttributes ?? CollectionServices.Empty<Attribute>();
         }
 
-        public override MethodInfo GetGetMethod(bool nonPublic)
+        public override MethodInfo? GetGetMethod(bool nonPublic)
         {
             // Current we don't support adding nonpulbic getters
             Debug.Assert(_getter == null || _getter.IsPublic);
             return _getter;
         }
 
-        public override MethodInfo GetSetMethod(bool nonPublic)
+        public override MethodInfo? GetSetMethod(bool nonPublic)
         {
             // Current we don't support adding nonpulbic setters
             Debug.Assert(_setter == null || _setter.IsPublic);

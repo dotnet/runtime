@@ -71,7 +71,7 @@ namespace System.Numerics.Tensors
         public override T GetValue(int index)
         {
 
-            if (!values.TryGetValue(index, out T value))
+            if (!values.TryGetValue(index, out T? value))
             {
                 value = Zero;
             }

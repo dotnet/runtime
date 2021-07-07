@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -80,6 +81,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DateTime>("\"abc\""));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DateTimeOffset>("\"abc\""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan>("\"abc\""));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Guid>("\"abc\""));
 
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<byte>("\"abc\""));
@@ -118,6 +120,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(sbyte))]
         [InlineData(typeof(float))]
         [InlineData(typeof(string))]
+        [InlineData(typeof(TimeSpan))]
         [InlineData(typeof(ushort))]
         [InlineData(typeof(uint))]
         [InlineData(typeof(ulong))]
@@ -303,6 +306,9 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DateTimeOffset>(unexpectedString));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DateTimeOffset?>(unexpectedString));
 
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan>(unexpectedString));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan?>(unexpectedString));
+
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<string>("1"));
 
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("1"));
@@ -441,6 +447,71 @@ namespace System.Text.Json.Serialization.Tests
 
             string str = JsonSerializer.Deserialize<string>(json);
             Assert.True(json.AsSpan(1, json.Length - 2).SequenceEqual(str.AsSpan()));
+        }
+
+        [Theory]
+        [InlineData("23:59:59")]
+        [InlineData("\\u002D23:59:59", "-23:59:59")]
+        [InlineData("\\u0032\\u0033\\u003A\\u0035\\u0039\\u003A\\u0035\\u0039", "23:59:59")]
+        [InlineData("23:59:59.9", "23:59:59.9000000")]
+        [InlineData("23:59:59.9999999")]
+        [InlineData("9999999.23:59:59.9999999")]
+        [InlineData("-9999999.23:59:59.9999999")]
+        [InlineData("10675199.02:48:05.4775807")] // TimeSpan.MaxValue
+        [InlineData("-10675199.02:48:05.4775808")] // TimeSpan.MinValue
+        public static void TimeSpan_Read_Success(string json, string? actual = null)
+        {
+            TimeSpan value = JsonSerializer.Deserialize<TimeSpan>($"\"{json}\"");
+
+            Assert.Equal(TimeSpan.Parse(actual ?? json), value);
+            Assert.Equal(value, JsonConvert.DeserializeObject<TimeSpan>($"\"{json}\""));
+        }
+
+        [Fact]
+        public static void TimeSpan_Read_KnownDifferences()
+        {
+            string value = "24:00:00";
+
+            // 24:00:00 should be invalid because hours can only be up to 23.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan>($"\"{value}\""));
+
+            TimeSpan expectedValue = TimeSpan.Parse("24.00:00:00");
+
+            // TimeSpan.Parse has a quirk where it treats 24:00:00 as 24.00:00:00.
+            Assert.Equal(expectedValue, TimeSpan.Parse(value));
+
+            // Newtonsoft uses TimeSpan.Parse so it is subject to the quirk.
+            Assert.Equal(expectedValue, JsonConvert.DeserializeObject<TimeSpan>($"\"{value}\""));
+        }
+
+        [Theory]
+        [InlineData("\t23:59:59")] // Otherwise valid but has invalid json character
+        [InlineData("\\t23:59:59")] // Otherwise valid but has leading whitespace
+        [InlineData("23:59:59   ")] // Otherwise valid but has trailing whitespace
+        [InlineData("24:00:00")]
+        [InlineData("\\u0032\\u0034\\u003A\\u0030\\u0030\\u003A\\u0030\\u0030")]
+        [InlineData("00:60:00")]
+        [InlineData("00:00:60")]
+        [InlineData("00:00:00.00000009")]
+        [InlineData("900000000.00:00:00")]
+        [InlineData("1:00:00")] // 'g' Format
+        [InlineData("1:2:00:00")] // 'g' Format
+        [InlineData("+00:00:00")]
+        [InlineData("2021-06-18")]
+        [InlineData("1$")]
+        [InlineData("10675199.02:48:05.4775808")] // TimeSpan.MaxValue + 1
+        [InlineData("-10675199.02:48:05.4775809")] // TimeSpan.MinValue - 1
+        [InlineData("1234", false)]
+        [InlineData("{}", false)]
+        [InlineData("[]", false)]
+        [InlineData("true", false)]
+        [InlineData("null", false)]
+        public static void TimeSpan_Read_Failure(string json, bool addQuotes = true)
+        {
+            if (addQuotes)
+                json = $"\"{json}\"";
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan>(json));
         }
     }
 }

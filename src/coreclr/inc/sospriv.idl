@@ -438,3 +438,14 @@ interface ISOSDacInterface10 : IUnknown
     HRESULT IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappersRCW);
     HRESULT GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRESS *identity);
 }
+
+[
+    object,
+    local,
+    uuid(96BA1DB9-14CD-4492-8065-1CAAECF6E5CF)
+]
+interface ISOSDacInterface11 : IUnknown
+{
+    HRESULT IsTrackedType(CLRDATA_ADDRESS objAddr, BOOL* isTrackedType, BOOL* hasTaggedMemory);
+    HRESULT GetTaggedMemory(CLRDATA_ADDRESS objAddr, CLRDATA_ADDRESS* taggedMemory, size_t* taggedMemorySizeInBytes);
+}

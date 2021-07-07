@@ -93,6 +93,42 @@ namespace System.Security.Cryptography
             _core.GenerateIV();
         }
 
+        protected override bool TryDecryptEcbCore(
+            ReadOnlySpan<byte> ciphertext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
+                iv: null,
+                encrypting: false,
+                paddingMode,
+                CipherMode.ECB);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryEncryptEcbCore(
+            ReadOnlySpan<byte> plaintext,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
+                iv: null,
+                encrypting: true,
+                paddingMode,
+                CipherMode.ECB);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
@@ -106,14 +142,14 @@ namespace System.Security.Cryptography
             return TripleDES.IsWeakKey(key);
         }
 
-        int ICngSymmetricAlgorithm.GetPaddingSize()
+        int ICngSymmetricAlgorithm.GetPaddingSize(CipherMode mode, int feedbackSizeBits)
         {
-            return this.GetPaddingSize();
+            return this.GetPaddingSize(mode, feedbackSizeBits);
         }
 
-        SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle()
+        SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle(CipherMode mode)
         {
-            return TripleDesBCryptModes.GetSharedHandle(Mode, FeedbackSize / 8);
+            return TripleDesBCryptModes.GetSharedHandle(mode, FeedbackSize / 8);
         }
 
         string ICngSymmetricAlgorithm.GetNCryptAlgorithmIdentifier()

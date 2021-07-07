@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Value = defaultValue;
         }
 
-        public override Type ServiceType => DefaultValue?.GetType() ?? _serviceType;
+        public override Type ServiceType => _serviceType;
         public override Type ImplementationType => DefaultValue?.GetType() ?? _serviceType;
         public override CallSiteKind Kind { get; } = CallSiteKind.Constant;
     }

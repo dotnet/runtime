@@ -5,7 +5,7 @@
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:Interop.Odbc.SQLSetConnectAttrW(System.Data.Odbc.OdbcConnectionHandle,System.Data.Odbc.ODBC32.SQL_ATTR,System.Transactions.IDtcTransaction,System.Int32)</property>
+      <property name="Target">M:System.Data.Odbc.OdbcConnectionHandle.SetConnectionAttribute4(System.Data.Odbc.ODBC32.SQL_ATTR,System.Transactions.IDtcTransaction,System.Int32)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

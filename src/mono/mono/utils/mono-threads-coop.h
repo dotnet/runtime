@@ -20,7 +20,7 @@
 #include "mono/metadata/icalls.h"
 
 /* JIT specific interface */
-extern volatile size_t mono_polling_required;
+MONO_API_DATA volatile size_t mono_polling_required;
 
 /* Internal API */
 

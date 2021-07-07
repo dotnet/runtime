@@ -633,7 +633,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50721", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void WriteHashSetTOfHashSetT()
         {
             HashSet<HashSet<int>> input = new HashSet<HashSet<int>>(new List<HashSet<int>>

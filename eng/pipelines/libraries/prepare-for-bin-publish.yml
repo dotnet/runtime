@@ -6,46 +6,24 @@ parameters:
 steps:
   - ${{ if ne(parameters.isOfficialBuild, true) }}:
     - task: CopyFiles@2
-      displayName: Prepare testhost folder to publish
+      displayName: Prepare bin folders to publish (unofficial build)
       inputs:
-        sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
-        targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
-
-    - task: CopyFiles@2
-      displayName: Prepare runtime folder to publish
-      inputs:
-        sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/runtime
-        targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/runtime
-
-    - task: CopyFiles@2
-      displayName: Prepare ref folder to publish
-      inputs:
-        sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref
-        targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref
+        sourceFolder: $(Build.SourcesDirectory)/artifacts/bin
+        targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin
+        contents: |
+          ref/**
+          runtime/**
+          testhost/**
 
   - task: CopyFiles@2
-    displayName: Prepare shared framework ref assemblies to publish
+    displayName: Prepare bin folders to publish
     inputs:
-      sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref/microsoft.netcore.app
-      targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref/microsoft.netcore.app
-
-  - task: CopyFiles@2
-    displayName: Prepare docs folder to publish
-    inputs:
-      sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/docs
-      targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/docs
-
-  - task: CopyFiles@2
-    displayName: Prepare shared framework runtime folder to publish
-    inputs:
-      sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg
-      targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg
-  
-  - task: CopyFiles@2
-    displayName: Prepare native folder to publish
-    inputs:
-      sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/native
-      targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/native
+      sourceFolder: $(Build.SourcesDirectory)/artifacts/bin
+      targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin
+      contents: |
+        docs/**
+        microsoft.netcore.app.*/**
+        native/**
   
   - task: CopyFiles@2
     displayName: Prepare artifacts packages folder to publish

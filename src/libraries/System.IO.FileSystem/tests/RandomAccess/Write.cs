@@ -12,35 +12,50 @@ namespace System.IO.Tests
         protected override int MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset)
             => RandomAccess.Write(handle, bytes, fileOffset);
 
-        protected override bool ShouldThrowForAsyncHandle
-            => OperatingSystem.IsWindows(); // on Windows we can NOT perform sync IO using async handle
-
-        [Fact]
-        public void ThrowsOnReadAccess()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public void ThrowsOnReadAccess(FileOptions options)
         {
-            using (SafeFileHandle handle = GetHandleToExistingFile(FileAccess.Read))
+            using (SafeFileHandle handle = GetHandleToExistingFile(FileAccess.Read, options))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => RandomAccess.Write(handle, new byte[1], 0));
             }
         }
 
-        [Fact]
-        public void WriteUsingEmptyBufferReturnsZero()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public void WriteUsingEmptyBufferReturnsZero(FileOptions options)
         {
-            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write))
+            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, options: options))
             {
                 Assert.Equal(0, RandomAccess.Write(handle, Array.Empty<byte>(), fileOffset: 0));
             }
         }
 
-        [Fact]
-        public void WritesBytesFromGivenBufferToGivenFileAtGivenOffset()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public void CanUseStackAllocatedMemory(FileOptions options)
+        {
+            string filePath = GetTestFilePath();
+            Span<byte> stackAllocated = stackalloc byte[2] { 1, 2 };
+
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Create, FileAccess.Write, options: options))
+            {
+                Assert.Equal(stackAllocated.Length, RandomAccess.Write(handle, stackAllocated, fileOffset: 0));
+            }
+
+            Assert.Equal(stackAllocated.ToArray(), File.ReadAllBytes(filePath));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public void WritesBytesFromGivenBufferToGivenFileAtGivenOffset(FileOptions options)
         {
             const int fileSize = 4_001;
             string filePath = GetTestFilePath();
             byte[] content = RandomNumberGenerator.GetBytes(fileSize);
 
-            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, options))
             {
                 int total = 0;
                 int current = 0;

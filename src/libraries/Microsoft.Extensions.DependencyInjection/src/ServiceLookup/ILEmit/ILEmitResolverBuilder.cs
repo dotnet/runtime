@@ -194,12 +194,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
-        protected override object VisitServiceScopeFactory(ServiceScopeFactoryCallSite serviceScopeFactoryCallSite, ILEmitResolverBuilderContext argument)
-        {
-            AddConstant(argument, serviceScopeFactoryCallSite.Value);
-            return null;
-        }
-
         protected override object VisitIEnumerable(IEnumerableCallSite enumerableCallSite, ILEmitResolverBuilderContext argument)
         {
             if (enumerableCallSite.ServiceCallSites.Length == 0)

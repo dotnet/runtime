@@ -100,6 +100,33 @@ namespace System.Security.Cryptography.Cng.Tests
 
                     Assert.Equal(expectedBytes, persistedDecrypted);
                 }
+
+                byte[] oneShotPersistedEncrypted = null;
+                byte[] oneShotEphemeralEncrypted = null;
+                byte[] oneShotPersistedDecrypted = null;
+
+                if (cipherMode == CipherMode.ECB)
+                {
+                    oneShotPersistedEncrypted = persisted.EncryptEcb(plainBytes, paddingMode);
+                    oneShotEphemeralEncrypted = ephemeral.EncryptEcb(plainBytes, paddingMode);
+                    oneShotPersistedDecrypted = persisted.DecryptEcb(oneShotEphemeralEncrypted, paddingMode);
+                }
+
+                if (oneShotPersistedEncrypted is not null)
+                {
+                    Assert.Equal(oneShotEphemeralEncrypted, oneShotPersistedEncrypted);
+
+                    if (paddingMode == PaddingMode.Zeros)
+                    {
+                        byte[] plainPadded = new byte[oneShotPersistedDecrypted.Length];
+                        plainBytes.AsSpan().CopyTo(plainPadded);
+                        Assert.Equal(plainPadded, oneShotPersistedDecrypted);
+                    }
+                    else
+                    {
+                        Assert.Equal(plainBytes, oneShotPersistedDecrypted);
+                    }
+                }
             }
         }
 

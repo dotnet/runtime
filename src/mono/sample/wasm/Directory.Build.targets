@@ -1,4 +1,5 @@
 <Project>
+  <Import Project="../Directory.Build.targets" />
   <Target Name="PrepareForWasmBuild" BeforeTargets="WasmBuildApp">
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />

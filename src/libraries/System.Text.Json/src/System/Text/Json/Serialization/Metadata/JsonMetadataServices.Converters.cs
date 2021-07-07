@@ -111,6 +111,12 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<string>? s_stringConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="TimeSpan"/> values.
+        /// </summary>
+        public static JsonConverter<TimeSpan> TimeSpanConverter => s_timeSpanConverter ??= new TimeSpanConverter();
+        private static JsonConverter<TimeSpan>? s_timeSpanConverter;
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="ushort"/> values.
         /// </summary>
         [CLSCompliant(false)]

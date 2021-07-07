@@ -135,11 +135,6 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class PlatformHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest
-    {
-        public PlatformHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
-    }
-
     public sealed class PlatformHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public PlatformHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
@@ -297,13 +292,6 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion20.Value;
 
         public PlatformHandler_HttpClientHandler_Proxy_Http2_Test(ITestOutputHelper output) : base(output) { }
-    }
-
-    public sealed class PlatformHandler_SchSendAuxRecordHttp_Http2_Test : SchSendAuxRecordHttpTest
-    {
-        protected override Version UseVersion => HttpVersion20.Value;
-
-        public PlatformHandler_SchSendAuxRecordHttp_Http2_Test(ITestOutputHelper output) : base(output) { }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]

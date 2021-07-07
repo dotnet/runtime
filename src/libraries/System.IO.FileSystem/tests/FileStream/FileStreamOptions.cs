@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace System.IO.Tests
@@ -133,6 +134,69 @@ namespace System.IO.Tests
             Assert.Equal(123, new FileStreamOptions { BufferSize = 123 }.BufferSize);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new FileStreamOptions { BufferSize = -1 });
+        }
+
+        public static IEnumerable<object[]> GetSettingsArePropagatedArguments()
+        {
+            yield return new object[] { FileMode.Create, FileAccess.Write, FileOptions.None };
+            yield return new object[] { FileMode.Open, FileAccess.Read, FileOptions.None };
+            yield return new object[] { FileMode.Create, FileAccess.ReadWrite, FileOptions.None };
+
+            if (PlatformDetection.IsAsyncFileIOSupported)
+            {
+                yield return new object[] { FileMode.Create, FileAccess.Write, FileOptions.Asynchronous };
+                yield return new object[] { FileMode.Open, FileAccess.Read, FileOptions.Asynchronous };
+                yield return new object[] { FileMode.Create, FileAccess.ReadWrite, FileOptions.Asynchronous };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetSettingsArePropagatedArguments))]
+        public void SettingsArePropagated(FileMode mode, FileAccess access, FileOptions fileOptions)
+        {
+            string filePath = GetTestFilePath();
+            if (mode == FileMode.Open)
+            {
+                File.Create(filePath).Dispose();
+            }
+
+            bool canRead = (access & FileAccess.Read) != 0;
+            bool canWrite = (access & FileAccess.Write) != 0;
+            bool isAsync = (fileOptions & FileOptions.Asynchronous) != 0;
+
+            var options = new FileStreamOptions
+            {
+                Mode = mode,
+                Access = access,
+                Options = fileOptions
+            };
+
+            Validate(new FileStream(filePath, options), filePath, isAsync, canRead, canWrite);
+            Validate(File.Open(filePath, options), filePath, isAsync, canRead, canWrite);
+            Validate(new FileInfo(filePath).Open(options), filePath, isAsync, canRead, canWrite);
+
+            if (canWrite)
+            {
+                Validate((FileStream)new StreamWriter(filePath, options).BaseStream, filePath, isAsync, canRead, canWrite);
+                Validate((FileStream)new StreamWriter(filePath, Encoding.UTF8, options).BaseStream, filePath, isAsync, canRead, canWrite);
+            }
+
+            if (canRead)
+            {
+                Validate((FileStream)new StreamReader(filePath, options).BaseStream, filePath, isAsync, canRead, canWrite);
+                Validate((FileStream)new StreamReader(filePath, Encoding.UTF8, false, options).BaseStream, filePath, isAsync, canRead, canWrite);
+            }
+
+            static void Validate(FileStream fs, string expectedPath, bool expectedAsync, bool expectedCanRead, bool expectedCanWrite)
+            {
+                using (fs)
+                {
+                    Assert.Equal(expectedPath, fs.Name);
+                    Assert.Equal(expectedAsync, fs.IsAsync);
+                    Assert.Equal(expectedCanRead, fs.CanRead);
+                    Assert.Equal(expectedCanWrite, fs.CanWrite);
+                }
+            }
         }
     }
 }

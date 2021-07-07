@@ -7,7 +7,7 @@
     <TargetArchitectureAppHost>$(TargetArchitecture)</TargetArchitectureAppHost>
     <TargetArchitectureAppHost Condition="'$(TargetArchitectureAppHost)'=='armel'">arm</TargetArchitectureAppHost>
 
-    <AppHostRuntimeIdentifier>$(_runtimeOS)-$(TargetArchitectureAppHost)</AppHostRuntimeIdentifier>
+    <AppHostRuntimeIdentifier>$(PackageRID)</AppHostRuntimeIdentifier>
   </PropertyGroup>
   <Import Project="crossgen2.props" />
 </Project>
