@@ -52,6 +52,17 @@ static uint32_t _ep_rt_mono_max_sampled_thread_count = 32;
 // Mono profiler.
 static MonoProfilerHandle _ep_rt_mono_profiler = NULL;
 
+// Phantom JIT compile method.
+MonoMethod *_ep_rt_mono_runtime_helper_compile_method = NULL;
+MonoJitInfo *_ep_rt_mono_runtime_helper_compile_method_jitinfo = NULL;
+
+// Monitor.Enter methods.
+MonoMethod *_ep_rt_mono_monitor_enter_method = NULL;
+MonoJitInfo *_ep_rt_mono_monitor_enter_method_jitinfo = NULL;
+
+MonoMethod *_ep_rt_mono_monitor_enter_v4_method = NULL;
+MonoJitInfo *_ep_rt_mono_monitor_enter_v4_method_jitinfo = NULL;
+
 // Rundown types.
 typedef
 bool
@@ -109,14 +120,21 @@ typedef struct _EventPipeFireMethodEventsData{
 	ep_rt_mono_fire_method_rundown_events_func method_events_func;
 } EventPipeFireMethodEventsData;
 
-typedef struct _EventPipeSampleProfileData {
+typedef struct _EventPipeStackWalkData {
+	EventPipeStackContents *stack_contents;
+	bool top_frame;
+	bool async_frame;
+	bool safe_point_frame;
+	bool runtime_invoke_frame;
+} EventPipeStackWalkData;
+
+typedef struct _EventPipeSampleProfileStackWalkData {
+	EventPipeStackWalkData stack_walk_data;
 	EventPipeStackContents stack_contents;
 	uint64_t thread_id;
 	uintptr_t thread_ip;
 	uint32_t payload_data;
-	bool async_frame;
-	bool safe_point_frame;
-} EventPipeSampleProfileData;
+} EventPipeSampleProfileStackWalkData;
 
 // Rundown flags.
 #define RUNTIME_SKU_CORECLR 0x2
@@ -257,6 +275,13 @@ eventpipe_execute_rundown (
 	ep_rt_mono_fire_domain_rundown_events_func domain_events_func,
 	ep_rt_mono_fire_assembly_rundown_events_func assembly_events_func,
 	ep_rt_mono_fire_method_rundown_events_func methods_events_func);
+
+static
+gboolean
+eventpipe_walk_managed_stack_for_thread (
+	MonoStackFrameInfo *frame,
+	MonoContext *ctx,
+	EventPipeStackWalkData *stack_walk_data);
 
 static
 gboolean
@@ -439,6 +464,9 @@ ep_rt_mono_thread_get_or_create (void);
 
 void *
 ep_rt_mono_thread_attach (bool background_thread);
+
+void *
+ep_rt_mono_thread_attach_2 (bool background_thread, EventPipeThreadType thread_type);
 
 void
 ep_rt_mono_thread_detach (void);
@@ -743,20 +771,22 @@ eventpipe_fire_method_events (
 	MonoDebugMethodJitInfo *debug_info = method ? mono_debug_find_method (method, events_data->domain) : NULL;
 	if (debug_info) {
 		offset_entries = debug_info->num_line_numbers;
-		size_t needed_size = (offset_entries * sizeof (uint32_t) * 2);
-		if (!events_data->buffer || needed_size > events_data->buffer_size) {
-			g_free (events_data->buffer);
-			events_data->buffer_size = (size_t)(needed_size * 1.5);
-			events_data->buffer = g_new (uint8_t, events_data->buffer_size);
-		}
+		if (offset_entries != 0) {
+			size_t needed_size = (offset_entries * sizeof (uint32_t) * 2);
+			if (!events_data->buffer || needed_size > events_data->buffer_size) {
+				g_free (events_data->buffer);
+				events_data->buffer_size = (size_t)(needed_size * 1.5);
+				events_data->buffer = g_new (uint8_t, events_data->buffer_size);
+			}
 
-		if (events_data->buffer) {
-			il_offsets = (uint32_t*)events_data->buffer;
-			native_offsets = il_offsets + offset_entries;
+			if (events_data->buffer) {
+				il_offsets = (uint32_t*)events_data->buffer;
+				native_offsets = il_offsets + offset_entries;
 
-			for (int offset_count = 0; offset_count < offset_entries; ++offset_count) {
-				il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
-				native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
+				for (int offset_count = 0; offset_count < offset_entries; ++offset_count) {
+					il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
+					native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
+				}
 			}
 		}
 
@@ -795,6 +825,21 @@ eventpipe_fire_method_events (
 }
 
 static
+inline
+bool
+include_method (MonoMethod *method)
+{
+	if (!method) {
+		return false;
+	} else if (!m_method_is_wrapper (method)) {
+		return true;
+	} else {
+		WrapperInfo *wrapper = mono_marshal_get_wrapper_info (method);
+		return (wrapper && wrapper->subtype == WRAPPER_SUBTYPE_PINVOKE) ? true : false;
+	}
+}
+
+static
 void
 eventpipe_fire_method_events_func (
 	MonoJitInfo *ji,
@@ -805,7 +850,7 @@ eventpipe_fire_method_events_func (
 
 	if (ji && !ji->is_trampoline && !ji->async) {
 		MonoMethod *method = jinfo_get_method (ji);
-		if (method && !m_method_is_wrapper (method))
+		if (include_method (method))
 			eventpipe_fire_method_events (ji, method, events_data);
 	}
 }
@@ -899,15 +944,28 @@ eventpipe_execute_rundown (
 	if (root_domain) {
 		uint64_t domain_id = (uint64_t)root_domain;
 
-		// Iterate all functions in use (JIT, AOT and Interpreter).
+		// Emit all functions in use (JIT, AOT and Interpreter).
 		EventPipeFireMethodEventsData events_data;
 		events_data.domain = root_domain;
 		events_data.buffer_size = 1024 * sizeof(uint32_t);
 		events_data.buffer = g_new (uint8_t, events_data.buffer_size);
 		events_data.method_events_func = method_events_func;
+
+		// All called JIT/AOT methods should be included in jit info table.
 		mono_jit_info_table_foreach_internal (eventpipe_fire_method_events_func, &events_data);
+
+		// All called interpreted methods should be included in interpreter jit info table.
 		if (mono_get_runtime_callbacks ()->is_interpreter_enabled())
 			mono_get_runtime_callbacks ()->interp_jit_info_foreach (eventpipe_fire_method_events_func, &events_data);
+
+		// Phantom methods injected in callstacks representing runtime functions.
+		if (_ep_rt_mono_runtime_helper_compile_method_jitinfo && _ep_rt_mono_runtime_helper_compile_method)
+			eventpipe_fire_method_events (_ep_rt_mono_runtime_helper_compile_method_jitinfo, _ep_rt_mono_runtime_helper_compile_method, &events_data);
+		if (_ep_rt_mono_monitor_enter_method_jitinfo && _ep_rt_mono_monitor_enter_method)
+			eventpipe_fire_method_events (_ep_rt_mono_monitor_enter_method_jitinfo, _ep_rt_mono_monitor_enter_method, &events_data);
+		if (_ep_rt_mono_monitor_enter_v4_method_jitinfo && _ep_rt_mono_monitor_enter_v4_method)
+			eventpipe_fire_method_events (_ep_rt_mono_monitor_enter_v4_method_jitinfo, _ep_rt_mono_monitor_enter_v4_method, &events_data);
+
 		g_free (events_data.buffer);
 
 		// Iterate all assemblies in domain.
@@ -936,17 +994,78 @@ eventpipe_execute_rundown (
 	return TRUE;
 }
 
+inline
+static
+bool
+in_safe_point_frame (EventPipeStackContents *stack_content, WrapperInfo *wrapper)
+{
+	EP_ASSERT (stack_content != NULL);
+
+	// If top of stack is a managed->native icall wrapper for one of the below subtypes, we are at a safe point frame.
+	if (wrapper && ep_stack_contents_get_length (stack_content) == 0 && wrapper->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER &&
+			(wrapper->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_state_poll ||
+			wrapper->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_enter_gc_safe_region_unbalanced ||
+			wrapper->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_exit_gc_safe_region_unbalanced ||
+			wrapper->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_enter_gc_unsafe_region_unbalanced ||
+			wrapper->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_exit_gc_unsafe_region_unbalanced))
+		return true;
+
+	return false;
+}
+
+inline
+static
+bool
+in_runtime_invoke_frame (EventPipeStackContents *stack_content, WrapperInfo *wrapper)
+{
+	EP_ASSERT (stack_content != NULL);
+
+	// If top of stack is a managed->native runtime invoke wrapper, we are at a managed frame.
+	if (wrapper && ep_stack_contents_get_length (stack_content) == 0 &&
+			(wrapper->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL ||
+			wrapper->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT ||
+			wrapper->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_DYNAMIC ||
+			wrapper->subtype == WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL))
+		return true;
+
+	return false;
+}
+
+inline
+static
+bool
+in_monitor_enter_frame (WrapperInfo *wrapper)
+{
+	if (wrapper && wrapper->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER &&
+			(wrapper->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_monitor_enter_fast ||
+			wrapper->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_monitor_enter_internal))
+		return true;
+
+	return false;
+}
+
+inline
+static
+bool
+in_monitor_enter_v4_frame (WrapperInfo *wrapper)
+{
+	if (wrapper && wrapper->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER &&
+			(wrapper->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_monitor_enter_v4_fast ||
+			wrapper->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_monitor_enter_v4_internal))
+		return true;
+
+	return false;
+}
+
 static
 gboolean
 eventpipe_walk_managed_stack_for_thread (
 	MonoStackFrameInfo *frame,
 	MonoContext *ctx,
-	void *data,
-	bool *async_frame,
-	bool *safe_point_frame)
+	EventPipeStackWalkData *stack_walk_data)
 {
 	EP_ASSERT (frame != NULL);
-	EP_ASSERT (data != NULL);
+	EP_ASSERT (stack_walk_data != NULL);
 
 	switch (frame->type) {
 	case FRAME_TYPE_DEBUGGER_INVOKE:
@@ -955,23 +1074,41 @@ eventpipe_walk_managed_stack_for_thread (
 	case FRAME_TYPE_INTERP_TO_MANAGED:
 	case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
 	case FRAME_TYPE_INTERP_ENTRY:
+		stack_walk_data->top_frame = false;
+		return FALSE;
+	case FRAME_TYPE_JIT_ENTRY:
+		// Frame in JIT compiler at top of callstack, add phantom frame representing call into JIT compiler.
+		// Makes it possible to detect stacks waiting on JIT compiler.
+		if (_ep_rt_mono_runtime_helper_compile_method && stack_walk_data->top_frame)
+			ep_stack_contents_append (stack_walk_data->stack_contents, (uintptr_t)((uint8_t*)_ep_rt_mono_runtime_helper_compile_method), _ep_rt_mono_runtime_helper_compile_method);
+		stack_walk_data->top_frame = false;
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
 	case FRAME_TYPE_INTERP:
-		if (!frame->ji)
-			return FALSE;
-		*async_frame |= frame->ji->async;
-		MonoMethod *method = frame->ji->async ? NULL : frame->actual_method;
-		if (method && m_method_is_wrapper (method)) {
-			WrapperInfo *wrapper = mono_marshal_get_wrapper_info(method);
-			if (wrapper && wrapper->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER && wrapper->d.icall.jit_icall_id == MONO_JIT_ICALL_mono_threads_state_poll)
-				*safe_point_frame = true;
-		} else if (method && !m_method_is_wrapper (method)) {
-			ep_stack_contents_append ((EventPipeStackContents *)data, (uintptr_t)((uint8_t*)frame->ji->code_start + frame->native_offset), method);
-		} else if (!method && frame->ji->async && !frame->ji->is_trampoline) {
-			ep_stack_contents_append ((EventPipeStackContents *)data, (uintptr_t)((uint8_t*)frame->ji->code_start), method);
+		if (frame->ji) {
+			stack_walk_data->async_frame |= frame->ji->async;
+			MonoMethod *method = frame->ji->async ? NULL : frame->actual_method;
+			if (method && m_method_is_wrapper (method)) {
+				WrapperInfo *wrapper = mono_marshal_get_wrapper_info (method);
+				if (in_safe_point_frame (stack_walk_data->stack_contents, wrapper)) {
+					stack_walk_data->safe_point_frame = true;
+				}else if (in_runtime_invoke_frame (stack_walk_data->stack_contents, wrapper)) {
+					stack_walk_data->runtime_invoke_frame = true;
+				} else if (_ep_rt_mono_monitor_enter_method && in_monitor_enter_frame (wrapper)) {
+					ep_stack_contents_append (stack_walk_data->stack_contents, (uintptr_t)((uint8_t*)_ep_rt_mono_monitor_enter_method), _ep_rt_mono_monitor_enter_method);
+				} else if (_ep_rt_mono_monitor_enter_v4_method && in_monitor_enter_v4_frame (wrapper)) {
+					ep_stack_contents_append (stack_walk_data->stack_contents, (uintptr_t)((uint8_t*)_ep_rt_mono_monitor_enter_v4_method), _ep_rt_mono_monitor_enter_v4_method);
+				} else if (wrapper && wrapper->subtype == WRAPPER_SUBTYPE_PINVOKE) {
+					ep_stack_contents_append (stack_walk_data->stack_contents, (uintptr_t)((uint8_t*)frame->ji->code_start + frame->native_offset), method);
+				}
+			} else if (method && !m_method_is_wrapper (method)) {
+				ep_stack_contents_append (stack_walk_data->stack_contents, (uintptr_t)((uint8_t*)frame->ji->code_start + frame->native_offset), method);
+			} else if (!method && frame->ji->async && !frame->ji->is_trampoline) {
+				ep_stack_contents_append (stack_walk_data->stack_contents, (uintptr_t)((uint8_t*)frame->ji->code_start), method);
+			}
 		}
-		return ep_stack_contents_get_length ((EventPipeStackContents *)data) >= EP_MAX_STACK_DEPTH;
+		stack_walk_data->top_frame = false;
+		return ep_stack_contents_get_length (stack_walk_data->stack_contents) >= EP_MAX_STACK_DEPTH;
 	default:
 		EP_UNREACHABLE ("eventpipe_walk_managed_stack_for_thread");
 		return FALSE;
@@ -985,9 +1122,7 @@ eventpipe_walk_managed_stack_for_thread_func (
 	MonoContext *ctx,
 	void *data)
 {
-	bool async_frame = false;
-	bool safe_point_frame = false;
-	return eventpipe_walk_managed_stack_for_thread (frame, ctx, data, &async_frame, &safe_point_frame);
+	return eventpipe_walk_managed_stack_for_thread (frame, ctx, (EventPipeStackWalkData *)data);
 }
 
 static
@@ -1000,7 +1135,7 @@ eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
 	EP_ASSERT (frame != NULL);
 	EP_ASSERT (data != NULL);
 
-	EventPipeSampleProfileData *sample_data = (EventPipeSampleProfileData *)data;
+	EventPipeSampleProfileStackWalkData *sample_data = (EventPipeSampleProfileStackWalkData *)data;
 
 	if (sample_data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR) {
 		switch (frame->type) {
@@ -1011,11 +1146,11 @@ eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
 		case FRAME_TYPE_TRAMPOLINE:
 			sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
 			break;
+		case FRAME_TYPE_JIT_ENTRY:
+			sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+			break;
 		case FRAME_TYPE_INTERP:
-			if (frame->managed)
-				sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
-			else
-				sample_data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+			sample_data->payload_data = frame->managed ? EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED : EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
 			break;
 		case FRAME_TYPE_INTERP_TO_MANAGED:
 		case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
@@ -1025,7 +1160,7 @@ eventpipe_sample_profiler_walk_managed_stack_for_thread_func (
 		}
 	}
 
-	return eventpipe_walk_managed_stack_for_thread (frame, ctx, &sample_data->stack_contents, &sample_data->async_frame, &sample_data->safe_point_frame);
+	return eventpipe_walk_managed_stack_for_thread (frame, ctx, &sample_data->stack_walk_data);
 }
 
 static
@@ -1051,6 +1186,65 @@ ep_rt_mono_init (void)
 
 	_ep_rt_mono_profiler = mono_profiler_create (NULL);
 	mono_profiler_set_thread_stopped_callback (_ep_rt_mono_profiler, profiler_eventpipe_thread_exited);
+
+	MonoMethodSignature *method_signature = mono_metadata_signature_alloc (mono_get_corlib (), 1);
+	if (method_signature) {
+		method_signature->params[0] = m_class_get_byval_arg (mono_get_object_class());
+		method_signature->ret = m_class_get_byval_arg (mono_get_void_class());
+
+		ERROR_DECL (error);
+		MonoClass *runtime_helpers = mono_class_from_name_checked (mono_get_corlib (), "System.Runtime.CompilerServices", "RuntimeHelpers", error);
+		if (is_ok (error) && runtime_helpers) {
+			MonoMethodBuilder *method_builder = mono_mb_new (runtime_helpers, "CompileMethod", MONO_WRAPPER_RUNTIME_INVOKE);
+			if (method_builder) {
+				_ep_rt_mono_runtime_helper_compile_method = mono_mb_create_method (method_builder, method_signature, 1);
+				mono_mb_free (method_builder);
+			}
+		}
+		mono_error_cleanup (error);
+		mono_metadata_free_method_signature (method_signature);
+
+		_ep_rt_mono_runtime_helper_compile_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
+		if (_ep_rt_mono_runtime_helper_compile_method) {
+			_ep_rt_mono_runtime_helper_compile_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_runtime_helper_compile_method);
+			_ep_rt_mono_runtime_helper_compile_method_jitinfo->code_size = 20;
+			_ep_rt_mono_runtime_helper_compile_method_jitinfo->d.method = _ep_rt_mono_runtime_helper_compile_method;
+		}
+	}
+
+	{
+		ERROR_DECL (error);
+		MonoMethodDesc *desc = NULL;
+		MonoClass *monitor = mono_class_from_name_checked (mono_get_corlib (), "System.Threading", "Monitor", error);
+		if (is_ok (error) && monitor) {
+			desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
+			if (desc) {
+				_ep_rt_mono_monitor_enter_v4_method = mono_method_desc_search_in_class (desc, monitor);
+				mono_method_desc_free (desc);
+
+				_ep_rt_mono_monitor_enter_v4_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
+				if (_ep_rt_mono_monitor_enter_v4_method_jitinfo) {
+					_ep_rt_mono_monitor_enter_v4_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_monitor_enter_v4_method);
+					_ep_rt_mono_monitor_enter_v4_method_jitinfo->code_size = 20;
+					_ep_rt_mono_monitor_enter_v4_method_jitinfo->d.method = _ep_rt_mono_monitor_enter_v4_method;
+				}
+			}
+
+			desc = mono_method_desc_new ("Monitor:Enter(object)", FALSE);
+			if (desc) {
+				_ep_rt_mono_monitor_enter_method = mono_method_desc_search_in_class (desc, monitor);
+				mono_method_desc_free (desc);
+
+				_ep_rt_mono_monitor_enter_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
+				if (_ep_rt_mono_monitor_enter_method_jitinfo) {
+					_ep_rt_mono_monitor_enter_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_monitor_enter_method);
+					_ep_rt_mono_monitor_enter_method_jitinfo->code_size = 20;
+					_ep_rt_mono_monitor_enter_method_jitinfo->d.method = _ep_rt_mono_monitor_enter_method;
+				}
+			}
+		}
+		mono_error_cleanup (error);
+	}
 }
 
 void
@@ -1081,6 +1275,20 @@ ep_rt_mono_fini (void)
 
 	if (_ep_rt_mono_initialized)
 		mono_rand_close (_ep_rt_mono_rand_provider);
+
+	g_free (_ep_rt_mono_runtime_helper_compile_method_jitinfo);
+	_ep_rt_mono_runtime_helper_compile_method_jitinfo = NULL;
+
+	mono_free_method (_ep_rt_mono_runtime_helper_compile_method);
+	_ep_rt_mono_runtime_helper_compile_method = NULL;
+
+	g_free (_ep_rt_mono_monitor_enter_method_jitinfo);
+	_ep_rt_mono_monitor_enter_method_jitinfo = NULL;
+	_ep_rt_mono_monitor_enter_method = NULL;
+
+	g_free (_ep_rt_mono_monitor_enter_v4_method_jitinfo);
+	_ep_rt_mono_monitor_enter_v4_method_jitinfo = NULL;
+	_ep_rt_mono_monitor_enter_v4_method = NULL;
 
 	_ep_rt_mono_sampled_thread_callstacks = NULL;
 	_ep_rt_mono_rand_provider = NULL;
@@ -1124,6 +1332,41 @@ ep_rt_mono_thread_attach (bool background_thread)
 	}
 
 	return thread;
+}
+
+void *
+ep_rt_mono_thread_attach_2 (bool background_thread, EventPipeThreadType thread_type)
+{
+	void *result = ep_rt_mono_thread_attach (background_thread);
+	if (result && thread_type == EP_THREAD_TYPE_SAMPLING) {
+		// Increase sampling thread priority, accepting failures.
+#ifdef HOST_WIN32
+		SetThreadPriority (GetCurrentThread (), THREAD_PRIORITY_HIGHEST);
+#elif _POSIX_PRIORITY_SCHEDULING
+		int policy;
+		int priority;
+		struct sched_param param;
+		int schedparam_result = pthread_getschedparam (pthread_self (), &policy, &param);
+		if (schedparam_result == 0) {
+			// Attempt to switch the thread to real time scheduling. This will not
+			// necessarily work on all OSs; for example, most Linux systems will give
+			// us EPERM here unless configured to allow this.
+			priority = param.sched_priority;
+			param.sched_priority = sched_get_priority_max (SCHED_RR);
+			if (param.sched_priority != -1) {
+				schedparam_result = pthread_setschedparam (pthread_self (), SCHED_RR, &param);
+				if (schedparam_result != 0) {
+					// Fallback, attempt to increase to max priority using current policy.
+					param.sched_priority = sched_get_priority_max (policy);
+					if (param.sched_priority != -1 && param.sched_priority != priority)
+						pthread_setschedparam (pthread_self (), policy, &param);
+				}
+			}
+		}
+#endif
+	}
+
+	return result;
 }
 
 void
@@ -1446,10 +1689,17 @@ ep_rt_mono_walk_managed_stack_for_thread (
 {
 	EP_ASSERT (thread != NULL && stack_contents != NULL);
 
+	EventPipeStackWalkData stack_walk_data;
+	stack_walk_data.stack_contents = stack_contents;
+	stack_walk_data.top_frame = true;
+	stack_walk_data.async_frame = false;
+	stack_walk_data.safe_point_frame = false;
+	stack_walk_data.runtime_invoke_frame = false;
+
 	if (thread == ep_rt_thread_get_handle () && mono_get_eh_callbacks ()->mono_walk_stack_with_ctx)
-		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (eventpipe_walk_managed_stack_for_thread_func, NULL, MONO_UNWIND_SIGNAL_SAFE, stack_contents);
+		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (eventpipe_walk_managed_stack_for_thread_func, NULL, MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
 	else if (mono_get_eh_callbacks ()->mono_walk_stack_with_state)
-		mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_walk_managed_stack_for_thread_func, mono_thread_info_get_suspend_state (thread), MONO_UNWIND_SIGNAL_SAFE, stack_contents);
+		mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_walk_managed_stack_for_thread_func, mono_thread_info_get_suspend_state (thread), MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
 
 	return true;
 }
@@ -1503,7 +1753,7 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 
 	// Sample profiler only runs on one thread, no need to synchorinize.
 	if (!_ep_rt_mono_sampled_thread_callstacks)
-		_ep_rt_mono_sampled_thread_callstacks = g_array_sized_new (FALSE, FALSE, sizeof (EventPipeSampleProfileData), _ep_rt_mono_max_sampled_thread_count);
+		_ep_rt_mono_sampled_thread_callstacks = g_array_sized_new (FALSE, FALSE, sizeof (EventPipeSampleProfileStackWalkData), _ep_rt_mono_max_sampled_thread_count);
 
 	// Make sure there is room based on previous max number of sampled threads.
 	// NOTE, there is a chance there are more threads than max, if that's the case we will
@@ -1524,16 +1774,22 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 			MonoThreadUnwindState *thread_state = mono_thread_info_get_suspend_state (thread_info);
 			if (thread_state->valid) {
 				if (sampled_thread_count < _ep_rt_mono_max_sampled_thread_count) {
-					EventPipeSampleProfileData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileData, sampled_thread_count);
+					EventPipeSampleProfileStackWalkData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileStackWalkData, sampled_thread_count);
 					data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
 					data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&thread_state->ctx);
 					data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
-					data->async_frame = FALSE;
-					data->safe_point_frame = FALSE;
+					data->stack_walk_data.stack_contents = &data->stack_contents;
+					data->stack_walk_data.top_frame = true;
+					data->stack_walk_data.async_frame = false;
+					data->stack_walk_data.safe_point_frame = false;
+					data->stack_walk_data.runtime_invoke_frame = false;
 					ep_stack_contents_reset (&data->stack_contents);
-					mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_sample_profiler_walk_managed_stack_for_thread_func, thread_state, MONO_UNWIND_SIGNAL_SAFE, data);		
-					if (data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL && data->safe_point_frame)
+					mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_sample_profiler_walk_managed_stack_for_thread_func, thread_state, MONO_UNWIND_SIGNAL_SAFE, data);
+					if (data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL && (data->stack_walk_data.safe_point_frame || data->stack_walk_data.runtime_invoke_frame)) {
+						// If classified as external code (managed->native frame on top of stack), but have a safe point or runtime invoke frame
+						// as second, re-classify current callstack to be executing managed code.
 						data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
+					}
 
 					sampled_thread_count++;
 				}
@@ -1550,12 +1806,12 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	// adapter instance and only set recorded tid as parameter inside adapter.
 	THREAD_INFO_TYPE adapter = { { 0 } };
 	for (uint32_t i = 0; i < sampled_thread_count; ++i) {
-		EventPipeSampleProfileData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileData, i);
+		EventPipeSampleProfileStackWalkData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileStackWalkData, i);
 		if (data->payload_data != EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR && ep_stack_contents_get_length(&data->stack_contents) > 0) {
 			// Check if we have an async frame, if so we will need to make sure all frames are registered in regular jit info table.
 			// TODO: An async frame can contain wrapper methods (no way to check during stackwalk), we could skip writing profile event
 			// for this specific stackwalk or we could cleanup stack_frames before writing profile event.
-			if (data->async_frame) {
+			if (data->stack_walk_data.async_frame) {
 				for (int i = 0; i < data->stack_contents.next_available_frame; ++i)
 					mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [i], TRUE, FALSE);
 			}
@@ -1720,19 +1976,21 @@ ep_rt_mono_write_event_method_il_to_native_map (
 
 		MonoDebugMethodJitInfo *debug_info = method ? mono_debug_find_method (method, root_domain) : NULL;
 		if (debug_info) {
-			offset_entries = debug_info->num_line_numbers;
-			size_t needed_size = (offset_entries * sizeof (uint32_t) * 2);
-			if (needed_size > sizeof (fixed_buffer)) {
-				buffer = g_new (uint8_t, needed_size);
-				il_offsets = (uint32_t*)buffer;
-			} else {
-				il_offsets = fixed_buffer;
-			}
-			if (il_offsets) {
-				native_offsets = il_offsets + offset_entries;
-				for (int offset_count = 0; offset_count < offset_entries; ++offset_count) {
-					il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
-					native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
+			if (offset_entries != 0) {
+				offset_entries = debug_info->num_line_numbers;
+				size_t needed_size = (offset_entries * sizeof (uint32_t) * 2);
+				if (needed_size > sizeof (fixed_buffer)) {
+					buffer = g_new (uint8_t, needed_size);
+					il_offsets = (uint32_t*)buffer;
+				} else {
+					il_offsets = fixed_buffer;
+				}
+				if (il_offsets) {
+					native_offsets = il_offsets + offset_entries;
+					for (int offset_count = 0; offset_count < offset_entries; ++offset_count) {
+						il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
+						native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
+					}
 				}
 			}
 

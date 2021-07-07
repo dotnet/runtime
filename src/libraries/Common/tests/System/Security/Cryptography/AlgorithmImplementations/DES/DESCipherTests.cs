@@ -524,6 +524,8 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         {
             byte[] liveEncryptBytes;
             byte[] liveDecryptBytes;
+            byte[] liveOneShotDecryptBytes = null;
+            byte[] liveOneShotEncryptBytes = null;
 
             using (DES des = DESFactory.Create())
             {
@@ -537,10 +539,33 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
 
                 liveEncryptBytes = DESEncryptDirectKey(des, key, iv, plainBytes);
                 liveDecryptBytes = DESDecryptDirectKey(des, key, iv, cipherBytes);
+
+                if (cipherMode == CipherMode.ECB)
+                {
+                    des.Key = key;
+                    liveOneShotDecryptBytes = des.DecryptEcb(cipherBytes, paddingMode);
+                    liveOneShotEncryptBytes = des.EncryptEcb(plainBytes, paddingMode);
+                }
+                else if (cipherMode == CipherMode.CBC)
+                {
+                    des.Key = key;
+                    liveOneShotDecryptBytes = des.DecryptCbc(cipherBytes, iv, paddingMode);
+                    liveOneShotEncryptBytes = des.EncryptCbc(plainBytes, iv, paddingMode);
+                }
             }
 
             Assert.Equal(cipherBytes, liveEncryptBytes);
             Assert.Equal(plainBytes, liveDecryptBytes);
+
+            if (liveOneShotDecryptBytes is not null)
+            {
+                Assert.Equal(plainBytes, liveOneShotDecryptBytes);
+            }
+
+            if (liveOneShotEncryptBytes is not null)
+            {
+                Assert.Equal(cipherBytes, liveOneShotEncryptBytes);
+            }
         }
 
         private static byte[] DESEncryptDirectKey(DES des, byte[] key, byte[] iv, byte[] plainBytes)

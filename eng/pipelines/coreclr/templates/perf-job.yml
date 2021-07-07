@@ -165,7 +165,13 @@ jobs:
           artifactFileName: 'iOSSampleAppNoLLVM.tar.gz'
           artifactName: 'iOSSampleAppNoLLVM'
           displayName: 'iOS Sample App NoLLVM'
-
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/llvm
+          cleanUnpackFolder: false
+          artifactFileName: 'iOSSampleAppLLVM.tar.gz'
+          artifactName: 'iOSSampleAppLLVM'
+          displayName: 'iOS Sample App LLVM'
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)

@@ -129,6 +129,44 @@ namespace System.Security.Cryptography
             }
         }
 
+        protected override bool TryEncryptCbcCore(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
+                iv: iv.ToArray(),
+                encrypting: true,
+                paddingMode,
+                CipherMode.CBC);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryDecryptCbcCore(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
+                iv: iv.ToArray(),
+                encrypting: false,
+                paddingMode,
+                CipherMode.CBC);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);

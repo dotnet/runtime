@@ -2,6 +2,16 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <SetIsTrimmable>false</SetIsTrimmable>
+    <IsPackable>true</IsPackable>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <PackageDescription>Provides types that support using Managed Extensibility Framework with a convention-based configuration model.
+
+Commonly Used Types:
+System.Composition.Convention.ConventionBuilder
+System.Composition.Convention.ExportConventionBuilder
+System.Composition.Convention.ImportConventionBuilder
+System.Composition.Convention.PartConventionBuilder
+System.Composition.Convention.ParameterImportConventionBuilder</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,5 +43,9 @@
     <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 </Project>
