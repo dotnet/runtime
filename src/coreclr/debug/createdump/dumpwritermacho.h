@@ -35,11 +35,12 @@ public:
     virtual ~DumpWriter();
     bool OpenDump(const char* dumpFileName);
     bool WriteDump();
+    static bool WriteData(int fd, const void* buffer, size_t length);
 
 private:
     void BuildSegmentLoadCommands();
     void BuildThreadLoadCommands();
     bool WriteHeader(uint64_t* pFileOffset);
     bool WriteSegments();
-    bool WriteData(const void* buffer, size_t length);
+    bool WriteData(const void* buffer, size_t length) { return WriteData(m_fd, buffer, length); }
 };
