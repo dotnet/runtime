@@ -4,11 +4,9 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -263,12 +261,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         new[] { lockWasTaken },
                         Expression.TryFinally(tryBody, finallyBody))
                 );
-        }
-
-        private static MethodInfo GetMethodInfo<T>(Expression<T> expr)
-        {
-            var mc = (MethodCallExpression)expr.Body;
-            return mc.Method;
         }
 
         public Expression GetCaptureDisposable(ParameterExpression scope)
