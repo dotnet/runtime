@@ -1161,9 +1161,9 @@ bool __stdcall TrackAllocationsEnabled();
 extern Volatile<int64_t> g_cbILJitted;
 extern Volatile<int64_t> g_cMethodsJitted;
 extern Volatile<int64_t> g_c100nsTicksInJit;
-extern thread_local int64_t g_cbILJittedForThread;
-extern thread_local int64_t g_cMethodsJittedForThread;
-extern thread_local int64_t g_c100nsTicksInJitForThread;
+extern thread_local int64_t t_cbILJittedForThread;
+extern thread_local int64_t t_cMethodsJittedForThread;
+extern thread_local int64_t t_c100nsTicksInJitForThread;
 
 FCDECL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread);
 FCDECL1(INT64, GetCompiledMethodCount, CLR_BOOL currentThread);

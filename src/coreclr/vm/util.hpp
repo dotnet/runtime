@@ -924,22 +924,13 @@ public:
 class NormalizedTimer
 {
 private:
-    LARGE_INTEGER startTimestamp;
-    LARGE_INTEGER stopTimestamp;
-    int64_t cachedElapsed100nsTicks = 0;
-    bool shouldRecalculate = true;
-    bool isRunning = false;
     static const int64_t NormalizedTicksPerSecond = 10000000 /* 100ns ticks per second (1e7) */;
     static Volatile<double> s_frequency;
 
-    inline
-    void Lap()
-    {
-        startTimestamp = stopTimestamp;
-        stopTimestamp.QuadPart = 0;
-        isRunning = true;
-        shouldRecalculate = true;
-    }
+    LARGE_INTEGER startTimestamp;
+    LARGE_INTEGER stopTimestamp;
+    bool isRunning = false;
+
 public:
     NormalizedTimer()
     {
@@ -965,7 +956,6 @@ public:
         QueryPerformanceCounter(&startTimestamp);
         stopTimestamp.QuadPart = 0;
         isRunning = true;
-        shouldRecalculate = true;
     }
 
     // ======================================================================================
@@ -979,7 +969,6 @@ public:
             startTimestamp = stopTimestamp;
 
         isRunning = false;
-        shouldRecalculate = true;
     }
 
     // ======================================================================================
@@ -987,20 +976,12 @@ public:
     // Will return 0 if called out of order.
     // Only recalculated this value if it has been stopped/started since previous calculation.
     inline
-    int64_t Elapsed100nsTicks(bool shouldContinue = false)
+    int64_t Elapsed100nsTicks()
     {
-        if (shouldRecalculate)
-        {
-            if (isRunning)
-                Stop();
+        if (isRunning)
+            Stop();
 
-            cachedElapsed100nsTicks = static_cast<int64_t>((stopTimestamp.QuadPart - startTimestamp.QuadPart) / s_frequency);
-
-            if (shouldContinue)
-                Lap();
-        }
-
-        return cachedElapsed100nsTicks;
+        return static_cast<int64_t>((stopTimestamp.QuadPart - startTimestamp.QuadPart) / s_frequency);
     }
 };
 

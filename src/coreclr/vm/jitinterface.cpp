@@ -105,16 +105,16 @@ GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 Volatile<int64_t> g_cbILJitted = 0;
 Volatile<int64_t> g_cMethodsJitted = 0;
 Volatile<int64_t> g_c100nsTicksInJit = 0;
-thread_local int64_t g_cbILJittedForThread = 0;
-thread_local int64_t g_cMethodsJittedForThread = 0;
-thread_local int64_t g_c100nsTicksInJitForThread = 0;
+thread_local int64_t t_cbILJittedForThread = 0;
+thread_local int64_t t_cMethodsJittedForThread = 0;
+thread_local int64_t t_c100nsTicksInJitForThread = 0;
 
 #ifndef CROSSGEN_COMPILE
 FCIMPL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread)
 {
     FCALL_CONTRACT;
 
-    return currentThread ? g_cbILJittedForThread : g_cbILJitted.Load();
+    return currentThread ? t_cbILJittedForThread : g_cbILJitted.Load();
 }
 FCIMPLEND
 
@@ -122,7 +122,7 @@ FCIMPL1(INT64, GetCompiledMethodCount, CLR_BOOL currentThread)
 {
     FCALL_CONTRACT;
 
-    return currentThread ? g_cMethodsJittedForThread : g_cMethodsJitted.Load();
+    return currentThread ? t_cMethodsJittedForThread : g_cMethodsJitted.Load();
 }
 FCIMPLEND
 
@@ -130,7 +130,7 @@ FCIMPL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread)
 {
     FCALL_CONTRACT;
 
-    return currentThread ? g_c100nsTicksInJitForThread : g_c100nsTicksInJit.Load();
+    return currentThread ? t_c100nsTicksInJitForThread : g_c100nsTicksInJit.Load();
 }
 FCIMPLEND
 #endif
@@ -13043,6 +13043,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     PCODE ret = NULL;
     NormalizedTimer timer;
+    int64_t c100nsTicksInJit = 0;
 
     COOPERATIVE_TRANSITION_BEGIN();
 
@@ -13410,15 +13411,16 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #endif // _DEBUG
 
     timer.Stop();
+    c100nsTicksInJit = timer.Elapsed100nsTicks();
 
-    InterlockedExchangeAdd64((LONG64*)&g_c100nsTicksInJit, timer.Elapsed100nsTicks());
-    g_c100nsTicksInJitForThread += timer.Elapsed100nsTicks();
+    InterlockedExchangeAdd64((LONG64*)&g_c100nsTicksInJit, c100nsTicksInJit);
+    t_c100nsTicksInJitForThread += c100nsTicksInJit;
 
     InterlockedExchangeAdd64((LONG64*)&g_cbILJitted, methodInfo.ILCodeSize);
-    g_cbILJittedForThread += methodInfo.ILCodeSize;
+    t_cbILJittedForThread += methodInfo.ILCodeSize;
 
     InterlockedIncrement64((LONG64*)&g_cMethodsJitted);
-    g_cMethodsJittedForThread++;
+    t_cMethodsJittedForThread++;
 
     COOPERATIVE_TRANSITION_END();
     return ret;
