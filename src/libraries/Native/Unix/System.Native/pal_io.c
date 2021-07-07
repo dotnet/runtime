@@ -1387,7 +1387,7 @@ static int16_t ConvertLockType(int16_t managedLockType)
 int64_t SystemNative_GetFileSystemType(intptr_t fd)
 {
     int statfsRes;
-#if HAVE_STATFS_MOUNT && defined(TARGET_OSX) // In macOS 10.6+ statfs64 is deprecated, in favor of statfs
+#if HAVE_STATFS_MOUNT && (defined(TARGET_IOS) || defined(TARGET_OSX) || defined(TARGET_WATCHOS) || defined(TARGET_TVOS) || defined(HOST_MACCAT)) // In macOS 10.6+ statfs64 is deprecated, in favor of statfs
     struct statfs statfsArgs;
     while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
 #elif HAVE_STATFS64_VFS || HAVE_STATFS64_MOUNT
