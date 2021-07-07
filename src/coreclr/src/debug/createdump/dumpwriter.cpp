@@ -23,7 +23,7 @@ DumpWriter::~DumpWriter()
 bool
 DumpWriter::OpenDump(const char* dumpFileName)
 {
-    m_fd = open(dumpFileName, O_WRONLY|O_CREAT|O_TRUNC, 0664);
+    m_fd = open(dumpFileName, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR | S_IRUSR);
     if (m_fd == -1)
     {
         fprintf(stderr, "Could not open output %s: %d %s\n", dumpFileName, errno, strerror(errno));
