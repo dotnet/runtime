@@ -378,6 +378,7 @@ static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
 
 int32_t CryptoNative_SslRenegotiate(SSL* ssl)
 {
+    printf("%s:%d %s \n", __FILE__, __LINE__, OPENSSL_VERSION_TEXT);
     // The openssl context is destroyed so we can't use ticket or session resumption.
     SSL_set_options(ssl, SSL_OP_NO_TICKET | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
 
