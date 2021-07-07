@@ -35,8 +35,10 @@
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif
-#if HAVE_STATFS64 || HAVE_STATFS
+#if HAVE_STATFS64_VFS || HAVE_STATFS_VFS // Linux
 #include <sys/vfs.h>
+#elif HAVE_STATFS64_MOUNT || HAVE_STATFS_MOUNT // BSD
+#include <sys/mount.h>
 #endif
 
 #ifdef _AIX
@@ -1384,16 +1386,18 @@ static int16_t ConvertLockType(int16_t managedLockType)
 
 int64_t SystemNative_GetFileSystemType(intptr_t fd)
 {
-#if HAVE_STATFS64
+    int statfsRes;
+#if HAVE_STATFS64_VFS || HAVE_STATFS64_MOUNT
     struct statfs64 statfsArgs;
-    return fstatfs64(ToFileDescriptor(fd), &statfsArgs) == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
-#elif HAVE_STATFS
+    while ((statfsRes = fstatfs64(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
+#elif HAVE_STATFS_VFS || HAVE_STATFS_MOUNT
     struct statfs statfsArgs;
-    return fstatfs(ToFileDescriptor(fd), &statfsArgs) == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
+    while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
 #else
-    // since this is just best effort, we return 0 if fstatfs is not supported
-    return 0;
+    #error "Platform doesn't support fstatfs64 or fstatfs"
 #endif
+
+    return statfsRes == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
 }
 
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
