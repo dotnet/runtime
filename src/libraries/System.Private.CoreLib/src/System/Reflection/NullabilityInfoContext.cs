@@ -67,13 +67,9 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(parameterInfo));
             }
 
-            if (parameterInfo.Member is MethodBase method &&
-                (method.IsPrivate || method.IsFamilyAndAssembly || method.IsAssembly))
+            if (parameterInfo.Member is MethodInfo method && IsPrivateOrInternalMethodAndAnnotationDisabled(method))
             {
-                if (IsPublicOnly(method.IsPrivate, method.IsFamilyAndAssembly, method.IsAssembly, method.Module))
-                {
-                    return new NullabilityInfo(parameterInfo.ParameterType, NullabilityState.Unknown, NullabilityState.Unknown, null, Array.Empty<NullabilityInfo>());
-                }
+                return new NullabilityInfo(parameterInfo.ParameterType, NullabilityState.Unknown, NullabilityState.Unknown, null, Array.Empty<NullabilityInfo>());
             }
 
             IList<CustomAttributeData> attributes = parameterInfo.GetCustomAttributesData();
@@ -183,20 +179,41 @@ namespace System.Reflection
             }
 
             NullabilityInfo nullability = GetNullabilityInfo(propertyInfo, propertyInfo.PropertyType, propertyInfo.GetCustomAttributesData());
-            IList<CustomAttributeData>? getterAttributes = propertyInfo.GetGetMethod(true)?.ReturnParameter.GetCustomAttributesData();
-            IList<CustomAttributeData>? setterAttributes = propertyInfo.GetSetMethod(true)?.GetParameters()[0].GetCustomAttributesData();
+            MethodInfo? getter = propertyInfo.GetGetMethod(true);
+            MethodInfo? setter = propertyInfo.GetSetMethod(true);
 
-            if (getterAttributes != null)
+            if (getter != null)
             {
-                CheckNullabilityAttributes(nullability, getterAttributes);
+                if (IsPrivateOrInternalMethodAndAnnotationDisabled(getter))
+                {
+                    nullability.ReadState = NullabilityState.Unknown;
+                }
+
+                CheckNullabilityAttributes(nullability, getter.ReturnParameter.GetCustomAttributesData());
             }
 
-            if (setterAttributes != null)
+            if (setter != null)
             {
-                CheckNullabilityAttributes(nullability, setterAttributes);
+                if (IsPrivateOrInternalMethodAndAnnotationDisabled(setter))
+                {
+                    nullability.WriteState = NullabilityState.Unknown;
+                }
+
+                CheckNullabilityAttributes(nullability, setter.GetParameters()[0].GetCustomAttributesData());
             }
 
             return nullability;
+        }
+
+        private bool IsPrivateOrInternalMethodAndAnnotationDisabled(MethodInfo method)
+        {
+            if ((method.IsPrivate || method.IsFamilyAndAssembly || method.IsAssembly) &&
+               IsPublicOnly(method.IsPrivate, method.IsFamilyAndAssembly, method.IsAssembly, method.Module))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -232,18 +249,26 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(fieldInfo));
             }
 
-            if (fieldInfo.IsPrivate || fieldInfo.IsFamilyAndAssembly || fieldInfo.IsAssembly)
+            if (IsPrivateOrInternalFieldAndAnnotationDisabled(fieldInfo))
             {
-                if (IsPublicOnly(fieldInfo.IsPrivate, fieldInfo.IsFamilyAndAssembly, fieldInfo.IsAssembly, fieldInfo.Module))
-                {
-                    return new NullabilityInfo(fieldInfo.FieldType, NullabilityState.Unknown, NullabilityState.Unknown, null, Array.Empty<NullabilityInfo>());
-                }
+                return new NullabilityInfo(fieldInfo.FieldType, NullabilityState.Unknown, NullabilityState.Unknown, null, Array.Empty<NullabilityInfo>());
             }
 
             IList<CustomAttributeData> attributes = fieldInfo.GetCustomAttributesData();
             NullabilityInfo nullability = GetNullabilityInfo(fieldInfo, fieldInfo.FieldType, attributes);
             CheckNullabilityAttributes(nullability, attributes);
             return nullability;
+        }
+
+        private bool IsPrivateOrInternalFieldAndAnnotationDisabled(FieldInfo fieldInfo)
+        {
+            if ((fieldInfo.IsPrivate || fieldInfo.IsFamilyAndAssembly || fieldInfo.IsAssembly) &&
+                IsPublicOnly(fieldInfo.IsPrivate, fieldInfo.IsFamilyAndAssembly, fieldInfo.IsAssembly, fieldInfo.Module))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private bool IsPublicOnly(bool isPrivate, bool isFamilyAndAssembly, bool isAssembly, Module module)

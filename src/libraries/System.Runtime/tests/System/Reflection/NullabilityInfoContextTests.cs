@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO.Enumeration;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -38,13 +40,13 @@ namespace System.Reflection.Tests
         [MemberData(nameof(FieldTestData))]
         public void FieldTest(string fieldName, NullabilityState readState, NullabilityState writeState, Type type)
         {
-            var field = testType.GetField(fieldName, flags);
-            var nullability = nullabilityContext.Create(field);
+            FieldInfo field = testType.GetField(fieldName, flags);
+            NullabilityInfo nullability = nullabilityContext.Create(field);
             Assert.Equal(readState, nullability.ReadState);
             Assert.Equal(writeState, nullability.WriteState);
             Assert.Equal(type, nullability.Type);
             Assert.Empty(nullability.GenericTypeArguments);
-            Assert.Null(nullability.ElementType );
+            Assert.Null(nullability.ElementType);
         }
 
         public static IEnumerable<object[]> EventTestData()
@@ -58,13 +60,13 @@ namespace System.Reflection.Tests
         [MemberData(nameof(EventTestData))]
         public void EventTest(string eventName, NullabilityState readState, NullabilityState writeState, Type type)
         {
-            var @event = testType.GetEvent(eventName);
-            var nullability = nullabilityContext.Create(@event);
+            EventInfo @event = testType.GetEvent(eventName);
+            NullabilityInfo nullability = nullabilityContext.Create(@event);
             Assert.Equal(readState, nullability.ReadState);
             Assert.Equal(writeState, nullability.WriteState);
             Assert.Equal(type, nullability.Type);
             Assert.Empty(nullability.GenericTypeArguments);
-            Assert.Null(nullability.ElementType );
+            Assert.Null(nullability.ElementType);
         }
 
         public static IEnumerable<object[]> PropertyTestData()
@@ -93,17 +95,15 @@ namespace System.Reflection.Tests
         [MemberData(nameof(PropertyTestData))]
         public void PropertyTest(string propertyName, NullabilityState readState, NullabilityState writeState, Type type)
         {
-            var property = testType.GetProperty(propertyName, flags);
-            var nullability = nullabilityContext.Create(property);
-            var getterAttributes = property.GetGetMethod()?.ReturnParameter.GetCustomAttributesData();
-            var getterAttributes2 = property.GetMethod?.ReturnParameter.GetCustomAttributesData();
+            PropertyInfo property = testType.GetProperty(propertyName, flags);
+            NullabilityInfo nullability = nullabilityContext.Create(property);
             Assert.Equal(readState, nullability.ReadState);
             Assert.Equal(readState, nullabilityContext.Create(property.GetMethod.ReturnParameter).ReadState);
             Assert.Equal(writeState, nullability.WriteState);
             Assert.Equal(writeState, nullabilityContext.Create(property.SetMethod.GetParameters()[0]).WriteState);
             Assert.Equal(type, nullability.Type);
             Assert.Empty(nullability.GenericTypeArguments);
-            Assert.Null(nullability.ElementType );
+            Assert.Null(nullability.ElementType);
         }
 
         public static IEnumerable<object[]> ArrayPropertyTestData()
@@ -119,10 +119,10 @@ namespace System.Reflection.Tests
         [MemberData(nameof(ArrayPropertyTestData))]
         public void ArrayPropertyTest(string propertyName, NullabilityState elementState, NullabilityState propertyState)
         {
-            var property = testType.GetProperty(propertyName, flags);
-            var nullability = nullabilityContext.Create(property);
+            PropertyInfo property = testType.GetProperty(propertyName, flags);
+            NullabilityInfo nullability = nullabilityContext.Create(property);
             Assert.Equal(propertyState, nullability.ReadState);
-            Assert.NotNull(nullability.ElementType );
+            Assert.NotNull(nullability.ElementType);
             Assert.Equal(elementState, nullability.ElementType.ReadState);
             Assert.Empty(nullability.GenericTypeArguments);
         }
@@ -132,18 +132,18 @@ namespace System.Reflection.Tests
             yield return new object[] { "PropertyArrayUnknown", NullabilityState.Unknown, NullabilityState.Unknown };
             yield return new object[] { "PropertyArrayNullNull", NullabilityState.Nullable, NullabilityState.Nullable }; // T?[]? PropertyArrayNullNull { get; set; }
             yield return new object[] { "PropertyArrayNullNon", NullabilityState.Nullable, NullabilityState.NotNull };   // T?[] PropertyArrayNullNon { get; set; } 
-            yield return new object[] { "PropertyArrayNonNull", NullabilityState.Nullable, NullabilityState.Nullable };   // T[]? PropertyArrayNonNull { get; set; }
-            yield return new object[] { "PropertyArrayNonNon", NullabilityState.Nullable, NullabilityState.NotNull };     // T[] PropertyArrayNonNon { get; set; }
+            yield return new object[] { "PropertyArrayNonNull", NullabilityState.Nullable, NullabilityState.Nullable };  // T[]? PropertyArrayNonNull { get; set; }
+            yield return new object[] { "PropertyArrayNonNon", NullabilityState.Nullable, NullabilityState.NotNull };    // T[] PropertyArrayNonNon { get; set; }
         }
 
         [Theory]
         [MemberData(nameof(GenericArrayPropertyTestData))]
         public void GenericArrayPropertyTest(string propertyName, NullabilityState elementState, NullabilityState propertyState)
         {
-            var property = genericType.GetProperty(propertyName, flags);
-            var nullability = nullabilityContext.Create(property);
+            PropertyInfo property = genericType.GetProperty(propertyName, flags);
+            NullabilityInfo nullability = nullabilityContext.Create(property);
             Assert.Equal(propertyState, nullability.ReadState);
-            Assert.NotNull(nullability.ElementType );
+            Assert.NotNull(nullability.ElementType);
             Assert.Equal(elementState, nullability.ElementType.ReadState);
             Assert.Empty(nullability.GenericTypeArguments);
         }
@@ -163,12 +163,12 @@ namespace System.Reflection.Tests
         [MemberData(nameof(JaggedArrayPropertyTestData))]
         public void JaggedArrayPropertyTest(string propertyName, NullabilityState innermodtElementState, NullabilityState elementState, NullabilityState propertyState)
         {
-            var property = testType.GetProperty(propertyName, flags);
-            var nullability = nullabilityContext.Create(property);
+            PropertyInfo property = testType.GetProperty(propertyName, flags);
+            NullabilityInfo nullability = nullabilityContext.Create(property);
             Assert.Equal(propertyState, nullability.ReadState);
-            Assert.NotNull(nullability.ElementType );
+            Assert.NotNull(nullability.ElementType);
             Assert.Equal(elementState, nullability.ElementType.ReadState);
-            Assert.NotNull(nullability.ElementType.ElementType );
+            Assert.NotNull(nullability.ElementType.ElementType);
             Assert.Equal(innermodtElementState, nullability.ElementType.ElementType.ReadState);
             Assert.Empty(nullability.GenericTypeArguments);
         }
@@ -187,14 +187,14 @@ namespace System.Reflection.Tests
         [MemberData(nameof(TuplePropertyTestData))]
         public void TuplePropertyTest(string propertyName, NullabilityState genericParam1, NullabilityState genericParam2, NullabilityState genericParam3, NullabilityState propertyState)
         {
-            var property = testType.GetProperty(propertyName, flags);
-            var nullability = nullabilityContext.Create(property);
+            PropertyInfo property = testType.GetProperty(propertyName, flags);
+            NullabilityInfo nullability = nullabilityContext.Create(property);
             Assert.Equal(propertyState, nullability.ReadState);
             Assert.NotEmpty(nullability.GenericTypeArguments);
             Assert.Equal(genericParam1, nullability.GenericTypeArguments[0].ReadState);
             Assert.Equal(genericParam2, nullability.GenericTypeArguments[1].ReadState);
             Assert.Equal(genericParam3, nullability.GenericTypeArguments[2].ReadState);
-            Assert.Null(nullability.ElementType );
+            Assert.Null(nullability.ElementType);
         }
 
         public static IEnumerable<object[]> GenericTuplePropertyTestData()
@@ -211,14 +211,14 @@ namespace System.Reflection.Tests
         [MemberData(nameof(GenericTuplePropertyTestData))]
         public void GenericTuplePropertyTest(string propertyName, NullabilityState genericParam1, NullabilityState genericParam2, NullabilityState genericParam3, NullabilityState propertyState)
         {
-            var property = genericType.GetProperty(propertyName, flags);
-            var nullability = nullabilityContext.Create(property);
+            PropertyInfo property = genericType.GetProperty(propertyName, flags);
+            NullabilityInfo nullability = nullabilityContext.Create(property);
             Assert.Equal(propertyState, nullability.ReadState);
             Assert.NotEmpty(nullability.GenericTypeArguments);
             Assert.Equal(genericParam1, nullability.GenericTypeArguments[0].ReadState);
             Assert.Equal(genericParam2, nullability.GenericTypeArguments[1].ReadState);
             Assert.Equal(genericParam3, nullability.GenericTypeArguments[2].ReadState);
-            Assert.Null(nullability.ElementType );
+            Assert.Null(nullability.ElementType);
         }
 
         public static IEnumerable<object[]> DictionaryPropertyTestData()
@@ -236,14 +236,14 @@ namespace System.Reflection.Tests
         [MemberData(nameof(DictionaryPropertyTestData))]
         public void DictionaryPropertyTest(string propertyName, NullabilityState keyState, NullabilityState valueElement, NullabilityState valueState, NullabilityState propertyState)
         {
-            var property = testType.GetProperty(propertyName, flags);
-            var nullability = nullabilityContext.Create(property);
+            PropertyInfo property = testType.GetProperty(propertyName, flags);
+            NullabilityInfo nullability = nullabilityContext.Create(property);
             Assert.Equal(propertyState, nullability.ReadState);
             Assert.NotEmpty(nullability.GenericTypeArguments);
             Assert.Equal(keyState, nullability.GenericTypeArguments[0].ReadState);
             Assert.Equal(valueState, nullability.GenericTypeArguments[1].ReadState);
             Assert.Equal(valueElement, nullability.GenericTypeArguments[1].ElementType.ReadState);
-            Assert.Null(nullability.ElementType );
+            Assert.Null(nullability.ElementType);
         }
 
         public static IEnumerable<object[]> GenericDictionaryPropertyTestData()
@@ -261,14 +261,14 @@ namespace System.Reflection.Tests
         [MemberData(nameof(GenericDictionaryPropertyTestData))]
         public void GenericDictionaryPropertyTest(string propertyName, NullabilityState keyState, NullabilityState valueElement, NullabilityState valueState, NullabilityState propertyState)
         {
-            var property = genericType.GetProperty(propertyName, flags);
-            var nullability = nullabilityContext.Create(property);
+            PropertyInfo property = genericType.GetProperty(propertyName, flags);
+            NullabilityInfo nullability = nullabilityContext.Create(property);
             Assert.Equal(propertyState, nullability.ReadState);
             Assert.NotEmpty(nullability.GenericTypeArguments);
             Assert.Equal(keyState, nullability.GenericTypeArguments[0].ReadState);
             Assert.Equal(valueState, nullability.GenericTypeArguments[1].ReadState);
             Assert.Equal(valueElement, nullability.GenericTypeArguments[1].ElementType.ReadState);
-            Assert.Null(nullability.ElementType );
+            Assert.Null(nullability.ElementType);
         }
 
         public static IEnumerable<object[]> GenericPropertyReferenceTypeTestData()
@@ -286,13 +286,13 @@ namespace System.Reflection.Tests
         [MemberData(nameof(GenericPropertyReferenceTypeTestData))]
         public void GenericPropertyReferenceTypeTest(string fieldName, NullabilityState readState, NullabilityState writeState, Type type)
         {
-            var property = typeof(GenericTest<TypeWithNotNullContext?>).GetProperty(fieldName, flags)!;
-            var nullability = nullabilityContext.Create(property);
+            PropertyInfo property = typeof(GenericTest<TypeWithNotNullContext?>).GetProperty(fieldName, flags)!;
+            NullabilityInfo nullability = nullabilityContext.Create(property);
             Assert.Equal(readState, nullability.ReadState);
             Assert.Equal(writeState, nullability.WriteState);
             Assert.Equal(type, nullability.Type);
             Assert.Empty(nullability.GenericTypeArguments);
-            Assert.Null(nullability.ElementType );
+            Assert.Null(nullability.ElementType);
 
             property = typeof(GenericTest<TypeWithNotNullContext>).GetProperty(fieldName, flags)!;
             nullability = nullabilityContext.Create(property);
@@ -320,13 +320,13 @@ namespace System.Reflection.Tests
         [MemberData(nameof(GenericFieldReferenceTypeTestData))]
         public void GenericFieldReferenceTypeTest(string fieldName, NullabilityState readState, NullabilityState writeState, Type type)
         {
-            var field = typeof(GenericTest<TypeWithNotNullContext?>).GetField(fieldName, flags)!;
-            var nullability = nullabilityContext.Create(field);
+            FieldInfo field = typeof(GenericTest<TypeWithNotNullContext?>).GetField(fieldName, flags)!;
+            NullabilityInfo nullability = nullabilityContext.Create(field);
             Assert.Equal(readState, nullability.ReadState);
             Assert.Equal(writeState, nullability.WriteState);
             Assert.Equal(type, nullability.Type);
             Assert.Empty(nullability.GenericTypeArguments);
-            Assert.Null(nullability.ElementType );
+            Assert.Null(nullability.ElementType);
 
             field = typeof(GenericTest<TypeWithNotNullContext>).GetField(fieldName, flags)!;
             nullability = nullabilityContext.Create(field);
@@ -355,8 +355,8 @@ namespace System.Reflection.Tests
         [MemberData(nameof(GenericFieldValueTypeTestData))]
         public void GenericFieldValueTypeTest(string fieldName, Type type)
         {
-            var field = typeof(GenericTest<int>).GetField(fieldName, flags)!;
-            var nullability = nullabilityContext.Create(field);
+            FieldInfo field = typeof(GenericTest<int>).GetField(fieldName, flags)!;
+            NullabilityInfo nullability = nullabilityContext.Create(field);
             Assert.Equal(NullabilityState.NotNull, nullability.ReadState);
             Assert.Equal(NullabilityState.NotNull, nullability.WriteState);
             Assert.Equal(type, nullability.Type);
@@ -377,8 +377,8 @@ namespace System.Reflection.Tests
         [MemberData(nameof(GenericFieldNullableValueTypeTestData))]
         public void GenericFieldNullableValueTypeTest(string fieldName, NullabilityState readState, NullabilityState writeState, Type type)
         {
-            var field = typeof(GenericTest<int?>).GetField(fieldName, flags)!;
-            var nullability = nullabilityContext.Create(field);
+            FieldInfo field = typeof(GenericTest<int?>).GetField(fieldName, flags)!;
+            NullabilityInfo nullability = nullabilityContext.Create(field);
             Assert.Equal(readState, nullability.ReadState);
             Assert.Equal(writeState, nullability.WriteState);
             Assert.Equal(type, nullability.Type);
@@ -395,8 +395,8 @@ namespace System.Reflection.Tests
         [MemberData(nameof(GenericNotnullConstraintTestData))]
         public void GenericNotNullConstraintTest(string fieldName, NullabilityState readState, NullabilityState writeState, Type type)
         {
-            var field = typeof(GenericTestConstrainedNotNull<string>).GetField(fieldName, flags)!;
-            var nullability = nullabilityContext.Create(field);
+            FieldInfo field = typeof(GenericTestConstrainedNotNull<string>).GetField(fieldName, flags)!;
+            NullabilityInfo nullability = nullabilityContext.Create(field);
             Assert.Equal(readState, nullability.ReadState);
             Assert.Equal(writeState, nullability.WriteState);
             Assert.Equal(type, nullability.Type);
@@ -413,8 +413,8 @@ namespace System.Reflection.Tests
         [MemberData(nameof(GenericStructConstraintTestData))]
         public void GenericStructConstraintTest(string fieldName, NullabilityState readState, NullabilityState writeState, Type type)
         {
-            var field = typeof(GenericTestConstrainedStruct<int>).GetField(fieldName, flags)!;
-            var nullability = nullabilityContext.Create(field);
+            FieldInfo field = typeof(GenericTestConstrainedStruct<int>).GetField(fieldName, flags)!;
+            NullabilityInfo nullability = nullabilityContext.Create(field);
             Assert.Equal(readState, nullability.ReadState);
             Assert.Equal(writeState, nullability.WriteState);
             Assert.Equal(type, nullability.Type);
@@ -423,21 +423,21 @@ namespace System.Reflection.Tests
         [Fact]
         public void GenericListTest()
         {
-            var listNullable = typeof(List<string?>);
-            var addNullable = listNullable.GetMethod("Add")!;
-            var nullability = nullabilityContext.Create(addNullable.GetParameters()[0]);
+            Type listNullable = typeof(List<string?>);
+            MethodInfo addNullable = listNullable.GetMethod("Add")!;
+            NullabilityInfo nullability = nullabilityContext.Create(addNullable.GetParameters()[0]);
             Assert.Equal(NullabilityState.Nullable, nullability.ReadState);
             Assert.Equal(NullabilityState.Nullable, nullability.WriteState);
             Assert.Equal(typeof(string), nullability.Type);
 
-            var lisNontNull = typeof(List<string>);
-            var addNotNull = lisNontNull.GetMethod("Add")!;
+            Type lisNontNull = typeof(List<string>);
+            MethodInfo addNotNull = lisNontNull.GetMethod("Add")!;
             nullability = nullabilityContext.Create(addNotNull.GetParameters()[0]);
             Assert.Equal(NullabilityState.Nullable, nullability.ReadState);
             Assert.Equal(typeof(string), nullability.Type);
 
-            var listOpen = typeof(List<>);
-            var addOpen = listOpen.GetMethod("Add")!;
+            Type listOpen = typeof(List<>);
+            MethodInfo addOpen = listOpen.GetMethod("Add")!;
             nullability = nullabilityContext.Create(addOpen.GetParameters()[0]);
             Assert.Equal(NullabilityState.Nullable, nullability.ReadState);
         }
@@ -445,37 +445,37 @@ namespace System.Reflection.Tests
         [Fact]
         public void GenericListAndDictionaryFieldTest()
         {
-            var typeNullable = typeof(GenericTest<string?>);
-            var listOfTNullable = typeNullable.GetField("FieldListOfT")!;
-            var listNullability = nullabilityContext.Create(listOfTNullable);
+            Type typeNullable = typeof(GenericTest<string?>);
+            FieldInfo listOfTNullable = typeNullable.GetField("FieldListOfT")!;
+            NullabilityInfo listNullability = nullabilityContext.Create(listOfTNullable);
             Assert.Equal(NullabilityState.Nullable, listNullability.GenericTypeArguments[0].ReadState);
             Assert.Equal(typeof(string), listNullability.GenericTypeArguments[0].Type);
 
-            var dictStringToTNullable = typeNullable.GetField("FieldDictionaryStringToT")!;
-            var dictNullability = nullabilityContext.Create(dictStringToTNullable);
+            FieldInfo dictStringToTNullable = typeNullable.GetField("FieldDictionaryStringToT")!;
+            NullabilityInfo dictNullability = nullabilityContext.Create(dictStringToTNullable);
             Assert.Equal(NullabilityState.NotNull, dictNullability.GenericTypeArguments[0].ReadState);
             Assert.Equal(NullabilityState.Nullable, dictNullability.GenericTypeArguments[1].ReadState);
             Assert.Equal(typeof(string), dictNullability.GenericTypeArguments[1].Type);
 
-            var typeNonNull = typeof(GenericTest<string>);
-            var listOfTNotNull = typeNonNull.GetField("FieldListOfT")!;
+            Type typeNonNull = typeof(GenericTest<string>);
+            FieldInfo listOfTNotNull = typeNonNull.GetField("FieldListOfT")!;
             listNullability = nullabilityContext.Create(listOfTNotNull);
             Assert.Equal(NullabilityState.Nullable, listNullability.GenericTypeArguments[0].ReadState);
             Assert.Equal(typeof(string), listNullability.GenericTypeArguments[0].Type);
 
-            var dictStringToTNotNull = typeNonNull.GetField("FieldDictionaryStringToT")!;
+            FieldInfo dictStringToTNotNull = typeNonNull.GetField("FieldDictionaryStringToT")!;
             dictNullability = nullabilityContext.Create(dictStringToTNotNull);
             Assert.Equal(NullabilityState.NotNull, dictNullability.GenericTypeArguments[0].ReadState);
             Assert.Equal(NullabilityState.Nullable, dictNullability.GenericTypeArguments[1].ReadState);
             Assert.Equal(typeof(string), dictNullability.GenericTypeArguments[1].Type);
 
-            var typeOpen = typeof(GenericTest<>);
-            var listOfTOpen = typeOpen.GetField("FieldListOfT")!;
+            Type typeOpen = typeof(GenericTest<>);
+            FieldInfo listOfTOpen = typeOpen.GetField("FieldListOfT")!;
             listNullability = nullabilityContext.Create(listOfTOpen);
             Assert.Equal(NullabilityState.Nullable, listNullability.GenericTypeArguments[0].ReadState);
             // Assert.Equal(typeof(T), listNullability.TypeArguments[0].Type);
 
-            var dictStringToTOpen = typeOpen.GetField("FieldDictionaryStringToT")!;
+            FieldInfo dictStringToTOpen = typeOpen.GetField("FieldDictionaryStringToT")!;
             dictNullability = nullabilityContext.Create(dictStringToTOpen);
             Assert.Equal(NullabilityState.NotNull, dictNullability.GenericTypeArguments[0].ReadState);
             Assert.Equal(NullabilityState.Nullable, dictNullability.GenericTypeArguments[1].ReadState);
@@ -496,8 +496,8 @@ namespace System.Reflection.Tests
         [MemberData(nameof(MethodReturnParameterTestData))]
         public void MethodReturnParameterTest(string methodName, NullabilityState elementState, NullabilityState readState)
         {
-            var method = testType.GetMethod(methodName, flags)!;
-            var nullability = nullabilityContext.Create(method.ReturnParameter);
+            MethodInfo method = testType.GetMethod(methodName, flags)!;
+            NullabilityInfo nullability = nullabilityContext.Create(method.ReturnParameter);
             Assert.Equal(readState, nullability.ReadState);
             //Assert.Equal(readState, nullability.WriteState);
             Assert.NotNull(nullability.ElementType);
@@ -520,8 +520,8 @@ namespace System.Reflection.Tests
         [MemberData(nameof(MethodGenericReturnParameterTestData))]
         public void MethodGenericReturnParameterTest(string methodName, NullabilityState readState, NullabilityState elementState)
         {
-            var method = typeof(GenericTest<TypeWithNotNullContext?>).GetMethod(methodName, flags)!;
-            var nullability = nullabilityContext.Create(method.ReturnParameter);
+            MethodInfo method = typeof(GenericTest<TypeWithNotNullContext?>).GetMethod(methodName, flags)!;
+            NullabilityInfo nullability = nullabilityContext.Create(method.ReturnParameter);
             Assert.Equal(readState, nullability.ReadState);
             if (nullability.GenericTypeArguments.Length > 0)
             {
@@ -542,16 +542,16 @@ namespace System.Reflection.Tests
         [MemberData(nameof(MethodParametersTestData))]
         public void MethodParametersTest(string methodName, NullabilityState stringState, NullabilityState dictKey, NullabilityState dictValueElement, NullabilityState dictValue, NullabilityState dictionaryState)
         {
-            var parameters = testType.GetMethod(methodName, flags)!.GetParameters();
-            var stringNullability = nullabilityContext.Create(parameters[0]);
-            var dictionaryNullability = nullabilityContext.Create(parameters[1]);
+            ParameterInfo[] parameters = testType.GetMethod(methodName, flags)!.GetParameters();
+            NullabilityInfo stringNullability = nullabilityContext.Create(parameters[0]);
+            NullabilityInfo dictionaryNullability = nullabilityContext.Create(parameters[1]);
             Assert.Equal(stringState, stringNullability.WriteState);
             Assert.Equal(dictionaryState, dictionaryNullability.ReadState);
             Assert.NotEmpty(dictionaryNullability.GenericTypeArguments);
             Assert.Equal(dictKey, dictionaryNullability.GenericTypeArguments[0].ReadState);
             Assert.Equal(dictValue, dictionaryNullability.GenericTypeArguments[1].ReadState);
             Assert.Equal(dictValueElement, dictionaryNullability.GenericTypeArguments[1].ElementType!.ReadState);
-            Assert.Null(dictionaryNullability.ElementType );
+            Assert.Null(dictionaryNullability.ElementType);
         }
 
         public static IEnumerable<object[]> MethodGenericParametersTestData()
@@ -565,9 +565,9 @@ namespace System.Reflection.Tests
         [MemberData(nameof(MethodGenericParametersTestData))]
         public void MethodGenericParametersTest(string methodName, NullabilityState param1State, NullabilityState dictKey, NullabilityState dictValue, NullabilityState dictionaryState)
         {
-            var parameters = typeof(GenericTest<TypeWithNotNullContext>).GetMethod(methodName, flags)!.GetParameters();
-            var stringNullability = nullabilityContext.Create(parameters[0]);
-            var dictionaryNullability = nullabilityContext.Create(parameters[1]);
+            ParameterInfo[] parameters = typeof(GenericTest<TypeWithNotNullContext>).GetMethod(methodName, flags)!.GetParameters();
+            NullabilityInfo stringNullability = nullabilityContext.Create(parameters[0]);
+            NullabilityInfo dictionaryNullability = nullabilityContext.Create(parameters[1]);
             Assert.Equal(param1State, stringNullability.WriteState);
             Assert.Equal(dictionaryState, dictionaryNullability.ReadState);
             Assert.NotEmpty(dictionaryNullability.GenericTypeArguments);
@@ -584,12 +584,12 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(StringTypeTestData))]
-        public void NullablePublicOnlyTestStringType(string methodName, NullabilityState param1State, NullabilityState param2State, NullabilityState param3State, Type[] types)
+        public void NullablePublicOnlyStringTypeTest(string methodName, NullabilityState param1State, NullabilityState param2State, NullabilityState param3State, Type[] types)
         {
-            var parameters = stringType.GetMethod(methodName, flags, types)!.GetParameters();
-            var param1 = nullabilityContext.Create(parameters[0]);
-            var param2 = nullabilityContext.Create(parameters[1]);
-            var param3 = nullabilityContext.Create(parameters[2]);
+            ParameterInfo[] parameters = stringType.GetMethod(methodName, flags, types)!.GetParameters();
+            NullabilityInfo param1 = nullabilityContext.Create(parameters[0]);
+            NullabilityInfo param2 = nullabilityContext.Create(parameters[1]);
+            NullabilityInfo param3 = nullabilityContext.Create(parameters[2]);
             Assert.Equal(param1State, param1.ReadState);
             Assert.Equal(param2State, param2.ReadState);
             Assert.Equal(param3State, param3.ReadState);
@@ -600,11 +600,49 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void NullablePublicOnlyTestTypeType() // TODO: test more members
+        public void NullablePublicOnlyOtherTypesTest()
         {
-            var field = typeof(Type).GetField("s_defaultBinder", flags)!;
-            var state = nullabilityContext.Create(field);
-            Assert.Equal(NullabilityState.Unknown, state.ReadState);
+            Type type = typeof(Type);
+            FieldInfo privateNullableField = type.GetField("s_defaultBinder", flags)!;
+            NullabilityInfo info = nullabilityContext.Create(privateNullableField);
+            Assert.Equal(NullabilityState.Unknown, info.ReadState);
+            Assert.Equal(NullabilityState.Unknown, info.WriteState);
+
+            MethodInfo internalNotNullableMethod = type.GetMethod("GetRootElementType", flags)!;
+            info = nullabilityContext.Create(internalNotNullableMethod.ReturnParameter);
+            Assert.Equal(NullabilityState.NotNull, info.ReadState);
+            Assert.Equal(NullabilityState.NotNull, info.WriteState);
+
+            PropertyInfo publicNullableProperty = type.GetProperty("DeclaringType", flags)!;
+            info = nullabilityContext.Create(publicNullableProperty);
+            Assert.Equal(NullabilityState.Nullable, info.ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.WriteState);
+
+            PropertyInfo publicGetPrivateSetNullableProperty = typeof(FileSystemEntry).GetProperty("Directory", flags)!;
+            info = nullabilityContext.Create(publicGetPrivateSetNullableProperty);
+            Assert.Equal(NullabilityState.NotNull, info.ReadState);
+            Assert.Equal(NullabilityState.Unknown, info.WriteState);
+
+            MethodInfo protectedNullableReturnMethod = type.GetMethod("GetPropertyImpl", flags)!;
+            info = nullabilityContext.Create(protectedNullableReturnMethod.ReturnParameter);
+            Assert.Equal(NullabilityState.Nullable, info.ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.WriteState);
+
+            MethodInfo privateValueTypeReturnMethod = type.GetMethod("BinarySearch", flags)!;
+            info = nullabilityContext.Create(privateValueTypeReturnMethod.ReturnParameter);
+            Assert.Equal(NullabilityState.Unknown, info.ReadState);
+            Assert.Equal(NullabilityState.Unknown, info.WriteState);
+
+            Type regexType = typeof(Regex);
+            FieldInfo protectedInternalNullableField = regexType.GetField("pattern", flags)!;
+            info = nullabilityContext.Create(protectedInternalNullableField);
+            Assert.Equal(NullabilityState.Nullable, info.ReadState);
+            Assert.Equal(NullabilityState.Nullable, info.WriteState);
+
+            privateNullableField = regexType.GetField("_code", flags)!;
+            info = nullabilityContext.Create(privateNullableField);
+            Assert.Equal(NullabilityState.Unknown, info.ReadState);
+            Assert.Equal(NullabilityState.Unknown, info.WriteState);
         }
 
         public static IEnumerable<object[]> DifferentContextTestData()
@@ -621,14 +659,14 @@ namespace System.Reflection.Tests
         [MemberData(nameof(DifferentContextTestData))]
         public void NullabilityDifferentContextTest(string propertyName, NullabilityState readState, NullabilityState writeState, Type type)
         {
-            var noContext = typeof(TypeWithNoContext);
-            var property = noContext.GetProperty(propertyName, flags)!;
-            var nullability = nullabilityContext.Create(property);
+            Type noContext = typeof(TypeWithNoContext);
+            PropertyInfo property = noContext.GetProperty(propertyName, flags)!;
+            NullabilityInfo nullability = nullabilityContext.Create(property);
             Assert.Equal(readState, nullability.ReadState);
             Assert.Equal(writeState, nullability.WriteState);
             Assert.Equal(type, nullability.Type);
 
-            var nullableContext = typeof(TypeWithNullableContext);
+            Type nullableContext = typeof(TypeWithNullableContext);
             property = nullableContext.GetProperty(propertyName, flags)!;
             nullability = nullabilityContext.Create(property);
             Assert.Equal(readState, nullability.ReadState);
@@ -639,32 +677,32 @@ namespace System.Reflection.Tests
         [Fact]
         public void AttributedParametersTest()
         {
-            var type = typeof(TypeWithNullableContext);
+            Type type = typeof(TypeWithNullableContext);
 
-            // NotNullWhenParameter([DisallowNull] string? disallowNull, [NotNullWhen(true)] ref string? notNullWhen, Type? nullableType);
-            var notNullWhenParameters = type.GetMethod("NotNullWhenParameter", flags)!.GetParameters();
-            var disallowNull = nullabilityContext.Create(notNullWhenParameters[0]);
-            var notNullWhen = nullabilityContext.Create(notNullWhenParameters[1]);
+            // bool NotNullWhenParameter([DisallowNull] string? disallowNull, [NotNullWhen(true)] ref string? notNullWhen, Type? nullableType);
+            ParameterInfo[] notNullWhenParameters = type.GetMethod("NotNullWhenParameter", flags)!.GetParameters();
+            NullabilityInfo disallowNull = nullabilityContext.Create(notNullWhenParameters[0]);
+            NullabilityInfo notNullWhen = nullabilityContext.Create(notNullWhenParameters[1]);
             Assert.Equal(NullabilityState.Nullable, disallowNull.ReadState);
             Assert.Equal(NullabilityState.NotNull, disallowNull.WriteState);
             Assert.Equal(NullabilityState.Nullable, notNullWhen.ReadState);
             Assert.Equal(NullabilityState.Nullable, notNullWhen.WriteState);
             Assert.Equal(NullabilityState.Nullable, nullabilityContext.Create(notNullWhenParameters[1]).ReadState);
 
-            // MaybeNullParameters([MaybeNull] string maybeNull, [MaybeNullWhen(false)] out string maybeNullWhen, Type? nullableType)
-            var maybeNullParameters = type.GetMethod("MaybeNullParameters", flags)!.GetParameters();
-            var maybeNull = nullabilityContext.Create(maybeNullParameters[0]);
-            var maybeNullWhen = nullabilityContext.Create(maybeNullParameters[1]);
+            // bool MaybeNullParameters([MaybeNull] string maybeNull, [MaybeNullWhen(false)] out string maybeNullWhen, Type? nullableType)
+            ParameterInfo[] maybeNullParameters = type.GetMethod("MaybeNullParameters", flags)!.GetParameters();
+            NullabilityInfo maybeNull = nullabilityContext.Create(maybeNullParameters[0]);
+            NullabilityInfo maybeNullWhen = nullabilityContext.Create(maybeNullParameters[1]);
             Assert.Equal(NullabilityState.Nullable, maybeNull.ReadState);
             Assert.Equal(NullabilityState.NotNull, maybeNull.WriteState);
             Assert.Equal(NullabilityState.Nullable, maybeNullWhen.ReadState);
             Assert.Equal(NullabilityState.NotNull, maybeNullWhen.WriteState);
             Assert.Equal(NullabilityState.Nullable, nullabilityContext.Create(maybeNullParameters[1]).ReadState);
 
-            // AllowNullParameter([AllowNull] string allowNull, [NotNullIfNotNull("allowNull")] string? notNullIfNotNull)
-            var allowNullParameter = type.GetMethod("AllowNullParameter", flags)!.GetParameters();
-            var allowNull = nullabilityContext.Create(allowNullParameter[0]);
-            var notNullIfNotNull = nullabilityContext.Create(allowNullParameter[1]);
+            // string? AllowNullParameter([AllowNull] string allowNull, [NotNullIfNotNull("allowNull")] string? notNullIfNotNull)
+            ParameterInfo[] allowNullParameter = type.GetMethod("AllowNullParameter", flags)!.GetParameters();
+            NullabilityInfo allowNull = nullabilityContext.Create(allowNullParameter[0]);
+            NullabilityInfo notNullIfNotNull = nullabilityContext.Create(allowNullParameter[1]);
             Assert.Equal(NullabilityState.NotNull, allowNull.ReadState);
             Assert.Equal(NullabilityState.Nullable, allowNull.WriteState);
             Assert.Equal(NullabilityState.Nullable, notNullIfNotNull.ReadState);
@@ -672,15 +710,50 @@ namespace System.Reflection.Tests
             Assert.Equal(NullabilityState.Nullable, nullabilityContext.Create(allowNullParameter[1]).ReadState);
 
             // [return: NotNullIfNotNull("nullable")] public string? NullablNotNullIfNotNullReturn(string? nullable, [NotNull] ref string? readNotNull)
-            var nullablNotNullIfNotNullReturn = type.GetMethod("NullablNotNullIfNotNullReturn", flags)!.GetParameters();
-            var returnNotNullIfNotNull = nullabilityContext.Create(type.GetMethod("NullablNotNullIfNotNullReturn", flags)!.ReturnParameter);
-            var readNotNull = nullabilityContext.Create(nullablNotNullIfNotNullReturn[1]);
+            ParameterInfo[] nullablNotNullIfNotNullReturn = type.GetMethod("NullablNotNullIfNotNullReturn", flags)!.GetParameters();
+            NullabilityInfo returnNotNullIfNotNull = nullabilityContext.Create(type.GetMethod("NullablNotNullIfNotNullReturn", flags)!.ReturnParameter);
+            NullabilityInfo readNotNull = nullabilityContext.Create(nullablNotNullIfNotNullReturn[1]);
             Assert.Equal(NullabilityState.Nullable, returnNotNullIfNotNull.ReadState);
             Assert.Equal(NullabilityState.Nullable, returnNotNullIfNotNull.WriteState);
             Assert.Equal(NullabilityState.NotNull, readNotNull.ReadState);
             Assert.Equal(NullabilityState.Nullable, readNotNull.WriteState);
             Assert.Equal(NullabilityState.Nullable, nullabilityContext.Create(nullablNotNullIfNotNullReturn[0]).ReadState);
 
+            // public bool TryGetOutParameters(string id, [NotNullWhen(true)] out string? value, [MaybeNullWhen(false)] out string value2)
+            ParameterInfo[] tryGetOutParameters = type.GetMethod("TryGetOutParameters", flags)!.GetParameters();
+            NullabilityInfo notNullWhenParam = nullabilityContext.Create(tryGetOutParameters[1]);
+            NullabilityInfo maybeNullWhenParam = nullabilityContext.Create(tryGetOutParameters[2]);
+            Assert.Equal(NullabilityState.Nullable, notNullWhenParam.ReadState);
+            Assert.Equal(NullabilityState.Nullable, notNullWhenParam.WriteState);
+            Assert.Equal(NullabilityState.Nullable, maybeNullWhenParam.ReadState);
+            Assert.Equal(NullabilityState.NotNull, maybeNullWhenParam.WriteState);
+            Assert.Equal(NullabilityState.NotNull, nullabilityContext.Create(tryGetOutParameters[0]).ReadState);
+        }
+
+        public static IEnumerable<object[]> RefReturnData()
+        {
+            yield return new object[] { "RefReturnUnknown", NullabilityState.Unknown, NullabilityState.Unknown, NullabilityState.Unknown, NullabilityState.Unknown };
+            // [return: MaybeNull] public ref string RefReturnMaybeNull([DisallowNull] ref string? id) 
+            yield return new object[] { "RefReturnMaybeNull", NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.NotNull };
+            // public ref string RefReturnNotNullable([MaybeNull] ref string id)
+            yield return new object[] { "RefReturnNotNullable", NullabilityState.NotNull, NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.NotNull };
+            // [return: NotNull]public ref string? RefReturnNotNull([NotNull] ref string? id)
+            yield return new object[] { "RefReturnNotNull", NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable };
+            // publiic ref string? RefReturnNullable([AllowNull] ref string id)
+            yield return new object[] { "RefReturnNullable", NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.NotNull, NullabilityState.Nullable };
+        }
+
+        [Theory]
+        [MemberData(nameof(RefReturnData))]
+        public void RefReturnTestTest(string methodName, NullabilityState retReadState, NullabilityState retWriteState, NullabilityState paramReadState, NullabilityState paramWriteState)
+        {
+            MethodInfo method = typeof(TypeWithNullableContext).GetMethod(methodName, flags)!;
+            NullabilityInfo returnNullability = nullabilityContext.Create(method.ReturnParameter);
+            NullabilityInfo paramNullability = nullabilityContext.Create(method.GetParameters()[0]);
+            Assert.Equal(retReadState, returnNullability.ReadState);
+            Assert.Equal(retWriteState, returnNullability.WriteState);
+            Assert.Equal(paramReadState, paramNullability.ReadState);
+            Assert.Equal(paramWriteState, paramNullability.WriteState);
         }
     }
 
@@ -689,6 +762,7 @@ namespace System.Reflection.Tests
     {
 #nullable disable
         public string PropertyDisabled { get; set; }
+        public ref string RefReturnUnknown(ref string id) { return ref id; }
 #nullable enable
         [AllowNull] public string PropertyEnabledAllowNull { get; set; }
         [NotNull] public string? PropertyEnabledNotNull { get; set; } = null!;
@@ -700,6 +774,11 @@ namespace System.Reflection.Tests
         public bool MaybeNullParameters([MaybeNull] string maybeNull, [MaybeNullWhen(false)] out string maybeNullWhen, Type? nullableType) { maybeNullWhen = null; return false; }
         public string? AllowNullParameter([AllowNull] string allowNull, [NotNullIfNotNull("allowNull")] string? notNullIfNotNull) { return null; }
         [return: NotNullIfNotNull("nullable")] public string? NullablNotNullIfNotNullReturn(string? nullable, [NotNull] ref string? readNotNull) { readNotNull = string.Empty; return null!; }
+        public ref string? RefReturnNullable([AllowNull] ref string id) { return ref id!; }
+        [return: MaybeNull] public ref string RefReturnMaybeNull([DisallowNull] ref string? id) { return ref id; }
+        [return: NotNull] public ref string? RefReturnNotNull([NotNull] ref string? id) { id = string.Empty; return ref id!; }
+        public ref string RefReturnNotNullable([MaybeNull] ref string id) { return ref id; }
+        public bool TryGetOutParameters(string id, [NotNullWhen(true)] out string? value, [MaybeNullWhen(false)] out string value2) { value = null; value2 = null; return false; }
     }
 
     public class TypeWithNoContext
@@ -754,7 +833,7 @@ namespace System.Reflection.Tests
         [AllowNull, DisallowNull] public string? PropertyDisallowNull2 { get; set; }
         // only NotNull matter
         [NotNull, MaybeNull] public string? PropertyNotNull2 { get; set; }
-        // only MabeNull matter
+        // only MaybeNull matter
         [NotNull, MaybeNull] public string PropertyMaybeNull2 { get; set; }
         private protected string?[]?[]? PropertyJaggedArrayNullNullNull { get; set; }
         public static string?[]?[] PropertyJaggedArrayNullNullNon { get; set; } = null!;
