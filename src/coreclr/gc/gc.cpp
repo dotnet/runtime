@@ -36766,8 +36766,6 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
         size_t    max_size = dd_max_size (dd);
         size_t    new_allocation = 0;
         float     time_since_previous_collection_secs = (dd_time_clock (dd) - dd_previous_time_clock (dd))*1e-6f;
-
-
         float allocation_fraction = (float) (dd_desired_allocation (dd) - dd_gc_new_allocation (dd)) / (float) (dd_desired_allocation (dd));
 
         if (gen_number >= max_generation)
