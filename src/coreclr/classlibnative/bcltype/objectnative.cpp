@@ -70,7 +70,7 @@ NOINLINE static INT32 GetHashCodeHelper(OBJECTREF objRef)
 {
     DWORD idx = 0;
 
-    FC_INNER_PROLOG(ObjectNative::GetHashCode);
+    FC_INNER_PROLOG(ObjectNative::InternalGetHashCode);
 
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
 
@@ -83,7 +83,7 @@ NOINLINE static INT32 GetHashCodeHelper(OBJECTREF objRef)
 
 // Note that we obtain a sync block index without actually building a sync block.
 // That's because a lot of objects are hashed, without requiring support for
-FCIMPL1(INT32, ObjectNative::GetHashCode, Object* obj) {
+FCIMPL1(INT32, ObjectNative::InternalGetHashCode, Object* obj) {
 
     CONTRACTL
     {

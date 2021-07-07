@@ -103,8 +103,32 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void PrepareDelegate(Delegate d);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetHashCode(object? o)
+        {
+            if (o is not null)
+            {
+                ref IntPtr startOfDataRef = ref Unsafe.As<byte, IntPtr>(ref Unsafe.As<RawData>(o).Data);
+                ref IntPtr objectHeaderRef = ref Unsafe.Add(ref startOfDataRef, -2);
+                uint syncBlockValue = Unsafe.As<IntPtr, ObjectHeader>(ref objectHeaderRef).SyncBlockValue;
+
+                const uint BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX = 0x08000000;
+                const uint BIT_SBLK_IS_HASHCODE = 0x04000000;
+                const uint BITS_IS_VALID_HASHCODE = BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE;
+                const int HASHCODE_BITS = 26;
+                const uint MASK_HASHCODE = (1u << HASHCODE_BITS) - 1u;
+
+                if ((syncBlockValue & BITS_IS_VALID_HASHCODE) == BITS_IS_VALID_HASHCODE)
+                {
+                    return unchecked((int)(syncBlockValue & MASK_HASHCODE));
+                }
+            }
+
+            return InternalGetHashCode(o);
+        }
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetHashCode(object? o);
+        private static extern int InternalGetHashCode(object? o);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern new bool Equals(object? o1, object? o2);
@@ -378,6 +402,15 @@ namespace System.Runtime.CompilerServices
         public uint Padding;
 #endif
         public byte Data;
+    }
+
+    // Mapping for ObjHeader from src\coreclr\gc\env\gcenv.object.h
+    internal struct ObjectHeader
+    {
+#if TARGET_64BIT
+        public uint Padding;
+#endif
+        public uint SyncBlockValue;
     }
 
     // Subset of src\vm\methodtable.h
