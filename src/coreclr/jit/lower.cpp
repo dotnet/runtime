@@ -5886,6 +5886,14 @@ PhaseStatus Lowering::DoPhase()
     }
 #endif // !defined(TARGET_64BIT)
 
+    if (!comp->compEnregLocals())
+    {
+        // Lowering is checking if lvDoNotEnregister is already set for contained optimizations.
+        // If we are running in min opts and know that we won't enregister any locals
+        // it is better to set this flag before we start reading it.
+        comp->lvSetMinOptsDoNotEnreg();
+    }
+
     for (BasicBlock* const block : comp->Blocks())
     {
         /* Make the block publicly available */

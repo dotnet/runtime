@@ -16004,6 +16004,14 @@ void Compiler::fgMorphBlocks()
 
 #endif
 
+    if (!compEnregLocals())
+    {
+        // Morph is checking if lvDoNotEnregister is already set for some optimizations.
+        // If we are running in min opts and know that we won't enregister any locals
+        // it is better to set this flag before we start reading it.
+        lvSetMinOptsDoNotEnreg();
+    }
+
     /*-------------------------------------------------------------------------
      * Process all basic blocks in the function
      */
