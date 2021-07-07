@@ -116,6 +116,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [SkipOnMono("Temporarily disable on Mono")]
         [MemberData(nameof(ArrayPropertyTestData))]
         public void ArrayPropertyTest(string propertyName, NullabilityState elementState, NullabilityState propertyState)
         {
@@ -137,6 +138,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [SkipOnMono("Temporarily disable on Mono")]
         [MemberData(nameof(GenericArrayPropertyTestData))]
         public void GenericArrayPropertyTest(string propertyName, NullabilityState elementState, NullabilityState propertyState)
         {
@@ -160,6 +162,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [SkipOnMono("Temporarily disable on Mono")]
         [MemberData(nameof(JaggedArrayPropertyTestData))]
         public void JaggedArrayPropertyTest(string propertyName, NullabilityState innermodtElementState, NullabilityState elementState, NullabilityState propertyState)
         {
@@ -184,6 +187,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [SkipOnMono("Temporarily disable on Mono")]
         [MemberData(nameof(TuplePropertyTestData))]
         public void TuplePropertyTest(string propertyName, NullabilityState genericParam1, NullabilityState genericParam2, NullabilityState genericParam3, NullabilityState propertyState)
         {
@@ -208,6 +212,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [SkipOnMono("Temporarily disable on Mono")]
         [MemberData(nameof(GenericTuplePropertyTestData))]
         public void GenericTuplePropertyTest(string propertyName, NullabilityState genericParam1, NullabilityState genericParam2, NullabilityState genericParam3, NullabilityState propertyState)
         {
@@ -233,6 +238,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [SkipOnMono("Temporarily disable on Mono")]
         [MemberData(nameof(DictionaryPropertyTestData))]
         public void DictionaryPropertyTest(string propertyName, NullabilityState keyState, NullabilityState valueElement, NullabilityState valueState, NullabilityState propertyState)
         {
@@ -258,6 +264,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [SkipOnMono("Temporarily disable on Mono")]
         [MemberData(nameof(GenericDictionaryPropertyTestData))]
         public void GenericDictionaryPropertyTest(string propertyName, NullabilityState keyState, NullabilityState valueElement, NullabilityState valueState, NullabilityState propertyState)
         {
@@ -493,6 +500,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [SkipOnMono("Temporarily disable on Mono")]
         [MemberData(nameof(MethodReturnParameterTestData))]
         public void MethodReturnParameterTest(string methodName, NullabilityState elementState, NullabilityState readState)
         {
@@ -517,6 +525,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [SkipOnMono("Temporarily disable on Mono")]
         [MemberData(nameof(MethodGenericReturnParameterTestData))]
         public void MethodGenericReturnParameterTest(string methodName, NullabilityState readState, NullabilityState elementState)
         {
@@ -539,6 +548,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [SkipOnMono("Temporarily disable on Mono")]
         [MemberData(nameof(MethodParametersTestData))]
         public void MethodParametersTest(string methodName, NullabilityState stringState, NullabilityState dictKey, NullabilityState dictValueElement, NullabilityState dictValue, NullabilityState dictionaryState)
         {
@@ -562,6 +572,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [SkipOnMono("Temporarily disable on Mono")]
         [MemberData(nameof(MethodGenericParametersTestData))]
         public void MethodGenericParametersTest(string methodName, NullabilityState param1State, NullabilityState dictKey, NullabilityState dictValue, NullabilityState dictionaryState)
         {
@@ -583,6 +594,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [SkipOnMono("Temporarily disable on Mono")]
         [MemberData(nameof(StringTypeTestData))]
         public void NullablePublicOnlyStringTypeTest(string methodName, NullabilityState param1State, NullabilityState param2State, NullabilityState param3State, Type[] types)
         {
