@@ -1,4 +1,4 @@
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-bullseye-slim
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-buster-slim
 FROM $SDK_BASE_IMAGE
 
 RUN echo "DOTNET_SDK_VERSION="$DOTNET_SDK_VERSION
