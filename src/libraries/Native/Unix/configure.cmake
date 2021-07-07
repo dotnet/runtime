@@ -110,6 +110,28 @@ check_c_source_compiles(
 
 check_c_source_compiles(
     "
+    #include <sys/vfs.h>
+    int main(void)
+    {
+        struct statfs64 s;
+        return 0;
+    }
+    "
+    HAVE_STATFS64)
+
+check_c_source_compiles(
+    "
+    #include <sys/vfs.h>
+    int main(void)
+    {
+        struct statfs s;
+        return 0;
+    }
+    "
+    HAVE_STATFS)
+
+check_c_source_compiles(
+    "
     #include <fcntl.h>
     int main(void)
     {

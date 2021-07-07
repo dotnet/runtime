@@ -35,6 +35,9 @@
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif
+#if HAVE_STATFS64 || HAVE_STATFS
+#include <sys/vfs.h>
+#endif
 
 #ifdef _AIX
 #include <alloca.h>
@@ -1377,6 +1380,19 @@ static int16_t ConvertLockType(int16_t managedLockType)
             assert_msg(managedLockType == 2, "Unknown Lock Type", (int)managedLockType);
             return F_UNLCK;
     }
+}
+
+int64_t SystemNative_GetFileSystemType(intptr_t fd)
+{
+#if HAVE_STATFS64
+    struct statfs64 statfsArgs;
+    return fstatfs64(ToFileDescriptor(fd), &statfsArgs) == -1 ? -1 : statfsArgs.f_type;
+#elif HAVE_STATFS
+    struct statfs statfsArgs;
+    return fstatfs(ToFileDescriptor(fd), &statfsArgs) == -1 ? -1 : statfsArgs.f_type;
+#else
+    return 0;
+#endif
 }
 
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)

@@ -258,7 +258,7 @@ namespace Microsoft.Win32.SafeHandles
             // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
             // and not atomic with file opening, it's better than nothing.
             Interop.Sys.LockOperations lockOperation = (share == FileShare.None) ? Interop.Sys.LockOperations.LOCK_EX : Interop.Sys.LockOperations.LOCK_SH;
-            if (Interop.Sys.FLock(this, lockOperation | Interop.Sys.LockOperations.LOCK_NB) < 0)
+            if (CanLockTheFile(lockOperation, access) && Interop.Sys.FLock(this, lockOperation | Interop.Sys.LockOperations.LOCK_NB) < 0)
             {
                 // The only error we care about is EWOULDBLOCK, which indicates that the file is currently locked by someone
                 // else and we would block trying to access it.  Other errors, such as ENOTSUP (locking isn't supported) or
@@ -316,6 +316,30 @@ namespace Microsoft.Win32.SafeHandles
                         path,
                         preallocationSize));
                 }
+            }
+        }
+
+        private bool CanLockTheFile(Interop.Sys.LockOperations lockOperation, FileAccess access)
+        {
+            Debug.Assert(lockOperation == Interop.Sys.LockOperations.LOCK_EX || lockOperation == Interop.Sys.LockOperations.LOCK_SH);
+
+            if (lockOperation == Interop.Sys.LockOperations.LOCK_EX)
+            {
+                return true; // LOCK_EX is always OK
+            }
+            else if ((access & FileAccess.Write) == 0)
+            {
+                return true; // LOCK_SH is always OK when reading
+            }
+
+            switch (Interop.Sys.GetFileSystemType(this))
+            {
+                case 0x6969: // NFS_SUPER_MAGIC
+                case 0xFF534D42: // CIFS_MAGIC_NUMBER
+                case 0x517B: // SMB_SUPER_MAGIC
+                    return false; // LOCK_SH is not OK when writing to NFS, CIFS or SMB
+                default:
+                    return true; // in all other situations it should be OK
             }
         }
 
