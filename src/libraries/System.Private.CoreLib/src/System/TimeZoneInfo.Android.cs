@@ -192,13 +192,12 @@ namespace System
             value = null;
             e = null;
 
-            // mono/mono FindSystemTimeZoneById suggests Local scenario
             value = id == LocalId ? GetLocalTimeZoneCore() : GetTimeZone(id, id);
 
             if (value == null)
             {
                 e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, GetTimeZoneDirectory() + _timeZoneFileName));
-                return TimeZoneInfoResult.TimeZoneNotFoundException; // Mono/mono throws TimeZoneNotFoundException, runtime throws InvalidTimeZoneException
+                return TimeZoneInfoResult.TimeZoneNotFoundException;
             }
 
             return TimeZoneInfoResult.Success;
@@ -230,7 +229,6 @@ namespace System
                 public fixed byte signature[12];
                 public int indexOffset;
                 public int dataOffset;
-                // Do we need zoneTabOFfset? Whats the format of tzdata now vs during mono/mono implementation.
             }
 
             [StructLayout(LayoutKind.Sequential, Pack=1)]
@@ -299,8 +297,7 @@ namespace System
                     if ((numBytesRead = fs.Read(buffer, 0, size)) < size)
                     {
                         //TODO: Put strings in resource file
-                        throw new InvalidOperationException(
-                                string.Format("Error reading '{0}': read {1} bytes, expected {2}", tzFilePath, numBytesRead, size));
+                        throw new InvalidOperationException(string.Format("Error reading '{0}': read {1} bytes, expected {2}", tzFilePath, numBytesRead, size));
                     }
 
                     fixed (byte* b = buffer)
@@ -315,11 +312,7 @@ namespace System
                 if (!BitConverter.IsLittleEndian)
                     return value;
 
-                return
-                    (((value >> 24) & 0xFF) |
-                        ((value >> 08) & 0xFF00) |
-                        ((value << 08) & 0xFF0000) |
-                        ((value << 24)));
+                return (((value >> 24) & 0xFF) | ((value >> 08) & 0xFF00) | ((value << 08) & 0xFF0000) | ((value << 24)));
             }
 
             private static unsafe int GetStringLength(sbyte* s, int maxLength)
@@ -328,12 +321,13 @@ namespace System
                 for (len = 0; len < maxLength; len++, s++)
                 {
                     if (*s == 0)
+                    {
                         break;
+                    }
                 }
                 return len;
             }
 
-            // What does the TZdata index look like?
             private unsafe void ReadIndex(string tzFilePath, int indexOffset, int dataOffset, byte[] buffer)
             {
                 int indexSize = dataOffset - indexOffset;
@@ -387,9 +381,7 @@ namespace System
                     if ((numBytesRead = fs.Read(buffer, 0, buffer.Length)) < buffer.Length)
                     {
                         //TODO: Put strings in resource file
-                        throw new InvalidOperationException(
-                                string.Format("Unable to fully read from file '{0}' at offset {1} length {2}; read {3} bytes expected {4}.",
-                                    tzFilePath, offset, length, numBytesRead, buffer.Length));
+                        throw new InvalidOperationException(string.Format("Unable to fully read from file '{0}' at offset {1} length {2}; read {3} bytes expected {4}.", tzFilePath, offset, length, numBytesRead, buffer.Length));
                     }
                 }
 
