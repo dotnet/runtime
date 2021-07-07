@@ -702,6 +702,15 @@ namespace System.Threading
             Debug.Assert(Monitor.IsEntered(m_lockObjAndDisposed), "Requires the lock be held");
 
             await new ConfiguredNoThrowAwaiter<bool>(asyncWaiter.WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout), cancellationToken));
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                // If we might be running as part of a cancellation callback, force the completion to be asynchronous
+                // so as to maintain semantics similar to when no token is passed (neither Release nor Cancel would invoke
+                // continuations off of this task).
+                await TaskScheduler.Default;
+            }
+
             if (asyncWaiter.IsCompleted)
             {
                 return true; // successfully acquired
