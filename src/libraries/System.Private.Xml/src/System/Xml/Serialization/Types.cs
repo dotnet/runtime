@@ -597,6 +597,8 @@ namespace System.Xml.Serialization
                         return true;
                     else if (type == typeof(TimeSpan))
                         return true;
+                    else if (type == typeof(DateTimeOffset))
+                        return true;
                     else if (type == typeof(XmlNode[]))
                         return true;
                     break;
