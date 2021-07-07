@@ -271,6 +271,11 @@ int32_t SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode, int32_t ha
                 // We've already called the original handler in SignalHandler.
                 break;
             }
+            if (IsSigIgn(OrigActionFor(signalCode)))
+            {
+                // Original handler doesn't do anything.
+                break;
+            }
             if (handlersDisposed && g_hasPosixSignalRegistrations[signalCode - 1])
             {
                 // New handlers got registered.
