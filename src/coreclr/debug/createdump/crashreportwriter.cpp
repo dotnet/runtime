@@ -53,28 +53,6 @@ CrashReportWriter::WriteCrashReport(const std::string& dumpFileName)
 
 #ifdef __APPLE__
 
-static void
-WriteSysctl(const char* sysctlname, CrashReportWriter& writer, const char* valueName)
-{
-    size_t size = 0;
-    if (sysctlbyname(sysctlname, nullptr, &size, NULL, 0) >= 0)
-    {
-        ArrayHolder<char> buffer = new char[size];
-        if (sysctlbyname(sysctlname, buffer, &size, NULL, 0) >= 0)
-        {
-            writer.WriteValue(valueName, buffer);
-        }
-        else
-        {
-            TRACE("sysctlbyname(%s) 1 FAILED %s\n", sysctlname, strerror(errno));
-        }
-    }
-    else
-    {
-        TRACE("sysctlbyname(%s) 2 FAILED %s\n", sysctlname, strerror(errno));
-    }
-}
-
 void
 CrashReportWriter::WriteCrashReport()
 {
@@ -176,8 +154,8 @@ CrashReportWriter::WriteCrashReport()
     {
         WriteValue("ExceptionType", exceptionType);
     }
-    WriteSysctl("kern.osproductversion", *this, "OSVersion");
-    WriteSysctl("hw.model", *this, "SystemModel");
+    WriteSysctl("kern.osproductversion", "OSVersion");
+    WriteSysctl("hw.model", "SystemModel");
     WriteValue("SystemManufacturer", "apple");
     CloseObject();              // parameters
 }
@@ -218,6 +196,28 @@ CrashReportWriter::WriteStackFrame(const StackFrame& frame)
     CloseObject();
 }
 
+void
+CrashReportWriter::WriteSysctl(const char* sysctlname, const char* valueName)
+{
+    size_t size = 0;
+    if (sysctlbyname(sysctlname, nullptr, &size, NULL, 0) >= 0)
+    {
+        ArrayHolder<char> buffer = new char[size];
+        if (sysctlbyname(sysctlname, buffer, &size, NULL, 0) >= 0)
+        {
+            WriteValue(valueName, buffer);
+        }
+        else
+        {
+            TRACE("sysctlbyname(%s) 1 FAILED %s\n", sysctlname, strerror(errno));
+        }
+    }
+    else
+    {
+        TRACE("sysctlbyname(%s) 2 FAILED %s\n", sysctlname, strerror(errno));
+    }
+}
+
 #else // __APPLE__
 
 void
@@ -226,6 +226,24 @@ CrashReportWriter::WriteCrashReport()
 }
 
 #endif // __APPLE__
+
+bool CrashReportWriter::OpenWriter(const char* fileName)
+{
+    m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, 0664);
+    if (m_fd == -1)
+    {
+        fprintf(stderr, "Could not create json file %s: %d %s\n", fileName, errno, strerror(errno));
+        return false;
+    }
+    Write("{\n");
+    return true;
+}
+
+void CrashReportWriter::CloseWriter()
+{
+    assert(m_indent == JSON_INDENT_VALUE);
+    Write("\n}\n");
+}
 
 void CrashReportWriter::Write(const std::string& text)
 {
@@ -284,24 +302,6 @@ void CrashReportWriter::CloseValue(char marker)
     text.append(1, marker);
     m_comma = true;
     Write(text);
-}
-
-bool CrashReportWriter::OpenWriter(const char* fileName)
-{
-    m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, 0664);
-    if (m_fd == -1)
-    {
-        fprintf(stderr, "Could not create json file %s: %d %s\n", fileName, errno, strerror(errno));
-        return false;
-    }
-    Write("{\n");
-    return true;
-}
-
-void CrashReportWriter::CloseWriter()
-{
-    assert(m_indent == JSON_INDENT_VALUE);
-    Write("\n}\n");
 }
 
 void CrashReportWriter::WriteValue(const char* key, const char* value)

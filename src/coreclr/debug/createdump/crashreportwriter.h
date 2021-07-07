@@ -18,6 +18,20 @@ public:
     virtual ~CrashReportWriter();
     void WriteCrashReport(const std::string& dumpFileName);
 
+private:
+    void WriteCrashReport();
+#ifdef __APPLE__
+    void WriteStackFrame(const StackFrame& frame);
+    void WriteSysctl(const char* sysctlname, const char* valueName);
+#endif
+    void Write(const std::string& text);
+    void Write(const char* buffer);
+    void Indent(std::string& text);
+    void WriteSeperator(std::string& text);
+    void OpenValue(const char* key, char marker);
+    void CloseValue(char marker);
+    bool OpenWriter(const char* fileName);
+    void CloseWriter();
     void WriteValue(const char* key, const char* value);
     void WriteValueBool(const char* key, bool value);
     void WriteValue32(const char* key, uint32_t value);
@@ -26,16 +40,4 @@ public:
     void CloseObject();
     void OpenArray(const char* key);
     void CloseArray();
-
-private:
-    bool OpenWriter(const char* fileName);
-    void CloseWriter();
-    void WriteCrashReport();
-    void WriteStackFrame(const StackFrame& frame);
-    void Write(const std::string& text);
-    void Write(const char* buffer);
-    void Indent(std::string& text);
-    void WriteSeperator(std::string& text);
-    void OpenValue(const char* key, char marker);
-    void CloseValue(char marker);
 };
