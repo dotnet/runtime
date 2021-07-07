@@ -11,7 +11,7 @@ using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.Tests
 {
-    public class PosixSignalTests
+    public class PosixSignalRegistrationTests
     {
         private static TimeSpan Timeout => TimeSpan.FromSeconds(30);
 
