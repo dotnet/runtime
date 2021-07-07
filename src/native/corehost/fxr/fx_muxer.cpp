@@ -404,7 +404,7 @@ namespace
             auto val = roll_forward_option_from_string(roll_forward);
             if (val == roll_forward_option::__Last)
             {
-                trace::error(_X("Invalid value for command line argument '%s'"), command_line::get_option_name(known_options::roll_forward).c_str());
+                trace::error(_X("Invalid value for command line argument '%s'"), command_line::get_option_name(known_options::roll_forward));
                 return StatusCode::InvalidArgFailure;
             }
 
@@ -417,8 +417,8 @@ namespace
             if (override_settings.has_roll_forward)
             {
                 trace::error(_X("It's invalid to use both '%s' and '%s' command line options."),
-                    command_line::get_option_name(known_options::roll_forward).c_str(),
-                    command_line::get_option_name(known_options::roll_forward_on_no_candidate_fx).c_str());
+                    command_line::get_option_name(known_options::roll_forward),
+                    command_line::get_option_name(known_options::roll_forward_on_no_candidate_fx));
                 return StatusCode::InvalidArgFailure;
             }
 

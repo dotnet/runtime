@@ -31,7 +31,11 @@ public:
 
         // Remove any whitespace at beginning and end of value.  (Only applicable for
         // *string* configuration values.)
-        TrimWhiteSpaceFromStringValue = 0x2
+        TrimWhiteSpaceFromStringValue = 0x2,
+
+        // The configuration should be parsed using a 10 radix as opposed to the
+        // default of 16.
+        ParseIntegerAsBase10 = 0x4,
     };
 
     // Struct used to store information about where/how to find a Config DWORD.

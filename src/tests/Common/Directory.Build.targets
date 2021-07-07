@@ -129,7 +129,13 @@
              WasmAppBuilder expects in native/-->
         <RunTimeDependencyCopyLocal
           Include="@(LibrariesRuntimeFiles)"
-          TargetDir="runtimepack/native/"/>
+          TargetDir="runtimepack/native/%(LibrariesRuntimeFiles.NativeSubDirectory)/"
+          Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' != ''" />
+
+        <RunTimeDependencyCopyLocal
+          Include="@(LibrariesRuntimeFiles)"
+          TargetDir="runtimepack/native/"
+          Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' == ''" />
 
         <RunTimeDependencyCopyLocal
           Include="$(ArtifactsDir)\TargetingPack\**"

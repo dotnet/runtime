@@ -2696,6 +2696,19 @@ namespace System.Tests
         [InlineData("Central Europe Standard Time", "Europe/Tirane", "AL")]
         [InlineData("Central Europe Standard Time", "Europe/Podgorica", "ME")]
         [InlineData("Central Europe Standard Time", "Europe/Belgrade", "RS")]
+        // lowercased region name cases:
+        [InlineData("Cen. Australia Standard Time", "Australia/Adelaide", "au")]
+        [InlineData("AUS Central Standard Time", "Australia/Darwin", "au")]
+        [InlineData("E. Australia Standard Time", "Australia/Brisbane", "au")]
+        [InlineData("AUS Eastern Standard Time", "Australia/Sydney", "au")]
+        [InlineData("Tasmania Standard Time", "Australia/Hobart", "au")]
+        [InlineData("Romance Standard Time", "Europe/Madrid", "es")]
+        [InlineData("Romance Standard Time", "Europe/Madrid", "Es")]
+        [InlineData("Romance Standard Time", "Europe/Madrid", "eS")]
+        [InlineData("GMT Standard Time", "Europe/London", "gb")]
+        [InlineData("GMT Standard Time", "Europe/Dublin", "ie")]
+        [InlineData("W. Europe Standard Time", "Europe/Rome", "it")]
+        [InlineData("New Zealand Standard Time", "Pacific/Auckland", "nz")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void IdsConversionsWithRegionTest(string windowsId, string ianaId, string region)
         {

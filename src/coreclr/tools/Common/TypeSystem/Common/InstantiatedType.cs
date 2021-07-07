@@ -144,6 +144,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override IEnumerable<MethodDesc> GetVirtualMethods()
+        {
+            foreach (var typicalMethodDef in _typeDef.GetVirtualMethods())
+            {
+                yield return _typeDef.Context.GetMethodForInstantiatedType(typicalMethodDef, this);
+            }
+        }
+
         // TODO: Substitutions, generics, modopts, ...
         public override MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
         {

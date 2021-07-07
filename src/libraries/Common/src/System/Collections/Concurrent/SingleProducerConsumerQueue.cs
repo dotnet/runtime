@@ -142,16 +142,38 @@ namespace System.Collections.Concurrent
                 segment._state._first = (first + 1) & (array.Length - 1);
                 return true;
             }
+
             // Slow path: there may not be data available in the current segment
-            else return TryDequeueSlow(ref segment, ref array, out result);
+            return TryDequeueSlow(segment, array, peek: false, out result);
+        }
+
+        /// <summary>Attempts to peek at an item in the queue.</summary>
+        /// <param name="result">The peeked item.</param>
+        /// <returns>true if an item could be peeked; otherwise, false.</returns>
+        public bool TryPeek([MaybeNullWhen(false)] out T result)
+        {
+            Segment segment = _head;
+            T[] array = segment._array;
+            int first = segment._state._first; // local copy to avoid multiple volatile reads
+
+            // Fast path: there's obviously data available in the current segment
+            if (first != segment._state._lastCopy)
+            {
+                result = array[first];
+                return true;
+            }
+
+            // Slow path: there may not be data available in the current segment
+            return TryDequeueSlow(segment, array, peek: true, out result);
         }
 
         /// <summary>Attempts to dequeue an item from the queue.</summary>
-        /// <param name="array">The array from which the item was dequeued.</param>
         /// <param name="segment">The segment from which the item was dequeued.</param>
+        /// <param name="array">The array from <paramref name="segment"/>.</param>
+        /// <param name="peek">true if this is only a peek operation; false if the item should be dequeued.</param>
         /// <param name="result">The dequeued item.</param>
         /// <returns>true if an item could be dequeued; otherwise, false.</returns>
-        private bool TryDequeueSlow(ref Segment segment, ref T[] array, [MaybeNullWhen(false)] out T result)
+        private bool TryDequeueSlow(Segment segment, T[] array, bool peek, [MaybeNullWhen(false)] out T result)
         {
             Debug.Assert(segment != null, "Expected a non-null segment.");
             Debug.Assert(array != null, "Expected a non-null item array.");
@@ -159,7 +181,9 @@ namespace System.Collections.Concurrent
             if (segment._state._last != segment._state._lastCopy)
             {
                 segment._state._lastCopy = segment._state._last;
-                return TryDequeue(out result); // will only recur once for this dequeue operation
+                return peek ?
+                    TryPeek(out result) :
+                    TryDequeue(out result); // will only recur once for this operation
             }
 
             if (segment._next != null && segment._state._first == segment._state._last)
@@ -178,9 +202,12 @@ namespace System.Collections.Concurrent
             }
 
             result = array[first];
-            array[first] = default!; // Clear the slot to release the element
-            segment._state._first = (first + 1) & (segment._array.Length - 1);
-            segment._state._lastCopy = segment._state._last; // Refresh _lastCopy to ensure that _first has not passed _lastCopy
+            if (!peek)
+            {
+                array[first] = default!; // Clear the slot to release the element
+                segment._state._first = (first + 1) & (segment._array.Length - 1);
+                segment._state._lastCopy = segment._state._last; // Refresh _lastCopy to ensure that _first has not passed _lastCopy
+            }
 
             return true;
         }

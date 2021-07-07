@@ -23,7 +23,7 @@ namespace System.Text.Json.Tests.Serialization
                     }
                     else
                     {
-                        _Dictionary = JsonMetadataServices.CreateDictionaryInfo<Dictionary<string, HighLowTemps>, string, HighLowTemps>(Options, () => new Dictionary<string, HighLowTemps>(), this.String, this.HighLowTemps, default);
+                        _Dictionary = JsonMetadataServices.CreateDictionaryInfo<Dictionary<string, HighLowTemps>, string, HighLowTemps>(Options, () => new Dictionary<string, HighLowTemps>(), this.String, this.HighLowTemps, default, serializeFunc: null);
                     }
                 }
 

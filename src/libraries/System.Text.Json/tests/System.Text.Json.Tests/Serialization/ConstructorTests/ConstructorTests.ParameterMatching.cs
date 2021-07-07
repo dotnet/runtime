@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -10,24 +11,29 @@ namespace System.Text.Json.Serialization.Tests
 {
     public class ConstructorTests_String : ConstructorTests
     {
-        public ConstructorTests_String() : base(DeserializationWrapper.StringDeserializer) { }
+        public ConstructorTests_String() : base(JsonSerializerWrapperForString.StringSerializer) { }
     }
 
-    public class ConstructorTests_Stream : ConstructorTests
+    public class ConstructorTests_AsyncStream : ConstructorTests
     {
-        public ConstructorTests_Stream() : base(DeserializationWrapper.StreamDeserializer) { }
+        public ConstructorTests_AsyncStream() : base(JsonSerializerWrapperForString.AsyncStreamSerializer) { }
+    }
+
+    public class ConstructorTests_SyncStream : ConstructorTests
+    {
+        public ConstructorTests_SyncStream() : base(JsonSerializerWrapperForString.SyncStreamSerializer) { }
     }
 
     public class ConstructorTests_Span : ConstructorTests
     {
-        public ConstructorTests_Span() : base(DeserializationWrapper.SpanDeserializer) { }
+        public ConstructorTests_Span() : base(JsonSerializerWrapperForString.SpanSerializer) { }
     }
 
     public abstract partial class ConstructorTests
     {
-        private DeserializationWrapper Serializer { get; }
+        private JsonSerializerWrapperForString Serializer { get; }
 
-        public ConstructorTests(DeserializationWrapper serializer)
+        public ConstructorTests(JsonSerializerWrapperForString serializer)
         {
             Serializer = serializer;
         }
@@ -514,6 +520,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<,,,,,,,>))]
         public async Task TupleDeserialization_MoreThanSevenItems()
         {
             var dont_trim_ctor = typeof(Tuple<,,,,,,>).GetConstructors();
@@ -538,6 +545,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties, typeof(Tuple<,,,,,,,>))]
         public async Task TupleDeserialization_DefaultValuesUsed_WhenJsonMissing()
         {
             // Seven items; only three provided.

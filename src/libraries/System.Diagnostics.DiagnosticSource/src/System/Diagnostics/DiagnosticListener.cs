@@ -39,12 +39,10 @@ namespace System.Diagnostics
 #if ENABLE_HTTP_HANDLER
                 GC.KeepAlive(HttpHandlerDiagnosticListener.s_instance);
 #endif
-
-                if (s_allListenerObservable == null)
-                {
-                    s_allListenerObservable = new AllListenerObservable();
-                }
-                return s_allListenerObservable;
+                return
+                    s_allListenerObservable ??
+                    Interlocked.CompareExchange(ref s_allListenerObservable, new AllListenerObservable(), null) ??
+                    s_allListenerObservable;
             }
         }
 
@@ -137,9 +135,7 @@ namespace System.Diagnostics
             lock (s_allListenersLock)
             {
                 // Issue the callback for this new diagnostic listener.
-                var allListenerObservable = s_allListenerObservable;
-                if (allListenerObservable != null)
-                    allListenerObservable.OnNewDiagnosticListener(this);
+                s_allListenerObservable?.OnNewDiagnosticListener(this);
 
                 // And add it to the list of all past listeners.
                 _next = s_allListeners;
@@ -262,14 +258,6 @@ namespace System.Diagnostics
             for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
                 curSubscription.Observer.OnNext(new KeyValuePair<string, object?>(name, value));
         }
-
-        /// <summary>
-        /// We don't have Activities in NetStandard1.1. but it is a pain to ifdef out all references to the Activity type
-        /// in DiagnosticSubscription so we just define a private type for it here just so things compile.
-        /// </summary>
-#if NETSTANDARD1_1
-        private sealed class Activity {}
-#endif
 
         // Note that Subscriptions are READ ONLY.   This means you never update any fields (even on removal!)
         private sealed class DiagnosticSubscription : IDisposable
@@ -468,7 +456,7 @@ namespace System.Diagnostics
         private bool _disposed;                        // Has Dispose been called?
 
         private static DiagnosticListener? s_allListeners;               // linked list of all instances of DiagnosticListeners.
-        private static AllListenerObservable? s_allListenerObservable;   // to make callbacks to this object when listeners come into existence.
+        private static volatile AllListenerObservable? s_allListenerObservable;   // to make callbacks to this object when listeners come into existence.
         private static readonly object s_allListenersLock = new object();
 #if false
         private static readonly DiagnosticListener s_default = new DiagnosticListener("DiagnosticListener.DefaultListener");

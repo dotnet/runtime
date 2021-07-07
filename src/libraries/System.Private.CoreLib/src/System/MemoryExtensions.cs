@@ -713,14 +713,6 @@ namespace System
                             Unsafe.Add(ref valueRef, 2),
                             span.Length);
                     }
-                    else
-                    {
-                        return SpanHelpers.IndexOfAny(
-                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                            span.Length,
-                            ref valueRef,
-                            values.Length);
-                    }
                 }
 
                 if (Unsafe.SizeOf<T>() == sizeof(char))
@@ -888,14 +880,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values) where T : IEquatable<T>
         {
-            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
-                return SpanHelpers.LastIndexOfAny(
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                    span.Length,
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)),
-                    values.Length);
-
-            return SpanHelpers.LastIndexOfAny<T>(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(values), values.Length);
+            return SpanHelpers.LastIndexOfAny(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(values), values.Length);
         }
 
         /// <summary>

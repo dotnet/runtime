@@ -151,9 +151,9 @@ void CALLBACK UpdateDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pE
     Object **pPrimaryRef = (Object **)pObjRef;
     Object **pSecondaryRef = (Object **)pExtraInfo;
 
-    LOG((LF_GC|LF_ENC, LL_INFO10000, LOG_HANDLE_OBJECT("Querying for new location of ",
+    LOG((LF_GC, LL_INFO10000, LOG_HANDLE_OBJECT("Querying for new location of ",
             pPrimaryRef, "to ", *pPrimaryRef)));
-    LOG((LF_GC|LF_ENC, LL_INFO10000, LOG_HANDLE_OBJECT(" and ",
+    LOG((LF_GC, LL_INFO10000, LOG_HANDLE_OBJECT(" and ",
             pSecondaryRef, "to ", *pSecondaryRef)));
 
 #ifdef _DEBUG
@@ -168,16 +168,16 @@ void CALLBACK UpdateDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pE
 
 #ifdef _DEBUG
     if (pOldPrimary != *pPrimaryRef)
-        LOG((LF_GC|LF_ENC, LL_INFO10000,  "Updating " FMT_HANDLE "from" FMT_ADDR "to " FMT_OBJECT "\n",
+        LOG((LF_GC, LL_INFO10000,  "Updating " FMT_HANDLE "from" FMT_ADDR "to " FMT_OBJECT "\n",
              DBG_ADDR(pPrimaryRef), DBG_ADDR(pOldPrimary), DBG_ADDR(*pPrimaryRef)));
     else
-        LOG((LF_GC|LF_ENC, LL_INFO10000, "Updating " FMT_HANDLE "- " FMT_OBJECT "did not move\n",
+        LOG((LF_GC, LL_INFO10000, "Updating " FMT_HANDLE "- " FMT_OBJECT "did not move\n",
              DBG_ADDR(pPrimaryRef), DBG_ADDR(*pPrimaryRef)));
     if (pOldSecondary != *pSecondaryRef)
-        LOG((LF_GC|LF_ENC, LL_INFO10000,  "Updating " FMT_HANDLE "from" FMT_ADDR "to " FMT_OBJECT "\n",
+        LOG((LF_GC, LL_INFO10000,  "Updating " FMT_HANDLE "from" FMT_ADDR "to " FMT_OBJECT "\n",
              DBG_ADDR(pSecondaryRef), DBG_ADDR(pOldSecondary), DBG_ADDR(*pSecondaryRef)));
     else
-        LOG((LF_GC|LF_ENC, LL_INFO10000, "Updating " FMT_HANDLE "- " FMT_OBJECT "did not move\n",
+        LOG((LF_GC, LL_INFO10000, "Updating " FMT_HANDLE "- " FMT_OBJECT "did not move\n",
              DBG_ADDR(pSecondaryRef), DBG_ADDR(*pSecondaryRef)));
 #endif
 }
@@ -189,9 +189,9 @@ void CALLBACK PromoteDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *p
 
     Object **pPrimaryRef = (Object **)pObjRef;
     Object **pSecondaryRef = (Object **)pExtraInfo;
-    LOG((LF_GC|LF_ENC, LL_INFO1000, "Checking promotion of DependentHandle"));
-    LOG((LF_GC|LF_ENC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("\tPrimary:\t", pObjRef, "to ", *pObjRef)));
-    LOG((LF_GC|LF_ENC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("\tSecondary\t", pSecondaryRef, "to ", *pSecondaryRef)));
+    LOG((LF_GC, LL_INFO1000, "Checking promotion of DependentHandle\n"));
+    LOG((LF_GC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("\tPrimary:\t", pObjRef, "to ", *pObjRef)));
+    LOG((LF_GC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("\tSecondary\t", pSecondaryRef, "to ", *pSecondaryRef)));
 
     ScanContext *sc = (ScanContext*)lp1;
     DhContext *pDhContext = Ref_GetDependentHandleContext(sc);
@@ -200,7 +200,7 @@ void CALLBACK PromoteDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *p
     {
         if (!g_theGCHeap->IsPromoted(*pSecondaryRef))
         {
-            LOG((LF_GC|LF_ENC, LL_INFO10000, "\tPromoting secondary " LOG_OBJECT_CLASS(*pSecondaryRef)));
+            LOG((LF_GC, LL_INFO10000, "\tPromoting secondary " LOG_OBJECT_CLASS(*pSecondaryRef)));
             _ASSERTE(lp2);
             promote_func* callback = (promote_func*) lp2;
             callback(pSecondaryRef, (ScanContext *)lp1, 0);
@@ -227,22 +227,22 @@ void CALLBACK ClearDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pEx
 
     Object **pPrimaryRef = (Object **)pObjRef;
     Object **pSecondaryRef = (Object **)pExtraInfo;
-    LOG((LF_GC|LF_ENC, LL_INFO1000, "Checking referent of DependentHandle"));
-    LOG((LF_GC|LF_ENC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("\tPrimary:\t", pPrimaryRef, "to ", *pPrimaryRef)));
-    LOG((LF_GC|LF_ENC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("\tSecondary\t", pSecondaryRef, "to ", *pSecondaryRef)));
+    LOG((LF_GC, LL_INFO1000, "Checking referent of DependentHandle"));
+    LOG((LF_GC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("\tPrimary:\t", pPrimaryRef, "to ", *pPrimaryRef)));
+    LOG((LF_GC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("\tSecondary\t", pSecondaryRef, "to ", *pSecondaryRef)));
 
     if (!g_theGCHeap->IsPromoted(*pPrimaryRef))
     {
-        LOG((LF_GC|LF_ENC, LL_INFO1000, "\tunreachable ", LOG_OBJECT_CLASS(*pPrimaryRef)));
-        LOG((LF_GC|LF_ENC, LL_INFO1000, "\tunreachable ", LOG_OBJECT_CLASS(*pSecondaryRef)));
+        LOG((LF_GC, LL_INFO1000, "\tunreachable ", LOG_OBJECT_CLASS(*pPrimaryRef)));
+        LOG((LF_GC, LL_INFO1000, "\tunreachable ", LOG_OBJECT_CLASS(*pSecondaryRef)));
         *pPrimaryRef = NULL;
         *pSecondaryRef = NULL;
     }
     else
     {
         _ASSERTE(g_theGCHeap->IsPromoted(*pSecondaryRef));
-        LOG((LF_GC|LF_ENC, LL_INFO10000, "\tPrimary is reachable " LOG_OBJECT_CLASS(*pPrimaryRef)));
-        LOG((LF_GC|LF_ENC, LL_INFO10000, "\tSecondary is reachable " LOG_OBJECT_CLASS(*pSecondaryRef)));
+        LOG((LF_GC, LL_INFO10000, "\tPrimary is reachable " LOG_OBJECT_CLASS(*pPrimaryRef)));
+        LOG((LF_GC, LL_INFO10000, "\tSecondary is reachable " LOG_OBJECT_CLASS(*pSecondaryRef)));
     }
 }
 

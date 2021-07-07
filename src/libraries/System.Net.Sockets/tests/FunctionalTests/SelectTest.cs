@@ -178,7 +178,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [SkipOnPlatform(TestPlatforms.OSX, "typical OSX install has very low max open file descriptors value")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Select_Error_OneReadyAtATime()
         {

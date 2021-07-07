@@ -382,8 +382,8 @@ namespace System.Drawing
         private static void AnimateImages()
         {
             Debug.Assert(s_imageInfoList != null, "Null images list");
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
 
             while (true)
             {

@@ -495,6 +495,9 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public override string ToString()
         {
+            if (!IsSupported)
+                return base.ToString()!;
+
             return SR.Format(SR.EventSource_ToString, Name, Guid);
         }
 
@@ -3657,6 +3660,7 @@ namespace System.Diagnostics.Tracing
 #endif
         private static int GetHelperCallFirstArg(MethodInfo method)
         {
+#if !CORERT
             // Currently searches for the following pattern
             //
             // ...     // CAN ONLY BE THE INSTRUCTIONS BELOW
@@ -3773,6 +3777,7 @@ namespace System.Diagnostics.Tracing
                 }
                 idx++;
             }
+#endif
             return -1;
         }
 
@@ -5486,7 +5491,7 @@ namespace System.Diagnostics.Tracing
             if (!channelTab.TryGetValue((int)channel, out ChannelInfo? info))
             {
                 // If we were not given an explicit channel, allocate one.
-                if (channelKeyword != 0)
+                if (channelKeyword == 0)
                 {
                     channelKeyword = nextChannelKeywordBit;
                     nextChannelKeywordBit >>= 1;

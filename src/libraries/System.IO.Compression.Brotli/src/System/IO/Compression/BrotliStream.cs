@@ -173,7 +173,7 @@ namespace System.IO.Compression
 
         private void AsyncOperationStarting()
         {
-            if (Interlocked.CompareExchange(ref _activeAsyncOperation, 1, 0) != 0)
+            if (Interlocked.Exchange(ref _activeAsyncOperation, 1) != 0)
             {
                 ThrowInvalidBeginCall();
             }
@@ -181,13 +181,11 @@ namespace System.IO.Compression
 
         private void AsyncOperationCompleting()
         {
-            int oldValue = Interlocked.CompareExchange(ref _activeAsyncOperation, 0, 1);
-            Debug.Assert(oldValue == 1, $"Expected {nameof(_activeAsyncOperation)} to be 1, got {oldValue}");
+            Debug.Assert(_activeAsyncOperation == 1);
+            Volatile.Write(ref _activeAsyncOperation, 0);
         }
 
-        private static void ThrowInvalidBeginCall()
-        {
+        private static void ThrowInvalidBeginCall() =>
             throw new InvalidOperationException(SR.InvalidBeginCall);
-        }
     }
 }

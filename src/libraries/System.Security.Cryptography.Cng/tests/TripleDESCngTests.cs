@@ -29,6 +29,10 @@ namespace System.Security.Cryptography.Cng.Tests
         [ConditionalTheory(nameof(SupportsPersistedSymmetricKeys))]
         // 3DES192-ECB-NoPadding 2 blocks.
         [InlineData(2 * BlockSizeBytes, CipherMode.ECB, PaddingMode.None)]
+        // 3DES192-ECB-Zeros 2 blocks.
+        [InlineData(2 * BlockSizeBytes, CipherMode.ECB, PaddingMode.Zeros)]
+        // 3DES192-ECB-Zeros 1.5 blocks.
+        [InlineData(BlockSizeBytes + BlockSizeBytes / 2, CipherMode.ECB, PaddingMode.Zeros)]
         // 3DES192-CBC-NoPadding at 2 blocks
         [InlineData(2 * BlockSizeBytes, CipherMode.CBC, PaddingMode.None)]
         // 3DES192-CBC-Zeros at 1.5 blocks

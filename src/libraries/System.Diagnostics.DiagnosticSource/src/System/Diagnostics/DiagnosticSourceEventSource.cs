@@ -219,7 +219,6 @@ namespace System.Diagnostics
             WriteEvent(1, Message);
         }
 
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
         /// <summary>
         /// Events from DiagnosticSource can be forwarded to EventSource using this event.
         /// </summary>
@@ -232,7 +231,7 @@ namespace System.Diagnostics
         {
             WriteEvent(2, SourceName, EventName, Arguments);
         }
-#endif
+
         /// <summary>
         /// This is only used on V4.5 systems that don't have the ability to log KeyValuePairs directly.
         /// It will eventually go away, but we should always reserve the ID for this.
@@ -243,7 +242,6 @@ namespace System.Diagnostics
             WriteEvent(3, SourceName, EventName, ArgmentsJson);
         }
 
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
@@ -321,7 +319,6 @@ namespace System.Diagnostics
         {
             WriteEvent(9, SourceName, EventName, Arguments);
         }
-#endif
 
         /// <summary>
         /// Fires when a new DiagnosticSource becomes available.
@@ -343,11 +340,7 @@ namespace System.Diagnostics
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Arguments parameter is trimmer safe")]
 #endif
-#if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-        [Event(11, Keywords = Keywords.Events)]
-#else
         [Event(11, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
-#endif
         private void ActivityStart(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
             WriteEvent(11, SourceName, ActivityName, Arguments);
 
@@ -361,65 +354,16 @@ namespace System.Diagnostics
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Arguments parameter is trimmer safe")]
 #endif
-#if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-        [Event(12, Keywords = Keywords.Events)]
-#else
         [Event(12, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
-#endif
         private void ActivityStop(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
             WriteEvent(12, SourceName, ActivityName, Arguments);
 
         #region private
 
-#if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-        /// <summary>
-        /// Converts a keyvalue bag to JSON. Only used on V4.5 EventSources.
-        /// </summary>
-        private static string ToJson(IEnumerable<KeyValuePair<string, string>> keyValues)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("{");
-            bool first = true;
-            foreach (var keyValue in keyValues)
-            {
-                if (!first)
-                    sb.Append(',').AppendLine();
-                first = false;
-
-                sb.Append('"').Append(keyValue.Key).Append("\":\"");
-
-                // Write out the value characters, escaping things as needed.
-                foreach (var c in keyValue.Value)
-                {
-                    if (char.IsControl(c))
-                    {
-                        if (c == '\n')
-                            sb.Append("\\n");
-                        else if (c == '\r')
-                            sb.Append("\\r");
-                        else
-                            sb.Append("\\u").Append(((int)c).ToString("x").PadLeft(4, '0'));
-                    }
-                    else
-                    {
-                        if (c == '"' || c == '\\')
-                            sb.Append('\\');
-                        sb.Append(c);
-                    }
-                }
-                sb.Append('"');     // Close the string.
-            }
-            sb.AppendLine().AppendLine("}");
-            return sb.ToString();
-        }
-#endif
-
         private DiagnosticSourceEventSource()
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
             // This constructor uses EventSourceSettings which is only available on V4.6 and above
             // Use the EventSourceSettings to turn on support for complex types, if available (v4.6 and above).
             : base(EventSourceSettings.EtwSelfDescribingEventFormat)
-#endif
         {
         }
 
@@ -548,13 +492,11 @@ namespace System.Diagnostics
                     while (startIdx < endIdx && char.IsWhiteSpace(filterAndPayloadSpecs[startIdx]))
                         startIdx++;
 
-#if EVENTSOURCE_ACTIVITY_SUPPORT
                     if (IsActivitySourceEntry(filterAndPayloadSpecs, startIdx, endIdx))
                     {
                         AddNewActivitySourceTransform(filterAndPayloadSpecs, startIdx, endIdx, eventSource);
                     }
                     else
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
                     {
                         specList = new FilterAndTransform(filterAndPayloadSpecs, startIdx, endIdx, eventSource, specList);
                     }
@@ -563,13 +505,12 @@ namespace System.Diagnostics
                     if (endIdx < 0)
                         break;
                 }
-#if EVENTSOURCE_ACTIVITY_SUPPORT
+
                 if (eventSource._activitySourceSpecs != null)
                 {
                     NormalizeActivitySourceSpecsList(eventSource);
                     CreateActivityListener(eventSource);
                 }
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
             }
 
             /// <summary>
@@ -579,11 +520,9 @@ namespace System.Diagnostics
             /// <param name="eventSource"></param>
             public static void DestroyFilterAndTransformList(ref FilterAndTransform? specList, DiagnosticSourceEventSource eventSource)
             {
-#if EVENTSOURCE_ACTIVITY_SUPPORT
                 eventSource._activityListener?.Dispose();
                 eventSource._activityListener = null;
                 eventSource._activitySourceSpecs = null; // nothing to dispose inside this list.
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
 
                 var curSpec = specList;
                 specList = null;            // Null out the list
@@ -677,7 +616,6 @@ namespace System.Diagnostics
                 Action<string, string, IEnumerable<KeyValuePair<string, string?>>>? writeEvent = null;
                 if (activityName != null && activityName.Contains("Activity"))
                 {
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
                     writeEvent = activityName switch
                     {
                         nameof(Activity1Start) => _eventSource.Activity1Start,
@@ -688,7 +626,6 @@ namespace System.Diagnostics
                         nameof(RecursiveActivity1Stop) => _eventSource.RecursiveActivity1Stop,
                         _ => null
                     };
-#endif
 
                     if (writeEvent == null)
                         _eventSource.Message("DiagnosticSource: Could not find Event to log Activity " + activityName);
@@ -696,14 +633,7 @@ namespace System.Diagnostics
 
                 if (writeEvent == null)
                 {
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
                     writeEvent = _eventSource.Event;
-#else
-                    writeEvent = delegate (string sourceName, string eventName, IEnumerable<KeyValuePair<string, string>> arguments)
-                    {
-                        _eventSource.EventJson(sourceName, eventName, ToJson(arguments));
-                    };
-#endif
                 }
 
                 // Set up a subscription that watches for the given Diagnostic Sources and events which will call back
@@ -737,7 +667,6 @@ namespace System.Diagnostics
                 }));
             }
 
-#if EVENTSOURCE_ACTIVITY_SUPPORT
             internal FilterAndTransform(string filterAndPayloadSpec, int endIdx, int colonIdx, string activitySourceName, string? activityName, ActivityEvents events, ActivitySamplingResult samplingResult, DiagnosticSourceEventSource eventSource)
             {
                 _eventSource = eventSource;
@@ -1063,7 +992,6 @@ namespace System.Diagnostics
 
                 eventSource._activitySourceSpecs = firstSpecificList;
             }
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
 
             private void Dispose()
             {
@@ -1156,13 +1084,11 @@ namespace System.Diagnostics
 
             // Specific ActivitySource Transforms information
 
-#if EVENTSOURCE_ACTIVITY_SUPPORT
             internal const string c_ActivitySourcePrefix = "[AS]";
             internal string? SourceName { get; set; }
             internal string? ActivityName { get; set; }
             internal DiagnosticSourceEventSource.ActivityEvents Events  { get; set; }
             internal ActivitySamplingResult SamplingResult { get; set; }
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
 
             #region private
 
@@ -1364,25 +1290,13 @@ namespace System.Diagnostics
                             return new PropertyFetch(type);     // returns null on any fetch.
                         if (propertyName == CurrentActivityPropertyName)
                         {
-#if EVENTSOURCE_ACTIVITY_SUPPORT
                             return new CurrentActivityPropertyFetch();
-#else
-                            // In netstandard1.1 the Activity.Current API doesn't exist
-                            Logger.Message($"{CurrentActivityPropertyName} not supported for this TFM");
-                            return new PropertyFetch(type);
-#endif
                         }
 
                         Debug.Assert(type != null, "Type should only be null for the well-known static fetchers already checked");
                         TypeInfo typeInfo = type.GetTypeInfo();
                         if (propertyName == EnumeratePropertyName)
                         {
-#if !EVENTSOURCE_ENUMERATE_SUPPORT
-                            // In netstandard1.1 and 1.3 the reflection APIs needed to implement Enumerate support aren't
-                            // available
-                            Logger.Message($"{EnumeratePropertyName} not supported for this TFM");
-                            return new PropertyFetch(type);
-#else
                             // If there are multiple implementations of IEnumerable<T>, this arbitrarily uses the first one
                             foreach (Type iFaceType in typeInfo.GetInterfaces())
                             {
@@ -1402,7 +1316,6 @@ namespace System.Diagnostics
                             // no implementation of IEnumerable<T> found, return a null fetcher
                             Logger.Message($"*Enumerate applied to non-enumerable type {type}");
                             return new PropertyFetch(type);
-#endif
                         }
                         else
                         {
@@ -1470,8 +1383,6 @@ namespace System.Diagnostics
                         private readonly StructFunc<TStruct, TProperty> _propertyFetch;
                     }
 
-
-#if EVENTSOURCE_ACTIVITY_SUPPORT
                     /// <summary>
                     /// A fetcher that returns the result of Activity.Current
                     /// </summary>
@@ -1483,7 +1394,6 @@ namespace System.Diagnostics
                             return Activity.Current;
                         }
                     }
-#endif
 
                     /// <summary>
                     /// A fetcher that enumerates and formats an IEnumerable
@@ -1546,10 +1456,8 @@ namespace System.Diagnostics
         #endregion
 
         private FilterAndTransform? _specs;                 // Transformation specifications that indicate which sources/events are forwarded.
-#if EVENTSOURCE_ACTIVITY_SUPPORT
         private FilterAndTransform? _activitySourceSpecs;   // ActivitySource Transformation specifications that indicate which sources/events are forwarded.
         private ActivityListener? _activityListener;
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
         #endregion
     }
 }

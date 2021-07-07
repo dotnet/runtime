@@ -3,10 +3,11 @@
 
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Dynamic;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Dynamic;
 
 namespace System.Text.Json.Nodes
 {
@@ -19,6 +20,8 @@ namespace System.Text.Json.Nodes
         private static readonly ConstantExpression Int1Expression = Expression.Constant((object)1);
 
         private JsonNode Dynamic { get; }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         internal MetaDynamic(Expression expression, JsonNode dynamicObject)
             : base(expression, BindingRestrictions.Empty, dynamicObject)
         {
@@ -41,6 +44,8 @@ namespace System.Text.Json.Nodes
             );
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked with RequiresUnreferencedCode.")]
         public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
         {
             MethodInfo? methodInfo = Dynamic.TrySetMemberMethodInfo;

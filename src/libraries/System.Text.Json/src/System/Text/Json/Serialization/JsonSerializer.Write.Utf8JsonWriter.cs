@@ -23,7 +23,7 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static void Serialize<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(
+        public static void Serialize<TValue>(
             Utf8JsonWriter writer,
             TValue value,
             JsonSerializerOptions? options = null)
@@ -52,7 +52,7 @@ namespace System.Text.Json
         public static void Serialize(
             Utf8JsonWriter writer,
             object? value,
-            [DynamicallyAccessedMembers(MembersAccessedOnWrite)] Type inputType,
+            Type inputType,
             JsonSerializerOptions? options = null)
         {
             Serialize<object?>(

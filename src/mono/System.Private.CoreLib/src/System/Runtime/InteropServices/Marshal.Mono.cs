@@ -67,16 +67,9 @@ namespace System.Runtime.InteropServices
         {
             if (structure == null)
                 throw new ArgumentNullException(nameof(structure));
+            if (ptr == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(ptr));
             PtrToStructureInternal(ptr, structure, allowValueClasses);
-        }
-
-        private static object PtrToStructureHelper(IntPtr ptr,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-            Type structureType)
-        {
-            object obj = Activator.CreateInstance(structureType)!;
-            PtrToStructureHelper(ptr, obj, true);
-            return obj;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

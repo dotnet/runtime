@@ -98,7 +98,7 @@ class ThumbCondJump : public InstructionFormat
         //Encoding 1|0|1|1|op|0|i|1|imm5|Rn
         //op = Bit3(variation)
         //Rn = Bits2-0(variation)
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBuffer, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT
 
@@ -109,8 +109,8 @@ class ThumbCondJump : public InstructionFormat
 
             _ASSERTE((fixedUpReference & 0x1) == 0);
 
-            pOutBuffer[0] = static_cast<BYTE>(((0x3e & fixedUpReference) << 2) | (0x7 & variationCode));
-            pOutBuffer[1] = static_cast<BYTE>(0xb1 | (0x8 & variationCode)| ((0x40 & fixedUpReference)>>5));
+            pOutBufferRW[0] = static_cast<BYTE>(((0x3e & fixedUpReference) << 2) | (0x7 & variationCode));
+            pOutBufferRW[1] = static_cast<BYTE>(0xb1 | (0x8 & variationCode)| ((0x40 & fixedUpReference)>>5));
         }
 };
 
@@ -138,7 +138,7 @@ class ThumbNearJump : public InstructionFormat
             return 0;
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBuffer, UINT cond, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT cond, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT
 
@@ -155,8 +155,8 @@ class ThumbNearJump : public InstructionFormat
                         _ASSERTE(!"Expected refSize to be 2");
 
                     //Emit T2 encoding of B<c> <label> instruction
-                    pOutBuffer[0] = static_cast<BYTE>((fixedUpReference & 0x1fe)>>1);
-                    pOutBuffer[1] = static_cast<BYTE>(0xe0 | ((fixedUpReference & 0xe00)>>9));
+                    pOutBufferRW[0] = static_cast<BYTE>((fixedUpReference & 0x1fe)>>1);
+                    pOutBufferRW[1] = static_cast<BYTE>(0xe0 | ((fixedUpReference & 0xe00)>>9));
                 }
                 else if(fixedUpReference >= -16777216 && fixedUpReference <= 16777214)
                 {
@@ -167,10 +167,10 @@ class ThumbNearJump : public InstructionFormat
                     int s = (fixedUpReference & 0x1000000) >> 24;
                     int i1 = (fixedUpReference & 0x800000) >> 23;
                     int i2 = (fixedUpReference & 0x400000) >> 22;
-                    pOutBuffer[0] = static_cast<BYTE>((fixedUpReference & 0xff000) >> 12);
-                    pOutBuffer[1] = static_cast<BYTE>(0xf0 | (s << 2) |( (fixedUpReference & 0x300000) >>20));
-                    pOutBuffer[2] = static_cast<BYTE>((fixedUpReference & 0x1fe) >> 1);
-                    pOutBuffer[3] = static_cast<BYTE>(0x90 | (~(i1^s)) << 5 | (~(i2^s)) << 3 | (fixedUpReference & 0xe00) >> 9);
+                    pOutBufferRW[0] = static_cast<BYTE>((fixedUpReference & 0xff000) >> 12);
+                    pOutBufferRW[1] = static_cast<BYTE>(0xf0 | (s << 2) |( (fixedUpReference & 0x300000) >>20));
+                    pOutBufferRW[2] = static_cast<BYTE>((fixedUpReference & 0x1fe) >> 1);
+                    pOutBufferRW[3] = static_cast<BYTE>(0x90 | (~(i1^s)) << 5 | (~(i2^s)) << 3 | (fixedUpReference & 0xe00) >> 9);
                 }
                 else
                 {
@@ -185,8 +185,8 @@ class ThumbNearJump : public InstructionFormat
                         _ASSERTE(!"Expected refSize to be 2");
 
                     //Emit T1 encoding of B<c> <label> instruction
-                    pOutBuffer[0] = static_cast<BYTE>((fixedUpReference & 0x1fe)>>1);
-                    pOutBuffer[1] = static_cast<BYTE>(0xd0 | (cond & 0xf));
+                    pOutBufferRW[0] = static_cast<BYTE>((fixedUpReference & 0x1fe)>>1);
+                    pOutBufferRW[1] = static_cast<BYTE>(0xd0 | (cond & 0xf));
                 }
                 else if(fixedUpReference >= -1048576 && fixedUpReference <= 1048574)
                 {
@@ -194,10 +194,10 @@ class ThumbNearJump : public InstructionFormat
                         _ASSERTE(!"Expected refSize to be 4");
 
                     //Emit T3 encoding of B<c> <label> instruction
-                    pOutBuffer[0] = static_cast<BYTE>(((cond & 0x3) << 6) | ((fixedUpReference & 0x3f000) >>12));
-                    pOutBuffer[1] = static_cast<BYTE>(0xf0 | ((fixedUpReference & 0x100000) >>18) | ((cond & 0xc) >> 2));
-                    pOutBuffer[2] = static_cast<BYTE>((fixedUpReference & 0x1fe) >> 1);
-                    pOutBuffer[3] = static_cast<BYTE>(0x80 | ((fixedUpReference & 0x40000) >> 13) | ((fixedUpReference & 0x80000) >> 16) | ((fixedUpReference & 0xe00) >> 9));
+                    pOutBufferRW[0] = static_cast<BYTE>(((cond & 0x3) << 6) | ((fixedUpReference & 0x3f000) >>12));
+                    pOutBufferRW[1] = static_cast<BYTE>(0xf0 | ((fixedUpReference & 0x100000) >>18) | ((cond & 0xc) >> 2));
+                    pOutBufferRW[2] = static_cast<BYTE>((fixedUpReference & 0x1fe) >> 1);
+                    pOutBufferRW[3] = static_cast<BYTE>(0x80 | ((fixedUpReference & 0x40000) >> 13) | ((fixedUpReference & 0x80000) >> 16) | ((fixedUpReference & 0xe00) >> 9));
                 }
                 else
                 {
@@ -714,7 +714,7 @@ void FixupPrecode::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #ifndef DACCESS_COMPILE
 
-void StubPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
+void StubPrecode::Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -748,7 +748,7 @@ void StubPrecode::Fixup(DataImage *image)
 }
 #endif // FEATURE_NATIVE_IMAGE_GENERATION
 
-void NDirectImportPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
+void NDirectImportPrecode::Init(NDirectImportPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -782,7 +782,7 @@ void NDirectImportPrecode::Fixup(DataImage *image)
 }
 #endif
 
-void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
+void FixupPrecode::Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -915,7 +915,7 @@ Note that ResolveWorkerChainLookupAsmStub currently points directly
 to ResolveWorkerAsmStub; in the future, this could be separate.
 */
 
-void  LookupHolder::Initialize(PCODE resolveWorkerTarget, size_t dispatchToken)
+void  LookupHolder::Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorkerTarget, size_t dispatchToken)
 {
     // Called directly by JITTED code
     // See ResolveWorkerAsmStub
@@ -932,7 +932,7 @@ void  LookupHolder::Initialize(PCODE resolveWorkerTarget, size_t dispatchToken)
     _ASSERTE(4 == LookupStub::entryPointLen);
 }
 
-void  DispatchHolder::Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT)
+void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT)
 {
     // Called directly by JITTED code
     // DispatchHolder._stub._entryPoint(r0:object, r1, r2, r3, r4:IndirectionCell)
@@ -1004,7 +1004,8 @@ void  DispatchHolder::Initialize(PCODE implTarget, PCODE failTarget, size_t expe
     _stub._implTarget = implTarget;
 }
 
-void ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
+void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
+                               PCODE resolveWorkerTarget, PCODE patcherTarget,
                                 size_t dispatchToken, UINT32 hashedToken,
                                 void * cacheAddr, INT32 * counterAddr)
 {
@@ -1980,7 +1981,7 @@ class UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
     return NULL;
 }
 
-void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
+void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam)
 {
     // ldr r12, [pc + 8]
     m_code[0] = 0xf8df;
@@ -1992,19 +1993,22 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
     m_pTargetCode = (TADDR)pTargetCode;
     m_pvSecretParam = (TADDR)pvSecretParam;
 
-    FlushInstructionCache(GetCurrentProcess(),&m_code,sizeof(m_code));
+    FlushInstructionCache(GetCurrentProcess(),&pEntryThunkCodeRX->m_code,sizeof(m_code));
 }
 
 #ifndef DACCESS_COMPILE
 
 void UMEntryThunkCode::Poison()
 {
-    m_pTargetCode = (TADDR)UMEntryThunk::ReportViolation;
+    ExecutableWriterHolder<UMEntryThunkCode> thunkWriterHolder(this, sizeof(UMEntryThunkCode));
+    UMEntryThunkCode *pThisRW = thunkWriterHolder.GetRW();
+
+    pThisRW->m_pTargetCode = (TADDR)UMEntryThunk::ReportViolation;
 
     // ldr r0, [pc + 8]
-    m_code[0] = 0x4802;
+    pThisRW->m_code[0] = 0x4802;
     // nop
-    m_code[1] = 0xbf00;
+    pThisRW->m_code[1] = 0xbf00;
 
     ClrFlushInstructionCache(&m_code,sizeof(m_code));
 }
@@ -2052,7 +2056,7 @@ VOID ResetCurrentContext()
 
 
 #ifdef FEATURE_COMINTEROP
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target)
+void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -2065,16 +2069,17 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target)
         0xf8df, 0xf004
     };
 
-    BYTE *pBuffer = (BYTE*)pCOMMethod - COMMETHOD_CALL_PRESTUB_SIZE;
+    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
+    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
 
-    memcpy(pBuffer, rgCode, sizeof(rgCode));
-    *((PCODE*)(pBuffer + sizeof(rgCode) + 2)) = target;
+    memcpy(pBufferRW, rgCode, sizeof(rgCode));
+    *((PCODE*)(pBufferRW + sizeof(rgCode) + 2)) = target;
 
     // Ensure that the updated instructions get actually written
-    ClrFlushInstructionCache(pBuffer, COMMETHOD_CALL_PRESTUB_SIZE);
+    ClrFlushInstructionCache(pBufferRX, COMMETHOD_CALL_PRESTUB_SIZE);
 
-    _ASSERTE(IS_ALIGNED(pBuffer + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
-             *((PCODE*)(pBuffer + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == target);
+    _ASSERTE(IS_ALIGNED(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
+             *((PCODE*)(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == target);
 }
 #endif // FEATURE_COMINTEROP
 
@@ -2103,14 +2108,17 @@ void MovRegImm(BYTE* p, int reg, TADDR imm)
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
-    BYTE * pStart = (BYTE *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
+    BYTE * pStartRX = (BYTE *)(void*)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
+    ExecutableWriterHolder<BYTE> startWriterHolder(pStartRX, cbAligned); \
+    BYTE * pStart = startWriterHolder.GetRW(); \
+    size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \
     while (p < pStart + cbAligned) { *(WORD *)p = 0xdefe; p += 2; } \
-    ClrFlushInstructionCache(pStart, cbAligned); \
-    return (PCODE)((TADDR)pStart | THUMB_CODE)
+    ClrFlushInstructionCache(pStartRX, cbAligned); \
+    return (PCODE)((TADDR)pStartRX | THUMB_CODE)
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
@@ -2133,7 +2141,7 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCOD
     END_DYNAMIC_HELPER_EMIT();
 }
 
-void DynamicHelpers::EmitHelperWithArg(BYTE*& p, LoaderAllocator * pAllocator, TADDR arg, PCODE target)
+void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
     // mov r1, arg
     MovRegImm(p, 1, arg);
@@ -2152,7 +2160,7 @@ PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR ar
 {
     BEGIN_DYNAMIC_HELPER_EMIT(18);
 
-    EmitHelperWithArg(p, pAllocator, arg, target);
+    EmitHelperWithArg(p, rxOffset, pAllocator, arg, target);
 
     END_DYNAMIC_HELPER_EMIT();
 }
@@ -2308,9 +2316,10 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
 
     GenericHandleArgs * pArgs = (GenericHandleArgs *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(sizeof(GenericHandleArgs), DYNAMIC_HELPER_ALIGNMENT);
-    pArgs->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
-    pArgs->signature = pLookup->signature;
-    pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
+    ExecutableWriterHolder<GenericHandleArgs> argsWriterHolder(pArgs, sizeof(GenericHandleArgs));
+    argsWriterHolder.GetRW()->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
+    argsWriterHolder.GetRW()->signature = pLookup->signature;
+    argsWriterHolder.GetRW()->module = (CORINFO_MODULE_HANDLE)pModule;
 
     WORD slotOffset = (WORD)(dictionaryIndexAndSlot & 0xFFFF) * sizeof(Dictionary*);
 
@@ -2320,7 +2329,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     {
         BEGIN_DYNAMIC_HELPER_EMIT(18);
 
-        EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
+        EmitHelperWithArg(p, rxOffset, pAllocator, (TADDR)pArgs, helperAddress);
 
         END_DYNAMIC_HELPER_EMIT();
     }
@@ -2426,7 +2435,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             *(WORD *)p = 0x4618;
             p += 2;
 
-            EmitHelperWithArg(p, pAllocator, (TADDR)pArgs, helperAddress);
+            EmitHelperWithArg(p, rxOffset, pAllocator, (TADDR)pArgs, helperAddress);
         }
 
         END_DYNAMIC_HELPER_EMIT();

@@ -5,7 +5,6 @@ using System.ComponentModel;
 using System.Collections.Generic;
 using System.Data.ProviderBase;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {

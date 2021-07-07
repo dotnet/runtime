@@ -151,10 +151,10 @@ namespace System.Net.Http.Tests
             headers.Add("Accept-Charset", "utf-8");
             headers.AcceptCharset.Add(new StringWithQualityHeaderValue("iso-8859-5", 0.5));
 
-            foreach (var header in headers.GetHeaderStrings())
+            foreach (var header in headers.NonValidated)
             {
                 Assert.Equal("Accept-Charset", header.Key);
-                Assert.Equal("utf-8, iso-8859-5; q=0.5, invalid value", header.Value);
+                Assert.Equal("utf-8, iso-8859-5; q=0.5, invalid value", header.Value.ToString());
             }
         }
 
@@ -656,10 +656,10 @@ namespace System.Net.Http.Tests
             headers.Add("User-Agent", "custom2/1.1");
             headers.UserAgent.Add(new ProductInfoHeaderValue("(comment)"));
 
-            foreach (var header in headers.GetHeaderStrings())
+            foreach (var header in headers.NonValidated)
             {
                 Assert.Equal("User-Agent", header.Key);
-                Assert.Equal("custom2/1.1 (comment) custom\u4F1A", header.Value);
+                Assert.Equal("custom2/1.1 (comment) custom\u4F1A", header.Value.ToString());
             }
         }
 

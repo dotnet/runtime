@@ -566,6 +566,10 @@ if(FEATURE_COMWRAPPERS OR FEATURE_OBJCMARSHAL)
     if (FEATURE_COMWRAPPERS)
         list(APPEND VM_SOURCES_WKS
             interoplibinterface.cpp
+            rcwrefcache.cpp
+        )
+        list(APPEND VM_HEADERS_WKS
+            rcwrefcache.h
         )
     endif (FEATURE_COMWRAPPERS)
 
@@ -626,7 +630,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         mngstdinterfaces.cpp
         notifyexternals.cpp
         olecontexthelpers.cpp
-        rcwrefcache.cpp
         runtimecallablewrapper.cpp
         stdinterfaces.cpp
         stdinterfaces_wrapper.cpp
@@ -644,7 +647,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         mngstdinterfaces.h
         notifyexternals.h
         olecontexthelpers.h
-        rcwrefcache.h
         runtimecallablewrapper.h
         stdinterfaces.h
         stdinterfaces_internal.h

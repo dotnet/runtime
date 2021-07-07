@@ -2585,3 +2585,209 @@ int64_t GetSigned64Magic(int64_t d, int* shift /*out*/)
 }
 #endif
 }
+
+namespace CheckedOps
+{
+bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned)
+{
+    switch (toType)
+    {
+        case TYP_BYTE:
+            return ((int8_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return (uint8_t)fromValue != fromValue;
+        case TYP_SHORT:
+            return ((int16_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
+        case TYP_USHORT:
+            return (uint16_t)fromValue != fromValue;
+        case TYP_INT:
+            return fromUnsigned && (fromValue < 0);
+        case TYP_UINT:
+        case TYP_ULONG:
+            return !fromUnsigned && (fromValue < 0);
+        case TYP_LONG:
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return false;
+        default:
+            unreached();
+    }
+}
+
+bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigned)
+{
+    switch (toType)
+    {
+        case TYP_BYTE:
+            return ((int8_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return (uint8_t)fromValue != fromValue;
+        case TYP_SHORT:
+            return ((int16_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
+        case TYP_USHORT:
+            return (uint16_t)fromValue != fromValue;
+        case TYP_INT:
+            return ((int32_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
+        case TYP_UINT:
+            return (uint32_t)fromValue != fromValue;
+        case TYP_LONG:
+            return fromUnsigned && (fromValue < 0);
+        case TYP_ULONG:
+            return !fromUnsigned && (fromValue < 0);
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return false;
+        default:
+            unreached();
+    }
+}
+
+//  ________________________________________________
+// |                                                |
+// |  Casting from floating point to integer types  |
+// |________________________________________________|
+//
+// The code below uses the following pattern to determine if an overflow would
+// occur when casting from a floating point type to an integer type:
+//
+//     return !(MIN <= fromValue && fromValue <= MAX);
+//
+// This section will provide some background on how MIN and MAX were derived
+// and why they are in fact the values to use in that comparison.
+//
+// First - edge cases:
+// 1) NaNs - they compare "false" to normal numbers, which MIN and MAX are, making
+//    the condition return "false" as well, which is flipped to true via "!", indicating
+//    overflow - exactly what we want.
+// 2) Infinities - they are outside of range of any normal numbers, making one of the comparisons
+//    always return "false", indicating overflow.
+// 3) Subnormal numbers - have no special behavior with respect to comparisons.
+// 4) Minus zero - compares equal to "+0", which is what we want as it can be safely cast to an integer "0".
+//
+// Binary normal floating point numbers are represented in the following format:
+//
+//     number = sign * (1 + mantissa) * 2^exponent
+//
+// Where "exponent" is a biased binary integer.
+// And "mantissa" is a fixed-point binary fraction of the following form:
+//
+//     mantissa = bits[1] * 2^-1 + bits[2] * 2^-2 + ... + bits[N] * 2^-N
+//
+// Where "N" is the number of digits that depends on the width of floating point type
+// in question. It is equal to "23" for "float"s and to "52" for "double"s.
+//
+// If we did our calculations with real numbers, the condition to check would simply be:
+//
+//     return !((INT_MIN - 1) < fromValue && fromValue < (INT_MAX + 1));
+//
+// This is because casting uses the "round to zero" semantic: "checked((int)((double)int.MaxValue + 0.9))"
+// yields "int.MaxValue" - not an error. Likewise, "checked((int)((double)int.MinValue - 0.9))"
+// results in "int.MinValue". However, "checked((int)((double)int.MaxValue + 1))" will not compile.
+//
+// The problem, of course, is that we are not dealing with real numbers, but rather floating point approximations.
+// At the same time, some real numbers can be represented in the floating point world exactly.
+// It so happens that both "INT_MIN - 1" and "INT_MAX + 1" can satisfy that requirement for most cases.
+// For unsigned integers, where M is the width of the type in bits:
+//
+//     INT_MIN - 1 = 0 - 1 = -2^0 - exactly representable.
+//     INT_MAX + 1 = (2^M - 1) + 1 = 2^M - exactly representable.
+//
+// For signed integers:
+//
+//     INT_MIN - 1 = -(2^(M - 1)) - 1 - not always exactly representable.
+//     INT_MAX + 1 = (2^(M - 1) - 1) + 1 = 2^(M - 1) - exactly representable.
+//
+// So, we have simple values for MIN and MAX in all but the signed MIN case.
+// To find out what value should be used then, the following equation needs to be solved:
+//
+//     -(2^(M - 1)) - 1 = -(2^(M - 1)) * (1 + m)
+//     1 + 1 / 2^(M - 1) = 1 + m
+//     m = 2^(1 - M)
+//
+// In this case "m" is the "mantissa". The result obtained means that we can find the exact
+// value in cases when "|1 - M| <= N" <=> "M <= N + 1" - i. e. the precision is high enough for there to be a position
+// in the fixed point mantissa that could represent the "-1". It is the case for the following combinations of types:
+//
+//     float -> int8 / int16
+//     double -> int8 / int16 / int32
+//
+// For the remaining cases, we could use a value that is the first representable one for the respective type
+// and is less than the infinitely precise MIN: -(1 + 2^-N) * 2^(M - 1).
+// However, a simpler approach is to just use a different comparison.
+// Instead of "MIN < fromValue", we'll do "MIN <= fromValue", where
+// MIN is just "-(2^(M - 1))" - the smallest representable value that can be cast safely.
+// The following table shows the final values and operations for MIN:
+//
+//     | Cast            | MIN                     | Comparison |
+//     |-----------------|-------------------------|------------|
+//     | float -> int8   | -129.0f                 | <          |
+//     | float -> int16  | -32769.0f               | <          |
+//     | float -> int32  | -2147483648.0f          | <=         |
+//     | float -> int64  | -9223372036854775808.0f | <=         |
+//     | double -> int8  | -129.0                  | <          |
+//     | double -> int16 | -32769.0                | <          |
+//     | double -> int32 | -2147483649.0           | <          |
+//     | double -> int64 | -9223372036854775808.0  | <=         |
+//
+// Note: casts from floating point to floating point never overflow.
+
+bool CastFromFloatOverflows(float fromValue, var_types toType)
+{
+    switch (toType)
+    {
+        case TYP_BYTE:
+            return !(-129.0f < fromValue && fromValue < 128.0f);
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return !(-1.0f < fromValue && fromValue < 256.0f);
+        case TYP_SHORT:
+            return !(-32769.0f < fromValue && fromValue < 32768.0f);
+        case TYP_USHORT:
+            return !(-1.0f < fromValue && fromValue < 65536.0f);
+        case TYP_INT:
+            return !(-2147483648.0f <= fromValue && fromValue < 2147483648.0f);
+        case TYP_UINT:
+            return !(-1.0 < fromValue && fromValue < 4294967296.0f);
+        case TYP_LONG:
+            return !(-9223372036854775808.0 <= fromValue && fromValue < 9223372036854775808.0f);
+        case TYP_ULONG:
+            return !(-1.0f < fromValue && fromValue < 18446744073709551616.0f);
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return false;
+        default:
+            unreached();
+    }
+}
+
+bool CastFromDoubleOverflows(double fromValue, var_types toType)
+{
+    switch (toType)
+    {
+        case TYP_BYTE:
+            return !(-129.0 < fromValue && fromValue < 128.0);
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return !(-1.0 < fromValue && fromValue < 256.0);
+        case TYP_SHORT:
+            return !(-32769.0 < fromValue && fromValue < 32768.0);
+        case TYP_USHORT:
+            return !(-1.0 < fromValue && fromValue < 65536.0);
+        case TYP_INT:
+            return !(-2147483649.0 < fromValue && fromValue < 2147483648.0);
+        case TYP_UINT:
+            return !(-1.0 < fromValue && fromValue < 4294967296.0);
+        case TYP_LONG:
+            return !(-9223372036854775808.0 <= fromValue && fromValue < 9223372036854775808.0);
+        case TYP_ULONG:
+            return !(-1.0 < fromValue && fromValue < 18446744073709551616.0);
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return false;
+        default:
+            unreached();
+    }
+}
+}

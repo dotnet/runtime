@@ -14,6 +14,7 @@
     <Compile Include="System\Runtime\InteropServices\BStrWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CallingConventionTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ClassInterfaceAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\NativeMemoryTests.cs" />
     <Compile Include="System\Runtime\InteropServices\NFloatTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CULongTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CLongTests.cs" />

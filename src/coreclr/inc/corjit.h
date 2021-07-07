@@ -396,6 +396,17 @@ public:
         int32_t Other;
     };
 
+    enum class PgoSource
+    {
+        Unknown = 0,    // PGO data source unknown
+        Static = 1,     // PGO data comes from embedded R2R profile data
+        Dynamic = 2,    // PGO data comes from current run
+        Blend = 3,      // PGO data comes from blend of prior runs and current run
+        Text = 4,       // PGO data comes from text file
+        IBC = 5,        // PGO data from classic IBC
+        Sampling= 6,    // PGO data derived from sampling
+    };
+
 #define DEFAULT_UNKNOWN_TYPEHANDLE 1
 #define UNKNOWN_TYPEHANDLE_MIN 1
 #define UNKNOWN_TYPEHANDLE_MAX 33
@@ -412,8 +423,9 @@ public:
             PgoInstrumentationSchema **pSchema,                    // OUT: pointer to the schema table (array) which describes the instrumentation results
                                                                    // (pointer will not remain valid after jit completes).
             uint32_t *                 pCountSchemaItems,          // OUT: pointer to the count of schema items in `pSchema` array.
-            uint8_t **                 pInstrumentationData        // OUT: `*pInstrumentationData` is set to the address of the instrumentation data
+            uint8_t **                 pInstrumentationData,       // OUT: `*pInstrumentationData` is set to the address of the instrumentation data
                                                                    // (pointer will not remain valid after jit completes).
+            PgoSource *                pPgoSource                  // OUT: value describing source of pgo data
             ) = 0;
 
     // Allocate a profile buffer for use in the current process

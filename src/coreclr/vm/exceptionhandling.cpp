@@ -1219,7 +1219,7 @@ lExit: ;
                 invalidRevPInvoke = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
 #else // USE_GC_INFO_DECODER
                 hdrInfo gcHdrInfo;
-                DecodeGCHdrInfo(gcInfoToken, 0, &gcHdrInfo);
+                DecodeGCHdrInfo(codeInfo.GetGCInfoToken(), 0, &gcHdrInfo);
                 invalidRevPInvoke = gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
 #endif // USE_GC_INFO_DECODER
 
@@ -4640,7 +4640,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         invalidRevPInvoke = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
 #else // USE_GC_INFO_DECODER
         hdrInfo gcHdrInfo;
-        DecodeGCHdrInfo(gcInfoToken, 0, &gcHdrInfo);
+        DecodeGCHdrInfo(codeInfo.GetGCInfoToken(), 0, &gcHdrInfo);
         invalidRevPInvoke = gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
 #endif // USE_GC_INFO_DECODER
 

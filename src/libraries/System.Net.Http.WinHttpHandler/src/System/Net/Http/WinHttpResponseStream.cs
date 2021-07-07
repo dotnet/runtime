@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
+#pragma warning disable CA1844 // lack of ReadAsync(Memory) override in .NET Standard 2.1 build
+
 namespace System.Net.Http
 {
     internal sealed class WinHttpResponseStream : Stream
@@ -152,7 +154,7 @@ namespace System.Net.Http
                     Debug.Assert(bytesRead > 0);
 
                     // Write that data out to the output stream
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1 || NETCOREAPP
                     await destination.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
 #else
                     await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);

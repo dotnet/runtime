@@ -11,12 +11,6 @@ namespace System.Text.Json
 {
     internal static partial class JsonHelpers
     {
-        // Members accessed by the serializer when deserializing.
-        public const DynamicallyAccessedMemberTypes MembersAccessedOnRead =
-            DynamicallyAccessedMemberTypes.PublicConstructors |
-            DynamicallyAccessedMemberTypes.PublicProperties |
-            DynamicallyAccessedMemberTypes.PublicFields;
-
         /// <summary>
         /// Returns the span for the given reader.
         /// </summary>

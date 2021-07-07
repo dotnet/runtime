@@ -126,6 +126,7 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.DataView'/> class with the
         ///    specified <see cref='System.Data.DataTable'/>.
         /// </summary>
+        [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
         public DataView(DataTable table, string? RowFilter, string? Sort, DataViewRowState RowState)
         {
             GC.SuppressFinalize(this);
@@ -314,6 +315,7 @@ namespace System.Data
                 DataExpression? expression = (_rowFilter as DataExpression);
                 return (expression == null ? "" : expression.Expression); // CONSIDER: return optimized expression here
             }
+            [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (value == null)
@@ -577,6 +579,8 @@ namespace System.Data
             _fInitInProgress = true;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Warning related to RowFilter has already been shown when RowFilter was delay set.")]
         public void EndInit()
         {
             if (_delayedTable != null && _delayedTable.fInitInProgress)
@@ -961,6 +965,7 @@ namespace System.Data
         bool IBindingList.SupportsSearching => true;
         bool IBindingList.SupportsSorting => true;
         bool IBindingList.IsSorted => Sort.Length != 0;
+
         PropertyDescriptor IBindingList.SortProperty => GetSortProperty();
 
         internal PropertyDescriptor GetSortProperty()
@@ -1123,8 +1128,10 @@ namespace System.Data
             return resultString.ToString();
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
+        // TODO: Enable after System.ComponentModel.TypeConverter is annotated
 #nullable disable
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Safe because filter is set to empty string.")]
         void IBindingListView.RemoveFilter()
         {
             DataCommonEventSource.Log.Trace("<ds.DataView.RemoveFilter|API> {0}", ObjectID);
@@ -1516,7 +1523,7 @@ namespace System.Data
                     {
                         // sdub: check that we will not do unnesasary operation here if dataViewSetting.Sort == this.Sort ...
                         _applyDefaultSort = dataViewSetting.ApplyDefaultSort;
-                        DataExpression newFilter = new DataExpression(_table, dataViewSetting.RowFilter);
+                        DataExpression newFilter = CreateDataExpressionFromDataViewSettings(dataViewSetting);
                         SetIndex(dataViewSetting.Sort, dataViewSetting.RowStateFilter, newFilter);
                     }
                     catch (Exception e) when (Common.ADP.IsCatchableExceptionType(e))
@@ -1530,6 +1537,14 @@ namespace System.Data
                     SetIndex("", DataViewRowState.CurrentRows, null);
                 }
             }
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "RowFilter is marked as unsafe because it can be used in DataExpression so that we only display warning when user is assigning an expression" +
+                " which means that in here we're either assigning empty filter which is safe or user has already seen a warning.")]
+        private DataExpression CreateDataExpressionFromDataViewSettings(DataViewSetting dataViewSetting)
+        {
+            return new DataExpression(_table, dataViewSetting.RowFilter);
         }
 
         internal virtual void SetIndex(string newSort, DataViewRowState newRowStates, IFilter? newRowFilter)

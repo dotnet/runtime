@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Security.Principal;
@@ -1260,7 +1261,7 @@ namespace System.Diagnostics.Eventing.Reader
                 return new EventLogHandle(val.Handle, true);
         }
 
-        public static Array ConvertToArray<T>(UnsafeNativeMethods.EvtVariant val, int size) where T : struct
+        public static Array ConvertToArray<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]T>(UnsafeNativeMethods.EvtVariant val, int size) where T : struct
         {
             IntPtr ptr = val.Reference;
             if (ptr == IntPtr.Zero)

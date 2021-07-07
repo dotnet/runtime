@@ -22,10 +22,10 @@ namespace System.ComponentModel.Composition.Hosting
     public partial class DirectoryCatalog : ComposablePartCatalog, INotifyComposablePartCatalogChanged, ICompositionElement
     {
         private static bool IsWindows =>
-#if NETSTANDARD || NETCOREAPP2_0
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-#else
+#if NETCOREAPP_5_0_OR_GREATER
             OperatingSystem.IsWindows();
+#else
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 #endif
 
         private readonly Lock _thisLock = new Lock();

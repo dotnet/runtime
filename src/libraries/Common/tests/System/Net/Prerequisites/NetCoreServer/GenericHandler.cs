@@ -13,7 +13,7 @@ namespace NetCoreServer
         // Must have constructor with this signature, otherwise exception at run time.
         public GenericHandler(RequestDelegate next)
         {
-            // This is an HTTP Handler, so no need to store next.
+            // This catch all HTTP Handler, so no need to store next.
         }
 
         public async Task Invoke(HttpContext context)

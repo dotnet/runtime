@@ -24,7 +24,10 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
         {
-            throw new InvalidOperationException();
+            Debug.Assert(value?.GetType() == typeof(object));
+
+            writer.WriteStartObject();
+            writer.WriteEndObject();
         }
 
         internal override object ReadWithQuotes(ref Utf8JsonReader reader)

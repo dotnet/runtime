@@ -46,6 +46,8 @@ namespace System
         private int caught_in_unmanaged;
         #endregion
 
+        private bool HasBeenThrown => _traceIPs != null;
+
         public MethodBase? TargetSite
         {
             get
@@ -56,32 +58,6 @@ namespace System
 
                 return null;
             }
-        }
-
-        public virtual string? StackTrace
-        {
-            get
-            {
-                string? stackTraceString = _stackTraceString;
-                string? remoteStackTraceString = _remoteStackTraceString;
-
-                if (stackTraceString != null)
-                {
-                    return remoteStackTraceString + stackTraceString;
-                }
-                if (_traceIPs == null)
-                {
-                    return remoteStackTraceString;
-                }
-
-                return remoteStackTraceString + GetStackTrace();
-            }
-        }
-
-        private string GetStackTrace()
-        {
-            // Do not include a trailing newline for backwards compatibility
-            return new StackTrace(this, fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
         }
 
         internal DispatchState CaptureDispatchState()
@@ -160,20 +136,5 @@ namespace System
         private static IDictionary CreateDataContainer() => new ListDictionaryInternal();
 
         private static string? SerializationWatsonBuckets => null;
-
-        private string? SerializationStackTraceString
-        {
-            get
-            {
-                string? stackTraceString = _stackTraceString;
-
-                if (stackTraceString == null && _traceIPs != null)
-                {
-                    stackTraceString = GetStackTrace();
-                }
-
-                return stackTraceString;
-            }
-        }
     }
 }

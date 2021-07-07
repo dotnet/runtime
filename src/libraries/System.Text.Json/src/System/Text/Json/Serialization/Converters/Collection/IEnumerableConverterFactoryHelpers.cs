@@ -40,10 +40,9 @@ namespace System.Text.Json.Serialization
         private const string ImmutableSortedDictionaryTypeName = "System.Collections.Immutable.ImmutableSortedDictionary";
 
         private const string CreateRangeMethodName = "CreateRange";
-        private const string CreateRangeMethodNameForEnumerable = "CreateRange`1";
-        private const string CreateRangeMethodNameForDictionary = "CreateRange`2";
 
-        private const string ImmutableCollectionsAssembly = "System.Collections.Immutable";
+        // Don't use DynamicDependency attributes to the Immutable Collection types so they can be trimmed in applications that don't use Immutable Collections.
+        internal const string ImmutableConvertersUnreferencedCodeMessage = "System.Collections.Immutable converters use Reflection to find and create Immutable Collection types, which requires unreferenced code.";
 
         internal static Type? GetCompatibleGenericBaseClass(this Type type, Type baseType)
         {
@@ -151,16 +150,7 @@ namespace System.Text.Json.Serialization
             }
         }
 
-        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableArrayTypeName, ImmutableCollectionsAssembly)]
-        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableListTypeName, ImmutableCollectionsAssembly)]
-        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableStackTypeName, ImmutableCollectionsAssembly)]
-        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableQueueTypeName, ImmutableCollectionsAssembly)]
-        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableSortedSetTypeName, ImmutableCollectionsAssembly)]
-        [DynamicDependency(CreateRangeMethodNameForEnumerable, ImmutableHashSetTypeName, ImmutableCollectionsAssembly)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "The CreateRange method is preserved by the DynamicDependency attribute.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-            Justification = "Immutable collections don't have trimming annotations.")]
+        [RequiresUnreferencedCode(ImmutableConvertersUnreferencedCodeMessage)]
         public static MethodInfo GetImmutableEnumerableCreateRangeMethod(this Type type, Type elementType)
         {
             Type? constructingType = GetImmutableEnumerableConstructingType(type);
@@ -183,12 +173,7 @@ namespace System.Text.Json.Serialization
             return null!;
         }
 
-        [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableDictionaryTypeName, ImmutableCollectionsAssembly)]
-        [DynamicDependency(CreateRangeMethodNameForDictionary, ImmutableSortedDictionaryTypeName, ImmutableCollectionsAssembly)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "The CreateRange method is preserved by the DynamicDependency attribute.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-            Justification = "Immutable collections don't have trimming annotations.")]
+        [RequiresUnreferencedCode(ImmutableConvertersUnreferencedCodeMessage)]
         public static MethodInfo GetImmutableDictionaryCreateRangeMethod(this Type type, Type keyType, Type valueType)
         {
             Type? constructingType = GetImmutableDictionaryConstructingType(type);
@@ -211,9 +196,7 @@ namespace System.Text.Json.Serialization
             return null!;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Json can't take a direct dependency on Collections.Immutable." +
-            "The types used here will be preserved by the DynamicDependency attributes on the only caller - GetImmutableEnumerableCreateRangeMethod.")]
+        [RequiresUnreferencedCode(ImmutableConvertersUnreferencedCodeMessage)]
         private static Type? GetImmutableEnumerableConstructingType(Type type)
         {
             Debug.Assert(type.IsImmutableEnumerableType());
@@ -257,9 +240,7 @@ namespace System.Text.Json.Serialization
             return underlyingType.Assembly.GetType(constructingTypeName);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Json can't take a direct dependency on Collections.Immutable." +
-            "The types used here will be preserved by the DynamicDependency attributes on the only caller - GetImmutableDictionaryCreateRangeMethod.")]
+        [RequiresUnreferencedCode(ImmutableConvertersUnreferencedCodeMessage)]
         private static Type? GetImmutableDictionaryConstructingType(Type type)
         {
             Debug.Assert(type.IsImmutableDictionaryType());

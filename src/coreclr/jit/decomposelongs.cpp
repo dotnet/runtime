@@ -42,7 +42,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 //
 void DecomposeLongs::PrepareForDecomposition()
 {
-    m_compiler->lvaPromoteLongVars();
+    PromoteLongVars();
 }
 
 //------------------------------------------------------------------------
@@ -101,7 +101,7 @@ void DecomposeLongs::DecomposeRangeHelper()
 {
     assert(m_range != nullptr);
 
-    GenTree* node = Range().FirstNonPhiNode();
+    GenTree* node = Range().FirstNode();
     while (node != nullptr)
     {
         node = DecomposeNode(node);
@@ -114,7 +114,7 @@ void DecomposeLongs::DecomposeRangeHelper()
 // DecomposeNode: Decompose long-type trees into lower and upper halves.
 //
 // Arguments:
-//    use - the LIR::Use object for the def that needs to be decomposed.
+//    tree - the tree that will, if needed, be decomposed.
 //
 // Return Value:
 //    The next node to process.
@@ -279,6 +279,13 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
     }
 #endif
 
+    // When casting from a decomposed long to a smaller integer we can discard the high part.
+    if (m_compiler->opts.OptimizationEnabled() && !use.IsDummyUse() && use.User()->OperIs(GT_CAST) &&
+        use.User()->TypeIs(TYP_INT) && use.Def()->OperIs(GT_LONG))
+    {
+        nextNode = OptimizeCastFromDecomposedLong(use.User()->AsCast(), nextNode);
+    }
+
     return nextNode;
 }
 
@@ -356,6 +363,7 @@ GenTree* DecomposeLongs::DecomposeLclVar(LIR::Use& use)
     }
     else
     {
+        m_compiler->lvaSetVarDoNotEnregister(varNum DEBUGARG(Compiler::DNER_LocalField));
         loResult->SetOper(GT_LCL_FLD);
         loResult->AsLclFld()->SetLclOffs(0);
         loResult->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
@@ -408,8 +416,7 @@ GenTree* DecomposeLongs::DecomposeStoreLclVar(LIR::Use& use)
 
     GenTree* tree = use.Def();
     GenTree* rhs  = tree->gtGetOp1();
-    if ((rhs->OperGet() == GT_PHI) || (rhs->OperGet() == GT_CALL) ||
-        ((rhs->OperGet() == GT_MUL_LONG) && (rhs->gtFlags & GTF_MUL_64RSLT) != 0))
+    if (rhs->OperIs(GT_CALL) || (rhs->OperIs(GT_MUL_LONG) && (rhs->gtFlags & GTF_MUL_64RSLT) != 0))
     {
         // GT_CALLs are not decomposed, so will not be converted to GT_LONG
         // GT_STORE_LCL_VAR = GT_CALL are handled in genMultiRegCallStoreToLocal
@@ -601,12 +608,12 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             {
                 //
                 // This int->long cast is used by a GT_MUL that will be transformed by DecomposeMul into a
-                // GT_LONG_MUL and as a result the high operand produced by the cast will become dead.
+                // GT_MUL_LONG and as a result the high operand produced by the cast will become dead.
                 // Skip cast decomposition so DecomposeMul doesn't need to bother with dead code removal,
                 // especially in the case of sign extending casts that also introduce new lclvars.
                 //
 
-                assert((use.User()->gtFlags & GTF_MUL_64RSLT) != 0);
+                assert(use.User()->Is64RsltMul());
 
                 skipDecomposition = true;
             }
@@ -1534,19 +1541,29 @@ GenTree* DecomposeLongs::DecomposeMul(LIR::Use& use)
 {
     assert(use.IsInitialized());
 
-    GenTree*   tree = use.Def();
-    genTreeOps oper = tree->OperGet();
+    GenTree* tree = use.Def();
 
-    assert(oper == GT_MUL);
-    assert((tree->gtFlags & GTF_MUL_64RSLT) != 0);
+    assert(tree->OperIs(GT_MUL));
+    assert(tree->Is64RsltMul());
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    // We expect both operands to be int->long casts. DecomposeCast specifically
-    // ignores such casts when they are used by GT_MULs.
-    assert((op1->OperGet() == GT_CAST) && (op1->TypeGet() == TYP_LONG));
-    assert((op2->OperGet() == GT_CAST) && (op2->TypeGet() == TYP_LONG));
+    assert(op1->TypeIs(TYP_LONG) && op2->TypeIs(TYP_LONG));
+
+    // We expect the first operand to be an int->long cast.
+    // DecomposeCast specifically ignores such casts when they are used by GT_MULs.
+    assert(op1->OperIs(GT_CAST));
+
+    // The second operand can be a cast or a constant.
+    if (!op2->OperIs(GT_CAST))
+    {
+        assert(op2->OperIs(GT_LONG));
+        assert(op2->gtGetOp1()->IsIntegralConst());
+        assert(op2->gtGetOp2()->IsIntegralConst());
+
+        Range().Remove(op2->gtGetOp2());
+    }
 
     Range().Remove(op1);
     Range().Remove(op2);
@@ -1785,6 +1802,100 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
 #endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
+// OptimizeCastFromDecomposedLong: optimizes a cast from GT_LONG by discarding
+// the high part of the source and, if the cast is to INT, the cast node itself.
+// Accounts for side effects and marks nodes unused as neccessary.
+//
+// Only accepts casts to integer types that are not long.
+// Does not optimize checked casts.
+//
+// Arguments:
+//    cast     - the cast tree that has a GT_LONG node as its operand.
+//    nextNode - the next candidate for decomposition.
+//
+// Return Value:
+//    The next node to process in DecomposeRange: "nextNode->gtNext" if
+//    "cast == nextNode", simply "nextNode" otherwise.
+//
+// Notes:
+//    Because "nextNode" usually is "cast", and this method may remove "cast"
+//    from the linear order, it needs to return the updated "nextNode". Instead
+//    of receiving it as an argument, it could assume that "nextNode" is always
+//    "cast->CastOp()->gtNext", but not making that assumption seems better.
+//
+GenTree* DecomposeLongs::OptimizeCastFromDecomposedLong(GenTreeCast* cast, GenTree* nextNode)
+{
+    GenTreeOp* src     = cast->CastOp()->AsOp();
+    var_types  dstType = cast->CastToType();
+
+    assert(src->OperIs(GT_LONG));
+    assert(genActualType(dstType) == TYP_INT);
+
+    if (cast->gtOverflow())
+    {
+        return nextNode;
+    }
+
+    GenTree* loSrc = src->gtGetOp1();
+    GenTree* hiSrc = src->gtGetOp2();
+
+    JITDUMP("Optimizing a truncating cast [%06u] from decomposed LONG [%06u]\n", cast->gtTreeID, src->gtTreeID);
+    INDEBUG(GenTree* treeToDisplay = cast);
+
+    // TODO-CQ: we could go perform this removal transitively.
+    // See also identical code in shift decomposition.
+    if ((hiSrc->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)) == 0)
+    {
+        JITDUMP("Removing the HI part of [%06u] and marking its operands unused:\n", src->gtTreeID);
+        DISPNODE(hiSrc);
+        Range().Remove(hiSrc, /* markOperandsUnused */ true);
+    }
+    else
+    {
+        JITDUMP("The HI part of [%06u] has side effects, marking it unused\n", src->gtTreeID);
+        hiSrc->SetUnusedValue();
+    }
+
+    JITDUMP("Removing the LONG source:\n");
+    DISPNODE(src);
+    Range().Remove(src);
+
+    if (varTypeIsSmall(dstType))
+    {
+        JITDUMP("Cast is to a small type, keeping it, the new source is [%06u]\n", loSrc->gtTreeID);
+        cast->CastOp() = loSrc;
+    }
+    else
+    {
+        LIR::Use useOfCast;
+        if (Range().TryGetUse(cast, &useOfCast))
+        {
+            useOfCast.ReplaceWith(m_compiler, loSrc);
+        }
+        else
+        {
+            loSrc->SetUnusedValue();
+        }
+
+        if (nextNode == cast)
+        {
+            nextNode = nextNode->gtNext;
+        }
+
+        INDEBUG(treeToDisplay = loSrc);
+        JITDUMP("Removing the cast:\n");
+        DISPNODE(cast);
+
+        Range().Remove(cast);
+    }
+
+    JITDUMP("Final result:\n")
+    DISPTREERANGE(Range(), treeToDisplay);
+
+    return nextNode;
+}
+
+//------------------------------------------------------------------------
 // StoreNodeToVar: Check if the user is a STORE_LCL_VAR, and if it isn't,
 // store the node to a var. Then decompose the new LclVar.
 //
@@ -1954,4 +2065,104 @@ genTreeOps DecomposeLongs::GetLoOper(genTreeOps oper)
     }
 }
 
-#endif // !TARGET_64BIT
+//------------------------------------------------------------------------
+// PromoteLongVars: "Struct promote" all register candidate longs as if they are structs of two ints.
+//
+// Arguments:
+//    None.
+//
+// Return Value:
+//    None.
+//
+void DecomposeLongs::PromoteLongVars()
+{
+    if (!m_compiler->compEnregLocals())
+    {
+        return;
+    }
+
+    // The lvaTable might grow as we grab temps. Make a local copy here.
+    unsigned startLvaCount = m_compiler->lvaCount;
+    for (unsigned lclNum = 0; lclNum < startLvaCount; lclNum++)
+    {
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+        if (!varTypeIsLong(varDsc))
+        {
+            continue;
+        }
+        if (varDsc->lvDoNotEnregister)
+        {
+            continue;
+        }
+        if (varDsc->lvRefCnt() == 0)
+        {
+            continue;
+        }
+        if (varDsc->lvIsStructField)
+        {
+            continue;
+        }
+        if (m_compiler->fgNoStructPromotion)
+        {
+            continue;
+        }
+        if (m_compiler->fgNoStructParamPromotion && varDsc->lvIsParam)
+        {
+            continue;
+        }
+
+        assert(!varDsc->lvIsMultiRegArgOrRet());
+        varDsc->lvFieldCnt      = 2;
+        varDsc->lvFieldLclStart = m_compiler->lvaCount;
+        varDsc->lvPromoted      = true;
+        varDsc->lvContainsHoles = false;
+
+        JITDUMP("\nPromoting long local V%02u:", lclNum);
+
+        bool isParam = varDsc->lvIsParam;
+
+        for (unsigned index = 0; index < 2; ++index)
+        {
+            // Grab the temp for the field local.
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef DEBUG
+            char buf[200];
+            sprintf_s(buf, sizeof(buf), "%s V%02u.%s (fldOffset=0x%x)", "field", lclNum, index == 0 ? "lo" : "hi",
+                      index * 4);
+
+            // We need to copy 'buf' as lvaGrabTemp() below caches a copy to its argument.
+            size_t len  = strlen(buf) + 1;
+            char*  bufp = m_compiler->getAllocator(CMK_DebugOnly).allocate<char>(len);
+            strcpy_s(bufp, len, buf);
+#endif
+
+            unsigned varNum =
+                m_compiler->lvaGrabTemp(false DEBUGARG(bufp)); // Lifetime of field locals might span multiple BBs, so
+                                                               // they are long lifetime temps.
+
+            LclVarDsc* fieldVarDsc       = m_compiler->lvaGetDesc(varNum);
+            fieldVarDsc->lvType          = TYP_INT;
+            fieldVarDsc->lvExactSize     = genTypeSize(TYP_INT);
+            fieldVarDsc->lvIsStructField = true;
+            fieldVarDsc->lvFldOffset     = (unsigned char)(index * genTypeSize(TYP_INT));
+            fieldVarDsc->lvFldOrdinal    = (unsigned char)index;
+            fieldVarDsc->lvParentLcl     = lclNum;
+            // Currently we do not support enregistering incoming promoted aggregates with more than one field.
+            if (isParam)
+            {
+                fieldVarDsc->lvIsParam = true;
+                m_compiler->lvaSetVarDoNotEnregister(varNum DEBUGARG(Compiler::DNER_LongParamField));
+            }
+        }
+    }
+
+#ifdef DEBUG
+    if (m_compiler->verbose)
+    {
+        printf("\nlvaTable after PromoteLongVars\n");
+        m_compiler->lvaTableDump();
+    }
+#endif // DEBUG
+}
+#endif // !defined(TARGET_64BIT)

@@ -166,13 +166,11 @@ def generateClrEventPipeWriteEventsImpl(
             WriteEventImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
 
     # EventPipeProvider and EventPipeEvent initialization
-    callbackName = ""
+    callbackName = 'EventPipeEtwCallback' + providerPrettyName
     createProviderFunc = ""
     if runtimeFlavor.coreclr:
-        callbackName = 'EventPipeEtwCallback' + providerPrettyName
         createProviderFunc = "EventPipeAdapter::CreateProvider"
     elif runtimeFlavor.mono:
-        callbackName = "NULL"
         createProviderFunc = "create_provider"
 
     eventPipeCallbackCastExpr = ""
@@ -181,6 +179,8 @@ def generateClrEventPipeWriteEventsImpl(
     else:
         eventPipeCallbackCastExpr = "(EventPipeCallback)"
 
+    if runtimeFlavor.mono:
+        WriteEventImpl.append("void " + callbackName + "(const uint8_t *, unsigned long, uint8_t, uint64_t,	uint64_t, EventFilterDescriptor *, void *);\n\n")
 
     if extern: WriteEventImpl.append('extern "C" ')
     WriteEventImpl.append(

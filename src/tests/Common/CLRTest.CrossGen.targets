@@ -37,7 +37,7 @@ WARNING:   When setting properties based on their current state (for example:
         <![CDATA[
 
 if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
-    export RunCrossGen=
+    unset RunCrossGen
     export RunCrossGen2=1
     export CompositeBuildMode=1
 fi

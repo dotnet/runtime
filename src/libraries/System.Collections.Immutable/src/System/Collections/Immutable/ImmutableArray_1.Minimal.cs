@@ -132,7 +132,6 @@ namespace System.Collections.Immutable
             }
         }
 
-#if !NETSTANDARD1_0
         /// <summary>
         /// Gets a read-only reference to the element at the specified index in the read-only list.
         /// </summary>
@@ -147,7 +146,6 @@ namespace System.Collections.Immutable
             // of removing array bounds checking to work.
             return ref this.array![index];
         }
-#endif
 
         /// <summary>
         /// Gets a value indicating whether this collection is empty.

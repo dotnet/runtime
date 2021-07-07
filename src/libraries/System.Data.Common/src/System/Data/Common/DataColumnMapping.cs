@@ -71,13 +71,13 @@ namespace System.Data.Common
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public DataColumn? GetDataColumnBySchemaAction(DataTable dataTable, Type? dataType, MissingSchemaAction schemaAction)
+        public DataColumn? GetDataColumnBySchemaAction(DataTable dataTable, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type? dataType, MissingSchemaAction schemaAction)
         {
             return GetDataColumnBySchemaAction(SourceColumn, DataSetColumn, dataTable, dataType, schemaAction);
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public static DataColumn? GetDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, DataTable dataTable, Type? dataType, MissingSchemaAction schemaAction)
+        public static DataColumn? GetDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, DataTable dataTable, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type? dataType, MissingSchemaAction schemaAction)
         {
             if (null == dataTable)
             {
@@ -112,7 +112,7 @@ namespace System.Data.Common
             return CreateDataColumnBySchemaAction(sourceColumn, dataSetColumn, dataTable, dataType, schemaAction);
         }
 
-        internal static DataColumn? CreateDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, DataTable dataTable, Type? dataType, MissingSchemaAction schemaAction)
+        internal static DataColumn? CreateDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, DataTable dataTable, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type? dataType, MissingSchemaAction schemaAction)
         {
             Debug.Assert(dataTable != null, "Should not call with a null DataTable");
             if (string.IsNullOrEmpty(dataSetColumn))

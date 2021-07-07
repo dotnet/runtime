@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -21,6 +22,49 @@ internal static class Utils
         return reader.ReadToEnd();
     }
 
+    public static (int exitCode, string output) RunShellCommand(string command,
+                                        IDictionary<string, string> envVars,
+                                        string workingDir,
+                                        MessageImportance debugMessageImportance=MessageImportance.Low)
+    {
+        string scriptFileName = CreateTemporaryBatchFile(command);
+        (string shell, string args) = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                                                    ? ("cmd", $"/c \"{scriptFileName}\"")
+                                                    : ("/bin/sh", $"\"{scriptFileName}\"");
+
+        Logger?.LogMessage(debugMessageImportance, $"Running {command} via script {scriptFileName}:");
+        Logger?.LogMessage(debugMessageImportance, File.ReadAllText(scriptFileName));
+
+        return TryRunProcess(shell,
+                             args,
+                             envVars,
+                             workingDir,
+                             silent: false,
+                             debugMessageImportance);
+
+        static string CreateTemporaryBatchFile(string command)
+        {
+            string extn = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".cmd" : ".sh";
+            string file = Path.Combine(Path.GetTempPath(), $"tmp{Guid.NewGuid():N}{extn}");
+
+            using StreamWriter sw = new(file);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                sw.WriteLine("setlocal");
+                sw.WriteLine("set errorlevel=dummy");
+                sw.WriteLine("set errorlevel=");
+            }
+            else
+            {
+                // Use sh rather than bash, as not all 'nix systems necessarily have Bash installed
+                sw.WriteLine("#!/bin/sh");
+            }
+
+            sw.WriteLine(command);
+            return file;
+        }
+    }
+
     public static string RunProcess(
         string path,
         string args = "",
@@ -28,12 +72,32 @@ internal static class Utils
         string? workingDir = null,
         bool ignoreErrors = false,
         bool silent = true,
-        MessageImportance outputMessageImportance=MessageImportance.High,
         MessageImportance debugMessageImportance=MessageImportance.High)
     {
-        LogInfo($"Running: {path} {args}", debugMessageImportance);
+        (int exitCode, string output) = TryRunProcess(
+                                            path,
+                                            args,
+                                            envVars,
+                                            workingDir,
+                                            silent,
+                                            debugMessageImportance);
+
+        if (exitCode != 0 && !ignoreErrors)
+            throw new Exception("Error: Process returned non-zero exit code: " + output);
+
+        return output;
+    }
+
+    public static (int, string) TryRunProcess(
+        string path,
+        string args = "",
+        IDictionary<string, string>? envVars = null,
+        string? workingDir = null,
+        bool silent = true,
+        MessageImportance debugMessageImportance=MessageImportance.High)
+    {
+        Logger?.LogMessage(debugMessageImportance, $"Running: {path} {args}");
         var outputBuilder = new StringBuilder();
-        var errorBuilder = new StringBuilder();
         var processStartInfo = new ProcessStartInfo
         {
             FileName = path,
@@ -47,7 +111,7 @@ internal static class Utils
         if (workingDir != null)
             processStartInfo.WorkingDirectory = workingDir;
 
-        LogInfo($"Using working directory: {workingDir ?? Environment.CurrentDirectory}", debugMessageImportance);
+        Logger?.LogMessage(debugMessageImportance, $"Using working directory: {workingDir ?? Environment.CurrentDirectory}");
 
         if (envVars != null)
         {
@@ -69,37 +133,55 @@ internal static class Utils
         {
             lock (s_SyncObj)
             {
+                if (string.IsNullOrEmpty(e.Data))
+                    return;
+
                 if (!silent)
-                {
                     LogWarning(e.Data);
-                    outputBuilder.AppendLine(e.Data);
-                }
-                errorBuilder.AppendLine(e.Data);
+                outputBuilder.AppendLine(e.Data);
             }
         };
         process.OutputDataReceived += (sender, e) =>
         {
             lock (s_SyncObj)
             {
+                if (string.IsNullOrEmpty(e.Data))
+                    return;
+
                 if (!silent)
-                {
-                    LogInfo(e.Data, outputMessageImportance);
-                    outputBuilder.AppendLine(e.Data);
-                }
+                    Logger?.LogMessage(debugMessageImportance, e.Data);
+                outputBuilder.AppendLine(e.Data);
             }
         };
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         process.WaitForExit();
 
-        if (process.ExitCode != 0)
+        Logger?.LogMessage(debugMessageImportance, $"Exit code: {process.ExitCode}");
+        return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
+    }
+
+    internal static string CreateTemporaryBatchFile(string command)
+    {
+        string extn = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".cmd" : ".sh";
+        string file = Path.Combine(Path.GetTempPath(), $"tmp{Guid.NewGuid():N}{extn}");
+
+        using StreamWriter sw = new(file);
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            Logger?.LogMessage(MessageImportance.High, $"Exit code: {process.ExitCode}");
-            if (!ignoreErrors)
-                throw new Exception("Error: Process returned non-zero exit code: " + errorBuilder);
+                sw.WriteLine("setlocal");
+                sw.WriteLine("set errorlevel=dummy");
+                sw.WriteLine("set errorlevel=");
+        }
+        else
+        {
+            // Use sh rather than bash, as not all 'nix systems necessarily have Bash installed
+            sw.WriteLine("#!/bin/sh");
         }
 
-        return outputBuilder.ToString().Trim('\r', '\n');
+        sw.WriteLine(command);
+
+        return file;
     }
 
 #if NETCOREAPP

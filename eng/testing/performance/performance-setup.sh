@@ -29,6 +29,7 @@ wasm_runtime_loc=
 using_wasm=false
 use_latest_dotnet=false
 logical_machine=
+javascript_engine="v8"
 
 while (($# > 0)); do
   lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
@@ -75,6 +76,10 @@ while (($# > 0)); do
       ;;
     --buildnumber)
       build_number=$2
+      shift 2
+      ;;
+    --javascriptengine)
+      javascript_engine=$2
       shift 2
       ;;
     --kind)
@@ -224,6 +229,9 @@ fi
 
 if [[ "$wasm_runtime_loc" != "" ]]; then
     configurations="CompilationMode=wasm RunKind=$kind"
+    if [[ "$javascript_engine" == "javascriptcore" ]]; then
+      configurations="$configurations JSEngine=javascriptcore"
+    fi
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoInterpreter NoWASM NoMono"
 fi
 
@@ -256,7 +264,7 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     using_wasm=true
     wasm_dotnet_path=$payload_directory/dotnet-wasm
     mv $wasm_runtime_loc $wasm_dotnet_path
-    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/v8 --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
 fi
 
 if [[ "$mono_dotnet" != "" ]] && [[ "$monoaot" == "false" ]]; then

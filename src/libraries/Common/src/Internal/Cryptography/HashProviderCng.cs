@@ -116,7 +116,7 @@ namespace Internal.Cryptography
                 {
                     byte[] key = _key;
                     _key = null;
-                    Array.Clear(key, 0, key.Length);
+                    Array.Clear(key);
                 }
             }
         }

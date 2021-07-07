@@ -337,21 +337,24 @@ namespace System.IO
             /// <param name="directoryName">The new directory path to monitor, relative to the root.</param>
             private void AddDirectoryWatchUnlocked(WatchedDirectory? parent, string directoryName)
             {
-                string fullPath = parent != null ? parent.GetPath(false, directoryName) : directoryName;
+                bool hasParent = parent != null;
+                string fullPath = hasParent ? parent!.GetPath(false, directoryName) : directoryName;
 
                 // inotify_add_watch will fail if this is a symlink, so check that we didn't get a symlink
-                Interop.Sys.FileStatus status = default(Interop.Sys.FileStatus);
-                if ((Interop.Sys.LStat(fullPath, out status) == 0) &&
+                // with the exception of the watched directory where we try to dereference the path.
+                if (hasParent &&
+                    (Interop.Sys.LStat(fullPath, out Interop.Sys.FileStatus status) == 0) &&
                     ((status.Mode & (uint)Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK))
                 {
                     return;
                 }
 
                 // Add a watch for the full path.  If the path is already being watched, this will return
-                // the existing descriptor.  This works even in the case of a rename. We also add the DONT_FOLLOW
+                // the existing descriptor.  This works even in the case of a rename. We also add the DONT_FOLLOW (for subdirectories only)
                 // and EXCL_UNLINK flags to keep parity with Windows where we don't pickup symlinks or unlinked
                 // files (which don't exist in Windows)
-                int wd = Interop.Sys.INotifyAddWatch(_inotifyHandle, fullPath, (uint)(this._watchFilters | Interop.Sys.NotifyEvents.IN_DONT_FOLLOW | Interop.Sys.NotifyEvents.IN_EXCL_UNLINK));
+                uint mask = (uint)(_watchFilters | Interop.Sys.NotifyEvents.IN_EXCL_UNLINK | (hasParent ? Interop.Sys.NotifyEvents.IN_DONT_FOLLOW : 0));
+                int wd = Interop.Sys.INotifyAddWatch(_inotifyHandle, fullPath, mask);
                 if (wd == -1)
                 {
                     // If we get an error when trying to add the watch, don't let that tear down processing.  Instead,
@@ -400,9 +403,9 @@ namespace System.IO
                         }
 
                         directoryEntry.Parent = parent;
-                        if (parent != null)
+                        if (hasParent)
                         {
-                            parent.InitializedChildren.Add (directoryEntry);
+                            parent!.InitializedChildren.Add(directoryEntry);
                         }
                     }
                     directoryEntry.Name = directoryName;
@@ -416,9 +419,9 @@ namespace System.IO
                         WatchDescriptor = wd,
                         Name = directoryName
                     };
-                    if (parent != null)
+                    if (hasParent)
                     {
-                        parent.InitializedChildren.Add (directoryEntry);
+                        parent!.InitializedChildren.Add(directoryEntry);
                     }
                     _wdToPathMap.Add(wd, directoryEntry);
                     isNewDirectory = true;

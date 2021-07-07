@@ -112,5 +112,24 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(@"""1.2.3.4""", JsonSerializer.Serialize(version));
             }
         }
+
+        [Theory]
+        [InlineData("1:59:59", "01:59:59")]
+        [InlineData("23:59:59")]
+        [InlineData("23:59:59.9", "23:59:59.9000000")]
+        [InlineData("23:59:59.9999999")]
+        [InlineData("1.23:59:59")]
+        [InlineData("9999999.23:59:59.9999999")]
+        [InlineData("-9999999.23:59:59.9999999")]
+        [InlineData("10675199.02:48:05.4775807")] // TimeSpan.MaxValue
+        [InlineData("-10675199.02:48:05.4775808")] // TimeSpan.MinValue
+        public static void TimeSpan_Write_Success(string value, string? expectedValue = null)
+        {
+            TimeSpan ts = TimeSpan.Parse(value);
+            string json = JsonSerializer.Serialize(ts);
+
+            Assert.Equal($"\"{expectedValue ?? value}\"", json);
+            Assert.Equal(json, JsonConvert.SerializeObject(ts));
+        }
     }
 }

@@ -14,6 +14,8 @@ namespace System.IO.Tests
 
         protected virtual long InitialLength => 0;
 
+        protected virtual string GetExpectedParamName(string paramName) => paramName;
+
         [Fact]
         public void NullPathThrows()
         {
@@ -35,7 +37,9 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidModeThrows()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", () => CreateFileStream(GetTestFilePath(), ~FileMode.Open));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                GetExpectedParamName("mode"),
+                () => CreateFileStream(GetTestFilePath(), ~FileMode.Open));
         }
 
         [Theory, MemberData(nameof(TrailingCharacters))]

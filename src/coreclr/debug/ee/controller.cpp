@@ -83,7 +83,11 @@ SharedPatchBypassBuffer* DebuggerControllerPatch::GetOrCreateSharedPatchBypassBu
 
     if (m_pSharedPatchBypassBuffer == NULL)
     {
-        m_pSharedPatchBypassBuffer = new (interopsafeEXEC) SharedPatchBypassBuffer();
+        void *pSharedPatchBypassBufferRX = g_pDebugger->GetInteropSafeExecutableHeap()->Alloc(sizeof(SharedPatchBypassBuffer));
+        ExecutableWriterHolder<SharedPatchBypassBuffer> sharedPatchBypassBufferWriterHolder((SharedPatchBypassBuffer*)pSharedPatchBypassBufferRX, sizeof(SharedPatchBypassBuffer));
+        new (sharedPatchBypassBufferWriterHolder.GetRW()) SharedPatchBypassBuffer();
+        m_pSharedPatchBypassBuffer = (SharedPatchBypassBuffer*)pSharedPatchBypassBufferRX;
+
         _ASSERTE(m_pSharedPatchBypassBuffer);
         TRACE_ALLOC(m_pSharedPatchBypassBuffer);
     }
@@ -1364,9 +1368,7 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
 
         LPVOID baseAddress = (LPVOID)(patch->address);
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#else // defined(HOST_OSX) && defined(HOST_ARM64)
+#if !defined(HOST_OSX) || !defined(HOST_ARM64)
         DWORD oldProt;
 
         if (!VirtualProtect(baseAddress,
@@ -1376,7 +1378,7 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)
 
         patch->opcode = CORDbgGetInstruction(patch->address);
 
@@ -1408,12 +1410,14 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
             _ASSERTE(!"VirtualProtect of code page failed");
             return false;
         }
+
         patch->opcode =
           (unsigned int) *(unsigned short*)(patch->address+1);
 
         _ASSERTE(patch->opcode != CEE_BREAK);
 
-        *(unsigned short *) (patch->address+1) = CEE_BREAK;
+        ExecutableWriterHolder<BYTE> breakpointWriterHolder((BYTE*)patch->address, 2);
+        *(unsigned short *) (breakpointWriterHolder.GetRW()+1) = CEE_BREAK;
 
         if (!VirtualProtect((void *) patch->address, 2, oldProt, &oldProt))
         {
@@ -1460,9 +1464,7 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
 
         LPVOID baseAddress = (LPVOID)(patch->address);
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#else // defined(HOST_OSX) && defined(HOST_ARM64)
+#if !defined(HOST_OSX) || !defined(HOST_ARM64)
         DWORD oldProt;
 
         if (!VirtualProtect(baseAddress,
@@ -1477,7 +1479,7 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
             InitializePRD(&(patch->opcode));
             return false;
         }
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+#endif // !defined(HOST_OSX) || !defined(HOST_ARM64)
 
         CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patch->address, patch->opcode);
 
@@ -1519,7 +1521,8 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
 #if defined(TARGET_X86)
         _ASSERTE(*(unsigned short*)(patch->address+1) == CEE_BREAK);
 
-        *(unsigned short *) (patch->address+1)
+        ExecutableWriterHolder<BYTE> breakpointWriterHolder((BYTE*)patch->address, 2);
+        *(unsigned short *) (breakpointWriterHolder.GetRW()+1)
           = (unsigned short) patch->opcode;
 #endif //this makes no sense on anything but X86
         //VERY IMPORTANT to zero out opcode, else we might mistake
@@ -4349,6 +4352,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
 
     m_pSharedPatchBypassBuffer = patch->GetOrCreateSharedPatchBypassBuffer();
     BYTE* patchBypass = m_pSharedPatchBypassBuffer->PatchBypass;
+    LOG((LF_CORDB, LL_INFO10000, "DPS::DPS: Patch skip for opcode 0x%.4x at address %p buffer allocated at 0x%.8x\n", patch->opcode, patch->address, m_pSharedPatchBypassBuffer));
 
     // Copy the instruction block over to the patch skip
     // WARNING: there used to be an issue here because CopyInstructionBlock copied the breakpoint from the
@@ -4409,8 +4413,9 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
         }
         else
         {
+            _ASSERTE(m_instrAttrib.m_cOperandSize <= SharedPatchBypassBuffer::cbBufferBypass);
             // Copy the data into our buffer.
-            memcpy(bufferBypass, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, SharedPatchBypassBuffer::cbBufferBypass);
+            memcpy(bufferBypass, patch->address + m_instrAttrib.m_cbInstr + dwOldDisp, m_instrAttrib.m_cOperandSize);
 
             if (m_instrAttrib.m_fIsWrite)
             {
@@ -4898,11 +4903,14 @@ bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
             break;
 
         case 16:
-            memcpy(reinterpret_cast<void*>(targetFixup), bufferBypass, 16);
+        case 32:
+            memcpy(reinterpret_cast<void*>(targetFixup), bufferBypass, fixupSize);
             break;
 
         default:
-            _ASSERTE(!"bad operand size");
+            _ASSERTE(!"bad operand size. If you hit this and it was because we need to process instructions with larger \
+                relative immediates, make sure to update the SharedPatchBypassBuffer size, the DebuggerHeapExecutableMemoryAllocator, \
+                and structures depending on DBG_MAX_EXECUTABLE_ALLOC_SIZE.");
         }
     }
 #endif

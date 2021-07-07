@@ -12,18 +12,40 @@ namespace System.Text.Json.Serialization.Metadata
     internal sealed class JsonTypeInfoInternal<T> : JsonTypeInfo<T>
     {
         /// <summary>
-        /// Creates serialization metadata for a <see cref="ConverterStrategy.Object"/>.
+        /// Creates serialization metadata given JsonSerializerOptions and a ConverterStrategy.
         /// </summary>
-        public JsonTypeInfoInternal() : base(typeof(T), null!, ConverterStrategy.Object)
+        public JsonTypeInfoInternal(JsonSerializerOptions options, ConverterStrategy converterStrategy)
+            : base(typeof(T), options, converterStrategy)
         {
         }
 
         /// <summary>
-        /// Creates serialization metadata for a <see cref="ConverterStrategy.Value"/>.
+        /// Creates serialization metadata for an object.
         /// </summary>
-        public JsonTypeInfoInternal(JsonSerializerOptions options)
-            : base (typeof(T), options, ConverterStrategy.Value)
+        public JsonTypeInfoInternal(
+            JsonSerializerOptions options,
+            Func<T>? createObjectFunc,
+            Func<JsonSerializerContext, JsonPropertyInfo[]>? propInitFunc,
+            JsonNumberHandling numberHandling,
+            Action<Utf8JsonWriter, T>? serializeFunc
+            ) : base(typeof(T), options, ConverterStrategy.Object)
         {
+            if (propInitFunc == null && serializeFunc == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_PropInitAndSerializeFuncsNull();
+            }
+
+#pragma warning disable CS8714
+            // The type cannot be used as type parameter in the generic type or method.
+            // Nullability of type argument doesn't match 'notnull' constraint.
+            JsonConverter converter = new JsonMetadataServicesConverter<T>(() => new ObjectDefaultConverter<T>(), ConverterStrategy.Object, keyType: null, elementType: null);
+#pragma warning restore CS8714
+
+            PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, Options);
+            NumberHandling = numberHandling;
+            PropInitFunc = propInitFunc;
+            Serialize = serializeFunc;
+            SetCreateObjectFunc(createObjectFunc);
         }
 
         /// <summary>
@@ -32,14 +54,19 @@ namespace System.Text.Json.Serialization.Metadata
         public JsonTypeInfoInternal(
             JsonSerializerOptions options,
             Func<T>? createObjectFunc,
-            JsonConverter<T> converter,
-            JsonTypeInfo elementInfo,
-            JsonNumberHandling numberHandling) : base(typeof(T), options, ConverterStrategy.Enumerable)
+            Func<JsonConverter<T>> converterCreator,
+            JsonTypeInfo? elementInfo,
+            JsonNumberHandling numberHandling,
+            Action<Utf8JsonWriter, T>? serializeFunc,
+            Type elementType) : base(typeof(T), options, ConverterStrategy.Enumerable)
         {
+            JsonConverter<T> converter = new JsonMetadataServicesConverter<T>(converterCreator, ConverterStrategy.Enumerable, keyType: null, elementType);
+
             ElementType = converter.ElementType;
             ElementTypeInfo = elementInfo ?? throw new ArgumentNullException(nameof(elementInfo));
             NumberHandling = numberHandling;
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
+            Serialize = serializeFunc;
             SetCreateObjectFunc(createObjectFunc);
         }
 
@@ -49,40 +76,24 @@ namespace System.Text.Json.Serialization.Metadata
         public JsonTypeInfoInternal(
             JsonSerializerOptions options,
             Func<T>? createObjectFunc,
-            JsonConverter<T> converter,
-            JsonTypeInfo keyInfo,
-            JsonTypeInfo valueInfo,
-            JsonNumberHandling numberHandling) : base(typeof(T), options, ConverterStrategy.Dictionary)
+            Func<JsonConverter<T>> converterCreator,
+            JsonTypeInfo? keyInfo,
+            JsonTypeInfo? valueInfo,
+            JsonNumberHandling numberHandling,
+            Action<Utf8JsonWriter, T>? serializeFunc,
+            Type keyType,
+            Type elementType) : base(typeof(T), options, ConverterStrategy.Dictionary)
         {
+            JsonConverter<T> converter = new JsonMetadataServicesConverter<T>(converterCreator, ConverterStrategy.Dictionary, keyType, elementType);
+
             KeyType = converter.KeyType;
-            KeyTypeInfo = keyInfo ?? throw new ArgumentNullException(nameof(keyInfo)); ;
+            ElementType = converter.ElementType;
+            KeyTypeInfo = keyInfo ?? throw new ArgumentNullException(nameof(keyInfo));
             ElementType = converter.ElementType;
             ElementTypeInfo = valueInfo ?? throw new ArgumentNullException(nameof(valueInfo));
             NumberHandling = numberHandling;
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
-            SetCreateObjectFunc(createObjectFunc);
-        }
-
-        /// <summary>
-        /// Initializes serialization metadata for a <see cref="ConverterStrategy.Object"/>.
-        /// </summary>
-        public void InitializeAsObject(
-            JsonSerializerOptions options,
-            Func<T>? createObjectFunc,
-            Func<JsonSerializerContext, JsonPropertyInfo[]> propInitFunc,
-            JsonNumberHandling numberHandling)
-        {
-            Options = options;
-
-#pragma warning disable CS8714
-            // The type cannot be used as type parameter in the generic type or method.
-            // Nullability of type argument doesn't match 'notnull' constraint.
-            JsonConverter converter = new ObjectSourceGenConverter<T>();
-#pragma warning restore CS8714
-
-            PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
-            NumberHandling = numberHandling;
-            PropInitFunc = propInitFunc;
+            Serialize = serializeFunc;
             SetCreateObjectFunc(createObjectFunc);
         }
 

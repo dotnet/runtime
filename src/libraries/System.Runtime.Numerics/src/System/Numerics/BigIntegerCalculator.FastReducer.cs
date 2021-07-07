@@ -81,7 +81,7 @@ namespace System.Numerics
                 // preceding division by 2^(32*k). To spare memory allocations
                 // we write the result to an already allocated memory.
 
-                Array.Clear(bits, 0, bits.Length);
+                Array.Clear(bits);
 
                 if (leftLength > k)
                 {

@@ -62,29 +62,6 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-#
-# This is the version of the corlib-runtime interface. When
-# making changes to this interface (by changing the layout
-# of classes the runtime knows about, changing icall signature or
-# semantics etc), change this variable.
-#
-# This must be unique relative to corlib interface and semantics.
-#
-# If you change corlib such that a runtime change is required, or
-# vice versa, change this string. Examples include removing icalls,
-# adding icalls, changing icall signatures, and changing type layouts
-# that both sides know.
-#
-# It is an arbitrary string and should be parsed as such.
-# A guid works and is encouraged.
-#
-# There is no ordering of corlib versions, no old or new,
-# an exact match is required between corlib and runtime.
-#
-# This line is parsed by other tools, it should remain in the format they expect.
-#
-set(MONO_CORLIB_VERSION 1A5E0066-58DC-428A-B21C-0AD6CDAE2789)
-
 set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
 set(DISABLE_PERFCOUNTERS 1)
@@ -107,10 +84,6 @@ set(DISABLED_FEATURES "\"\"")
 
 if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR(CMAKE_CXX_COMPILER_ID STREQUAL "Clang") OR(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
   set(GCC 1)
-endif()
-
-if(DISABLE_INTERPRETER)
-  unset(ENABLE_METADATA_UPDATE)
 endif()
 
 add_definitions(-DHAVE_CONFIG_H)
@@ -160,11 +133,11 @@ if(NOT AOT_TARGET_TRIPLE STREQUAL "")
   elseif(AOT_TARGET_TRIPLE STREQUAL "x86_64-apple-maccatalyst")
     set(TARGET_SYSTEM_NAME "Darwin")
     set(TARGET_ARCH "x86_64")
-    set(CMAKE_SYSTEM_VARIANT "MacCatalyst")
+    set(TARGET_MACCAT 1)
   elseif(AOT_TARGET_TRIPLE STREQUAL "aarch64-apple-maccatalyst")
     set(TARGET_SYSTEM_NAME "Darwin")
     set(TARGET_ARCH "arm64")
-    set(CMAKE_SYSTEM_VARIANT "MacCatalyst")
+    set(TARGET_MACCAT 1)
   elseif(AOT_TARGET_TRIPLE STREQUAL "wasm32-unknown-none")
     set(TARGET_SYSTEM_NAME "Emscripten")
     set(TARGET_ARCH "wasm")
@@ -225,7 +198,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS" OR CMAKE_SYSTEM_NAME STREQUAL "tvOS")
   set(DISABLE_EXECUTABLES 1)
   set(DISABLE_CRASH_REPORTING 1)
   set(ENABLE_MONOTOUCH 1)
-  add_definitions(-DMONOTOUCH=1)
   add_definitions("-DSMALL_CONFIG")
   add_definitions("-D_XOPEN_SOURCE")
   add_definitions("-DHAVE_LARGE_FILE_SUPPORT=1")
@@ -307,7 +279,6 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "iOS" OR TARGET_SYSTEM_NAME STREQUAL "tvOS")
     set(TARGET_TVOS 1)
   endif()
   set(ENABLE_MONOTOUCH 1)
-  add_definitions(-DMONOTOUCH=1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "Linux")
   set(TARGET_LINUX 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "Android")
@@ -429,6 +400,15 @@ elseif(TARGET_ARCH STREQUAL "wasm")
   set(SIZEOF_REGISTER 4)
 else()
   message(FATAL_ERROR "TARGET_ARCH='${TARGET_ARCH}' not supported.")
+endif()
+
+# arm64 MacCatalyst runtime host or AOT target is more like Apple mobile targets than x64
+if ((HOST_MACCAT AND HOST_ARCH STREQUAL "arm64") OR (TARGET_MACCAT AND TARGET_ARCH STREQUAL "arm64"))
+  set(ENABLE_MONOTOUCH 1)
+endif()
+
+if(ENABLE_MONOTOUCH)
+  add_definitions(-DMONOTOUCH=1)
 endif()
 
 ######################################
@@ -723,6 +703,10 @@ else()
   # FIXME:
   set(NAME_DEV_RANDOM "\"/dev/random\"")
 endif()
+
+if(HOST_LINUX AND HAVE_SYS_MMAN_H AND HAVE_ELF_H AND HAVE_SYS_SYSCALL_H)
+  set(ENABLE_JIT_DUMP 1)
+endif()
 ### End of other checks
 
 ######################################
@@ -765,7 +749,7 @@ set(FULL_VERSION ${product_version_string})
 ######################################
 # OS SPECIFIC CHECKS
 ######################################
-if(TARGET_IOS OR TARGET_ANDROID OR TARGET_MACCAT)
+if(HOST_IOS OR HOST_ANDROID OR HOST_MACCAT)
   # FIXME: the mobile products use mono_dllmap_insert so allow this
   unset(DISABLE_DLLMAP)
 else()

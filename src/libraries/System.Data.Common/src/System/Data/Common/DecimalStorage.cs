@@ -3,6 +3,7 @@
 
 using System.Xml;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
@@ -237,11 +238,13 @@ namespace System.Data.Common
             base.SetCapacity(capacity);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override object ConvertXmlToObject(string s)
         {
             return XmlConvert.ToDecimal(s);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override string ConvertObjectToXml(object value)
         {
             return XmlConvert.ToString((decimal)value);

@@ -31,16 +31,16 @@ typedef struct {
 	MonoFlightRecorderItem *items [MONO_ZERO_LEN_ARRAY]; // The data of the history
 } MonoFlightRecorder;
 
-MonoCoopMutex *
+MONO_COMPONENT_API MonoCoopMutex *
 mono_flight_recorder_mutex (MonoFlightRecorder *recorder);
 
-MonoFlightRecorder *
+MONO_COMPONENT_API MonoFlightRecorder *
 mono_flight_recorder_init (size_t max_size, size_t payload_size);
 
-void
+MONO_COMPONENT_API void
 mono_flight_recorder_free (MonoFlightRecorder *recorder);
 
-void
+MONO_COMPONENT_API void
 mono_flight_recorder_append (MonoFlightRecorder *recorder, gpointer payload);
 
 // Used to traverse the ring buffer in order of oldest to newest message
@@ -52,15 +52,15 @@ typedef struct {
 } MonoFlightRecorderIter;
 
 // Mutex has to be held when called
-void
+MONO_COMPONENT_API void
 mono_flight_recorder_iter_init (MonoFlightRecorder *recorder, MonoFlightRecorderIter *iter);
 
 // Mutex has to be held when called
-void
+MONO_COMPONENT_API void
 mono_flight_recorder_iter_destroy (MonoFlightRecorderIter *iter);
 
 // Mutex has to be held when called
-gboolean
+MONO_COMPONENT_API gboolean
 mono_flight_recorder_iter_next (MonoFlightRecorderIter *iter, MonoFlightRecorderHeader *header, gpointer *payload);
 
 #endif

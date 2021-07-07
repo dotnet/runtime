@@ -22,15 +22,14 @@ namespace System.Text.Json.Tests.Serialization
                     }
                     else
                     {
-                        JsonTypeInfo<WeatherForecastWithPOCOs> objectInfo = JsonMetadataServices.CreateObjectInfo<WeatherForecastWithPOCOs>();
-                        _WeatherForecastWithPOCOs = objectInfo;
-    
-                        JsonMetadataServices.InitializeObjectInfo(
-                            objectInfo,
+                        JsonTypeInfo<WeatherForecastWithPOCOs> objectInfo = JsonMetadataServices.CreateObjectInfo<WeatherForecastWithPOCOs>(
                             Options,
                             createObjectFunc: static () => new WeatherForecastWithPOCOs(),
                             WeatherForecastWithPOCOsPropInitFunc,
-                            default);
+                            default,
+                            serializeFunc: null);
+
+                        _WeatherForecastWithPOCOs = objectInfo;
                     }
                 }
 

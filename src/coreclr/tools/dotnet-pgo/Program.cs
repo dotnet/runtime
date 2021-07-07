@@ -396,28 +396,31 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             FileInfo file1 = options.CompareMibc[0];
             FileInfo file2 = options.CompareMibc[1];
 
+            // Look for the shortest unique names for the input files.
+            string name1 = file1.Name;
+            string name2 = file2.Name;
+            string path1 = Path.GetDirectoryName(file1.FullName);
+            string path2 = Path.GetDirectoryName(file2.FullName);
+            while (name1 == name2)
+            {
+                name1 = Path.Combine(Path.GetFileName(path1), name1);
+                name2 = Path.Combine(Path.GetFileName(path2), name2);
+                path1 = Path.GetDirectoryName(path1);
+                path2 = Path.GetDirectoryName(path2);
+            }
+
             PEReader mibc1 = MIbcProfileParser.OpenMibcAsPEReader(file1.FullName);
             PEReader mibc2 = MIbcProfileParser.OpenMibcAsPEReader(file2.FullName);
             var tsc = new TypeRefTypeSystem.TypeRefTypeSystemContext(new PEReader[] { mibc1, mibc2 });
 
             ProfileData profile1 = MIbcProfileParser.ParseMIbcFile(tsc, mibc1, null, onlyDefinedInAssembly: null);
             ProfileData profile2 = MIbcProfileParser.ParseMIbcFile(tsc, mibc2, null, onlyDefinedInAssembly: null);
-            PrintOutput($"Comparing {file1.Name} to {file2.Name}");
-            PrintOutput($"Statistics for {file1.Name}");
-            PrintStats(profile1, file1.Name, profile2, file2.Name);
+            PrintOutput($"Comparing {name1} to {name2}");
+            PrintOutput($"Statistics for {name1}");
+            PrintMibcStats(profile1);
             PrintOutput("");
-            PrintOutput($"Statistics for {file2.Name}");
-            PrintStats(profile2, file2.Name, profile1, file1.Name);
-
-            static void PrintStats(ProfileData self, string selfName, ProfileData other, string otherName)
-            {
-                var methods = self.GetAllMethodProfileData().ToList();
-                var profiledMethods = methods.Where(spd => spd.SchemaData != null).ToList();
-                var otherMethods = other.GetAllMethodProfileData().ToList();
-                var otherProfiledMethods = otherMethods.Where(spd => spd.SchemaData != null).ToList();
-                PrintMibcStats(self);
-                PrintOutput($"# Profiled methods in {selfName} not in {otherName}: {profiledMethods.Select(m => m.Method).Except(otherProfiledMethods.Select(m => m.Method)).Count()}");
-            }
+            PrintOutput($"Statistics for {name2}");
+            PrintMibcStats(profile2);
 
             PrintOutput("");
             PrintOutput("Comparison");
@@ -426,6 +429,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             var profiledMethods1 = methods1.Where(m => m.SchemaData != null).ToList();
             var profiledMethods2 = methods2.Where(m => m.SchemaData != null).ToList();
 
+            PrintOutput($"# Profiled methods in {name1} not in {name2}: {profiledMethods1.Select(m => m.Method).Except(profiledMethods2.Select(m => m.Method)).Count()}");
+            PrintOutput($"# Profiled methods in {name2} not in {name1}: {profiledMethods2.Select(m => m.Method).Except(profiledMethods1.Select(m => m.Method)).Count()}");
             PrintOutput($"# Methods with profile data in both .mibc files: {profiledMethods1.Select(m => m.Method).Intersect(profiledMethods2.Select(m => m.Method)).Count()}");
             var fgMatches = new List<(MethodProfileData prof1, MethodProfileData prof2)>();
             var fgMismatches = new List<(MethodProfileData prof1, MethodProfileData prof2, List<string> mismatches)>();
@@ -435,16 +440,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 MethodProfileData prof2 = profile2.GetMethodProfileData(prof1.Method);
                 if (prof2?.SchemaData == null)
                     continue;
-
-                Dictionary<int, PgoSchemaElem> GroupBlocks(MethodProfileData data)
-                    => data.SchemaData
-                       .Where(e => e.InstrumentationKind == PgoInstrumentationKind.BasicBlockIntCount || e.InstrumentationKind == PgoInstrumentationKind.BasicBlockLongCount)
-                       .ToDictionary(e => e.ILOffset);
-
-                Dictionary<(int, int), PgoSchemaElem> GroupEdges(MethodProfileData data)
-                    => data.SchemaData
-                       .Where(e => e.InstrumentationKind == PgoInstrumentationKind.EdgeIntCount || e.InstrumentationKind == PgoInstrumentationKind.EdgeLongCount)
-                       .ToDictionary(e => (e.ILOffset, e.Other));
 
                 var (blocks1, blocks2) = (GroupBlocks(prof1), GroupBlocks(prof2));
                 var (edges1, edges2) = (GroupEdges(prof1), GroupEdges(prof2));
@@ -456,9 +451,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     var in2 = blocks2.Keys.Where(k => !blocks1.ContainsKey(k)).ToList();
 
                     foreach (var m1 in in1)
-                        mismatches.Add($"{file1.Name} has a block at {m1:x} not present in {file2.Name}");
+                        mismatches.Add($"{name1} has a block at {m1:x} not present in {name2}");
                     foreach (var m2 in in2)
-                        mismatches.Add($"{file2.Name} has a block at {m2:x} not present in {file1.Name}");
+                        mismatches.Add($"{name2} has a block at {m2:x} not present in {name1}");
                 }
 
                 if (edges1.Count > 0 && edges2.Count > 0)
@@ -467,9 +462,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     var in2 = edges2.Keys.Where(k => !edges1.ContainsKey(k)).ToList();
 
                     foreach (var (from, to) in in1)
-                        mismatches.Add($"{file1.Name} has an edge {from:x}->{to:x} not present in {file2.Name}");
+                        mismatches.Add($"{name1} has an edge {from:x}->{to:x} not present in {name2}");
                     foreach (var (from, to) in in2)
-                        mismatches.Add($"{file2.Name} has an edge {from:x}->{to:x} not present in {file1.Name}");
+                        mismatches.Add($"{name2} has an edge {from:x}->{to:x} not present in {name1}");
                 }
 
                 if (mismatches.Count > 0)
@@ -495,10 +490,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             if (fgMatches.Count > 0)
             {
                 PrintOutput("");
-                PrintOutput($"When comparing the flow-graphs of the matching methods, their overlaps break down as follows:");
+                PrintOutput($"Comparing methods with matching flow-graphs");
 
-                List<double> blockOverlaps = new List<double>();
-                List<double> edgeOverlaps = new List<double>();
+                var blockOverlaps = new List<(MethodDesc Method, double Overlap)>();
+                var edgeOverlaps = new List<(MethodDesc Method, double Overlap)>();
 
                 foreach ((MethodProfileData prof1, MethodProfileData prof2) in fgMatches)
                 {
@@ -512,6 +507,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         Debug.Assert(left.Keys.All(k => right.ContainsKey(k)));
                         Debug.Assert(right.Keys.All(k => left.ContainsKey(k)));
 
+                        if (leftTotal == 0 && rightTotal == 0)
+                            return 1;
+
+                        if (leftTotal == 0 || rightTotal == 0)
+                            return 0;
+
                         var leftPW = left.ToDictionary(k => k.Key, k => k.Value.DataLong / (double)leftTotal);
                         var rightPW = right.ToDictionary(k => k.Key, k => k.Value.DataLong / (double)rightTotal);
 
@@ -519,26 +520,27 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         return overlap;
                     }
 
+                    Debug.Assert(prof1.Method == prof2.Method);
                     if (blocks1.Count > 0 && blocks2.Count > 0)
-                        blockOverlaps.Add(Overlap(blocks1, blocks2));
+                        blockOverlaps.Add((prof1.Method, Overlap(blocks1, blocks2)));
 
                     if (edges1.Count > 0 && edges2.Count > 0)
-                        edgeOverlaps.Add(Overlap(edges1, edges2));
+                        edgeOverlaps.Add((prof1.Method, Overlap(edges1, edges2)));
                 }
 
-                void PrintHistogram(List<double> overlaps)
+                void PrintHistogram(List<(MethodDesc Method, double Overlap)> overlaps)
                 {
                     int maxWidth = Console.WindowWidth - 10;
                     const int maxLabelWidth = 4; // to print "100%".
                     int barMaxWidth = maxWidth - (maxLabelWidth + 10); // Leave 10 chars for writing other things on the line
                     const int bucketSize = 5;
                     int width = Console.WindowWidth - 10;
-                    var sorted = overlaps.OrderByDescending(d => d).ToList();
+                    var sorted = overlaps.OrderByDescending(t => t.Overlap).ToList();
 
                     void PrintBar(string label, ref int curIndex, Func<double, bool> include, bool forcePrint)
                     {
                         int count = 0;
-                        while (curIndex < sorted.Count && include(sorted[curIndex]))
+                        while (curIndex < sorted.Count && include(sorted[curIndex].Overlap))
                         {
                             count++;
                             curIndex++;
@@ -574,23 +576,85 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     for (int proportion = 100 - bucketSize; proportion >= 0; proportion -= bucketSize)
                         PrintBar($">{(int)proportion,2}%", ref curIndex, d => d * 100 > proportion, true);
                     PrintBar("0%", ref curIndex, d => true, false);
+
+                    var wtf = sorted.Where(t => double.IsNaN(t.Overlap)).ToList();
+                    PrintOutput(FormattableString.Invariant($"The average overlap is {sorted.Average(t => t.Overlap)*100:F2}% for the {sorted.Count} methods with matching flow graphs and profile data"));
+                    double mse = sorted.Sum(t => (100 - t.Overlap*100) * (100 - t.Overlap*100)) / sorted.Count;
+                    PrintOutput(FormattableString.Invariant($"The mean squared error is {mse:F2}"));
+                    PrintOutput(FormattableString.Invariant($"There are {sorted.Count(t => t.Overlap < 0.5)}/{sorted.Count} methods with overlaps < 50%:"));
+                    foreach (var badMethod in sorted.Where(t => t.Overlap < 0.5).OrderBy(t => t.Overlap))
+                    {
+                        PrintOutput(FormattableString.Invariant($"  {badMethod.Method} ({badMethod.Overlap * 100:F2}%)"));
+                    }
                 }
 
                 // Need UTF8 for the block chars.
                 Console.OutputEncoding = Encoding.UTF8;
                 if (blockOverlaps.Count > 0)
                 {
+                    PrintOutput("The overlap of the block counts break down as follows:");
                     PrintHistogram(blockOverlaps);
-                    PrintOutput("(using block counts)");
+                    PrintOutput("");
                 }
 
                 if (edgeOverlaps.Count > 0)
                 {
-                    if (blockOverlaps.Count > 0)
-                        PrintOutput("");
-
+                    PrintOutput("The overlap of the edge counts break down as follows:");
                     PrintHistogram(edgeOverlaps);
-                    PrintOutput("(using edge counts)");
+                    PrintOutput("");
+                }
+
+                var changes = new List<(MethodDesc method, int ilOffset, GetLikelyClassResult result1, GetLikelyClassResult result2)>();
+                int devirtToSame = 0;
+                int devirtToSameLikelihood100 = 0;
+                int devirtToSameLikelihood70 = 0;
+                foreach ((MethodProfileData prof1, MethodProfileData prof2) in fgMatches)
+                {
+                    List<int> typeHandleHistogramCallSites =
+                        prof1.SchemaData.Concat(prof2.SchemaData)
+                        .Where(e => e.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass || e.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle)
+                        .Select(e => e.ILOffset)
+                        .Distinct()
+                        .ToList();
+
+                    foreach (int callsite in typeHandleHistogramCallSites)
+                    {
+                        GetLikelyClassResult result1 = GetLikelyClass(prof1.SchemaData, callsite);
+                        GetLikelyClassResult result2 = GetLikelyClass(prof2.SchemaData, callsite);
+                        if (result1.Devirtualizes != result2.Devirtualizes || (result1.Devirtualizes && result2.Devirtualizes && result1.Type != result2.Type))
+                            changes.Add((prof1.Method, callsite, result1, result2));
+
+                        if (result1.Devirtualizes && result2.Devirtualizes && result1.Type == result2.Type)
+                        {
+                            devirtToSame++;
+                            devirtToSameLikelihood100 += result1.Likelihood == 100 && result2.Likelihood == 100 ? 1 : 0;
+                            devirtToSameLikelihood70 += result1.Likelihood >= 70 && result2.Likelihood >= 70 ? 1 : 0;
+                        }
+                    }
+                }
+
+                PrintOutput($"There are {changes.Count(t => t.result1.Devirtualizes && !t.result2.Devirtualizes)} sites that devirtualize with {name1} but not with {name2}");
+                PrintOutput($"There are {changes.Count(t => !t.result1.Devirtualizes && t.result2.Devirtualizes)} sites that do not devirtualize with {name1} but do with {name2}");
+                PrintOutput($"There are {changes.Count(t => t.result1.Devirtualizes && t.result2.Devirtualizes && t.result1.Type != t.result2.Type)} sites that change devirtualized type");
+                PrintOutput($"There are {devirtToSame} sites that devirtualize to the same type before and after");
+                PrintOutput($"  Of these, {devirtToSameLikelihood100} have a likelihood of 100 in both .mibc files");
+                PrintOutput($"  and {devirtToSameLikelihood70} have a likelihood >= 70 in both .mibc files");
+
+                foreach (var group in changes.GroupBy(g => g.method))
+                {
+                    PrintOutput($"  In {group.Key}");
+                    foreach (var change in group)
+                    {
+                        string FormatDevirt(GetLikelyClassResult result)
+                        {
+                            if (result.Type != null)
+                                return $"{result.Type}, likelihood {result.Likelihood}{(result.Devirtualizes ? "" : " (does not devirt)")}";
+
+                            return $"(null)";
+                        }
+
+                        PrintOutput($"    At +{change.ilOffset:x}: {FormatDevirt(change.result1)} vs {FormatDevirt(change.result2)}");
+                    }
                 }
             }
 
@@ -607,8 +671,115 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             PrintOutput($"# Methods with 64-bit block counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.BasicBlockLongCount))}");
             PrintOutput($"# Methods with 32-bit edge counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.EdgeIntCount))}");
             PrintOutput($"# Methods with 64-bit edge counts: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.EdgeLongCount))}");
-            PrintOutput($"# Methods with type handle histograms: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle))}");
-            PrintOutput($"# Methods with GetLikelyClass data: {profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass))}");
+            int numTypeHandleHistograms = profiledMethods.Sum(spd => spd.SchemaData.Count(elem => elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle));
+            int methodsWithTypeHandleHistograms = profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle));
+            PrintOutput($"# Type handle histograms: {numTypeHandleHistograms} in {methodsWithTypeHandleHistograms} methods");
+            int numGetLikelyClass = profiledMethods.Sum(spd => spd.SchemaData.Count(elem => elem.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass));
+            int methodsWithGetLikelyClass = profiledMethods.Count(spd => spd.SchemaData.Any(elem => elem.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass));
+            PrintOutput($"# GetLikelyClass data: {numGetLikelyClass} in {methodsWithGetLikelyClass} methods");
+
+            var histogramCallSites = new List<(MethodProfileData mpd, int ilOffset)>();
+            foreach (var mpd in profiledMethods)
+            {
+                var sites =
+                    mpd.SchemaData
+                    .Where(e => e.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle || e.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass)
+                    .Select(e => e.ILOffset)
+                    .Distinct();
+
+                histogramCallSites.AddRange(sites.Select(ilOffset => (mpd, ilOffset)));
+            }
+
+            int CountGetLikelyClass(Func<GetLikelyClassResult, bool> predicate)
+                => histogramCallSites.Count(t => predicate(GetLikelyClass(t.mpd.SchemaData, t.ilOffset)));
+
+            PrintOutput($"# Call sites where getLikelyClass is null: {CountGetLikelyClass(r => r.IsNull)}");
+            PrintOutput($"# Call sites where getLikelyClass is unknown: {CountGetLikelyClass(r => r.IsUnknown)}");
+            PrintOutput($"# Call sites where getLikelyClass returns data that devirtualizes: {CountGetLikelyClass(r => r.Devirtualizes)}");
+
+            static bool PresentAndZero(MethodProfileData mpd, PgoInstrumentationKind kind)
+                => mpd.SchemaData.Any(e => e.InstrumentationKind == kind) && mpd.SchemaData.Sum(e => e.InstrumentationKind == kind ? e.DataLong : 0) == 0;
+
+            static bool CountersSumToZero(MethodProfileData data)
+                => PresentAndZero(data, PgoInstrumentationKind.BasicBlockIntCount) ||
+                   PresentAndZero(data, PgoInstrumentationKind.BasicBlockLongCount) ||
+                   PresentAndZero(data, PgoInstrumentationKind.EdgeIntCount) ||
+                   PresentAndZero(data, PgoInstrumentationKind.EdgeLongCount);
+
+            List<MethodProfileData> methodsWithZeroCounters = profiledMethods.Where(CountersSumToZero).ToList();
+            if (methodsWithZeroCounters.Count > 0)
+            {
+                PrintOutput($"There are {methodsWithZeroCounters.Count} methods whose counters sum to 0:");
+                foreach (MethodProfileData mpd in methodsWithZeroCounters)
+                    PrintOutput($"  {mpd.Method}");
+            }
+        }
+
+        private struct GetLikelyClassResult
+        {
+            public bool IsNull;
+            public bool IsUnknown;
+            public TypeDesc Type;
+            public int Likelihood;
+            public bool Devirtualizes;
+        }
+
+        private static GetLikelyClassResult GetLikelyClass(PgoSchemaElem[] schema, int ilOffset)
+        {
+            const int UNKNOWN_TYPEHANDLE_MIN = 1;
+            const int UNKNOWN_TYPEHANDLE_MAX = 33;
+
+            static bool IsUnknownTypeHandle(int handle)
+                => handle >= UNKNOWN_TYPEHANDLE_MIN && handle <= UNKNOWN_TYPEHANDLE_MAX;
+
+            for (int i = 0; i < schema.Length; i++)
+            {
+                var elem = schema[i];
+                if (elem.InstrumentationKind == PgoInstrumentationKind.GetLikelyClass)
+                {
+                    Trace.Assert(elem.Count == 1);
+                    return new GetLikelyClassResult
+                    {
+                        IsUnknown = IsUnknownTypeHandle(((TypeSystemEntityOrUnknown[])elem.DataObject)[0].AsUnknown),
+                        Likelihood = (byte)elem.Other,
+                    };
+                }
+
+                bool isHistogramCount =
+                    elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramIntCount ||
+                    elem.InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramLongCount;
+
+                if (isHistogramCount && elem.Count == 1 && i + 1 < schema.Length && schema[i + 1].InstrumentationKind == PgoInstrumentationKind.TypeHandleHistogramTypeHandle)
+                {
+                    var handles = (TypeSystemEntityOrUnknown[])schema[i + 1].DataObject;
+                    var histogram = handles.Where(e => !e.IsNull).GroupBy(e => e).ToList();
+                    if (histogram.Count == 0)
+                        return new GetLikelyClassResult { IsNull = true };
+
+                    int totalCount = histogram.Sum(g => g.Count());
+                    // The number of unknown type handles matters for the likelihood, but not for the most likely class that we pick, so we can remove them now.
+                    histogram.RemoveAll(e => IsUnknownTypeHandle(e.Key.AsUnknown));
+                    if (histogram.Count == 0)
+                        return new GetLikelyClassResult { IsUnknown = true };
+
+                    // Now return the most likely one
+                    var best = histogram.OrderByDescending(h => h.Count()).First();
+                    Trace.Assert(best.Key.AsType != null);
+                    int likelihood = best.Count() * 100 / totalCount;
+                    // The threshold is different for interfaces and classes.
+                    // A flag in the Other field of the TypeHandleHistogram*Count entry indicates which kind of call site this is.
+                    bool isInterface = (elem.Other & (uint)ClassProfileFlags.IsInterface) != 0;
+                    int threshold = isInterface ? 25 : 30;
+                    return new GetLikelyClassResult
+                    {
+                        Type = best.Key.AsType,
+                        Likelihood = likelihood,
+                        Devirtualizes = likelihood >= threshold,
+                    };
+                }
+            }
+
+            return new GetLikelyClassResult { IsNull = true };
         }
 
         private static Dictionary<int, PgoSchemaElem> GroupBlocks(MethodProfileData data)
@@ -1139,6 +1310,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             SampleProfile sp = SampleProfile.Create(il, GetFlowGraph(g.Key), g.Select(t => t.Offset));
                             sampleProfiles.Add(g.Key, sp);
                         }
+
+                        PrintOutput($"Profile is based on {samples.Count} samples");
                     }
                     else
                     {
@@ -1149,6 +1322,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         Dictionary<(ulong startRun, ulong endRun), long> runs = new Dictionary<(ulong startRun, ulong endRun), long>();
                         List<(ulong start, ulong end)> lbrRuns = new List<(ulong start, ulong end)>();
                         LbrEntry64[] lbr64Arr = null;
+                        long numLbrRecords = 0;
                         foreach (var e in traceLog.Events)
                         {
                             if (e.TaskGuid != lbrGuid)
@@ -1157,6 +1331,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             // Opcode is always 32 for the LBR event.
                             if (e.Opcode != (TraceEventOpcode)32)
                                 continue;
+
+                            numLbrRecords++;
 
                             unsafe
                             {
@@ -1291,6 +1467,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                             sampleProfiles.Add(g.Key.Method, ep);
                         }
+
+                        PrintOutput($"Profile is based on {numLbrRecords} LBR records");
                     }
                 }
 

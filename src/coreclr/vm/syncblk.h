@@ -889,12 +889,13 @@ private:
 
 #ifdef FEATURE_OBJCMARSHAL
 public:
-    void* AllocTaggedMemory(_Out_ size_t* memoryInSizeT)
+#ifndef DACCESS_COMPILE
+    PTR_VOID AllocTaggedMemory(_Out_ size_t* memoryInSizeT)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(memoryInSizeT != NULL);
 
-        *memoryInSizeT = _countof(m_taggedAlloc) / sizeof(SIZE_T);
+        *memoryInSizeT = GetTaggedMemorySizeInBytes() / sizeof(SIZE_T);
 
         // The allocation is meant to indicate that memory
         // has been made available by the system. Calling the 'get'
@@ -903,15 +904,22 @@ public:
         m_taggedMemory = m_taggedAlloc;
         return m_taggedMemory;
     }
+#endif // !DACCESS_COMPILE
 
-    void* GetTaggedMemory()
+    PTR_VOID GetTaggedMemory()
     {
         LIMITED_METHOD_CONTRACT;
         return m_taggedMemory;
     }
 
+    size_t GetTaggedMemorySizeInBytes()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _countof(m_taggedAlloc);
+    }
+
 private:
-    void* m_taggedMemory;
+    PTR_VOID m_taggedMemory;
 
     // Two pointers worth of bytes of the requirement for
     // the current consuming implementation so that is what

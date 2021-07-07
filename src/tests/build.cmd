@@ -47,9 +47,9 @@ set __SkipTestWrappers=
 set __BuildTestWrappersOnly=
 set __SkipNative=
 set __TargetsWindows=1
-set __DoCrossgen=
 set __DoCrossgen2=
 set __CompositeBuildMode=
+set __TestBuildMode=
 set __CreatePdb=
 set __CopyNativeTestBinaries=0
 set __CopyNativeProjectsAfterCombinedTestBuild=true
@@ -100,7 +100,6 @@ if /i "%1" == "buildtestwrappersonly" (set __SkipNative=1&set __SkipManaged=1&se
 
 if /i "%1" == "-msbuild"              (set __Ninja=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildagainstpackages"  (echo error: Remove /BuildAgainstPackages switch&&exit /b1)
-if /i "%1" == "crossgen"              (set __DoCrossgen=1&set __TestBuildMode=crossgen&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "crossgen2"             (set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "composite"             (set __CompositeBuildMode=1&set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pdb"                   (set __CreatePdb=1&shift&goto Arg_Loop)
@@ -506,23 +505,7 @@ REM ============================================================================
 if defined __SkipCrossgenFramework goto SkipCrossgen
 if defined __BuildTestWrappersOnly goto SkipCrossgen
 
-set __CrossgenArg = ""
-if defined __DoCrossgen (
-    set __CrossgenArg="/p:Crossgen=true"
-    if "%__TargetsWindows%" == "1" (
-        echo %__MsgPrefix%Running crossgen on framework assemblies in CORE_ROOT: %CORE_ROOT%
-        call :PrecompileFX
-        if ERRORLEVEL 1 (
-            echo %__ErrMsgPrefix%%__MsgPrefix%Error: crossgen precompilation of framework assemblies failed
-            exit /b 1
-        )
-    ) else (
-        echo "%__MsgPrefix%Crossgen only supported on Windows, for now"
-    )
-)
-
 if defined __DoCrossgen2 (
-    set __CrossgenArg="/p:Crossgen2=true"
     echo %__MsgPrefix%Running crossgen2 on framework assemblies in CORE_ROOT: %CORE_ROOT%
     call :PrecompileFX
     if ERRORLEVEL 1 (
@@ -555,14 +538,17 @@ echo.
 echo.-? -h -help --help: view this message.
 echo Build architecture: one of x64, x86, arm, arm64 ^(default: x64^).
 echo Build type: one of Debug, Checked, Release ^(default: Debug^).
+echo skipgeneratelayout: Do not generate the Core_Root layout
 echo skipmanaged: skip the managed tests build
 echo skipnative: skip the native tests build
 echo skiprestorepackages: skip package restore
-echo crossgen: Precompiles the framework managed assemblies
+echo skiptestwrappers: skip generating test wrappers
+echo buildtestwrappersonly: generate test wrappers without building managed or native test components or generating layouts
 echo copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.
-echo skipgeneratelayout: Do not generate the Core_Root layout
+echo crossgen2: Precompiles the framework managed assemblies
+echo composite: Precompiles the framework managed assemblies in composite build mode
+echo pdb: create PDB files when precompiling the framework managed assemblies
 echo generatelayoutonly: Generate the Core_Root layout without building managed or native test components
-echo targetsNonWindows:
 echo Exclude- Optional parameter - specify location of default exclusion file ^(defaults to tests\issues.targets if not specified^)
 echo     Set to "" to disable default exclusion file.
 echo -- ... : all arguments following this tag will be passed directly to msbuild.
@@ -591,32 +577,20 @@ if defined __CompositeBuildMode (
 )
 
 set __CrossgenDir=%__BinDir%
-if defined __DoCrossgen (
-    if /i "%__BuildArch%" == "arm" (
-        set __CrossgenDir=!__CrossgenDir!\x86
-    )
-    if /i "%__BuildArch%" == "arm64" (
-        set __CrossgenDir=!__CrossgenDir!\x64
-    )
-    set __CrossgenCmd=%__CrossgenCmd% --crossgen --nocrossgen2 --crossgen-path "!__CrossgenDir!\crossgen.exe"
-) else (
-    if /i "%__BuildArch%" == "arm" (
-        set __CrossgenDir=!__CrossgenDir!\x64
-    )
-    if /i "%__BuildArch%" == "arm64" (
-        set __CrossgenDir=!__CrossgenDir!\x64
-    )
-    if /i "%__BuildArch%" == "x86" (
-        set __CrossgenDir=!__CrossgenDir!\x64
-    )
-    set __CrossgenCmd=%__CrossgenCmd% --verify-type-and-field-layout --crossgen2-path "!__CrossgenDir!\crossgen2\crossgen2.dll"
+if /i "%__BuildArch%" == "arm" (
+    set __CrossgenDir=!__CrossgenDir!\x64
 )
+if /i "%__BuildArch%" == "arm64" (
+    set __CrossgenDir=!__CrossgenDir!\x64
+)
+if /i "%__BuildArch%" == "x86" (
+    set __CrossgenDir=!__CrossgenDir!\x64
+)
+set __CrossgenCmd=%__CrossgenCmd% --verify-type-and-field-layout --crossgen2-path "!__CrossgenDir!\crossgen2\crossgen2.dll"
 
 echo Running %__CrossgenCmd%
 call %__CrossgenCmd%
-set /a __exitCode = !errorlevel!
-
-if %__exitCode% neq 0 (
+if %errorlevel% neq 0 (
     echo Failed to crossgen the framework
     exit /b 1
 )

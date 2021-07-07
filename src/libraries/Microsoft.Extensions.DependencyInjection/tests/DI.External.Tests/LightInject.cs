@@ -10,6 +10,8 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 {
     public class LightInjectDependencyInjectionSpecificationTests: DependencyInjectionSpecificationTests
     {
+        public override bool SupportsIServiceProviderIsService => false;
+
         protected override IServiceProvider CreateServiceProvider(IServiceCollection serviceCollection)
         {
             var builder = new ContainerBuilder();

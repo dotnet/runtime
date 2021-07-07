@@ -1,6 +1,0 @@
-<Project InitialTargets="_ErrorForSystemSecurityCryptographyPkcsOnNetCoreApp20">
-  <Target Name="_ErrorForSystemSecurityCryptographyPkcsOnNetCoreApp20"
-          Condition="'$(SuppressTfmSupportBuildWarnings)' == ''">
-    <Error Text="System.Security.Cryptography.Pkcs doesn't support netcoreapp2.0. Consider updating your TargetFramework to netcoreapp3.1 or later." />
-  </Target>
-</Project>

@@ -23,15 +23,14 @@ namespace System.Net.Http.Json.Functional.Tests
                     }
                     else
                     {
-                        JsonTypeInfo<Person> objectInfo = JsonMetadataServices.CreateObjectInfo<Person>();
-                        _Person = objectInfo;
-
-                        JsonMetadataServices.InitializeObjectInfo(
-                            objectInfo,
+                        JsonTypeInfo<Person> objectInfo = JsonMetadataServices.CreateObjectInfo<Person>(
                             Options,
                             createObjectFunc: static () => new Person(),
                             PersonPropInitFunc,
-                            default);
+                            default,
+                            serializeFunc: null);
+
+                        _Person = objectInfo;
                     }
                 }
 

@@ -6,6 +6,7 @@
          to a different assembly. -->
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <PackageDescription>Provides classes to use caching facilities.
 
 Commonly Used Types:

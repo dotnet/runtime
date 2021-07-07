@@ -32,7 +32,7 @@ void reader_t::set_offset(int64_t offset)
         throw StatusCode::BundleExtractionFailure;
     }
 
-    m_ptr = m_base_ptr + offset;
+    m_ptr = m_base_ptr + offset + m_offset_in_file;
 }
 
 void reader_t::bounds_check(int64_t len)

@@ -16,13 +16,11 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <BuildTargetFramework Condition="'$(TestPackages)' != 'true'">$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</BuildTargetFramework>
+    <BuildTargetFramework>$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</BuildTargetFramework>
     <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
 
     <!-- The Helix correlation payload file -->
-    <TestArchiveRuntimeFile Condition="'$(TestPackages)' != 'true' and
-                                       '$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(TestArchiveRuntimeRoot)test-runtime-$(NetCoreAppCurrentBuildSettings).zip</TestArchiveRuntimeFile>
-    <TestArchiveRuntimeFile Condition="'$(TestPackages)' == 'true'">$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip</TestArchiveRuntimeFile>
+    <TestArchiveRuntimeFile Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">$(TestArchiveRuntimeRoot)test-runtime-$(NetCoreAppCurrentBuildSettings).zip</TestArchiveRuntimeFile>
 
     <!-- Set the name of the scenario file. Note that this is only used in invocations where $(Scenario) is set
          (which is when this project is invoked to call the "CreateOneScenarioTestEnvFile" target). -->
@@ -157,8 +155,7 @@
           DependsOnTargets="IncludeDumpDocsInTesthost;_CollectRuntimeInputs"
           Inputs="@(_RuntimeInput);@(TestArchiveRuntimeDependency)"
           Outputs="$(TestArchiveRuntimeFile)"
-          Condition="'$(TestPackages)' != 'true' and
-                     '$(TargetsMobile)' != 'true' and
+          Condition="'$(TargetsMobile)' != 'true' and
                      '$(TestArchiveRuntimeFile)' != ''">
 
     <!-- Compress the test files, testhost, and per-scenario scripts into a single ZIP file for sending to the Helix machines. -->

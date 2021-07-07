@@ -695,6 +695,74 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(loopLength * 8, totalCount);
             }).Dispose();
         }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SerializedEventsTest()
+        {
+            RemoteExecutor.Invoke(() => {
+
+                const int MaxMetersCount = 50;
+
+                Meter [] meters = new Meter[MaxMetersCount];
+                for (int i = 0; i < MaxMetersCount; i++)
+                {
+                    meters[i] = new Meter("SerializedEventsTest" + i);
+                }
+
+                Dictionary<Instrument, bool> instruments = new Dictionary<Instrument, bool>();
+
+                MeterListener listener = new MeterListener()
+                {
+                    InstrumentPublished = (instrument, theListener) =>
+                    {
+                        lock (instruments)
+                        {
+                            Assert.False(instruments.ContainsKey(instrument), $"{instrument.Name}, {instrument.Meter.Name} is already published before");
+                            instruments.Add(instrument, true);
+                            theListener.EnableMeasurementEvents(instrument, null);
+                        }
+                    },
+
+                    MeasurementsCompleted = (instrument, state) =>
+                    {
+                        lock (instruments)
+                        {
+                            Assert.True(instruments.Remove(instrument), $"{instrument.Name}, {instrument.Meter.Name} is not published while getting completed results");
+                        }
+                    }
+                };
+
+                listener.Start();
+
+                int counterCounter = 0;
+                Random r = new Random();
+
+                Task [] jobs = new Task[Environment.ProcessorCount];
+                for (int i = 0; i < jobs.Length; i++)
+                {
+                    jobs[i] = Task.Run(() => {
+                        for (int j = 0; j < 10; j++)
+                        {
+                            int index = r.Next(MaxMetersCount);
+
+                            for (int k = 0; k < 10; k++)
+                            {
+                                int c = Interlocked.Increment(ref counterCounter);
+                                Counter<int> counter = meters[index].CreateCounter<int>("Counter");
+                                counter.Add(1);
+                            }
+
+                            meters[index].Dispose();
+                        }
+                    });
+                }
+
+                Task.WaitAll(jobs);
+                listener.Dispose();
+                Assert.Equal(0, instruments.Count);
+            }).Dispose();
+        }
+
         private void PublishCounterMeasurement<T>(Counter<T> counter, T value, KeyValuePair<string, object?>[] tags) where T : struct
         {
             switch (tags.Length)

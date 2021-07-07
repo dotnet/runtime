@@ -5,10 +5,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
-
-using Microsoft.Win32.SafeHandles;
 
 using Internal.Win32;
 
@@ -36,8 +35,8 @@ namespace System
         private const int MaxKeyLength = 255;
         private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
 
-        private static readonly Dictionary<string, string> s_FileMuiPathCache = new();
-        private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone();
+        private static readonly Dictionary<string, string> s_fileMuiPathCache = new();
+        private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone(); // must be initialized after s_fileMuiPathCache
 
         private sealed partial class CachedData
         {
@@ -749,9 +748,9 @@ namespace System
             string? result;
             string cacheKey = $"{cultureInfo.Name};{filePath}";
 
-            lock (s_FileMuiPathCache)
+            lock (s_fileMuiPathCache)
             {
-                if (s_FileMuiPathCache.TryGetValue(cacheKey, out result))
+                if (s_fileMuiPathCache.TryGetValue(cacheKey, out result))
                 {
                     return result;
                 }
@@ -759,9 +758,9 @@ namespace System
 
             result = GetFileMuiPath(filePath, cultureInfo);
 
-            lock (s_FileMuiPathCache)
+            lock (s_fileMuiPathCache)
             {
-                s_FileMuiPathCache.TryAdd(cacheKey, result);
+                s_fileMuiPathCache.TryAdd(cacheKey, result);
             }
 
             return result;
@@ -783,10 +782,12 @@ namespace System
             while (true)
             {
                 // Search all installed languages.  The enumerator is re-used between loop iterations.
+                language[0] = '\0';
                 bool succeeded = Interop.Kernel32.GetFileMUIPath(
                     Interop.Kernel32.MUI_USE_INSTALLED_LANGUAGES,
                     filePath, language, ref languageLength,
                     fileMuiPath, ref fileMuiPathLength, ref enumerator);
+                fileMuiPath[Interop.Kernel32.MAX_PATH] = '\0';
 
                 if (!succeeded)
                 {
@@ -798,37 +799,35 @@ namespace System
 
                     // Final fallback, using the preferred installed UI language.
                     enumerator = 0;
+                    language[0] = '\0';
                     succeeded = Interop.Kernel32.GetFileMUIPath(
                         Interop.Kernel32.MUI_USER_PREFERRED_UI_LANGUAGES,
                         filePath, language, ref languageLength,
                         fileMuiPath, ref fileMuiPathLength, ref enumerator);
+                    fileMuiPath[Interop.Kernel32.MAX_PATH] = '\0';
 
                     if (succeeded)
                     {
-                        fileMuiPath[Interop.Kernel32.MAX_PATH] = '\0';
                         return new string(fileMuiPath);
                     }
 
-                    // Shouldn't get here, as there's always at least one language installed.
                     return string.Empty;
                 }
 
                 // Lookup succeeded.  Check for exact match to the desired culture.
                 language[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH] = '\0';
-                var lang = new string(language);
-                if (string.Equals(lang, cultureInfo.Name, StringComparison.OrdinalIgnoreCase))
+                ReadOnlySpan<char> lang = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(language);
+                if (lang.Equals(cultureInfo.Name, StringComparison.OrdinalIgnoreCase))
                 {
-                    fileMuiPath[Interop.Kernel32.MAX_PATH] = '\0';
                     return new string(fileMuiPath);
                 }
 
                 // Check for match of any parent of the language returned to the desired culture.
-                var ci = CultureInfo.GetCultureInfo(lang);
+                var ci = CultureInfo.GetCultureInfo(lang.ToString());
                 while (ci.Parent.Name != string.Empty)
                 {
                     if (ci.Parent.Name.Equals(cultureInfo.Name, StringComparison.OrdinalIgnoreCase))
                     {
-                        fileMuiPath[Interop.Kernel32.MAX_PATH] = '\0';
                         return new string(fileMuiPath);
                     }
 
@@ -849,15 +848,15 @@ namespace System
         /// If a localized resource file exists, we LoadString resource ID "123" and
         /// return it to our caller.
         /// </summary>
-        private static string GetLocalizedNameByMuiNativeResource(string resource, CultureInfo? cultureInfo = null)
+        private static string GetLocalizedNameByMuiNativeResource(string resource)
         {
-            if (string.IsNullOrEmpty(resource))
+            if (string.IsNullOrEmpty(resource) || (GlobalizationMode.Invariant && GlobalizationMode.PredefinedCulturesOnly))
             {
                 return string.Empty;
             }
 
             // Use the current UI culture when culture not specified
-            cultureInfo ??= CultureInfo.CurrentUICulture;
+            CultureInfo cultureInfo = CultureInfo.CurrentUICulture;
 
             // parse "@tzres.dll, -100"
             //
@@ -876,11 +875,11 @@ namespace System
             string system32 = Environment.SystemDirectory;
 
             // trim the string "@tzres.dll" => "tzres.dll"
-            string tzresDll = resources[0].TrimStart('@');
+            ReadOnlySpan<char> tzresDll = resources[0].AsSpan().TrimStart('@');
 
             try
             {
-                filePath = Path.Combine(system32, tzresDll);
+                filePath = Path.Join(system32, tzresDll);
             }
             catch (ArgumentException)
             {

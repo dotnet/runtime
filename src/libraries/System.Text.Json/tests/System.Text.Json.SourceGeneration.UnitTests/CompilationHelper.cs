@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Text.Encodings.Web;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
@@ -33,6 +34,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 MetadataReference.CreateFromFile(typeof(Type).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(KeyValuePair).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(ContractNamespaceAttribute).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(JavaScriptEncoder).Assembly.Location),
                 MetadataReference.CreateFromFile(systemRuntimeAssemblyPath),
                 MetadataReference.CreateFromFile(systemCollectionsAssemblyPath),
             };
@@ -167,8 +169,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             using System.Collections.Generic;
             using System.Text.Json.Serialization;
 
-            [assembly: JsonSerializable(typeof(Fake.Location))]
-            [assembly: JsonSerializable(typeof(HelloWorld.Location))]
+            namespace JsonSourceGeneration
+            {
+                [JsonSerializable(typeof(Fake.Location))]
+                [JsonSerializable(typeof(HelloWorld.Location))]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+            }
 
             namespace Fake
             {

@@ -17,14 +17,13 @@ namespace System.Net.Http.Json
     public sealed partial class JsonContent : HttpContent
     {
         private readonly JsonSerializerOptions? _jsonSerializerOptions;
-        [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)]
         public Type ObjectType { get; }
         public object? Value { get; }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         private JsonContent(
             object? inputValue,
-            [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] Type inputType,
+            Type inputType,
             MediaTypeHeaderValue? mediaType,
             JsonSerializerOptions? options)
         {
@@ -45,11 +44,11 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static JsonContent Create<[DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
+        public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => Create(inputValue, typeof(T), mediaType, options);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static JsonContent Create(object? inputValue, [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
+        public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => new JsonContent(inputValue, inputType, mediaType, options);
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
@@ -80,10 +79,7 @@ namespace System.Net.Http.Json
                     }
                     else
                     {
-                        // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
-                        // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
-                        using var writer = new Utf8JsonWriter(transcodingStream);
-                        SerializeHelper(writer, Value, ObjectType, _jsonSerializerOptions);
+                        SerializeSyncHelper(transcodingStream, Value, ObjectType, _jsonSerializerOptions);
                     }
                 }
                 finally
@@ -121,26 +117,22 @@ namespace System.Net.Http.Json
                 else
                 {
 #if NETCOREAPP
-                    // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
-                    // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
-                    using var writer = new Utf8JsonWriter(targetStream);
-                    SerializeHelper(writer, Value, ObjectType, _jsonSerializerOptions);
+                    SerializeSyncHelper(targetStream, Value, ObjectType, _jsonSerializerOptions);
 #else
                     Debug.Fail("Synchronous serialization is only supported since .NET 5.0");
 #endif
                 }
             }
-
 #if NETCOREAPP
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-            static void SerializeHelper(Utf8JsonWriter writer, object? value, [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] Type inputType, JsonSerializerOptions? options)
-                => JsonSerializer.Serialize(writer, value, inputType, options);
+            static void SerializeSyncHelper(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options)
+                => JsonSerializer.Serialize(utf8Json, value, inputType, options);
 #endif
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-            static Task SerializeAsyncHelper(Stream utf8Json, object? value, [DynamicallyAccessedMembers(JsonHelpers.SerializationMemberTypes)] Type inputType, JsonSerializerOptions? options, CancellationToken cancellationToken)
+            static Task SerializeAsyncHelper(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options, CancellationToken cancellationToken)
                 => JsonSerializer.SerializeAsync(utf8Json, value, inputType, options, cancellationToken);
         }
     }

@@ -2451,7 +2451,10 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	case ArgInIReg:
 	case ArgInFReg:
 	case ArgInFRegR4:
+		linfo->ret.storage = LLVMArgNormal;
+		break;
 	case ArgNone:
+		linfo->ret.storage = LLVMArgNone;
 		break;
 	case ArgVtypeByRef:
 		linfo->ret.storage = LLVMArgVtypeByRef;

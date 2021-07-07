@@ -65,13 +65,14 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "debugger-agent.h"
 #include "aot-compiler.h"
 #include "aot-runtime.h"
 #include "jit-icalls.h"
 #include "mini-runtime.h"
 #include "mono-private-unstable.h"
 #include "llvmonly-runtime.h"
+
+#include <mono/metadata/components.h>
 
 #ifndef DISABLE_AOT
 
@@ -1577,7 +1578,7 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, guint8 *blob, char 
 		msg = g_strdup ("compiled with --aot=full");
 		usable = FALSE;
 	}
-	if (mono_use_interpreter && !interp && !strcmp (assembly->aname.name, "mscorlib")) {
+	if (mono_use_interpreter && !interp && !strcmp (assembly->aname.name, MONO_ASSEMBLY_CORLIB_NAME)) {
 		/* mscorlib contains necessary interpreter trampolines */
 		msg = g_strdup ("not compiled with --aot=interp");
 		usable = FALSE;
@@ -2183,8 +2184,10 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	amodule->trampolines [MONO_AOT_TRAMP_FTNPTR_ARG] = (guint8 *)info->ftnptr_arg_trampolines;
 	amodule->trampolines [MONO_AOT_TRAMP_UNBOX_ARBITRARY] = (guint8 *)info->unbox_arbitrary_trampolines;
 
-	if (mono_is_corlib_image (assembly->image) || !strcmp (assembly->aname.name, "mscorlib") || !strcmp (assembly->aname.name, "System.Private.CoreLib"))
+	if (mono_is_corlib_image (assembly->image) || !strcmp (assembly->aname.name, MONO_ASSEMBLY_CORLIB_NAME)) {
+		g_assert (!mscorlib_aot_module);
 		mscorlib_aot_module = amodule;
+	}
 
 	/* Compute method addresses */
 	amodule->methods = (void **)g_malloc0 (amodule->info.nmethods * sizeof (gpointer));
@@ -4188,7 +4191,7 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 	if (mono_llvm_only) {
 		guint8 flags = amodule->method_flags_table [method_index];
 		/* The caller needs to looks this up, but its hard to do without constructing the full MonoJitInfo, so save it here */
-		if (flags & MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE) {
+		if (flags & (MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE | MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY)) {
 			mono_aot_lock ();
 			if (!code_to_method_flags)
 				code_to_method_flags = g_hash_table_new (NULL, NULL);
@@ -5319,10 +5322,10 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				MONO_AOT_ICALL (mono_exception_from_token)
 
 				case MONO_JIT_ICALL_mono_debugger_agent_single_step_from_context:
-					target = (gpointer)mini_get_dbg_callbacks ()->single_step_from_context;
+					target = (gpointer)mono_component_debugger ()->single_step_from_context;
 					break;
 				case MONO_JIT_ICALL_mono_debugger_agent_breakpoint_from_context:
-					target = (gpointer)mini_get_dbg_callbacks ()->breakpoint_from_context;
+					target = (gpointer)mono_component_debugger ()->breakpoint_from_context;
 					break;
 				case MONO_JIT_ICALL_mono_throw_exception:
 					target = mono_get_throw_exception_addr ();
@@ -5834,7 +5837,7 @@ aot_is_slim_amodule (MonoAotModule *amodule)
 		return FALSE;
 
 	/* "slim" only applies to mscorlib.dll */
-	if (strcmp (amodule->aot_name, "mscorlib"))
+	if (strcmp (amodule->aot_name, MONO_ASSEMBLY_CORLIB_NAME))
 		return FALSE;
 
 	guint32 f = amodule->info.flags;

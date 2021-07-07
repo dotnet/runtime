@@ -261,11 +261,6 @@ namespace System.Net.Http.Headers
         {
         }
 
-        internal HttpRequestHeaders(bool forceHeaderStoreItems)
-            : base(HttpHeaderType.General | HttpHeaderType.Request | HttpHeaderType.Custom, HttpHeaderType.Response, forceHeaderStoreItems)
-        {
-        }
-
         internal override void AddHeaders(HttpHeaders sourceHeaders)
         {
             base.AddHeaders(sourceHeaders);

@@ -39,11 +39,11 @@
       <AOTLLVMFiles Include="$(NuGetPackageRoot)\runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).microsoft.netcore.runtime.mono.llvm.tools\$(MonoLLVMSDKVersion)\tools\$(MonoLLVMHostOS)-$(BuildArchitecture)\**" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(RecursiveDir)">
+    <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(RecursiveDir)" Condition="'$(_MonoUseLLVMPackage)' == 'true'">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
 
-    <Copy SourceFiles="@(AOTLLVMFiles)" DestinationFolder="$(MonoAOTLLVMDir)\%(RecursiveDir)">
+    <Copy SourceFiles="@(AOTLLVMFiles)" DestinationFolder="$(MonoAOTLLVMDir)\%(RecursiveDir)" Condition="'$(_MonoUseAOTLLVMPackage)' == 'true'">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
   </Target>

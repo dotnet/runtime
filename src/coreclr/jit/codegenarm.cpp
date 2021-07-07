@@ -460,7 +460,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
 
         // regCnt will be the total number of bytes to locAlloc
-        genSetRegToIcon(regCnt, amount, ((int)amount == amount) ? TYP_INT : TYP_LONG);
+        genSetRegToIcon(regCnt, amount, TYP_INT);
     }
     else
     {

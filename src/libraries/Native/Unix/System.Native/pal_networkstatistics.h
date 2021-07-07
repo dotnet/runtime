@@ -27,7 +27,7 @@ typedef struct
     uint64_t SegmentsResent;
     uint64_t SegmentsSent;
     int32_t CurrentConnections;
-    int32_t __padding;
+    int32_t _padding;
 } TcpGlobalStatistics;
 
 typedef struct
@@ -120,7 +120,7 @@ typedef struct
     uint8_t AddressBytes[16];
     uint32_t NumAddressBytes;
     uint32_t Port;
-    uint32_t __padding1;
+    uint32_t _padding1;
 } IPEndPointInfo;
 
 typedef struct

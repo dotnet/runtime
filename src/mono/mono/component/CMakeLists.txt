@@ -6,6 +6,7 @@ set(MONO_EVENTPIPE_GEN_INCLUDE_PATH "${CMAKE_CURRENT_BINARY_DIR}/eventpipe")
 
 set(MONO_HOT_RELOAD_COMPONENT_NAME "hot_reload")
 set(MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME "diagnostics_tracing")
+set(MONO_DEBUGGER_COMPONENT_NAME "debugger")
 
 # a list of every component.
 set(components "")
@@ -13,6 +14,27 @@ set(components "")
 # the sources for each individiable component define a new
 # component_name-sources list for each component, and a
 # component_name-stub-sources list for the component stub.
+
+# debugger
+list(APPEND components
+  ${MONO_DEBUGGER_COMPONENT_NAME}
+)
+set(${MONO_DEBUGGER_COMPONENT_NAME}-sources
+  ${MONO_COMPONENT_PATH}/debugger.c
+  ${MONO_COMPONENT_PATH}/debugger.h
+  ${MONO_COMPONENT_PATH}/debugger-agent.c
+  ${MONO_COMPONENT_PATH}/debugger-agent.h
+  ${MONO_COMPONENT_PATH}/debugger-engine.c
+  ${MONO_COMPONENT_PATH}/debugger-engine.h
+  ${MONO_COMPONENT_PATH}/debugger-state-machine.h
+  ${MONO_COMPONENT_PATH}/debugger-state-machine.c
+  ${MONO_COMPONENT_PATH}/mini-wasm-debugger.c
+  ${MONO_COMPONENT_PATH}/debugger-protocol.h
+  ${MONO_COMPONENT_PATH}/debugger-protocol.c
+  )
+set(${MONO_DEBUGGER_COMPONENT_NAME}-stub-sources
+  ${MONO_COMPONENT_PATH}/debugger-stub.c
+  )
 
 # hot_reload
 list(APPEND components
@@ -58,13 +80,27 @@ set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-dependencies
 
 # from here down, all the components are treated in the same way
 
+#define a library for each component and component stub
+function(define_component_libs)
+  if (NOT DISABLE_LIBS)
+    foreach(component IN LISTS components)
+      add_library("mono-component-${component}-static" STATIC $<TARGET_OBJECTS:${component}-objects>)
+      install(TARGETS "mono-component-${component}-static" LIBRARY)
+    endforeach()
+    foreach(component IN LISTS components)
+      add_library("mono-component-${component}-stub-static" STATIC $<TARGET_OBJECTS:${component}-stub-objects>)
+      install(TARGETS "mono-component-${component}-stub-static" LIBRARY)
+    endforeach()
+  endif()
+endfunction()
+
 # a generic component interface that all components implement
 add_library(component_base INTERFACE)
 target_sources(component_base INTERFACE
   ${MONO_COMPONENT_PATH}/component.h
 )
 
-if(DISABLE_COMPONENTS OR (NOT STATIC_COMPONENTS AND HOST_WIN32))
+if(DISABLE_COMPONENTS OR DISABLE_LIBS)
   set(DISABLE_COMPONENT_OBJECTS 1)
 endif()
 
@@ -90,6 +126,7 @@ if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
       target_compile_definitions("mono-component-${component}" PRIVATE -DCOMPILING_COMPONENT_DYNAMIC;-DMONO_DLL_IMPORT)
     else()
       add_library("mono-component-${component}" SHARED $<TARGET_OBJECTS:${component}-objects>)
+      target_compile_definitions("${component}-objects" PRIVATE -DCOMPILING_COMPONENT_DYNAMIC;-DMONO_DLL_IMPORT)
     endif()
     foreach(dependency IN LISTS "${component}-dependencies")
       add_dependencies("mono-component-${component}" "${dependency}")
@@ -111,17 +148,13 @@ if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
     install(TARGETS "mono-component-${component}" LIBRARY)
   endforeach()
 
+  #define a library for each component and component stub
+  define_component_libs()
+
 elseif(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS)
 
-  #define a static library for each component and component stub
-  foreach(component IN LISTS components)
-    add_library("mono-component-${component}-static" STATIC $<TARGET_OBJECTS:${component}-objects>)
-    install(TARGETS "mono-component-${component}-static" LIBRARY)
-  endforeach()
-  foreach(component IN LISTS components)
-    add_library("mono-component-${component}-stub-static" STATIC $<TARGET_OBJECTS:${component}-stub-objects>)
-    install(TARGETS "mono-component-${component}-stub-static" LIBRARY)
-  endforeach()
+  #define a library for each component and component stub
+  define_component_libs()
 
   # define a list of mono-components objects for mini if building a shared libmono with static-linked components
   set(mono-components-objects "")
