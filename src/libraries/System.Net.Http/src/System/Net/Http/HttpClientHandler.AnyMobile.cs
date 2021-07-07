@@ -21,7 +21,6 @@ namespace System.Net.Http
         private readonly DiagnosticsHandler? _diagnosticsHandler;
 
         private readonly HttpMessageHandler? _underlyingHandler;
-        private static MethodInfo? _underlyingHandlerMethod;
 
         private volatile bool _disposed;
 
@@ -67,8 +66,6 @@ namespace System.Net.Http
 
         public virtual bool SupportsProxy => false;
 
-        protected static bool IsSocketHandler => IsSocketHandlerEnabled();
-
         [UnsupportedOSPlatform("browser")]
         public bool UseCookies
         {
@@ -80,7 +77,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    return (bool)GetNativeHandlerProp("UseCookies");
+                    return GetUseCookies();
                 }
             }
             set
@@ -91,7 +88,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    InvokeNativeHandlerMethod("set_UseCookies", value);
+                    SetUseCookies(value);
                 }
             }
         }
@@ -107,7 +104,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    return (CookieContainer)GetNativeHandlerProp("CookieContainer");
+                    return GetCookieContainer();
                 }
             }
             set
@@ -123,14 +120,16 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    InvokeNativeHandlerMethod("set_CookieContainer", value);
+                    SetCookieContainer(value);
                 }
             }
         }
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public IWebProxy? Proxy
         {
             get => throw new PlatformNotSupportedException();
@@ -139,7 +138,9 @@ namespace System.Net.Http
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public ICredentials? DefaultProxyCredentials
         {
             get => throw new PlatformNotSupportedException();
@@ -161,7 +162,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    creds = (ICredentials)GetNativeHandlerProp("Credentials");
+                    creds = GetCredentials();
                 }
 
                 return creds == CredentialCache.DefaultCredentials;
@@ -176,7 +177,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        InvokeNativeHandlerMethod("set_Credentials", CredentialCache.DefaultCredentials);
+                        SetCredentials(CredentialCache.DefaultCredentials);
                     }
                 }
                 else
@@ -190,11 +191,11 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        ICredentials? creds = (ICredentials)GetNativeHandlerProp("Credentials");
+                        ICredentials? creds = GetCredentials();
 
                         if (creds == CredentialCache.DefaultCredentials)
                         {
-                            InvokeNativeHandlerMethod("set_Credentials", null!);
+                            SetCredentials(null!);
                         }
                     }
                 }
@@ -212,7 +213,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    return (ICredentials)GetNativeHandlerProp("Credentials");
+                    return GetCredentials();
                 }
 
             }
@@ -224,7 +225,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    InvokeNativeHandlerMethod("set_Credentials", value!);
+                    SetCredentials(value!);
                 }
             }
         }
@@ -239,7 +240,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    return (bool)GetNativeHandlerProp("AllowAutoRedirect");
+                    return GetAllowAutoRedirect();
                 }
             }
             set
@@ -250,14 +251,16 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    InvokeNativeHandlerMethod("set_AllowAutoRedirect", value);
+                    SetAllowAutoRedirect(value);
                 }
             }
         }
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public int MaxConnectionsPerServer
         {
             get => throw new PlatformNotSupportedException();
@@ -299,7 +302,9 @@ namespace System.Net.Http
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public int MaxResponseHeadersLength
         {
             get => throw new PlatformNotSupportedException();
@@ -307,19 +312,20 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public ClientCertificateOption ClientCertificateOptions
         {
             get => throw new PlatformNotSupportedException();
-            set
-            {
-                throw new PlatformNotSupportedException();
-            }
+            set => throw new PlatformNotSupportedException();
         }
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public X509CertificateCollection ClientCertificates
         {
             get
@@ -330,7 +336,9 @@ namespace System.Net.Http
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback
         {
             get => throw new PlatformNotSupportedException();
@@ -339,7 +347,9 @@ namespace System.Net.Http
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public bool CheckCertificateRevocationList
         {
             get => throw new PlatformNotSupportedException();
@@ -348,7 +358,9 @@ namespace System.Net.Http
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public SslProtocols SslProtocols
         {
             get => throw new PlatformNotSupportedException();
@@ -356,12 +368,16 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException();
 
-        [UnsupportedOSPlatform("android")]
+        //[UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
@@ -388,7 +404,9 @@ namespace System.Net.Http
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
             throw new PlatformNotSupportedException();
 
@@ -400,26 +418,15 @@ namespace System.Net.Http
             }
         }
 
-        protected HttpMessageHandler? GetUnderlyingHandler()
-        {
-            return _underlyingHandler!;
-        }
-
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Unused fields don't make a difference for hashcode quality")]
-        private object GetNativeHandlerProp(string name)
-        {
-            return _underlyingHandler!.GetType()!.GetProperty(name)!.GetValue(_underlyingHandler, null)!;
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Unused fields don't make a difference for hashcode quality")]
+            Justification = "Xamarin dependencies are not available during libraries build")]
         private object InvokeNativeHandlerMethod(string name, params object?[] parameters)
         {
             return _underlyingHandler!.GetType()!.GetMethod(name)!.Invoke(_underlyingHandler, parameters)!;
         }
 
-        // check to see if this is linker friendly or not.
+        private static bool IsSocketHandler => IsSocketHandlerEnabled();
+
         private static bool IsSocketHandlerEnabled()
         {
             if (!AppContext.TryGetSwitch("System.Net.Http.UseNativeHttpHandler", out bool isNativeHandlerEnabled))

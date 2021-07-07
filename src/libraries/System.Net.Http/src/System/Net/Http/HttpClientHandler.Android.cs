@@ -10,12 +10,16 @@ namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
+        private static MethodInfo? _underlyingHandlerMethod;
+
         // not sure
         public virtual bool SupportsAutomaticDecompression => true;
         public virtual bool SupportsRedirectConfiguration => true;
 
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public DecompressionMethods AutomaticDecompression
         {
             get
@@ -26,8 +30,13 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    return (DecompressionMethods)GetNativeHandlerProp("AutomaticDecompression");
+                    return GetAutomaticDecompression();
                 }
+
+                //[DynamicDependency("get_AutomaticDecompression", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+                //[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2035:Unresolved External Assemblies",
+                //    Justification = "Xamarin dependencies are not available during libraries build")]
+                DecompressionMethods GetAutomaticDecompression() => (DecompressionMethods)InvokeNativeHandlerMethod("get_AutomaticDecompression");
             }
             set
             {
@@ -37,13 +46,18 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    InvokeNativeHandlerMethod("set_AutomaticDecompression", value);
+                    SetAutomaticDecompression(value);
                 }
+
+                //[DynamicDependency("set_AutomaticDecompression", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+                void SetAutomaticDecompression(DecompressionMethods value) => InvokeNativeHandlerMethod("set_AutomaticDecompression", value);
             }
         }
 
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public bool UseProxy
         {
             get
@@ -54,8 +68,11 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    return (bool)GetNativeHandlerProp("UseProxy");
+                    return GetUseProxy();
                 }
+
+                //[DynamicDependency("get_UseProxy", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+                bool GetUseProxy() => (bool)InvokeNativeHandlerMethod("get_UseProxy");
             }
             set
             {
@@ -65,13 +82,18 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    InvokeNativeHandlerMethod("set_UseProxy", value);
+                    SetUseProxy(value);
                 }
+
+                //[DynamicDependency("set_UseProxy", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+                void SetUseProxy(bool value) => InvokeNativeHandlerMethod("set_UseProxy", value);
             }
         }
 
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public bool PreAuthenticate
         {
             get
@@ -82,8 +104,13 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    return (bool)GetNativeHandlerProp("PreAuthenticate");
+                    return GetPreAuthenticate();
                 }
+
+                //[DynamicDependency("get_PreAuthenticate", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+                //[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2035:Unresolved External Assemblies",
+                //    Justification = "Xamarin dependencies are not available during libraries build")]
+                bool GetPreAuthenticate() => (bool)InvokeNativeHandlerMethod("get_PreAuthenticate");
             }
             set
             {
@@ -93,13 +120,18 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    InvokeNativeHandlerMethod("set_PreAuthenticate", value);
+                    SetPreAuthenticate(value);
                 }
+
+                //[DynamicDependency("set_PreAuthenticate", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+                void SetPreAuthenticate(bool value) => InvokeNativeHandlerMethod("set_PreAuthenticate", value);
             }
         }
 
         [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        //[UnsupportedOSPlatform("maccatalyst")]
         public int MaxAutomaticRedirections
         {
             get
@@ -110,8 +142,13 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    return (int)GetNativeHandlerProp("MaxAutomaticRedirections");
+                    return GetMaxAutomaticRedirections();
                 }
+
+                //[DynamicDependency("get_MaxAutomaticRedirections", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+                //[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2035:Unresolved External Assemblies",
+                //    Justification = "Xamarin dependencies are not available during libraries build")]
+                int GetMaxAutomaticRedirections() => (int)InvokeNativeHandlerMethod("get_MaxAutomaticRedirections");
             }
             set
             {
@@ -121,13 +158,40 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    InvokeNativeHandlerMethod("set_MaxAutomaticRedirections", value);
+                    SetMaxAutomaticRedirections(value);
                 }
+
+                //[DynamicDependency("set_MaxAutomaticRedirections", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+                void SetMaxAutomaticRedirections(int value) => InvokeNativeHandlerMethod("set_MaxAutomaticRedirections", value);
             }
         }
 
+        //[DynamicDependency("get_UseCookies", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        private bool GetUseCookies() => (bool)InvokeNativeHandlerMethod("get_UseCookies");
+
+        //[DynamicDependency("set_UseCookies", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        private void SetUseCookies(bool value) => InvokeNativeHandlerMethod("set_UseCookies", value);
+
+        //[DynamicDependency("get_CookieContainer", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        private CookieContainer GetCookieContainer() => (CookieContainer)InvokeNativeHandlerMethod("get_CookieContainer");
+
+        //[DynamicDependency("set_CookieContainer", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        private void SetCookieContainer(CookieContainer value) => InvokeNativeHandlerMethod("set_CookieContainer", value);
+
+        //[DynamicDependency("get_AllowAutoRedirect", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        private bool GetAllowAutoRedirect() => (bool)InvokeNativeHandlerMethod("get_AllowAutoRedirect");
+
+        //[DynamicDependency("set_AllowAutoRedirect", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        private void SetAllowAutoRedirect(bool value) => InvokeNativeHandlerMethod("set_AllowAutoRedirect", value);
+
+        //[DynamicDependency("get_Credentials", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        private ICredentials GetCredentials() => (ICredentials)InvokeNativeHandlerMethod("get_Credentials");
+
+        //[DynamicDependency("set_Credentials", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        private void SetCredentials(ICredentials? value) => InvokeNativeHandlerMethod("set_Credentials", value);
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Unused fields don't make a difference for hashcode quality")]
+            Justification = "Xamarin dependencies are not available during libraries build")]
         private HttpMessageHandler CreateNativeHandler()
         {
             if (_underlyingHandlerMethod == null)
