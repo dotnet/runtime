@@ -176,7 +176,7 @@ CrashReportWriter::WriteStackFrame(const StackFrame& frame)
     }
     if (frame.ModuleAddress() != 0)
     {
-        const ModuleInfo* moduleInfo = m_crashInfo.GetModuleInfoFromBaseAddress(frame.ModuleAddress());
+        ModuleInfo* moduleInfo = (ModuleInfo*)m_crashInfo.GetModuleInfoFromBaseAddress(frame.ModuleAddress());
         if (moduleInfo != nullptr)
         {
             std::string moduleName = GetFileName(moduleInfo->ModuleName());
@@ -189,6 +189,12 @@ CrashReportWriter::WriteStackFrame(const StackFrame& frame)
             }
             else
             {
+                const char* symbol = moduleInfo->GetSymbolName(frame.ReturnAddress());
+                if (symbol != nullptr)
+                {
+                    WriteValue("unmanaged_name", symbol);
+                    free((void*)symbol);
+                }
                 WriteValue("native_module", moduleName.c_str());
             }
         }

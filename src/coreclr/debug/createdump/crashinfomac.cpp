@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdump.h"
+#include <cxxabi.h>
 
 bool
 CrashInfo::Initialize()
@@ -379,4 +380,55 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
     }
     *read = numberOfBytesRead;
     return size == 0 || numberOfBytesRead > 0;
+}
+
+const struct dyld_all_image_infos* g_image_infos = nullptr;
+
+//
+// Lookup a symbol in a module. The caller needs to call "free()" on symbol returned.
+//
+const char*
+ModuleInfo::GetSymbolName(uint64_t address)
+{
+    if (m_module == nullptr)
+    {
+        m_module = dlopen(m_moduleName.c_str(), RTLD_LAZY);
+        if (m_module != nullptr)
+        {
+            if (g_image_infos == nullptr)
+            {
+                struct task_dyld_info dyld_info;
+                mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
+                kern_return_t result = task_info(mach_task_self_, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count);
+                if (result == KERN_SUCCESS)
+                {
+                    g_image_infos = (const struct dyld_all_image_infos*)dyld_info.all_image_info_addr;
+                }
+            }
+            if (g_image_infos != nullptr)
+            {
+                for (int i = 0; i < g_image_infos->infoArrayCount; ++i)
+                {
+                    const struct dyld_image_info* image = g_image_infos->infoArray + i;
+                    if (strcasecmp(image->imageFilePath, m_moduleName.c_str()) == 0)
+                    {
+                        m_localBaseAddress = (uint64_t)image->imageLoadAddress;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if (m_localBaseAddress != 0)
+    {
+        uint64_t localAddress = m_localBaseAddress + (address - m_baseAddress);
+        Dl_info info;
+        if (dladdr((void*)localAddress, &info) != 0)
+        {
+            int status = -1;
+            char *demangled = abi::__cxa_demangle(info.dli_sname, nullptr, 0, &status);
+            return status == 0 ? demangled : strdup(info.dli_sname);
+        }
+    }
+    return nullptr;
 }
