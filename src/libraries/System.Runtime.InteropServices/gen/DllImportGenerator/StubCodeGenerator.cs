@@ -465,18 +465,6 @@ namespace Microsoft.Interop
             }
         }
 
-        public override TypePositionInfo? GetTypePositionInfoForManagedIndex(int index)
-        {
-            foreach (var info in paramsTypeInfo)
-            {
-                if (info.ManagedIndex == index)
-                {
-                    return info;
-                }
-            }
-            return null;
-        }
-
         private void AppendVariableDeclations(List<StatementSyntax> statementsToUpdate, TypePositionInfo info, IMarshallingGenerator generator)
         {
             var (managed, native) = GetIdentifiers(info);

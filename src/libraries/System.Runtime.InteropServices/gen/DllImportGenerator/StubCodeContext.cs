@@ -104,7 +104,5 @@ namespace Microsoft.Interop
         {
             return $"{GetIdentifiers(info).native}__{name}";
         }
-
-        public abstract TypePositionInfo? GetTypePositionInfoForManagedIndex(int index);
     }
 }

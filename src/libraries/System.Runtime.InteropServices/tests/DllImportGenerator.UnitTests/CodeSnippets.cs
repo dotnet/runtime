@@ -1328,6 +1328,17 @@ partial class Test
     );
 }
 ";
+        public static string MutuallyRecursiveSizeParamIndexOnParameter => @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method(
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=1)] ref int[] arr,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex=0)] ref int[] arr2
+    );
+}
+";
 
         public static string CollectionsOfCollectionsStress => @"
 using System.Runtime.InteropServices;

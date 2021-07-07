@@ -70,15 +70,6 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The &apos;SizeParamIndex&apos; value in the &apos;MarshalAsAttribute&apos; is out of range..
-        /// </summary>
-        internal static string ArraySizeParamIndexOutOfRange {
-            get {
-                return ResourceManager.GetString("ArraySizeParamIndexOutOfRange", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to A type marked with &apos;BlittableTypeAttribute&apos; must be blittable..
         /// </summary>
         internal static string BlittableTypeMustBeBlittableDescription {

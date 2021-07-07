@@ -48,7 +48,7 @@ namespace Microsoft.Interop
 
                 if (collectionMarshalling.ElementCountInfo is SizeAndParamIndexInfo countInfo)
                 {
-                    if (countInfo.ConstSize != SizeAndParamIndexInfo.UnspecifiedData)
+                    if (countInfo.ConstSize != SizeAndParamIndexInfo.UnspecifiedConstSize)
                     {
                         marshalAsArguments.Add(
                             AttributeArgument(NameEquals("SizeConst"), null,
@@ -56,12 +56,12 @@ namespace Microsoft.Interop
                                     Literal(countInfo.ConstSize)))
                         );
                     }
-                    if (countInfo.ParamIndex != SizeAndParamIndexInfo.UnspecifiedData)
+                    if (countInfo.ParamAtIndex is { ManagedIndex: int paramIndex })
                     {
                         marshalAsArguments.Add(
                             AttributeArgument(NameEquals("SizeParamIndex"), null,
                                 LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                                    Literal(countInfo.ParamIndex)))
+                                    Literal(paramIndex)))
                         );
                     }
                 }

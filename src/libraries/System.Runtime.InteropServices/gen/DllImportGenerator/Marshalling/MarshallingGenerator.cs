@@ -376,14 +376,14 @@ namespace Microsoft.Interop
             throw new MarshallingNotSupportedException(info, context);
         }
         
-        private static ExpressionSyntax GetNumElementsExpressionFromMarshallingInfo(TypePositionInfo info, CountInfo count, StubCodeContext context, AnalyzerConfigOptions options)
+        private static ExpressionSyntax GetNumElementsExpressionFromMarshallingInfo(TypePositionInfo info, CountInfo count, StubCodeContext context)
         {
             return count switch
             {
-                SizeAndParamIndexInfo(int size, SizeAndParamIndexInfo.UnspecifiedData) => GetConstSizeExpression(size),
+                SizeAndParamIndexInfo(int size, SizeAndParamIndexInfo.UnspecifiedParam) => GetConstSizeExpression(size),
                 ConstSizeCountInfo(int size) => GetConstSizeExpression(size),
-                SizeAndParamIndexInfo(SizeAndParamIndexInfo.UnspecifiedData, int paramIndex) => CheckedExpression(SyntaxKind.CheckedExpression, GetExpressionForParam(context.GetTypePositionInfoForManagedIndex(paramIndex))),
-                SizeAndParamIndexInfo(int size, int paramIndex) => CheckedExpression(SyntaxKind.CheckedExpression, BinaryExpression(SyntaxKind.AddExpression, GetConstSizeExpression(size), GetExpressionForParam(context.GetTypePositionInfoForManagedIndex(paramIndex)))),
+                SizeAndParamIndexInfo(SizeAndParamIndexInfo.UnspecifiedConstSize, TypePositionInfo param) => CheckedExpression(SyntaxKind.CheckedExpression, GetExpressionForParam(param)),
+                SizeAndParamIndexInfo(int size, TypePositionInfo param) => CheckedExpression(SyntaxKind.CheckedExpression, BinaryExpression(SyntaxKind.AddExpression, GetConstSizeExpression(size), GetExpressionForParam(param))),
                 CountElementCountInfo(TypePositionInfo elementInfo) => CheckedExpression(SyntaxKind.CheckedExpression, GetExpressionForParam(elementInfo)),
                 _ => throw new MarshallingNotSupportedException(info, context)
                 {
@@ -396,53 +396,43 @@ namespace Microsoft.Interop
                 return LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(size));
             }
 
-            ExpressionSyntax GetExpressionForParam(TypePositionInfo? paramInfo)
+            ExpressionSyntax GetExpressionForParam(TypePositionInfo paramInfo)
             {
-                if (paramInfo is null)
-                {
-                    throw new MarshallingNotSupportedException(info, context)
-                    {
-                        NotSupportedDetails = Resources.ArraySizeParamIndexOutOfRange
-                    };
-                }
-                else
-                {
-                    ExpressionSyntax numElementsExpression = GetIndexedNumElementsExpression(
-                        context,
-                        paramInfo,
-                        out int numIndirectionLevels);
+                ExpressionSyntax numElementsExpression = GetIndexedNumElementsExpression(
+                           context,
+                           paramInfo,
+                           out int numIndirectionLevels);
 
-                    ITypeSymbol type = paramInfo.ManagedType;
-                    MarshallingInfo marshallingInfo = paramInfo.MarshallingAttributeInfo;
+                ITypeSymbol type = paramInfo.ManagedType;
+                MarshallingInfo marshallingInfo = paramInfo.MarshallingAttributeInfo;
 
-                    for (int i = 0; i < numIndirectionLevels; i++)
+                for (int i = 0; i < numIndirectionLevels; i++)
+                {
+                    if (marshallingInfo is NativeContiguousCollectionMarshallingInfo collectionInfo)
                     {
-                        if (marshallingInfo is NativeContiguousCollectionMarshallingInfo collectionInfo)
-                        {
-                            type = collectionInfo.ElementType;
-                            marshallingInfo = collectionInfo.ElementMarshallingInfo;
-                        }
-                        else
-                        {
-                            throw new MarshallingNotSupportedException(info, context)
-                            {
-                                NotSupportedDetails = Resources.CollectionSizeParamTypeMustBeIntegral
-                            };
-                        }
+                        type = collectionInfo.ElementType;
+                        marshallingInfo = collectionInfo.ElementMarshallingInfo;
                     }
-
-                    if (!type.IsIntegralType())
+                    else
                     {
                         throw new MarshallingNotSupportedException(info, context)
                         {
                             NotSupportedDetails = Resources.CollectionSizeParamTypeMustBeIntegral
                         };
                     }
-
-                    return CastExpression(
-                            PredefinedType(Token(SyntaxKind.IntKeyword)),
-                            ParenthesizedExpression(numElementsExpression));
                 }
+
+                if (!type.IsIntegralType())
+                {
+                    throw new MarshallingNotSupportedException(info, context)
+                    {
+                        NotSupportedDetails = Resources.CollectionSizeParamTypeMustBeIntegral
+                    };
+                }
+
+                return CastExpression(
+                        PredefinedType(Token(SyntaxKind.IntKeyword)),
+                        ParenthesizedExpression(numElementsExpression));
             }
 
             static ExpressionSyntax GetIndexedNumElementsExpression(StubCodeContext context, TypePositionInfo numElementsInfo, out int numIndirectionLevels)
@@ -607,7 +597,7 @@ namespace Microsoft.Interop
             if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
             {
                 // In this case, we need a numElementsExpression supplied from metadata, so we'll calculate it here.
-                numElementsExpression = GetNumElementsExpressionFromMarshallingInfo(info, collectionInfo.ElementCountInfo, context, options);
+                numElementsExpression = GetNumElementsExpressionFromMarshallingInfo(info, collectionInfo.ElementCountInfo, context);
             }
 
             marshallingStrategy = new NumElementsExpressionMarshalling(

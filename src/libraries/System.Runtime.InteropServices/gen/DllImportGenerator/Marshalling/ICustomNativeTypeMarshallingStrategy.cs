@@ -137,11 +137,6 @@ namespace Microsoft.Interop
 
         public override bool AdditionalTemporaryStateLivesAcrossStages => ParentContext!.AdditionalTemporaryStateLivesAcrossStages;
 
-        public override TypePositionInfo? GetTypePositionInfoForManagedIndex(int index)
-        {
-            return ParentContext!.GetTypePositionInfoForManagedIndex(index);
-        }
-
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
             return (ParentContext!.GetIdentifiers(info).managed, MarshallerHelpers.GetMarshallerIdentifier(info, ParentContext));

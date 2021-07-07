@@ -57,12 +57,6 @@ namespace Microsoft.Interop
             return $"{nativeSpanIdentifier}__{IndexerIdentifier}__{name}";
         }
 
-        public override TypePositionInfo? GetTypePositionInfoForManagedIndex(int index)
-        {
-            // We don't have parameters to look at when we're in the middle of marshalling an array.
-            return null;
-        }
-
         private static string CalculateIndexerIdentifierBasedOnParentContext(StubCodeContext? parentContext)
         {
             int i = 0;

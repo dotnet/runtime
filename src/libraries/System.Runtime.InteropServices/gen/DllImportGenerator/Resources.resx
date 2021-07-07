@@ -120,9 +120,6 @@
   <data name="ArraySizeMustBeSpecified" xml:space="preserve">
     <value>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</value>
   </data>
-  <data name="ArraySizeParamIndexOutOfRange" xml:space="preserve">
-    <value>The 'SizeParamIndex' value in the 'MarshalAsAttribute' is out of range.</value>
-  </data>
   <data name="BlittableTypeMustBeBlittableDescription" xml:space="preserve">
     <value>A type marked with 'BlittableTypeAttribute' must be blittable.</value>
   </data>

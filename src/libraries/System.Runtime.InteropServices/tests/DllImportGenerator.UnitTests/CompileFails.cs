@@ -121,6 +121,7 @@ namespace DllImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.RecursiveCountElementNameOnReturnValue, 2, 0 };
             yield return new object[] { CodeSnippets.RecursiveCountElementNameOnParameter, 2, 0 };
             yield return new object[] { CodeSnippets.MutuallyRecursiveCountElementNameOnParameter, 4, 0 };
+            yield return new object[] { CodeSnippets.MutuallyRecursiveSizeParamIndexOnParameter, 4, 0 };
         }
 
         [Theory]
