@@ -1,13 +1,16 @@
 <Project>
   <Target Name="_MonoReadAvailableComponentsManifest">
-    <Error Condition="'%(ResolvedRuntimePack.PackageDirectory)' == ''"
+    <Error Condition="'%(ResolvedRuntimePack.PackageDirectory)' == '' and '$(_MonoRuntimeComponentManifestJsonFilePath)' == ''"
            Text="Empty ResolvedRuntimePack.PackageDirectory while trying to read runtime components manifest" />
-    <MonoRuntimeComponentsReadManifestTask JsonFilePath="%(ResolvedRuntimePack.PackageDirectory)\runtimes\$(RuntimeIdentifier)\build\RuntimeComponentManifest.json">
+    <PropertyGroup>
+      <_MonoRuntimeComponentManifestJsonFilePath Condition="'$(_MonoRuntimeComponentManifestJsonFilePath)' == ''">%(ResolvedRuntimePack.PackageDirectory)\runtimes\$(RuntimeIdentifier)\build\RuntimeComponentManifest.json</_MonoRuntimeComponentManifestJsonFilePath>
+    </PropertyGroup>
+    <MonoRuntimeComponentManifestReadTask JsonFilePath="$(_MonoRuntimeComponentManifestJsonFilePath)">
       <Output TaskParameter="_MonoRuntimeComponentSharedLibExt" ItemName="_MonoRuntimeComponentSharedLibExt" />
       <Output TaskParameter="_MonoRuntimeComponentStaticLibExt" ItemName="_MonoRuntimeComponentStaticLibExt" />
       <Output TaskParameter="_MonoRuntimeComponentLinking" ItemName="_MonoRuntimeComponentLinking" />
       <Output TaskParameter="_MonoRuntimeAvailableComponents" ItemName="_MonoRuntimeAvailableComponents" />
-    </MonoRuntimeComponentsReadManifestTask>
+    </MonoRuntimeComponentManifestReadTask>
   </Target>
 
   <Target Name="_MonoComputeAvailableComponentDefinitions" DependsOnTargets="_MonoReadAvailableComponentsManifest">
