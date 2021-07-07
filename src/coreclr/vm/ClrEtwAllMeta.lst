@@ -637,6 +637,7 @@ nomac:CLRStackStress:::CLRStackWalkStress
 #################################
 # Events from the Mono profiler provider
 #################################
+nostack::MonoProfiler::ExceptionClause
 nostack::MonoProfiler::MonoProfilerMethodEnter
 nostack::MonoProfiler::MonoProfilerMethodLeave
 nostack::MonoProfiler::MonoProfilerMethodTailCall
