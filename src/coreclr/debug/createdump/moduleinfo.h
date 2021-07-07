@@ -10,10 +10,14 @@ private:
     GUID m_mvid;
     std::string m_moduleName;
     bool m_isManaged;
+    void* m_module;
+    uint64_t m_localBaseAddress;
 
 public:
     ModuleInfo(uint64_t baseAddress) :
-        m_baseAddress(baseAddress)
+        m_baseAddress(baseAddress),
+        m_module(nullptr),
+        m_localBaseAddress(0)
     {
     }
 
@@ -23,7 +27,9 @@ public:
         m_imageSize(imageSize),
         m_mvid(*mvid),
         m_moduleName(moduleName),
-        m_isManaged(isManaged)
+        m_isManaged(isManaged),
+        m_module(nullptr),
+        m_localBaseAddress(0)
     {
     }
 
@@ -34,13 +40,22 @@ public:
         m_imageSize(moduleInfo.m_imageSize),
         m_mvid(moduleInfo.m_mvid),
         m_moduleName(moduleInfo.m_moduleName),
-        m_isManaged(moduleInfo.m_isManaged)
+        m_isManaged(moduleInfo.m_isManaged),
+        m_module(nullptr),
+        m_localBaseAddress(0)
     {
     }
 
+#ifdef __APPLE__
     ~ModuleInfo()
     {
+        if (m_module != nullptr)
+        {
+            dlclose(m_module);
+            m_module = nullptr;
+        }
     }
+#endif
 
     inline bool IsManaged() const { return m_isManaged; }
     inline uint64_t BaseAddress() const { return m_baseAddress; }
@@ -48,6 +63,10 @@ public:
     inline uint32_t ImageSize() const { return m_imageSize; }
     inline const GUID* Mvid() const { return &m_mvid; }
     inline const std::string& ModuleName() const { return m_moduleName; }
+
+#ifdef __APPLE__
+    const char* GetSymbolName(uint64_t address);
+#endif
 
     bool operator<(const ModuleInfo& rhs) const
     {
