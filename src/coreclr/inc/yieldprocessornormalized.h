@@ -57,7 +57,8 @@ public:
     static void FireMeasurementEvents();
 
 private:
-    static double UntornLoad(double *valueRef);
+    static double AtomicLoad(double *valueRef);
+    static void AtomicStore(double *valueRef, double value);
 
     DISABLE_CONSTRUCT_COPY(YieldProcessorNormalization);
 

@@ -130,7 +130,8 @@ void YieldProcessorNormalization::PerformMeasurement()
         }
 
         int nextMeasurementIndex = s_nextMeasurementIndex;
-        s_nsPerYieldMeasurements[nextMeasurementIndex] = latestNsPerYield = MeasureNsPerYield(DetermineMeasureDurationUs());
+        latestNsPerYield = MeasureNsPerYield(DetermineMeasureDurationUs());
+        AtomicStore(&s_nsPerYieldMeasurements[nextMeasurementIndex], latestNsPerYield);
         if (++nextMeasurementIndex >= NsPerYieldMeasurementCount)
         {
             nextMeasurementIndex = 0;
@@ -152,10 +153,10 @@ void YieldProcessorNormalization::PerformMeasurement()
         for (int i = 0; i < NsPerYieldMeasurementCount; ++i)
         {
             latestNsPerYield = MeasureNsPerYield(measureDurationUs);
-            s_nsPerYieldMeasurements[i] = latestNsPerYield;
+            AtomicStore(&s_nsPerYieldMeasurements[i], latestNsPerYield);
             if (i == 0 || latestNsPerYield < s_establishedNsPerYield)
             {
-                s_establishedNsPerYield = latestNsPerYield;
+                AtomicStore(&s_establishedNsPerYield, latestNsPerYield);
             }
 
             if (i < NsPerYieldMeasurementCount - 1)
@@ -179,7 +180,10 @@ void YieldProcessorNormalization::PerformMeasurement()
             establishedNsPerYield = nsPerYield;
         }
     }
-    s_establishedNsPerYield = establishedNsPerYield;
+    if (establishedNsPerYield != s_establishedNsPerYield)
+    {
+        AtomicStore(&s_establishedNsPerYield, establishedNsPerYield);
+    }
 
     FireEtwYieldProcessorMeasurement(GetClrInstanceId(), latestNsPerYield, s_establishedNsPerYield);
 
@@ -257,11 +261,11 @@ void YieldProcessorNormalization::FireMeasurementEvents()
 
     // This function may be called at any time to fire events about recorded measurements. There is no synchronization for the
     // recorded information, so try to enumerate the array with some care.
-    double establishedNsPerYield = UntornLoad(&s_establishedNsPerYield);
+    double establishedNsPerYield = AtomicLoad(&s_establishedNsPerYield);
     int nextIndex = VolatileLoadWithoutBarrier(&s_nextMeasurementIndex);
     for (int i = 0; i < NsPerYieldMeasurementCount; ++i)
     {
-        double nsPerYield = UntornLoad(&s_nsPerYieldMeasurements[nextIndex]);
+        double nsPerYield = AtomicLoad(&s_nsPerYieldMeasurements[nextIndex]);
         if (nsPerYield != 0) // the array may not be fully initialized yet
         {
             FireEtwYieldProcessorMeasurement(GetClrInstanceId(), nsPerYield, establishedNsPerYield);
@@ -274,7 +278,7 @@ void YieldProcessorNormalization::FireMeasurementEvents()
     }
 }
 
-double YieldProcessorNormalization::UntornLoad(double *valueRef)
+double YieldProcessorNormalization::AtomicLoad(double *valueRef)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -282,6 +286,17 @@ double YieldProcessorNormalization::UntornLoad(double *valueRef)
     return VolatileLoadWithoutBarrier(valueRef);
 #else
     return InterlockedCompareExchangeT(valueRef, 0.0, 0.0);
+#endif
+}
+
+void YieldProcessorNormalization::AtomicStore(double *valueRef, double value)
+{
+    WRAPPER_NO_CONTRACT;
+
+#ifdef TARGET_64BIT
+    *valueRef = value;
+#else
+    InterlockedExchangeT(valueRef, value);
 #endif
 }
 
