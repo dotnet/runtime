@@ -594,6 +594,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </PropertyGroup>
 
     <ItemGroup>
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="full" />
       <MonoAotOption Include="llvm" />
       <MonoAotOption Include="llvm-path=$(MonoLlvmPath)" />
       <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />
