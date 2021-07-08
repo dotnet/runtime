@@ -471,7 +471,6 @@ namespace System.Net.Http
         }
 
         // Returns null if HTTP2 cannot be used
-        [UnsupportedOSPlatform("tvos")]
         private async ValueTask<Http2Connection?> GetHttp2ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http || _kind == HttpConnectionKind.SocksTunnel || _kind == HttpConnectionKind.SslSocksTunnel);
@@ -813,7 +812,6 @@ namespace System.Net.Http
         }
 
         // Returns null if HTTP2 cannot be used.
-        [UnsupportedOSPlatform("tvos")]
         private async ValueTask<HttpResponseMessage?> TrySendUsingHttp2Async(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             // Send using HTTP/2 if we can.
@@ -834,7 +832,6 @@ namespace System.Net.Http
             return null;
         }
 
-        [UnsupportedOSPlatform("tvos")]
         private async ValueTask<HttpResponseMessage> SendUsingHttp11Async(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             HttpConnection? connection = await GetOrReserveHttp11ConnectionAsync(async, cancellationToken).ConfigureAwait(false);
@@ -865,7 +862,6 @@ namespace System.Net.Http
             }
         }
 
-        [UnsupportedOSPlatform("tvos")]
         private async ValueTask<HttpResponseMessage> DetermineVersionAndSendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             HttpResponseMessage? response;
@@ -900,7 +896,6 @@ namespace System.Net.Http
             return await SendUsingHttp11Async(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
         }
 
-        [UnsupportedOSPlatform("tvos")]
         private async ValueTask<HttpResponseMessage> SendAndProcessAltSvcAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             HttpResponseMessage response = await DetermineVersionAndSendAsync(request, async, doRequestAuth, cancellationToken).ConfigureAwait(false);
@@ -914,7 +909,6 @@ namespace System.Net.Http
             return response;
         }
 
-        [UnsupportedOSPlatform("tvos")]
         public async ValueTask<HttpResponseMessage> SendWithRetryAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             int retryCount = 0;
@@ -1202,7 +1196,6 @@ namespace System.Net.Http
             }
         }
 
-        [UnsupportedOSPlatform("tvos")]
         public Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             if (doRequestAuth && Settings._credentials != null)
@@ -1215,7 +1208,6 @@ namespace System.Net.Http
 
         private bool DoProxyAuth => (_kind == HttpConnectionKind.Proxy || _kind == HttpConnectionKind.ProxyConnect);
 
-        [UnsupportedOSPlatform("tvos")]
         public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpConnection connection, HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             if (DoProxyAuth && ProxyCredentials is not null)
@@ -1226,7 +1218,6 @@ namespace System.Net.Http
             return connection.SendAsync(request, async, cancellationToken);
         }
 
-        [UnsupportedOSPlatform("tvos")]
         public ValueTask<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             if (DoProxyAuth && ProxyCredentials is not null)
@@ -1237,7 +1228,6 @@ namespace System.Net.Http
             return SendWithRetryAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        [UnsupportedOSPlatform("tvos")]
         public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
             if (doRequestAuth && Settings._credentials != null)
@@ -1248,7 +1238,6 @@ namespace System.Net.Http
             return SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        [UnsupportedOSPlatform("tvos")]
         private async ValueTask<(Socket?, Stream, TransportContext?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             // If a non-infinite connect timeout has been set, create and use a new CancellationToken that will be canceled
@@ -1369,7 +1358,6 @@ namespace System.Net.Http
             }
         }
 
-        [UnsupportedOSPlatform("tvos")]
         internal async ValueTask<HttpConnection> CreateHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             (Socket? socket, Stream? stream, TransportContext? transportContext) =
@@ -1464,7 +1452,6 @@ namespace System.Net.Http
             return http2Connection;
         }
 
-        [UnsupportedOSPlatform("tvos")]
         private async ValueTask<Stream> EstablishProxyTunnelAsync(bool async, HttpRequestHeaders? headers, CancellationToken cancellationToken)
         {
             Debug.Assert(_originAuthority != null);
