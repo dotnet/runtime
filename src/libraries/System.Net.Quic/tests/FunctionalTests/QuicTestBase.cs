@@ -130,6 +130,15 @@ namespace System.Net.Quic.Tests
             return bytesRead;
         }
 
+        internal static async Task<int> WriteForever(QuicStream stream)
+        {
+            Memory<byte> buffer = new byte[] { 123 };
+            while (true)
+            {
+                await stream.WriteAsync(buffer);
+            }
+        }
+
         internal static void AssertArrayEqual(byte[] expected, byte[] actual)
         {
             for (int i = 0; i < expected.Length; ++i)
