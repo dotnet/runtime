@@ -125,10 +125,18 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         static MsQuicApi()
         {
+            if (!IsHttp3AndQuicEnabled())
+            {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(null, $"HTTP/3 and QUIC is not enabled, see 'System.Net.SocketsHttpHandler.Http3AndQuicSupport' AppContext switch.");
+                }
+
+                return;
+            }
+
             if (OperatingSystem.IsWindows() && !IsWindowsVersionSupported())
             {
-                IsQuicSupported = false;
-
                 if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
@@ -161,6 +169,34 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     }
                 }
             }
+        }
+
+        // Note that this is copy-pasted from S.N.Http just to hide S.N.Quic behind the same AppContext switch
+        // since this library is considered "private" for 6.0.
+        // We should get rid of this once S.N.Quic API surface is officially exposed.
+        private static bool IsHttp3AndQuicEnabled()
+        {
+            bool value;
+
+            // First check for the AppContext switch, giving it priority over the environment variable.
+            if (AppContext.TryGetSwitch("System.Net.SocketsHttpHandler.Http3AndQuicSupport", out value))
+            {
+                return value;
+            }
+
+            // AppContext switch wasn't used. Check the environment variable.
+            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3ANDQUICSUPPORT");
+
+            if (bool.TryParse(envVar, out value))
+            {
+                return value;
+            }
+            else if (uint.TryParse(envVar, out uint intVal))
+            {
+                return intVal != 0;
+            }
+
+            return false;
         }
 
         private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,

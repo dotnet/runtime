@@ -5,6 +5,9 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Net.SocketsHttpHandler.Http3AndQuicSupport" Value="true" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="*.cs" />
   </ItemGroup>
   <ItemGroup>
