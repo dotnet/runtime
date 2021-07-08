@@ -4772,8 +4772,11 @@ public:
     // At the start of the merge function of the dataflow equations, initialize premerge state (to detect change.)
     void StartMerge(BasicBlock* block)
     {
-        JITDUMP("StartMerge: " FMT_BB " ", block->bbNum);
-        Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "\n");
+        if (VerboseDataflow())
+        {
+            JITDUMP("StartMerge: " FMT_BB " ", block->bbNum);
+            Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "\n");
+        }
 
         BitVecOps::Assign(apTraits, preMergeOut, block->bbAssertionOut);
         BitVecOps::Assign(apTraits, preMergeJumpDestOut, mJumpDestOut[block->bbNum]);
@@ -4795,11 +4798,14 @@ public:
                 assert(predBlock->bbNext == block);
                 BitVecOps::IntersectionD(apTraits, pAssertionOut, predBlock->bbAssertionOut);
 
-                JITDUMP("Merge     : Duplicate flow, " FMT_BB " ", block->bbNum);
-                Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "; ");
-                JITDUMP("pred " FMT_BB " ", predBlock->bbNum);
-                Compiler::optDumpAssertionIndices("out1 -> ", mJumpDestOut[predBlock->bbNum], "; ");
-                Compiler::optDumpAssertionIndices("out2 -> ", predBlock->bbAssertionOut, "\n");
+                if (VerboseDataflow())
+                {
+                    JITDUMP("Merge     : Duplicate flow, " FMT_BB " ", block->bbNum);
+                    Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "; ");
+                    JITDUMP("pred " FMT_BB " ", predBlock->bbNum);
+                    Compiler::optDumpAssertionIndices("out1 -> ", mJumpDestOut[predBlock->bbNum], "; ");
+                    Compiler::optDumpAssertionIndices("out2 -> ", predBlock->bbAssertionOut, "\n");
+                }
             }
         }
         else
@@ -4807,10 +4813,13 @@ public:
             pAssertionOut = predBlock->bbAssertionOut;
         }
 
-        JITDUMP("Merge     : " FMT_BB " ", block->bbNum);
-        Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "; ");
-        JITDUMP("pred " FMT_BB " ", predBlock->bbNum);
-        Compiler::optDumpAssertionIndices("out -> ", pAssertionOut, "\n");
+        if (VerboseDataflow())
+        {
+            JITDUMP("Merge     : " FMT_BB " ", block->bbNum);
+            Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "; ");
+            JITDUMP("pred " FMT_BB " ", predBlock->bbNum);
+            Compiler::optDumpAssertionIndices("out -> ", pAssertionOut, "\n");
+        }
 
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, pAssertionOut);
     }
@@ -4835,8 +4844,11 @@ public:
     // At the end of the merge store results of the dataflow equations, in a postmerge state.
     bool EndMerge(BasicBlock* block)
     {
-        JITDUMP("EndMerge  : " FMT_BB " ", block->bbNum);
-        Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "\n\n");
+        if (VerboseDataflow())
+        {
+            JITDUMP("EndMerge  : " FMT_BB " ", block->bbNum);
+            Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "\n\n");
+        }
 
         BitVecOps::DataFlowD(apTraits, block->bbAssertionOut, block->bbAssertionGen, block->bbAssertionIn);
         BitVecOps::DataFlowD(apTraits, mJumpDestOut[block->bbNum], mJumpDestGen[block->bbNum], block->bbAssertionIn);
@@ -4844,22 +4856,34 @@ public:
         bool changed = (!BitVecOps::Equal(apTraits, preMergeOut, block->bbAssertionOut) ||
                         !BitVecOps::Equal(apTraits, preMergeJumpDestOut, mJumpDestOut[block->bbNum]));
 
-        if (changed)
+        if (VerboseDataflow())
         {
-            JITDUMP("Changed   : " FMT_BB " ", block->bbNum);
-            Compiler::optDumpAssertionIndices("before out -> ", preMergeOut, "; ");
-            Compiler::optDumpAssertionIndices("after out -> ", block->bbAssertionOut, ";\n        ");
-            Compiler::optDumpAssertionIndices("jumpDest before out -> ", preMergeJumpDestOut, "; ");
-            Compiler::optDumpAssertionIndices("jumpDest after out -> ", mJumpDestOut[block->bbNum], ";\n\n");
-        }
-        else
-        {
-            JITDUMP("Unchanged : " FMT_BB " ", block->bbNum);
-            Compiler::optDumpAssertionIndices("out -> ", block->bbAssertionOut, "; ");
-            Compiler::optDumpAssertionIndices("jumpDest out -> ", mJumpDestOut[block->bbNum], "\n\n");
+            if (changed)
+            {
+                JITDUMP("Changed   : " FMT_BB " ", block->bbNum);
+                Compiler::optDumpAssertionIndices("before out -> ", preMergeOut, "; ");
+                Compiler::optDumpAssertionIndices("after out -> ", block->bbAssertionOut, ";\n        ");
+                Compiler::optDumpAssertionIndices("jumpDest before out -> ", preMergeJumpDestOut, "; ");
+                Compiler::optDumpAssertionIndices("jumpDest after out -> ", mJumpDestOut[block->bbNum], ";\n\n");
+            }
+            else
+            {
+                JITDUMP("Unchanged : " FMT_BB " ", block->bbNum);
+                Compiler::optDumpAssertionIndices("out -> ", block->bbAssertionOut, "; ");
+                Compiler::optDumpAssertionIndices("jumpDest out -> ", mJumpDestOut[block->bbNum], "\n\n");
+            }
         }
 
         return changed;
+    }
+
+    // Can be enabled to get detailed debug output about dataflow for assertions.
+    bool VerboseDataflow()
+    {
+#if 0
+        return VERBOSE;
+#endif
+        return false;
     }
 };
 
@@ -5471,9 +5495,12 @@ void Compiler::optAssertionPropMain()
     ASSERT_TP* jumpDestGen = optComputeAssertionGen();
 
     // Modified dataflow algorithm for available expressions.
-    JITDUMP("AssertionPropFlowCallback:\n\n")
     DataFlow                  flow(this);
     AssertionPropFlowCallback ap(this, bbJtrueAssertionOut, jumpDestGen);
+    if (ap.VerboseDataflow())
+    {
+        JITDUMP("AssertionPropFlowCallback:\n\n")
+    }
     flow.ForwardAnalysis(ap);
 
     for (BasicBlock* const block : Blocks())
