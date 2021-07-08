@@ -83,6 +83,22 @@ namespace System.Reflection.Metadata
             });
         }
 
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        public void CustomAttributeUpdates()
+        {
+            // Test that _modifying_ custom attribute constructor/property argumments works as expected.
+            // For this test, we don't change which constructor is called, or how many custom attributes there are.
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeUpdates).Assembly;
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+		Assert.True(true); // just check that the update loaded
+            });
+        }
+
         class NonRuntimeAssembly : Assembly
         {
         }
