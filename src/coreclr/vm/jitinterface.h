@@ -1158,9 +1158,9 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 bool __stdcall TrackAllocationsEnabled();
 
 
-extern Volatile<int64_t> g_cbILJitted;
-extern Volatile<int64_t> g_cMethodsJitted;
-extern Volatile<int64_t> g_c100nsTicksInJit;
+extern int64_t g_cbILJitted;
+extern int64_t g_cMethodsJitted;
+extern int64_t g_c100nsTicksInJit;
 extern thread_local int64_t t_cbILJittedForThread;
 extern thread_local int64_t t_cMethodsJittedForThread;
 extern thread_local int64_t t_c100nsTicksInJitForThread;

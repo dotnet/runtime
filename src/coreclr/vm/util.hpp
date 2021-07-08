@@ -929,11 +929,15 @@ private:
 
     LARGE_INTEGER startTimestamp;
     LARGE_INTEGER stopTimestamp;
+
+#if _DEBUG
     bool isRunning = false;
+#endif // _DEBUG
 
 public:
     NormalizedTimer()
     {
+        LIMITED_METHOD_CONTRACT;
         if (s_frequency.Load() == -1)
         {
             double frequency;
@@ -953,9 +957,13 @@ public:
     inline
     void Start()
     {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!isRunning);
         QueryPerformanceCounter(&startTimestamp);
-        stopTimestamp.QuadPart = 0;
+
+#if _DEBUG
         isRunning = true;
+#endif // _DEBUG
     }
 
     // ======================================================================================
@@ -963,12 +971,13 @@ public:
     inline
     void Stop()
     {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(isRunning);
         QueryPerformanceCounter(&stopTimestamp);
-        // protect against stop before start
-        if (!isRunning)
-            startTimestamp = stopTimestamp;
 
+#if _DEBUG
         isRunning = false;
+#endif // _DEBUG
     }
 
     // ======================================================================================
@@ -978,9 +987,10 @@ public:
     inline
     int64_t Elapsed100nsTicks()
     {
-        if (isRunning)
-            Stop();
-
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!isRunning);
+        _ASSERTE(startTimestamp.QuadPart > 0);
+        _ASSERTE(stopTimestamp.QuadPart > 0);
         return static_cast<int64_t>((stopTimestamp.QuadPart - startTimestamp.QuadPart) / s_frequency);
     }
 };
