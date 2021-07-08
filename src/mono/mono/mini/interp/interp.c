@@ -1060,7 +1060,13 @@ ves_array_create (MonoClass *klass, int param_count, stackval *values, MonoError
 	int rank = m_class_get_rank (klass);
 	uintptr_t *lengths = g_newa (uintptr_t, rank * 2);
 	intptr_t *lower_bounds = NULL;
-	if (2 * rank == param_count) {
+
+	if (param_count > rank && m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY) {
+		// Special constructor for jagged arrays
+		for (int i = 0; i < param_count; ++i)
+			lengths [i] = values [i].data.i;
+		return (MonoObject*) mono_array_new_jagged_checked (klass, param_count, lengths, error);
+	} else if (2 * rank == param_count) {
 		for (int l = 0; l < 2; ++l) {
 			int src = l;
 			int dst = l * rank;

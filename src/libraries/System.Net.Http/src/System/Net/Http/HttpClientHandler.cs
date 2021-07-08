@@ -28,7 +28,7 @@ namespace System.Net.Http
         public HttpClientHandler()
         {
             _underlyingHandler = new HttpHandlerType();
-            if (DiagnosticsHandler.IsGloballyEnabled())
+            if (DiagnosticsHandler.IsGloballyEnabled)
             {
                 _diagnosticsHandler = new DiagnosticsHandler(_underlyingHandler);
             }

@@ -882,6 +882,17 @@ bool GenTreeCall::IsPure(Compiler* compiler) const
 //      true if this call has any side-effects; false otherwise.
 bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool ignoreCctors) const
 {
+    // Some named intrinsics are known to have ignorable side effects.
+    if (gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+    {
+        NamedIntrinsic ni = compiler->lookupNamedIntrinsic(gtCallMethHnd);
+        if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
+            (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
+        {
+            return false;
+        }
+    }
+
     // Generally all GT_CALL nodes are considered to have side-effects, but we may have extra information about helper
     // calls that can prove them side-effect-free.
     if (gtCallType != CT_HELPER)
@@ -14458,46 +14469,26 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                         break;
 
                     case GT_CAST:
+                        f1 = forceCastToFloat(d1);
 
-                        if (tree->gtOverflow() &&
-                            ((op1->TypeIs(TYP_DOUBLE) && CheckedOps::CastFromDoubleOverflows(d1, tree->CastToType())) ||
-                             (op1->TypeIs(TYP_FLOAT) &&
-                              CheckedOps::CastFromFloatOverflows(forceCastToFloat(d1), tree->CastToType()))))
+                        if ((op1->TypeIs(TYP_DOUBLE) && CheckedOps::CastFromDoubleOverflows(d1, tree->CastToType())) ||
+                            (op1->TypeIs(TYP_FLOAT) && CheckedOps::CastFromFloatOverflows(f1, tree->CastToType())))
                         {
+                            // The conversion overflows. The ECMA spec says, in III 3.27, that
+                            // "...if overflow occurs converting a floating point type to an integer, ...,
+                            // the value returned is unspecified."  However, it would at least be
+                            // desirable to have the same value returned for casting an overflowing
+                            // constant to an int as would be obtained by passing that constant as
+                            // a parameter and then casting that parameter to an int type.
+
+                            // Don't fold overflowing converions, as the value returned by
+                            // JIT's codegen doesn't always match with the C compiler's cast result.
+                            // We want the behavior to be the same with or without folding.
+
                             return tree;
                         }
 
                         assert(tree->TypeIs(genActualType(tree->CastToType())));
-
-                        if ((op1->TypeIs(TYP_FLOAT) && !_finite(forceCastToFloat(d1))) ||
-                            (op1->TypeIs(TYP_DOUBLE) && !_finite(d1)))
-                        {
-                            // The floating point constant is not finite.  The ECMA spec says, in
-                            // III 3.27, that "...if overflow occurs converting a floating point type
-                            // to an integer, ..., the value returned is unspecified."  However, it would
-                            // at least be desirable to have the same value returned for casting an overflowing
-                            // constant to an int as would obtained by passing that constant as a parameter
-                            // then casting that parameter to an int type.  We will assume that the C compiler's
-                            // cast logic will yield the desired result (and trust testing to tell otherwise).
-                            // Cross-compilation is an issue here; if that becomes an important scenario, we should
-                            // capture the target-specific values of overflow casts to the various integral types as
-                            // constants in a target-specific function.
-                            CLANG_FORMAT_COMMENT_ANCHOR;
-
-                            // Don't fold conversions of +inf/-inf to integral value on all platforms
-                            // as the value returned by JIT helper doesn't match with the C compiler's cast result.
-                            // We want the behavior to be same with or without folding.
-                            return tree;
-                        }
-
-                        if (d1 <= -1.0 && varTypeIsUnsigned(tree->CastToType()))
-                        {
-                            // Don't fold conversions of these cases becasue the result is unspecified per ECMA spec
-                            // and the native math doing the fold doesn't match the run-time computation on all
-                            // platforms.
-                            // We want the behavior to be same with or without folding.
-                            return tree;
-                        }
 
                         switch (tree->CastToType())
                         {
@@ -15940,9 +15931,10 @@ void Compiler::gtExtractSideEffList(GenTree*  expr,
                 }
 
                 // Generally all GT_CALL nodes are considered to have side-effects.
-                // So if we get here it must be a helper call that we decided it does
+                // So if we get here it must be a helper call or a special intrinsic that we decided it does
                 // not have side effects that we needed to keep.
-                assert(!node->OperIs(GT_CALL) || (node->AsCall()->gtCallType == CT_HELPER));
+                assert(!node->OperIs(GT_CALL) || (node->AsCall()->gtCallType == CT_HELPER) ||
+                       (node->AsCall()->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC));
             }
 
             if ((m_flags & GTF_IS_IN_CSE) != 0)
@@ -17763,13 +17755,50 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     break;
                 }
 
-                CORINFO_CLASS_HANDLE specialObjClass = impGetSpecialIntrinsicExactReturnType(call->gtCallMethHnd);
-                if (specialObjClass != nullptr)
+                // Try to get the actual type of [Equality]Comparer<>.Default
+                if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
+                    (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
                 {
-                    objClass    = specialObjClass;
-                    *pIsExact   = true;
-                    *pIsNonNull = true;
-                    break;
+                    CORINFO_SIG_INFO sig;
+                    info.compCompHnd->getMethodSig(call->gtCallMethHnd, &sig);
+                    assert(sig.sigInst.classInstCount == 1);
+                    CORINFO_CLASS_HANDLE typeHnd = sig.sigInst.classInst[0];
+                    assert(typeHnd != nullptr);
+
+                    // Lookup can incorrect when we have __Canon as it won't appear to implement any interface types.
+                    // And if we do not have a final type, devirt & inlining is unlikely to result in much
+                    // simplification. We can use CORINFO_FLG_FINAL to screen out both of these cases.
+                    const DWORD typeAttribs = info.compCompHnd->getClassAttribs(typeHnd);
+                    const bool  isFinalType = ((typeAttribs & CORINFO_FLG_FINAL) != 0);
+
+                    if (isFinalType)
+                    {
+                        if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
+                        {
+                            objClass = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
+                        }
+                        else
+                        {
+                            assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
+                            objClass = info.compCompHnd->getDefaultComparerClass(typeHnd);
+                        }
+                    }
+
+                    if (objClass == nullptr)
+                    {
+                        // Don't re-visit this intrinsic in this case.
+                        call->gtCallMoreFlags &= ~GTF_CALL_M_SPECIAL_INTRINSIC;
+                        JITDUMP("Special intrinsic for type %s: type not final, so deferring opt\n",
+                                eeGetClassName(typeHnd))
+                    }
+                    else
+                    {
+                        JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
+                                eeGetClassName(objClass))
+                        *pIsExact   = true;
+                        *pIsNonNull = true;
+                        break;
+                    }
                 }
             }
             if (call->IsInlineCandidate())

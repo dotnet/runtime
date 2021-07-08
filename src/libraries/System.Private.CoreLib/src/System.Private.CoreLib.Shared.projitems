@@ -459,6 +459,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\FileStreamHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\FileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\Net5CompatFileStreamStrategy.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\OSFileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IObservable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IObserver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IProgress.cs" />
@@ -692,6 +693,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ConfiguredCancelableAsyncEnumerable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ConfiguredValueTaskAwaitable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ContractHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CreateNewOnMetadataUpdateAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CustomConstantAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\DateTimeConstantAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\DecimalConstantAttribute.cs" />
@@ -1813,7 +1815,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\Net5CompatFileStreamStrategy.CompletionSource.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\Net5CompatFileStreamStrategy.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\SyncWindowsFileStreamStrategy.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\WindowsFileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\PasteArguments.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\LibraryNameVariation.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.Windows.cs" />
@@ -2084,8 +2085,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Enumeration\FileSystemEnumerator.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\FileStreamHelpers.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\Net5CompatFileStreamStrategy.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\Net5CompatFileStreamStrategy.Lock.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\Net5CompatFileStreamStrategy.Lock.Unix.cs" Condition="'$(IsOSXLike)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\UnixFileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\PasteArguments.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\LibraryNameVariation.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.Unix.cs" />

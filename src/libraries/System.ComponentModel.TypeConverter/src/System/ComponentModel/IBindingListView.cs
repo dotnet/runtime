@@ -9,7 +9,7 @@ namespace System.ComponentModel
     {
         void ApplySort(ListSortDescriptionCollection sorts);
 
-        string Filter { get; set; }
+        string? Filter { get; set; }
 
         ListSortDescriptionCollection SortDescriptions { get; }
 

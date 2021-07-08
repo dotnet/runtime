@@ -83,6 +83,8 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0026`__ | X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate. |
 |  __`SYSLIB0027`__ | PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey. |
 |  __`SYSLIB0028`__ | X509Certificate2.PrivateKey is obsolete. Use the appropriate method to get the private key, such as GetRSAPrivateKey, or use the CopyWithPrivateKey method to create a new instance with a private key. |
+|  __`SYSLIB0029`__ | ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is no longer supported. |
+|  __`SYSLIB0030`__ | HMACSHA1 always uses the algorithm implementation provided by the platform. Use a constructor without the useManagedSha1 parameter. |
 
 ## Analyzer Warnings
 

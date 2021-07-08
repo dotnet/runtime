@@ -19254,6 +19254,19 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 goto _exit;
             }
 
+            // It's better for JIT to keep these methods not inlined for CQ.
+            NamedIntrinsic ni;
+            if (pParam->call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+            {
+                ni = pParam->pThis->lookupNamedIntrinsic(pParam->call->gtCallMethHnd);
+                if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
+                    (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
+                {
+                    pParam->result->NoteFatal(InlineObservation::CALLEE_SPECIAL_INTRINSIC);
+                    goto _exit;
+                }
+            }
+
             // Speculatively check if initClass() can be done.
             // If it can be done, we will try to inline the method.
             initClassResult =
@@ -21491,79 +21504,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
     }
 #endif // FEATURE_READYTORUN_COMPILER
-}
-
-//------------------------------------------------------------------------
-// impGetSpecialIntrinsicExactReturnType: Look for special cases where a call
-//   to an intrinsic returns an exact type
-//
-// Arguments:
-//     methodHnd -- handle for the special intrinsic method
-//
-// Returns:
-//     Exact class handle returned by the intrinsic call, if known.
-//     Nullptr if not known, or not likely to lead to beneficial optimization.
-
-CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(CORINFO_METHOD_HANDLE methodHnd)
-{
-    JITDUMP("Special intrinsic: looking for exact type returned by %s\n", eeGetMethodFullName(methodHnd));
-
-    CORINFO_CLASS_HANDLE result = nullptr;
-
-    // See what intrinisc we have...
-    const NamedIntrinsic ni = lookupNamedIntrinsic(methodHnd);
-    switch (ni)
-    {
-        case NI_System_Collections_Generic_Comparer_get_Default:
-        case NI_System_Collections_Generic_EqualityComparer_get_Default:
-        {
-            // Expect one class generic parameter; figure out which it is.
-            CORINFO_SIG_INFO sig;
-            info.compCompHnd->getMethodSig(methodHnd, &sig);
-            assert(sig.sigInst.classInstCount == 1);
-            CORINFO_CLASS_HANDLE typeHnd = sig.sigInst.classInst[0];
-            assert(typeHnd != nullptr);
-
-            // Lookup can incorrect when we have __Canon as it won't appear
-            // to implement any interface types.
-            //
-            // And if we do not have a final type, devirt & inlining is
-            // unlikely to result in much simplification.
-            //
-            // We can use CORINFO_FLG_FINAL to screen out both of these cases.
-            const DWORD typeAttribs = info.compCompHnd->getClassAttribs(typeHnd);
-            const bool  isFinalType = ((typeAttribs & CORINFO_FLG_FINAL) != 0);
-
-            if (isFinalType)
-            {
-                if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
-                {
-                    result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
-                }
-                else
-                {
-                    assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
-                    result = info.compCompHnd->getDefaultComparerClass(typeHnd);
-                }
-                JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
-                        result != nullptr ? eeGetClassName(result) : "unknown");
-            }
-            else
-            {
-                JITDUMP("Special intrinsic for type %s: type not final, so deferring opt\n", eeGetClassName(typeHnd));
-            }
-
-            break;
-        }
-
-        default:
-        {
-            JITDUMP("This special intrinsic not handled, sorry...\n");
-            break;
-        }
-    }
-
-    return result;
 }
 
 //------------------------------------------------------------------------
