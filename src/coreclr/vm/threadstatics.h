@@ -450,6 +450,20 @@ public:
         return GetPrecomputedStaticsClassData()[classID] & ClassInitFlags::INITIALIZED_FLAG;
     }
 
+    void* operator new(SIZE_T) = delete;
+
+    struct ParentModule { PTR_Module pModule; };
+
+    void* operator new(SIZE_T baseSize, ParentModule parentModule)
+    {
+        SIZE_T size = parentModule.pModule->GetThreadLocalModuleSize();
+
+        _ASSERTE(size >= baseSize);
+        _ASSERTE(size >= ThreadLocalModule::OffsetOfDataBlob());
+
+        return ::operator new(size);
+    }
+
 #ifndef DACCESS_COMPILE
 
     FORCEINLINE void EnsureClassAllocated(MethodTable * pMT)

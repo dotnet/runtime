@@ -704,9 +704,7 @@ PTR_ThreadLocalModule ThreadStatics::AllocateTLM(Module * pModule)
 
     SIZE_T size = pModule->GetThreadLocalModuleSize();
 
-    _ASSERTE(size >= ThreadLocalModule::OffsetOfDataBlob());
-
-    PTR_ThreadLocalModule pThreadLocalModule = (ThreadLocalModule*)new BYTE[size];
+    PTR_ThreadLocalModule pThreadLocalModule = new({ pModule }) ThreadLocalModule;
 
     // We guarantee alignment for 64-bit regular thread statics on 32-bit platforms even without FEATURE_64BIT_ALIGNMENT for performance reasons.
 
