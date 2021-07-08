@@ -68,6 +68,7 @@ enum class common_property
     BundleProbe,
     HostPolicyEmbedded,
     PInvokeOverride,
+    HostFxrPath,
     // Sentinel value - new values should be defined above
     Last
 };

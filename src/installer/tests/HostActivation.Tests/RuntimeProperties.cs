@@ -25,9 +25,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
             dotnet.Exec(appDll, sharedState.AppTestPropertyName)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdErrContaining($"Property {sharedState.AppTestPropertyName} = {sharedState.AppTestPropertyValue}")
@@ -43,9 +41,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
             dotnet.Exec(appDll, sharedState.FrameworkTestPropertyName)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdErrContaining($"Property {sharedState.FrameworkTestPropertyName} = {sharedState.FrameworkTestPropertyValue}")
@@ -65,13 +61,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
             dotnet.Exec(appDll, sharedState.FrameworkTestPropertyName)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdErrContaining($"Property {sharedState.FrameworkTestPropertyName} = {sharedState.AppTestPropertyValue}")
                 .And.HaveStdOutContaining($"AppContext.GetData({sharedState.FrameworkTestPropertyName}) = {sharedState.AppTestPropertyValue}");
+        }
+
+        [Fact]
+        public void HostFxrPathProperty_NotVisibleFromApp()
+        {
+            var fixture = sharedState.RuntimePropertiesFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+            dotnet.Exec(appDll, sharedState.HostFxrPathPropertyName)
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining($"Property '{sharedState.HostFxrPathPropertyName}' was not found.");
         }
 
         [Fact]
@@ -88,9 +97,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
             dotnet.Exec(appDll)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"Duplicate runtime property found: {name}");
@@ -105,6 +112,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public string AppTestPropertyValue => "VALUE_FROM_APP";
             public string FrameworkTestPropertyName => "FRAMEWORK_TEST_PROPERTY";
             public string FrameworkTestPropertyValue => "VALUE_FROM_FRAMEWORK";
+            public string HostFxrPathPropertyName => "HOSTFXR_PATH";
 
             private readonly string copiedDotnet;
 

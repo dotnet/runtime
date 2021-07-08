@@ -290,6 +290,16 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         }
     }
 
+    // We pass the loaded hostfxr path to the SDK so that it can dynamically pinvoke its APIs.
+    if (host_mode == host_mode_t::muxer &&
+        (pal::strcmp(get_filename(application).c_str(), _X("dotnet.dll")) == 0))
+    {
+        pal::dll_t fxr;
+        pal::string_t fxr_path;
+        pal::get_loaded_library(LIBFXR_NAME, "hostfxr_main", &fxr, &fxr_path);
+        coreclr_properties.add(common_property::HostFxrPath, fxr_path.c_str());
+    }
+
 #if defined(NATIVE_LIBS_EMBEDDED)
     // PInvoke Override
     if (bundle::info_t::is_single_file_bundle())

@@ -14,6 +14,13 @@ namespace RuntimeProperties
 
             foreach (string propertyName in args)
             {
+                var propertyValue = (string)System.AppContext.GetData(propertyName);
+                if (string.IsNullOrEmpty(propertyValue))
+                {
+                    Console.WriteLine($"Property '{propertyName}' was not found.");
+                    continue;
+                }
+
                 Console.WriteLine($"AppContext.GetData({propertyName}) = {System.AppContext.GetData(propertyName)}");
             }
         }
