@@ -117,7 +117,7 @@ int64_t AtomicLoad64WithoutTearing(int64_t *valueRef)
 #if TARGET_64BIT
     return VolatileLoad(valueRef);
 #else
-    return InterlockedCompareExchangeT((int64_t*)valueRef, 0, 0);
+    return InterlockedCompareExchangeT(valueRef, 0, 0);
 #endif // TARGET_64BIT
 }
 
