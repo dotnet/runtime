@@ -1683,11 +1683,13 @@ ep_rt_mono_init (void)
 		mono_error_cleanup (error);
 		mono_metadata_free_method_signature (method_signature);
 
-		_ep_rt_mono_runtime_helper_compile_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
 		if (_ep_rt_mono_runtime_helper_compile_method) {
-			_ep_rt_mono_runtime_helper_compile_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_runtime_helper_compile_method);
-			_ep_rt_mono_runtime_helper_compile_method_jitinfo->code_size = 20;
-			_ep_rt_mono_runtime_helper_compile_method_jitinfo->d.method = _ep_rt_mono_runtime_helper_compile_method;
+			_ep_rt_mono_runtime_helper_compile_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
+			if (_ep_rt_mono_runtime_helper_compile_method) {
+				_ep_rt_mono_runtime_helper_compile_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_runtime_helper_compile_method);
+				_ep_rt_mono_runtime_helper_compile_method_jitinfo->code_size = 20;
+				_ep_rt_mono_runtime_helper_compile_method_jitinfo->d.method = _ep_rt_mono_runtime_helper_compile_method;
+			}
 		}
 	}
 
@@ -1701,11 +1703,13 @@ ep_rt_mono_init (void)
 				_ep_rt_mono_monitor_enter_v4_method = mono_method_desc_search_in_class (desc, monitor);
 				mono_method_desc_free (desc);
 
-				_ep_rt_mono_monitor_enter_v4_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
-				if (_ep_rt_mono_monitor_enter_v4_method_jitinfo) {
-					_ep_rt_mono_monitor_enter_v4_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_monitor_enter_v4_method);
-					_ep_rt_mono_monitor_enter_v4_method_jitinfo->code_size = 20;
-					_ep_rt_mono_monitor_enter_v4_method_jitinfo->d.method = _ep_rt_mono_monitor_enter_v4_method;
+				if (_ep_rt_mono_monitor_enter_v4_method) {
+					_ep_rt_mono_monitor_enter_v4_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
+					if (_ep_rt_mono_monitor_enter_v4_method_jitinfo) {
+						_ep_rt_mono_monitor_enter_v4_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_monitor_enter_v4_method);
+						_ep_rt_mono_monitor_enter_v4_method_jitinfo->code_size = 20;
+						_ep_rt_mono_monitor_enter_v4_method_jitinfo->d.method = _ep_rt_mono_monitor_enter_v4_method;
+					}
 				}
 			}
 
@@ -1714,11 +1718,13 @@ ep_rt_mono_init (void)
 				_ep_rt_mono_monitor_enter_method = mono_method_desc_search_in_class (desc, monitor);
 				mono_method_desc_free (desc);
 
-				_ep_rt_mono_monitor_enter_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
-				if (_ep_rt_mono_monitor_enter_method_jitinfo) {
-					_ep_rt_mono_monitor_enter_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_monitor_enter_method);
-					_ep_rt_mono_monitor_enter_method_jitinfo->code_size = 20;
-					_ep_rt_mono_monitor_enter_method_jitinfo->d.method = _ep_rt_mono_monitor_enter_method;
+				if (_ep_rt_mono_monitor_enter_method ) {
+					_ep_rt_mono_monitor_enter_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
+					if (_ep_rt_mono_monitor_enter_method_jitinfo) {
+						_ep_rt_mono_monitor_enter_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_monitor_enter_method);
+						_ep_rt_mono_monitor_enter_method_jitinfo->code_size = 20;
+						_ep_rt_mono_monitor_enter_method_jitinfo->d.method = _ep_rt_mono_monitor_enter_method;
+					}
 				}
 			}
 		}
@@ -3474,74 +3480,97 @@ EventPipeEtwCallbackDotNETRuntime (
 	EP_ASSERT(is_enabled == 0 || is_enabled == 1) ;
 	EP_ASSERT (_ep_rt_dotnet_runtime_profiler_provider != NULL);
 
+	match_any_keywords = (is_enabled == 1) ? match_any_keywords : 0;
+
 	EP_LOCK_ENTER (section1)
-		if (is_enabled == 1 && !MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled) {
-			// Add profiler callbacks for DotNETRuntime provider events.
-			if (profiler_callback_is_enabled(match_any_keywords, JIT_KEYWORD)) {
+		uint64_t enabled_keywords = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask;
+
+		if (profiler_callback_is_enabled(match_any_keywords, JIT_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, JIT_KEYWORD)) {
 				mono_profiler_set_jit_begin_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_jit_begin);
 				mono_profiler_set_jit_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_jit_failed);
 				mono_profiler_set_jit_done_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_jit_done);
 			}
-			if (profiler_callback_is_enabled(match_any_keywords, LOADER_KEYWORD)) {
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, JIT_KEYWORD)) {
+				mono_profiler_set_jit_begin_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_jit_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_jit_done_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, LOADER_KEYWORD)) {
+			if (!profiler_callback_is_enabled(enabled_keywords, LOADER_KEYWORD)) {
 				mono_profiler_set_image_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_image_loaded);
 				mono_profiler_set_image_unloaded_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_image_unloaded);
 				mono_profiler_set_assembly_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_assembly_loaded);
 				mono_profiler_set_assembly_unloaded_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_assembly_unloaded);
 			}
-			if (profiler_callback_is_enabled(match_any_keywords, APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD | THREADING_KEYWORD)) {
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, LOADER_KEYWORD)) {
+				mono_profiler_set_image_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_image_unloaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_assembly_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_assembly_unloaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD | THREADING_KEYWORD)) {
+			if (!profiler_callback_is_enabled(enabled_keywords, APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD | THREADING_KEYWORD)) {
 				mono_profiler_set_thread_started_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_thread_started);
 				mono_profiler_set_thread_stopped_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_thread_stopped);
 			}
-			if (profiler_callback_is_enabled(match_any_keywords, TYPE_DIAGNOSTIC_KEYWORD)) {
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD | THREADING_KEYWORD)) {
+				mono_profiler_set_thread_started_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_thread_stopped_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, TYPE_DIAGNOSTIC_KEYWORD)) {
+			if (!profiler_callback_is_enabled(enabled_keywords, TYPE_DIAGNOSTIC_KEYWORD)) {
 				mono_profiler_set_class_loading_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_class_loading);
 				mono_profiler_set_class_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_class_failed);
 				mono_profiler_set_class_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_class_loaded);
 			}
-			if (profiler_callback_is_enabled(match_any_keywords, EXCEPTION_KEYWORD)) {
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, TYPE_DIAGNOSTIC_KEYWORD)) {
+				mono_profiler_set_class_loading_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_class_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_class_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, EXCEPTION_KEYWORD)) {
+			if (!profiler_callback_is_enabled(enabled_keywords, EXCEPTION_KEYWORD)) {
 				mono_profiler_set_exception_throw_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_exception_throw);
 				mono_profiler_set_exception_clause_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_exception_clause);
 			}
-			if (profiler_callback_is_enabled(match_any_keywords, CONTENTION_KEYWORD)) {
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, EXCEPTION_KEYWORD)) {
+				mono_profiler_set_exception_throw_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_exception_clause_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, CONTENTION_KEYWORD)) {
+			if (!profiler_callback_is_enabled(enabled_keywords, CONTENTION_KEYWORD)) {
 				mono_profiler_set_monitor_contention_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_monitor_contention);
 				mono_profiler_set_monitor_acquired_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_monitor_acquired);
 				mono_profiler_set_monitor_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_monitor_failed);
 			}
-		} else if (is_enabled == 0 && MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled) {
-			// Remove profiler callbacks for DotNETRuntime provider events.
-			// JIT_KEYWORD
-			mono_profiler_set_jit_begin_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-			mono_profiler_set_jit_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-			mono_profiler_set_jit_done_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-
-			// LOADER_KEYWORD
-			mono_profiler_set_image_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-			mono_profiler_set_image_unloaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-			mono_profiler_set_assembly_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-			mono_profiler_set_assembly_unloaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-
-			// APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD | THREADING_KEYWORD
-			mono_profiler_set_thread_started_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-			mono_profiler_set_thread_stopped_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-
-			// TYPE_DIAGNOSTIC_KEYWORD
-			mono_profiler_set_class_loading_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-			mono_profiler_set_class_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-			mono_profiler_set_class_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-
-			// EXCEPTION_KEYWORD
-			mono_profiler_set_exception_throw_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-			mono_profiler_set_exception_clause_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-
-			// CONTENTION_KEYWORD
-			mono_profiler_set_monitor_contention_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-			mono_profiler_set_monitor_acquired_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
-			mono_profiler_set_monitor_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, CONTENTION_KEYWORD)) {
+				mono_profiler_set_monitor_contention_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_monitor_acquired_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_monitor_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+			}
 		}
-	EP_LOCK_EXIT (section1)
 
-	MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.Level = level;
-	MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = match_any_keywords;
-	MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled = (is_enabled == 1 ? true : false);
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.Level = level;
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = match_any_keywords;
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled = (is_enabled == 1 ? true : false);
+	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
 	ep_rt_config_requires_lock_not_held ();
@@ -4861,250 +4890,249 @@ EventPipeEtwCallbackDotNETRuntimeMonoProfiler (
 	EP_ASSERT(is_enabled == 0 || is_enabled == 1) ;
 	EP_ASSERT (_ep_rt_dotnet_mono_profiler_provider != NULL);
 
+	match_any_keywords = (is_enabled == 1) ? match_any_keywords : 0;
+
 	EP_LOCK_ENTER (section1)
-		if (is_enabled == 1 && !MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.IsEnabled) {
-			// Add profiler callbacks for Mono profiler provider events.
-			if (profiler_callback_is_enabled(match_any_keywords, LOADER_KEYWORD)) {
-				if (EventEnabledMonoProfilerAppDomainLoading ())
-					mono_profiler_set_domain_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_loading);
-				if (EventEnabledMonoProfilerAppDomainLoaded ())
-					mono_profiler_set_domain_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_loaded);
-				if (EventEnabledMonoProfilerAppDomainUnloading ())
-					mono_profiler_set_domain_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_unloading);
-				if (EventEnabledMonoProfilerAppDomainUnloaded ())
-					mono_profiler_set_domain_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_unloaded);
-				if (EventEnabledMonoProfilerAppDomainName ())
-					mono_profiler_set_domain_name_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_name);
-				if (EventEnabledMonoProfilerModuleLoading ())
-					mono_profiler_set_image_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_loading);
-				if (EventEnabledMonoProfilerModuleFailed ())
-					mono_profiler_set_image_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_failed);
-				if (EventEnabledMonoProfilerModuleLoaded ())
-					mono_profiler_set_image_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_loaded);
-				if (EventEnabledMonoProfilerModuleUnloading ())
-					mono_profiler_set_image_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_unloading);
-				if (EventEnabledMonoProfilerModuleUnloaded ())
-					mono_profiler_set_image_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_unloaded);
-				if (EventEnabledMonoProfilerModuleUnloading ())
-					mono_profiler_set_assembly_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_assembly_loading);
-				if (EventEnabledMonoProfilerAssemblyLoaded ())
-					mono_profiler_set_assembly_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_assembly_loaded);
-				if (EventEnabledMonoProfilerAssemblyUnloading ())
-					mono_profiler_set_assembly_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_assembly_unloading);
-				if (EventEnabledMonoProfilerAssemblyUnloaded ())
-					mono_profiler_set_assembly_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_assembly_unloaded);
-			}
-			if (profiler_callback_is_enabled(match_any_keywords, JIT_KEYWORD)) {
-				if (EventEnabledMonoProfilerJitBegin ())
-					mono_profiler_set_jit_begin_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_begin);
-				if (EventEnabledMonoProfilerJitFailed ())
-					mono_profiler_set_jit_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_failed);
-				if (EventEnabledMonoProfilerJitDone ())
-					mono_profiler_set_jit_done_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_done);
-				if (EventEnabledMonoProfilerJitChunkCreated ())
-					mono_profiler_set_jit_chunk_created_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_chunk_created);
-				if (EventEnabledMonoProfilerJitChunkDestroyed ())
-					mono_profiler_set_jit_chunk_destroyed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_chunk_destroyed);
-				if (EventEnabledMonoProfilerJitCodeBuffer ())
-					mono_profiler_set_jit_code_buffer_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_code_buffer);
-			}
-			if (profiler_callback_is_enabled(match_any_keywords, TYPE_LOADING_KEYWORD)) {
-				if (EventEnabledMonoProfilerClassLoading ())
-					mono_profiler_set_class_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_class_loading);
-				if (EventEnabledMonoProfilerClassFailed ())
-					mono_profiler_set_class_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_class_failed);
-				if (EventEnabledMonoProfilerClassLoaded ())
-					mono_profiler_set_class_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_class_loaded);
-				if (EventEnabledMonoProfilerVTableLoading ())
-					mono_profiler_set_vtable_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_vtable_loading);
-				if (EventEnabledMonoProfilerVTableFailed ())
-					mono_profiler_set_vtable_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_vtable_failed);
-				if (EventEnabledMonoProfilerVTableLoaded ())
-					mono_profiler_set_vtable_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_vtable_loaded);
-			}
-			if (profiler_callback_is_enabled(match_any_keywords, METHOD_TRACING_KEYWORD)) {
-				if (EventEnabledMonoProfilerMethodEnter ())
-					mono_profiler_set_method_enter_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_enter);
-				if (EventEnabledMonoProfilerMethodLeave ())
-					mono_profiler_set_method_leave_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_leave);
-				if (EventEnabledMonoProfilerMethodTailCall ())
-					mono_profiler_set_method_tail_call_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_tail_call);
-				if (EventEnabledMonoProfilerMethodExceptionLeave ())
-					mono_profiler_set_method_exception_leave_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_exception_leave);
-				if (EventEnabledMonoProfilerMethodFree ())
-					mono_profiler_set_method_free_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_free);
-				if (EventEnabledMonoProfilerMethodBeginInvoke ())
-					mono_profiler_set_method_begin_invoke_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_begin_invoke);
-				if (EventEnabledMonoProfilerMethodEndInvoke ())
-					mono_profiler_set_method_end_invoke_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_end_invoke);
-				if (EventEnabledMonoProfilerMethodEnter () || 
-						EventEnabledMonoProfilerMethodLeave () ||
-						EventEnabledMonoProfilerMethodTailCall () ||
-						EventEnabledMonoProfilerMethodExceptionLeave ())
-					mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_instrumentation);
-			}
-			if (profiler_callback_is_enabled(match_any_keywords, EXCEPTION_KEYWORD)) {
-				if (EventEnabledMonoProfilerExceptionThrow ())
-					mono_profiler_set_exception_throw_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_exception_throw);
-				if (EventEnabledMonoProfilerExceptionClause ())
-					mono_profiler_set_exception_clause_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_exception_clause);
-			}
-			if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD)) {
-				if (EventEnabledMonoProfilerGCEvent ())
-					mono_profiler_set_gc_event_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_event);
-			}
-			if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_ALLOCATION_KEYWORD)) {
-				if (EventEnabledMonoProfilerGCAllocation ())
-					mono_profiler_set_gc_allocation_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_allocation);
-			}
-			if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_MOVES_KEYWORD)) {
-				if (EventEnabledMonoProfilerGCMoves ())
-					mono_profiler_set_gc_moves_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_moves);
-			}
-			if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_RESIZE_KEYWORD)) {
-				if (EventEnabledMonoProfilerGCResize ())
-					mono_profiler_set_gc_resize_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_resize);
-			}
-			if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_HANDLE_KEYWORD)) {
-				if (EventEnabledMonoProfilerGCHandleCreated ())
-					mono_profiler_set_gc_handle_created_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_handle_created);
-				if (EventEnabledMonoProfilerGCHandleDeleted ())
-					mono_profiler_set_gc_handle_deleted_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_handle_deleted);
-			}
-			if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_FINALIZATION_KEYWORD)) {
-				if (EventEnabledMonoProfilerGCFinalizing ())
-					mono_profiler_set_gc_finalizing_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_finalizing);
-				if (EventEnabledMonoProfilerGCFinalized ())
-					mono_profiler_set_gc_finalized_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_finalized);
-				if (EventEnabledMonoProfilerGCFinalizingObject ())
-					mono_profiler_set_gc_finalizing_object_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_finalizing_object);
-				if (EventEnabledMonoProfilerGCFinalizedObject ())
-					mono_profiler_set_gc_finalized_object_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_finalized_object);
-			}
-			if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_ROOT_KEYWORD)) {
-				if (EventEnabledMonoProfilerGCRootRegister ())
-					mono_profiler_set_gc_root_register_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_root_register);
-				if (EventEnabledMonoProfilerGCRootUnregister ())
-					mono_profiler_set_gc_root_unregister_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_root_unregister);
-				if (EventEnabledMonoProfilerGCRoots ())
-					mono_profiler_set_gc_roots_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_roots);
-			}
-			if (profiler_callback_is_enabled(match_any_keywords, MONITOR_KEYWORD | CONTENTION_KEYWORD)) {
-				if (EventEnabledMonoProfilerMonitorContention ())
-					mono_profiler_set_monitor_contention_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_monitor_contention);
-			}
-			if (profiler_callback_is_enabled(match_any_keywords, MONITOR_KEYWORD)) {
-				if (EventEnabledMonoProfilerMonitorFailed ())
-					mono_profiler_set_monitor_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_monitor_failed);
-				if (EventEnabledMonoProfilerMonitorAcquired ())
-					mono_profiler_set_monitor_acquired_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_monitor_acquired);
-			}
-			if (profiler_callback_is_enabled(match_any_keywords, THREADING_KEYWORD)) {
-				if (EventEnabledMonoProfilerThreadStarted ())
-					mono_profiler_set_thread_started_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_started);
-				if (EventEnabledMonoProfilerThreadStopping ())
-					mono_profiler_set_thread_stopping_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_stopping);
-				if (EventEnabledMonoProfilerThreadStopped ())
-					mono_profiler_set_thread_stopped_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_stopped);
-				if (EventEnabledMonoProfilerThreadExited ())
-					mono_profiler_set_thread_exited_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_exited);
-				if (EventEnabledMonoProfilerThreadName ())
-					mono_profiler_set_thread_name_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_name);
-			}
-		} else if (is_enabled == 0 && MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.IsEnabled) {
-			// Remove profiler callbacks for Mono profiler provider events.
-			// LOADER_KEYWORD
-			mono_profiler_set_domain_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_domain_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_domain_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_domain_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_domain_name_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_image_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_image_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_image_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_image_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_image_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_assembly_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_assembly_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_assembly_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_assembly_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+		uint64_t enabled_keywords = MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask;
 
-			// JIT_KEYWORD
-			mono_profiler_set_jit_begin_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_jit_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_jit_done_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_jit_chunk_created_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_jit_chunk_destroyed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_jit_code_buffer_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-
-			// TYPE_LOADING_KEYWORD
-			mono_profiler_set_class_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_class_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_class_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_vtable_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_vtable_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_vtable_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-
-			// METHOD_TRACING_KEYWORD
-			mono_profiler_set_method_enter_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_method_leave_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_method_tail_call_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_method_exception_leave_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_method_free_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_method_begin_invoke_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_method_end_invoke_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-
-			// EXCEPTION_KEYWORD
-			mono_profiler_set_exception_throw_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_exception_clause_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			
-			// GC_KEYWORD
-			mono_profiler_set_gc_event_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-
-			// GC_KEYWORD | GC_ALLOCATION_KEYWORD
-			mono_profiler_set_gc_allocation_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-
-			// GC_KEYWORD | GC_MOVES_KEYWORD
-			mono_profiler_set_gc_moves_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-
-			// GC_KEYWORD | GC_RESIZE_KEYWORD
-			mono_profiler_set_gc_resize_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-
-			// GC_KEYWORD | GC_HANDLE_KEYWORD
-			mono_profiler_set_gc_handle_created_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_gc_handle_deleted_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-
-			// GC_KEYWORD | GC_FINALIZATION_KEYWORD
-			mono_profiler_set_gc_finalizing_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_gc_finalized_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_gc_finalizing_object_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_gc_finalized_object_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			
-			// GC_KEYWORD | GC_ROOT_KEYWORD
-			mono_profiler_set_gc_root_register_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_gc_root_unregister_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_gc_roots_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-
-			// MONITOR_KEYWORD | CONTENTION_KEYWORD
-			mono_profiler_set_monitor_contention_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-
-			// MONITOR_KEYWORD
-			mono_profiler_set_monitor_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_monitor_acquired_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-
-			// THREADING_KEYWORD
-			mono_profiler_set_thread_started_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_thread_stopping_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_thread_stopped_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_thread_exited_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
-			mono_profiler_set_thread_name_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+		if (profiler_callback_is_enabled(match_any_keywords, LOADER_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, LOADER_KEYWORD)) {
+				mono_profiler_set_domain_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_loading);
+				mono_profiler_set_domain_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_loaded);
+				mono_profiler_set_domain_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_unloading);
+				mono_profiler_set_domain_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_unloaded);
+				mono_profiler_set_domain_name_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_name);
+				mono_profiler_set_image_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_loading);
+				mono_profiler_set_image_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_failed);
+				mono_profiler_set_image_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_loaded);
+				mono_profiler_set_image_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_unloading);
+				mono_profiler_set_image_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_unloaded);
+				mono_profiler_set_assembly_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_assembly_loading);
+				mono_profiler_set_assembly_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_assembly_loaded);
+				mono_profiler_set_assembly_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_assembly_unloading);
+				mono_profiler_set_assembly_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_assembly_unloaded);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, LOADER_KEYWORD)) {
+				mono_profiler_set_domain_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_domain_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_domain_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_domain_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_domain_name_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_image_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_image_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_image_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_image_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_image_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_assembly_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_assembly_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_assembly_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_assembly_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
 		}
-	EP_LOCK_EXIT (section1)
 
-	MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.Level = level;
-	MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = match_any_keywords;
-	MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.IsEnabled = (is_enabled == 1 ? true : false);
+		if (profiler_callback_is_enabled(match_any_keywords, JIT_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, JIT_KEYWORD)) {
+				mono_profiler_set_jit_begin_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_begin);
+				mono_profiler_set_jit_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_failed);
+				mono_profiler_set_jit_done_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_done);
+				mono_profiler_set_jit_chunk_created_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_chunk_created);
+				mono_profiler_set_jit_chunk_destroyed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_chunk_destroyed);
+				mono_profiler_set_jit_code_buffer_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_code_buffer);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, JIT_KEYWORD)) {
+				mono_profiler_set_jit_begin_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_jit_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_jit_done_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_jit_chunk_created_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_jit_chunk_destroyed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_jit_code_buffer_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, TYPE_LOADING_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, TYPE_LOADING_KEYWORD)) {
+				mono_profiler_set_class_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_class_loading);
+				mono_profiler_set_class_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_class_failed);
+				mono_profiler_set_class_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_class_loaded);
+				mono_profiler_set_vtable_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_vtable_loading);
+				mono_profiler_set_vtable_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_vtable_failed);
+				mono_profiler_set_vtable_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_vtable_loaded);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, TYPE_LOADING_KEYWORD)) {
+				mono_profiler_set_class_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_class_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_class_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_vtable_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_vtable_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_vtable_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, METHOD_TRACING_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, METHOD_TRACING_KEYWORD)) {
+				mono_profiler_set_method_enter_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_enter);
+				mono_profiler_set_method_leave_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_leave);
+				mono_profiler_set_method_tail_call_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_tail_call);
+				mono_profiler_set_method_exception_leave_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_exception_leave);
+				mono_profiler_set_method_free_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_free);
+				mono_profiler_set_method_begin_invoke_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_begin_invoke);
+				mono_profiler_set_method_end_invoke_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_end_invoke);
+				mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_instrumentation);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, METHOD_TRACING_KEYWORD)) {
+				mono_profiler_set_method_enter_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_method_leave_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_method_tail_call_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_method_exception_leave_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_method_free_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_method_begin_invoke_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_method_end_invoke_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, EXCEPTION_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, EXCEPTION_KEYWORD)) {
+				mono_profiler_set_exception_throw_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_exception_throw);
+				mono_profiler_set_exception_clause_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_exception_clause);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, EXCEPTION_KEYWORD)) {
+				mono_profiler_set_exception_throw_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_exception_clause_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD)) {
+				mono_profiler_set_gc_event_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_event);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD)) {
+				mono_profiler_set_gc_event_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_ALLOCATION_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_ALLOCATION_KEYWORD)) {
+				mono_profiler_set_gc_allocation_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_allocation);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_ALLOCATION_KEYWORD)) {
+				mono_profiler_set_gc_allocation_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_MOVES_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_MOVES_KEYWORD)) {
+				mono_profiler_set_gc_moves_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_moves);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_MOVES_KEYWORD)) {
+				mono_profiler_set_gc_moves_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_RESIZE_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_RESIZE_KEYWORD)) {
+				mono_profiler_set_gc_resize_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_resize);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_RESIZE_KEYWORD)) {
+				mono_profiler_set_gc_resize_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_HANDLE_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_HANDLE_KEYWORD)) {
+				mono_profiler_set_gc_handle_created_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_handle_created);
+				mono_profiler_set_gc_handle_deleted_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_handle_deleted);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_HANDLE_KEYWORD)) {
+				mono_profiler_set_gc_handle_created_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_gc_handle_deleted_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_FINALIZATION_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_FINALIZATION_KEYWORD)) {
+				mono_profiler_set_gc_finalizing_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_finalizing);
+				mono_profiler_set_gc_finalized_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_finalized);
+				mono_profiler_set_gc_finalizing_object_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_finalizing_object);
+				mono_profiler_set_gc_finalized_object_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_finalized_object);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_FINALIZATION_KEYWORD)) {
+				mono_profiler_set_gc_finalizing_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_gc_finalized_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_gc_finalizing_object_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_gc_finalized_object_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_ROOT_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_ROOT_KEYWORD)) {
+				mono_profiler_set_gc_root_register_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_root_register);
+				mono_profiler_set_gc_root_unregister_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_root_unregister);
+				mono_profiler_set_gc_roots_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_roots);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_ROOT_KEYWORD)) {
+				mono_profiler_set_gc_root_register_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_gc_root_unregister_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_gc_roots_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, MONITOR_KEYWORD | CONTENTION_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, MONITOR_KEYWORD | CONTENTION_KEYWORD)) {
+				mono_profiler_set_monitor_contention_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_monitor_contention);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, MONITOR_KEYWORD | CONTENTION_KEYWORD)) {
+				mono_profiler_set_monitor_contention_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, MONITOR_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, MONITOR_KEYWORD)) {
+				mono_profiler_set_monitor_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_monitor_failed);
+				mono_profiler_set_monitor_acquired_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_monitor_acquired);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, MONITOR_KEYWORD)) {
+				mono_profiler_set_monitor_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_monitor_acquired_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, THREADING_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, THREADING_KEYWORD)) {
+				mono_profiler_set_thread_started_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_started);
+				mono_profiler_set_thread_stopping_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_stopping);
+				mono_profiler_set_thread_stopped_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_stopped);
+				mono_profiler_set_thread_exited_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_exited);
+				mono_profiler_set_thread_name_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_name);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, THREADING_KEYWORD)) {
+				mono_profiler_set_thread_started_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_thread_stopping_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_thread_stopped_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_thread_exited_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_thread_name_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.Level = level;
+		MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = match_any_keywords;
+		MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.IsEnabled = (is_enabled == 1 ? true : false);
+	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
 	ep_rt_config_requires_lock_not_held ();
