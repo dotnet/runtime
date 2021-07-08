@@ -35,6 +35,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public C2 () { }
 
 			[Kept]
+			[KeptMember (".ctor()")]
 			public class Nested { }
 		}
 

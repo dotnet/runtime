@@ -1043,15 +1043,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class PublicNestedTypesType : PublicNestedTypesBaseType
 		{
 			[Kept]
+			[KeptMember (".ctor()")]
 			public class PublicNestedType { }
 			protected class ProtectedNestedType { }
 			private class PrivateNestedType { }
 			[Kept]
+			[KeptMember (".ctor()")]
 			public class HideNestedType { }
 
 			[Kept]
 			[KeptBaseType (typeof (MulticastDelegate))]
 			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
+			[KeptMember ("EndInvoke(System.IAsyncResult)")]
 			[KeptMember ("Invoke()")]
 			public delegate int PublicDelegate ();
 
@@ -1085,8 +1089,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			public class PublicNestedType { }
 			[Kept]
+			[KeptMember (".ctor()")]
 			protected class ProtectedNestedType { }
 			[Kept]
+			[KeptMember (".ctor()")]
 			private class PrivateNestedType { }
 			public class HideNestedType { }
 
@@ -1095,6 +1101,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[Kept]
 			[KeptBaseType (typeof (MulticastDelegate))]
 			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
+			[KeptMember ("EndInvoke(System.IAsyncResult)")]
 			[KeptMember ("Invoke()")]
 			private delegate int PrivateDelegate ();
 		}
@@ -1125,23 +1133,31 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class AllNestedTypesType : AllNestedTypesBaseType
 		{
 			[Kept]
+			[KeptMember (".ctor()")]
 			public class PublicNestedType { }
 			[Kept]
+			[KeptMember (".ctor()")]
 			protected class ProtectedNestedType { }
 			[Kept]
+			[KeptMember (".ctor()")]
 			private class PrivateNestedType { }
 			[Kept]
+			[KeptMember (".ctor()")]
 			public class HideNestedType { }
 
 			[Kept]
 			[KeptBaseType (typeof (MulticastDelegate))]
 			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
+			[KeptMember ("EndInvoke(System.IAsyncResult)")]
 			[KeptMember ("Invoke()")]
 			public delegate int PublicDelegate ();
 
 			[Kept]
 			[KeptBaseType (typeof (MulticastDelegate))]
 			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
+			[KeptMember ("EndInvoke(System.IAsyncResult)")]
 			[KeptMember ("Invoke()")]
 			private delegate int PrivateDelegate ();
 		}
