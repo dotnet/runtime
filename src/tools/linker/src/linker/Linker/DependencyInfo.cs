@@ -136,6 +136,8 @@ namespace Mono.Linker
 		XmlSerialized = 84, // entry type or member for XML serialization
 		SerializedRecursiveType = 85, // recursive type kept due to serialization handling
 		SerializedMember = 86, // field or property kept on a type for serialization
+
+		PreservedOperator = 87 // operator method preserved on a type
 	}
 
 	public readonly struct DependencyInfo : IEquatable<DependencyInfo>
