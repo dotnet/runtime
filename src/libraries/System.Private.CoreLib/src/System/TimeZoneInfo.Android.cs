@@ -260,21 +260,14 @@ namespace System
                 header.dataOffset = NetworkToHostOrder(header.dataOffset);
 
                 sbyte* s = (sbyte*)header.signature;
-                string magic = new string(s, 0, 6, Encoding.ASCII);
-
-                if (magic != "tzdata" || header.signature[11] != 0)
-                {
-                    var b = new StringBuilder();
-                    b.Append("bad tzdata magic:");
-                    for (int i = 0; i < 12; ++i) {
-                        b.Append(' ').Append(((byte)s[i]).ToString("x2"));
-                    }
-
-                    //TODO: Put strings in resource file
-                    throw new InvalidOperationException("bad tzdata magic: " + b.ToString());
+                var b = new StringBuilder();
+                for (int i = 0; i < 12; ++i) {
+                    b.Append(' ').Append(((byte)s[i]).ToString("x2"));
                 }
-                // What exactly are we considering bad tzdata? Seems like if it doesnt start with "tzdata" or if the signature is filled.
-                // How does filling the AndroidTzDataHeader work? Shouldn't signature be filled up, so its always != 0?
+                var signature = b.ToString();
+
+                if (!signature.StartsWith("tzdata") || header.signature[11] != 0)
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadTZHeader, tzFilePath, signature));
 
                 ReadIndex(tzFilePath, header.indexOffset, header.dataOffset, buffer);
             }
@@ -287,8 +280,7 @@ namespace System
                 int size = Marshal.SizeOf(typeof(T));
                 if (buffer.Length < size)
                 {
-                    //TODO: Put strings in resource file
-                    throw new InvalidOperationException("private error: buffer too small");
+                    throw new InvalidOperationException(SR.InvalidOperation_BadBuffer);
                 }
 
                 using (FileStream fs = File.OpenRead(tzFilePath))
@@ -297,8 +289,7 @@ namespace System
                     int numBytesRead;
                     if ((numBytesRead = fs.Read(buffer, 0, size)) < size)
                     {
-                        //TODO: Put strings in resource file
-                        throw new InvalidOperationException(string.Format("Error reading '{0}': read {1} bytes, expected {2}", tzFilePath, numBytesRead, size));
+                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ReadTZError, tzFilePath, position, size, numBytesRead, size));
                     }
 
                     fixed (byte* b = buffer)
@@ -350,8 +341,7 @@ namespace System
 
                     if (_lengths![i] < Marshal.SizeOf(typeof(AndroidTzDataHeader)))
                     {
-                        //TODO: Put strings in resource file
-                        throw new InvalidOperationException("Length in index file < sizeof(tzhead)");
+                        throw new InvalidOperationException(SR.InvalidOperation_BadIndexLength);
                     }
                 }
             }
@@ -366,8 +356,7 @@ namespace System
                 int i = Array.BinarySearch(_ids!, id, StringComparer.Ordinal);
                 if (i < 0)
                 {
-                    //TODO: Put strings in resource file
-                    throw new InvalidOperationException("Error finding the timezone id");
+                    throw new InvalidOperationException(SR.InvalidOperation_TimeZoneIDNotFound);
                 }
 
                 int offset = _byteOffsets![i];
@@ -381,8 +370,7 @@ namespace System
                     int numBytesRead;
                     if ((numBytesRead = fs.Read(buffer, 0, buffer.Length)) < buffer.Length)
                     {
-                        //TODO: Put strings in resource file
-                        throw new InvalidOperationException(string.Format("Unable to fully read from file '{0}' at offset {1} length {2}; read {3} bytes expected {4}.", tzFilePath, offset, length, numBytesRead, buffer.Length));
+                        throw new InvalidOperationException(string.Format(SR.InvalidOperation_ReadTZError, tzFilePath, offset, length, numBytesRead, buffer.Length));
                     }
                 }
 
