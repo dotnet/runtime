@@ -84,7 +84,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (releaseHandles)
                 {
                     Handle?.Dispose();
-                    StateGCHandle.Free();
                 }
             }
 
@@ -235,19 +234,22 @@ namespace System.Net.Quic.Implementations.MsQuic
                 state.ConnectTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
             }
 
-            state.AcceptQueue.Writer.Complete();
+            state.AcceptQueue.Writer.TryComplete();
             return MsQuicStatusCodes.Success;
         }
 
         private static uint HandleEventShutdownInitiatedByPeer(State state, ref ConnectionEvent connectionEvent)
         {
             state.AbortErrorCode = (long)connectionEvent.Data.ShutdownInitiatedByPeer.ErrorCode;
-            state.AcceptQueue.Writer.Complete();
+            state.AcceptQueue.Writer.TryComplete();
             return MsQuicStatusCodes.Success;
         }
 
         private static uint HandleEventShutdownComplete(State state, ref ConnectionEvent connectionEvent)
         {
+            // This is the final event on the connection, so free the GCHandle used by the event callback.
+            state.StateGCHandle.Free();
+
             state.Connection = null;
 
             state.ShutdownTcs.SetResult(MsQuicStatusCodes.Success);
@@ -533,6 +535,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _ => throw new Exception(SR.Format(SR.net_quic_unsupported_address_family, _remoteEndPoint.AddressFamily))
             };
 
+            Debug.Assert(_state.StateGCHandle.IsAllocated);
+
             _state.Connection = this;
             try
             {
@@ -547,6 +551,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch
             {
+                _state.StateGCHandle.Free();
                 _state.Connection = null;
                 throw;
             }
@@ -593,7 +598,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             IntPtr context,
             ref ConnectionEvent connectionEvent)
         {
-            var state = (State)GCHandle.FromIntPtr(context).Target!;
+            GCHandle gcHandle = GCHandle.FromIntPtr(context);
+            Debug.Assert(gcHandle.IsAllocated);
+            Debug.Assert(gcHandle.Target is not null);
+            var state = (State)gcHandle.Target;
 
             if (NetEventSource.Log.IsEnabled())
             {
@@ -626,8 +634,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(state, $"[Connection#{state.GetHashCode()}] Exception occurred during handling {connectionEvent.Type} connection callback: {ex.Message}");
+                    NetEventSource.Error(state, $"[Connection#{state.GetHashCode()}] Exception occurred during handling {connectionEvent.Type} connection callback: {ex}");
                 }
+
+                Debug.Fail($"[Connection#{state.GetHashCode()}] Exception occurred during handling {connectionEvent.Type} connection callback: {ex}");
 
                 // TODO: trigger an exception on any outstanding async calls.
 
@@ -692,7 +702,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 // We may not be fully initialized if constructor fails.
                 _state.Handle?.Dispose();
-                if (_state.StateGCHandle.IsAllocated) _state.StateGCHandle.Free();
             }
         }
 
