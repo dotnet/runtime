@@ -67,7 +67,7 @@ namespace System.Net.Http
         public HttpConnectionSettings()
         {
             bool allowHttp2 = GlobalHttpSettings.SocketsHttpHandler.AllowHttp2;
-            bool allowHttp3 = GlobalHttpSettings.SocketsHttpHandler.AllowDraftHttp3;
+            bool allowHttp3 = GlobalHttpSettings.SocketsHttpHandler.AllowHttp3AndQuic;
             _maxHttpVersion =
                 allowHttp3 && allowHttp2 ? HttpVersion.Version30 :
                 allowHttp2 ? HttpVersion.Version20 :
