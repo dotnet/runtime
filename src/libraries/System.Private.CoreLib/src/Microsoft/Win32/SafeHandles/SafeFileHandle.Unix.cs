@@ -328,7 +328,11 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(lockOperation == Interop.Sys.LockOperations.LOCK_EX || lockOperation == Interop.Sys.LockOperations.LOCK_SH);
 
-            if (DisableFileLocking)
+            if (OperatingSystem.IsBrowser())
+            {
+                return false; // #40065: Emscripten does not support file locking
+            }
+            else if (DisableFileLocking)
             {
                 return false;
             }
