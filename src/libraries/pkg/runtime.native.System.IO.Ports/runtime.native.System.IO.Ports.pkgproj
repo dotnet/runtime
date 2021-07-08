@@ -1,4 +1,10 @@
 ﻿<Project DefaultTargets="Build">
+  <PropertyGroup>
+    <BuildingAnOfficialBuildLeg Condition="'$(BuildingAnOfficialBuildLeg)' == '' and '$(OfficialBuildId)' != '' and '$(DotNetBuildFromSource)' != 'true'">true</BuildingAnOfficialBuildLeg>
+    <RequiresBuildRid Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' or '$(RuntimeFlavor)' != 'Mono'">true</RequiresBuildRid>
+    <ExcludeFromBuildRID>win*;linux-musl*</ExcludeFromBuildRID>
+  </PropertyGroup>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>

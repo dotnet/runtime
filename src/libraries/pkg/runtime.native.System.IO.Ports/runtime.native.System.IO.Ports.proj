@@ -2,7 +2,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
-    <!-- identity project built in AllConfigurations leg, runtime specific projects are included through netcoreapp.rids.props -->
+    <!-- identity project built in AllConfigurations leg -->
     <Project Include="$(MSBuildProjectName).pkgproj" />
   </ItemGroup>
 
