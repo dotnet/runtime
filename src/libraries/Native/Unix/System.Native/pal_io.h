@@ -711,7 +711,7 @@ PALEXPORT char* SystemNative_RealPath(const char* path);
 PALEXPORT int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid);
 
 /**
-* Returns file system type on success, or -1 on error or 0 when fstatfs is not supported.
+* Returns file system type on success, or -1 on error.
 */
 PALEXPORT int64_t SystemNative_GetFileSystemType(intptr_t fd);
 

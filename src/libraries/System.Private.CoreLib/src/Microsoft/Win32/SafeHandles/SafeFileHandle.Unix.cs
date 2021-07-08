@@ -10,7 +10,8 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal static bool DisableFileLocking { get; } = AppContextConfigHelper.GetBooleanConfig("System.IO.DisableFileLocking", "DOTNET_SYSTEM_IO_DISABLEFILELOCKING", defaultValue: false);
+        internal static bool DisableFileLocking { get; } = OperatingSystem.IsBrowser() // #40065: Emscripten does not support file locking
+            || AppContextConfigHelper.GetBooleanConfig("System.IO.DisableFileLocking", "DOTNET_SYSTEM_IO_DISABLEFILELOCKING", defaultValue: false);
 
         // not using bool? as it's not thread safe
         private volatile NullableBool _canSeek = NullableBool.Undefined;
@@ -328,11 +329,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(lockOperation == Interop.Sys.LockOperations.LOCK_EX || lockOperation == Interop.Sys.LockOperations.LOCK_SH);
 
-            if (OperatingSystem.IsBrowser())
-            {
-                return false; // #40065: Emscripten does not support file locking
-            }
-            else if (DisableFileLocking)
+            if (DisableFileLocking)
             {
                 return false;
             }
