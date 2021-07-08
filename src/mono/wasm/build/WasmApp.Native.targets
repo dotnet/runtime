@@ -249,9 +249,6 @@
 
     <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
-    <!-- warm up the cache -->
-    <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
-
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
     <EmccCompile SourceFiles="@(_WasmSourceFileToCompile)" Arguments='$(_EmccLocalFlags) "@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
   </Target>
