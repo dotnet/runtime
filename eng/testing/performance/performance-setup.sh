@@ -270,6 +270,7 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     wasm_dotnet_path=$payload_directory/dotnet-wasm
     mv $wasm_runtime_loc $wasm_dotnet_path
     if [[ "$wasmaot" == "true" ]]; then
+        # wasm aot needs some source code from dotnet\runtime repo
         rsync -a --progress $source_directory/* $wasm_dotnet_path --exclude payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --aotcompilermode wasm --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --buildTimeout 3600" 
     else
