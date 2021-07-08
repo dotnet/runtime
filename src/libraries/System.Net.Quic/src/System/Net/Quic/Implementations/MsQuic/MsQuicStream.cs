@@ -875,7 +875,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     shouldReadComplete = true;
                 }
 
-                if (state.ReadState != ReadState.ConnectionClosed)
+                if (state.ReadState != ReadState.ConnectionClosed && state.ReadState != ReadState.Aborted)
                 {
                     state.ReadState = ReadState.ReadsCompleted;
                 }
