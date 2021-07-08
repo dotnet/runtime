@@ -3045,11 +3045,15 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                 }
             }
 
-            if (regSize == YMM_REGSIZE_BYTES)
+            if (regSize == YMM_REGSIZE_BYTES && size >= 0)
             {
                 regSize = XMM_REGSIZE_BYTES;
+
+                // Avoid AVX-SSE transition penalty
+                instGen(INS_vzeroupper);
             }
         }
+
 
         // TODO-CQ-XArch: On x86 we could copy 8 byte at once by using MOVQ instead of four 4 byte MOV stores.
         // On x64 it may also be worth copying a 4/8 byte remainder using MOVD/MOVQ, that avoids the need to
