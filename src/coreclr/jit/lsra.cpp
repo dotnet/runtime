@@ -11247,11 +11247,12 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
         spillCandidates &= ~spillCandidateBit;
         regNumber  spillCandidateRegNum    = genRegNumFromMask(spillCandidateBit);
         RegRecord* spillCandidateRegRecord = &linearScan->physRegs[spillCandidateRegNum];
+        Interval*  assignedInterval        = spillCandidateRegRecord->assignedInterval;
 
         // Can and should the interval in this register be spilled for this one,
         // if we don't find a better alternative?
         if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == currentLocation) &&
-            !spillCandidateRegRecord->assignedInterval->getNextRefPosition()->RegOptional())
+            !assignedInterval->getNextRefPosition()->RegOptional())
         {
             continue;
         }
@@ -11261,17 +11262,15 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
         }
 
         float        currentSpillWeight = 0;
-        RefPosition* recentRefPosition  = spillCandidateRegRecord->assignedInterval != nullptr
-                                             ? spillCandidateRegRecord->assignedInterval->recentRefPosition
-                                             : nullptr;
-        if ((recentRefPosition != nullptr) && (recentRefPosition->RegOptional() &&
-             !(spillCandidateRegRecord->assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
+        RefPosition* recentRefPosition  = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
+        if ((recentRefPosition != nullptr) &&
+            (recentRefPosition->RegOptional() && !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
         {
             // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
             // is not an actual ref. In those cases, we will reload in future (next) refPosition.
             // For such cases, consider the spill cost of next refposition.
             // See notes in "spillInterval()".
-            RefPosition* reloadRefPosition = spillCandidateRegRecord->assignedInterval->getNextRefPosition();
+            RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
             if (reloadRefPosition != nullptr)
             {
                 currentSpillWeight = linearScan->getWeight(reloadRefPosition);
