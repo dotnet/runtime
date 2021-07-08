@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Threading
@@ -14,9 +15,17 @@ namespace System.Threading
         /// </summary>
         public sealed class WaitableObject
         {
+            /// <summary>
+            /// Dictionary to look up named waitable objects.  This implementation only supports in-process
+            /// named waitable objects.  Currently only named mutexes are supported.
+            /// </summary>
+            private static Dictionary<string, WaitableObject>? s_namedObjects;
+
             private readonly WaitableObjectType _type;
             private int _signalCount;
             private readonly int _maximumSignalCount;
+            private int _referenceCount;
+            private readonly string? _name;
 
             /// <summary>
             /// Only <see cref="Mutex"/> has a thread ownership requirement, and it's a less common type to be used, so
@@ -33,6 +42,7 @@ namespace System.Threading
                 WaitableObjectType type,
                 int initialSignalCount,
                 int maximumSignalCount,
+                string? name,
                 OwnershipInfo? ownershipInfo)
             {
                 Debug.Assert(initialSignalCount >= 0);
@@ -42,6 +52,8 @@ namespace System.Threading
                 _type = type;
                 _signalCount = initialSignalCount;
                 _maximumSignalCount = maximumSignalCount;
+                _referenceCount = 1;
+                _name = name;
                 _ownershipInfo = ownershipInfo;
             }
 
@@ -56,17 +68,67 @@ namespace System.Threading
                             : WaitableObjectType.AutoResetEvent,
                         initiallySignaled ? 1 : 0,
                         1,
+                        null,
                         null);
             }
 
             public static WaitableObject NewSemaphore(int initialSignalCount, int maximumSignalCount)
             {
-                return new WaitableObject(WaitableObjectType.Semaphore, initialSignalCount, maximumSignalCount, null);
+                return new WaitableObject(WaitableObjectType.Semaphore, initialSignalCount, maximumSignalCount, null, null);
             }
 
             public static WaitableObject NewMutex()
             {
-                return new WaitableObject(WaitableObjectType.Mutex, 1, 1, new OwnershipInfo());
+                return new WaitableObject(WaitableObjectType.Mutex, 1, 1, null, new OwnershipInfo());
+            }
+
+            public static WaitableObject? CreateNamedMutex_Locked(string name, out bool createdNew)
+            {
+                s_lock.VerifyIsLocked();
+
+                s_namedObjects ??= new Dictionary<string, WaitableObject>();
+
+                if (s_namedObjects.TryGetValue(name, out WaitableObject? result))
+                {
+                    createdNew = false;
+                    if (!result.IsMutex)
+                    {
+                        return null;
+                    }
+                    result._referenceCount++;
+                }
+                else
+                {
+                    createdNew = true;
+                    result = new WaitableObject(WaitableObjectType.Mutex, 1, 1, name, new OwnershipInfo());
+                    s_namedObjects.Add(name, result);
+                }
+
+                return result;
+            }
+
+            public static OpenExistingResult OpenNamedMutex(string name, out WaitableObject? result)
+            {
+                s_lock.Acquire();
+                try
+                {
+                    if (s_namedObjects == null || !s_namedObjects.TryGetValue(name, out result))
+                    {
+                        result = null;
+                        return OpenExistingResult.NameNotFound;
+                    }
+                    if (!result.IsMutex)
+                    {
+                        result = null;
+                        return OpenExistingResult.NameInvalid;
+                    }
+                    result._referenceCount++;
+                    return OpenExistingResult.Success;
+                }
+                finally
+                {
+                    s_lock.Release();
+                }
             }
 
             public void OnDeleteHandle()
@@ -74,6 +136,19 @@ namespace System.Threading
                 s_lock.Acquire();
                 try
                 {
+                    // Multiple handles may refer to the same named object.  Make sure the object
+                    // is only abandoned once the last handle to it is deleted.  Also, remove the
+                    // object from the named objects dictionary at this point.
+                    _referenceCount--;
+                    if (_referenceCount > 0)
+                    {
+                        return;
+                    }
+                    if (_name != null)
+                    {
+                        s_namedObjects!.Remove(_name);
+                    }
+
                     if (IsMutex && !IsSignaled)
                     {
                         // A thread has a reference to all <see cref="Mutex"/>es locked by it, see
