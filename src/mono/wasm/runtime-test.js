@@ -145,8 +145,8 @@ const IOHandler = {
 						req = await req(Module); // pass Module so emsdk can use it
 					}
 
-					// add to the globalThis the file under the namespace of the upercase filename without js extension
-					globalThis[file.substring(2,file.length - 3).replace("-","_").toUpperCase()] = req;
+					// add to Module
+					Module = Object.assign(req, Module);
 				};
 			} else if (is_browser) { // vanila JS in browser
 				loadFunc = function (file) {

@@ -257,6 +257,9 @@
   "author": "Microsoft",
   "license": "MIT",
   "dependencies": {
+    "node-gyp-build": "^4.2.0",
+    "bufferutil": "^4.0.1",
+    "utf-8-validate": "^5.0.2",
     "ws": "^7.5.0"
   }
 }'
