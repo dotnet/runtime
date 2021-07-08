@@ -34,10 +34,7 @@ namespace System.Net.Http
             return IsGloballyEnabled() && (Activity.Current != null || s_diagnosticListener.IsEnabled());
         }
 
-        internal static bool IsGloballyEnabled()
-        {
-            return GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation;
-        }
+        internal static bool IsGloballyEnabled() => GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation;
 
         // SendAsyncCore returns already completed ValueTask for when async: false is passed.
         // Internally, it calls the synchronous Send method of the base class.
