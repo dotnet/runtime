@@ -381,7 +381,7 @@
           Condition="'$(InstallWorkloadForTesting)' == 'true'">
 
     <MSBuild Projects="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
-             Properties="TestingWorkloads=true;RuntimeIdentifier=osx-x64;Configuration=$(Configuration);TargetCrossRid=$(RuntimeIdentifier)"
+             Properties="TestingWorkloads=true;RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier);Configuration=$(Configuration);TargetCrossRid=$(RuntimeIdentifier)"
              Targets="Restore;Pack" />
 
     <ItemGroup>
