@@ -237,7 +237,7 @@ typedef enum {
 	EP_RT_COUNTERS_GC_LARGE_OBJECT_SIZE_BYTES,
 	EP_RT_COUNTERS_GC_LAST_PERCENT_TIME_IN_GC,
 	EP_RT_COUNTERS_JIT_IL_BYTES_JITTED,
-	EP_RT_COUNTERS_JIT_METOHODS_JITTED,
+	EP_RT_COUNTERS_JIT_METHODS_JITTED,
 	EP_RT_COUNTERS_JIT_TICKS_IN_JIT
 } EventPipeRuntimeCounters;
 
@@ -332,7 +332,7 @@ guint64 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetRuntimeCounter
 		return (guint64)gc_last_percent_time_in_gc ();
 	case EP_RT_COUNTERS_JIT_IL_BYTES_JITTED :
 		return (guint64)get_il_bytes_jitted ();
-	case EP_RT_COUNTERS_JIT_METOHODS_JITTED :
+	case EP_RT_COUNTERS_JIT_METHODS_JITTED :
 		return (guint64)get_methods_jitted ();
 	case EP_RT_COUNTERS_JIT_TICKS_IN_JIT :
 		return (gint64)get_ticks_in_jit ();
