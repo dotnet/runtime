@@ -1196,41 +1196,46 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
         return -1;
     }
 
-
     // On 32-bit, if you use 64-bit offsets, the last argument of `sendfile' will be a
     // `size_t' a 32-bit integer while the `st_size' field of the stat structure will be off64_t.
     // So `size' will have to be `uint64_t'. In all other cases, it will be `size_t'.
     uint64_t size = (uint64_t)sourceStat.st_size;
-
-    // Note that per man page for large files, you have to iterate until the
-    // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
-    while (size > 0)
+    if (size != 0)
     {
-        ssize_t sent = sendfile(outFd, inFd, NULL, (size >= SSIZE_MAX ? SSIZE_MAX : (size_t)size));
-        if (sent < 0)
+        // Note that per man page for large files, you have to iterate until the
+        // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
+        while (size > 0)
         {
-            if (errno != EINVAL && errno != ENOSYS)
+            ssize_t sent = sendfile(outFd, inFd, NULL, (size >= SSIZE_MAX ? SSIZE_MAX : (size_t)size));
+            if (sent < 0)
             {
-                return -1;
+                if (errno != EINVAL && errno != ENOSYS)
+                {
+                    return -1;
+                }
+                else
+                {
+                    break;
+                }
             }
             else
             {
-                break;
+                assert((size_t)sent <= size);
+                size -= (size_t)sent;
             }
         }
-        else
+
+        if (size == 0)
         {
-            assert((size_t)sent <= size);
-            size -= (size_t)sent;
+            copied = true;
         }
     }
-    if (size == 0)
-    {
-        copied = true;
-    }
+
     // sendfile couldn't be used; fall back to a manual copy below. This could happen
     // if we're on an old kernel, for example, where sendfile could only be used
-    // with sockets and not regular files.
+    // with sockets and not regular files.  Additionally, certain files (e.g. procfs)
+    // may return a size of 0 even though reading from then will produce data.  As such,
+    // we avoid using sendfile with the queried size if the size is reported as 0.
 #endif // HAVE_SENDFILE_4
 
     // Manually read all data from the source and write it to the destination.
