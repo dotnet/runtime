@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.Configuration
                 {
                     if (_providers.Count == 0)
                     {
-                        throw new InvalidOperationException("A configuration source is not registered. Please register one before setting a value.");
+                        throw new InvalidOperationException(SR.Error_NoSources);
                     }
 
                     foreach (var provider in _providers)

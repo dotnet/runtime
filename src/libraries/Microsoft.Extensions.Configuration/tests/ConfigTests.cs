@@ -740,13 +740,11 @@ namespace Microsoft.Extensions.Configuration.Test
 
             ((IConfigurationBuilder)config).Sources.Clear();
 
-            var expectedMsg = "A configuration source is not registered. Please register one before setting a value.";
-
             // Act
             var ex = Assert.Throws<InvalidOperationException>(() => config["Title"] = "Welcome");
 
             // Assert
-            Assert.Equal(expectedMsg, ex.Message);
+            Assert.Equal(SR.Error_NoSources, ex.Message);
         }
 
         [Fact]
