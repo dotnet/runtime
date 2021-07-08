@@ -49,6 +49,9 @@ else(CLR_CMAKE_HOST_WIN32)
 
     add_definitions(-DPAL_STDCPP_COMPAT)
 
+    # This is so we can include "version.c"
+    include_directories(${CMAKE_BINARY_DIR})
+
     set(CREATEDUMP_SOURCES
         main.cpp
         dumpname.cpp
@@ -57,6 +60,7 @@ else(CLR_CMAKE_HOST_WIN32)
         threadinfo.cpp
         datatarget.cpp
         dumpwriter.cpp
+        crashreportwriter.cpp
     )
 
 if(CLR_CMAKE_HOST_OSX)
