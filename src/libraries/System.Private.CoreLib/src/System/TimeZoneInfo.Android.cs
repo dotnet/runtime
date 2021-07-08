@@ -128,6 +128,9 @@ namespace System
             }
         }
 
+        // Core logic to retrieve the local system time zone.
+        // Obtains Android's system local time zone id to get the corresponding time zone
+        // Defaults to Utc if local time zone cannot be found
         private static TimeZoneInfo GetLocalTimeZoneCore()
         {
             string? id = Interop.Sys.GetDefaultTimeZone();
@@ -141,7 +144,6 @@ namespace System
                 }
             }
 
-            // If we can't find a default time zone, return UTC
             return Utc;
         }
 
@@ -167,6 +169,9 @@ namespace System
             return "/apex/com.android.runtime";
         }
 
+        // On Android, time zone data is found in tzdata
+        // Based on https://github.com/mono/mono/blob/main/mcs/class/corlib/System/TimeZoneInfo.Android.cs
+        // Also follows the locations found at the bottom of https://github.com/aosp-mirror/platform_bionic/blob/master/libc/tzcode/bionic.cpp
         private static string GetTimeZoneDirectory()
         {
             // Android 10+, TimeData module where the updates land
@@ -252,13 +257,14 @@ namespace System
 
             private unsafe void ReadHeader(string tzFilePath)
             {
-                int size   = Math.Max(Marshal.SizeOf(typeof(AndroidTzDataHeader)), Marshal.SizeOf(typeof(AndroidTzDataEntry)));
+                int size = Math.Max(Marshal.SizeOf(typeof(AndroidTzDataHeader)), Marshal.SizeOf(typeof(AndroidTzDataEntry)));
                 var buffer = new byte[size];
                 AndroidTzDataHeader header = ReadAt<AndroidTzDataHeader>(tzFilePath, 0, buffer);
 
                 header.indexOffset = NetworkToHostOrder(header.indexOffset);
                 header.dataOffset = NetworkToHostOrder(header.dataOffset);
 
+                // tzdata files are expected to start with the form of "tzdata2012f\0" depending on the year of the tzdata used which is 2012 in this example
                 sbyte* s = (sbyte*)header.signature;
                 string magic = new string(s, 0, 6, Encoding.ASCII);
 
