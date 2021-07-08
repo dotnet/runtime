@@ -223,7 +223,7 @@ namespace System.Text.Json
             int length = JsonWriterHelper.GetMaxEscapedLength(propertyName.Length, firstEscapeIndexProp);
 
             Span<char> escapedPropertyName = length <= JsonConstants.StackallocThreshold ?
-                (stackalloc char[JsonConstants.StackallocThreshold]).Slice(0, length) :
+                stackalloc char[JsonConstants.StackallocThreshold] :
                 (propertyArray = ArrayPool<char>.Shared.Rent(length));
 
             JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndexProp, _options.Encoder, out int written);
@@ -246,7 +246,7 @@ namespace System.Text.Json
             int length = JsonWriterHelper.GetMaxEscapedLength(utf8PropertyName.Length, firstEscapeIndexProp);
 
             Span<byte> escapedPropertyName = length <= JsonConstants.StackallocThreshold ?
-                (stackalloc byte[JsonConstants.StackallocThreshold]).Slice(0, length) :
+                stackalloc byte[JsonConstants.StackallocThreshold] :
                 (propertyArray = ArrayPool<byte>.Shared.Rent(length));
 
             JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndexProp, _options.Encoder, out int written);
