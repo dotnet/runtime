@@ -3274,8 +3274,7 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
         }
     }
 
-    // Only handle the singledef intervals whose firstRefPosition is RefTypeDef and is not already marked as spillAfter
-    // yet.
+    // Only handle the singledef intervals whose firstRefPosition is RefTypeDef and is not yet marked as spillAfter.
     // The singledef intervals whose firstRefPositions are already marked as spillAfter, no need to mark them as
     // singleDefSpill because they will always get spilled at firstRefPosition.
     // This helps in spilling the singleDef at definition

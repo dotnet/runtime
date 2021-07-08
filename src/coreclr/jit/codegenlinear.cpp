@@ -229,7 +229,7 @@ void CodeGen::genCodeForBBlist()
                 {
                     newRegByrefSet |= varDsc->lvRegMask();
                 }
-                if (!varDsc->lvLiveInOutOfHndlr && !varDsc->lvSpillAtSingleDef)
+                if (!varDsc->IsAlwaysAliveInMemory())
                 {
 #ifdef DEBUG
                     if (verbose && VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varIndex))
@@ -240,8 +240,7 @@ void CodeGen::genCodeForBBlist()
                     VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varIndex);
                 }
             }
-            if ((!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef) &&
-                compiler->lvaIsGCTracked(varDsc))
+            if ((!varDsc->lvIsInReg() || varDsc->IsAlwaysAliveInMemory()) && compiler->lvaIsGCTracked(varDsc))
             {
 #ifdef DEBUG
                 if (verbose && !VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varIndex))
@@ -876,7 +875,7 @@ void CodeGen::genSpillVar(GenTree* tree)
 
         // If this is a write-thru or a single-def variable, we don't actually spill at a use,
         // but we will kill the var in the reg (below).
-        if (!varDsc->lvLiveInOutOfHndlr && !varDsc->lvSpillAtSingleDef)
+        if (!varDsc->IsAlwaysAliveInMemory())
         {
             instruction storeIns = ins_Store(lclType, compiler->isSIMDTypeLocalAligned(varNum));
             assert(varDsc->GetRegNum() == tree->GetRegNum());
@@ -921,7 +920,7 @@ void CodeGen::genSpillVar(GenTree* tree)
     {
         // We only have 'GTF_SPILL' and 'GTF_SPILLED' on a def of a write-thru lclVar
         // or a single-def var that is to be spilled at its definition.
-        assert((varDsc->lvLiveInOutOfHndlr || varDsc->lvSpillAtSingleDef) && ((tree->gtFlags & GTF_VAR_DEF) != 0));
+        assert((varDsc->IsAlwaysAliveInMemory()) && ((tree->gtFlags & GTF_VAR_DEF) != 0));
     }
 
 #ifdef USING_VARIABLE_LIVE_RANGE
@@ -1057,7 +1056,7 @@ void CodeGen::genUnspillLocal(
         }
 #endif // USING_VARIABLE_LIVE_RANGE
 
-        if (!varDsc->lvLiveInOutOfHndlr && !varDsc->lvSpillAtSingleDef)
+        if (!varDsc->IsAlwaysAliveInMemory())
         {
 #ifdef DEBUG
             if (VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex))
@@ -2051,7 +2050,7 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
     // spilled, i.e. write-thru. Likewise, single-def vars that are spilled at its definitions).
     // An EH or single-def var use is always valid on the stack (so we don't need to actually spill it),
     // but the GTF_SPILL flag records the fact that the register value is going dead.
-    if (((lclNode->gtFlags & GTF_VAR_DEF) != 0) || (!varDsc->lvLiveInOutOfHndlr && !varDsc->lvSpillAtSingleDef))
+    if (((lclNode->gtFlags & GTF_VAR_DEF) != 0) || (!varDsc->IsAlwaysAliveInMemory()))
     {
         // Store local variable to its home location.
         // Ensure that lclVar stores are typed correctly.
