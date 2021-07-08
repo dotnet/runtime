@@ -292,7 +292,7 @@ namespace Microsoft.Win32.SafeHandles
             // When the delete is performed by another .NET Handle, it holds the lock during the delete.
             // Since we've just obtained the lock, the file will already be removed/replaced.
             // This checks whether other Handles had DeleteOnClose for this path.
-            // As an optimization, we only check when DeleteOnClose was set for our handle.
+            // To avoid performing this check for every FileStream, we only check when DeleteOnClose is set.
             if (((options & FileOptions.DeleteOnClose) != 0) && share == FileShare.None)
             {
                 if (!statusHasValue)
