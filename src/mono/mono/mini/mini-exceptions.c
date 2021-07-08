@@ -450,6 +450,8 @@ arch_unwind_frame (MonoJitTlsData *jit_tls,
 					frame->type = FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX;
 					memcpy (new_ctx, &ext->ctx, sizeof (MonoContext));
 				}
+			} else if (ext->kind == MONO_LMFEXT_JIT_ENTRY) {
+				frame->type = FRAME_TYPE_JIT_ENTRY;
 			} else {
 				g_assert_not_reached ();
 			}
@@ -1873,6 +1875,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			case FRAME_TYPE_INTERP_TO_MANAGED:
 			case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
 			case FRAME_TYPE_INTERP_ENTRY:
+			case FRAME_TYPE_JIT_ENTRY:
 				continue;
 			case FRAME_TYPE_INTERP:
 			case FRAME_TYPE_MANAGED:
@@ -2278,6 +2281,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 		case FRAME_TYPE_TRAMPOLINE:
 		case FRAME_TYPE_INTERP_TO_MANAGED:
 		case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+		case FRAME_TYPE_JIT_ENTRY:
 			*ctx = new_ctx;
 			continue;
 		case FRAME_TYPE_INTERP_ENTRY:
@@ -2722,6 +2726,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			case FRAME_TYPE_TRAMPOLINE:
 			case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
 			case FRAME_TYPE_INTERP_ENTRY:
+			case FRAME_TYPE_JIT_ENTRY:
 				*ctx = new_ctx;
 				continue;
 			case FRAME_TYPE_INTERP_TO_MANAGED:

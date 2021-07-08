@@ -6804,18 +6804,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
 //    structs being passed to either the caller or callee.
 //
 // Exceptions:
-//    1) If the callee has structs which cannot be enregistered it will be
-//    reported as cannot fast tail call. This is an implementation limitation
-//    where the callee only is checked for non enregisterable structs. This is
-//    tracked with https://github.com/dotnet/runtime/issues/8492.
-//
-//    2) If the caller or callee has stack arguments and the callee has more
-//    arguments then the caller it will be reported as cannot fast tail call.
-//    This is due to a bug in LowerFastTailCall which assumes that
-//    nCalleeArgs <= nCallerArgs, which is always true on Windows Amd64. This
-//    is tracked with https://github.com/dotnet/runtime/issues/8413.
-//
-//    3) If the callee has a 9 to 16 byte struct argument and the callee has
+//    If the callee has a 9 to 16 byte struct argument and the callee has
 //    stack arguments, the decision will be to not fast tail call. This is
 //    because before fgMorphArgs is done, the struct is unknown whether it
 //    will be placed on the stack or enregistered. Therefore, the conservative
@@ -12672,8 +12661,7 @@ DONE_MORPHING_CHILDREN:
 
             // Skip optimization if non-NEG operand is constant.
             // Both op1 and op2 are not constant because it was already checked above.
-            if (opts.OptimizationEnabled() && fgGlobalMorph &&
-                (((op1->gtFlags & GTF_EXCEPT) == 0) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
+            if (opts.OptimizationEnabled() && fgGlobalMorph)
             {
                 // a - -b = > a + b
                 // SUB(a, (NEG(b)) => ADD(a, b)
@@ -12698,7 +12686,7 @@ DONE_MORPHING_CHILDREN:
                 // -a - -b = > b - a
                 // SUB(NEG(a), (NEG(b)) => SUB(b, a)
 
-                if (op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG))
+                if (op1->OperIs(GT_NEG) && op2->OperIs(GT_NEG) && gtCanSwapOrder(op1, op2))
                 {
                     // tree: SUB
                     // op1: NEG
@@ -12897,15 +12885,14 @@ DONE_MORPHING_CHILDREN:
                     }
                 }
 
-                if (opts.OptimizationEnabled() && fgGlobalMorph &&
-                    (((op1->gtFlags & GTF_EXCEPT) == 0) || ((op2->gtFlags & GTF_EXCEPT) == 0)))
+                if (opts.OptimizationEnabled() && fgGlobalMorph)
                 {
                     // - a + b = > b - a
                     // ADD((NEG(a), b) => SUB(b, a)
 
                     // Skip optimization if non-NEG operand is constant.
-                    if (op1->OperIs(GT_NEG) && !op2->OperIs(GT_NEG) &&
-                        !(op2->IsCnsIntOrI() && varTypeIsIntegralOrI(typ)))
+                    if (op1->OperIs(GT_NEG) && !op2->OperIs(GT_NEG) && !op2->IsIntegralConst() &&
+                        gtCanSwapOrder(op1, op2))
                     {
                         // tree: ADD
                         // op1: NEG

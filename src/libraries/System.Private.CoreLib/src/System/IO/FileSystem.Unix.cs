@@ -224,8 +224,7 @@ namespace System.IO
 
                         // Input allows trailing separators in order to match Windows behavior
                         // Unix does not accept trailing separators, so must be trimmed
-                        if (!FileExists(Path.TrimEndingDirectorySeparator(fullPath),
-                            Interop.Sys.FileTypes.S_IFREG, out fileExistsError) &&
+                        if (!FileExists(fullPath, out fileExistsError) &&
                             fileExistsError.Error == Interop.Error.ENOENT)
                         {
                             return;

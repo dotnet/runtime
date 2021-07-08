@@ -62,29 +62,6 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-#
-# This is the version of the corlib-runtime interface. When
-# making changes to this interface (by changing the layout
-# of classes the runtime knows about, changing icall signature or
-# semantics etc), change this variable.
-#
-# This must be unique relative to corlib interface and semantics.
-#
-# If you change corlib such that a runtime change is required, or
-# vice versa, change this string. Examples include removing icalls,
-# adding icalls, changing icall signatures, and changing type layouts
-# that both sides know.
-#
-# It is an arbitrary string and should be parsed as such.
-# A guid works and is encouraged.
-#
-# There is no ordering of corlib versions, no old or new,
-# an exact match is required between corlib and runtime.
-#
-# This line is parsed by other tools, it should remain in the format they expect.
-#
-set(MONO_CORLIB_VERSION 1A5E0066-58DC-428A-B21C-0AD6CDAE2789)
-
 set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
 set(DISABLE_PERFCOUNTERS 1)
@@ -725,6 +702,10 @@ if(HOST_WIN32)
 else()
   # FIXME:
   set(NAME_DEV_RANDOM "\"/dev/random\"")
+endif()
+
+if(HOST_LINUX AND HAVE_SYS_MMAN_H AND HAVE_ELF_H AND HAVE_SYS_SYSCALL_H)
+  set(ENABLE_JIT_DUMP 1)
 endif()
 ### End of other checks
 

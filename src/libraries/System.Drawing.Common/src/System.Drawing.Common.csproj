@@ -192,6 +192,7 @@
     <Compile Include="System\Drawing\BufferedGraphicsManager.Windows.cs" />
     <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Windows.cs" />
     <Compile Include="System\Drawing\Drawing2D\GraphicsPath.Windows.cs" />
+    <Compile Include="System\Drawing\DrawingCom.cs" />
     <Compile Include="System\Drawing\Font.Windows.cs" />
     <Compile Include="System\Drawing\FontFamily.Windows.cs" />
     <Compile Include="System\Drawing\GdiplusNative.Windows.cs" />
@@ -294,8 +295,6 @@
              Link="Common\Interop\Windows\Kernel32\Interop.GlobalLock.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.BitBlt.cs"
              Link="Common\Interop\Windows\Gdi32\Interop.BitBlt.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.IStream.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.IStream.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.STATSTG.cs"
              Link="Common\Interop\Windows\Ole32\Interop.STATSTG.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.STGTY.cs"
@@ -318,11 +317,18 @@
              Link="Common\Interop\Windows\Interop.HRESULT.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.IStream.COMWrappers.cs"
+             Link="Common\Interop\Windows\Ole32\Interop.IStream.COMWrappers.cs" />
+    <Compile Include="System\Drawing\DrawingCom.COMWrappers.cs" />
     <Compile Include="System\Drawing\Icon.Windows.COMWrappers.cs" />
-    <Compile Include="System\Drawing\DrawingComWrappers.cs" />
+    <Compile Include="System\Drawing\Internal\GPStream.COMWrappers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.IStream.NoCOMWrappers.cs"
+             Link="Common\Interop\Windows\Ole32\Interop.IStream.NoCOMWrappers.cs" />
+    <Compile Include="System\Drawing\DrawingCom.NoCOMWrappers.cs" />
     <Compile Include="System\Drawing\Icon.Windows.NoCOMWrappers.cs" />
+    <Compile Include="System\Drawing\Internal\GPStream.NoCOMWrappers.cs" />
   </ItemGroup>
   <!-- Unix specific -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">

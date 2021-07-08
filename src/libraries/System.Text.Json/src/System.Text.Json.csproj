@@ -165,6 +165,7 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\SByteConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\SingleConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\StringConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\TimeSpanConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt16Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt32Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt64Converter.cs" />
@@ -257,6 +258,7 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Guid.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Helpers.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Literal.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Raw.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.SignedNumber.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.String.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />

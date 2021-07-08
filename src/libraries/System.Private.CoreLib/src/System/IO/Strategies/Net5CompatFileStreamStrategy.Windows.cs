@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -82,7 +83,7 @@ namespace System.IO.Strategies
 
         private void InitFromHandleImpl(SafeFileHandle handle, bool useAsyncIO)
         {
-            handle.InitThreadPoolBindingIfNeeded();
+            handle.EnsureThreadPoolBindingInitialized();
 
             if (handle.CanSeek)
                 SeekCore(handle, 0, SeekOrigin.Current);
@@ -98,7 +99,7 @@ namespace System.IO.Strategies
         {
             get
             {
-                long len = RandomAccess.GetFileLength(_fileHandle, _path);
+                long len = RandomAccess.GetFileLength(_fileHandle);
 
                 // If we're writing near the end of the file, we must include our
                 // internal buffer in our Length calculation.  Don't flush because
@@ -178,7 +179,7 @@ namespace System.IO.Strategies
             }
         }
 
-        private void FlushOSBuffer() => FileStreamHelpers.FlushToDisk(_fileHandle, _path);
+        private void FlushOSBuffer() => FileStreamHelpers.FlushToDisk(_fileHandle);
 
         // Returns a task that flushes the internal write buffer
         private Task FlushWriteAsync(CancellationToken cancellationToken)
@@ -265,7 +266,7 @@ namespace System.IO.Strategies
             Debug.Assert(value >= 0, "value >= 0");
             VerifyOSHandlePosition();
 
-            FileStreamHelpers.SetFileLength(_fileHandle, _path, value);
+            FileStreamHelpers.SetFileLength(_fileHandle, value);
 
             if (_filePosition > value)
             {
@@ -373,7 +374,7 @@ namespace System.IO.Strategies
                     if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                         ThrowHelper.ThrowArgumentException_HandleNotSync(nameof(_fileHandle));
 
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _fileHandle.Path);
                 }
             }
             Debug.Assert(r >= 0, "FileStream's ReadNative is likely broken.");
@@ -472,7 +473,7 @@ namespace System.IO.Strategies
         {
             Debug.Assert(fileHandle.CanSeek, "fileHandle.CanSeek");
 
-            return _filePosition = FileStreamHelpers.Seek(fileHandle, _path, offset, origin, closeInvalidHandle);
+            return _filePosition = FileStreamHelpers.Seek(fileHandle, offset, origin, closeInvalidHandle);
         }
 
         partial void OnBufferAllocated()
@@ -577,7 +578,7 @@ namespace System.IO.Strategies
                     // to a handle opened asynchronously.
                     if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                         throw new IOException(SR.IO_FileTooLongOrHandleNotSync);
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _fileHandle.Path);
                 }
             }
             Debug.Assert(r >= 0, "FileStream's WriteCore is likely broken.");
@@ -775,7 +776,7 @@ namespace System.IO.Strategies
                     }
                     else
                     {
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _fileHandle.Path);
                     }
                 }
                 else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
@@ -977,7 +978,7 @@ namespace System.IO.Strategies
                     }
                     else
                     {
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _fileHandle.Path);
                     }
                 }
                 else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
@@ -1005,14 +1006,33 @@ namespace System.IO.Strategies
         {
             Debug.Assert((_useAsyncIO && overlapped != null) || (!_useAsyncIO && overlapped == null), "Async IO and overlapped parameters inconsistent in call to ReadFileNative.");
 
-            return RandomAccess.ReadFileNative(handle, bytes, false, overlapped, out errorCode);
+            return FileStreamHelpers.ReadFileNative(handle, bytes, overlapped, out errorCode);
         }
 
         private unsafe int WriteFileNative(SafeFileHandle handle, ReadOnlySpan<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
         {
             Debug.Assert((_useAsyncIO && overlapped != null) || (!_useAsyncIO && overlapped == null), "Async IO and overlapped parameters inconsistent in call to WriteFileNative.");
 
-            return RandomAccess.WriteFileNative(handle, buffer, false, overlapped, out errorCode);
+            int numBytesWritten = 0;
+            int r;
+
+            fixed (byte* p = &MemoryMarshal.GetReference(buffer))
+            {
+                r = overlapped == null
+                    ? Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, overlapped)
+                    : Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped);
+            }
+
+            if (r == 0)
+            {
+                errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
+                return -1;
+            }
+            else
+            {
+                errorCode = 0;
+                return numBytesWritten;
+            }
         }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
@@ -1080,7 +1100,7 @@ namespace System.IO.Strategies
             try
             {
                 await FileStreamHelpers
-                    .AsyncModeCopyToAsync(_fileHandle, _path, canSeek, _filePosition, destination, bufferSize, cancellationToken)
+                    .AsyncModeCopyToAsync(_fileHandle, canSeek, _filePosition, destination, bufferSize, cancellationToken)
                     .ConfigureAwait(false);
             }
             finally
@@ -1093,8 +1113,8 @@ namespace System.IO.Strategies
             }
         }
 
-        internal override void Lock(long position, long length) => FileStreamHelpers.Lock(_fileHandle, _path, position, length);
+        internal override void Lock(long position, long length) => FileStreamHelpers.Lock(_fileHandle, position, length);
 
-        internal override void Unlock(long position, long length) => FileStreamHelpers.Unlock(_fileHandle, _path, position, length);
+        internal override void Unlock(long position, long length) => FileStreamHelpers.Unlock(_fileHandle, position, length);
     }
 }

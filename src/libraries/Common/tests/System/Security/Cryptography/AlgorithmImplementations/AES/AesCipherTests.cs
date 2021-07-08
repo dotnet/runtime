@@ -1139,6 +1139,12 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     liveOneShotDecryptBytes = aes.DecryptEcb(cipherBytes, paddingMode);
                     liveOneShotEncryptBytes = aes.EncryptEcb(plainBytes, paddingMode);
                 }
+                else if (cipherMode == CipherMode.CBC)
+                {
+                    aes.Key = key;
+                    liveOneShotDecryptBytes = aes.DecryptCbc(cipherBytes, iv, paddingMode);
+                    liveOneShotEncryptBytes = aes.EncryptCbc(plainBytes, iv, paddingMode);
+                }
             }
 
             Assert.Equal(cipherBytes, liveEncryptBytes);
