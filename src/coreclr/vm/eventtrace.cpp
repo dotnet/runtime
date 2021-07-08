@@ -4417,6 +4417,12 @@ VOID EtwCallbackCommon(
     {
         ETW::TypeSystemLog::OnKeywordsChanged();
     }
+
+    if (g_fEEStarted && !g_fEEShutDown)
+    {
+        // Emit the YieldProcessor measured values at the beginning of the trace
+        YieldProcessorNormalization::FireMeasurementEvents();
+    }
 }
 
 // Individual callbacks for each EventPipe provider.
@@ -4679,12 +4685,6 @@ extern "C"
             if (g_fEEStarted && !g_fEEShutDown && (ControlCode == EVENT_CONTROL_CODE_CAPTURE_STATE))
             {
                 ETW::EnumerationLog::EnumerateForCaptureState();
-            }
-
-            if (g_fEEStarted && !g_fEEShutDown)
-            {
-                // Emit the YieldProcessor measured values at the beginning of the trace
-                YieldProcessorNormalization::FireMeasurementEvents();
             }
         }
 #ifdef FEATURE_COMINTEROP
