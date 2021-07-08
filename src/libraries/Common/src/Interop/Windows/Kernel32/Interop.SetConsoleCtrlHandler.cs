@@ -13,9 +13,7 @@ internal static partial class Interop
         internal const int CTRL_LOGOFF_EVENT = 5;
         internal const int CTRL_SHUTDOWN_EVENT = 6;
 
-        internal delegate bool ConsoleCtrlHandlerRoutine(int controlType);
-
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool SetConsoleCtrlHandler(ConsoleCtrlHandlerRoutine handler, bool addOrRemove);
+        internal static extern unsafe bool SetConsoleCtrlHandler(delegate* unmanaged<int, BOOL> HandlerRoutine, bool Add);
     }
 }

@@ -26,7 +26,6 @@ namespace System.Tests
         public static IEnumerable<object[]> UnsupportedSignals()
         {
             yield return new object[] { 0 };
-            yield return new object[] { 3 };
             yield return new object[] { -1000 };
             yield return new object[] { 1000 };
         }

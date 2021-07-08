@@ -972,15 +972,13 @@ namespace System
         {
             Debug.Assert(ctx.Signal == PosixSignal.SIGINT || ctx.Signal == PosixSignal.SIGQUIT);
 
-            bool cancel = false;
             if (s_cancelCallbacks is ConsoleCancelEventHandler handler)
             {
                 var args = new ConsoleCancelEventArgs(ctx.Signal == PosixSignal.SIGINT ? ConsoleSpecialKey.ControlC : ConsoleSpecialKey.ControlBreak);
+                args.Cancel = ctx.Cancel;
                 handler(null, args);
-                cancel = args.Cancel;
+                ctx.Cancel = args.Cancel;
             }
-
-            ctx.Cancel = cancel;
         }
     }
 }

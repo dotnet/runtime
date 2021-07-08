@@ -189,7 +189,7 @@ namespace System.Runtime.InteropServices
                 bool handlersCalled = false;
                 if (state.registrations != null)
                 {
-                    PosixSignalContext ctx = new();
+                    PosixSignalContext ctx = new(0);
                     foreach (PosixSignalRegistration? registration in state.registrations)
                     {
                         if (registration != null)

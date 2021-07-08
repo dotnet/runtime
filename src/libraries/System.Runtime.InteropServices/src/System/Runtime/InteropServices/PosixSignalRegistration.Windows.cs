@@ -6,9 +6,8 @@ using System.IO;
 
 namespace System.Runtime.InteropServices
 {
-    public sealed partial class PosixSignalRegistration
+    public sealed unsafe partial class PosixSignalRegistration
     {
-        private static readonly Interop.Kernel32.ConsoleCtrlHandlerRoutine s_handlerRoutine = HandlerRoutine;
         private static readonly HashSet<Token> s_handlers = new();
 
         private Token? _token;
@@ -39,7 +38,7 @@ namespace System.Runtime.InteropServices
                 }
 
                 if (s_handlers.Count == 0 &&
-                    !Interop.Kernel32.SetConsoleCtrlHandler(s_handlerRoutine, addOrRemove: true))
+                    !Interop.Kernel32.SetConsoleCtrlHandler(&HandlerRoutine, Add: true))
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
@@ -60,7 +59,7 @@ namespace System.Runtime.InteropServices
 
                     s_handlers.Remove(token);
                     if (s_handlers.Count == 0 &&
-                        !Interop.Kernel32.SetConsoleCtrlHandler(s_handlerRoutine, addOrRemove: false))
+                        !Interop.Kernel32.SetConsoleCtrlHandler(&HandlerRoutine, Add: false))
                     {
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
@@ -68,7 +67,8 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private static bool HandlerRoutine(int dwCtrlType)
+        [UnmanagedCallersOnly]
+        private static Interop.BOOL HandlerRoutine(int dwCtrlType)
         {
             PosixSignal signal;
             switch (dwCtrlType)
@@ -90,7 +90,7 @@ namespace System.Runtime.InteropServices
                     break;
 
                 default:
-                    return false;
+                    return Interop.BOOL.FALSE;
             }
 
             List<Token>? tokens = null;
@@ -107,7 +107,7 @@ namespace System.Runtime.InteropServices
 
             if (tokens is null)
             {
-                return false;
+                return Interop.BOOL.FALSE;
             }
 
             var context = new PosixSignalContext(signal);
@@ -116,7 +116,7 @@ namespace System.Runtime.InteropServices
                 handler.Handler(context);
             }
 
-            return context.Cancel;
+            return context.Cancel ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
 
         private sealed class Token

@@ -61,11 +61,12 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\PosixSignalRegistration.Windows.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs" Link="Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs" />
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs" Link="Common\System\IO\Win32Marshal.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs" Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs" Link="Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\PosixSignalRegistration.Unsupported.cs" />
