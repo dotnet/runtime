@@ -16,7 +16,7 @@ namespace System
         private static AndroidTzData? s_tzData;
         private static readonly object s_tzDataLock = new object();
 
-        private static AndroidTzData s_atzData
+        private static AndroidTzData s_androidTzDataInstance
         {
             get
             {
@@ -118,7 +118,7 @@ namespace System
 
             try
             {
-                byte[] buffer = s_atzData.GetTimeZoneData(name);
+                byte[] buffer = s_androidTzDataInstance.GetTimeZoneData(name);
                 return GetTimeZoneFromTzData(buffer, id);
             }
             catch
@@ -205,7 +205,7 @@ namespace System
 
         private static string[] GetTimeZoneIds()
         {
-            return s_atzData.GetTimeZoneIds();
+            return s_androidTzDataInstance.GetTimeZoneIds();
         }
 
         /*
