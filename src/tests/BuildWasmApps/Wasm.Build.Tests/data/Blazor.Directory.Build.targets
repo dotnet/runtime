@@ -33,7 +33,7 @@
                             FrameworkName="Microsoft.NETCore.App"
                             NuGetPackageId="Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
                             NuGetPackageVersion="$(RuntimePackInWorkloadVersion)"
-                            PackageDirectory="$(WorkloadPacksDir)\Microsoft.NETCore.App.Runtime.Mono.browser-wasm\$(RuntimePackInWorkloadVersion)"
+                            PackageDirectory="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.browser-wasm\$(RuntimePackInWorkloadVersion)"
                             RuntimeIdentifier="browser-wasm" />
 
        <ResolvedFrameworkReference
@@ -41,7 +41,7 @@
                                      Include="Microsoft.NETCore.App"
                                      RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
                                      RuntimePackVersion="$(RuntimePackInWorkloadVersion)"
-                                     RuntimePackPath="$(WorkloadPacksDir)\Microsoft.NETCore.App.Runtime.Mono.browser-wasm\$(RuntimePackInWorkloadVersion)"
+                                     RuntimePackPath="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.browser-wasm\$(RuntimePackInWorkloadVersion)"
                                      RuntimeIdentifier="browser-wasm" />
     </ItemGroup>
   </Target>
