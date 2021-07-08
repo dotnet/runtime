@@ -260,14 +260,17 @@ namespace System
                 header.dataOffset = NetworkToHostOrder(header.dataOffset);
 
                 sbyte* s = (sbyte*)header.signature;
-                var b = new StringBuilder();
-                for (int i = 0; i < 12; ++i) {
-                    b.Append(' ').Append(((byte)s[i]).ToString("x2"));
-                }
-                var signature = b.ToString();
+                string magic = new string(s, 0, 6, Encoding.ASCII);
 
-                if (!signature.StartsWith("tzdata") || header.signature[11] != 0)
-                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadTZHeader, tzFilePath, signature));
+                if (magic != "tzdata" || header.signature[11] != 0)
+                {
+                    var b = new StringBuilder();
+                    for (int i = 0; i < 12; ++i) {
+                        b.Append(' ').Append(((byte)s[i]).ToString("x2"));
+                    }
+
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadTZHeader, tzFilePath, b.ToString()));
+                }
 
                 ReadIndex(tzFilePath, header.indexOffset, header.dataOffset, buffer);
             }
