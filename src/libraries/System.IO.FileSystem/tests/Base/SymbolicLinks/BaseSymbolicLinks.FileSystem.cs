@@ -265,9 +265,10 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(1, false)]
         [InlineData(10, false)]
+        [InlineData(20, false)]
         [InlineData(1, true)]
         [InlineData(10, true)]
-        [InlineData(40, true)]
+        [InlineData(20, true)]
         public void ResolveLinkTarget_ReturnFinalTarget_ChainOfLinks_Succeeds(int length, bool relative)
         {
             string target = GetTestFilePath();
@@ -279,7 +280,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        // 100 is way beyond the limit, we just want to make sure that a nice exception is thrown when its exceeded.
+        // 100 is way beyond the limit (63 in Windows and 40 in Unix), we just want to make sure that a nice exception is thrown when its exceeded.
         // We also don't want to test for a very precise limit given that it is very inconsistent across Windows versions.
         [InlineData(100, false)]
         [InlineData(100, true)]
