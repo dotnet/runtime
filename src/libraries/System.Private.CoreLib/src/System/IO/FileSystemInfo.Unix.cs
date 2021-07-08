@@ -63,7 +63,11 @@ namespace System.IO
 
         internal long LengthCore => _fileStatus.GetLength(FullPath);
 
-        public void Refresh() => _fileStatus.RefreshCaches(FullPath);
+        public void Refresh()
+        {
+            _linkTargetIsValid = false;
+            _fileStatus.RefreshCaches(FullPath);
+        }
 
         internal static void ThrowNotFound(string path)
         {

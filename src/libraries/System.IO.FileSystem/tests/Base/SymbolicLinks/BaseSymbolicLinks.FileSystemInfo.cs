@@ -23,6 +23,18 @@ namespace System.IO.Tests
         protected override FileSystemInfo ResolveLinkTarget(string linkPath, bool returnFinalTarget = false)
             => GetFileSystemInfo(linkPath).ResolveLinkTarget(returnFinalTarget);
 
+        private void Delete(string path)
+        {
+            if (IsDirectoryTest)
+            {
+                Directory.Delete(path);
+            }
+            else
+            {
+                File.Delete(path);
+            }
+        }
+
         [Fact]
         public void LinkTarget_ReturnsNull_NotExists()
         {
@@ -49,6 +61,28 @@ namespace System.IO.Tests
 
             AssertLinkExists(linkInfo);
             Assert.Equal(pathToTarget, linkInfo.LinkTarget);
+        }
+
+        [Fact]
+        public void LinkTarget_RefreshesCorrectly()
+        {
+            string path = GetRandomLinkPath();
+            string pathToTarget = GetTestFileName();
+            FileSystemInfo linkInfo = CreateSymbolicLink(path, pathToTarget);
+            Assert.Equal(pathToTarget, linkInfo.LinkTarget);
+
+            Delete(path);
+            Assert.Equal(pathToTarget, linkInfo.LinkTarget);
+
+            linkInfo.Refresh();
+            Assert.Null(linkInfo.LinkTarget);
+
+            string newPathToTarget = GetTestFileName();
+            FileSystemInfo newLinkInfo = CreateSymbolicLink(path, newPathToTarget);
+
+            linkInfo.Refresh();
+            Assert.Equal(newPathToTarget, linkInfo.LinkTarget);
+            Assert.Equal(newLinkInfo.LinkTarget, linkInfo.LinkTarget);
         }
 
         public static IEnumerable<object[]> LinkTarget_PathToTarget_Data

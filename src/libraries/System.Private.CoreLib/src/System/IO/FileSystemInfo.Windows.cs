@@ -151,6 +151,7 @@ namespace System.IO
 
         public void Refresh()
         {
+            _linkTargetIsValid = false;
             // This should not throw, instead we store the result so that we can throw it
             // when someone actually accesses a property
             _dataInitialized = FileSystem.FillAttributeInfo(FullPath, ref _data, returnErrorOnNotFound: false);

@@ -20,6 +20,7 @@ namespace System.IO
         internal string _name = null!; // Fields initiated in derived classes
 
         private string? _linkTarget;
+        private bool _linkTargetIsValid;
 
         protected FileSystemInfo(SerializationInfo info, StreamingContext context)
         {
@@ -28,7 +29,7 @@ namespace System.IO
 
         internal void Invalidate()
         {
-            _linkTarget = null;
+            _linkTargetIsValid = false;
             InvalidateCore();
         }
 
@@ -119,7 +120,20 @@ namespace System.IO
         /// If this <see cref="FileSystemInfo"/> instance represents a link, returns the link target's path.
         /// If a link does not exist in <see cref="FullName"/>, or this instance does not represent a link, returns <see langword="null"/>.
         /// </summary>
-        public string? LinkTarget => _linkTarget ??= FileSystem.GetLinkTarget(FullPath, this is DirectoryInfo);
+        public string? LinkTarget
+        {
+            get
+            {
+                if (_linkTargetIsValid)
+                {
+                    return _linkTarget;
+                }
+
+                _linkTarget = FileSystem.GetLinkTarget(FullPath, this is DirectoryInfo);
+                _linkTargetIsValid = true;
+                return _linkTarget;
+            }
+        }
 
         /// <summary>
         /// Creates a symbolic link located in <see cref="FullName"/> that points to the specified <paramref name="pathToTarget"/>.
