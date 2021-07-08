@@ -35,9 +35,9 @@
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif
-#if HAVE_STATFS64_VFS || HAVE_STATFS_VFS // Linux
+#if HAVE_STATFS_VFS // Linux
 #include <sys/vfs.h>
-#elif HAVE_STATFS64_MOUNT || HAVE_STATFS_MOUNT // BSD
+#elif HAVE_STATFS_MOUNT // BSD
 #include <sys/mount.h>
 #endif
 
@@ -1386,21 +1386,16 @@ static int16_t ConvertLockType(int16_t managedLockType)
 
 int64_t SystemNative_GetFileSystemType(intptr_t fd)
 {
+#if HAVE_STATFS_VFS || HAVE_STATFS_MOUNT
     int statfsRes;
-#if HAVE_STATFS_MOUNT && (defined(TARGET_IOS) || defined(TARGET_OSX) || defined(TARGET_WATCHOS) || defined(TARGET_TVOS) || defined(HOST_MACCAT)) // In macOS 10.6+ statfs64 is deprecated, in favor of statfs
     struct statfs statfsArgs;
+    // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
+    // which got deprecated in macOS 10.6, in favor of statfs
     while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
-#elif HAVE_STATFS64_VFS || HAVE_STATFS64_MOUNT
-    struct statfs64 statfsArgs;
-    while ((statfsRes = fstatfs64(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
-#elif HAVE_STATFS_VFS || HAVE_STATFS_MOUNT
-    struct statfs statfsArgs;
-    while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
-#else
-    #error "Platform doesn't support fstatfs64 or fstatfs"
-#endif
-
     return statfsRes == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
+#else
+    #error "Platform doesn't support fstatfs"
+#endif
 }
 
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
