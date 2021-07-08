@@ -6,15 +6,13 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
 {
-    public sealed partial class SslCertificateTrust
+    public sealed class SslCertificateTrust
     {
         internal X509Store? _store;
         internal X509Certificate2Collection? _trustList;
         internal bool _sendTrustInHandshake;
 
-        public static SslCertificateTrust CreateForX509Store(
-                                                X509Store store,
-                                                bool sendTrustInHandshake = false)
+        public static SslCertificateTrust CreateForX509Store(X509Store store, bool sendTrustInHandshake = false)
         {
 
 #if TARGET_WINDOWS
@@ -41,9 +39,7 @@ namespace System.Net.Security
         }
 
         [UnsupportedOSPlatform("windows")]
-        public static SslCertificateTrust CreateForX509Collection(
-                                               X509Certificate2Collection trustList,
-                                               bool sendTrustInHandshake = false)
+        public static SslCertificateTrust CreateForX509Collection(X509Certificate2Collection trustList, bool sendTrustInHandshake = false)
         {
             if (sendTrustInHandshake)
             {
