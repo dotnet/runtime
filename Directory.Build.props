@@ -197,7 +197,6 @@
     <BuildRid Remove="$(ExcludeFromBuildRID)" Condition="'$(ExcludeFromBuildRID)' != ''" />
 
     <RestoreBuildRID Include="@(BuildRID)" Exclude="@(BuildRID->HasMetadata('ExcludeFromPlatformManifest'))" />
-    <RestoreBuildRID Remove="$(ExcludeFromBuildRID)" Condition="'$(ExcludeFromBuildRID)' != ''" />
   </ItemGroup>
 
   <PropertyGroup Label="CalculateTargetOSName" Condition="'$(SkipInferTargetOSName)' != 'true'">
