@@ -24,6 +24,7 @@
 #include <mono/mini/mini-runtime.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/sgen/sgen-tagged-pointer.h>
+#include "mono/utils/mono-logger-internals.h"
 #include <runtime_version.h>
 #include <clretwallmain.h>
 
@@ -338,6 +339,10 @@ void
 profiler_eventpipe_thread_exited (
 	MonoProfiler *prof,
 	uintptr_t tid);
+
+static
+bool
+parse_mono_profiler_options (const ep_char8_t *option);
 
 static
 bool
@@ -832,6 +837,9 @@ mono_profiler_thread_name (
 /*
  * Forward declares of all private functions (accessed using extern in ep-rt-mono.h).
  */
+
+void
+ep_rt_mono_component_init (void);
 
 void
 ep_rt_mono_init (void);
@@ -1569,6 +1577,78 @@ profiler_eventpipe_thread_exited (
 	ep_rt_mono_thread_exited ();
 }
 
+static bool
+parse_mono_profiler_options (const ep_char8_t *option)
+{
+	do {
+		if (!*option)
+			return false;
+
+		if (!strncmp (option, "alloc", 5)) {
+			mono_profiler_enable_allocations ();
+			option += 5;
+		} else if (!strncmp (option, "exception", 9)) {
+			mono_profiler_enable_clauses ();
+			option += 9;
+		/*} else if (!strncmp (option, "sample", 6)) {
+			mono_profiler_enable_sampling (_ep_rt_dotnet_mono_profiler_provider);
+			option += 6;*/
+		} else {
+			return false;
+		}
+
+		if (*option == ',')
+			option++;
+	} while (*option);
+
+	return true;
+}
+
+void
+ep_rt_mono_component_init (void)
+{
+	_ep_rt_default_profiler = mono_profiler_create (NULL);
+	_ep_rt_dotnet_runtime_profiler_provider = mono_profiler_create (NULL);
+	_ep_rt_dotnet_mono_profiler_provider = mono_profiler_create (NULL);
+
+	char *diag_env = g_getenv("MONO_DIAGNOSTICS");
+	if (diag_env) {
+		int diag_argc = 1;
+		char **diag_argv = g_new (char *, 1);
+		if (diag_argv) {
+			diag_argv [0] = NULL;
+			if (!mono_parse_options_from (diag_env, &diag_argc, &diag_argv)) {
+				for (int i = 0; i < diag_argc; ++i) {
+					if (diag_argv [i]) {
+						if (strncmp (diag_argv [i], "--diagnostic-mono-profiler=", 27) == 0) {
+							if (!parse_mono_profiler_options (diag_argv [i] + 27))
+								mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed parsing MONO_DIAGNOSTICS environment variable option: %s", diag_argv [i]);
+						} else if (strncmp (diag_argv [i], "--diagnostic-ports=", 19) == 0) {
+							char *diag_ports_env = g_getenv("DOTNET_DiagnosticPorts");
+							if (diag_ports_env)
+								mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DIAGNOSTICS, "DOTNET_DiagnosticPorts environment variable already set, ignoring --diagnostic-ports used in MONO_DIAGNOSTICS environment variable");
+							else
+								g_setenv ("DOTNET_DiagnosticPorts", diag_argv [i] + 19, TRUE);
+							g_free (diag_ports_env);
+
+						} else {
+							mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed parsing MONO_DIAGNOSTICS environment variable, unknown option: %s", diag_argv [i]);
+						}
+
+						g_free (diag_argv [i]);
+						diag_argv [i] = NULL;
+					}
+				}
+
+				g_free (diag_argv);
+			} else {
+				mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed parsing MONO_DIAGNOSTICS environment variable");
+			}
+		}
+	}
+	g_free (diag_env);
+}
+
 void
 ep_rt_mono_init (void)
 {
@@ -1580,11 +1660,11 @@ ep_rt_mono_init (void)
 
 	_ep_rt_mono_initialized = TRUE;
 
-	_ep_rt_default_profiler = mono_profiler_create (NULL);
-	mono_profiler_set_thread_stopped_callback (_ep_rt_default_profiler, profiler_eventpipe_thread_exited);
+	EP_ASSERT (_ep_rt_default_profiler != NULL);
+	EP_ASSERT (_ep_rt_dotnet_runtime_profiler_provider != NULL);
+	EP_ASSERT (_ep_rt_dotnet_mono_profiler_provider != NULL);
 
-	_ep_rt_dotnet_runtime_profiler_provider = mono_profiler_create (NULL);
-	_ep_rt_dotnet_mono_profiler_provider = mono_profiler_create (NULL);
+	mono_profiler_set_thread_stopped_callback (_ep_rt_default_profiler, profiler_eventpipe_thread_exited);
 
 	MonoMethodSignature *method_signature = mono_metadata_signature_alloc (mono_get_corlib (), 1);
 	if (method_signature) {

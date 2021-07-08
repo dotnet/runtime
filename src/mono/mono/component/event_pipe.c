@@ -284,5 +284,7 @@ event_pipe_thread_ctrl_activity_id (
 MonoComponentEventPipe *
 mono_component_event_pipe_init (void)
 {
+	extern void ep_rt_mono_component_init (void);
+	ep_rt_mono_component_init ();
 	return &fn_table;
 }
