@@ -5487,15 +5487,14 @@ void Compiler::optAssertionPropMain()
     {
         for (BasicBlock* const block : Blocks())
         {
-            printf(FMT_BB " ", block->bbNum);
-            optDumpAssertionIndices("in = ", block->bbAssertionIn, "; ");
-            optDumpAssertionIndices("out = ", block->bbAssertionOut);
+            printf(FMT_BB ":\n", block->bbNum);
+            optDumpAssertionIndices(" in   = ", block->bbAssertionIn, "\n");
+            optDumpAssertionIndices(" out  = ", block->bbAssertionOut, "\n");
             if (block->bbJumpKind == BBJ_COND)
             {
-                printf(" => " FMT_BB " ", block->bbJumpDest->bbNum);
-                optDumpAssertionIndices("out = ", bbJtrueAssertionOut[block->bbNum]);
+                printf(" " FMT_BB " = ", block->bbJumpDest->bbNum);
+                optDumpAssertionIndices(bbJtrueAssertionOut[block->bbNum], "\n");
             }
-            printf("\n");
         }
         printf("\n");
     }
