@@ -26,14 +26,30 @@ HRESULT GCAllocateProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 
 HRESULT STDMETHODCALLTYPE GCAllocateProfiler::ObjectAllocated(ObjectID objectId, ClassID classId)
 {
-    assert (false);
+    COR_PRF_GC_GENERATION_RANGE gen;
+    HRESULT hr = pCorProfilerInfo->GetObjectGeneration(objectId, &gen);
+    if (FAILED(hr))
+    {
+        printf("GetObjectGeneration failed hr=0x%x\n", hr);
+    }
+    else if (gen.generation == COR_PRF_GC_PINNED_OBJECT_HEAP)
+    {
+        _gcPOHAllocations++;
+    }
+    else if (gen.generation == COR_PRF_GC_LARGE_OBJECT_HEAP)
+    {
+        _gcLOHAllocations++;
+    }
+
     return S_OK;
 }
 
 HRESULT GCAllocateProfiler::Shutdown()
 {
     Profiler::Shutdown();
-    printf("PROFILER TEST PASSES\n");
+    assert(_gcPOHAllocations > 0);
+    assert(_gcLOHAllocations > 0);
+    printf("PROFILER TEST PASSES. PinnedObjectAllocations=%d, LargeObjectAllocations=%d.\n", (int)_gcPOHAllocations, (int)_gcLOHAllocations);
     fflush(stdout);
 
     return S_OK;

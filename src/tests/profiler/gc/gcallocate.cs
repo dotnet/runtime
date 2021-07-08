@@ -13,6 +13,7 @@ namespace Profiler.Tests
         public static int RunTest(String[] args) 
         {
             int[] large = new int[100000];
+            int[] pinned = GC.AllocateArray<int>(32, true);
             Console.WriteLine("Test Passed");
             return 100;
         }

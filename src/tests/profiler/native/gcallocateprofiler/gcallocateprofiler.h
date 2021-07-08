@@ -8,9 +8,10 @@
 class GCAllocateProfiler : public Profiler
 {
 public:
-    GCAllocateProfiler() : Profiler()
-    {
-    }
+    GCAllocateProfiler() : Profiler(),
+        _gcLOHAllocations(0),
+        _gcPOHAllocations(0)
+    {}
 
 	virtual GUID GetClsid();
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
@@ -18,4 +19,6 @@ public:
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
 
 private:
+    std::atomic<int> _gcLOHAllocations;
+    std::atomic<int> _gcPOHAllocations;
 };
