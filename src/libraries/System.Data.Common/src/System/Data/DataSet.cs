@@ -3509,6 +3509,7 @@ namespace System.Data
         }
 #pragma warning restore 8632
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(IDataReader reader, LoadOption loadOption, FillErrorEventHandler? errorHandler, params DataTable[] tables)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Load|API> reader, loadOption={0}", loadOption);
@@ -3543,9 +3544,11 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(IDataReader reader, LoadOption loadOption, params DataTable[] tables) =>
             Load(reader, loadOption, null, tables);
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(IDataReader reader, LoadOption loadOption, params string[] tables)
         {
             ADP.CheckArgumentNull(tables, nameof(tables));

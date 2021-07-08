@@ -65,6 +65,7 @@ namespace System.Data.Common
             return _schemaInfo[i].typeName;
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public override Type GetFieldType(int i)
         {
             return _schemaInfo[i].type;
@@ -381,6 +382,7 @@ namespace System.Data.Common
     {
         public string name;
         public string typeName;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public Type type;
     }
 }

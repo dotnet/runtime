@@ -572,8 +572,11 @@ namespace System.Data
         public void InferXmlSchema(System.Xml.XmlReader? reader, string[]? nsArray) { }
         protected virtual void InitializeDerivedDataSet() { }
         protected bool IsBinarySerialized(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, params System.Data.DataTable[] tables) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, System.Data.FillErrorEventHandler? errorHandler, params System.Data.DataTable[] tables) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, params string[] tables) { }
         public void Merge(System.Data.DataRow[] rows) { }
         public void Merge(System.Data.DataRow[] rows, bool preserveChanges, System.Data.MissingSchemaAction missingSchemaAction) { }
@@ -762,8 +765,11 @@ namespace System.Data
         protected virtual System.Type GetRowType() { throw null; }
         protected virtual System.Xml.Schema.XmlSchema? GetSchema() { throw null; }
         public void ImportRow(System.Data.DataRow? row) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, System.Data.FillErrorEventHandler? errorHandler) { }
         public System.Data.DataRow LoadDataRow(object?[] values, bool fAcceptChanges) { throw null; }
         public System.Data.DataRow LoadDataRow(object?[] values, System.Data.LoadOption loadOption) { throw null; }
@@ -1309,8 +1315,10 @@ namespace System.Data
         System.Data.MissingSchemaAction MissingSchemaAction { get; set; }
         System.Data.ITableMappingCollection TableMappings { get; }
         int Fill(System.Data.DataSet dataSet);
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType);
         System.Data.IDataParameter[] GetFillParameters();
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         int Update(System.Data.DataSet dataSet);
     }
     public partial interface IDataParameter
@@ -1357,6 +1365,7 @@ namespace System.Data
         System.DateTime GetDateTime(int i);
         decimal GetDecimal(int i);
         double GetDouble(int i);
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         System.Type GetFieldType(int i);
         float GetFloat(int i);
         System.Guid GetGuid(int i);
@@ -1756,7 +1765,7 @@ namespace System.Data.Common
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool ContinueUpdateOnError { get { throw null; } set { } }
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
-        public System.Data.LoadOption FillLoadOption { get { throw null; } set { } }
+        public System.Data.LoadOption FillLoadOption { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.MissingMappingAction.Passthrough)]
         public System.Data.MissingMappingAction MissingMappingAction { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.MissingSchemaAction.Add)]
@@ -1775,8 +1784,11 @@ namespace System.Data.Common
         protected virtual int Fill(System.Data.DataSet dataSet, string srcTable, System.Data.IDataReader dataReader, int startRecord, int maxRecords) { throw null; }
         protected virtual int Fill(System.Data.DataTable dataTable, System.Data.IDataReader dataReader) { throw null; }
         protected virtual int Fill(System.Data.DataTable[] dataTables, System.Data.IDataReader dataReader, int startRecord, int maxRecords) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("dataReader's schema table types cannot be statically analyzed.")]
         protected virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, string srcTable, System.Data.IDataReader dataReader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("dataReader's schema table types cannot be statically analyzed.")]
         protected virtual System.Data.DataTable? FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDataReader dataReader) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public virtual System.Data.IDataParameter[] GetFillParameters() { throw null; }
@@ -1789,6 +1801,7 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual bool ShouldSerializeFillLoadOption() { throw null; }
         protected virtual bool ShouldSerializeTableMappings() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public virtual int Update(System.Data.DataSet dataSet) { throw null; }
     }
     public sealed partial class DataColumnMapping : System.MarshalByRefObject, System.Data.IColumnMapping, System.ICloneable
@@ -2256,10 +2269,15 @@ namespace System.Data.Common
         protected virtual int Fill(System.Data.DataTable dataTable, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
         protected virtual int Fill(System.Data.DataTable[] dataTables, int startRecord, int maxRecords, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
         public int Fill(int startRecord, int maxRecords, params System.Data.DataTable[] dataTables) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public override System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from command) schema table types cannot be statically analyzed.")]
         protected virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, System.Data.IDbCommand command, string srcTable, System.Data.CommandBehavior behavior) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, string srcTable) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public System.Data.DataTable? FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from command) schema table types cannot be statically analyzed.")]
         protected virtual System.Data.DataTable? FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
         protected virtual System.Data.IDataParameter GetBatchedParameter(int commandIdentifier, int parameterIndex) { throw null; }
         protected virtual bool GetBatchedRecordsAffected(int commandIdentifier, out int recordsAffected, out System.Exception? error) { throw null; }
@@ -2270,10 +2288,15 @@ namespace System.Data.Common
         protected virtual void OnRowUpdating(System.Data.Common.RowUpdatingEventArgs value) { }
         object System.ICloneable.Clone() { throw null; }
         protected virtual void TerminateBatching() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public int Update(System.Data.DataRow[] dataRows) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         protected virtual int Update(System.Data.DataRow[] dataRows, System.Data.Common.DataTableMapping tableMapping) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public override int Update(System.Data.DataSet dataSet) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public int Update(System.Data.DataSet dataSet, string srcTable) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public int Update(System.Data.DataTable dataTable) { throw null; }
     }
     public abstract partial class DbDataReader : System.MarshalByRefObject, System.Collections.IEnumerable, System.Data.IDataReader, System.Data.IDataRecord, System.IDisposable, System.IAsyncDisposable
