@@ -606,6 +606,19 @@ namespace System.IO.Compression
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public virtual void Read_EmptyBuffer(bool useAsync)
+        {
+            using (var decompressor = CreateStream(new MemoryStream(new byte[1]), CompressionMode.Decompress))
+            {
+                var data = new byte[1] { 42 };
+                Assert.Equal(0, useAsync ? decompressor.ReadAsync(data, 0, 0).Result : decompressor.Read(data, 0, 0));
+                Assert.Equal(42, data[0]);
+            }
+        }
+
+        [Theory]
         [InlineData(CompressionMode.Compress)]
         [InlineData(CompressionMode.Decompress)]
         public void CopyToAsync_ArgumentValidation(CompressionMode mode)

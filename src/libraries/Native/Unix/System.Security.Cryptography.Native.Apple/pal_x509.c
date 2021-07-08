@@ -257,6 +257,18 @@ int32_t AppleCryptoNative_X509CopyPrivateKeyFromIdentity(SecIdentityRef identity
     return SecIdentityCopyPrivateKey(identity, pPrivateKeyOut);
 }
 
+int32_t AppleCryptoNative_X509GetSubjectSummary(SecCertificateRef cert, CFStringRef* ppSummaryOut)
+{
+    if (ppSummaryOut != NULL)
+        *ppSummaryOut = NULL;
+
+    if (cert == NULL || ppSummaryOut == NULL)
+        return kErrorBadInput;
+
+    *ppSummaryOut = SecCertificateCopySubjectSummary(cert);
+    return (*ppSummaryOut != NULL);
+}
+
 #if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 static int32_t ReadX509(uint8_t* pbData,
                         int32_t cbData,
