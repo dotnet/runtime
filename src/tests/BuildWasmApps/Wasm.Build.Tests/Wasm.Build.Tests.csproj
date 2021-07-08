@@ -15,6 +15,9 @@
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
     <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
 
+    <!-- not supported on windows yet -->
+    <TestUsingWorkloads Condition="'$(OS)' == 'Windows_NT'">false</TestUsingWorkloads>
+
     <!-- don't run any wasm build steps -->
     <WasmBuildAppAfterThisTarget />
     <RunScriptInputName>RunScriptTemplate.sh</RunScriptInputName>
