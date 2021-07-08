@@ -22,7 +22,7 @@ macro(append_extra_security_libs NativeLibsExtra)
   if(CLR_CMAKE_TARGET_LINUX)
     # On Linux libgssapi_krb5.so is loaded on demand to tolerate its absense in singlefile apps that do not use it
     list(APPEND ${NativeLibsExtra} dl)
-    add_definitions(-DGSS_DYNAMIC_LIB="libgssapi_krb5.so")
+    add_definitions(-DGSS_SHIM)
   else()
     list(APPEND ${NativeLibsExtra} ${LIBGSS})
   endif()

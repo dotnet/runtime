@@ -20,7 +20,7 @@
 #include <assert.h>
 #include <string.h>
 
-#if defined(GSS_DYNAMIC_LIB)
+#if defined(GSS_SHIM)
 #include <dlfcn.h>
 #include "pal_atomic.h"
 #endif
@@ -53,7 +53,7 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = ARRAY_SIZE(gss_ntlm_oid_
                                               .elements = gss_ntlm_oid_value};
 #endif
 
-#if defined(GSS_DYNAMIC_LIB)
+#if defined(GSS_SHIM)
 
 #define FOR_ALL_GSS_FUNCTIONS \
     PER_FUNCTION_BLOCK(gss_accept_sec_context) \
@@ -131,6 +131,8 @@ static gss_shim_t* volatile s_gss_shim_ptr = NULL;
 #define GSS_C_NT_HOSTBASED_SERVICE              *s_gss_shim_ptr->GSS_C_NT_HOSTBASED_SERVICE_ptr
 #define gss_mech_krb5                           *s_gss_shim_ptr->gss_mech_krb5_ptr
 
+#define gss_lib_name "libgssapi_krb5.so"
+
 static int32_t ensure_gss_shim_initialized()
 {
     if (s_gss_shim_ptr != NULL)
@@ -138,8 +140,8 @@ static int32_t ensure_gss_shim_initialized()
         return 0;
     }
 
-    void* lib = dlopen(GSS_DYNAMIC_LIB, RTLD_LAZY);
-    if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", GSS_DYNAMIC_LIB, dlerror()); return -1; }
+    void* lib = dlopen(gss_lib_name, RTLD_LAZY);
+    if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
 
     // check is someone else has opened and published s_gssLib already
     if (!pal_atomic_cas_ptr(&s_gssLib, lib, NULL))
@@ -149,10 +151,10 @@ static int32_t ensure_gss_shim_initialized()
 
     // initialize indirection pointers for all functions, like:
     //   s_gss_shim.gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(s_gssLib, "gss_accept_sec_context");
-    //   if (s_gss_shim.gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", GSS_DYNAMIC_LIB, dlerror()); return -1; }
+    //   if (s_gss_shim.gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", gss_lib_name, dlerror()); return -1; }
 #define PER_FUNCTION_BLOCK(fn) \
     s_gss_shim.fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn); \
-    if (s_gss_shim.fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", GSS_DYNAMIC_LIB, dlerror()); return -1; }
+    if (s_gss_shim.fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
 
     FOR_ALL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
@@ -163,7 +165,7 @@ static int32_t ensure_gss_shim_initialized()
     return 0;
 }
 
-#endif // GSS_DYNAMIC_LIB
+#endif // GSS_SHIM
 
 // transfers ownership of the underlying data from gssBuffer to PAL_GssBuffer
 static void NetSecurityNative_MoveBuffer(gss_buffer_t gssBuffer, PAL_GssBuffer* targetBuffer)
@@ -687,7 +689,7 @@ uint32_t NetSecurityNative_IsNtlmInstalled()
 
 int32_t NetSecurityNative_EnsureGssInitialized()
 {
-#if defined(GSS_DYNAMIC_LIB)
+#if defined(GSS_SHIM)
     return ensure_gss_shim_initialized();
 #else
     return 0;
