@@ -2,16 +2,11 @@
   <!-- This depends on the root Directory.Build.targets imported this file -->
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'"/>
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
 
-  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
-  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences" Condition="@(RuntimePack->Count()) != 0">
-    <ItemGroup>
-      <RuntimePack>
-        <PackageDirectory>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.browser-wasm', $(Configuration)))</PackageDirectory>
-      </RuntimePack>
-    </ItemGroup>
-    <Message Text="Using RuntimePack.PackageDirectory: %(RuntimePack.PackageDirectory)" Importance="Low" />
+  <Target Name="PrintRuntimePackLocation" AfterTargets="UpdateTargetingAndRuntimePack">
+    <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
   <Target Name="RebuildWasmAppBuilder">
