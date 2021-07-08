@@ -3543,6 +3543,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                 noway_assert(op1->IsMultiRegCall() || op1->IsMultiRegLclVar());
 
                 int                   srcCount;
+                ReturnTypeDesc        nonCallRetTypeDesc;
                 const ReturnTypeDesc* pRetTypeDesc;
                 if (op1->OperIs(GT_CALL))
                 {
@@ -3552,12 +3553,11 @@ int LinearScan::BuildReturn(GenTree* tree)
                 {
                     assert(compiler->lvaEnregMultiRegVars);
                     LclVarDsc*     varDsc = compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum());
-                    ReturnTypeDesc retTypeDesc;
-                    retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(),
+                    nonCallRetTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(),
                                                            compiler->info.compCallConv);
-                    pRetTypeDesc = &retTypeDesc;
+                    pRetTypeDesc = &nonCallRetTypeDesc;
                     assert(compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum())->lvFieldCnt ==
-                           retTypeDesc.GetReturnRegCount());
+                           nonCallRetTypeDesc.GetReturnRegCount());
                 }
                 srcCount = pRetTypeDesc->GetReturnRegCount();
                 // For any source that's coming from a different register file, we need to ensure that
