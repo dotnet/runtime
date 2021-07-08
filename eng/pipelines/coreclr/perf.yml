@@ -58,19 +58,19 @@ jobs:
   # run arm64 interpreter jobs for mono
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
-      jobtemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildconfig: release
-      runtimeflavor: mono
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
       platforms:
-      - linux_arm64
-      jobparameters:
-        testgroup: perf
-        livelibrariesbuildconfig: release
-        runtimetype: mono
-        codegentype: 'interpreter'
-        projectfile: microbenchmarks.proj
-        runkind: micro_mono
-        runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+      - Linux_arm64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        runtimeType: mono
+        codeGenType: 'Interpreter'
+        projectFile: microbenchmarks.proj
+        runKind: micro_mono
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfa64'
 
   # build mono on wasm
