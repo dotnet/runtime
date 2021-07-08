@@ -84,58 +84,50 @@ static gss_OID_desc gss_mech_ntlm_OID_desc = {.length = ARRAY_SIZE(gss_ntlm_oid_
 
 #endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 
-typedef struct gss_shim_t
-{
-    // define indirection pointers for all functions, like
-    // TYPEOF(gss_accept_sec_context)* gss_accept_sec_context_ptr;
+// define indirection pointers for all functions, like
+// static TYPEOF(gss_accept_sec_context)* gss_accept_sec_context_ptr;
 #define PER_FUNCTION_BLOCK(fn) \
-    TYPEOF(fn)* fn##_ptr;
+static TYPEOF(fn)* fn##_ptr;
 
-    FOR_ALL_GSS_FUNCTIONS
+FOR_ALL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
-} gss_shim_t;
 
 static void* volatile s_gssLib = NULL;
-
-// static storage for all method pointers
-static gss_shim_t s_gss_shim;
-
-// reference to the shim storage.
-static gss_shim_t* volatile s_gss_shim_ptr = NULL;
+static volatile bool s_gss_shim_initialized = false;
 
 // remap gss function use to use indirection pointers
-#define gss_accept_sec_context(...)         s_gss_shim_ptr->gss_accept_sec_context_ptr(__VA_ARGS__)
-#define gss_acquire_cred(...)               s_gss_shim_ptr->gss_acquire_cred_ptr(__VA_ARGS__)
-#define gss_acquire_cred_with_password(...) s_gss_shim_ptr->gss_acquire_cred_with_password_ptr(__VA_ARGS__)
-#define gss_delete_sec_context(...)         s_gss_shim_ptr->gss_delete_sec_context_ptr(__VA_ARGS__)
-#define gss_display_name(...)               s_gss_shim_ptr->gss_display_name_ptr(__VA_ARGS__)
-#define gss_display_status(...)             s_gss_shim_ptr->gss_display_status_ptr(__VA_ARGS__)
-#define gss_import_name(...)                s_gss_shim_ptr->gss_import_name_ptr(__VA_ARGS__)
-#define gss_indicate_mechs(...)             s_gss_shim_ptr->gss_indicate_mechs_ptr(__VA_ARGS__)
-#define gss_init_sec_context(...)           s_gss_shim_ptr->gss_init_sec_context_ptr(__VA_ARGS__)
-#define gss_inquire_context(...)            s_gss_shim_ptr->gss_inquire_context_ptr(__VA_ARGS__)
-#define gss_oid_equal(...)                  s_gss_shim_ptr->gss_oid_equal_ptr(__VA_ARGS__)
-#define gss_release_buffer(...)             s_gss_shim_ptr->gss_release_buffer_ptr(__VA_ARGS__)
-#define gss_release_cred(...)               s_gss_shim_ptr->gss_release_cred_ptr(__VA_ARGS__)
-#define gss_release_name(...)               s_gss_shim_ptr->gss_release_name_ptr(__VA_ARGS__)
-#define gss_release_oid_set(...)            s_gss_shim_ptr->gss_release_oid_set_ptr(__VA_ARGS__)
-#define gss_unwrap(...)                     s_gss_shim_ptr->gss_unwrap_ptr(__VA_ARGS__)
-#define gss_wrap(...)                       s_gss_shim_ptr->gss_wrap_ptr(__VA_ARGS__)
+#define gss_accept_sec_context(...)         gss_accept_sec_context_ptr(__VA_ARGS__)
+#define gss_acquire_cred(...)               gss_acquire_cred_ptr(__VA_ARGS__)
+#define gss_acquire_cred_with_password(...) gss_acquire_cred_with_password_ptr(__VA_ARGS__)
+#define gss_delete_sec_context(...)         gss_delete_sec_context_ptr(__VA_ARGS__)
+#define gss_display_name(...)               gss_display_name_ptr(__VA_ARGS__)
+#define gss_display_status(...)             gss_display_status_ptr(__VA_ARGS__)
+#define gss_import_name(...)                gss_import_name_ptr(__VA_ARGS__)
+#define gss_indicate_mechs(...)             gss_indicate_mechs_ptr(__VA_ARGS__)
+#define gss_init_sec_context(...)           gss_init_sec_context_ptr(__VA_ARGS__)
+#define gss_inquire_context(...)            gss_inquire_context_ptr(__VA_ARGS__)
+#define gss_oid_equal(...)                  gss_oid_equal_ptr(__VA_ARGS__)
+#define gss_release_buffer(...)             gss_release_buffer_ptr(__VA_ARGS__)
+#define gss_release_cred(...)               gss_release_cred_ptr(__VA_ARGS__)
+#define gss_release_name(...)               gss_release_name_ptr(__VA_ARGS__)
+#define gss_release_oid_set(...)            gss_release_oid_set_ptr(__VA_ARGS__)
+#define gss_unwrap(...)                     gss_unwrap_ptr(__VA_ARGS__)
+#define gss_wrap(...)                       gss_wrap_ptr(__VA_ARGS__)
 
 #if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-#define gss_set_cred_option(...)            get_gss_shim()->gss_set_cred_option_ptr(__VA_ARGS__)
+#define gss_set_cred_option(...)            gss_set_cred_option_ptr(__VA_ARGS__)
 #endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 
 
-#define GSS_C_NT_USER_NAME                      *s_gss_shim_ptr->GSS_C_NT_USER_NAME_ptr
-#define GSS_C_NT_HOSTBASED_SERVICE              *s_gss_shim_ptr->GSS_C_NT_HOSTBASED_SERVICE_ptr
-#define gss_mech_krb5                           *s_gss_shim_ptr->gss_mech_krb5_ptr
+#define GSS_C_NT_USER_NAME                  (*GSS_C_NT_USER_NAME_ptr)
+#define GSS_C_NT_HOSTBASED_SERVICE          (*GSS_C_NT_HOSTBASED_SERVICE_ptr)
+#define gss_mech_krb5                       (*gss_mech_krb5_ptr)
 
 #define gss_lib_name "libgssapi_krb5.so"
 
 static int32_t ensure_gss_shim_initialized()
 {
-    if (s_gss_shim_ptr != NULL)
+    if (__atomic_load_n(&s_gss_shim_initialized, __ATOMIC_ACQUIRE))
     {
         return 0;
     }
@@ -150,17 +142,17 @@ static int32_t ensure_gss_shim_initialized()
     }
 
     // initialize indirection pointers for all functions, like:
-    //   s_gss_shim.gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(s_gssLib, "gss_accept_sec_context");
-    //   if (s_gss_shim.gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", gss_lib_name, dlerror()); return -1; }
+    //   gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(s_gssLib, "gss_accept_sec_context");
+    //   if (gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", gss_lib_name, dlerror()); return -1; }
 #define PER_FUNCTION_BLOCK(fn) \
-    s_gss_shim.fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn); \
-    if (s_gss_shim.fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
+    fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn); \
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
 
     FOR_ALL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
-    // publish the shim pointer
-    __atomic_store_n(&s_gss_shim_ptr, &s_gss_shim, __ATOMIC_RELEASE);
+    // set the completion flag after setting up all indirections
+    __atomic_store_n(&s_gss_shim_initialized, true, __ATOMIC_RELEASE);
 
     return 0;
 }
