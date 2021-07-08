@@ -262,50 +262,50 @@ namespace System.IO.Tests
                 filePath: filePath);
         }
 
-        [Fact]
-        public void ResolveLinkTarget_ReturnFinalTarget_MaxFollowedLinks()
+        [Theory]
+        [InlineData(1, false)]
+        [InlineData(10, false)]
+        [InlineData(30, false)] // Close to Windows limit when reparsing absolute paths, for relative paths the limit is supposedly 63.
+        [InlineData(1, true)]
+        [InlineData(10, true)]
+        [InlineData(30, true)]
+        [InlineData(40, true)] // The limit specified in Unix, this is the same for absolute and relative paths.
+        public void ResolveLinkTarget_ReturnFinalTarget_ChainOfLinks_Succeeds(int length, bool relative)
         {
-            if (OperatingSystem.IsWindows())
+            string target = GetTestFilePath();
+            CreateFileOrDirectory(target);
+
+            string tail = CreateChainOfLinks(target, length, relative);
+            FileSystemInfo targetInfo = ResolveLinkTarget(tail, returnFinalTarget: true);
+            Assert.Equal(target, targetInfo.FullName);
+        }
+
+        [Theory]
+        // 100 is way beyond the limit, we just want to make sure that a nice exception is thrown when its exceeded.
+        // We also don't want to test for a very precise limit given that it is very inconsistent across Windows versions.
+        [InlineData(100, false)]
+        [InlineData(100, true)]
+        public void ResolveLinkTarget_ReturnFinalTarget_ChainOfLinks_ExceedsLimit_Throws(int length, bool relative)
+        {
+            string target = GetTestFilePath();
+            CreateFileOrDirectory(target);
+
+            string tail = CreateChainOfLinks(target, length, relative);
+            Assert.Throws<IOException>(() => ResolveLinkTarget(tail, returnFinalTarget: true));
+        }
+
+        private string CreateChainOfLinks(string target, int length, bool relative)
+        {
+            string previousPath = target;
+
+            for (int i = 0; i < length; i++)
             {
-                // As per the docs, this should be 63 but I don't see that in practice.
-                // https://docs.microsoft.com/windows/win32/fileio/reparse-points
-                Verify(limit: 62, relative: true);
-                Verify(limit: 31, relative: false);
-            }
-            else
-            {
-                Verify(limit: 40, relative: true);
-                Verify(limit: 40, relative: false);
-            }
-
-            void Verify(int limit, bool relative)
-            {
-                string? root = relative ? Directory.CreateDirectory(GetRandomFilePath()).FullName : null;
-                string finalTarget = GetFullPath(root);
-
-                CreateFileOrDirectory(finalTarget);
-                string previousPath = finalTarget;
-
-                for (int i = 0; i < limit; i++)
-                {
-                    string currentLinkPath = GetFullPath(root);
-                    CreateSymbolicLink(currentLinkPath, GetLinkTargetPath(previousPath, relative));
-
-                    previousPath = currentLinkPath;
-                }
-
-                // This is the edge of the limit
-                FileSystemInfo linkInfo = ResolveLinkTarget(previousPath, returnFinalTarget: true);
-                Assert.Equal(finalTarget, linkInfo.FullName);
-
-                // One after the limit
-                linkInfo = CreateSymbolicLink(GetFullPath(root), GetLinkTargetPath(previousPath, relative));
-                Assert.Throws<IOException>(() => ResolveLinkTarget(linkInfo.FullName, returnFinalTarget: true));
+                string currentLinkPath = GetTestFilePath();
+                CreateSymbolicLink(currentLinkPath, relative ? Path.GetFileName(previousPath) : previousPath);
+                previousPath = currentLinkPath;
             }
 
-            string GetFullPath(string? root) => root != null ? Path.Join(root, GetRandomFileName()) : GetRandomFilePath();
-
-            string GetLinkTargetPath(string fullPath, bool relative) => relative ? Path.GetFileName(fullPath) : fullPath;
+            return previousPath;
         }
 
         [Fact]
