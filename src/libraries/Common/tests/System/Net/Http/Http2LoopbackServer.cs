@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -222,12 +223,30 @@ namespace System.Net.Test.Common
             return http2Options;
         }
 
-        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
+        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null, List<(int, long)> times = null, Stopwatch s = null)
         {
-            using (var server = CreateServer(options))
+            times?.Add((500, s.ElapsedMilliseconds));
+            var server = CreateServer(options);
+            times?.Add((501, s.ElapsedMilliseconds));
+            try
             {
-                await funcAsync(server, server.Address).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
+                times?.Add((502, s.ElapsedMilliseconds));
+                await funcAsync(server, server.Address)
+                    .WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout + 10000));
+                times?.Add((503, s.ElapsedMilliseconds));
             }
+            catch
+            {
+                times?.Add((504, s.ElapsedMilliseconds));
+                throw;
+            }
+            finally
+            {
+                times?.Add((505, s.ElapsedMilliseconds));
+                server.Dispose();
+                times?.Add((506, s.ElapsedMilliseconds));
+            }
+            times?.Add((507, s.ElapsedMilliseconds));
         }
 
         public override Version Version => HttpVersion20.Value;
