@@ -42,7 +42,7 @@
           DependsOnTargets="PrepareProjectReferences">
     <PropertyGroup>
       <!-- if we build for several architectures in the same dirty tree, the tasks for one may be different from the tasks for another -->
-      <TasksIntermediateFile>$([MSBuild]::NormalizePath('$(ArtifactsObjDir)', '$(MSBuildProjectName)', 'Debug', 'build-semaphore-$(TargetOS)-$(TargetArchitecture).txt'))</TasksIntermediateFile>
+      <TasksIntermediateFile>$([MSBuild]::NormalizePath('$(ArtifactsObjDir)', '$(MSBuildProjectName)', 'Debug', 'build-semaphore-$(TargetOS).txt'))</TasksIntermediateFile>
     </PropertyGroup>
 
     <!-- Include both the project file and its sources as an input. -->
