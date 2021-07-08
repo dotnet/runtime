@@ -64,26 +64,31 @@ namespace Microsoft.Win32.SafeHandles
 
             // Make sure it's not a directory; we do this after opening it once we have a file descriptor
             // to avoid race conditions.
-            Interop.Sys.FileStatus status;
-            if (Interop.Sys.FStat(handle, out status) != 0)
+            //
+            // We can omit the check when write access is requested. open will have failed with EISDIR.
+            if ((flags & (Interop.Sys.OpenFlags.O_WRONLY | Interop.Sys.OpenFlags.O_RDWR)) == 0)
             {
-                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                handle.Dispose();
-                throw Interop.GetExceptionForIoErrno(error, path);
-            }
-            if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
-            {
-                handle.Dispose();
-                throw Interop.GetExceptionForIoErrno(Interop.Error.EACCES.Info(), path, isDirectory: true);
-            }
+                Interop.Sys.FileStatus status;
+                if (Interop.Sys.FStat(handle, out status) != 0)
+                {
+                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                    handle.Dispose();
+                    throw Interop.GetExceptionForIoErrno(error, path);
+                }
+                if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
+                {
+                    handle.Dispose();
+                    throw Interop.GetExceptionForIoErrno(Interop.Error.EACCES.Info(), path, isDirectory: true);
+                }
 
-            if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFREG)
-            {
-                // we take advantage of the information provided by the fstat syscall
-                // and for regular files (most common case)
-                // avoid one extra sys call for determining whether file can be seeked
-                handle._canSeek = NullableBool.True;
-                Debug.Assert(Interop.Sys.LSeek(handle, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
+                if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFREG)
+                {
+                    // we take advantage of the information provided by the fstat syscall
+                    // and for regular files (most common case)
+                    // avoid one extra sys call for determining whether file can be seeked
+                    handle._canSeek = NullableBool.True;
+                    Debug.Assert(Interop.Sys.LSeek(handle, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
+                }
             }
 
             return handle;
@@ -93,11 +98,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             Interop.Sys.FileStatus fileinfo;
 
-            // First use stat, as we want to follow symlinks.  If that fails, it could be because the symlink
-            // is broken, we don't have permissions, etc., in which case fall back to using LStat to evaluate
-            // based on the symlink itself.
-            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0 &&
-                Interop.Sys.LStat(fullPath, out fileinfo) < 0)
+            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
             {
                 return false;
             }

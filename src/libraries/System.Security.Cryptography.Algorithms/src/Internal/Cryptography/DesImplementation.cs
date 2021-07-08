@@ -131,6 +131,52 @@ namespace Internal.Cryptography
             }
         }
 
+        protected override bool TryEncryptCbcCore(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.CBC,
+                paddingMode,
+                Key,
+                iv: iv.ToArray(),
+                blockSize: BlockSize / BitsPerByte,
+                0, /*feedback size */
+                paddingSize: BlockSize / BitsPerByte,
+                encrypting: true);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryDecryptCbcCore(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            UniversalCryptoTransform transform = CreateTransformCore(
+                CipherMode.CBC,
+                paddingMode,
+                Key,
+                iv: iv.ToArray(),
+                blockSize: BlockSize / BitsPerByte,
+                0, /*feedback size */
+                paddingSize: BlockSize / BitsPerByte,
+                encrypting: false);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
         private static void ValidateCFBFeedbackSize(int feedback)
         {
             // only 8bits feedback is available on all platforms

@@ -25,6 +25,13 @@ namespace System.Reflection.Metadata
         public System.Type HandlerType { get { throw null; } }
     }
 }
+namespace System.Runtime.CompilerServices
+{
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false)]
+    public sealed class CreateNewOnMetadataUpdateAttribute : System.Attribute
+    {
+    }
+}
 namespace System.Runtime.Loader
 {
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]

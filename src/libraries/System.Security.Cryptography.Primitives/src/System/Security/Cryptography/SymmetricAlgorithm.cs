@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using Internal.Cryptography;
 
@@ -601,7 +602,7 @@ namespace System.Security.Cryptography
             if (!TryEncryptEcbCore(plaintext, buffer, paddingMode, out int written) ||
                 written != ciphertextLength)
             {
-                // This means a user-derived imiplementation added more padding than we expected or
+                // This means a user-derived implementation added more padding than we expected or
                 // did something non-standard (encrypt to a partial block). This can't happen for
                 // multiple padding blocks since the buffer would have been too small in the first
                 // place. It doesn't make sense to try and support partial block encryption, likely
@@ -667,6 +668,319 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Decrypts data using CBC mode with the specified padding mode.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The decrypted plaintext data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="ciphertext" /> or <paramref name="iv" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The ciphertext could not be decrypted successfully.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryDecryptCbcCore" />.
+        /// </remarks>
+        public byte[] DecryptCbc(byte[] ciphertext, byte[] iv, PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            if (ciphertext is null)
+                throw new ArgumentNullException(nameof(ciphertext));
+            if (iv is null)
+                throw new ArgumentNullException(nameof(iv));
+
+            return DecryptCbc(new ReadOnlySpan<byte>(ciphertext), new ReadOnlySpan<byte>(iv), paddingMode);
+        }
+
+        /// <summary>
+        ///   Decrypts data using CBC mode with the specified padding mode.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The decrypted plaintext data.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The ciphertext could not be decrypted successfully.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryDecryptCbcCore" />.
+        /// </remarks>
+        public byte[] DecryptCbc(ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> iv, PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            CheckPaddingMode(paddingMode);
+            CheckInitializationVectorSize(iv);
+
+            // CBC is more typically used with padding so the resulting plaintext is
+            // unlikely to be the same size as the ciphertext. So we rent since we are
+            // likely to going to need to resize anyway.
+            // This will pass the rented buffer to user code (the virtual Core) so
+            // don't use CryptoPool.
+            byte[] decryptRent = ArrayPool<byte>.Shared.Rent(ciphertext.Length);
+            Span<byte> decryptBuffer = decryptRent.AsSpan(0, ciphertext.Length);
+
+            if (!TryDecryptCbcCore(ciphertext, iv, decryptBuffer, paddingMode, out int written)
+                || (uint)written > decryptBuffer.Length)
+            {
+                // This means decrypting the ciphertext grew in to a larger plaintext or overflowed.
+                // A user-derived class could do this, but it is not expected in any of the
+                // implementations that we ship.
+                throw new CryptographicException(SR.Argument_DestinationTooShort);
+            }
+
+            byte[] plaintext = decryptBuffer.Slice(0, written).ToArray();
+            CryptographicOperations.ZeroMemory(decryptBuffer.Slice(0, written));
+            ArrayPool<byte>.Shared.Return(decryptRent);
+
+            return plaintext;
+        }
+
+        /// <summary>
+        ///   Decrypts data into the specified buffer, using CBC mode with the specified padding mode.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="destination">The buffer to receive the plaintext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" /></returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The ciphertext could not be decrypted successfully.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The buffer in <paramref name="destination"/> is too small to hold the plaintext data.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryDecryptCbcCore" />.
+        /// </remarks>
+        public int DecryptCbc(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            CheckPaddingMode(paddingMode);
+            CheckInitializationVectorSize(iv);
+
+            if (!TryDecryptCbcCore(ciphertext, iv, destination, paddingMode, out int written))
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
+
+            return written;
+        }
+
+        /// <summary>
+        ///   Attempts to decrypt data into the specified buffer, using CBC mode with the specified padding mode.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="destination">The buffer to receive the plaintext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the decrypted data; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The ciphertext could not be decrypted successfully.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryDecryptCbcCore" />.
+        /// </remarks>
+        public bool TryDecryptCbc(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            out int bytesWritten,
+            PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            CheckPaddingMode(paddingMode);
+            CheckInitializationVectorSize(iv);
+            return TryDecryptCbcCore(ciphertext, iv, destination, paddingMode, out bytesWritten);
+        }
+
+        /// <summary>
+        ///   Encrypts data using CBC mode with the specified padding mode.
+        /// </summary>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The encrypted ciphertext data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="plaintext" /> or <paramref name="iv" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <see cref="TryEncryptEcbCore" /> could not encrypt the plaintext.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryEncryptCbcCore" />.
+        /// </remarks>
+        public byte[] EncryptCbc(byte[] plaintext, byte[] iv, PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            if (plaintext is null)
+                throw new ArgumentNullException(nameof(plaintext));
+            if (iv is null)
+                throw new ArgumentNullException(nameof(iv));
+
+            return EncryptCbc(new ReadOnlySpan<byte>(plaintext), new ReadOnlySpan<byte>(iv), paddingMode);
+        }
+
+        /// <summary>
+        ///   Encrypts data using CBC mode with the specified padding mode.
+        /// </summary>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The encrypted ciphertext data.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <see cref="TryEncryptEcbCore" /> could not encrypt the plaintext.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryEncryptCbcCore" />.
+        /// </remarks>
+        public byte[] EncryptCbc(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            CheckPaddingMode(paddingMode);
+            CheckInitializationVectorSize(iv);
+
+            int ciphertextLength = GetCiphertextLengthCbc(plaintext.Length, paddingMode);
+
+            // We expect most if not all uses to encrypt to exactly the ciphertextLength
+            byte[] buffer = GC.AllocateUninitializedArray<byte>(ciphertextLength);
+
+            if (!TryEncryptCbcCore(plaintext, iv, buffer, paddingMode, out int written) ||
+                written != ciphertextLength)
+            {
+                // This means a user-derived implementation added more padding than we expected or
+                // did something non-standard (encrypt to a partial block). This can't happen for
+                // multiple padding blocks since the buffer would have been too small in the first
+                // place. It doesn't make sense to try and support partial block encryption, likely
+                // something went very wrong. So throw.
+                throw new CryptographicException(SR.Format(SR.Cryptography_EncryptedIncorrectLength, nameof(TryEncryptCbcCore)));
+            }
+
+            return buffer;
+        }
+
+        /// <summary>
+        ///   Encrypts data into the specified buffer, using CBC mode with the specified padding mode.
+        /// </summary>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="destination">The buffer to receive the ciphertext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The plaintext could not be encrypted successfully.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The buffer in <paramref name="destination"/> is too small to hold the ciphertext data.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryEncryptCbcCore" />.
+        /// </remarks>
+        public int EncryptCbc(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            CheckPaddingMode(paddingMode);
+            CheckInitializationVectorSize(iv);
+
+            if (!TryEncryptCbcCore(plaintext, iv, destination, paddingMode, out int written))
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
+
+            return written;
+        }
+
+        /// <summary>
+        ///   Attempts to encrypt data into the specified buffer, using CBC mode with the specified padding mode.
+        /// </summary>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="destination">The buffer to receive the ciphertext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the encrypted data; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="paddingMode" /> is not a valid padding mode.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The plaintext could not be encrypted successfully.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryEncryptCbcCore" />.
+        /// </remarks>
+        public bool TryEncryptCbc(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            out int bytesWritten,
+            PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            CheckPaddingMode(paddingMode);
+            CheckInitializationVectorSize(iv);
+
+            return TryEncryptCbcCore(plaintext, iv, destination, paddingMode, out bytesWritten);
+        }
+
+        /// <summary>
         ///   When overridden in a derived class, attempts to encrypt data into the specified
         ///   buffer, using ECB mode with the specified padding mode.
         /// </summary>
@@ -719,10 +1033,73 @@ namespace System.Security.Cryptography
             throw new NotSupportedException(SR.NotSupported_SubclassOverride);
         }
 
+        /// <summary>
+        ///   When overridden in a derived class, attempts to encrypt data into the specified
+        ///   buffer, using CBC mode with the specified padding mode.
+        /// </summary>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="destination">The buffer to receive the ciphertext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the encrypted data; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="NotSupportedException">
+        ///   A derived class has not provided an implementation.
+        /// </exception>
+        /// <remarks>
+        ///   <para>Derived classes must override this and provide an implementation.</para>
+        ///   <para>
+        ///      Implementations of this method must write precisely
+        ///      <c>GetCiphertextLengthCbc(plaintext.Length, paddingMode)</c> bytes to <paramref name="destination"/>
+        ///      and report that via <paramref name="bytesWritten"/>.
+        ///   </para>
+        /// </remarks>
+        protected virtual bool TryEncryptCbcCore(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, attempts to decrypt data
+        ///   into the specified buffer, using CBC mode with the specified padding mode.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="destination">The buffer to receive the plaintext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the decrypted data; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="NotSupportedException">
+        ///   A derived class has not provided an implementation.
+        /// </exception>
+        /// <remarks>
+        ///   Derived classes must override this and provide an implementation.
+        /// </remarks>
+        protected virtual bool TryDecryptCbcCore(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            out int bytesWritten)
+        {
+            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+        }
+
         private static void CheckPaddingMode(PaddingMode paddingMode)
         {
             if (paddingMode < PaddingMode.None || paddingMode > PaddingMode.ISO10126)
                 throw new ArgumentOutOfRangeException(nameof(paddingMode), SR.Cryptography_InvalidPaddingMode);
+        }
+
+        private void CheckInitializationVectorSize(ReadOnlySpan<byte> iv)
+        {
+            if (iv.Length != BlockSize >> 3)
+                throw new ArgumentException(SR.Cryptography_InvalidIVSize, nameof(iv));
         }
 
         protected CipherMode ModeValue;

@@ -4975,10 +4975,13 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode("Members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(IDataReader reader) => Load(reader, LoadOption.PreserveChanges, null);
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(IDataReader reader, LoadOption loadOption) => Load(reader, loadOption, null);
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(IDataReader reader, LoadOption loadOption, FillErrorEventHandler? errorHandler)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.Load|API> {0}, loadOption={1}", ObjectID, loadOption);

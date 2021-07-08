@@ -13,31 +13,53 @@
     <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">TEST_DEBUG_CONFIG_ALSO</DefineConstants>
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
+    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
 
     <!-- don't run any wasm build steps -->
     <WasmBuildAppAfterThisTarget />
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
-    <_PreCommand Condition="'$(OS)' != 'Windows_NT'">WasmBuildSupportDir=%24{HELIX_CORRELATION_PAYLOAD}/build</_PreCommand>
-    <_PreCommand Condition="'$(OS)' == 'Windows_NT'">set WasmBuildSupportDir=%HELIX_CORRELATION_PAYLOAD%/build &amp;</_PreCommand>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <_PreCommand Condition="'$(OS)' != 'Windows_NT'">$(_PreCommand) TEST_LOG_PATH=%24{XHARNESS_OUT}/logs</_PreCommand>
-    <_PreCommand Condition="'$(OS)' != 'Windows_NT'">$(_PreCommand) HARNESS_RUNNER=%24{HARNESS_RUNNER}</_PreCommand>
-    <_PreCommand Condition="'$(OS)' == 'Windows_NT'">$(_PreCommand) set TEST_LOG_PATH=%XHARNESS_OUT%\logs &amp;</_PreCommand>
-    <_PreCommand Condition="'$(OS)' == 'Windows_NT'">$(_PreCommand) set HARNESS_RUNNER=%HARNESS_RUNNER% &amp;</_PreCommand>
-
-    <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(_PreCommand) dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
-    <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(_PreCommand) dotnet.exe exec xunit.console.dll $(AssemblyName).dll -xml %XHARNESS_OUT%\testResults.xml</RunScriptCommand>
-    <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
-    <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
+    <RunScriptInputName>RunScriptTemplate.sh</RunScriptInputName>
+    <RunScriptInputPath>$(MSBuildThisFileDirectory)data\$(RunScriptInputName)</RunScriptInputPath>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="$(RepoRoot)\src\mono\wasm\runtime-test.js" CopyToOutputDirectory="PreserveNewest" />
-
-    <None Include="..\testassets\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
+    <ItemGroup>
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(Version)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(Version)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+      <!-- TEST_USING_WORKLOADS - this is set per helix job, in sendtohelixhelp.proj -->
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=%24{HELIX_CORRELATION_PAYLOAD}" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=%HELIX_CORRELATION_PAYLOAD%" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
+      <!-- Enable once we add workloads based testing -->
+      <!--<RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />-->
+      <!--<RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />-->
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=$(ArtifactsBinDir)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=$(ArtifactsBinDir)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="set_env_vars" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe exec xunit.console.dll $(AssemblyName).dll -xml %XHARNESS_OUT%\testResults.xml</RunScriptCommand>
+      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
+      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
+
+      <RunScriptCommand Condition="'$(XUnitMethodName)' != ''">$(RunScriptCommand) -method $(XUnitMethodName)</RunScriptCommand>
+      <RunScriptCommand Condition="'$(XUnitClassName)' != ''">$(RunScriptCommand) -class $(XUnitClassName)</RunScriptCommand>
+    </PropertyGroup>
+  </Target>
 </Project>
