@@ -226,9 +226,10 @@ namespace System
             [StructLayout(LayoutKind.Sequential, Pack=1)]
             private unsafe struct AndroidTzDataHeader
             {
-                public fixed byte signature[12];
+                public fixed byte signature[12]; // "tzdata2012f\0"
                 public int indexOffset;
                 public int dataOffset;
+                public int finalOffset;
             }
 
             [StructLayout(LayoutKind.Sequential, Pack=1)]
@@ -237,7 +238,7 @@ namespace System
                 public fixed byte id[40];
                 public int byteOffset;
                 public int length;
-                public int rawUtcOffset;
+                public int unused; // Was raw GMT offset; always 0 since tzdata2014f (L).
             }
 
             private string[]? _ids;
