@@ -2,54 +2,43 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
-using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Microsoft.DotNet.RemoteExecutor;
+using System.Collections.Generic;
 
 namespace System.Tests
 {
-    public class PosixSignalRegistrationTests
+    public partial class PosixSignalRegistrationTests
     {
-        private static TimeSpan Timeout => TimeSpan.FromSeconds(30);
-
-        [Fact]
-        public void HandlerNullThrows()
+        public static IEnumerable<object[]> UninstallableSignals()
         {
-            Assert.Throws<ArgumentNullException>(() => PosixSignalRegistration.Create(PosixSignal.SIGCONT, null));
+            yield return new object[] { (PosixSignal)9 };
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(-1000)]
-        [InlineData(1000)]
-        public void InvalidSignalValueThrows(int value)
+        public static IEnumerable<object[]> SupportedSignals()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => PosixSignalRegistration.Create((PosixSignal)value, ctx => { }));
+            foreach (PosixSignal value in Enum.GetValues(typeof(PosixSignal)))
+                yield return new object[] { value };
         }
 
-        [Theory]
-        [InlineData((PosixSignal)9)]  // SIGKILL
-        public void UninstallableSignalsThrow(PosixSignal signal)
+        public static IEnumerable<object[]> UnsupportedSignals()
         {
-            Assert.Throws<IOException>(() => PosixSignalRegistration.Create(signal, ctx => { }));
+            yield return new object[] { 0 };
+            yield return new object[] { 3 };
+            yield return new object[] { -1000 };
+            yield return new object[] { 1000 };
         }
 
-        [Theory]
-        [MemberData(nameof(PosixSignalValues))]
-        public void CanRegisterForKnownValues(PosixSignal signal)
-        {
-            using var _ = PosixSignalRegistration.Create(signal, ctx => { });
-        }
-
-        [Theory]
-        [MemberData(nameof(PosixSignalValues))]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(SupportedSignals))]
         public void SignalHandlerCalledForKnownSignals(PosixSignal s)
         {
-            RemoteExecutor.Invoke((signalStr) => {
+            RemoteExecutor.Invoke(signalStr =>
+            {
                 PosixSignal signal = Enum.Parse<PosixSignal>(signalStr);
+
                 using SemaphoreSlim semaphore = new(0);
                 using var _ = PosixSignalRegistration.Create(signal, ctx =>
                 {
@@ -60,18 +49,21 @@ namespace System.Tests
 
                     semaphore.Release();
                 });
+
                 kill(signal);
-                bool entered = semaphore.Wait(Timeout);
+                bool entered = semaphore.Wait(SuccessTimeout);
                 Assert.True(entered);
             }, s.ToString()).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(PosixSignalAsRawValues))]
         public void SignalHandlerCalledForRawSignals(PosixSignal s)
         {
-            RemoteExecutor.Invoke((signalStr) => {
+            RemoteExecutor.Invoke((signalStr) =>
+            {
                 PosixSignal signal = Enum.Parse<PosixSignal>(signalStr);
+
                 using SemaphoreSlim semaphore = new(0);
                 using var _ = PosixSignalRegistration.Create(signal, ctx =>
                 {
@@ -82,8 +74,9 @@ namespace System.Tests
 
                     semaphore.Release();
                 });
+
                 kill(signal);
-                bool entered = semaphore.Wait(Timeout);
+                bool entered = semaphore.Wait(SuccessTimeout);
                 Assert.True(entered);
             }, s.ToString()).Dispose();
         }
@@ -105,8 +98,9 @@ namespace System.Tests
 
                     semaphore.Release();
                 });
+
                 kill(signal);
-                bool entered = semaphore.Wait(Timeout);
+                bool entered = semaphore.Wait(SuccessTimeout);
                 Assert.True(entered);
             }
         }
@@ -116,11 +110,10 @@ namespace System.Tests
         {
             PosixSignal signal = PosixSignal.SIGCONT;
 
-            using var registration = PosixSignalRegistration.Create(signal, ctx =>
+            PosixSignalRegistration.Create(signal, ctx =>
             {
                 Assert.False(true, "Signal handler was called.");
-            });
-            registration.Dispose();
+            }).Dispose();
 
             kill(signal);
             Thread.Sleep(100);
@@ -179,7 +172,7 @@ namespace System.Tests
 
                 kill(signalArg);
 
-                bool entered = semaphore.Wait(Timeout);
+                bool entered = semaphore.Wait(SuccessTimeout);
                 Assert.True(entered);
 
                 // Give the default signal handler a chance to run.
@@ -188,19 +181,6 @@ namespace System.Tests
                 return 0;
             }, signal.ToString(), cancel.ToString(), expectedExitCode.ToString(),
                new RemoteInvokeOptions() { ExpectedExitCode = expectedExitCode, TimeOut = 10 * 60 * 1000 }).Dispose();
-        }
-
-        public static TheoryData<PosixSignal> PosixSignalValues
-        {
-            get
-            {
-                var data = new TheoryData<PosixSignal>();
-                foreach (var value in Enum.GetValues(typeof(PosixSignal)))
-                {
-                    data.Add((PosixSignal)value);
-                }
-                return data;
-            }
         }
 
         public static TheoryData<PosixSignal> PosixSignalAsRawValues
@@ -230,7 +210,6 @@ namespace System.Tests
         }
 
         [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetPlatformSignalNumber")]
-        [SuppressGCTransition]
         private static extern int GetPlatformSignalNumber(PosixSignal signal);
     }
 }
