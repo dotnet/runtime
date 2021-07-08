@@ -4830,9 +4830,9 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
 //
 void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 {
-    insGroup* dstIG              = (insGroup*)loopTopBlock->bbEmitCookie;
-    bool      noAlignCurrentLoop = false;
-    bool      noAlignLastLoop    = false;
+    insGroup* dstIG            = (insGroup*)loopTopBlock->bbEmitCookie;
+    bool      alignCurrentLoop = true;
+    bool      alignLastLoop    = true;
 
     // With (dstIG != nullptr), ensure that only back edges are tracked.
     // If there is forward jump, dstIG is not yet generated.
@@ -4871,30 +4871,30 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
         {
             // if current loop completely encloses last loop,
             // then current loop should not be aligned.
-            noAlignCurrentLoop = true;
+            alignCurrentLoop = false;
         }
         else if ((emitLastLoopStart < currLoopStart) && (currLoopEnd < emitLastLoopEnd))
         {
             // if last loop completely encloses current loop,
             // then last loop should not be aligned.
-            noAlignLastLoop = true;
+            alignLastLoop = false;
         }
         else
         {
             // The loops intersect and should not align either of the loops
-            noAlignLastLoop    = true;
-            noAlignCurrentLoop = true;
+            alignLastLoop    = false;
+            alignCurrentLoop = false;
         }
 
-        if (noAlignLastLoop || noAlignCurrentLoop)
+        if (!alignLastLoop || !alignCurrentLoop)
         {
             instrDescAlign* alignInstr     = emitAlignList;
-            bool            markedLastLoop = !noAlignLastLoop;
-            bool            markedCurrLoop = !noAlignCurrentLoop;
+            bool            markedLastLoop = alignLastLoop;
+            bool            markedCurrLoop = alignCurrentLoop;
             while ((alignInstr != nullptr))
             {
                 // Find the IG before current loop and clear the IGF_LOOP_ALIGN flag
-                if (noAlignCurrentLoop && (alignInstr->idaIG->igNext == dstIG))
+                if (!alignCurrentLoop && (alignInstr->idaIG->igNext == dstIG))
                 {
                     assert(!markedCurrLoop);
                     alignInstr->idaIG->igFlags &= ~IGF_LOOP_ALIGN;
@@ -4905,7 +4905,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                 }
 
                 // Find the IG before the last loop and clear the IGF_LOOP_ALIGN flag
-                if (noAlignLastLoop && (alignInstr->idaIG->igNext != nullptr) &&
+                if (!alignLastLoop && (alignInstr->idaIG->igNext != nullptr) &&
                     (alignInstr->idaIG->igNext->igNum == emitLastLoopStart))
                 {
                     assert(!markedLastLoop);
