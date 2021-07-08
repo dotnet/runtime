@@ -3797,7 +3797,7 @@
     <value>Unable to fully read from file '{0}' at offset {1} length {2}; read {3} bytes expected {4}.</value>
   </data>
   <data name="InvalidOperation_BadIndexLength" xml:space="preserve">
-    <value>Length in index file < sizeof(tzhead)</value>
+    <value>Length in index file less than AndroidTzDataHeader</value>
   </data>
   <data name="InvalidOperation_TimeZoneIDNotFound" xml:space="preserve">
     <value>Error finding the timezone id</value>
