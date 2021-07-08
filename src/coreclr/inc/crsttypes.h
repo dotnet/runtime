@@ -151,8 +151,8 @@ int g_rgCrstLevelMap[] =
     0,          // CrstArgBasedStubCache
     0,          // CrstAssemblyList
     12,         // CrstAssemblyLoader
-    3,          // CrstAvailableClass
-    4,          // CrstAvailableParamTypes
+    4,          // CrstAvailableClass
+    5,          // CrstAvailableParamTypes
     7,          // CrstBaseDomain
     -1,         // CrstCCompRC
     13,         // CrstClassFactInfoHash
@@ -161,7 +161,7 @@ int g_rgCrstLevelMap[] =
     6,          // CrstCodeFragmentHeap
     9,          // CrstCodeVersioning
     0,          // CrstCOMCallWrapper
-    4,          // CrstCOMWrapperCache
+    5,          // CrstCOMWrapperCache
     3,          // CrstDataTest1
     0,          // CrstDataTest2
     0,          // CrstDbgTransport
@@ -180,10 +180,10 @@ int g_rgCrstLevelMap[] =
     18,         // CrstEventPipe
     0,          // CrstEventStore
     0,          // CrstException
-    -1,         // CrstExecutableAllocatorLock
+    0,          // CrstExecutableAllocatorLock
     0,          // CrstExecuteManRangeLock
     0,          // CrstExternalObjectContextCache
-    3,          // CrstFCall
+    4,          // CrstFCall
     7,          // CrstFuncPtrStubs
     10,         // CrstFusionAppCtx
     10,         // CrstGCCover
@@ -198,25 +198,25 @@ int g_rgCrstLevelMap[] =
     3,          // CrstInlineTrackingMap
     17,         // CrstInstMethodHashTable
     20,         // CrstInterop
-    4,          // CrstInteropData
+    5,          // CrstInteropData
     0,          // CrstIsJMCMethod
     7,          // CrstISymUnmanagedReader
     11,         // CrstJit
     0,          // CrstJitGenericHandleCache
     16,         // CrstJitInlineTrackingMap
-    3,          // CrstJitPatchpoint
+    4,          // CrstJitPatchpoint
     -1,         // CrstJitPerf
     6,          // CrstJumpStubCache
     0,          // CrstLeafLock
     -1,         // CrstListLock
     15,         // CrstLoaderAllocator
     16,         // CrstLoaderAllocatorReferences
-    0,          // CrstLoaderHeap
+    3,          // CrstLoaderHeap
     3,          // CrstManagedObjectWrapperMap
     14,         // CrstMethodDescBackpatchInfoTracker
-    4,          // CrstModule
+    5,          // CrstModule
     15,         // CrstModuleFixup
-    3,          // CrstModuleLookupTable
+    4,          // CrstModuleLookupTable
     0,          // CrstMulticoreJitHash
     13,         // CrstMulticoreJitManager
     0,          // CrstNativeImageEagerFixups
@@ -224,22 +224,22 @@ int g_rgCrstLevelMap[] =
     0,          // CrstNls
     0,          // CrstNotifyGdb
     2,          // CrstObjectList
-    4,          // CrstPEImage
+    5,          // CrstPEImage
     19,         // CrstPendingTypeLoadEntry
-    3,          // CrstPgoData
+    4,          // CrstPgoData
     0,          // CrstPinnedByrefValidation
     0,          // CrstProfilerGCRefDataFreeList
     0,          // CrstProfilingAPIStatus
-    3,          // CrstRCWCache
+    4,          // CrstRCWCache
     0,          // CrstRCWCleanupList
     10,         // CrstReadyToRunEntryPointToMethodDescMap
     8,          // CrstReflection
     17,         // CrstReJITGlobalRequest
-    3,          // CrstRetThunkCache
+    4,          // CrstRetThunkCache
     3,          // CrstSavedExceptionInfo
     0,          // CrstSaveModuleProfileData
     0,          // CrstSecurityStackwalkCache
-    3,          // CrstSigConvert
+    4,          // CrstSigConvert
     5,          // CrstSingleUseLock
     0,          // CrstSpecialStatics
     0,          // CrstStackSampler
@@ -249,7 +249,7 @@ int g_rgCrstLevelMap[] =
     4,          // CrstStubUnwindInfoHeapSegments
     3,          // CrstSyncBlockCache
     0,          // CrstSyncHashLock
-    4,          // CrstSystemBaseDomain
+    5,          // CrstSystemBaseDomain
     13,         // CrstSystemDomain
     0,          // CrstSystemDomainDelayedUnloadList
     0,          // CrstThreadIdDispenser
@@ -258,13 +258,13 @@ int g_rgCrstLevelMap[] =
     13,         // CrstThreadpoolWorker
     12,         // CrstThreadStore
     8,          // CrstTieredCompilation
-    3,          // CrstTypeEquivalenceMap
+    4,          // CrstTypeEquivalenceMap
     10,         // CrstTypeIDMap
-    3,          // CrstUMEntryThunkCache
-    3,          // CrstUniqueStack
+    4,          // CrstUMEntryThunkCache
+    4,          // CrstUniqueStack
     7,          // CrstUnresolvedClassLock
     3,          // CrstUnwindInfoTableLock
-    3,          // CrstVSDIndirectionCellLock
+    4,          // CrstVSDIndirectionCellLock
     3,          // CrstWrapperTemplate
 };
 

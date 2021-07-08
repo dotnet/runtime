@@ -1177,16 +1177,20 @@ void InitThreadManager()
         // can jump to it.
 #ifdef TARGET_X86
         JIT_WriteBarrierEAX_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEAX);
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_EAX, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEAX));
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_ECX, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierECX));
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_EBX, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEBX));
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_ESI, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierESI));
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_EDI, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEDI));
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_EBP, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEBP));
+
+#define X86_WRITE_BARRIER_REGISTER(reg) \
+    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_##reg, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg)); \
+    ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), W("@WriteBarrier" #reg));
+
+        ENUM_X86_WRITE_BARRIER_REGISTERS()
+
+#undef X86_WRITE_BARRIER_REGISTER
+
 #else // TARGET_X86
         JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
 #endif // TARGET_X86
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
+        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), W("@WriteBarrier"));
 
 #ifdef TARGET_ARM64
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
@@ -1195,7 +1199,9 @@ void InitThreadManager()
 
 #if defined(TARGET_ARM64) || defined(TARGET_ARM)
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
+        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), W("@CheckedWriteBarrier"));
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
+        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), W("@ByRefWriteBarrier"));
 #endif // TARGET_ARM64 || TARGET_ARM
 
     }

@@ -154,7 +154,7 @@ HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandle
     LIMITED_METHOD_CONTRACT;
 
     g_fatalErrorHandler = fatalErrorHandler;
-    g_isWXorXEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableWXORX) != 0;
+    g_isWXorXEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableWriteXorExecute) != 0;
     g_instance = new (nothrow) ExecutableAllocator();
     if (g_instance == NULL)
     {

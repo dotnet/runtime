@@ -163,19 +163,6 @@ void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offs
                 break;
             }
 
-#ifdef _DEBUG
-            // if (ShouldInjectFaultInRange())
-            // {
-            //     // return nullptr (failure)
-            //     faultInjected = true;
-            //     break;
-            // }
-#endif // _DEBUG
-
-            // On UNIX we can also fail if our request size 'dwSize' is larger than 64K and
-            // and our tryAddr is pointing at a small MEM_FREE region (smaller than 'dwSize')
-            // However we can't distinguish between this and the race case.
-
             // We might fail in a race.  So just move on to next region and continue trying
             tryAddr = tryAddr + VIRTUAL_ALLOC_RESERVE_GRANULARITY;
         }
@@ -187,35 +174,7 @@ void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offs
         }
     }
 
-    // STRESS_LOG7(LF_JIT, LL_INFO100,
-    //             "ClrVirtualAllocWithinRange request #%u for %08x bytes in [ %p .. %p ], query count was %u - returned %s: %p\n",
-    //             countOfCalls, (DWORD)dwSize, pMinAddr, pMaxAddr,
-    //             virtualQueryCount, (pResult != nullptr) ? "success" : "failure", pResult);
-
-    // If we failed this call the process will typically be terminated
-    // so we log any additional reason for failing this call.
-    //
-    if (pResult == nullptr)
-    {
-        // if ((tryAddr + dwSize) > (BYTE *)pMaxAddr)
-        // {
-        //     // Our tryAddr reached pMaxAddr
-        //     STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: Address space exhausted.\n");
-        // }
-
-        // if (virtualQueryFailed)
-        // {
-        //     STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: VirtualQuery operation failed.\n");
-        // }
-
-        // if (faultInjected)
-        // {
-        //     STRESS_LOG0(LF_JIT, LL_INFO100, "Additional reason: fault injected.\n");
-        // }
-    }
-
     return pResult;
-
 }
 
 void *VMToOSInterface::CommitDoubleMappedMemory(void* pStart, size_t size, bool isExecutable)

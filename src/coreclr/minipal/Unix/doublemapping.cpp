@@ -13,6 +13,7 @@
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
+#include <errno.h>
 #ifdef TARGET_LINUX
 #include <linux/memfd.h>
 #include <sys/syscall.h> // __NR_memfd_create
@@ -77,6 +78,39 @@ void VMToOSInterface::DestroyDoubleMemoryMapper(void *mapperHandle)
 
 extern "C" void* PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(const void* lpBeginAddress, const void* lpEndAddress, size_t dwSize);
 
+#ifdef TARGET_OSX
+bool IsMapJitFlagNeeded()
+{
+    static volatile int isMapJitFlagNeeded = -1;
+
+    if (isMapJitFlagNeeded == -1)
+    {
+        int mapJitFlagCheckResult = 0;
+        int pageSize = sysconf(_SC_PAGE_SIZE);
+        // Try to map a page with read-write-execute protection. It should fail on Mojave hardened runtime and higher.
+        void* testPage = mmap(NULL, pageSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+        if (testPage == MAP_FAILED && (errno == EACCES))
+        {
+            // The mapping has failed with EACCES, check if making the same mapping with MAP_JIT flag works
+            testPage = mmap(NULL, pageSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE | MAP_JIT, -1, 0);
+            if (testPage != MAP_FAILED)
+            {
+                mapJitFlagCheckResult = 1;
+            }
+        }
+
+        if (testPage != MAP_FAILED)
+        {
+            munmap(testPage, pageSize);
+        }
+
+        isMapJitFlagNeeded = mapJitFlagCheckResult;
+    }
+
+    return (bool)isMapJitFlagNeeded;
+}
+#endif // TARGET_OSX
+
 void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offset, size_t size, const void *rangeStart, const void* rangeEnd)
 {
     int fd = (int)(size_t)mapperHandle;
@@ -103,7 +137,12 @@ void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offs
 #ifndef TARGET_OSX
     void* result = mmap(NULL, size, PROT_NONE, MAP_SHARED, fd, offset);
 #else
-    void* result = mmap(NULL, size, PROT_NONE, MAP_JIT | MAP_ANON | MAP_PRIVATE, -1, 0);
+    int mmapFlags = MAP_ANON | MAP_PRIVATE;
+    if (IsMapJitFlagNeeded())
+    {
+        mmapFlags |= MAP_JIT;
+    }
+    void* result = mmap(NULL, size, PROT_NONE, mmapFlags, -1, 0);
 #endif    
     if (result == MAP_FAILED)
     {
