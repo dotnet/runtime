@@ -16,7 +16,7 @@ Prerequisites:
 - Turned on TLS 1.3
   - It is turned on by default, to confirm you can check the appropriate registry `Computer\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols` (empty means default which means enabled).
 
-During the build, the `msquic.dll` is automatically downloaded and placed in correct directories in order to be picked up byt the runtime. It is also published as part of the runtime for Windows.
+During the build, the `msquic.dll` is automatically downloaded and placed in correct directories in order to be picked up by the runtime. It is also published as part of the runtime for Windows.
 
 ### Linux
 
