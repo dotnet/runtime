@@ -173,7 +173,7 @@ namespace System.Net.Http
                 // See Http2Connection.SendAsync for a full comment on this logic -- it is identical behavior.
                 if (sendContentTask.IsCompleted ||
                     _request.Content?.AllowDuplex != true ||
-                    sendContentTask == await Task.WhenAny(sendContentTask, readResponseTask).ConfigureAwait(false) ||
+                    await Task.WhenAny(sendContentTask, readResponseTask).ConfigureAwait(false) == sendContentTask ||
                     sendContentTask.IsCompleted)
                 {
                     try

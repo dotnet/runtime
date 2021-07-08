@@ -24,23 +24,7 @@ namespace System.Net.Quic.Tests
         protected override bool UsableAfterCanceledReads => false;
         protected override bool BlocksOnZeroByteReads => true;
 
-        // TODO: These are all hanging, likely due to Stream close behavior.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task Read_Eof_Returns0(ReadWriteMode mode, bool dataAvailableFirst) => base.Read_Eof_Returns0(mode, dataAvailableFirst);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task CopyToAsync_AllDataCopied(int byteCount, bool useAsync) => base.CopyToAsync_AllDataCopied(byteCount, useAsync);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task CopyToAsync_AllDataCopied_Large(bool useAsync) => base.CopyToAsync_AllDataCopied_Large(useAsync);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task Dispose_ClosesStream(int disposeMode) => base.Dispose_ClosesStream(disposeMode);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task Write_DataReadFromDesiredOffset(ReadWriteMode mode) => base.Write_DataReadFromDesiredOffset(mode);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task Parallel_ReadWriteMultipleStreamsConcurrently() => base.Parallel_ReadWriteMultipleStreamsConcurrently();
-
         // TODO: new additions, find out the actual reason for hanging
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task Read_DataStoredAtDesiredOffset(ReadWriteMode mode) => base.Read_DataStoredAtDesiredOffset(mode);
         [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         public override Task ReadAsync_DuringReadAsync_ThrowsIfUnsupported() => base.ReadAsync_DuringReadAsync_ThrowsIfUnsupported();
     }

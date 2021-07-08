@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Strategies;
+using System.Threading;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -30,6 +31,10 @@ namespace Microsoft.Win32.SafeHandles
         public bool IsAsync { get; private set; }
 
         internal bool CanSeek => !IsClosed && GetCanSeek();
+
+        internal ThreadPoolBoundHandle? ThreadPoolBinding => null;
+
+        internal void EnsureThreadPoolBindingInitialized() { /* nop */ }
 
         /// <summary>Opens the specified file with the requested flags and mode.</summary>
         /// <param name="path">The path to the file.</param>
@@ -101,11 +106,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             Interop.Sys.FileStatus fileinfo;
 
-            // First use stat, as we want to follow symlinks.  If that fails, it could be because the symlink
-            // is broken, we don't have permissions, etc., in which case fall back to using LStat to evaluate
-            // based on the symlink itself.
-            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0 &&
-                Interop.Sys.LStat(fullPath, out fileinfo) < 0)
+            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
             {
                 return false;
             }

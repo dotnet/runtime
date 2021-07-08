@@ -436,7 +436,6 @@ namespace System.Net.Quic.Tests
             }).WaitAsync(TimeSpan.FromSeconds(15));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53530")]
         [Fact]
         public async Task StreamAbortedWithoutWriting_ReadThrows()
         {
@@ -493,13 +492,7 @@ namespace System.Net.Quic.Tests
 
                     byte[] buffer = new byte[1024 * 1024];
 
-                    // TODO: it should always throw QuicStreamAbortedException, but sometimes it does not https://github.com/dotnet/runtime/issues/53530
-                    //QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => ReadAll(stream, buffer));
-                    try
-                    {
-                        await ReadAll(stream, buffer);
-                    }
-                    catch (QuicStreamAbortedException) { }
+                    QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => ReadAll(stream, buffer));
 
                     await stream.ShutdownCompleted();
                 }
@@ -555,13 +548,7 @@ namespace System.Net.Quic.Tests
                         }
                     }
 
-                    // TODO: it should always throw QuicStreamAbortedException, but sometimes it does not https://github.com/dotnet/runtime/issues/53530
-                    //QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => ReadUntilAborted());
-                    try
-                    {
-                        await ReadUntilAborted().WaitAsync(TimeSpan.FromSeconds(3));
-                    }
-                    catch (QuicStreamAbortedException) { }
+                    QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => ReadUntilAborted());
 
                     await stream.ShutdownCompleted();
                 }

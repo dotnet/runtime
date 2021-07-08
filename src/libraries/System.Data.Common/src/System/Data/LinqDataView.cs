@@ -231,8 +231,6 @@ namespace System.Data
         #endregion
 
         #region IBindingList
-        // TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         /// <summary>
         /// Clears both expression-based and DataView's string-based sorting.
         /// </summary>
@@ -246,7 +244,7 @@ namespace System.Data
         /// Overrides IBindingList's SortProperty so that it returns null if expression based sort
         /// is used in the LinkDataView, otherwise it defers the result to DataView
         /// </summary>
-        PropertyDescriptor IBindingList.SortProperty
+        PropertyDescriptor? IBindingList.SortProperty
         {
             get
             {
@@ -283,7 +281,6 @@ namespace System.Data
                 return !(base.SortComparison == null && base.Sort.Length == 0);
             }
         }
-#nullable enable
         #endregion
     }
 }

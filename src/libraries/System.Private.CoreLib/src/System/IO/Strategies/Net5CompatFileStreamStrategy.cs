@@ -159,7 +159,7 @@ namespace System.IO.Strategies
                 // Read is invoked asynchronously.  But we can do so using the base Stream's internal helper
                 // that bypasses delegating to BeginRead, since we already know this is FileStream rather
                 // than something derived from it and what our BeginRead implementation is going to do.
-                return (Task<int>)base.BeginReadInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
+                return BeginReadInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
             }
 
             return ReadAsyncTask(buffer, offset, count, cancellationToken);
@@ -174,7 +174,7 @@ namespace System.IO.Strategies
                 // internal helper that bypasses delegating to BeginRead, since we already know this is FileStream
                 // rather than something derived from it and what our BeginRead implementation is going to do.
                 return MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment) ?
-                    new ValueTask<int>((Task<int>)base.BeginReadInternal(segment.Array!, segment.Offset, segment.Count, null, null, serializeAsynchronously: true, apm: false)) :
+                    new ValueTask<int>(BeginReadInternal(segment.Array!, segment.Offset, segment.Count, null, null, serializeAsynchronously: true, apm: false)) :
                     base.ReadAsync(buffer, cancellationToken);
             }
 
@@ -241,7 +241,7 @@ namespace System.IO.Strategies
                 // Write is invoked asynchronously.  But we can do so using the base Stream's internal helper
                 // that bypasses delegating to BeginWrite, since we already know this is FileStream rather
                 // than something derived from it and what our BeginWrite implementation is going to do.
-                return (Task)base.BeginWriteInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
+                return BeginWriteInternal(buffer, offset, count, null, null, serializeAsynchronously: true, apm: false);
             }
 
             return WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
@@ -256,7 +256,7 @@ namespace System.IO.Strategies
                 // internal helper that bypasses delegating to BeginWrite, since we already know this is FileStream
                 // rather than something derived from it and what our BeginWrite implementation is going to do.
                 return MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment) ?
-                    new ValueTask((Task)base.BeginWriteInternal(segment.Array!, segment.Offset, segment.Count, null, null, serializeAsynchronously: true, apm: false)) :
+                    new ValueTask(BeginWriteInternal(segment.Array!, segment.Offset, segment.Count, null, null, serializeAsynchronously: true, apm: false)) :
                     base.WriteAsync(buffer, cancellationToken);
             }
 
@@ -271,7 +271,7 @@ namespace System.IO.Strategies
 
             if (flushToDisk && CanWrite)
             {
-                FlushOSBuffer();
+                FileStreamHelpers.FlushToDisk(_fileHandle);
             }
         }
 
@@ -369,6 +369,16 @@ namespace System.IO.Strategies
             {
                 Seek(value, SeekOrigin.Begin);
             }
+        }
+
+        // This doesn't do argument checking.  Necessary for SetLength, which must
+        // set the file pointer beyond the end of the file. This will update the
+        // internal position
+        private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
+        {
+            Debug.Assert(fileHandle.CanSeek, "fileHandle.CanSeek");
+
+            return _filePosition = FileStreamHelpers.Seek(fileHandle, offset, origin, closeInvalidHandle);
         }
 
         internal override bool IsClosed => _fileHandle.IsClosed;

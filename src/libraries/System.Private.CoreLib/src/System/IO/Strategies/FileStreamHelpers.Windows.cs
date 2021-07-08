@@ -27,38 +27,15 @@ namespace System.IO.Strategies
             internal const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
         }
 
-        private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
-        {
-            if (UseNet5CompatStrategy)
-            {
-                // The .NET 5 Compat strategy does not support bufferSize == 0.
-                // To minimize the risk of introducing bugs to it, we just pass 1 to disable the buffering.
-                return new Net5CompatFileStreamStrategy(handle, access, bufferSize == 0 ? 1 : bufferSize, isAsync);
-            }
+        private static OSFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, bool isAsync) =>
+            isAsync ?
+                new AsyncWindowsFileStreamStrategy(handle, access, share) :
+                new SyncWindowsFileStreamStrategy(handle, access, share);
 
-            WindowsFileStreamStrategy strategy = isAsync
-                ? new AsyncWindowsFileStreamStrategy(handle, access, share)
-                : new SyncWindowsFileStreamStrategy(handle, access, share);
-
-            return EnableBufferingIfNeeded(strategy, bufferSize);
-        }
-
-        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
-        {
-            if (UseNet5CompatStrategy)
-            {
-                return new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize == 0 ? 1 : bufferSize, options, preallocationSize);
-            }
-
-            WindowsFileStreamStrategy strategy = (options & FileOptions.Asynchronous) != 0
-                ? new AsyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize)
-                : new SyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize);
-
-            return EnableBufferingIfNeeded(strategy, bufferSize);
-        }
-
-        internal static FileStreamStrategy EnableBufferingIfNeeded(WindowsFileStreamStrategy strategy, int bufferSize)
-            => bufferSize > 1 ? new BufferedFileStreamStrategy(strategy, bufferSize) : strategy;
+        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize) =>
+            (options & FileOptions.Asynchronous) != 0 ?
+                new AsyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize) :
+                new SyncWindowsFileStreamStrategy(path, mode, access, share, options, preallocationSize);
 
         internal static void FlushToDisk(SafeFileHandle handle)
         {
@@ -86,6 +63,9 @@ namespace System.IO.Strategies
 
             return ret;
         }
+
+        internal static void ThrowInvalidArgument(SafeFileHandle handle) =>
+            throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_INVALID_PARAMETER, handle.Path);
 
         internal static int GetLastWin32ErrorAndDisposeHandleIfInvalid(SafeFileHandle handle)
         {
@@ -116,7 +96,7 @@ namespace System.IO.Strategies
             return errorCode;
         }
 
-        internal static void Lock(SafeFileHandle handle, long position, long length)
+        internal static void Lock(SafeFileHandle handle, bool canWrite, long position, long length)
         {
             int positionLow = unchecked((int)(position));
             int positionHigh = unchecked((int)(position >> 32));

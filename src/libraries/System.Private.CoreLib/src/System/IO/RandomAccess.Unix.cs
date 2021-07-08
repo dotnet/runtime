@@ -28,7 +28,12 @@ namespace System.IO
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                int result = Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset);
+                // The Windows implementation uses ReadFile, which ignores the offset if the handle
+                // isn't seekable.  We do the same manually with PRead vs Read, in order to enable
+                // the function to be used by FileStream for all the same situations.
+                int result = handle.CanSeek ?
+                    Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset) :
+                    Interop.Sys.Read(handle, bufPtr, buffer.Length);
                 FileStreamHelpers.CheckFileCall(result, handle.Path);
                 return result;
             }
@@ -67,7 +72,7 @@ namespace System.IO
             return FileStreamHelpers.CheckFileCall(result, handle.Path);
         }
 
-        private static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        internal static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
             => ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
 
         private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
@@ -78,9 +83,14 @@ namespace System.IO
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                int result = Interop.Sys.PWrite(handle, bufPtr, buffer.Length, fileOffset);
+                // The Windows implementation uses WriteFile, which ignores the offset if the handle
+                // isn't seekable.  We do the same manually with PWrite vs Write, in order to enable
+                // the function to be used by FileStream for all the same situations.
+                int result = handle.CanSeek ?
+                    Interop.Sys.PWrite(handle, bufPtr, buffer.Length, fileOffset) :
+                    Interop.Sys.Write(handle, bufPtr, buffer.Length);
                 FileStreamHelpers.CheckFileCall(result, handle.Path);
-                return  result;
+                return result;
             }
         }
 
@@ -117,7 +127,7 @@ namespace System.IO
             return FileStreamHelpers.CheckFileCall(result, handle.Path);
         }
 
-        private static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        internal static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
             => ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
 
         private static ValueTask<long> WriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
