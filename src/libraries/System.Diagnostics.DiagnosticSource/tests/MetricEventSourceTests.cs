@@ -1001,8 +1001,7 @@ namespace System.Diagnostics.Metrics.Tests
                 if (errorEvent != null)
                 {
                     string message = errorEvent.Payload[1].ToString();
-                    string stackTrace = errorEvent.Payload[2].ToString();
-                    Assert.True(errorEvent == null, "Unexpected Error event: " + message + Environment.NewLine + stackTrace);
+                    Assert.True(errorEvent == null, "Unexpected Error event: " + message);
                 }
             }
         }

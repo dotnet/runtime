@@ -17,6 +17,7 @@
   <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
+    <GenerateNuspecDependsOn>IncludeAnalyzersInPackage;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
     <NetCoreAppCurrentBuildSettings>$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</NetCoreAppCurrentBuildSettings>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrentBuildSettings)'))</NativeBinDir>
     <NetCoreAppCurrentTestHostPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(NetCoreAppCurrentBuildSettings)'))</NetCoreAppCurrentTestHostPath>

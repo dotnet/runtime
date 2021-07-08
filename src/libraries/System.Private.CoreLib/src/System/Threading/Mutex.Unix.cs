@@ -12,10 +12,15 @@ namespace System.Threading
     {
         private void CreateMutexCore(bool initiallyOwned, string? name, out bool createdNew)
         {
-            // See https://github.com/dotnet/runtime/issues/48720
             if (name != null)
             {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
+                SafeWaitHandle? safeWaitHandle = WaitSubsystem.CreateNamedMutex(initiallyOwned, name, out createdNew);
+                if (safeWaitHandle == null)
+                {
+                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
+                }
+                SafeWaitHandle = safeWaitHandle;
+                return;
             }
 
             SafeWaitHandle = WaitSubsystem.NewMutex(initiallyOwned);
@@ -24,7 +29,9 @@ namespace System.Threading
 
         private static OpenExistingResult OpenExistingWorker(string name, out Mutex? result)
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
+            OpenExistingResult status = WaitSubsystem.OpenNamedMutex(name, out SafeWaitHandle? safeWaitHandle);
+            result = status == OpenExistingResult.Success ? new Mutex(safeWaitHandle!) : null;
+            return status;
         }
 
         public void ReleaseMutex()
