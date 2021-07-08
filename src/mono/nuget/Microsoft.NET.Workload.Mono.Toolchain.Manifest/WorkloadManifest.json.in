@@ -83,17 +83,17 @@
       "abstract": true,
       "description": "Shared native build tooling for Mono runtime",
       "packs": [
-        "Microsoft.NET.Runtime.RuntimeConfigParser.Task",
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
+        "Microsoft.NET.Runtime.MonoTargets.Sdk",
       ],
     }
   },
   "packs": {
-    "Microsoft.NET.Runtime.RuntimeConfigParser.Task": {
+    "Microsoft.NET.Runtime.MonoAOTCompiler.Task": {
       "kind": "Sdk",
       "version": "${PackageVersion}"
     },
-    "Microsoft.NET.Runtime.MonoAOTCompiler.Task": {
+    "Microsoft.NET.Runtime.MonoTargets.Sdk": {
       "kind": "Sdk",
       "version": "${PackageVersion}"
     },
