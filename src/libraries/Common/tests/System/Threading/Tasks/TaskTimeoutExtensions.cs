@@ -60,7 +60,7 @@ namespace System.Threading.Tasks
                 // in the error we throw.
                 try
                 {
-                    await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(3)); // arbitrary delay; can be dialed up or down in the future
+                    await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(20)); // arbitrary delay; can be dialed up or down in the future
                 }
                 catch { }
 

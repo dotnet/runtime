@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net.WebSockets;
 using Xunit;
+using System.Diagnostics;
 
 namespace System.Net.Test.Common
 {
@@ -1086,7 +1087,7 @@ namespace System.Net.Test.Common
             return loopbackServer;
         }
 
-        public override Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
+        public override Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null, List<(int, long)> times = null, Stopwatch s = null)
         {
             return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri), options: CreateOptions(options));
         }
