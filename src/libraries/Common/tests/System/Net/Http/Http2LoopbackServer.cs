@@ -231,8 +231,7 @@ namespace System.Net.Test.Common
             try
             {
                 times?.Add((502, s.ElapsedMilliseconds));
-                await funcAsync(server, server.Address)
-                    .WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout + 10000));
+                await funcAsync(server, server.Address).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
                 times?.Add((503, s.ElapsedMilliseconds));
             }
             catch

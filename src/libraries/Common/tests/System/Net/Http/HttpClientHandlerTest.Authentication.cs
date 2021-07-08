@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -153,9 +155,82 @@ namespace System.Net.Http.Functional.Tests
             var options = new LoopbackServer.Options { Domain = Domain, Username = Username, Password = Password };
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                HttpClientHandler handler = CreateHttpClientHandler();
-                Task serverTask = server.AcceptConnectionPerformAuthenticationAndCloseAsync(authenticateHeader);
-                await TestHelper.WhenAllCompletedOrAnyFailed(CreateAndValidateRequest(handler, url, HttpStatusCode.OK, s_credentials), serverTask);
+                Stopwatch s = Stopwatch.StartNew();
+                ConcurrentQueue<(string, long)> list = new ConcurrentQueue<(string, long)>();
+                try
+                {
+                    HttpClientHandler handler = CreateHttpClientHandler();
+
+                    Task serverTask = Task.Run(async () =>
+                    {
+                        list.Enqueue(("ServerStart", s.ElapsedMilliseconds));
+                        try
+                        {
+                            await server.AcceptConnectionPerformAuthenticationAndCloseAsync(authenticateHeader);
+                            list.Enqueue(("ServerStop", s.ElapsedMilliseconds));
+                        }
+                        catch
+                        {
+                            list.Enqueue(("ServerException", s.ElapsedMilliseconds));
+                            throw;
+                        }
+                        finally
+                        {
+                            list.Enqueue(("ServerExit", s.ElapsedMilliseconds));
+                        }
+                    });
+
+                    Task clientTask = Task.Run(async () =>
+                    {
+                        list.Enqueue(("ClientStart", s.ElapsedMilliseconds));
+                        try
+                        {
+                            handler.Credentials = s_credentials;
+
+                            HttpClient client = CreateHttpClient(handler);
+                            list.Enqueue(("CreateHttpClient", s.ElapsedMilliseconds));
+                            try
+                            {
+                                list.Enqueue(("BeforeGetAsync", s.ElapsedMilliseconds));
+                                HttpResponseMessage response = await client.GetAsync(url);
+                                list.Enqueue(("AfterGetAsync", s.ElapsedMilliseconds));
+                                try
+                                {
+                                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                                }
+                                finally
+                                {
+                                    list.Enqueue(("GetAsyncFinally1", s.ElapsedMilliseconds));
+                                    response.Dispose();
+                                    list.Enqueue(("GetAsyncFinally2", s.ElapsedMilliseconds));
+                                }
+                            }
+                            finally
+                            {
+                                list.Enqueue(("CreateHttpClientFinally1", s.ElapsedMilliseconds));
+                                client.Dispose();
+                                list.Enqueue(("CreateHttpClientFinally2", s.ElapsedMilliseconds));
+                            }
+
+                            list.Enqueue(("ClientStop", s.ElapsedMilliseconds));
+                        }
+                        catch
+                        {
+                            list.Enqueue(("ClientException", s.ElapsedMilliseconds));
+                            throw;
+                        }
+                        finally
+                        {
+                            list.Enqueue(("ClientExit", s.ElapsedMilliseconds));
+                        }
+                    });
+
+                    await TestHelper.WhenAllCompletedOrAnyFailed(clientTask, serverTask);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(string.Join('\n', list.Select(l => $"{l.Item1,20} {l.Item2}")), ex);
+                }
             }, options);
         }
 

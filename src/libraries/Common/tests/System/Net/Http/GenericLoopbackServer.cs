@@ -72,7 +72,7 @@ namespace System.Net.Test.Common
 
                 await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed().ConfigureAwait(false);
                 times?.Add((104, s.ElapsedMilliseconds));
-            }, options: options, times: times, s: s).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout + 50000));
+            }, options: options, times: times, s: s).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
             times?.Add((200, s.ElapsedMilliseconds));
             return server;
         }
