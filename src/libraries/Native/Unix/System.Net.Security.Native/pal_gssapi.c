@@ -95,21 +95,51 @@ typedef struct gss_shim_t
 #undef PER_FUNCTION_BLOCK
 } gss_shim_t;
 
+static void* volatile s_gssLib = NULL;
+
 // static storage for all method pointers
 static gss_shim_t s_gss_shim;
 
-static void* volatile s_gssLib = NULL;
-
 // reference to the shim storage.
-// NOTE: the shim reference is published after all indirection pointers are initialized.
-//       when we read the indirection pointers, we do that via the shim reference.
-//       data dependency ensures that method pointers are loaded after reading and null-checking the shim reference.
 static gss_shim_t* volatile s_gss_shim_ptr = NULL;
 
-static void init_gss_shim()
+// remap gss function use to use indirection pointers
+#define gss_accept_sec_context(...)         s_gss_shim_ptr->gss_accept_sec_context_ptr(__VA_ARGS__)
+#define gss_acquire_cred(...)               s_gss_shim_ptr->gss_acquire_cred_ptr(__VA_ARGS__)
+#define gss_acquire_cred_with_password(...) s_gss_shim_ptr->gss_acquire_cred_with_password_ptr(__VA_ARGS__)
+#define gss_delete_sec_context(...)         s_gss_shim_ptr->gss_delete_sec_context_ptr(__VA_ARGS__)
+#define gss_display_name(...)               s_gss_shim_ptr->gss_display_name_ptr(__VA_ARGS__)
+#define gss_display_status(...)             s_gss_shim_ptr->gss_display_status_ptr(__VA_ARGS__)
+#define gss_import_name(...)                s_gss_shim_ptr->gss_import_name_ptr(__VA_ARGS__)
+#define gss_indicate_mechs(...)             s_gss_shim_ptr->gss_indicate_mechs_ptr(__VA_ARGS__)
+#define gss_init_sec_context(...)           s_gss_shim_ptr->gss_init_sec_context_ptr(__VA_ARGS__)
+#define gss_inquire_context(...)            s_gss_shim_ptr->gss_inquire_context_ptr(__VA_ARGS__)
+#define gss_oid_equal(...)                  s_gss_shim_ptr->gss_oid_equal_ptr(__VA_ARGS__)
+#define gss_release_buffer(...)             s_gss_shim_ptr->gss_release_buffer_ptr(__VA_ARGS__)
+#define gss_release_cred(...)               s_gss_shim_ptr->gss_release_cred_ptr(__VA_ARGS__)
+#define gss_release_name(...)               s_gss_shim_ptr->gss_release_name_ptr(__VA_ARGS__)
+#define gss_release_oid_set(...)            s_gss_shim_ptr->gss_release_oid_set_ptr(__VA_ARGS__)
+#define gss_unwrap(...)                     s_gss_shim_ptr->gss_unwrap_ptr(__VA_ARGS__)
+#define gss_wrap(...)                       s_gss_shim_ptr->gss_wrap_ptr(__VA_ARGS__)
+
+#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+#define gss_set_cred_option(...)            get_gss_shim()->gss_set_cred_option_ptr(__VA_ARGS__)
+#endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+
+
+#define GSS_C_NT_USER_NAME                      *s_gss_shim_ptr->GSS_C_NT_USER_NAME_ptr
+#define GSS_C_NT_HOSTBASED_SERVICE              *s_gss_shim_ptr->GSS_C_NT_HOSTBASED_SERVICE_ptr
+#define gss_mech_krb5                           *s_gss_shim_ptr->gss_mech_krb5_ptr
+
+static int32_t ensure_gss_shim_initialized()
 {
+    if (s_gss_shim_ptr != NULL)
+    {
+        return 0;
+    }
+
     void* lib = dlopen(GSS_DYNAMIC_LIB, RTLD_LAZY);
-    if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", GSS_DYNAMIC_LIB, dlerror()); abort(); }
+    if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", GSS_DYNAMIC_LIB, dlerror()); return -1; }
 
     // check is someone else has opened and published s_gssLib already
     if (!pal_atomic_cas_ptr(&s_gssLib, lib, NULL))
@@ -119,83 +149,19 @@ static void init_gss_shim()
 
     // initialize indirection pointers for all functions, like:
     //   s_gss_shim.gss_accept_sec_context_ptr = (TYPEOF(gss_accept_sec_context)*)dlsym(s_gssLib, "gss_accept_sec_context");
-    //   if (s_gss_shim.gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", GSS_DYNAMIC_LIB, dlerror()); abort(); }
+    //   if (s_gss_shim.gss_accept_sec_context_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from %s \nError: %s\n", "gss_accept_sec_context", GSS_DYNAMIC_LIB, dlerror()); return -1; }
 #define PER_FUNCTION_BLOCK(fn) \
     s_gss_shim.fn##_ptr = (TYPEOF(fn)*)dlsym(s_gssLib, #fn); \
-    if (s_gss_shim.fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", GSS_DYNAMIC_LIB, dlerror()); abort(); }
+    if (s_gss_shim.fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from %s \nError: %s\n", GSS_DYNAMIC_LIB, dlerror()); return -1; }
 
     FOR_ALL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
     // publish the shim pointer
     __atomic_store_n(&s_gss_shim_ptr, &s_gss_shim, __ATOMIC_RELEASE);
+
+    return 0;
 }
-
-static gss_shim_t* get_gss_shim()
-{
-    gss_shim_t* ptr = s_gss_shim_ptr;
-    if (ptr == NULL)
-    {
-        init_gss_shim();
-        return s_gss_shim_ptr;
-    }
-
-    return ptr;
-}
-
-// remap gss function use to use indirection pointers
-#define gss_accept_sec_context(...)         get_gss_shim()->gss_accept_sec_context_ptr(__VA_ARGS__)
-#define gss_acquire_cred(...)               get_gss_shim()->gss_acquire_cred_ptr(__VA_ARGS__)
-#define gss_acquire_cred_with_password(...) get_gss_shim()->gss_acquire_cred_with_password_ptr(__VA_ARGS__)
-#define gss_delete_sec_context(...)         get_gss_shim()->gss_delete_sec_context_ptr(__VA_ARGS__)
-#define gss_display_name(...)               get_gss_shim()->gss_display_name_ptr(__VA_ARGS__)
-#define gss_display_status(...)             get_gss_shim()->gss_display_status_ptr(__VA_ARGS__)
-#define gss_import_name(...)                get_gss_shim()->gss_import_name_ptr(__VA_ARGS__)
-#define gss_init_sec_context(...)           get_gss_shim()->gss_init_sec_context_ptr(__VA_ARGS__)
-#define gss_inquire_context(...)            get_gss_shim()->gss_inquire_context_ptr(__VA_ARGS__)
-#define gss_oid_equal(...)                  get_gss_shim()->gss_oid_equal_ptr(__VA_ARGS__)
-#define gss_release_buffer(...)             get_gss_shim()->gss_release_buffer_ptr(__VA_ARGS__)
-#define gss_release_cred(...)               get_gss_shim()->gss_release_cred_ptr(__VA_ARGS__)
-#define gss_release_name(...)               get_gss_shim()->gss_release_name_ptr(__VA_ARGS__)
-#define gss_release_oid_set(...)            get_gss_shim()->gss_release_oid_set_ptr(__VA_ARGS__)
-#define gss_unwrap(...)                     get_gss_shim()->gss_unwrap_ptr(__VA_ARGS__)
-#define gss_wrap(...)                       get_gss_shim()->gss_wrap_ptr(__VA_ARGS__)
-
-#if HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-#define gss_set_cred_option(...)            get_gss_shim()->gss_set_cred_option_ptr(__VA_ARGS__)
-#endif //HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
-
-
-#define GSS_C_NT_USER_NAME                      *get_gss_shim()->GSS_C_NT_USER_NAME_ptr
-#define GSS_C_NT_HOSTBASED_SERVICE              *get_gss_shim()->GSS_C_NT_HOSTBASED_SERVICE_ptr
-#define gss_mech_krb5                           *get_gss_shim()->gss_mech_krb5_ptr
-
-// NB: Managed side may call IsNtlmInstalled, which in turn calls `gss_indicate_mechs` to probe for support and
-//     treat all all exceptions same as `false`. Our own tests and platform detection do that.
-//     So we will not abort if API is not there for `gss_indicate_mechs_ptr`, and return a failure code instead.
-static bool probe_gss_api()
-{
-    if (s_gss_shim_ptr)
-    {
-        return true;
-    }
-
-    void* lib = dlopen(GSS_DYNAMIC_LIB, RTLD_LAZY);
-    if (lib == NULL)
-    {
-        return false;
-    }
-
-    // check is someone else has opened and published s_gssLib already
-    if (!pal_atomic_cas_ptr(&s_gssLib, lib, NULL))
-    {
-        dlclose(lib);
-    }
-
-    return true;
-}
-
-#define gss_indicate_mechs(...)             (probe_gss_api() ? get_gss_shim()->gss_indicate_mechs_ptr(__VA_ARGS__) : GSS_S_UNAVAILABLE)
 
 #endif // GSS_DYNAMIC_LIB
 
@@ -696,7 +662,7 @@ uint32_t NetSecurityNative_IsNtlmInstalled()
 
     uint32_t majorStatus;
     uint32_t minorStatus;
-    gss_OID_set mechSet = NULL;
+    gss_OID_set mechSet;
     gss_OID_desc oid;
     uint32_t foundNtlm = 0;
 
@@ -717,4 +683,13 @@ uint32_t NetSecurityNative_IsNtlmInstalled()
     }
 
     return foundNtlm;
+}
+
+int32_t NetSecurityNative_EnsureGssInitialized()
+{
+#if defined(GSS_DYNAMIC_LIB)
+    return ensure_gss_shim_initialized();
+#else
+    return 0;
+#endif
 }

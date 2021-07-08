@@ -193,3 +193,9 @@ Shims gss_inquire_context and gss_display_name to get the remote user principal 
 PALEXPORT uint32_t NetSecurityNative_GetUser(uint32_t* minorStatus,
                                              GssCtxId* contextHandle,
                                              PAL_GssBuffer* outBuffer);
+
+/*
+Performs initialization of GSS shim, if necessary.
+Return value 0 indicates a success.
+*/
+PALEXPORT int32_t NetSecurityNative_EnsureGssInitialized(void);
