@@ -97,7 +97,7 @@ void ThreadLocalBlock::FreeTable()
         SpinLock::Holder lock(&m_TLMTableLock);
 
         // Free the table itself
-        delete m_pTLMTable;
+        delete[] m_pTLMTable;
         m_pTLMTable = NULL;
     }
 
@@ -136,7 +136,7 @@ void ThreadLocalBlock::EnsureModuleIndex(ModuleIndex index)
 
     // If this allocation fails, we will throw. If it succeeds,
     // then we are good to go
-    PTR_TLMTableEntry pNewModuleSlots = (PTR_TLMTableEntry) (void*) new BYTE[sizeof(TLMTableEntry) * aModuleIndices];
+    PTR_TLMTableEntry pNewModuleSlots = (PTR_TLMTableEntry) new TLMTableEntry[aModuleIndices];
 
     // Zero out the new TLM table
     memset(pNewModuleSlots, 0 , sizeof(TLMTableEntry) * aModuleIndices);
