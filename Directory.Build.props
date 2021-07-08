@@ -134,6 +134,10 @@
 
     <_runtimeOS Condition="$(_runtimeOS.StartsWith('tizen'))">linux</_runtimeOS>
     <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
+
+    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)</_packageOS>
+    <_packageOS Condition="'$(_packageOS)' == '' and '$(PortableBuild)' == 'true'">$(_portableOS)</_packageOS>
+    <_packageOS Condition="'$(_packageOS)' == ''">$(_runtimeOS)</_packageOS>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateRID">
@@ -158,14 +162,43 @@
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(PortableBuild)' != 'true' and '$(_portableOS)' == 'linux'">linux-$(_hostArch)</MicrosoftNetCoreIlasmPackageRuntimeId>
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(_toolRuntimeRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
-    <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</_packageRID>
-    <_packageRID Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)-$(TargetArchitecture)</_packageRID>
-    <PackageRID Condition="'$(PackageRID)' == ''">$(_packageRID)</PackageRID>
-    <PackageRID Condition="'$(PackageRID)' == ''">$(_runtimeOS)-$(TargetArchitecture)</PackageRID>
+    <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
+
+    <!-- Crossgen2 does not support armel, so we will use arm instead. -->
+    <Crossgen2PackageRID Condition="'$(TargetArchitecture)' == 'armel'">$(_packageOS)-arm</Crossgen2PackageRID>
+    <Crossgen2PackageRID Condition="'$(TargetArchitecture)' != 'armel'">$(PackageRID)</Crossgen2PackageRID>
 
     <OutputRid Condition="'$(OutputRid)' == ''">$(PackageRID)</OutputRid>
     <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
+
+  <ItemGroup Label="CalculateRIDLists" Condition="'$(RequiresBuildRid)' == 'true'">
+    <BuildRID Include="linux-arm" Platform="arm" />
+    <BuildRID Include="linux-arm64" Platform="arm64" />
+    <BuildRID Include="linux-musl-arm" Platform="arm" />
+    <BuildRID Include="linux-musl-arm64" Platform="arm64" />
+    <BuildRID Include="linux-musl-x64" Platform="amd64" />
+    <BuildRID Include="linux-x64" Platform="amd64" />
+    <BuildRID Include="osx-x64" Platform="amd64" />
+    <BuildRID Include="rhel.6-x64" Platform="amd64" />
+    <BuildRID Include="win-arm" Platform="arm" />
+    <BuildRID Include="win-arm64" Platform="arm64" />
+    <BuildRID Include="win-x86" Platform="x86" />
+    <BuildRID Include="win-x64" Platform="amd64" />
+
+    <!-- platforms which are not officially supported -->
+    <BuildRID Include="freebsd-x64" Platform="amd64" ExcludeFromPlatformManifest="true" />
+    <BuildRID Include="illumos-x64" Platform="amd64" ExcludeFromPlatformManifest="true" />
+    <BuildRID Include="netbsd-x64" Platform="amd64" ExcludeFromPlatformManifest="true" />
+    <BuildRID Include="solaris-x64" Platform="amd64" ExcludeFromPlatformManifest="true" />
+    <BuildRID Include="tizen.4.0.0-armel" Platform="armel" ExcludeFromPlatformManifest="true" />
+    <BuildRID Include="tizen.5.0.0-armel" Platform="armel" ExcludeFromPlatformManifest="true" />
+
+    <BuildRid Remove="$(ExcludeFromBuildRID)" Condition="'$(ExcludeFromBuildRID)' != ''" />
+
+    <RestoreBuildRID Include="@(BuildRID)" Exclude="@(BuildRID->HasMetadata('ExcludeFromPlatformManifest'))" />
+    <RestoreBuildRID Remove="$(ExcludeFromBuildRID)" Condition="'$(ExcludeFromBuildRID)' != ''" />
+  </ItemGroup>
 
   <PropertyGroup Label="CalculateTargetOSName" Condition="'$(SkipInferTargetOSName)' != 'true'">
     <TargetsFreeBSD Condition="'$(TargetOS)' == 'FreeBSD'">true</TargetsFreeBSD>

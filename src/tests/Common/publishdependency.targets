@@ -5,13 +5,6 @@
     </TestTargetFramework>
   </ItemGroup>
 
-  <PropertyGroup>
-    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(TargetArchitecture)</PackagePlatform>
-    <MinOSForArch>win7</MinOSForArch>
-    <MinOSForArch Condition="'$(PackagePlatform)' == 'arm'">win8</MinOSForArch>
-    <MinOSForArch Condition="'$(PackagePlatform)' == 'arm64'">win10</MinOSForArch>
-  </PropertyGroup>
-
   <ItemGroup>
     <!-- These projects are individually restored in order. Each
          subsequent restore only copies files that don't already exist
