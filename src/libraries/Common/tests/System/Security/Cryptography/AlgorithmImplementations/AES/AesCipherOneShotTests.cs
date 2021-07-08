@@ -22,68 +22,68 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void OneShotRoundtrip(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            OneShotRoundtripTest(plaintext, ciphertext, padding, mode);
+        public void OneShotRoundtrip(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            OneShotRoundtripTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryDecryptOneShot_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryDecryptOneShot_DestinationTooSmallTest(plaintext, ciphertext, padding, mode);
+        public void TryDecryptOneShot_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryDecryptOneShot_DestinationTooSmallTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryEncryptOneShot_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryEncryptOneShot_DestinationTooSmallTest(plaintext, ciphertext, padding, mode);
+        public void TryEncryptOneShot_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryEncryptOneShot_DestinationTooSmallTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryDecryptOneShot_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryDecryptOneShot_DestinationJustRightTest(plaintext, ciphertext, padding, mode);
+        public void TryDecryptOneShot_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryDecryptOneShot_DestinationJustRightTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryEncryptOneShot_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryEncryptOneShot_DestinationJustRightTest(plaintext, ciphertext, padding, mode);
+        public void TryEncryptOneShot_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryEncryptOneShot_DestinationJustRightTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryDecryptOneShot_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryDecryptOneShot_DestinationLargerTest(plaintext, ciphertext, padding, mode);
+        public void TryDecryptOneShot_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryDecryptOneShot_DestinationLargerTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryEncryptOneShot_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryEncryptOneShot_DestinationLargerTest(plaintext, ciphertext, padding, mode);
+        public void TryEncryptOneShot_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryEncryptOneShot_DestinationLargerTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryDecryptOneShot_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryDecryptOneShot_OverlapsTest(plaintext, ciphertext, padding, mode);
+        public void TryDecryptOneShot_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryDecryptOneShot_OverlapsTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryEncryptOneShot_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryEncryptOneShot_OverlapsTest(plaintext, ciphertext, padding, mode);
+        public void TryEncryptOneShot_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryEncryptOneShot_OverlapsTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void DecryptOneShot_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            DecryptOneShot_SpanTest(plaintext, ciphertext, padding, mode);
+        public void DecryptOneShot_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            DecryptOneShot_SpanTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void EncryptOneShot_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            EncryptOneShot_SpanTest(plaintext, ciphertext, padding, mode);
+        public void EncryptOneShot_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            EncryptOneShot_SpanTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void DecryptOneShot_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            DecryptOneShot_ArrayTest(plaintext, ciphertext, padding, mode);
+        public void DecryptOneShot_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            DecryptOneShot_ArrayTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void EncryptOneShot_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            EncryptOneShot_ArrayTest(plaintext, ciphertext, padding, mode);
+        public void EncryptOneShot_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            EncryptOneShot_ArrayTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         public static IEnumerable<object[]> TestCases
         {
@@ -91,6 +91,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             {
                 yield return new object[]
                 {
+
                     // plaintext
                     new byte[]
                     {
@@ -568,6 +569,344 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     PaddingMode.PKCS7,
                     CipherMode.ECB,
                 };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                        0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x53, 0x8B, 0x08, 0x3E, 0x07, 0xA4, 0x03, 0x16,
+                        0x0A, 0x75, 0x1A, 0x15, 0xF6, 0x1D, 0xAB, 0xD9,
+                        0xD2,
+                    },
+
+                    PaddingMode.PKCS7,
+                    CipherMode.CFB,
+                    8,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                        0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x53, 0x8B, 0x08, 0x3E, 0x07, 0xA4, 0x03, 0x16,
+                        0x0A, 0x75, 0x1A, 0x15, 0xF6, 0x1D, 0xAB, 0xD9,
+                    },
+
+                    PaddingMode.None,
+                    CipherMode.CFB,
+                    8,
+                };
+
+                yield return new object[]
+                {
+
+                    // plaintext
+                    new byte[]
+                    {
+                        0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                        0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x53, 0x8B, 0x08, 0x3E, 0x07, 0xA4, 0x03, 0x16,
+                        0x0A, 0x75, 0x1A, 0x15, 0xF6, 0x1D, 0xAB, 0xD9,
+                    },
+
+                    PaddingMode.Zeros,
+                    CipherMode.CFB,
+                    8,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                        0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x53, 0x8B, 0x08, 0x3E, 0x07, 0xA4, 0x03, 0x16,
+                        0x0A, 0x75, 0x1A, 0x15, 0xF6, 0x1D, 0xAB, 0xD9,
+                        0xD2,
+                    },
+
+                    PaddingMode.ANSIX923,
+                    CipherMode.CFB,
+                    8,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                        0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x53, 0x8B, 0x08, 0x3E, 0x07, 0xA4, 0x03, 0x16,
+                        0x0A, 0x75, 0x1A, 0x15, 0xF6, 0x1D, 0xAB, 0xD9,
+                        0xD2,
+                    },
+
+                    PaddingMode.ISO10126,
+                    CipherMode.CFB,
+                    8,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x99, 0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8,
+                        0x89, 0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83,
+                        0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x9A, 0x84, 0x44, 0xEB, 0x82, 0x11, 0xEA, 0x28,
+                        0x91, 0x8E, 0xA8, 0x40, 0xE4, 0x12, 0x3F, 0x72,
+                        0xF9, 0x97,
+                    },
+
+                    PaddingMode.PKCS7,
+                    CipherMode.CFB,
+                    8,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x99, 0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8,
+                        0x89, 0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83,
+                        0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x9A, 0x84, 0x44, 0xEB, 0x82, 0x11, 0xEA, 0x28,
+                        0x91, 0x8E, 0xA8, 0x40, 0xE4, 0x12, 0x3F, 0x72,
+                        0xF9,
+                    },
+
+                    PaddingMode.None,
+                    CipherMode.CFB,
+                    8,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x99, 0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8,
+                        0x89, 0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83,
+                        0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x9A, 0x84, 0x44, 0xEB, 0x82, 0x11, 0xEA, 0x28,
+                        0x91, 0x8E, 0xA8, 0x40, 0xE4, 0x12, 0x3F, 0x72,
+                        0xF9,
+                    },
+
+                    PaddingMode.Zeros,
+                    CipherMode.CFB,
+                    8,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x99, 0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8,
+                        0x89, 0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83,
+                        0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x9A, 0x84, 0x44, 0xEB, 0x82, 0x11, 0xEA, 0x28,
+                        0x91, 0x8E, 0xA8, 0x40, 0xE4, 0x12, 0x3F, 0x72,
+                        0xF9, 0x97,
+                    },
+
+                    PaddingMode.ANSIX923,
+                    CipherMode.CFB,
+                    8,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x99, 0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8,
+                        0x89, 0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83,
+                        0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x9A, 0x84, 0x44, 0xEB, 0x82, 0x11, 0xEA, 0x28,
+                        0x91, 0x8E, 0xA8, 0x40, 0xE4, 0x12, 0x3F, 0x72,
+                        0xF9, 0x97,
+                    },
+
+                    PaddingMode.ISO10126,
+                    CipherMode.CFB,
+                    8,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    Array.Empty<byte>(),
+
+                    // ciphertext
+                    Array.Empty<byte>(),
+
+                    PaddingMode.Zeros,
+                    CipherMode.CFB,
+                    8,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    Array.Empty<byte>(),
+
+                    // ciphertext
+                    Array.Empty<byte>(),
+
+                    PaddingMode.None,
+                    CipherMode.CFB,
+                    8,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    Array.Empty<byte>(),
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x02,
+                    },
+
+                    PaddingMode.PKCS7,
+                    CipherMode.CFB,
+                    8,
+                };
+
+                // CFB128 is not supported on Windows 7.
+                if (PlatformDetection.IsNotWindows7)
+                {
+                    yield return new object[]
+                    {
+
+                        // plaintext
+                        new byte[]
+                        {
+                            0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                            0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                        },
+
+                        // ciphertext
+                        new byte[]
+                        {
+                            0x53, 0x3F, 0x49, 0x1D, 0x53, 0x29, 0x39, 0x67,
+                            0x8A, 0x06, 0x28, 0x76, 0x34, 0x9A, 0x2D, 0xE3,
+                            0x2B, 0x63, 0xD4, 0x34, 0x86, 0x05, 0x9B, 0x52,
+                            0x20, 0x46, 0x65, 0xD5, 0xBC, 0xA1, 0xED, 0x11,
+                        },
+
+                        PaddingMode.PKCS7,
+                        CipherMode.CFB,
+                        128,
+                    };
+
+                    yield return new object[]
+                    {
+
+                        // plaintext
+                        new byte[]
+                        {
+                            0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                            0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                        },
+
+                        // ciphertext
+                        new byte[]
+                        {
+                            0x53, 0x3F, 0x49, 0x1D, 0x53, 0x29, 0x39, 0x67,
+                            0x8A, 0x06, 0x28, 0x76, 0x34, 0x9A, 0x2D, 0xE3,
+                        },
+
+                        PaddingMode.None,
+                        CipherMode.CFB,
+                        128,
+                    };
+
+                    yield return new object[]
+                    {
+
+                        // plaintext
+                        new byte[]
+                        {
+                            0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                            0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                        },
+
+                        // ciphertext
+                        new byte[]
+                        {
+                            0x53, 0x3F, 0x49, 0x1D, 0x53, 0x29, 0x39, 0x67,
+                            0x8A, 0x06, 0x28, 0x76, 0x34, 0x9A, 0x2D, 0xE3,
+                        },
+
+                        PaddingMode.Zeros,
+                        CipherMode.CFB,
+                        128,
+                    };
+                }
             }
         }
     }
