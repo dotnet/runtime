@@ -33,7 +33,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
-using System.Xml.XPath;
 using Mono.Cecil;
 using Mono.Linker.Steps;
 

@@ -42,13 +42,10 @@ namespace Mono.Linker
 
 		public static IEnumerable<IMemberDefinition> GetMembersForDocumentationSignature (string id, ModuleDefinition module)
 		{
-			if (id == null)
-				throw new ArgumentNullException (nameof (id));
-
-			if (module == null)
-				throw new ArgumentNullException (nameof (module));
-
 			var results = new List<IMemberDefinition> ();
+			if (id == null || module == null)
+				return results;
+
 			ParseDocumentationSignature (id, module, results);
 			return results;
 		}

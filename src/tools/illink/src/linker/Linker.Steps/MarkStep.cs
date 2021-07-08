@@ -808,7 +808,8 @@ namespace Mono.Linker.Steps
 						continue;
 					}
 
-					if (UnconditionalSuppressMessageAttributeState.TypeRefHasUnconditionalSuppressions (ca.Constructor.DeclaringType))
+					if (UnconditionalSuppressMessageAttributeState.TypeRefHasUnconditionalSuppressions (ca.Constructor.DeclaringType) &&
+						provider is not ModuleDefinition && provider is not AssemblyDefinition)
 						_context.Suppressions.AddSuppression (ca, provider);
 
 					var resolvedAttributeType = _context.Resolve (ca.AttributeType);

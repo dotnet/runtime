@@ -120,7 +120,7 @@ namespace Mono.Linker
 				foreach (var p in attribute.Properties) {
 					switch (p.Name) {
 					case ScopeProperty:
-						info.Scope = (p.Argument.Value as string)?.ToLower ();
+						info.Scope = p.Argument.Value as string;
 						break;
 					case TargetProperty:
 						info.Target = p.Argument.Value as string;
@@ -173,15 +173,17 @@ namespace Mono.Linker
 				if (!TryDecodeSuppressMessageAttributeData (instance, out info))
 					continue;
 
-				if (info.Target == null && (info.Scope == "module" || info.Scope == null)) {
+				var scope = info.Scope?.ToLower ();
+				if (info.Target == null && (scope == "module" || scope == null)) {
 					AddSuppression (info, provider);
 					continue;
 				}
 
-				if (info.Target == null || info.Scope == null)
-					continue;
+				switch (scope) {
+				case "module":
+					AddSuppression (info, provider);
+					break;
 
-				switch (info.Scope) {
 				case "type":
 				case "member":
 					foreach (var result in DocumentationSignatureParser.GetMembersForDocumentationSignature (info.Target, module))
@@ -189,7 +191,9 @@ namespace Mono.Linker
 
 					break;
 				default:
-					_context.LogMessage ($"Scope `{info.Scope}` used in `UnconditionalSuppressMessage` is currently not supported.");
+					_context.LogWarning ($"Invalid scope '{info.Scope}' used in 'UnconditionalSuppressMessageAttribute' on module '{module.Name}' " +
+						$"with target '{info.Target}'.",
+						2108, _context.GetAssemblyLocation (module.Assembly));
 					break;
 				}
 			}
