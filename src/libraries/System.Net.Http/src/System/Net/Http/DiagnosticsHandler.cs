@@ -31,10 +31,13 @@ namespace System.Net.Http
         {
             // check if there is a parent Activity (and propagation is not suppressed)
             // or if someone listens to HttpHandlerDiagnosticListener
-            return IsGloballyEnabled && (Activity.Current != null || s_diagnosticListener.IsEnabled());
+            return IsGloballyEnabled() && (Activity.Current != null || s_diagnosticListener.IsEnabled());
         }
 
-        internal static bool IsGloballyEnabled => GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation;
+        internal static bool IsGloballyEnabled()
+        {
+            return GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation;
+        }
 
         // SendAsyncCore returns already completed ValueTask for when async: false is passed.
         // Internally, it calls the synchronous Send method of the base class.
