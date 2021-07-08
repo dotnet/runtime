@@ -67,7 +67,8 @@ namespace System.IO.Tests
         public void LinkTarget_RefreshesCorrectly()
         {
             string path = GetRandomLinkPath();
-            string pathToTarget = GetTestFileName();
+            string pathToTarget = GetTestFilePath();
+            CreateFileOrDirectory(pathToTarget);
             FileSystemInfo linkInfo = CreateSymbolicLink(path, pathToTarget);
             Assert.Equal(pathToTarget, linkInfo.LinkTarget);
 
@@ -77,7 +78,8 @@ namespace System.IO.Tests
             linkInfo.Refresh();
             Assert.Null(linkInfo.LinkTarget);
 
-            string newPathToTarget = GetTestFileName();
+            string newPathToTarget = GetTestFilePath();
+            CreateFileOrDirectory(newPathToTarget);
             FileSystemInfo newLinkInfo = CreateSymbolicLink(path, newPathToTarget);
 
             linkInfo.Refresh();

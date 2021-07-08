@@ -265,11 +265,9 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(1, false)]
         [InlineData(10, false)]
-        [InlineData(30, false)] // Close to Windows limit when reparsing absolute paths, for relative paths the limit is supposedly 63.
         [InlineData(1, true)]
         [InlineData(10, true)]
-        [InlineData(30, true)]
-        [InlineData(40, true)] // The limit specified in Unix, this is the same for absolute and relative paths.
+        [InlineData(40, true)]
         public void ResolveLinkTarget_ReturnFinalTarget_ChainOfLinks_Succeeds(int length, bool relative)
         {
             string target = GetTestFilePath();
