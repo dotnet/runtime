@@ -542,7 +542,7 @@ namespace System.Text.Json
         {
             Debug.Assert(span.Length > 0 && span[0] == literal[0] && literal.Length <= JsonConstants.MaximumLiteralLength);
 
-            Span<byte> readSoFar = (stackalloc byte[JsonConstants.MaximumLiteralLength]).Slice(0, literal.Length);
+            Span<byte> readSoFar = stackalloc byte[JsonConstants.MaximumLiteralLength];
             int written = 0;
 
             long prevTotalConsumed = _totalConsumed;
