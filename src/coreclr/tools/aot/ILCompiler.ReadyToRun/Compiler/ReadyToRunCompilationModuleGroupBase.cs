@@ -347,8 +347,10 @@ namespace ILCompiler
         {
             // PInvokes depend on details of the core library, so for now only compile them if:
             //    1) We're compiling the core library module, or
-            //    2) We're compiling any module, and no marshalling is needed, or
-            //    3) We're compiling any module, and core library module is in the same bubble, and marhaller supports compilation
+            //    2) We're compiling any module, and no marshalling is needed
+            //
+            // TODO Future: consider compiling PInvokes with complex marshalling in version bubble
+            // mode when the core library is included in the bubble.
 
             Debug.Assert(method is EcmaMethod);
 
@@ -357,7 +359,7 @@ namespace ILCompiler
             if (!_versionBubbleModuleSet.Contains(((EcmaMethod)method).Module))
                 return false;
 
-            if (_versionBubbleModuleSet.Contains(method.Context.SystemModule))
+            if (((EcmaMethod)method).Module.Equals(method.Context.SystemModule))
                 return true;
 
             return !Marshaller.IsMarshallingRequired(method);
