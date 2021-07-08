@@ -123,6 +123,8 @@ namespace Mono.Linker
 
 		public bool DisableSerializationDiscovery { get; set; }
 
+		public bool DisableOperatorDiscovery { get; set; }
+
 		public bool IgnoreDescriptors { get; set; }
 
 		public bool IgnoreSubstitutions { get; set; }

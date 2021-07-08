@@ -259,6 +259,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.LinqExpressionsTests))]
+		public void LinqExpressionsTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.MetadataTests))]
 		public void MetadataTests (TestCase testCase)
 		{

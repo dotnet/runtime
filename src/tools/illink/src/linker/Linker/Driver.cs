@@ -355,6 +355,12 @@ namespace Mono.Linker
 
 						continue;
 
+					case "--disable-operator-discovery":
+						if (!GetBoolParam (token, l => context.DisableOperatorDiscovery = l))
+							return -1;
+
+						continue;
+
 					case "--ignore-descriptors":
 						if (!GetBoolParam (token, l => context.IgnoreDescriptors = l))
 							return -1;
@@ -731,6 +737,9 @@ namespace Mono.Linker
 
 			if (!context.DisableSerializationDiscovery)
 				p.MarkHandlers.Add (new DiscoverSerializationHandler ());
+
+			if (!context.DisableOperatorDiscovery)
+				p.MarkHandlers.Add (new DiscoverOperatorsHandler ());
 
 			foreach (string custom_step in custom_steps) {
 				if (!AddCustomStep (p, custom_step))

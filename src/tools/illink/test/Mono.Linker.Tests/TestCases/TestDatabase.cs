@@ -216,6 +216,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("LinkXml");
 		}
 
+		public static IEnumerable<TestCaseData> LinqExpressionsTests ()
+		{
+			return NUnitCasesBySuiteName ("LinqExpressions");
+		}
+
 		public static IEnumerable<TestCaseData> MetadataTests ()
 		{
 			return NUnitCasesBySuiteName ("Metadata");
