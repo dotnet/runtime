@@ -122,7 +122,7 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        char* ptr = stackalloc char[length];
+                        char* ptr = stackalloc char[JsonConstants.StackallocThreshold];
                         escapedPropertyName = new Span<char>(ptr, length);
                     }
                 }
@@ -284,7 +284,7 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        byte* ptr = stackalloc byte[length];
+                        byte* ptr = stackalloc byte[JsonConstants.StackallocThreshold];
                         escapedPropertyName = new Span<byte>(ptr, length);
                     }
                 }
@@ -897,7 +897,7 @@ namespace System.Text.Json
             int length = JsonWriterHelper.GetMaxEscapedLength(utf8Value.Length, firstEscapeIndex);
 
             Span<byte> escapedValue = length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[length] :
+                (stackalloc byte[JsonConstants.StackallocThreshold]).Slice(0, length) :
                 (valueArray = ArrayPool<byte>.Shared.Rent(length));
 
             JsonWriterHelper.EscapeString(utf8Value, escapedValue, firstEscapeIndex, _options.Encoder, out int written);
@@ -920,7 +920,7 @@ namespace System.Text.Json
             int length = JsonWriterHelper.GetMaxEscapedLength(value.Length, firstEscapeIndex);
 
             Span<char> escapedValue = length <= JsonConstants.StackallocThreshold ?
-                stackalloc char[length] :
+                (stackalloc char[JsonConstants.StackallocThreshold]).Slice(0, length) :
                 (valueArray = ArrayPool<char>.Shared.Rent(length));
 
             JsonWriterHelper.EscapeString(value, escapedValue, firstEscapeIndex, _options.Encoder, out int written);
@@ -943,7 +943,7 @@ namespace System.Text.Json
             int length = JsonWriterHelper.GetMaxEscapedLength(propertyName.Length, firstEscapeIndex);
 
             Span<char> escapedPropertyName = length <= JsonConstants.StackallocThreshold ?
-                stackalloc char[length] :
+                (stackalloc char[JsonConstants.StackallocThreshold]).Slice(0, length) :
                 (propertyArray = ArrayPool<char>.Shared.Rent(length));
 
             JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndex, _options.Encoder, out int written);
@@ -966,7 +966,7 @@ namespace System.Text.Json
             int length = JsonWriterHelper.GetMaxEscapedLength(utf8PropertyName.Length, firstEscapeIndex);
 
             Span<byte> escapedPropertyName = length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[length] :
+                (stackalloc byte[JsonConstants.StackallocThreshold]).Slice(0, length) :
                 (propertyArray = ArrayPool<byte>.Shared.Rent(length));
 
             JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndex, _options.Encoder, out int written);
@@ -1078,7 +1078,7 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        char* ptr = stackalloc char[length];
+                        char* ptr = stackalloc char[JsonConstants.StackallocThreshold];
                         escapedValue = new Span<char>(ptr, length);
                     }
                 }
@@ -1102,7 +1102,7 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        char* ptr = stackalloc char[length];
+                        char* ptr = stackalloc char[JsonConstants.StackallocThreshold];
                         escapedPropertyName = new Span<char>(ptr, length);
                     }
                 }
@@ -1147,7 +1147,7 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        byte* ptr = stackalloc byte[length];
+                        byte* ptr = stackalloc byte[JsonConstants.StackallocThreshold];
                         escapedValue = new Span<byte>(ptr, length);
                     }
                 }
@@ -1171,7 +1171,7 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        byte* ptr = stackalloc byte[length];
+                        byte* ptr = stackalloc byte[JsonConstants.StackallocThreshold];
                         escapedPropertyName = new Span<byte>(ptr, length);
                     }
                 }
@@ -1216,7 +1216,7 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        byte* ptr = stackalloc byte[length];
+                        byte* ptr = stackalloc byte[JsonConstants.StackallocThreshold];
                         escapedValue = new Span<byte>(ptr, length);
                     }
                 }
@@ -1240,7 +1240,7 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        char* ptr = stackalloc char[length];
+                        char* ptr = stackalloc char[JsonConstants.StackallocThreshold];
                         escapedPropertyName = new Span<char>(ptr, length);
                     }
                 }
@@ -1285,7 +1285,7 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        char* ptr = stackalloc char[length];
+                        char* ptr = stackalloc char[JsonConstants.StackallocThreshold];
                         escapedValue = new Span<char>(ptr, length);
                     }
                 }
@@ -1309,7 +1309,7 @@ namespace System.Text.Json
                     // Cannot create a span directly since it gets assigned to parameter and passed down.
                     unsafe
                     {
-                        byte* ptr = stackalloc byte[length];
+                        byte* ptr = stackalloc byte[JsonConstants.StackallocThreshold];
                         escapedPropertyName = new Span<byte>(ptr, length);
                     }
                 }

@@ -95,6 +95,8 @@ namespace System.Text.Json
         public const int MinimumDateTimeParseLength = 10; // YYYY-MM-DD
         public const int MaximumEscapedDateTimeOffsetParseLength = MaxExpansionFactorWhileEscaping * MaximumDateTimeOffsetParseLength;
 
+        public const int MaximumLiteralLength = 5; // Must be able to fit null, true, & false.
+
         // Encoding Helpers
         public const char HighSurrogateStart = '\ud800';
         public const char HighSurrogateEnd = '\udbff';
