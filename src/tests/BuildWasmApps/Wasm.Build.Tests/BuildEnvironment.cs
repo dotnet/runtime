@@ -42,7 +42,6 @@ namespace Wasm.Build.Tests
             string? sdkForWorkloadPath = Environment.GetEnvironmentVariable("SDK_FOR_WORKLOAD_TESTING_PATH");
             if (!string.IsNullOrEmpty(sdkForWorkloadPath))
             {
-
                 DotNet = Path.Combine(sdkForWorkloadPath, "dotnet");
                 var workloadPacksVersion = Environment.GetEnvironmentVariable("WORKLOAD_PACKS_VER");
                 if (string.IsNullOrEmpty(workloadPacksVersion))
