@@ -42,11 +42,22 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public XmlSerializerNamespaces(XmlQualifiedName[] namespaces)
         {
+            _namespaces = new Dictionary<string, string?>(namespaces.Length);
+
             for (int i = 0; i < namespaces.Length; i++)
             {
                 XmlQualifiedName qname = namespaces[i];
                 Add(qname.Name, qname.Namespace);
             }
+        }
+
+        /// <internalonly/>
+        /// <devdoc>
+        ///    <para>[To be supplied.]</para>
+        /// </devdoc>
+        public XmlSerializerNamespaces(IDictionary<string, string?> namespaces)
+        {
+            _namespaces = new Dictionary<string, string?>(namespaces);
         }
 
         /// <devdoc>
