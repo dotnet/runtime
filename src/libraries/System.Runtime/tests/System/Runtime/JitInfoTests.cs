@@ -26,13 +26,27 @@ namespace System.Runtime.Tests
             long afterCompiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes();
             long afterCompiledMethodCount = System.Runtime.JitInfo.GetCompiledMethodCount();
 
-            Assert.True(beforeCompilationTime > TimeSpan.Zero, $"Compilation time not greater than 0! ({beforeCompilationTime})");
-            Assert.True(beforeCompiledILBytes > 0, $"Compiled IL bytes not greater than 0! ({beforeCompiledILBytes})");
-            Assert.True(beforeCompiledMethodCount > 0, $"Compiled method count not greater than 0! ({beforeCompiledMethodCount})");
+            if (PlatformDetection.IsMonoInterpreter)
+            {
+                // special case the Mono interpreter where compilation time may be >0 but before and after will most likely be the same
+                Assert.True(beforeCompilationTime >= TimeSpan.Zero, $"Compilation time not greater than 0! ({beforeCompilationTime})");
+                Assert.True(beforeCompiledILBytes >= 0, $"Compiled IL bytes not greater than 0! ({beforeCompiledILBytes})");
+                Assert.True(beforeCompiledMethodCount >= 0, $"Compiled method count not greater than 0! ({beforeCompiledMethodCount})");
 
-            Assert.True(afterCompilationTime > beforeCompilationTime, $"CompilationTime: after not greater than before! (after: {afterCompilationTime}, before: {beforeCompilationTime})");
-            Assert.True(afterCompiledILBytes > beforeCompiledILBytes, $"Compiled IL bytes: after not greater than before! (after: {afterCompiledILBytes}, before: {beforeCompiledILBytes})");
-            Assert.True(afterCompiledMethodCount > beforeCompiledMethodCount, $"Compiled method count: after not greater than before! (after: {afterCompiledMethodCount}, before: {beforeCompiledMethodCount})");
+                Assert.True(afterCompilationTime >= beforeCompilationTime, $"CompilationTime: after not greater than before! (after: {afterCompilationTime}, before: {beforeCompilationTime})");
+                Assert.True(afterCompiledILBytes >= beforeCompiledILBytes, $"Compiled IL bytes: after not greater than before! (after: {afterCompiledILBytes}, before: {beforeCompiledILBytes})");
+                Assert.True(afterCompiledMethodCount >= beforeCompiledMethodCount, $"Compiled method count: after not greater than before! (after: {afterCompiledMethodCount}, before: {beforeCompiledMethodCount})");
+            }
+            else
+            {
+                Assert.True(beforeCompilationTime > TimeSpan.Zero, $"Compilation time not greater than 0! ({beforeCompilationTime})");
+                Assert.True(beforeCompiledILBytes > 0, $"Compiled IL bytes not greater than 0! ({beforeCompiledILBytes})");
+                Assert.True(beforeCompiledMethodCount > 0, $"Compiled method count not greater than 0! ({beforeCompiledMethodCount})");
+
+                Assert.True(afterCompilationTime > beforeCompilationTime, $"CompilationTime: after not greater than before! (after: {afterCompilationTime}, before: {beforeCompilationTime})");
+                Assert.True(afterCompiledILBytes > beforeCompiledILBytes, $"Compiled IL bytes: after not greater than before! (after: {afterCompiledILBytes}, before: {beforeCompiledILBytes})");
+                Assert.True(afterCompiledMethodCount > beforeCompiledMethodCount, $"Compiled method count: after not greater than before! (after: {afterCompiledMethodCount}, before: {beforeCompiledMethodCount})");
+            }
         }
 
         [Fact]
