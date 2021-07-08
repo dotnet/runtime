@@ -11264,7 +11264,8 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
         RefPosition* recentRefPosition  = spillCandidateRegRecord->assignedInterval != nullptr
                                              ? spillCandidateRegRecord->assignedInterval->recentRefPosition
                                              : nullptr;
-        if ((recentRefPosition != nullptr) && (recentRefPosition->RegOptional() &&
+        if ((recentRefPosition != nullptr) &&
+            (recentRefPosition->RegOptional() &&
              !(spillCandidateRegRecord->assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
         {
             // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
