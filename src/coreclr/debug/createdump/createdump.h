@@ -72,6 +72,7 @@ typedef int T_CONTEXT;
 #include <dirent.h>
 #include <fcntl.h>
 #include <dlfcn.h>
+#include <cxxabi.h>
 #ifdef __APPLE__
 #include <ELF.h>
 #else

@@ -13,7 +13,16 @@ private:
     void* m_module;
     uint64_t m_localBaseAddress;
 
+    void LoadModule();
+
 public:
+    ModuleInfo() :
+        m_baseAddress(0),
+        m_module(nullptr),
+        m_localBaseAddress(0)
+    {
+    }
+
     ModuleInfo(uint64_t baseAddress) :
         m_baseAddress(baseAddress),
         m_module(nullptr),
@@ -46,7 +55,6 @@ public:
     {
     }
 
-#ifdef __APPLE__
     ~ModuleInfo()
     {
         if (m_module != nullptr)
@@ -55,7 +63,6 @@ public:
             m_module = nullptr;
         }
     }
-#endif
 
     inline bool IsManaged() const { return m_isManaged; }
     inline uint64_t BaseAddress() const { return m_baseAddress; }
@@ -64,9 +71,7 @@ public:
     inline const GUID* Mvid() const { return &m_mvid; }
     inline const std::string& ModuleName() const { return m_moduleName; }
 
-#ifdef __APPLE__
     const char* GetSymbolName(uint64_t address);
-#endif
 
     bool operator<(const ModuleInfo& rhs) const
     {

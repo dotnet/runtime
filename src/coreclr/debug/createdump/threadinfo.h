@@ -42,7 +42,8 @@ private:
     pid_t m_tgid;                               // thread group
     bool m_managed;                             // if true, thread has managed code running
     uint64_t m_exceptionObject;                 // exception object address
-    std::string m_exceptionType;                // exception type 
+    std::string m_exceptionType;                // exception type
+    int32_t m_exceptionHResult;                 // exception HRESULT
     std::set<StackFrame> m_frames;              // stack frames
 
 #ifdef __APPLE__
@@ -64,6 +65,10 @@ private:
 #endif
 #endif // __APPLE__
 
+    // no public copy constructor
+    ThreadInfo(const ThreadInfo&) = delete;
+    void operator=(const ThreadInfo&) = delete;
+
 public:
 #ifdef __APPLE__
     ThreadInfo(CrashInfo& crashInfo, pid_t tid, mach_port_t port);
@@ -73,7 +78,7 @@ public:
 #endif
     ~ThreadInfo();
     bool Initialize();
-    bool UnwindThread(IXCLRDataProcess* pClrDataProcess);
+    bool UnwindThread(IXCLRDataProcess* pClrDataProcess, ISOSDacInterface* pSos);
     void GetThreadStack();
     void GetThreadContext(uint32_t flags, CONTEXT* context) const;
 
@@ -83,6 +88,7 @@ public:
 
     inline bool IsManaged() const { return m_managed; }
     inline uint64_t ManagedExceptionObject() const { return m_exceptionObject; }
+    inline int32_t ManagedExceptionHResult() const { return m_exceptionHResult; }
     inline std::string ManagedExceptionType() const { return m_exceptionType; }
     inline const std::set<StackFrame> StackFrames() const { return m_frames; }
 

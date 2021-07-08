@@ -2503,7 +2503,16 @@ ClrDataModule::GetFlags(
         {
             (*flags) |= CLRDATA_MODULE_IS_MEMORY_STREAM;
         }
-
+        PTR_Assembly pAssembly = m_module->GetAssembly();
+        PTR_BaseDomain pBaseDomain = pAssembly->GetDomain();
+        if (pBaseDomain->IsAppDomain())
+        {
+            AppDomain* pAppDomain = pBaseDomain->AsAppDomain();
+            if (pAssembly == pAppDomain->GetRootAssembly())
+            {
+                (*flags) |= CLRDATA_MODULE_IS_MAIN_MODULE;
+            }
+        }
         status = S_OK;
     }
     EX_CATCH

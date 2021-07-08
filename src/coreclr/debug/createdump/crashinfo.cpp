@@ -10,6 +10,7 @@ CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t s
     m_ref(1),
     m_pid(pid),
     m_ppid(-1),
+    m_hdac(nullptr),
     m_gatherFrames(gatherFrames),
     m_crashThread(crashThread),
     m_signal(signal)
@@ -31,6 +32,11 @@ CrashInfo::~CrashInfo()
         delete thread;
     }
     m_threads.clear();
+    if (m_hdac != nullptr)
+    {
+        FreeLibrary(m_hdac);
+        m_hdac = nullptr;
+    }
 #ifdef __APPLE__
     if (m_task != 0)
     {
@@ -191,7 +197,6 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
     ICLRDataEnumMemoryRegions* pClrDataEnumRegions = nullptr;
     IXCLRDataProcess* pClrDataProcess = nullptr;
-    HMODULE hdac = nullptr;
     HRESULT hr = S_OK;
     bool result = false;
 
@@ -205,13 +210,13 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
         dacPath.append(MAKEDLLNAME_A("mscordaccore"));
 
         // Load and initialize the DAC
-        hdac = LoadLibraryA(dacPath.c_str());
-        if (hdac == nullptr)
+        m_hdac = LoadLibraryA(dacPath.c_str());
+        if (m_hdac == nullptr)
         {
             fprintf(stderr, "LoadLibraryA(%s) FAILED %d\n", dacPath.c_str(), GetLastError());
             goto exit;
         }
-        pfnCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(hdac, "CLRDataCreateInstance");
+        pfnCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(m_hdac, "CLRDataCreateInstance");
         if (pfnCLRDataCreateInstance == nullptr)
         {
             fprintf(stderr, "GetProcAddress(CLRDataCreateInstance) FAILED %d\n", GetLastError());
@@ -261,10 +266,6 @@ exit:
     if (pClrDataProcess != nullptr)
     {
         pClrDataProcess->Release();
-    }
-    if (hdac != nullptr)
-    {
-        FreeLibrary(hdac);
     }
     return result;
 }
@@ -347,10 +348,13 @@ CrashInfo::EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess)
 bool
 CrashInfo::UnwindAllThreads(IXCLRDataProcess* pClrDataProcess)
 {
+    ReleaseHolder<ISOSDacInterface> pSos = nullptr;
+    pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
+
     // For each native and managed thread
     for (ThreadInfo* thread : m_threads)
     {
-        if (!thread->UnwindThread(pClrDataProcess)) {
+        if (!thread->UnwindThread(pClrDataProcess, pSos)) {
             return false;
         }
     }
@@ -480,6 +484,7 @@ CrashInfo::AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* 
     {
         uint32_t timeStamp = 0;
         uint32_t imageSize = 0;
+        bool mainModule = false;
         GUID mvid;
         if (isManaged)
         {
@@ -511,11 +516,18 @@ CrashInfo::AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* 
             }
             if (pClrDataModule != nullptr)
             {
+                ULONG32 flags = 0;
+                pClrDataModule->GetFlags(&flags);
+                mainModule = (flags & CLRDATA_MODULE_IS_MAIN_MODULE) != 0;
                 pClrDataModule->GetVersionId(&mvid);
             }
-            TRACE("MODULE: timestamp %08x size %08x %s %s\n", timeStamp, imageSize, FormatGuid(&mvid).c_str(), moduleName.c_str());
+            TRACE("MODULE: timestamp %08x size %08x %s %s%s\n", timeStamp, imageSize, FormatGuid(&mvid).c_str(), mainModule ? "*" : "", moduleName.c_str());
         }
-        m_moduleInfos.insert(ModuleInfo(isManaged, baseAddress, timeStamp, imageSize, &mvid, moduleName));
+        ModuleInfo moduleInfo(isManaged, baseAddress, timeStamp, imageSize, &mvid, moduleName);
+        if (mainModule) {
+            m_mainModule = moduleInfo;
+        }
+        m_moduleInfos.insert(moduleInfo);
     }
 }
 
@@ -735,6 +747,31 @@ CrashInfo::TraceVerbose(const char* format, ...)
         fflush(stdout);
         va_end(args);
     }
+}
+
+//
+// Lookup a symbol in a module. The caller needs to call "free()" on symbol returned.
+//
+const char*
+ModuleInfo::GetSymbolName(uint64_t address)
+{
+    LoadModule();
+
+    if (m_localBaseAddress != 0)
+    {
+        uint64_t localAddress = m_localBaseAddress + (address - m_baseAddress);
+        Dl_info info;
+        if (dladdr((void*)localAddress, &info) != 0)
+        {
+            if (info.dli_sname != nullptr)
+            {
+                int status = -1;
+                char *demangled = abi::__cxa_demangle(info.dli_sname, nullptr, 0, &status);
+                return status == 0 ? demangled : strdup(info.dli_sname);
+            }
+        }
+    }
+    return nullptr;
 }
 
 //

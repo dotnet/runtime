@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdump.h"
-#include <cxxabi.h>
 
 bool
 CrashInfo::Initialize()
@@ -384,11 +383,8 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
 
 const struct dyld_all_image_infos* g_image_infos = nullptr;
 
-//
-// Lookup a symbol in a module. The caller needs to call "free()" on symbol returned.
-//
-const char*
-ModuleInfo::GetSymbolName(uint64_t address)
+void
+ModuleInfo::LoadModule()
 {
     if (m_module == nullptr)
     {
@@ -419,16 +415,4 @@ ModuleInfo::GetSymbolName(uint64_t address)
             }
         }
     }
-    if (m_localBaseAddress != 0)
-    {
-        uint64_t localAddress = m_localBaseAddress + (address - m_baseAddress);
-        Dl_info info;
-        if (dladdr((void*)localAddress, &info) != 0)
-        {
-            int status = -1;
-            char *demangled = abi::__cxa_demangle(info.dli_sname, nullptr, 0, &status);
-            return status == 0 ? demangled : strdup(info.dli_sname);
-        }
-    }
-    return nullptr;
 }
