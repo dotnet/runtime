@@ -239,10 +239,7 @@ function test_exit (exit_code) {
 		tests_done_elem.id = "tests_done";
 		tests_done_elem.innerHTML = exit_code.toString ();
 		document.body.appendChild (tests_done_elem);
-	} else if (is_node) {
-		Module.exit_code = exit_code;
-		console.log ("WASM EXIT " + exit_code);
-	} else {
+	} else { // shell or node
 		Module.wasm_exit (exit_code);
 	}
 }

@@ -9,7 +9,6 @@
     "author": "Microsoft",
     "license": "MIT",
     "dependencies": {
-      "ws": "^7.5.0",
-      "utf-8-validate": "^5.0.2"
+      "ws": "^7.5.0"
     }
 }
