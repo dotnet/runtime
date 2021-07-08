@@ -1,9 +1,4 @@
 <Project>
-    <PropertyGroup>
-        <RuntimePackInWorkloadVersion>${PackageVersion}</RuntimePackInWorkloadVersion>
-        <WorkloadPacksDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', '..', 'packs'))</WorkloadPacksDir>
-    </PropertyGroup>
-
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' AND '$(UsingBrowserRuntimeWorkload)' == ''">
         <UsingBrowserRuntimeWorkload Condition="'$(RunAOTCompilation)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'" >true</UsingBrowserRuntimeWorkload>
         <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == ''" >$(WasmNativeWorkload)</UsingBrowserRuntimeWorkload>
