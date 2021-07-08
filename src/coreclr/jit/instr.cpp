@@ -92,12 +92,12 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     instruction ins     = id->idIns();
     const char* insName = genInsName(ins);
 
+#ifdef TARGET_XARCH
     const int       TEMP_BUFFER_LEN = 40;
     static unsigned curBuf          = 0;
     static char     buf[4][TEMP_BUFFER_LEN];
     const char*     retbuf;
 
-#ifdef TARGET_XARCH
     if (GetEmitter()->IsAVXInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins))
     {
         sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);

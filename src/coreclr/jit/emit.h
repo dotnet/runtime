@@ -247,6 +247,11 @@ struct insGroup
     double               igPerfScore; // The PerfScore for this insGroup
 #endif
 
+#ifdef DEBUG
+    BasicBlock*               lastGeneratedBlock; // The last block that generated code into this insGroup.
+    jitstd::list<BasicBlock*> igBlocks;           // All the blocks that generated code into this insGroup.
+#endif
+
     UNATIVE_OFFSET igNum;     // for ordering (and display) purposes
     UNATIVE_OFFSET igOffs;    // offset of this group within method
     unsigned int   igFuncIdx; // Which function/funclet does this belong to? (Index into Compiler::compFuncInfos array.)
@@ -348,11 +353,6 @@ struct insGroup
     {
         return (igFlags & IGF_LOOP_ALIGN) != 0;
     }
-
-#ifdef DEBUG
-    BasicBlock*               lastGeneratedBlock; // The last block that generated code into this insGroup.
-    jitstd::list<BasicBlock*> igBlocks;           // All the blocks that generated code into this insGroup.
-#endif
 
 }; // end of struct insGroup
 
