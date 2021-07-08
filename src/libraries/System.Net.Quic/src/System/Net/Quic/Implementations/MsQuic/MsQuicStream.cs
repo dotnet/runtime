@@ -695,7 +695,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             IntPtr context,
             ref StreamEvent streamEvent)
         {
-            var state = (State)GCHandle.FromIntPtr(context).Target!;
+            GCHandle gcHandle = GCHandle.FromIntPtr(context);
+            Debug.Assert(gcHandle.IsAllocated);
+            Debug.Assert(gcHandle.Target is not null);
+            var state = (State)gcHandle.Target;
+
             return HandleEvent(state, ref streamEvent);
         }
 
@@ -746,8 +750,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(state, $"[Stream#{state.GetHashCode()}] Exception occurred during handling {(QUIC_STREAM_EVENT_TYPE)evt.Type} event: {ex.Message}");
+                    NetEventSource.Error(state, $"[Stream#{state.GetHashCode()}] Exception occurred during handling {(QUIC_STREAM_EVENT_TYPE)evt.Type} event: {ex}");
                 }
+
+                // This is getting hit currently
+                // See https://github.com/dotnet/runtime/issues/55302
+                //Debug.Fail($"[Stream#{state.GetHashCode()}] Exception occurred during handling {(QUIC_STREAM_EVENT_TYPE)evt.Type} event: {ex}");
 
                 return MsQuicStatusCodes.InternalError;
             }
