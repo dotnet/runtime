@@ -2279,7 +2279,8 @@ namespace Mono.Linker.Dataflow
 					MarkField (ref reflectionContext, field, DependencyKind.DynamicallyAccessedMember);
 					break;
 				case TypeDefinition nestedType:
-					MarkType (ref reflectionContext, nestedType, DependencyKind.DynamicallyAccessedMember);
+					DependencyInfo nestedDependencyInfo = new DependencyInfo (DependencyKind.DynamicallyAccessedMember, reflectionContext.Source);
+					reflectionContext.RecordRecognizedPattern (nestedType, () => _markStep.MarkEntireType (nestedType, includeBaseAndInterfaceTypes: true, nestedDependencyInfo));
 					break;
 				case PropertyDefinition property:
 					MarkProperty (ref reflectionContext, property, DependencyKind.DynamicallyAccessedMember);

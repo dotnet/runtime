@@ -1102,18 +1102,23 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			class Derived : AnnotatedBase
 			{
 				[Kept]
+				[KeptMember (".ctor()")]
 				[KeptBaseType (typeof (AnnotatedBase))]
 				public class NestedDerived : AnnotatedBase
 				{
 					[Kept]
 					[KeptBaseType (typeof (NestedDerived))]
+					[KeptMember (".ctor()")]
 					public class DeepNestedDerived : NestedDerived
 					{
 						[Kept] // Marked due to the annotation
+						[KeptMember (".ctor()")]
 						public class DeepNestedChild
 						{
 						}
 
+						[Kept] // Marked due to the annotation
+						[KeptMember (".ctor()")]
 						private class DeepNestedPrivateChild
 						{
 						}
@@ -1121,6 +1126,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 					[Kept] // Marked due to the annotation
 					[KeptInterface (typeof (IUnannotatedInterface))]
+					[KeptMember (".ctor()")]
 					public class NestedChild : IUnannotatedInterface
 					{
 					}
