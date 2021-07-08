@@ -1,7 +1,7 @@
 <Project>
     <PropertyGroup>
         <RuntimePackInWorkloadVersion>${PackageVersion}</RuntimePackInWorkloadVersion>
-        <WorkloadPacksDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', '..'))</WorkloadPacksDir>
+        <WorkloadPacksDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', '..', 'packs'))</WorkloadPacksDir>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' AND '$(UsingBrowserRuntimeWorkload)' == ''">
