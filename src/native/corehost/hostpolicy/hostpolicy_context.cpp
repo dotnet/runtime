@@ -290,7 +290,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
         }
     }
 
-    // We pass the loaded hostfxr path to the SDK so that it can dynamically pinvoke its APIs.
+    // We pass the loaded hostfxr path to the SDK can load it without relying on dlopen/LoadLibrary to find it.
     if (host_mode == host_mode_t::muxer &&
         (pal::strcmp(get_filename(application).c_str(), _X("dotnet.dll")) == 0))
     {
