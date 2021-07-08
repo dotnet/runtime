@@ -26,7 +26,7 @@ namespace System.IO.Tests
         protected override FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) =>
             File.CreateSymbolicLink(path, pathToTarget);
 
-        protected override FileSystemInfo ResolveLinkTarget(string linkPath, bool returnFinalTarget = false) =>
+        protected override FileSystemInfo ResolveLinkTarget(string linkPath, bool returnFinalTarget) =>
             File.ResolveLinkTarget(linkPath, returnFinalTarget);
 
         protected override void AssertIsCorrectTypeAndDirectoryAttribute(FileSystemInfo linkInfo)

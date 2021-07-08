@@ -36,7 +36,7 @@ namespace System.IO.Tests
         }
 
         /// <summary>Calls the actual public API for resolving the symbolic link target.</summary>
-        protected abstract FileSystemInfo ResolveLinkTarget(string linkPath, bool returnFinalTarget = false);
+        protected abstract FileSystemInfo ResolveLinkTarget(string linkPath, bool returnFinalTarget);
 
         [Fact]
         public void CreateSymbolicLink_NullPathToTarget()
@@ -141,7 +141,7 @@ namespace System.IO.Tests
         protected void ResolveLinkTarget_Throws_NotExists_Internal<T>() where T : Exception
         {
             string path = GetRandomFilePath();
-            Assert.Throws<T>(() => ResolveLinkTarget(path));
+            Assert.Throws<T>(() => ResolveLinkTarget(path, returnFinalTarget: false));
             Assert.Throws<T>(() => ResolveLinkTarget(path, returnFinalTarget: true));
         }
 
@@ -320,8 +320,8 @@ namespace System.IO.Tests
             FileSystemInfo link2Info = CreateSymbolicLink(link2Path, link1Path);
 
             // Can get targets without following symlinks
-            FileSystemInfo link1Target = ResolveLinkTarget(link1Path);
-            FileSystemInfo link2Target = ResolveLinkTarget(link2Path);
+            FileSystemInfo link1Target = ResolveLinkTarget(link1Path, returnFinalTarget: false);
+            FileSystemInfo link2Target = ResolveLinkTarget(link2Path, returnFinalTarget: false);
 
             // Cannot get target when following symlinks
             Assert.Throws<IOException>(() => ResolveLinkTarget(link1Path, returnFinalTarget: true));
@@ -337,7 +337,7 @@ namespace System.IO.Tests
             FileSystemInfo linkInfo = CreateSymbolicLink(linkPath, linkPath);
 
             // Can get target without following symlinks
-            FileSystemInfo linkTarget = ResolveLinkTarget(linkPath);
+            FileSystemInfo linkTarget = ResolveLinkTarget(linkPath, returnFinalTarget: false);
 
             // Cannot get target when following symlinks
             Assert.Throws<IOException>(() => ResolveLinkTarget(linkPath, returnFinalTarget: true));
@@ -406,7 +406,7 @@ namespace System.IO.Tests
                 Assert.True(link.Exists); // The target file or directory was created above, so we report Exists of the target for both
             }
 
-            FileSystemInfo target = ResolveLinkTarget(linkPath);
+            FileSystemInfo target = ResolveLinkTarget(linkPath, returnFinalTarget: false);
             AssertIsCorrectTypeAndDirectoryAttribute(target);
             Assert.True(Path.IsPathFullyQualified(target.FullName));
         }
@@ -438,7 +438,7 @@ namespace System.IO.Tests
             Assert.Equal(link1Target, link1Info.LinkTarget);
 
             // link1: do not follow symlinks
-            FileSystemInfo link1TargetInfo = ResolveLinkTarget(link1Path);
+            FileSystemInfo link1TargetInfo = ResolveLinkTarget(link1Path, returnFinalTarget: false);
             Assert.True(link1TargetInfo.Exists);
             AssertIsCorrectTypeAndDirectoryAttribute(link1TargetInfo);
             Assert.True(link1TargetInfo.Attributes.HasFlag(FileAttributes.ReparsePoint));
@@ -446,7 +446,7 @@ namespace System.IO.Tests
             Assert.Equal(link2Target, link1TargetInfo.LinkTarget);
 
             // link2: do not follow symlinks
-            FileSystemInfo link2TargetInfo = ResolveLinkTarget(link2Path);
+            FileSystemInfo link2TargetInfo = ResolveLinkTarget(link2Path, returnFinalTarget: false);
             Assert.True(link2TargetInfo.Exists);
             AssertIsCorrectTypeAndDirectoryAttribute(link2TargetInfo);
             Assert.False(link2TargetInfo.Attributes.HasFlag(FileAttributes.ReparsePoint));
@@ -477,7 +477,7 @@ namespace System.IO.Tests
 
             // Create a link with a similar Target Path to the one of our dummy file or directory.
             FileSystemInfo linkInfo = CreateSymbolicLink(linkPath, fileOrDirectoryInCwd);
-            FileSystemInfo targetInfo = linkInfo.ResolveLinkTarget();
+            FileSystemInfo targetInfo = linkInfo.ResolveLinkTarget(returnFinalTarget: false);
 
             // Verify that Target is resolved and is relative to Link's directory and not to the cwd.
             Assert.False(targetInfo.Exists);

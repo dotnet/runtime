@@ -74,7 +74,7 @@ namespace System.IO
             get
             {
                 if (_dataInitialized == -1)
-                    Refresh();
+                    RefreshCore();
                 if (_dataInitialized != 0)
                 {
                     // Refresh was unable to initialize the data.
@@ -142,7 +142,7 @@ namespace System.IO
             if (_dataInitialized == -1)
             {
                 _data = default;
-                Refresh();
+                RefreshCore();
             }
 
             if (_dataInitialized != 0) // Refresh was unable to initialize the data
@@ -152,6 +152,11 @@ namespace System.IO
         public void Refresh()
         {
             _linkTargetIsValid = false;
+            RefreshCore();
+        }
+
+        private void RefreshCore()
+        {
             // This should not throw, instead we store the result so that we can throw it
             // when someone actually accesses a property
             _dataInitialized = FileSystem.FillAttributeInfo(FullPath, ref _data, returnErrorOnNotFound: false);

@@ -7482,7 +7482,7 @@ namespace System.IO
         public abstract void Delete();
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void Refresh() { }
-        public System.IO.FileSystemInfo? ResolveLinkTarget(bool returnFinalTarget = false) { throw null; }
+        public System.IO.FileSystemInfo? ResolveLinkTarget(bool returnFinalTarget) { throw null; }
         public override string ToString() { throw null; }
     }
     public sealed partial class DirectoryInfo : System.IO.FileSystemInfo
