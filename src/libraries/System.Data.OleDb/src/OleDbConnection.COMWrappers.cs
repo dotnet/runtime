@@ -16,7 +16,7 @@ namespace System.Data.OleDb
 
     public sealed partial class OleDbConnection
     {
-        internal static Exception? ProcessResults(OleDbHResult hresult, OleDbConnection? connection, object? src)
+        internal static unsafe Exception? ProcessResults(OleDbHResult hresult, OleDbConnection? connection, object? src)
         {
             if ((0 <= (int)hresult) && ((null == connection) || (null == connection.Events[EventInfoMessage])))
             {
@@ -28,31 +28,41 @@ namespace System.Data.OleDb
             Exception? e = null;
             IntPtr pErrorInfo;
             OleDbHResult hr = UnsafeNativeMethods.GetErrorInfo(0, &pErrorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
-            if ((OleDbHResult.S_OK == hr) && (null != errorInfo))
+            if ((OleDbHResult.S_OK == hr) && (IntPtr.Zero != pErrorInfo))
             {
-                using UnsafeNativeMethods.IErrorInfo errorInfo = (UnsafeNativeMethods.IErrorInfo)OleDbComWrappers.Instance
+                UnsafeNativeMethods.IErrorInfo errorInfo = (UnsafeNativeMethods.IErrorInfo)OleDbComWrappers.Instance
                     .GetOrCreateObjectForComInstance(pErrorInfo, CreateObjectFlags.UniqueInstance);;
-                if (hresult < 0)
+                try
                 {
-                    // UNDONE: if authentication failed - throw a unique exception object type
-                    //if (/*OLEDB_Error.DB_SEC_E_AUTH_FAILED*/unchecked((int)0x80040E4D) == hr) {
-                    //}
-                    //else if (/*OLEDB_Error.DB_E_CANCELED*/unchecked((int)0x80040E4E) == hr) {
-                    //}
-                    // else {
-                    e = OleDbException.CreateException(errorInfo, hresult, null);
-                    //}
-
-                    if (OleDbHResult.DB_E_OBJECTOPEN == hresult)
+                    if (hresult < 0)
                     {
-                        e = ADP.OpenReaderExists(e);
-                    }
+                        // UNDONE: if authentication failed - throw a unique exception object type
+                        //if (/*OLEDB_Error.DB_SEC_E_AUTH_FAILED*/unchecked((int)0x80040E4D) == hr) {
+                        //}
+                        //else if (/*OLEDB_Error.DB_E_CANCELED*/unchecked((int)0x80040E4E) == hr) {
+                        //}
+                        // else {
+                        e = OleDbException.CreateException(errorInfo, hresult, null);
+                        //}
 
-                    ResetState(connection);
+                        if (OleDbHResult.DB_E_OBJECTOPEN == hresult)
+                        {
+                            e = ADP.OpenReaderExists(e);
+                        }
+
+                        ResetState(connection);
+                    }
+                    else if (null != connection)
+                    {
+                        connection.OnInfoMessage(errorInfo, hresult);
+                    }
                 }
-                else if (null != connection)
+                finally
                 {
-                    connection.OnInfoMessage(errorInfo, hresult);
+                    if (errorInfo is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
                 }
             }
             else if (0 < hresult)

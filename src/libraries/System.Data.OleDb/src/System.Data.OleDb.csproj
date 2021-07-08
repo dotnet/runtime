@@ -103,16 +103,12 @@
     <Compile Include="UnsafeNativeMethods.COMWrappers.cs" />
     <Compile Include="OleDbComWrappers.cs" />
     <Compile Include="DbPropSet.COMWrappers.cs" />
-    <Compile Include="OleDb_Util.COMWrappers.cs" />
     <Compile Include="OleDbConnection.COMWrappers.cs" />
-    <Compile Include="OleDbException.COMWrappers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
     <Compile Include="UnsafeNativeMethods.NoCOMWrappers.cs" />
     <Compile Include="DbPropSet.NoCOMWrappers.cs" />
-    <Compile Include="OleDb_Util.NoCOMWrappers.cs" />
     <Compile Include="OleDbConnection.NoCOMWrappers.cs" />
-    <Compile Include="OleDbException.NoCOMWrappers.cs" />
   </ItemGroup>
 
   <ItemGroup>
