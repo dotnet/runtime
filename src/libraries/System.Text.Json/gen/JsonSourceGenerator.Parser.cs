@@ -582,8 +582,8 @@ namespace System.Text.Json.SourceGeneration
 
                     // GetInterface() is currently not implemented, so we use GetInterfaces().
                     IEnumerable<string> interfaces = type.GetInterfaces().Select(interfaceType => interfaceType.FullName);
-                    implementsIJsonOnSerialized = interfaces.FirstOrDefault(interfaceName => interfaceName == JsonConstants.IJsonOnSerializedFullName) != null;
-                    implementsIJsonOnSerializing = interfaces.FirstOrDefault(interfaceName => interfaceName == JsonConstants.IJsonOnSerializingFullName) != null;
+                    implementsIJsonOnSerialized = interfaces.FirstOrDefault(interfaceName => interfaceName == IJsonOnSerializedFullName) != null;
+                    implementsIJsonOnSerializing = interfaces.FirstOrDefault(interfaceName => interfaceName == IJsonOnSerializingFullName) != null;
 
                     for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                     {

@@ -656,7 +656,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                 // Begin method definition
                 if (implementsIJsonOnSerializing)
                 {
-                    sb.Append($@"(({JsonConstants.IJsonOnSerializingFullName}){ValueVarName}).OnSerializing();");
+                    sb.Append($@"(({IJsonOnSerializingFullName}){ValueVarName}).OnSerializing();");
                     sb.Append($@"{Environment.NewLine}    ");
                 }
 

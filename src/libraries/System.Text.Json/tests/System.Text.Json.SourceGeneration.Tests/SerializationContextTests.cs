@@ -17,6 +17,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(HighLowTemps))]
     [JsonSerializable(typeof(MyType))]
     [JsonSerializable(typeof(MyType2))]
+    [JsonSerializable(typeof(MyTypeWithCallbacks))]
     [JsonSerializable(typeof(MyIntermediateType))]
     [JsonSerializable(typeof(HighLowTempsImmutable))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass))]

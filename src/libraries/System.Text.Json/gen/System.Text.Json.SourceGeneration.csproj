@@ -35,7 +35,6 @@
     <Compile Include="..\Common\JsonSourceGenerationOptionsAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationOptionsAttribute.cs" />
     <Compile Include="ClassType.cs" />
     <Compile Include="CollectionType.cs" />
-    <Compile Include="JsonConstants.cs" />
     <Compile Include="JsonSourceGenerator.cs" />
     <Compile Include="JsonSourceGenerator.Emitter.cs" />
     <Compile Include="JsonSourceGenerator.Parser.cs" />
