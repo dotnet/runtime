@@ -750,7 +750,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                 if (implementsIJsonOnSerialized)
                 {
                     sb.Append($@"{Environment.NewLine}    ");
-                    sb.Append($@"(({JsonConstants.IJsonOnSerializedFullName}){ValueVarName}).OnSerialized();");
+                    sb.Append($@"(({IJsonOnSerializedFullName}){ValueVarName}).OnSerialized();");
                 };
 
                 return GenerateFastPathFuncForType(serializeMethodName, typeInfoTypeRef, sb.ToString(), canBeNull);
