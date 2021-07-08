@@ -179,6 +179,8 @@ namespace System.Net.Test.Common
     {
         public bool ClientCertificateRequired { get; set; }
 
+        public bool EnableTransparentPingResponse { get; set; } = true;
+
         public Http2Options()
         {
             SslProtocols = SslProtocols.Tls12;
