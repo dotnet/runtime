@@ -5889,8 +5889,10 @@ PhaseStatus Lowering::DoPhase()
     if (!comp->compEnregLocals())
     {
         // Lowering is checking if lvDoNotEnregister is already set for contained optimizations.
-        // If we are running in min opts and know that we won't enregister any locals
-        // it is better to set this flag before we start reading it.
+        // If we are running without `CLFLG_REGVAR` flag set (`compEnregLocals() == false`)
+        // then we already know that we won't enregister any locals and it is better to set
+        // this flag before we start reading it.
+        // The main reason why this flag is not set is that we are running in minOpts.
         comp->lvSetMinOptsDoNotEnreg();
     }
 
