@@ -102,22 +102,22 @@ GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 #else // DACCESS_COMPILE
 
-int64_t g_cbILJitted = 0;
-int64_t g_cMethodsJitted = 0;
-int64_t g_c100nsTicksInJit = 0;
+Volatile<int64_t> g_cbILJitted = 0;
+Volatile<int64_t> g_cMethodsJitted = 0;
+Volatile<int64_t> g_c100nsTicksInJit = 0;
 thread_local int64_t t_cbILJittedForThread = 0;
 thread_local int64_t t_cMethodsJittedForThread = 0;
 thread_local int64_t t_c100nsTicksInJitForThread = 0;
 
 // This prevents tearing of 64 bit values on 32 bit systems
 static inline
-int64_t AtomicLoad64WithoutTearing(int64_t *valueRef)
+int64_t AtomicLoad64WithoutTearing(int64_t volatile *valueRef)
 {
     WRAPPER_NO_CONTRACT;
 #if TARGET_64BIT
     return VolatileLoad(valueRef);
 #else
-    return InterlockedCompareExchangeT(valueRef, 0, 0);
+    return InterlockedCompareExchangeT((LONG64 volatile *)valueRef, (LONG64)0, (LONG64)0);
 #endif // TARGET_64BIT
 }
 
