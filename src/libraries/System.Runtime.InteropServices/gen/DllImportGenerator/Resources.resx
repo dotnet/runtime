@@ -226,11 +226,11 @@
   <data name="MarshallingStringOrCharAsUndefinedNotSupported" xml:space="preserve">
     <value>Marshalling string or char without explicit marshalling information is not supported. Specify either 'GeneratedDllImportAttribute.CharSet' or 'MarshalAsAttribute'.</value>
   </data>
-  <data name="NativeGenericTypeMustBeClosedDescription" xml:space="preserve">
-    <value>The native type '{0}' must be a closed generic so the emitted code can use a specific instantiation.</value>
+  <data name="NativeGenericTypeMustBeClosedOrMatchArityDescription" xml:space="preserve">
+    <value>The native type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</value>
   </data>
-  <data name="NativeGenericTypeMustBeClosedMessage" xml:space="preserve">
-    <value>The native type '{0}' for managed type '{1}' must be a closed generic type.</value>
+  <data name="NativeGenericTypeMustBeClosedOrMatchArityMessage" xml:space="preserve">
+    <value>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</value>
   </data>
   <data name="NativeTypeMustBeBlittableDescription" xml:space="preserve">
     <value>A native type for a given type must be blittable.</value>
@@ -255,6 +255,12 @@
   </data>
   <data name="NativeTypeMustHaveRequiredShapeMessage" xml:space="preserve">
     <value>The native type '{0}' must be a value type and have a constructor that takes one parameter of type '{1}' or a parameterless instance method named 'ToManaged' that returns '{1}'</value>
+  </data>
+  <data name="CollectionNativeTypeMustHaveRequiredShapeDescription" xml:space="preserve">
+    <value>A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</value>
+  </data>
+  <data name="CollectionNativeTypeMustHaveRequiredShapeMessage" xml:space="preserve">
+    <value>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</value>
   </data>
   <data name="OutByValueNotSupportedDescription" xml:space="preserve">
     <value>The '[Out]' attribute is only supported on array parameters.</value>

@@ -106,6 +106,24 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to A native type with the &apos;GenericContiguousCollectionMarshallerAttribute&apos; must have at least one of the two marshalling methods as well as a &apos;ManagedValues&apos; property of type &apos;Span&lt;T&gt;&apos; for some &apos;T&apos; and a &apos;NativeValueStorage&apos; property of type &apos;Span&lt;byte&gt;&apos; to enable marshalling the managed type..
+        /// </summary>
+        internal static string CollectionNativeTypeMustHaveRequiredShapeDescription {
+            get {
+                return ResourceManager.GetString("CollectionNativeTypeMustHaveRequiredShapeDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be a value type and have a constructor that takes two parameters, one of type &apos;{1}&apos; and an &apos;int&apos;, or have a parameterless instance method named &apos;ToManaged&apos; that returns &apos;{1}&apos; as well as a &apos;ManagedValues&apos; property of type &apos;Span&lt;T&gt;&apos; for some &apos;T&apos; and a &apos;NativeValueStorage&apos; property of type &apos;Span&lt;byte&gt;&apos;.
+        /// </summary>
+        internal static string CollectionNativeTypeMustHaveRequiredShapeMessage {
+            get {
+                return ResourceManager.GetString("CollectionNativeTypeMustHaveRequiredShapeMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element..
         /// </summary>
         internal static string CollectionSizeParamTypeMustBeIntegral {
@@ -385,20 +403,20 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be a closed generic so the emitted code can use a specific instantiation..
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation..
         /// </summary>
-        internal static string NativeGenericTypeMustBeClosedDescription {
+        internal static string NativeGenericTypeMustBeClosedOrMatchArityDescription {
             get {
-                return ResourceManager.GetString("NativeGenericTypeMustBeClosedDescription", resourceCulture);
+                return ResourceManager.GetString("NativeGenericTypeMustBeClosedOrMatchArityDescription", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; for managed type &apos;{1}&apos; must be a closed generic type..
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; for managed type &apos;{1}&apos; must be a closed generic type or have the same arity as the managed type..
         /// </summary>
-        internal static string NativeGenericTypeMustBeClosedMessage {
+        internal static string NativeGenericTypeMustBeClosedOrMatchArityMessage {
             get {
-                return ResourceManager.GetString("NativeGenericTypeMustBeClosedMessage", resourceCulture);
+                return ResourceManager.GetString("NativeGenericTypeMustBeClosedOrMatchArityMessage", resourceCulture);
             }
         }
         

@@ -85,7 +85,7 @@ namespace Microsoft.Interop
                 return true;
             }
 
-            if (!type.IsValueType || type.IsReferenceType)
+            if (type.IsReferenceType)
             {
                 return false;
             }
