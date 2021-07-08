@@ -3017,47 +3017,69 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         instruction simdMov = simdUnalignedMovIns();
 
-        unsigned regSize = compiler->getSIMDVectorRegisterByteLength();
+        unsigned regSize = XMM_REGSIZE_BYTES; // compiler->getSIMDVectorRegisterByteLength();
 
-        while (size >= XMM_REGSIZE_BYTES)
+        if (regSize == YMM_REGSIZE_BYTES && size < regSize)
         {
-            for (; size >= regSize;
-                 size -= regSize, srcOffset += regSize, dstOffset += regSize)
-            {
-                if (srcLclNum != BAD_VAR_NUM)
-                {
-                    emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
-                }
-                else
-                {
-                    emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg, srcAddrIndexScale,
-                                        srcOffset);
-                }
-
-                if (dstLclNum != BAD_VAR_NUM)
-                {
-                    emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
-                }
-                else
-                {
-                    emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg, dstAddrIndexScale,
-                                        dstOffset);
-                }
-            }
-
-            if (regSize == YMM_REGSIZE_BYTES && size >= 0)
-            {
-                regSize = XMM_REGSIZE_BYTES;
-
-                // Avoid AVX-SSE transition penalty
-                instGen(INS_vzeroupper);
-            }
+            regSize = XMM_REGSIZE_BYTES;
         }
 
+        for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
+        {
+            if (srcLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+            }
+            else
+            {
+                emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                    srcAddrIndexScale, srcOffset);
+            }
+
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                    dstAddrIndexScale, dstOffset);
+            }
+        }
 
         // TODO-CQ-XArch: On x86 we could copy 8 byte at once by using MOVQ instead of four 4 byte MOV stores.
         // On x64 it may also be worth copying a 4/8 byte remainder using MOVD/MOVQ, that avoids the need to
         // allocate a GPR just for the remainder.
+
+        if (size > 0)
+        {
+            // Copy the remainder by moving the last regSize bytes of the buffer
+            unsigned remainder = regSize - size;
+            size += remainder;
+            srcOffset -= remainder;
+            dstOffset -= remainder;
+
+            if (srcLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_R_S(simdMov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+            }
+            else
+            {
+                emit->emitIns_R_ARX(simdMov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                    srcAddrIndexScale, srcOffset);
+            }
+
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_S_R(simdMov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                    dstAddrIndexScale, dstOffset);
+            }
+        }
+        return;
     }
 
     if (size > 0)
