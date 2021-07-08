@@ -125,7 +125,6 @@ namespace Wasm.Build.Tests
             }
         }
 
-        // FIXME: update these to use Workload variants of the file, with the workload support
         protected static string s_directoryBuildPropsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.props"));
         protected static string s_directoryBuildTargetsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.targets"));
 
