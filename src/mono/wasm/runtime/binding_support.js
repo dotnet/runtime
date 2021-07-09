@@ -1694,7 +1694,7 @@ var BindingSupportLib = {
 	},
 
 	mono_wasm_invoke_js_with_args: function(js_handle, method_name, args, is_exception) {
-		let argsRoot = MONO.mono_wasm_new_root (args);
+		let argsRoot = MONO.mono_wasm_new_root (args), nameRoot = MONO.mono_wasm_new_root (method_name);
 		try {
 			BINDING.bindings_lazy_init ();
 
@@ -1704,7 +1704,7 @@ var BindingSupportLib = {
 				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 			}
 
-			var js_name = BINDING.unbox_mono_obj (method_name);
+			var js_name = BINDING._unbox_mono_obj_root (nameRoot);
 			if (!js_name || (typeof(js_name) !== "string")) {
 				setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Invalid method name object '" + method_name + "'");
@@ -1730,6 +1730,7 @@ var BindingSupportLib = {
 			}
 		} finally {
 			argsRoot.release();
+			nameRoot.release();
 		}
 	},
 	mono_wasm_get_object_property: function(js_handle, property_name, is_exception) {
@@ -1780,7 +1781,7 @@ var BindingSupportLib = {
 
 			var result = false;
 
-			var js_value = BINDING.unbox_mono_obj_root(valueRoot);
+			var js_value = BINDING._unbox_mono_obj_root(valueRoot);
 			BINDING.mono_wasm_save_LMF();
 
 			if (createIfNotExist) {
@@ -1843,7 +1844,7 @@ var BindingSupportLib = {
 				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 			}
 
-			var js_value = BINDING.unbox_mono_obj(value);
+			var js_value = BINDING._unbox_mono_obj_root(valueRoot);
 			BINDING.mono_wasm_save_LMF();
 
 			try {
