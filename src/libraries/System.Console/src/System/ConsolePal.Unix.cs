@@ -1442,37 +1442,6 @@ namespace System
             }
         }
 
-        internal sealed class ControlCHandlerRegistrar
-        {
-            private PosixSignalRegistration? _sigIntRegistration;
-            private PosixSignalRegistration? _sigQuitRegistration;
-
-            internal unsafe void Register()
-            {
-                Debug.Assert(_sigIntRegistration is null);
-
-                _sigIntRegistration = PosixSignalRegistration.Create(PosixSignal.SIGINT, HandlePosixSignal);
-                _sigQuitRegistration = PosixSignalRegistration.Create(PosixSignal.SIGQUIT, HandlePosixSignal);
-            }
-
-            internal void Unregister()
-            {
-                Debug.Assert(_sigIntRegistration is not null);
-
-                _sigIntRegistration?.Dispose();
-                _sigQuitRegistration?.Dispose();
-            }
-
-            private static void HandlePosixSignal(PosixSignalContext ctx)
-            {
-                Debug.Assert(ctx.Signal == PosixSignal.SIGINT || ctx.Signal == PosixSignal.SIGQUIT);
-
-                ConsoleSpecialKey controlKey = ctx.Signal == PosixSignal.SIGINT ? ConsoleSpecialKey.ControlC : ConsoleSpecialKey.ControlBreak;
-                bool cancel = Console.HandleBreakEvent(controlKey, ctx.Cancel);
-                ctx.Cancel = cancel;
-            }
-        }
-
         private sealed class ReadOnlyMemoryContentComparer : IEqualityComparer<ReadOnlyMemory<char>>
         {
             public bool Equals(ReadOnlyMemory<char> x, ReadOnlyMemory<char> y) =>

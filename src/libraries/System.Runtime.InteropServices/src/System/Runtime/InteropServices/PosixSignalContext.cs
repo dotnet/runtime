@@ -11,30 +11,16 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Initializes a new instance of the <see cref="PosixSignalContext"/> class.
         /// </summary>
-        public PosixSignalContext(PosixSignal signal)
-        {
-            Signal = signal;
-        }
+        public PosixSignalContext(PosixSignal signal) => Signal = signal;
 
         /// <summary>
         /// Gets the signal that occurred.
         /// </summary>
-        public PosixSignal Signal
-        {
-            get;
-            internal set;
-        }
+        public PosixSignal Signal { get; internal set; }
 
         /// <summary>
         /// Gets or sets a value that indicates whether to cancel the default handling of the signal. The default is <see langword="false"/>.
         /// </summary>
-        public bool Cancel
-        {
-            get;
-            set;
-        }
-
-        internal PosixSignalContext()
-        { }
+        public bool Cancel { get; set; }
     }
 }
