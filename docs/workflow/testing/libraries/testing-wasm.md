@@ -25,7 +25,7 @@ e.g. for V8
 PATH=/Users/<your_user>/.jsvu/:$PATH V8
 ```
 ### Using NodeJS
-To run in NodeJS you will need to have both [NodeJS and NPM](https://nodejs.org/en/download/) installed and added to your PATH. 
+To run in NodeJS you will need to have both [NodeJS and NPM](https://nodejs.org/en/download/) installed and added to your PATH.
 
 ### Using Browser Instance
 It's possible to run tests in a browser instance:

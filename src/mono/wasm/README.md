@@ -49,7 +49,7 @@ The latest engines can be installed with jsvu (JavaScript engine Version Updater
 
 ## Installation of NodeJS
 
-To run in NodeJS you will need to have both [NodeJS and NPM](https://nodejs.org/en/download/) installed and added to your PATH. 
+To run in NodeJS you will need to have both [NodeJS and NPM](https://nodejs.org/en/download/) installed and added to your PATH.
 
 ### Mac
 
