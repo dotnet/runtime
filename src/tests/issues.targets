@@ -2938,11 +2938,9 @@
         </ExcludeList>
         
         <!-- NodeJS temporary exclude list -->
-        <ItemGroup Condition="'$(ForNode)' == 'true'">
-            <ExcludeList Include = "$(XunitTestBinBase)/JIT/**">
-                <Issue>needs testing infrastructure changes that are being delayed to work incrementally from a green build</Issue>
-            </ExcludeList>
-        </ItemGroup>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/**" Condition="'$(ForNode)' == 'true'">
+            <Issue>needs testing infrastructure changes that are being delayed to work incrementally from a green build</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition=" $(TargetOS) == 'Android' " >
