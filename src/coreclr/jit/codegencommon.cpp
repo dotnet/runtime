@@ -4355,16 +4355,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #endif // defined(UNIX_AMD64_ABI)
 
             noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
-#ifndef TARGET_64BIT
-#ifndef TARGET_ARM
-            // Right now we think that incoming arguments are not pointer sized.  When we eventually
-            // understand the calling convention, this still won't be true. But maybe we'll have a better
-            // idea of how to ignore it.
-
-            // On Arm, a long can be passed in register
-            noway_assert(genTypeSize(genActualType(varDsc->TypeGet())) == TARGET_POINTER_SIZE);
-#endif
-#endif // TARGET_64BIT
+#ifdef TARGET_X86
+            // On x86 we don't enregister args that are not pointer sized.
+            noway_assert(genTypeSize(varDsc->GetActualRegisterType()) == TARGET_POINTER_SIZE);
+#endif // TARGET_X86
 
             noway_assert(varDsc->lvIsInReg() && !regArgTab[argNum].circular);
 

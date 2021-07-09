@@ -3493,7 +3493,7 @@ void Compiler::lvaSortByRefCount()
             {
                 varDsc->lvTracked = 0;
             }
-            else if ((varDsc->lvType == TYP_STRUCT) && !varDsc->lvRegStruct)
+            else if ((varDsc->lvType == TYP_STRUCT) && !varDsc->lvRegStruct && !compEnregStructLocals())
             {
                 lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
             }

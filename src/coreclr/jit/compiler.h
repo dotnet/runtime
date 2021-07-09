@@ -1016,9 +1016,18 @@ public:
 
     var_types GetActualRegisterType() const;
 
-    bool IsEnregisterable() const
+    bool IsEnregisterableType() const
     {
         return GetRegisterType() != TYP_UNDEF;
+    }
+
+    bool IsEnregisterableLcl() const
+    {
+        if (lvDoNotEnregister)
+        {
+            return false;
+        }
+        return IsEnregisterableType();
     }
 
     bool CanBeReplacedWithItsField(Compiler* comp) const;
@@ -7491,9 +7500,14 @@ public:
 
 #ifdef DEBUG
     void optPrintAssertion(AssertionDsc* newAssertion, AssertionIndex assertionIndex = 0);
+    void optPrintAssertionIndex(AssertionIndex index);
+    void optPrintAssertionIndices(ASSERT_TP assertions);
     void optDebugCheckAssertion(AssertionDsc* assertion);
     void optDebugCheckAssertions(AssertionIndex AssertionIndex);
 #endif
+    static void optDumpAssertionIndices(const char* header, ASSERT_TP assertions, const char* footer = nullptr);
+    static void optDumpAssertionIndices(ASSERT_TP assertions, const char* footer = nullptr);
+
     void optAddCopies();
 #endif // ASSERTION_PROP
 

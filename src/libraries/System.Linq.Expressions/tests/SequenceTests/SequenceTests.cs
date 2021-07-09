@@ -1486,7 +1486,6 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51952", TestPlatforms.tvOS)]
         public static void ConvertNullToInt(bool useInterpreter)
         {
             Assert.Throws<NullReferenceException>(() =>

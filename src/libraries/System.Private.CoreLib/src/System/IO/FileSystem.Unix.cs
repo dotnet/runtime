@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 
 namespace System.IO
 {
@@ -10,6 +11,10 @@ namespace System.IO
     internal static partial class FileSystem
     {
         internal const int DefaultBufferSize = 4096;
+
+        // On Linux, the maximum number of symbolic links that are followed while resolving a pathname is 40.
+        // See: https://man7.org/linux/man-pages/man7/path_resolution.7.html
+        private const int MaxFollowedLinks = 40;
 
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
@@ -528,6 +533,92 @@ namespace System.IO
         public static string[] GetLogicalDrives()
         {
             return DriveInfoInternal.GetLogicalDrives();
+        }
+
+        internal static string? GetLinkTarget(ReadOnlySpan<char> linkPath, bool isDirectory) => Interop.Sys.ReadLink(linkPath);
+
+        internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
+        {
+            string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
+
+            // Fail if the target exists but is not consistent with the expected filesystem entry type
+            if (Interop.Sys.Stat(pathToTargetFullPath, out Interop.Sys.FileStatus targetInfo) == 0)
+            {
+                if (isDirectory != ((targetInfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR))
+                {
+                    throw new IOException(SR.Format(SR.IO_InconsistentLinkType, path));
+                }
+            }
+
+            Interop.CheckIo(Interop.Sys.SymLink(pathToTarget, path), path, isDirectory);
+        }
+
+        internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
+        {
+            ValueStringBuilder sb = new(Interop.DefaultPathBufferSize);
+            sb.Append(linkPath);
+
+            string? linkTarget = GetLinkTarget(linkPath, isDirectory: false /* Irrelevant in Unix */);
+            if (linkTarget == null)
+            {
+                sb.Dispose();
+                Interop.Error error = Interop.Sys.GetLastError();
+                // Not a link, return null
+                if (error == Interop.Error.EINVAL)
+                {
+                    return null;
+                }
+
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(error), linkPath, isDirectory);
+            }
+
+            if (!returnFinalTarget)
+            {
+                GetLinkTargetFullPath(ref sb, linkTarget);
+            }
+            else
+            {
+                string? current = linkTarget;
+                int visitCount = 1;
+
+                while (current != null)
+                {
+                    if (visitCount > MaxFollowedLinks)
+                    {
+                        sb.Dispose();
+                        // We went over the limit and couldn't reach the final target
+                        throw new IOException(SR.Format(SR.IO_TooManySymbolicLinkLevels, linkPath));
+                    }
+
+                    GetLinkTargetFullPath(ref sb, current);
+                    current = GetLinkTarget(sb.AsSpan(), isDirectory: false);
+                    visitCount++;
+                }
+            }
+
+            Debug.Assert(sb.Length > 0);
+            linkTarget = sb.ToString(); // ToString disposes
+
+            return isDirectory ?
+                    new DirectoryInfo(linkTarget) :
+                    new FileInfo(linkTarget);
+
+            // In case of link target being relative:
+            // Preserve the full path of the directory of the previous path
+            // so the final target is returned with a valid full path
+            static void GetLinkTargetFullPath(ref ValueStringBuilder sb, ReadOnlySpan<char> linkTarget)
+            {
+                if (PathInternal.IsPartiallyQualified(linkTarget))
+                {
+                    sb.Length = Path.GetDirectoryNameOffset(sb.AsSpan());
+                    sb.Append(PathInternal.DirectorySeparatorChar);
+                }
+                else
+                {
+                    sb.Length = 0;
+                }
+                sb.Append(linkTarget);
+            }
         }
     }
 }

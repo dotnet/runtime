@@ -130,6 +130,23 @@ namespace System.Collections.Tests
         {
             return new SortedSet<int>(new Comparer_SameAsDefaultComparer());
         }
+
+        [Fact]
+        public void SortedSet_Generic_GetViewBetween_MinMax_WithCustomComparer()
+        {
+            var set = (SortedSet<int>)CreateSortedSet(new[] { 5, 15, 25, 35, 45 }, 5, 5);
+
+            for (int i = 0; i <= 40; i += 10)
+            {
+                for (int j = i + 10; j <= 50; j += 10)
+                {
+                    SortedSet<int> view = set.GetViewBetween(i, j);
+
+                    Assert.Equal(i + 5, view.Min);
+                    Assert.Equal(j - 5, view.Max);
+                }
+            }
+        }
     }
 
     [OuterLoop]

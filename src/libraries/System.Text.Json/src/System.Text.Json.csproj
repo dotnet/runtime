@@ -92,6 +92,10 @@
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyNameAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonMetadataServicesConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\IgnoreReferenceResolver.cs" />
+    <Compile Include="System\Text\Json\Serialization\IJsonOnDeserialized.cs" />
+    <Compile Include="System\Text\Json\Serialization\IJsonOnDeserializing.cs" />
+    <Compile Include="System\Text\Json\Serialization\IJsonOnSerialized.cs" />
+    <Compile Include="System\Text\Json\Serialization\IJsonOnSerializing.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerContext.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Collections.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Converters.cs" />

@@ -639,7 +639,6 @@ OPTIMIZECAST:
                             case GT_IND:
                             case GT_CLS_VAR:
                             case GT_LCL_FLD:
-                            case GT_ARR_ELEM:
                                 oper->gtType = dstType;
                                 // We're changing the type here so we need to update the VN;
                                 // in other cases we discard the cast without modifying oper

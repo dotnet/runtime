@@ -733,6 +733,22 @@ namespace System.Text.Json.Nodes
 }
 namespace System.Text.Json.Serialization
 {
+    public partial interface IJsonOnDeserialized
+    {
+        void OnDeserialized();
+    }
+    public partial interface IJsonOnDeserializing
+    {
+        void OnDeserializing();
+    }
+    public partial interface IJsonOnSerialized
+    {
+        void OnSerialized();
+    }
+    public partial interface IJsonOnSerializing
+    {
+        void OnSerializing();
+    }
     public abstract partial class JsonAttribute : System.Attribute
     {
         protected JsonAttribute() { }

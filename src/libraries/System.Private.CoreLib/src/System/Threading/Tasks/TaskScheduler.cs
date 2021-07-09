@@ -166,7 +166,7 @@ namespace System.Threading.Tasks
         {
             // Do not inline unstarted tasks (i.e., task.ExecutingTaskScheduler == null).
             // Do not inline TaskCompletionSource-style (a.k.a. "promise") tasks.
-            // No need to attempt inlining if the task body was already run (i.e. either TASK_STATE_DELEGATE_INVOKED or TASK_STATE_CANCELED bits set)
+            // No need to attempt inlining if the task body was already run (i.e. either TaskStateFlags.DelegateInvoked or TaskStateFlags.Canceled bits set)
             TaskScheduler? ets = task.ExecutingTaskScheduler;
 
             // Delegate cross-scheduler inlining requests to target scheduler
@@ -189,7 +189,7 @@ namespace System.Threading.Tasks
 
             bool inlined = TryExecuteTaskInline(task, taskWasPreviouslyQueued);
 
-            // If the custom scheduler returned true, we should either have the TASK_STATE_DELEGATE_INVOKED or TASK_STATE_CANCELED bit set
+            // If the custom scheduler returned true, we should either have the TaskStateFlags.DelegateInvoked or TaskStateFlags.Canceled bit set
             // Otherwise the scheduler is buggy
             if (inlined && !(task.IsDelegateInvoked || task.IsCanceled))
             {
