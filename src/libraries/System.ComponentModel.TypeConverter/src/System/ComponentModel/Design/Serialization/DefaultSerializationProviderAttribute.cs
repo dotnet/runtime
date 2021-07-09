@@ -23,7 +23,7 @@ namespace System.ComponentModel.Design.Serialization
                 throw new ArgumentNullException(nameof(providerType));
             }
 
-            ProviderTypeName = providerType.AssemblyQualifiedName;
+            ProviderTypeName = providerType.AssemblyQualifiedName!;
         }
 
         /// <summary>

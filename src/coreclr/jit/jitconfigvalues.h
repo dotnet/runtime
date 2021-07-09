@@ -462,8 +462,17 @@ CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))
 CONFIG_INTEGER(JitExtDefaultPolicy, W("JitExtDefaultPolicy"), 1)
 CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, W("JitExtDefaultPolicyMaxIL"), 0x64)
 CONFIG_INTEGER(JitExtDefaultPolicyMaxBB, W("JitExtDefaultPolicyMaxBB"), 7)
-CONFIG_INTEGER(JitExtDefaultPolicyProfScale, W("JitExtDefaultPolicyProfScale"), 0x22)
+
+// Inliner uses the following formula for PGO-driven decisions:
+//
+//    BM = BM * ((1.0 - ProfTrust) + ProfWeight * ProfScale)
+//
+// Where BM is a benefit multiplier composed from various observations (e.g. "const arg makes a branch foldable").
+// If a profile data can be trusted for 100% we can safely just give up on inlining anything inside cold blocks
+// (except the cases where inlining in cold blocks improves type info/escape analysis for the whole caller).
+// For now, it's only applied for dynamic PGO.
 CONFIG_INTEGER(JitExtDefaultPolicyProfTrust, W("JitExtDefaultPolicyProfTrust"), 0x7)
+CONFIG_INTEGER(JitExtDefaultPolicyProfScale, W("JitExtDefaultPolicyProfScale"), 0x2A)
 
 CONFIG_INTEGER(JitInlinePolicyModel, W("JitInlinePolicyModel"), 0)
 CONFIG_INTEGER(JitInlinePolicyProfile, W("JitInlinePolicyProfile"), 0)
@@ -543,8 +552,12 @@ CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSave
 #endif // defined(TARGET_ARM64)
 #endif // DEBUG
 
-// Allow to enregister locals with struct type.
-CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 0)
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 1) // Allow to enregister locals with struct type.
+#else
+CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 0) // Don't allow to enregister locals with struct type
+                                                                   // yet.
+#endif
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING

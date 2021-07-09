@@ -72,6 +72,56 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        public void EnvironmentVariable_DotnetRootPathDoesNotExist()
+        {
+            var fixture = sharedTestState.PortableAppFixture
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+            using (TestOnlyProductBehavior.Enable(appExe))
+            {
+                Command.Create(appExe)
+                    .EnableTracingAndCaptureOutputs()
+                    .DotNetRoot("non_existent_path")
+                    .MultilevelLookup(false)
+                    .EnvironmentVariable(
+                        Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath,
+                        sharedTestState.InstallLocation)
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdErrContaining("Did not find [DOTNET_ROOT] directory [non_existent_path]")
+                    // If DOTNET_ROOT points to a folder that does not exist, we fall back to the global install path.
+                    .And.HaveUsedGlobalInstallLocation(sharedTestState.InstallLocation)
+                    .And.HaveStdOutContaining("Hello World");
+            }
+        }
+
+        [Fact]
+        public void EnvironmentVariable_DotnetRootPathExistsButHasNoHost()
+        {
+            var fixture = sharedTestState.PortableAppFixture
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+            var projDir = fixture.TestProject.ProjectDirectory;
+            using (TestOnlyProductBehavior.Enable(appExe))
+            {
+                Command.Create(appExe)
+                .EnableTracingAndCaptureOutputs()
+                .DotNetRoot(projDir)
+                .MultilevelLookup(false)
+                .EnvironmentVariable(
+                    Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath,
+                    sharedTestState.InstallLocation)
+                .Execute()
+                .Should().Fail()
+                .And.HaveUsedDotNetRootInstallLocation(projDir, fixture.CurrentRid)
+                // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
+                .And.HaveStdErrContaining($"A fatal error occurred. The required library {RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform ("hostfxr")} could not be found.");
+            }
+        }
+
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Windows, "This test targets the install_location config file which is only used on Linux and macOS.")]
         public void InstallLocationFile_ArchSpecificLocationIsPickedFirst()
         {
@@ -173,6 +223,7 @@ namespace HostActivation.Tests
 
                 PortableAppFixture = fixture;
                 BaseDirectory = Path.GetDirectoryName(PortableAppFixture.SdkDotnet.GreatestVersionHostFxrFilePath);
+                InstallLocation = fixture.BuiltDotnet.BinPath;
             }
 
             public void Dispose()

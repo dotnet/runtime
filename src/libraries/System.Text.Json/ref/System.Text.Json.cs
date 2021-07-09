@@ -473,6 +473,9 @@ namespace System.Text.Json
         public void WritePropertyName(System.ReadOnlySpan<char> propertyName) { }
         public void WritePropertyName(string propertyName) { }
         public void WritePropertyName(System.Text.Json.JsonEncodedText propertyName) { }
+        public void WriteRawValue(string json, bool skipInputValidation = false) { }
+        public void WriteRawValue(System.ReadOnlySpan<byte> utf8Json, bool skipInputValidation = false) { }
+        public void WriteRawValue(System.ReadOnlySpan<char> json, bool skipInputValidation = false) { }
         public void WriteStartArray() { }
         public void WriteStartArray(System.ReadOnlySpan<byte> utf8PropertyName) { }
         public void WriteStartArray(System.ReadOnlySpan<char> propertyName) { }
@@ -900,6 +903,7 @@ namespace System.Text.Json.Serialization.Metadata
         public static System.Text.Json.Serialization.JsonConverter<sbyte> SByteConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<float> SingleConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<string> StringConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.TimeSpan> TimeSpanConverter { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public static System.Text.Json.Serialization.JsonConverter<ushort> UInt16Converter { get { throw null; } }
         [System.CLSCompliantAttribute(false)]

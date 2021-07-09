@@ -65,8 +65,8 @@ namespace HttpStress
                 }
             }
 
-            return new HttpClient(CreateHttpHandler()) 
-            { 
+            return new HttpClient(CreateHttpHandler())
+            {
                 BaseAddress = _baseAddress,
                 Timeout = _config.DefaultTimeout,
                 DefaultRequestVersion = _config.HttpVersion,
@@ -209,6 +209,11 @@ namespace HttpStress
                     {
                         _aggregator.RecordCancellation(opIndex, stopwatch.Elapsed);
                     }
+                    catch (Exception e) when (e.Message == "IGNORE")
+                    {
+                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/55261")]
+                        // See ClientOperations.ValidateStatusCode
+                    }
                     catch (Exception e)
                     {
                         _aggregator.RecordFailure(e, opIndex, stopwatch.Elapsed, requestContext.IsCancellationRequested, taskNum: taskNum, iteration: i);
@@ -283,7 +288,7 @@ namespace HttpStress
             public void RecordFailure(Exception exn, int operationIndex, TimeSpan elapsed, bool isCancelled, int taskNum, long iteration)
             {
                 DateTime timestamp = DateTime.Now;
-                
+
                 Interlocked.Increment(ref _totalRequests);
                 Interlocked.Increment(ref _failures[operationIndex]);
 

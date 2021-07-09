@@ -17,24 +17,29 @@ namespace System.IO
         // that get stackalloced in the Linux kernel.
         private const int IovStackThreshold = 8;
 
-        internal static long GetFileLength(SafeFileHandle handle, string? path)
+        internal static long GetFileLength(SafeFileHandle handle)
         {
             int result = Interop.Sys.FStat(handle, out Interop.Sys.FileStatus status);
-            FileStreamHelpers.CheckFileCall(result, path);
+            FileStreamHelpers.CheckFileCall(result, handle.Path);
             return status.Size;
         }
 
-        private static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
+        internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                int result = Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset);
-                FileStreamHelpers.CheckFileCall(result, path: null);
+                // The Windows implementation uses ReadFile, which ignores the offset if the handle
+                // isn't seekable.  We do the same manually with PRead vs Read, in order to enable
+                // the function to be used by FileStream for all the same situations.
+                int result = handle.CanSeek ?
+                    Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset) :
+                    Interop.Sys.Read(handle, bufPtr, buffer.Length);
+                FileStreamHelpers.CheckFileCall(result, handle.Path);
                 return result;
             }
         }
 
-        private static unsafe long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
+        internal static unsafe long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
         {
             MemoryHandle[] handles = new MemoryHandle[buffers.Count];
             Span<Interop.Sys.IOVector> vectors = buffers.Count <= IovStackThreshold ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffers.Count];
@@ -64,27 +69,32 @@ namespace System.IO
                 }
             }
 
-            return FileStreamHelpers.CheckFileCall(result, path: null);
+            return FileStreamHelpers.CheckFileCall(result, handle.Path);
         }
 
-        private static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        internal static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
             => ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
 
         private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
             => ScheduleSyncReadScatterAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
 
-        private static unsafe int WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
+        internal static unsafe int WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
             {
-                int result = Interop.Sys.PWrite(handle, bufPtr, buffer.Length, fileOffset);
-                FileStreamHelpers.CheckFileCall(result, path: null);
-                return  result;
+                // The Windows implementation uses WriteFile, which ignores the offset if the handle
+                // isn't seekable.  We do the same manually with PWrite vs Write, in order to enable
+                // the function to be used by FileStream for all the same situations.
+                int result = handle.CanSeek ?
+                    Interop.Sys.PWrite(handle, bufPtr, buffer.Length, fileOffset) :
+                    Interop.Sys.Write(handle, bufPtr, buffer.Length);
+                FileStreamHelpers.CheckFileCall(result, handle.Path);
+                return result;
             }
         }
 
-        private static unsafe long WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
+        internal static unsafe long WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
         {
             MemoryHandle[] handles = new MemoryHandle[buffers.Count];
             Span<Interop.Sys.IOVector> vectors = buffers.Count <= IovStackThreshold ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffers.Count ];
@@ -114,10 +124,10 @@ namespace System.IO
                 }
             }
 
-            return FileStreamHelpers.CheckFileCall(result, path: null);
+            return FileStreamHelpers.CheckFileCall(result, handle.Path);
         }
 
-        private static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        internal static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
             => ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
 
         private static ValueTask<long> WriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,

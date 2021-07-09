@@ -31,7 +31,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingProperty.CanWrite; }
         }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return UnderlyingProperty.DeclaringType; }
         }
@@ -56,7 +56,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingProperty.PropertyType; }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return UnderlyingProperty.ReflectedType; }
         }
@@ -68,7 +68,7 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingProperty.GetAccessors(nonPublic);
         }
 
-        public override MethodInfo GetGetMethod(bool nonPublic)
+        public override MethodInfo? GetGetMethod(bool nonPublic)
         {
             return UnderlyingProperty.GetGetMethod(nonPublic);
         }
@@ -78,27 +78,27 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingProperty.GetIndexParameters();
         }
 
-        public override MethodInfo GetSetMethod(bool nonPublic)
+        public override MethodInfo? GetSetMethod(bool nonPublic)
         {
             return UnderlyingProperty.GetSetMethod(nonPublic);
         }
 
-        public override object GetValue(object obj, object[] index)
+        public override object? GetValue(object? obj, object?[]? index)
         {
             return UnderlyingProperty.GetValue(obj, index);
         }
 
-        public override object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
+        public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             return UnderlyingProperty.GetValue(obj, invokeAttr, binder, index, culture);
         }
 
-        public override void SetValue(object obj, object value, object[] index)
+        public override void SetValue(object? obj, object? value, object?[]? index)
         {
             UnderlyingProperty.SetValue(obj, value, index);
         }
 
-        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             UnderlyingProperty.SetValue(obj, value, invokeAttr, binder, index, culture);
         }
@@ -118,12 +118,12 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingProperty.GetCustomAttributesData();
         }
 
-        public override object GetConstantValue()
+        public override object? GetConstantValue()
         {
             return UnderlyingProperty.GetConstantValue();
         }
 
-        public override object GetRawConstantValue()
+        public override object? GetRawConstantValue()
         {
             return UnderlyingProperty.GetRawConstantValue();
         }
@@ -143,7 +143,7 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingProperty.IsDefined(attributeType, inherit);
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             return UnderlyingProperty.ToString();
         }

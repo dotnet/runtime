@@ -91,5 +91,11 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Data.OleDb.OleDbMetaDataFactory.GetDataSourceInformationTable(System.Data.OleDb.OleDbConnection,System.Data.OleDb.OleDbConnectionInternal)</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2093</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.OleDb.OleDbDataReader.GetFieldType(System.Int32)</property>
+    </attribute>
   </assembly>
 </linker>

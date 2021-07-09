@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
@@ -150,6 +150,8 @@
     <Compile Include="System\Runtime\InteropServices\ObjectiveC\MessageSendTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveC\PendingExceptionTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveC\LibObjC.cs" />
+    <Compile Include="System\Runtime\InteropServices\PosixSignalContextTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistrationTests.cs" />
     <Compile Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ProgIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTests.cs" />
@@ -182,5 +184,15 @@
     <Compile Include="System\Runtime\InteropServices\TypeLibTypeAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibVarAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibVersionAttributeTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistrationTests.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistrationTests.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistrationTests.Browser.cs" />
   </ItemGroup>
 </Project>

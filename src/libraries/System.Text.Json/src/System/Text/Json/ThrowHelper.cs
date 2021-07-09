@@ -636,6 +636,9 @@ namespace System.Text.Json
                 case DataType.DateTimeOffset:
                     message = SR.FormatDateTimeOffset;
                     break;
+                case DataType.TimeSpan:
+                    message = SR.FormatTimeSpan;
+                    break;
                 case DataType.Base64String:
                     message = SR.CannotDecodeInvalidBase64;
                     break;
@@ -723,6 +726,7 @@ namespace System.Text.Json
         Boolean,
         DateTime,
         DateTimeOffset,
+        TimeSpan,
         Base64String,
         Guid,
     }
