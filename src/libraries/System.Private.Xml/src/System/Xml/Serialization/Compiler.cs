@@ -96,11 +96,8 @@ namespace System.Xml.Serialization
         private static uint GetPersistentHashCode(string value)
         {
             byte[] valueBytes = System.Text.Encoding.UTF8.GetBytes(value);
-            using (SHA512 sha512 = SHA512.Create())
-            {
-                byte[] hash = sha512.ComputeHash(valueBytes);
-                return (uint)(hash[0] << 24 | hash[1] << 16 | hash[2] << 8 | hash[3]);
-            }
+            byte[] hash = SHA512.HashData(valueBytes);
+            return (uint)(hash[0] << 24 | hash[1] << 16 | hash[2] << 8 | hash[3]);
         }
     }
 }
