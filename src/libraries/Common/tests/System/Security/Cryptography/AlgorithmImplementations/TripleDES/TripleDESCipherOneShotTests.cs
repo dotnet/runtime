@@ -28,68 +28,68 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void OneShotRoundtrip(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            OneShotRoundtripTest(plaintext, ciphertext, padding, mode);
+        public void OneShotRoundtrip(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            OneShotRoundtripTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryDecryptOneShot_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryDecryptOneShot_DestinationTooSmallTest(plaintext, ciphertext, padding, mode);
+        public void TryDecryptOneShot_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryDecryptOneShot_DestinationTooSmallTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryEncryptOneShot_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryEncryptOneShot_DestinationTooSmallTest(plaintext, ciphertext, padding, mode);
+        public void TryEncryptOneShot_DestinationTooSmall(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryEncryptOneShot_DestinationTooSmallTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryDecryptOneShot_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryDecryptOneShot_DestinationJustRightTest(plaintext, ciphertext, padding, mode);
+        public void TryDecryptOneShot_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryDecryptOneShot_DestinationJustRightTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryEncryptOneShot_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryEncryptOneShot_DestinationJustRightTest(plaintext, ciphertext, padding, mode);
+        public void TryEncryptOneShot_DestinationJustRight(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryEncryptOneShot_DestinationJustRightTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryDecryptOneShot_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryDecryptOneShot_DestinationLargerTest(plaintext, ciphertext, padding, mode);
+        public void TryDecryptOneShot_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryDecryptOneShot_DestinationLargerTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryEncryptOneShot_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryEncryptOneShot_DestinationLargerTest(plaintext, ciphertext, padding, mode);
+        public void TryEncryptOneShot_DestinationLarger(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryEncryptOneShot_DestinationLargerTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryDecryptOneShot_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryDecryptOneShot_OverlapsTest(plaintext, ciphertext, padding, mode);
+        public void TryDecryptOneShot_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryDecryptOneShot_OverlapsTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void TryEncryptOneShot_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            TryEncryptOneShot_OverlapsTest(plaintext, ciphertext, padding, mode);
+        public void TryEncryptOneShot_Overlaps(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            TryEncryptOneShot_OverlapsTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void DecryptOneShot_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            DecryptOneShot_SpanTest(plaintext, ciphertext, padding, mode);
+        public void DecryptOneShot_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            DecryptOneShot_SpanTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void EncryptOneShot_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            EncryptOneShot_SpanTest(plaintext, ciphertext, padding, mode);
+        public void EncryptOneShot_Span(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            EncryptOneShot_SpanTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void DecryptOneShot_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            DecryptOneShot_ArrayTest(plaintext, ciphertext, padding, mode);
+        public void DecryptOneShot_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            DecryptOneShot_ArrayTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         [Theory]
         [MemberData(nameof(TestCases))]
-        public void EncryptOneShot_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode) =>
-            EncryptOneShot_ArrayTest(plaintext, ciphertext, padding, mode);
+        public void EncryptOneShot_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
+            EncryptOneShot_ArrayTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
         public static IEnumerable<object[]> TestCases
         {
@@ -556,6 +556,28 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 
                     PaddingMode.PKCS7,
                     CipherMode.ECB,
+                };
+
+                yield return new object[]
+                {
+                    // plaintext
+                    new byte[]
+                    {
+                        0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                        0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                    },
+
+                    // ciphertext
+                    new byte[]
+                    {
+                        0x46, 0x85, 0x45, 0x43, 0x3E, 0xD9, 0x40, 0xAF,
+                        0x16, 0xBE, 0xC5, 0xEF, 0xD9, 0x12, 0xFE, 0x07,
+                        0x66,
+                    },
+
+                    PaddingMode.PKCS7,
+                    CipherMode.CFB,
+                    8
                 };
             }
         }
