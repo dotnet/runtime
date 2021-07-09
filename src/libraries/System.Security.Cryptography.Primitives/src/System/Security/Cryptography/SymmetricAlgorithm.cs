@@ -980,6 +980,47 @@ namespace System.Security.Cryptography
             return TryEncryptCbcCore(plaintext, iv, destination, paddingMode, out bytesWritten);
         }
 
+        /// <summary>
+        ///   Decrypts data using CFB mode with the specified padding mode and
+        ///   feedback size.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="feedbackSizeInBits">The feedback size, specified in bits.</param>
+        /// <returns>The decrypted plaintext data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="ciphertext" /> or <paramref name="iv" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <para>
+        ///     <paramref name="paddingMode" /> is not a valid padding mode.
+        ///   </para>
+        ///   <para>
+        ///     -or-
+        ///   </para>
+        ///   <para>
+        ///     <paramref name="feedbackSizeInBits" /> is not positive or represent a whole number of bytes.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The ciphertext could not be decrypted successfully.
+        ///   </para>
+        ///   <para>
+        ///     -or-
+        ///   </para>
+        ///   <para>
+        ///     The feedback size is not valid for the algorithm.
+        ///   </para>
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryDecryptCfbCore" />.
+        /// </remarks>
         public byte[] DecryptCfb(byte[] ciphertext, byte[] iv, PaddingMode paddingMode = PaddingMode.None, int feedbackSizeInBits = 8)
         {
             if (ciphertext is null)
@@ -994,6 +1035,44 @@ namespace System.Security.Cryptography
                 feedbackSizeInBits);
         }
 
+        /// <summary>
+        ///   Decrypts data using CFB mode with the specified padding mode and
+        ///   feedback size.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="feedbackSizeInBits">The feedback size, specified in bits.</param>
+        /// <returns>The decrypted plaintext data.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <para>
+        ///     <paramref name="paddingMode" /> is not a valid padding mode.
+        ///   </para>
+        ///   <para>
+        ///     -or-
+        ///   </para>
+        ///   <para>
+        ///     <paramref name="feedbackSizeInBits" /> is not positive or represent a whole number of bytes.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The ciphertext could not be decrypted successfully.
+        ///   </para>
+        ///   <para>
+        ///     -or-
+        ///   </para>
+        ///   <para>
+        ///     The feedback size is not valid for the algorithm.
+        ///   </para>
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryDecryptCfbCore" />.
+        /// </remarks>
         public byte[] DecryptCfb(
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> iv,
@@ -1023,6 +1102,52 @@ namespace System.Security.Cryptography
             return decryptBuffer;
         }
 
+        /// <summary>
+        ///   Decrypts data using CFB mode with the specified padding mode and
+        ///   feedback size.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="feedbackSizeInBits">The feedback size, specified in bits.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <para>
+        ///     <paramref name="paddingMode" /> is not a valid padding mode.
+        ///   </para>
+        ///   <para>
+        ///     -or-
+        ///   </para>
+        ///   <para>
+        ///     <paramref name="feedbackSizeInBits" /> is not positive or represent a whole number of bytes.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///     that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        ///   </para>
+        ///   <para>
+        ///     -or-
+        ///   </para>
+        ///   <para>
+        ///     The buffer in <paramref name="destination"/> is too small to hold the plaintext data.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The ciphertext could not be decrypted successfully.
+        ///   </para>
+        ///   <para>
+        ///     -or-
+        ///   </para>
+        ///   <para>
+        ///     <paramref name="feedbackSizeInBits" /> is not valid for the algorithm.
+        ///   </para>
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryDecryptCfbCore" />.
+        /// </remarks>
         public int DecryptCfb(
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> iv,
@@ -1042,6 +1167,45 @@ namespace System.Security.Cryptography
             return written;
         }
 
+        /// <summary>
+        ///   Attempts to decrypt data into the specified buffer, using CFB mode
+        ///   with the specified padding mode and feedback size.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="feedbackSizeInBits">The feedback size, specified in bits.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the decrypted data; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <para>
+        ///     <paramref name="paddingMode" /> is not a valid padding mode.
+        ///   </para>
+        ///   <para>
+        ///     -or-
+        ///   </para>
+        ///   <para>
+        ///     <paramref name="feedbackSizeInBits" /> is not positive or represent a whole number of bytes.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>
+        ///     The ciphertext could not be decrypted successfully.
+        ///   </para>
+        ///   <para>
+        ///     -or-
+        ///   </para>
+        ///   <para>
+        ///     <paramref name="feedbackSizeInBits" /> is not valid for the algorithm.
+        ///   </para>
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryDecryptCfbCore" />.
+        /// </remarks>
         public bool TryDecryptCfb(
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> iv,
@@ -1057,6 +1221,38 @@ namespace System.Security.Cryptography
             return TryDecryptCfbCore(ciphertext, iv, destination, paddingMode, feedbackSizeInBits, out bytesWritten);
         }
 
+        /// <summary>
+        ///   Encrypts data using CFB mode with the specified padding mode and feedback size.
+        /// </summary>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="feedbackSizeInBits">The feedback size, specified in bits.</param>
+        /// <returns>The encrypted ciphertext data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="plaintext" /> or <paramref name="iv" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <para>
+        ///     <paramref name="paddingMode" /> is not a valid padding mode.
+        ///   </para>
+        ///   <para>
+        ///     -or-
+        ///   </para>
+        ///   <para>
+        ///     <paramref name="feedbackSizeInBits" /> is not positive or represent a whole number of bytes.
+        ///   </para>
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="iv" /> is the incorrect length. Callers are expected to pass an initialization vector
+        ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <see cref="TryEncryptCfbCore" /> could not encrypt the plaintext.
+        /// </exception>
+        /// <remarks>
+        ///   This method's behavior is defined by <see cref="TryEncryptCbcCore" />.
+        /// </remarks>
         public byte[] EncryptCfb(
             byte[] plaintext,
             byte[] iv,
@@ -1243,6 +1439,24 @@ namespace System.Security.Cryptography
             throw new NotSupportedException(SR.NotSupported_SubclassOverride);
         }
 
+        /// <summary>
+        ///   When overridden in a derived class, attempts to decrypt data
+        ///   into the specified buffer, using CFB mode with the specified padding mode
+        ///   and feedback size.
+        /// </summary>
+        /// <param name="ciphertext">The data to decrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="destination">The buffer to receive the plaintext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="feedbackSizeInBits">The feedback size, specified in bits.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the decrypted data; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="NotSupportedException">
+        ///   A derived class has not provided an implementation.
+        /// </exception>
+        /// <remarks>
+        ///   Derived classes must override this and provide an implementation.
+        /// </remarks>
         protected virtual bool TryDecryptCfbCore(
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> iv,
@@ -1254,6 +1468,28 @@ namespace System.Security.Cryptography
             throw new NotSupportedException(SR.NotSupported_SubclassOverride);
         }
 
+        /// <summary>
+        ///   When overridden in a derived class, attempts to encrypt data into the specified
+        ///   buffer, using CFB mode with the specified padding mode and feedback size.
+        /// </summary>
+        /// <param name="plaintext">The data to encrypt.</param>
+        /// <param name="iv">The initialization vector.</param>
+        /// <param name="destination">The buffer to receive the ciphertext data.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
+        /// <param name="feedbackSizeInBits">The feedback size, specified in bits.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the encrypted data; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="NotSupportedException">
+        ///   A derived class has not provided an implementation.
+        /// </exception>
+        /// <remarks>
+        ///   <para>Derived classes must override this and provide an implementation.</para>
+        ///   <para>
+        ///      Implementations of this method must write precisely
+        ///      <c>GetCiphertextLengthCfb(plaintext.Length, paddingMode, feedbackSizeInBits)</c>
+        ///      bytes to <paramref name="destination"/> and report that via <paramref name="bytesWritten"/>.
+        ///   </para>
+        /// </remarks>
         protected virtual bool TryEncryptCfbCore(
             ReadOnlySpan<byte> plaintext,
             ReadOnlySpan<byte> iv,
