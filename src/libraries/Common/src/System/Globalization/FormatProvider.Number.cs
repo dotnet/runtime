@@ -583,7 +583,7 @@ namespace System.Globalization
                 bool negExp;
 
                 negExp = false;
-                if ((ch == 'E' || ch == 'e') && (options.HasFlag(NumberStyles.AllowExponent)))
+                if ((char.ToLower(ch) == ScientificFormat) && (options.HasFlag(NumberStyles.AllowExponent)))
                 {
                     char* temp = p;
                     ch = ++p < strEnd ? *p : '\0';
@@ -603,14 +603,6 @@ namespace System.Globalization
                         {
                             exp = exp * 10 + (ch - '0');
                             ch = ++p < strEnd ? *p : '\0';
-                            if (exp > 1000)
-                            {
-                                exp = 9999;
-                                while (IsDecimalChar(ch))
-                                {
-                                    ch = ++p < strEnd ? *p : '\0';
-                                }
-                            }
                         } while (IsDecimalChar(ch));
                         if (negExp)
                         {
