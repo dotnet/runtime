@@ -10,7 +10,8 @@ class GCAllocateProfiler : public Profiler
 public:
     GCAllocateProfiler() : Profiler(),
         _gcLOHAllocations(0),
-        _gcPOHAllocations(0)
+        _gcPOHAllocations(0),
+        _failures(0)
     {}
 
 	virtual GUID GetClsid();
@@ -21,4 +22,5 @@ public:
 private:
     std::atomic<int> _gcLOHAllocations;
     std::atomic<int> _gcPOHAllocations;
+    std::atomic<int> _failures;
 };

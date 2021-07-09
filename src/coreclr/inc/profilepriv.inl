@@ -1872,7 +1872,7 @@ inline BOOL CORProfilerTrackPinnedAllocations()
 
     return
             (CORProfilerPresent() &&
-            ((&g_profControlBlock)->dwEventMaskHigh & COR_PRF_HIGH_MONITOR_PINNEDOBJECT_ALLOCATED));
+            (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_PINNEDOBJECT_ALLOCATED));
 }
 
 inline BOOL CORProfilerEnableRejit()
