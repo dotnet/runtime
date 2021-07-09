@@ -451,7 +451,7 @@ namespace System
 
             if (tzDirectory == null)
             {
-                tzDirectory = _defaultTimeZoneDirectory;
+                tzDirectory = DefaultTimeZoneDirectory;
             }
             else if (!tzDirectory.EndsWith(Path.DirectorySeparatorChar))
             {
