@@ -23,6 +23,7 @@ namespace Microsoft.Workload.Build.Tasks
         private PackageInstaller(string nugetConfigContents, TaskLoggingHelper logger)
         {
             _nugetConfigContents = nugetConfigContents;
+
             _logger = logger;
             _tempDir = Path.Combine(Path.GetTempPath(), "install-workload", Path.GetRandomFileName());
             _packagesDir = Path.Combine(_tempDir, "nuget-packages");
@@ -63,6 +64,20 @@ namespace Microsoft.Workload.Build.Tasks
             if (exitCode != 0)
             {
                 LogErrorOrWarning($"Restoring packages failed with exit code: {exitCode}. Output:{Environment.NewLine}{output}", stopOnMissing);
+                return false;
+            }
+
+            IList<(PackageReference, string)> failedToRestore = references
+                                                             .Select(r => (r, Path.Combine(_packagesDir, r.Name.ToLower(), r.Version)))
+                                                             .Where(tuple => !Directory.Exists(tuple.Item2))
+                                                             .ToList();
+
+            if (failedToRestore.Count > 0)
+            {
+                _logger.LogMessage(MessageImportance.Normal, output);
+                foreach ((PackageReference pkgRef, string pkgDir) in failedToRestore)
+                    LogErrorOrWarning($"Could not restore {pkgRef.Name}/{pkgRef.Version} (can't find {pkgDir})", stopOnMissing);
+
                 return false;
             }
 
