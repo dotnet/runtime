@@ -35,6 +35,11 @@
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif
+#if HAVE_STATFS_VFS // Linux
+#include <sys/vfs.h>
+#elif HAVE_STATFS_MOUNT // BSD
+#include <sys/mount.h>
+#endif
 
 #ifdef _AIX
 #include <alloca.h>
@@ -1384,6 +1389,20 @@ static int16_t ConvertLockType(int16_t managedLockType)
             assert_msg(managedLockType == 2, "Unknown Lock Type", (int)managedLockType);
             return F_UNLCK;
     }
+}
+
+int64_t SystemNative_GetFileSystemType(intptr_t fd)
+{
+#if HAVE_STATFS_VFS || HAVE_STATFS_MOUNT
+    int statfsRes;
+    struct statfs statfsArgs;
+    // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
+    // which got deprecated in macOS 10.6, in favor of statfs
+    while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
+    return statfsRes == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
+#else
+    #error "Platform doesn't support fstatfs"
+#endif
 }
 
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)

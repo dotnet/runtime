@@ -11,9 +11,13 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        internal static bool DisableFileLocking { get; } = OperatingSystem.IsBrowser() // #40065: Emscripten does not support file locking
+            || AppContextConfigHelper.GetBooleanConfig("System.IO.DisableFileLocking", "DOTNET_SYSTEM_IO_DISABLEFILELOCKING", defaultValue: false);
+
         // not using bool? as it's not thread safe
         private volatile NullableBool _canSeek = NullableBool.Undefined;
         private bool _deleteOnClose;
+        private bool _isLocked;
 
         public SafeFileHandle() : this(ownsHandle: true)
         {
@@ -121,9 +125,12 @@ namespace Microsoft.Win32.SafeHandles
             // an advisory lock.  This lock should be removed via closing the file descriptor, but close can be
             // interrupted, and we don't retry closes.  As such, we could end up leaving the file locked,
             // which could prevent subsequent usage of the file until this process dies.  To avoid that, we proactively
-            // try to release the lock before we close the handle. (If it's not locked, there's no behavioral
-            // problem trying to unlock it.)
-            Interop.Sys.FLock(handle, Interop.Sys.LockOperations.LOCK_UN); // ignore any errors
+            // try to release the lock before we close the handle.
+            if (_isLocked)
+            {
+                Interop.Sys.FLock(handle, Interop.Sys.LockOperations.LOCK_UN); // ignore any errors
+                _isLocked = false;
+            }
 
             // If DeleteOnClose was requested when constructed, delete the file now.
             // (Unix doesn't directly support DeleteOnClose, so we mimic it here.)
@@ -259,7 +266,7 @@ namespace Microsoft.Win32.SafeHandles
             // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
             // and not atomic with file opening, it's better than nothing.
             Interop.Sys.LockOperations lockOperation = (share == FileShare.None) ? Interop.Sys.LockOperations.LOCK_EX : Interop.Sys.LockOperations.LOCK_SH;
-            if (Interop.Sys.FLock(this, lockOperation | Interop.Sys.LockOperations.LOCK_NB) < 0)
+            if (CanLockTheFile(lockOperation, access) && !(_isLocked = Interop.Sys.FLock(this, lockOperation | Interop.Sys.LockOperations.LOCK_NB) >= 0))
             {
                 // The only error we care about is EWOULDBLOCK, which indicates that the file is currently locked by someone
                 // else and we would block trying to access it.  Other errors, such as ENOTSUP (locking isn't supported) or
@@ -317,6 +324,40 @@ namespace Microsoft.Win32.SafeHandles
                         path,
                         preallocationSize));
                 }
+            }
+        }
+
+        private bool CanLockTheFile(Interop.Sys.LockOperations lockOperation, FileAccess access)
+        {
+            Debug.Assert(lockOperation == Interop.Sys.LockOperations.LOCK_EX || lockOperation == Interop.Sys.LockOperations.LOCK_SH);
+
+            if (DisableFileLocking)
+            {
+                return false;
+            }
+            else if (lockOperation == Interop.Sys.LockOperations.LOCK_EX)
+            {
+                return true; // LOCK_EX is always OK
+            }
+            else if ((access & FileAccess.Write) == 0)
+            {
+                return true; // LOCK_SH is always OK when reading
+            }
+
+            if (!Interop.Sys.TryGetFileSystemType(this, out Interop.Sys.UnixFileSystemTypes unixFileSystemType))
+            {
+                return false; // assume we should not acquire the lock if we don't know the File System
+            }
+
+            switch (unixFileSystemType)
+            {
+                case Interop.Sys.UnixFileSystemTypes.nfs: // #44546
+                case Interop.Sys.UnixFileSystemTypes.smb:
+                case Interop.Sys.UnixFileSystemTypes.smb2: // #53182
+                case Interop.Sys.UnixFileSystemTypes.cifs:
+                    return false; // LOCK_SH is not OK when writing to NFS, CIFS or SMB
+                default:
+                    return true; // in all other situations it should be OK
             }
         }
 
