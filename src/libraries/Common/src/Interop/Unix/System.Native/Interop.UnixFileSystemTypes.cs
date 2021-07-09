@@ -108,6 +108,7 @@ internal static partial class Interop
             securityfs = 0x73636673,
             selinux = 0xF97CFF8C,
             smb = 0x517B,
+            smb2 = 0xFE534D42,
             sockfs = 0x534F434B,
             squashfs = 0x73717368,
             sysfs = 0x62656572,

@@ -352,8 +352,8 @@ namespace Microsoft.Win32.SafeHandles
             {
                 case Interop.Sys.UnixFileSystemTypes.nfs:
                 case Interop.Sys.UnixFileSystemTypes.smb:
+                case Interop.Sys.UnixFileSystemTypes.smb2: // (#53182)
                 case Interop.Sys.UnixFileSystemTypes.cifs:
-                // case 0xFE534D42: // SMB2_SUPER_MAGIC (#53182)
                     return false; // LOCK_SH is not OK when writing to NFS, CIFS or SMB
                 default:
                     return true; // in all other situations it should be OK
