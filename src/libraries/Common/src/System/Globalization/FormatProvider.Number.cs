@@ -517,14 +517,6 @@ namespace System.Globalization
                             {
                                 exp = exp * 10 + (ch - '0');
                                 ch = ++p < strEnd ? *p : '\0';
-                                if (exp > 1000)
-                                {
-                                    exp = 9999;
-                                    while (ch >= '0' && ch <= '9')
-                                    {
-                                        ch = ++p < strEnd ? *p : '\0';
-                                    }
-                                }
                             } while (ch >= '0' && ch <= '9');
                             if (negExp)
                             {
