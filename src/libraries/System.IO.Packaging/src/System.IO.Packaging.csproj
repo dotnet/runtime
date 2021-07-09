@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <!-- Suppress `string.Contains(char)` offers better performance than `string.Contains(string)` to avoid ifdefs.-->
+    <NoWarn>$(NoWarn);CA1847</NoWarn>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="'$(TargetFramework)' == 'net461'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\IO\Packaging\CompressionOption.cs" />
     <Compile Include="System\IO\Packaging\ContentType.cs" />
@@ -38,6 +42,14 @@
     <Compile Include="System\IO\Packaging\ZipWrappingStream.cs" />
     <Compile Include="System\IO\Packaging\PackUriHelper.PackUriScheme.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Xml.ReaderWriter" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="WindowsBase" />
   </ItemGroup>

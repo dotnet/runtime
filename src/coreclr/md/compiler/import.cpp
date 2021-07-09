@@ -762,7 +762,7 @@ STDMETHODIMP RegMeta::EnumMemberRefs(         // S_OK, S_FALSE, or error.
 
         // set the output parameter
         *ppmdEnum = pEnum;
-        *ppmdEnum = 0;
+        pEnum = NULL;
     }
 
     // fill the output token buffer

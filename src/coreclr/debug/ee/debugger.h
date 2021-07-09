@@ -1047,7 +1047,12 @@ protected:
 //     different part of the address space (not on the heap).
 // ------------------------------------------------------------------------ */
 
-#define DBG_MAX_EXECUTABLE_ALLOC_SIZE 48
+constexpr uint64_t DBG_MAX_EXECUTABLE_ALLOC_SIZE=112;
+constexpr uint64_t EXPECTED_CHUNKSIZE=128;
+constexpr uint64_t DEBUGGERHEAP_PAGESIZE=4096;
+constexpr uint64_t CHUNKS_PER_DEBUGGERHEAP=(DEBUGGERHEAP_PAGESIZE / EXPECTED_CHUNKSIZE);
+constexpr uint64_t MAX_CHUNK_MASK=((1ull << CHUNKS_PER_DEBUGGERHEAP) - 1);
+constexpr uint64_t BOOKKEEPING_CHUNK_MASK (1ull << (CHUNKS_PER_DEBUGGERHEAP - 1));
 
 // Forward declaration
 struct DebuggerHeapExecutableMemoryPage;
@@ -1060,7 +1065,7 @@ struct DebuggerHeapExecutableMemoryPage;
 // for the page, and the remaining ones are DataChunks and are handed out
 // by the allocator when it allocates memory.
 // ------------------------------------------------------------------------ */
-union DECLSPEC_ALIGN(64) DebuggerHeapExecutableMemoryChunk {
+union DECLSPEC_ALIGN(EXPECTED_CHUNKSIZE) DebuggerHeapExecutableMemoryChunk {
 
     struct DataChunk
     {
@@ -1078,13 +1083,14 @@ union DECLSPEC_ALIGN(64) DebuggerHeapExecutableMemoryChunk {
         DebuggerHeapExecutableMemoryPage *nextPage;
 
         uint64_t pageOccupancy;
+        static_assert(CHUNKS_PER_DEBUGGERHEAP <= sizeof(pageOccupancy) * 8,
+            "Our interfaces assume the chunks in a page can be masken on this field");
 
     } bookkeeping;
 
-    char _alignpad[64];
+    char _alignpad[EXPECTED_CHUNKSIZE];
 };
-
-static_assert(sizeof(DebuggerHeapExecutableMemoryChunk) == 64, "DebuggerHeapExecutableMemoryChunk is expect to be 64 bytes.");
+static_assert(sizeof(DebuggerHeapExecutableMemoryChunk) == EXPECTED_CHUNKSIZE, "DebuggerHeapExecutableMemoryChunk is expect to be EXPECTED_CHUNKSIZE bytes.");
 
 // ------------------------------------------------------------------------ */
 // DebuggerHeapExecutableMemoryPage
@@ -1095,7 +1101,7 @@ static_assert(sizeof(DebuggerHeapExecutableMemoryChunk) == 64, "DebuggerHeapExec
 // about which of the other chunks are used/free as well as a pointer to
 // the next page.
 // ------------------------------------------------------------------------ */
-struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
+struct DECLSPEC_ALIGN(DEBUGGERHEAP_PAGESIZE) DebuggerHeapExecutableMemoryPage
 {
     inline DebuggerHeapExecutableMemoryPage* GetNextPage()
     {
@@ -1115,15 +1121,16 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
 
     inline void SetPageOccupancy(uint64_t newOccupancy)
     {
-        // Can't unset first bit of occupancy!
-        ASSERT((newOccupancy & 0x8000000000000000) != 0);
-
+        // Can't unset the bookmark chunk!
+        ASSERT((newOccupancy & BOOKKEEPING_CHUNK_MASK) != 0);
+        ASSERT(newOccupancy <= MAX_CHUNK_MASK);
         ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
         debuggerHeapPageWriterHolder.GetRW()->chunks[0].bookkeeping.pageOccupancy = newOccupancy;
     }
 
     inline void* GetPointerToChunk(int chunkNum) const
     {
+        ASSERT(chunkNum >= 0 && (uint)chunkNum < CHUNKS_PER_DEBUGGERHEAP);
         return (char*)this + chunkNum * sizeof(DebuggerHeapExecutableMemoryChunk);
     }
 
@@ -1131,8 +1138,8 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
     {
         ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
 
-        SetPageOccupancy(0x8000000000000000); // only the first bit is set.
-        for (uint8_t i = 1; i < sizeof(chunks)/sizeof(chunks[0]); i++)
+        SetPageOccupancy(BOOKKEEPING_CHUNK_MASK); // only the first bit is set.
+        for (uint8_t i = 1; i < CHUNKS_PER_DEBUGGERHEAP; i++)
         {
             ASSERT(i != 0);
             debuggerHeapPageWriterHolder.GetRW()->chunks[i].data.startOfPage = this;
@@ -1141,8 +1148,13 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
     }
 
 private:
-    DebuggerHeapExecutableMemoryChunk chunks[64];
+    DebuggerHeapExecutableMemoryChunk chunks[CHUNKS_PER_DEBUGGERHEAP];
+    static_assert(sizeof(chunks) == DEBUGGERHEAP_PAGESIZE,
+        "Expected DebuggerHeapExecutableMemoryPage to have DEBUGGERHEAP_PAGESIZE bytes worth of chunks.");
+
 };
+static_assert(sizeof(DebuggerHeapExecutableMemoryPage) == DEBUGGERHEAP_PAGESIZE,
+    "DebuggerHeapExecutableMemoryPage exceeded the expected size.");
 
 // ------------------------------------------------------------------------ */
 // DebuggerHeapExecutableMemoryAllocator class
@@ -1170,7 +1182,7 @@ private:
 
     DebuggerHeapExecutableMemoryPage* AddNewPage();
     bool CheckPageForAvailability(DebuggerHeapExecutableMemoryPage* page, /* _Out_ */ int* chunkToUse);
-    void* ChangePageUsage(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action);
+    void* GetPointerToChunkWithUsageUpdate(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action);
 
 private:
     // Linked list of pages that have been allocated

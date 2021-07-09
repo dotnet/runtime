@@ -38,15 +38,16 @@ namespace System.Linq
         }
 
         /// <summary>Returns the element at a specified index in a sequence.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
         /// <param name="source">An <see cref="IEnumerable{T}" /> to return an element from.</param>
         /// <param name="index">The index of the element to retrieve, which is either from the start or the end.</param>
-        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="source" /> is <see langword="null" />.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="index" /> is outside the bounds of the <paramref name="source" /> sequence.
-        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> is outside the bounds of the <paramref name="source" /> sequence.</exception>
         /// <returns>The element at the specified position in the <paramref name="source" /> sequence.</returns>
+        /// <remarks>
+        /// <para>If the type of <paramref name="source" /> implements <see cref="IList{T}" />, that implementation is used to obtain the element at the specified index. Otherwise, this method obtains the specified element.</para>
+        /// <para>This method throws an exception if <paramref name="index" /> is out of range. To instead return a default value when the specified index is out of range, use the <see cref="O:Enumerable.ElementAtOrDefault" /> method.</para>
+        /// </remarks>
         public static TSource ElementAt<TSource>(this IEnumerable<TSource> source, Index index)
         {
             if (source == null)
@@ -95,15 +96,15 @@ namespace System.Linq
         }
 
         /// <summary>Returns the element at a specified index in a sequence or a default value if the index is out of range.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
         /// <param name="source">An <see cref="IEnumerable{T}" /> to return an element from.</param>
         /// <param name="index">The index of the element to retrieve, which is either from the start or the end.</param>
-        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="source" /> is <see langword="null" />.
-        /// </exception>
-        /// <returns>
-        ///   <see langword="default" /> if <paramref name="index" /> is outside the bounds of the <paramref name="source" /> sequence; otherwise, the element at the specified position in the <paramref name="source" /> sequence.
-        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <returns><see langword="default" /> if <paramref name="index" /> is outside the bounds of the <paramref name="source" /> sequence; otherwise, the element at the specified position in the <paramref name="source" /> sequence.</returns>
+        /// <remarks>
+        /// <para>If the type of <paramref name="source" /> implements <see cref="IList{T}" />, that implementation is used to obtain the element at the specified index. Otherwise, this method obtains the specified element.</para>
+        /// <para>The default value for reference and nullable types is <see langword="null" />.</para>
+        /// </remarks>
         public static TSource? ElementAtOrDefault<TSource>(this IEnumerable<TSource> source, Index index)
         {
             if (source == null)

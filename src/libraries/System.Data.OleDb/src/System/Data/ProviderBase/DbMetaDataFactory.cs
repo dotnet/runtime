@@ -130,10 +130,6 @@ namespace System.Data.ProviderBase
             DataColumn collectionNameColumn = metaDataCollectionsTable.Columns[_collectionName]!;
             //DataColumn  restrictionNameColumn = metaDataCollectionsTable.Columns[_restrictionName];
 
-            DataTable? resultTable = null;
-            DbCommand? command = null;
-            DataTable? schemaTable = null;
-
             Debug.Assert(requestedCollectionRow != null);
             string sqlCommand = (requestedCollectionRow[populationStringColumn, DataRowVersion.Current] as string)!;
             int numberOfRestrictions = (int)requestedCollectionRow[numberOfRestrictionsColumn, DataRowVersion.Current];
@@ -144,10 +140,11 @@ namespace System.Data.ProviderBase
                 throw ADP.TooManyRestrictions(collectionName);
             }
 
-            command = connection.CreateCommand();
+            DbCommand? command = connection.CreateCommand();
             command.CommandText = sqlCommand;
             command.CommandTimeout = System.Math.Max(command.CommandTimeout, 180);
 
+            DataTable? resultTable = null;
             for (int i = 0; i < numberOfRestrictions; i++)
             {
                 DbParameter restrictionParameter = command.CreateParameter();
@@ -190,8 +187,8 @@ namespace System.Data.ProviderBase
                 resultTable = new DataTable(collectionName);
                 resultTable.Locale = CultureInfo.InvariantCulture;
 
-                schemaTable = reader.GetSchemaTable();
-                foreach (DataRow row in schemaTable.Rows)
+                DataTable? schemaTable = reader.GetSchemaTable();
+                foreach (DataRow row in schemaTable!.Rows)
                 {
                     resultTable.Columns.Add(row["ColumnName"] as string, (Type)row["DataType"]);
                 }
@@ -210,6 +207,7 @@ namespace System.Data.ProviderBase
                     reader = null;
                 }
             }
+
             return resultTable;
         }
 

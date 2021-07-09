@@ -4284,10 +4284,8 @@ add_jit_icall_wrapper (MonoAotCompile *acfg, MonoJitICallInfo *callinfo)
 static void
 add_lazy_init_wrappers (MonoAotCompile *acfg)
 {
-	add_method (acfg, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD));
-	add_method (acfg, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD_GSHARED_MRGCTX));
-	add_method (acfg, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD_GSHARED_VTABLE));
-	add_method (acfg, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD_GSHARED_THIS));
+	for (int i = 0; i < AOT_INIT_METHOD_NUM; ++i)
+		add_method (acfg, mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype)i));
 }
 
 #endif
@@ -8240,7 +8238,7 @@ parse_cpu_features (const gchar *attr)
 	// if we disable a feature from the SSE-AVX tree we also need to disable all dependencies
 	if (!enabled && (feature & MONO_CPU_X86_FULL_SSEAVX_COMBINED))
 		feature = (MonoCPUFeatures) (MONO_CPU_X86_FULL_SSEAVX_COMBINED & ~feature);
-	
+
 #elif defined(TARGET_ARM64)
 	// MONO_CPU_ARM64_BASE is unconditionally set in mini_get_cpu_features.
 	if (!strcmp (attr + prefix, "crc"))
@@ -8249,6 +8247,10 @@ parse_cpu_features (const gchar *attr)
 		feature = MONO_CPU_ARM64_CRYPTO;
 	else if (!strcmp (attr + prefix, "neon"))
 		feature = MONO_CPU_ARM64_NEON;
+	else if (!strcmp (attr + prefix, "rdm"))
+		feature = MONO_CPU_ARM64_RDM;
+	else if (!strcmp (attr + prefix, "dotprod"))
+		feature = MONO_CPU_ARM64_DP;
 #elif defined(TARGET_WASM)
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\CompilerServices\IDispatchConstantAttribute.cs" />
@@ -33,6 +33,9 @@
     <Compile Include="System\Runtime\InteropServices\ImportedFromTypeLibAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ManagedToNativeComInteropStubAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\PosixSignal.cs" />
+    <Compile Include="System\Runtime\InteropServices\PosixSignalContext.cs" />
+    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistration.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationClassContext.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationConnectionType.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironment.cs" />
@@ -47,6 +50,26 @@
     <Compile Include="System\Runtime\InteropServices\TypeLibVersionAttribute.cs" />
     <Compile Include="System\Security\SecureStringMarshal.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistration.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs" Link="Common\Interop\Unix\Interop.PosixSignal.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InitializeTerminalAndSignalHandling.cs" Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs" Link="Common\CoreLib\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs" Link="Common\Interop\Unix\Interop.IOErrors.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistration.Windows.cs" />
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs" Link="Common\System\IO\Win32Marshal.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs" Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs" Link="Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\PosixSignalRegistration.Unsupported.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />

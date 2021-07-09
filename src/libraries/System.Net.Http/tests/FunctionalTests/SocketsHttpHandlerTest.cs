@@ -985,11 +985,6 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest
-    {
-        public SocketsHttpHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
-    }
-
     public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
@@ -1932,6 +1927,30 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Fact]
+        public void InitialHttp2StreamWindowSize_GetSet_Roundtrips()
+        {
+            using var handler = new SocketsHttpHandler();
+            Assert.Equal(HttpClientHandlerTestBase.DefaultInitialWindowSize, handler.InitialHttp2StreamWindowSize); // default value
+
+            handler.InitialHttp2StreamWindowSize = 1048576;
+            Assert.Equal(1048576, handler.InitialHttp2StreamWindowSize);
+
+            handler.InitialHttp2StreamWindowSize = HttpClientHandlerTestBase.DefaultInitialWindowSize;
+            Assert.Equal(HttpClientHandlerTestBase.DefaultInitialWindowSize, handler.InitialHttp2StreamWindowSize);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(65534)]
+        [InlineData(32 * 1024 * 1024)]
+        public void InitialHttp2StreamWindowSize_InvalidValue_ThrowsArgumentOutOfRangeException(int value)
+        {
+            using var handler = new SocketsHttpHandler();
+            Assert.Throws<ArgumentOutOfRangeException>(() => handler.InitialHttp2StreamWindowSize = value);
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -1971,6 +1990,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(handler.UseProxy);
                 Assert.Null(handler.ConnectCallback);
                 Assert.Null(handler.PlaintextStreamFilter);
+                Assert.Equal(HttpClientHandlerTestBase.DefaultInitialWindowSize, handler.InitialHttp2StreamWindowSize);
 
                 Assert.Throws(expectedExceptionType, () => handler.AllowAutoRedirect = false);
                 Assert.Throws(expectedExceptionType, () => handler.AutomaticDecompression = DecompressionMethods.GZip);
@@ -1992,6 +2012,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws(expectedExceptionType, () => handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests);
                 Assert.Throws(expectedExceptionType, () => handler.ConnectCallback = (context, token) => default);
                 Assert.Throws(expectedExceptionType, () => handler.PlaintextStreamFilter = (context, token) => default);
+                Assert.Throws(expectedExceptionType, () => handler.InitialHttp2StreamWindowSize = 128 * 1024);
             }
         }
     }
@@ -2098,7 +2119,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45204")]
         public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemaningRequestsAreHandledByNewConnection()
         {
             const int MaxConcurrentStreams = 2;
@@ -2274,6 +2294,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Task<HttpResponseMessage> warmUpTask = client.GetAsync(server.Address);
             Http2LoopbackConnection connection = await GetConnection(server, maxConcurrentStreams, readTimeout).WaitAsync(TestHelper.PassingTestTimeout * 2).ConfigureAwait(false);
+
             // Wait until the client confirms MaxConcurrentStreams setting took into effect.
             Task settingAckReceived = connection.SettingAckWaiter;
             while (true)
@@ -3103,7 +3124,6 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
-    // TODO: Many Cookie tests are failing for HTTP3.
     [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     public sealed class SocketsHttpHandlerTest_Cookies_Http3_MsQuic : HttpClientHandlerTest_Cookies
@@ -3138,8 +3158,6 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
-    // TODO: Many cancellation tests are failing for HTTP3.
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_MsQuic : SocketsHttpHandler_Cancellation_Test
     {
@@ -3148,7 +3166,6 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_Mock : SocketsHttpHandler_Cancellation_Test
     {

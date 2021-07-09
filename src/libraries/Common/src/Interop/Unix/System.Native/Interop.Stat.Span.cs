@@ -9,16 +9,12 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        // Unix max paths are typically 1K or 4K UTF-8 bytes, 256 should handle the majority of paths
-        // without putting too much pressure on the stack.
-        private const int StackBufferSize = 256;
-
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Stat", SetLastError = true)]
         internal static extern int Stat(ref byte path, out FileStatus output);
 
         internal static int Stat(ReadOnlySpan<char> path, out FileStatus output)
         {
-            var converter = new ValueUtf8Converter(stackalloc byte[StackBufferSize]);
+            var converter = new ValueUtf8Converter(stackalloc byte[DefaultPathBufferSize]);
             int result = Stat(ref MemoryMarshal.GetReference(converter.ConvertAndTerminateString(path)), out output);
             converter.Dispose();
             return result;
@@ -29,7 +25,7 @@ internal static partial class Interop
 
         internal static int LStat(ReadOnlySpan<char> path, out FileStatus output)
         {
-            var converter = new ValueUtf8Converter(stackalloc byte[StackBufferSize]);
+            var converter = new ValueUtf8Converter(stackalloc byte[DefaultPathBufferSize]);
             int result = LStat(ref MemoryMarshal.GetReference(converter.ConvertAndTerminateString(path)), out output);
             converter.Dispose();
             return result;

@@ -286,6 +286,32 @@ namespace System.Net.Http
         }
 
         /// <summary>
+        /// Defines the initial HTTP2 stream receive window size for all connections opened by the this <see cref="SocketsHttpHandler"/>.
+        /// </summary>
+        /// <remarks>
+        /// Larger the values may lead to faster download speed, but potentially higher memory footprint.
+        /// The property must be set to a value between 65535 and the configured maximum window size, which is 16777216 by default.
+        /// </remarks>
+        public int InitialHttp2StreamWindowSize
+        {
+            get => _settings._initialHttp2StreamWindowSize;
+            set
+            {
+                if (value < HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize || value > GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize)
+                {
+                    string message = SR.Format(
+                        SR.net_http_http2_invalidinitialstreamwindowsize,
+                        HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize,
+                        GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize);
+
+                    throw new ArgumentOutOfRangeException(nameof(InitialHttp2StreamWindowSize), message);
+                }
+                CheckDisposedOrStarted();
+                _settings._initialHttp2StreamWindowSize = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the keep alive ping delay. The client will send a keep alive ping to the server if it
         /// doesn't receive any frames on a connection for this period of time. This property is used together with
         /// <see cref="SocketsHttpHandler.KeepAlivePingTimeout"/> to close broken connections.
@@ -391,21 +417,6 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _settings._plaintextStreamFilter = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the QUIC implementation to be used for HTTP3 requests.
-        /// </summary>
-        public QuicImplementationProvider? QuicImplementationProvider
-        {
-            // !!! NOTE !!!
-            // This is temporary and will not ship.
-            get => _settings._quicImplementationProvider;
-            set
-            {
-                CheckDisposedOrStarted();
-                _settings._quicImplementationProvider = value;
             }
         }
 

@@ -75,4 +75,43 @@
   <data name="InvalidOperation_NoDispIdAttribute" xml:space="preserve">
     <value>Event invocation for COM objects requires event to be attributed with DispIdAttribute.</value>
   </data>
+  <data name="IO_FileExists_Name" xml:space="preserve">
+    <value>The file '{0}' already exists.</value>
+  </data>
+  <data name="IO_FileNotFound" xml:space="preserve">
+    <value>Unable to find the specified file.</value>
+  </data>
+  <data name="IO_FileNotFound_FileName" xml:space="preserve">
+    <value>Could not find file '{0}'.</value>
+  </data>
+  <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
+    <value>Could not find a part of the path.</value>
+  </data>
+  <data name="IO_PathNotFound_Path" xml:space="preserve">
+    <value>Could not find a part of the path '{0}'.</value>
+  </data>
+  <data name="IO_PathTooLong" xml:space="preserve">
+    <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_SharingViolation_File" xml:space="preserve">
+    <value>The process cannot access the file '{0}' because it is being used by another process.</value>
+  </data>
+  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
+    <value>The process cannot access the file because it is being used by another process.</value>
+  </data>
+  <data name="IO_PathTooLong_Path" xml:space="preserve">
+    <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
+    <value>Access to the path '{0}' is denied.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
+    <value>Access to the path is denied.</value>
+  </data>
+  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
+    <value>Specified file length was too large for the file system.</value>
+  </data>
+  <data name="IO_AlreadyExists_Name" xml:space="preserve">
+    <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
+  </data>
 </root>

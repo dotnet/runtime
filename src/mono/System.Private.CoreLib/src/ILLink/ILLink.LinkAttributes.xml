@@ -18,9 +18,6 @@
     <type fullname="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
-    <type fullname="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
-      <attribute internal="RemoveAttributeInstances" />
-    </type>
 
     <!-- System.Runtime.CompilerServices -->
     <type fullname="System.Reflection.AssemblyCompanyAttribute">
@@ -121,7 +118,13 @@
     <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
     <type fullname="System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.SuppressMessageAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">

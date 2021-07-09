@@ -19,6 +19,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<HighLowTemps> HighLowTemps { get; }
         public JsonTypeInfo<MyType> MyType { get; }
         public JsonTypeInfo<MyType2> MyType2 { get; }
+        public JsonTypeInfo<MyTypeWithCallbacks> MyTypeWithCallbacks { get; }
         public JsonTypeInfo<MyIntermediateType> MyIntermediateType { get; }
         public JsonTypeInfo<HighLowTempsImmutable> HighLowTempsImmutable { get; }
         public JsonTypeInfo<RealWorldContextTests.MyNestedClass> MyNestedClass { get; }

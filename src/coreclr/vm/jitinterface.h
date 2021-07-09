@@ -941,6 +941,8 @@ public:
 
 protected :
 
+    void WriteCodeBytes();
+
 #ifdef FEATURE_PGO
     // PGO data
     struct ComputedPgoData

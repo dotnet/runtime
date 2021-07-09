@@ -1442,55 +1442,6 @@ namespace System
             }
         }
 
-        internal sealed class ControlCHandlerRegistrar
-        {
-            private bool _handlerRegistered;
-
-            internal unsafe void Register()
-            {
-                Debug.Assert(s_initialized); // by CancelKeyPress add.
-
-                Debug.Assert(!_handlerRegistered);
-                Interop.Sys.RegisterForCtrl(&OnBreakEvent);
-                _handlerRegistered = true;
-            }
-
-            internal void Unregister()
-            {
-                Debug.Assert(_handlerRegistered);
-                _handlerRegistered = false;
-                Interop.Sys.UnregisterForCtrl();
-            }
-
-            [UnmanagedCallersOnly]
-            private static void OnBreakEvent(Interop.Sys.CtrlCode ctrlCode)
-            {
-                // This is called on the native signal handling thread. We need to move to another thread so
-                // signal handling is not blocked. Otherwise we may get deadlocked when the handler depends
-                // on work triggered from the signal handling thread.
-                // We use a new thread rather than queueing to the ThreadPool in order to prioritize handling
-                // in case the ThreadPool is saturated.
-                Thread handlerThread = new Thread(HandleBreakEvent)
-                {
-                    IsBackground = true,
-                    Name = ".NET Console Break"
-                };
-                handlerThread.Start(ctrlCode);
-            }
-
-            private static void HandleBreakEvent(object? state)
-            {
-                Debug.Assert(state != null);
-                var ctrlCode = (Interop.Sys.CtrlCode)state;
-                ConsoleSpecialKey controlKey = (ctrlCode == Interop.Sys.CtrlCode.Break ? ConsoleSpecialKey.ControlBreak : ConsoleSpecialKey.ControlC);
-                bool cancel = Console.HandleBreakEvent(controlKey);
-                if (!cancel)
-                {
-                    Interop.Sys.RestoreAndHandleCtrl(ctrlCode);
-                }
-            }
-        }
-
         private sealed class ReadOnlyMemoryContentComparer : IEqualityComparer<ReadOnlyMemory<char>>
         {
             public bool Equals(ReadOnlyMemory<char> x, ReadOnlyMemory<char> y) =>

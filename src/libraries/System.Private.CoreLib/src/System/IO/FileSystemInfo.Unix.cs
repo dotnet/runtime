@@ -27,7 +27,7 @@ namespace System.IO
             return info;
         }
 
-        internal void Invalidate() => _fileStatus.InvalidateCaches();
+        internal void InvalidateCore() => _fileStatus.InvalidateCaches();
 
         internal unsafe void Init(ref FileStatus fileStatus)
         {
@@ -63,7 +63,11 @@ namespace System.IO
 
         internal long LengthCore => _fileStatus.GetLength(FullPath);
 
-        public void Refresh() => _fileStatus.RefreshCaches(FullPath);
+        public void Refresh()
+        {
+            _linkTargetIsValid = false;
+            _fileStatus.RefreshCaches(FullPath);
+        }
 
         internal static void ThrowNotFound(string path)
         {

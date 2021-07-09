@@ -238,6 +238,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        [Obsolete(Obsoletions.X509CertificatePrivateKeyMessage, DiagnosticId = Obsoletions.X509CertificatePrivateKeyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public AsymmetricAlgorithm? PrivateKey
         {
             get

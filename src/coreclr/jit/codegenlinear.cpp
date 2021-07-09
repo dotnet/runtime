@@ -395,6 +395,13 @@ void CodeGen::genCodeForBBlist()
         compiler->compCurStmt     = nullptr;
         compiler->compCurLifeTree = nullptr;
 
+        // Emit poisoning into scratch BB that comes right after prolog.
+        // We cannot emit this code in the prolog as it might make the prolog too large.
+        if (compiler->compShouldPoisonFrame() && compiler->fgBBisScratch(block))
+        {
+            genPoisonFrame(newLiveRegSet);
+        }
+
         // Traverse the block in linear order, generating code for each node as we
         // as we encounter it.
         CLANG_FORMAT_COMMENT_ANCHOR;
@@ -1184,12 +1191,12 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             assert(spillType != TYP_UNDEF);
 
 // TODO-Cleanup: The following code could probably be further merged and cleaned up.
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             // Load local variable from its home location.
             // In most cases the tree type will indicate the correct type to use for the load.
             // However, if it is NOT a normalizeOnLoad lclVar (i.e. NOT a small int that always gets
-            // widened when loaded into a register), and its size is not the same as genActualType of
-            // the type of the lclVar, then we need to change the type of the tree node when loading.
+            // widened when loaded into a register), and its size is not the same as the actual register type
+            // of the lclVar, then we need to change the type of the tree node when loading.
             // This situation happens due to "optimizations" that avoid a cast and
             // simply retype the node when using long type lclVar as an int.
             // While loading the int in that case would work for this use of the lclVar, if it is
@@ -1202,13 +1209,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             {
                 assert(!varTypeIsGC(varDsc));
                 spillType = lclActualType;
-            }
-#elif defined(TARGET_ARM64)
-            var_types targetType = unspillTree->gtType;
-            if (spillType != genActualType(varDsc->lvType) && !varTypeIsGC(spillType) && !varDsc->lvNormalizeOnLoad())
-            {
-                assert(!varTypeIsGC(varDsc));
-                spillType = genActualType(varDsc->lvType);
             }
 #elif defined(TARGET_ARM)
 // No normalizing for ARM
@@ -1458,7 +1458,8 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
         LclVarDsc*           varDsc = &compiler->lvaTable[lcl->GetLclNum()];
         if (varDsc->GetRegNum() != REG_STK)
         {
-            inst_Mov(tree->TypeGet(), tree->GetRegNum(), varDsc->GetRegNum(), /* canSkip */ true);
+            var_types regType = varDsc->GetRegisterType(lcl);
+            inst_Mov(regType, tree->GetRegNum(), varDsc->GetRegNum(), /* canSkip */ true);
         }
     }
 

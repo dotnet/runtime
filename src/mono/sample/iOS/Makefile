@@ -1,8 +1,9 @@
-MONO_CONFIG=Debug
-MONO_ARCH=x64
+MONO_CONFIG?=Debug
+MONO_ARCH?=x64
 DOTNET := ../../../../dotnet.sh
 USE_LLVM=true
-AOT=false
+AOT?=false
+TARGET?=iOSSimulator
 
 #If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
 #If RUNTIME_COMPONENTS is enabled, DIAGNOSTIC_PORTS is optional.
@@ -20,7 +21,7 @@ appbuilder:
 	$(DOTNET) build -c Debug $(TOOLS_DIR)/AppleAppBuilder/AppleAppBuilder.csproj
 
 runtimepack:
-	../../../../build.sh Mono+Libs -os iOSSimulator -arch $(MONO_ARCH) -c $(MONO_CONFIG)
+	../../../../build.sh Mono+Libs -os $(TARGET)  -arch $(MONO_ARCH) -c $(MONO_CONFIG)
 
 run: clean appbuilder
 	$(DOTNET) publish \
@@ -40,6 +41,10 @@ run-sim: clean appbuilder
 	/p:ForceAOT=$(AOT) \
 	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"'
+
+build-appbundle: clean appbuilder
+	$(DOTNET) publish -c $(MONO_CONFIG) /p:TargetOS=$(TARGET) /p:TargetArchitecture=$(MONO_ARCH) \
+	/p:UseLLVM=$(USE_LLVM) /p:ForceAOT=$(AOT) /bl \
 
 run-catalyst:
 	$(DOTNET) publish \

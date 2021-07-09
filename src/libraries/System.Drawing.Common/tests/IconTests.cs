@@ -528,7 +528,7 @@ namespace System.Drawing.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/47759", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Save_ClosedOutputStreamNoIconData_DoesNothing()
+        public void Save_ClosedOutputStreamNoIconData()
         {
             using (var source = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
             using (var icon = Icon.FromHandle(source.Handle))
@@ -536,7 +536,16 @@ namespace System.Drawing.Tests
                 var stream = new MemoryStream();
                 stream.Close();
 
-                icon.Save(stream);
+                if (PlatformDetection.IsNetFramework)
+                {
+                    // The ObjectDisposedException is ignored in previous .NET versions,
+                    // so the following does nothing.
+                    icon.Save(stream);
+                }
+                else
+                {
+                    Assert.Throws<ObjectDisposedException>(() => icon.Save(stream));
+                }
             }
         }
 

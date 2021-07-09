@@ -5,7 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <!-- TODO: Remove when the package ships with .NET 6. -->
-    <EnablePackageBaselineValidation>false</EnablePackageBaselineValidation>
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <PackageDescription>Provides non-cryptographic hash algorithms, such as CRC-32.
 
 Commonly Used Types:

@@ -46,6 +46,12 @@ namespace ILCompiler.DependencyAnalysis
         private readonly EcmaModule _componentModule;
 
         /// <summary>
+        /// Compilation input files. Input files are emitted as perfmap entries and used
+        /// to calculate the output GUID of the ReadyToRun executable for symbol indexation.
+        /// </summary>
+        private readonly IEnumerable<string> _inputFiles;
+
+        /// <summary>
         /// Nodes to emit into the output executable as collected by the dependency analysis.
         /// </summary>
         private readonly IEnumerable<DependencyNode> _nodes;
@@ -101,9 +107,9 @@ namespace ILCompiler.DependencyAnalysis
         private string _perfMapPath;
 
         /// <summary>
-        /// MVID of the input managed module to embed in the perfmap file name.
+        /// Requested version of the perfmap file format
         /// </summary>
-        private Guid? _perfMapMvid;
+        private int _perfMapFormatVersion;
 
         /// <summary>
         /// If non-zero, the PE file will be laid out such that it can naturally be mapped with a higher alignment than 4KB.
@@ -132,6 +138,7 @@ namespace ILCompiler.DependencyAnalysis
         public ReadyToRunObjectWriter(
             string objectFilePath,
             EcmaModule componentModule,
+            IEnumerable<string> inputFiles,
             IEnumerable<DependencyNode> nodes,
             NodeFactory factory,
             bool generateMapFile,
@@ -140,13 +147,14 @@ namespace ILCompiler.DependencyAnalysis
             string pdbPath,
             bool generatePerfMapFile,
             string perfMapPath,
-            Guid? perfMapMvid,
+            int perfMapFormatVersion,
             bool generateProfileFile,
             CallChainProfile callChainProfile,
             int customPESectionAlignment)
         {
             _objectFilePath = objectFilePath;
             _componentModule = componentModule;
+            _inputFiles = inputFiles;
             _nodes = nodes;
             _nodeFactory = factory;
             _customPESectionAlignment = customPESectionAlignment;
@@ -156,7 +164,7 @@ namespace ILCompiler.DependencyAnalysis
             _pdbPath = pdbPath;
             _generatePerfMapFile = generatePerfMapFile;
             _perfMapPath = perfMapPath;
-            _perfMapMvid = perfMapMvid;
+            _perfMapFormatVersion = perfMapFormatVersion;
 
             bool generateMap = (generateMapFile || generateMapCsvFile);
             bool generateSymbols = (generatePdbFile || generatePerfMapFile);
@@ -329,6 +337,11 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (_outputInfoBuilder != null)
                 {
+                    foreach (string inputFile in _inputFiles)
+                    {
+                        _outputInfoBuilder.AddInputModule(_nodeFactory.TypeSystemContext.GetModuleFromPath(inputFile));
+                    }
+
                     r2rPeBuilder.AddSections(_outputInfoBuilder);
 
                     if (_generateMapFile)
@@ -361,7 +374,7 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             path = Path.GetDirectoryName(_objectFilePath);
                         }
-                        _symbolFileBuilder.SavePerfMap(path, _objectFilePath, _perfMapMvid);
+                        _symbolFileBuilder.SavePerfMap(path, _perfMapFormatVersion, _objectFilePath, _nodeFactory.Target.OperatingSystem, _nodeFactory.Target.Architecture);
                     }
 
                     if (_profileFileBuilder != null)
@@ -430,6 +443,7 @@ namespace ILCompiler.DependencyAnalysis
         public static void EmitObject(
             string objectFilePath,
             EcmaModule componentModule,
+            IEnumerable<string> inputFiles,
             IEnumerable<DependencyNode> nodes,
             NodeFactory factory,
             bool generateMapFile,
@@ -438,7 +452,7 @@ namespace ILCompiler.DependencyAnalysis
             string pdbPath,
             bool generatePerfMapFile,
             string perfMapPath,
-            Guid? perfMapMvid,
+            int perfMapFormatVersion,
             bool generateProfileFile,
             CallChainProfile callChainProfile,
             int customPESectionAlignment)
@@ -447,6 +461,7 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(
                 objectFilePath,
                 componentModule,
+                inputFiles,
                 nodes,
                 factory,
                 generateMapFile: generateMapFile,
@@ -455,7 +470,7 @@ namespace ILCompiler.DependencyAnalysis
                 pdbPath: pdbPath,
                 generatePerfMapFile: generatePerfMapFile,
                 perfMapPath: perfMapPath,
-                perfMapMvid: perfMapMvid,
+                perfMapFormatVersion: perfMapFormatVersion,
                 generateProfileFile: generateProfileFile,
                 callChainProfile,
                 customPESectionAlignment);

@@ -8676,8 +8676,10 @@ void emitter::emitDispIns(
     if (code != nullptr)
     {
         /* Display the instruction hex code */
+        assert(((code >= emitCodeBlock) && (code < emitCodeBlock + emitTotalHotCodeSize)) ||
+               ((code >= emitColdCodeBlock) && (code < emitColdCodeBlock + emitTotalColdCodeSize)));
 
-        emitDispInsHex(id, code, sz);
+        emitDispInsHex(id, code + writeableOffset, sz);
     }
 
     /* Display the instruction name */

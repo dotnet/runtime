@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using Xunit;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0, NaN from -NaN
@@ -349,15 +350,12 @@ namespace System.Tests
 
         internal static string SplitPairs(string input)
         {
-            string[] splitPairs = input.Split('-');
-            string ret = "";
-            foreach (var pair in splitPairs)
+            if (!BitConverter.IsLittleEndian)
             {
-                string reversedPair = Reverse(pair);
-                ret += reversedPair;
+                return input.Replace("-", "");
             }
 
-            return ret;
+            return string.Concat(input.Split('-').Select(pair => Reverse(pair)));
         }
 
         internal static string Reverse(string s)
