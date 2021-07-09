@@ -9,14 +9,32 @@ namespace System.Tests
     public class PosixSignalContextTests
     {
         [Theory]
-        [InlineData(0)]
-        [InlineData(3)]
-        [InlineData(-1000)]
-        [InlineData(1000)]
-        public void Constructor(int value)
+        [InlineData(PosixSignal.SIGINT)]
+        [InlineData((PosixSignal)0)]
+        [InlineData((PosixSignal)1000)]
+        [InlineData((PosixSignal)(-1000))]
+        public void Constructor(PosixSignal value)
         {
-            var ctx = new PosixSignalContext((PosixSignal)value);
-            Assert.Equal(value, (int)ctx.Signal);
+            var ctx = new PosixSignalContext(value);
+            Assert.Equal(value, ctx.Signal);
+            Assert.False(ctx.Cancel);
+        }
+
+        [Fact]
+        public void Cancel_Roundtrips()
+        {
+            var ctx = new PosixSignalContext(PosixSignal.SIGINT);
+            Assert.Equal(PosixSignal.SIGINT, ctx.Signal);
+            Assert.False(ctx.Cancel);
+
+            for (int i = 0; i < 2; i++)
+            {
+                ctx.Cancel = true;
+                Assert.True(ctx.Cancel);
+
+                ctx.Cancel = false;
+                Assert.False(ctx.Cancel);
+            }
         }
     }
 }

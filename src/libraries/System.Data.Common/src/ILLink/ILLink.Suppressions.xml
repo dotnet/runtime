@@ -5,18 +5,6 @@
       <argument>ILLink</argument>
       <argument>IL2026</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.Data.ColumnTypeConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext,System.Globalization.CultureInfo,System.Object,System.Type)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2060</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Data.DataRowExtensions.UnboxT`1.Create</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
       <property name="Target">M:System.Data.DataSet.GetObjectData(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
@@ -60,12 +48,6 @@
       <argument>IL2026</argument>
       <property name="Scope">member</property>
       <property name="Target">M:System.Data.DataTable.WriteXmlCore(System.Xml.XmlWriter)</property>
-    </attribute>
-    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
-      <argument>ILLink</argument>
-      <argument>IL2026</argument>
-      <property name="Scope">member</property>
-      <property name="Target">M:System.Data.DataView.SetRowFilter(System.String)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>
