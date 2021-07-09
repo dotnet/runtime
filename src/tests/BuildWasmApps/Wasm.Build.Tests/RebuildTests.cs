@@ -30,7 +30,10 @@ namespace Wasm.Build.Tests
             bool dotnetWasmFromRuntimePack = !nativeRelink && !buildArgs.AOT;
 
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>");
+            
+            string nodeArgs = $"<ForNode>{(host == RunHost.NodeJS) ? "true" : "false"}</ForNode>";
+            string buildNative = $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>";
+            buildArgs = ExpandBuildArgs(buildArgs, $"{buildNative}\n{nodeArgs}");
 
             BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
