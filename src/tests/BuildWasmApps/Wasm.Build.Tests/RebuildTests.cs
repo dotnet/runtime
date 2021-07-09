@@ -31,7 +31,7 @@ namespace Wasm.Build.Tests
 
             buildArgs = buildArgs with { ProjectName = projectName };
             
-            string nodeArgs = $"<ForNode>{(host == RunHost.NodeJS) ? "true" : "false"}</ForNode>";
+            string nodeArgs = $"<ForNode>{(host == RunHost.NodeJS ? "true" : "false")}</ForNode>";
             string buildNative = $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>";
             buildArgs = ExpandBuildArgs(buildArgs, $"{buildNative}\n{nodeArgs}");
 
