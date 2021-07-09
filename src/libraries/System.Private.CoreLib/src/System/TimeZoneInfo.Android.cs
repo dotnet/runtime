@@ -245,15 +245,18 @@ namespace System
                 public int unused; // Was raw GMT offset; always 0 since tzdata2014f (L).
             }
 
-            private string[]? _ids;
-            private int[]? _byteOffsets;
-            private int[]? _lengths;
+            private string[] _ids;
+            private int[] _byteOffsets;
+            private int[] _lengths;
 
             public AndroidTzData()
             {
                 ReadHeader(GetTimeZoneDirectory() + TimeZoneFileName);
             }
 
+            [MemberNotNull(nameof(_ids))]
+            [MemberNotNull(nameof(_byteOffsets))]
+            [MemberNotNull(nameof(_lengths))]
             private unsafe void ReadHeader(string tzFilePath)
             {
                 int size = Math.Max(Marshal.SizeOf(typeof(AndroidTzDataHeader)), Marshal.SizeOf(typeof(AndroidTzDataEntry)));
@@ -328,6 +331,9 @@ namespace System
                 return len;
             }
 
+            [MemberNotNull(nameof(_ids))]
+            [MemberNotNull(nameof(_byteOffsets))]
+            [MemberNotNull(nameof(_lengths))]
             private unsafe void ReadIndex(string tzFilePath, int indexOffset, int dataOffset, Span<byte> buffer)
             {
                 int indexSize = dataOffset - indexOffset;
