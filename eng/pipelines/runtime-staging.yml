@@ -354,7 +354,7 @@ jobs:
       timeoutInMinutes: 90
 
 #
-# Build Browser_wasm, on windows, run browser tests
+# Build Browser_wasm, on windows, run console and browser tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -388,6 +388,7 @@ jobs:
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
         extraHelixArguments: /p:BrowserHost=windows
         scenarios:
+        - normal
         - wasmtestonbrowser
         condition: >-
           or(
