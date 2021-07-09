@@ -48,7 +48,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                             break;
                         }
                     }
-                    catch { };
+                    catch { }
                 }
             }
 

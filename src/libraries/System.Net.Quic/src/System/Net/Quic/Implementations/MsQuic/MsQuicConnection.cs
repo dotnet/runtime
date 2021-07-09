@@ -141,6 +141,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (_remoteCertificateRequired)
             {
                 // We need to link connection for the validation callback.
+                // We need to be able to find the connection in HandleEventPeerCertificateReceived
+                // and dispatch it as sender to validation callback.
+                // After that Connection will be set back to null.
                 _state.Connection = this;
             }
 
