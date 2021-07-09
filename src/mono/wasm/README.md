@@ -47,6 +47,10 @@ If `EMSDK_PATH` is not set, the `emsdk` should be provisioned automatically duri
 
 The latest engines can be installed with jsvu (JavaScript engine Version Updater https://github.com/GoogleChromeLabs/jsvu)
 
+## Installation of NodeJS
+
+To run in NodeJS you will need to have both [NodeJS and NPM](https://nodejs.org/en/download/) installed and added to your PATH. 
+
 ### Mac
 
 * Install npm with brew:

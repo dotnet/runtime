@@ -24,6 +24,8 @@ e.g. for V8
 ```bash
 PATH=/Users/<your_user>/.jsvu/:$PATH V8
 ```
+### Using NodeJS
+To run in NodeJS you will need to have both [NodeJS and NPM](https://nodejs.org/en/download/) installed and added to your PATH. 
 
 ### Using Browser Instance
 It's possible to run tests in a browser instance:
@@ -56,8 +58,10 @@ and even run tests one by one for each library:
 ./build.sh libs.tests -test -os Browser -c Release
 ```
 
+**Note:** To use the Node environment append the following switches to your commands `/p:ForNode=true /p:JSEngine=NodeJS`. The first make the build to build for Node and the second will make make the test runner (XHarness) use the NodeJS engine.
+
 ### Running individual test suites using JavaScript engine
-The following shows how to run tests for a specific library
+The following shows how to run tests for a specific library on v8
 ```
 ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release
 ```
@@ -80,6 +84,7 @@ At the moment supported values are:
 - `V8`
 - `JavaScriptCore`
 - `SpiderMonkey`
+- `NodeJS` (will also require you to add the `/p:ForNode=true` and `/p:JSEngine=NodeJS` switches to work properly)
 
 By default, `V8` engine is used.
 

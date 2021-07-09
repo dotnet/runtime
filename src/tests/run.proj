@@ -325,7 +325,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <ItemGroup>
       <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)" />
-      <AllCMDsPresent Remove="$(_CMDDIR)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
+      <AllCMDsPresent Remove="$(_CMDDIR)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm' and '$(ForNode)' != 'true'" />
+      <AllCMDsPresent Remove="$(_CMDDIR)\**\run-node.sh" Condition="'$(TargetArchitecture)' == 'wasm' and '$(ForNode)' == 'true'" />
       <TestGroupingDistinctWithCase Include="@(TestGrouping->Metadata('FullPath')->DistinctWithCase())" />
       <TestGroupingNotRelevant Include="@(TestGroupingDistinctWithCase)" Exclude="@(AllCMDsPresent)" />
       <GroupedCMDs Include="@(TestGroupingDistinctWithCase)" Exclude="@(TestGroupingNotRelevant)" />
@@ -706,7 +707,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.$(TestScriptExtension)"/>
-      <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
+      <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm' and '$(ForNode)' != 'true'" />
+      <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-node.sh" Condition="'$(TargetArchitecture)' == 'wasm' and '$(ForNode)' == 'true'" />
     </ItemGroup>
   </Target>
 
