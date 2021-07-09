@@ -47,15 +47,16 @@ namespace Microsoft.Workload.Build.Tasks
                 return false;
             }
 
-            Log.LogMessage(MessageImportance.Normal, $"{Environment.NewLine}** Installing workload {WorkloadId.ItemSpec} **{Environment.NewLine}");
+            Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** Installing workload manifest {WorkloadId.ItemSpec} **{Environment.NewLine}");
 
             string nugetConfigContents = GetNuGetConfig();
-            if (!InstallWorkloadManifest(WorkloadId.GetMetadata("ManifestName"), WorkloadId.GetMetadata("Version"), nugetConfigContents))
+            if (!InstallWorkloadManifest(WorkloadId.GetMetadata("ManifestName"), WorkloadId.GetMetadata("Version"), nugetConfigContents, stopOnMissing: true))
                 return false;
 
             string nugetConfigPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             File.WriteAllText(nugetConfigPath, nugetConfigContents);
 
+            Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** workload install **{Environment.NewLine}");
             (int exitCode, string output) = Utils.TryRunProcess(
                                                     Path.Combine(SdkDir, "dotnet"),
                                                     $"workload install --skip-manifest-update --no-cache --configfile {nugetConfigPath} {WorkloadId.ItemSpec}",
@@ -94,7 +95,7 @@ namespace Microsoft.Workload.Build.Tasks
             return nugetConfigBuilder.ToString();
         }
 
-        private bool InstallWorkloadManifest(string name, string version, string nugetConfigContents)
+        private bool InstallWorkloadManifest(string name, string version, string nugetConfigContents, bool stopOnMissing)
         {
             Log.LogMessage(MessageImportance.High, $"Installing workload manifest for {name}/{version}");
             PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBand}",
@@ -102,7 +103,7 @@ namespace Microsoft.Workload.Build.Tasks
                                           OutputDir: Path.Combine(SdkDir, "sdk-manifests", VersionBand, name),
                                           relativeSourceDir: "data");
 
-            if (!PackageInstaller.Install(new[]{ pkgRef }, nugetConfigContents, Log, stopOnMissing: false))
+            if (!PackageInstaller.Install(new[]{ pkgRef }, nugetConfigContents, Log, stopOnMissing))
                 return false;
 
             string manifestDir = pkgRef.OutputDir;
@@ -140,7 +141,7 @@ namespace Microsoft.Workload.Build.Tasks
             {
                 foreach ((string depName, string depVersion) in manifest.DependsOn)
                 {
-                    if (!InstallWorkloadManifest(depName, depVersion, nugetConfigContents))
+                    if (!InstallWorkloadManifest(depName, depVersion, nugetConfigContents, stopOnMissing: false))
                     {
                         Log.LogWarning($"Could not install manifest {depName}/{depVersion}. This can be ignored if the workload {WorkloadId.ItemSpec} doesn't depend on it.");
                         continue;
