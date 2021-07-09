@@ -531,6 +531,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
             {
                 des.Mode = cipherMode;
                 des.Padding = paddingMode;
+                des.Key = key;
 
                 if (feedbackSize.HasValue)
                 {
@@ -542,15 +543,18 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
 
                 if (cipherMode == CipherMode.ECB)
                 {
-                    des.Key = key;
                     liveOneShotDecryptBytes = des.DecryptEcb(cipherBytes, paddingMode);
                     liveOneShotEncryptBytes = des.EncryptEcb(plainBytes, paddingMode);
                 }
                 else if (cipherMode == CipherMode.CBC)
                 {
-                    des.Key = key;
                     liveOneShotDecryptBytes = des.DecryptCbc(cipherBytes, iv, paddingMode);
                     liveOneShotEncryptBytes = des.EncryptCbc(plainBytes, iv, paddingMode);
+                }
+                else if (cipherMode == CipherMode.CFB)
+                {
+                    liveOneShotDecryptBytes = des.DecryptCfb(cipherBytes, iv, paddingMode, feedbackSizeInBits: feedbackSize.Value);
+                    liveOneShotEncryptBytes = des.EncryptCfb(plainBytes, iv, paddingMode, feedbackSizeInBits: feedbackSize.Value);
                 }
             }
 
