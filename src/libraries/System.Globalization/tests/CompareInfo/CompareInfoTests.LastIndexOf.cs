@@ -151,6 +151,7 @@ namespace System.Globalization.Tests
         [Theory]
         [MemberData(nameof(LastIndexOf_TestData))]
         [MemberData(nameof(LastIndexOf_U_WithDiaeresis_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void LastIndexOf_String(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int expected, int expectedMatchLength)
         {
             if (value.Length == 1)

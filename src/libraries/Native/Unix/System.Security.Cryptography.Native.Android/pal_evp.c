@@ -30,15 +30,15 @@ static jobject GetMessageDigestInstance(JNIEnv* env, intptr_t type)
 {
     jobject mdName = NULL;
     if (type == CryptoNative_EvpSha1())
-        mdName = JSTRING("SHA-1");
+        mdName = make_java_string(env, "SHA-1");
     else if (type == CryptoNative_EvpSha256())
-        mdName = JSTRING("SHA-256");
+        mdName = make_java_string(env, "SHA-256");
     else if (type == CryptoNative_EvpSha384())
-        mdName = JSTRING("SHA-384");
+        mdName = make_java_string(env, "SHA-384");
     else if (type == CryptoNative_EvpSha512())
-        mdName = JSTRING("SHA-512");
+        mdName = make_java_string(env, "SHA-512");
     else if (type == CryptoNative_EvpMd5())
-        mdName = JSTRING("MD5");
+        mdName = make_java_string(env, "MD5");
     else
         return NULL;
 
@@ -50,6 +50,8 @@ static jobject GetMessageDigestInstance(JNIEnv* env, intptr_t type)
 
 int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourceSize, uint8_t* md, uint32_t* mdSize)
 {
+    abort_if_invalid_pointer_argument (source);
+
     if (!type || !md || !mdSize || sourceSize < 0)
         return FAIL;
 
@@ -59,10 +61,10 @@ int32_t CryptoNative_EvpDigestOneShot(intptr_t type, void* source, int32_t sourc
     if (!mdObj)
         return FAIL;
 
-    jbyteArray bytes = (*env)->NewByteArray(env, sourceSize);
+    jbyteArray bytes = make_java_byte_array(env, sourceSize);
     (*env)->SetByteArrayRegion(env, bytes, 0, sourceSize, (jbyte*) source);
     jbyteArray hashedBytes = (jbyteArray)(*env)->CallObjectMethod(env, mdObj, g_mdDigestWithInputBytes, bytes);
-    assert(hashedBytes && "MessageDigest.digest(...) was not expected to return null");
+    abort_unless(hashedBytes != NULL, "MessageDigest.digest(...) was not expected to return null");
 
     jsize hashedBytesLen = (*env)->GetArrayLength(env, hashedBytes);
     (*env)->GetByteArrayRegion(env, hashedBytes, 0, hashedBytesLen, (jbyte*) md);
@@ -83,7 +85,7 @@ jobject CryptoNative_EvpMdCtxCreate(intptr_t type)
 
 int32_t CryptoNative_EvpDigestReset(jobject ctx, intptr_t type)
 {
-    assert(ctx != NULL);
+    abort_if_invalid_pointer_argument (ctx);
 
     JNIEnv* env = GetJNIEnv();
     (*env)->CallVoidMethod(env, ctx, g_mdReset);
@@ -93,10 +95,12 @@ int32_t CryptoNative_EvpDigestReset(jobject ctx, intptr_t type)
 
 int32_t CryptoNative_EvpDigestUpdate(jobject ctx, void* d, int32_t cnt)
 {
-    assert(ctx != NULL);
+    abort_if_invalid_pointer_argument (ctx);
+    if(cnt > 0)
+        abort_if_invalid_pointer_argument (d);
     JNIEnv* env = GetJNIEnv();
 
-    jbyteArray bytes = (*env)->NewByteArray(env, cnt);
+    jbyteArray bytes = make_java_byte_array(env, cnt);
     (*env)->SetByteArrayRegion(env, bytes, 0, cnt, (jbyte*) d);
     (*env)->CallVoidMethod(env, ctx, g_mdUpdate, bytes);
     (*env)->DeleteLocalRef(env, bytes);
@@ -106,9 +110,11 @@ int32_t CryptoNative_EvpDigestUpdate(jobject ctx, void* d, int32_t cnt)
 
 static int32_t DigestFinal(JNIEnv* env, jobject ctx, uint8_t* md, uint32_t* s)
 {
+    abort_if_invalid_pointer_argument (md);
+
     // ctx.digest();
     jbyteArray bytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx, g_mdDigest);
-    assert(bytes && "digest() was not expected to return null");
+    abort_unless(bytes != NULL, "digest() was not expected to return null");
     jsize bytesLen = (*env)->GetArrayLength(env, bytes);
     *s = (uint32_t)bytesLen;
     (*env)->GetByteArrayRegion(env, bytes, 0, bytesLen, (jbyte*) md);
@@ -118,7 +124,7 @@ static int32_t DigestFinal(JNIEnv* env, jobject ctx, uint8_t* md, uint32_t* s)
 
 int32_t CryptoNative_EvpDigestFinalEx(jobject ctx, uint8_t* md, uint32_t* s)
 {
-    assert(ctx != NULL);
+    abort_if_invalid_pointer_argument (ctx);
 
     JNIEnv* env = GetJNIEnv();
     return DigestFinal(env, ctx, md, s);
@@ -126,7 +132,7 @@ int32_t CryptoNative_EvpDigestFinalEx(jobject ctx, uint8_t* md, uint32_t* s)
 
 int32_t CryptoNative_EvpDigestCurrent(jobject ctx, uint8_t* md, uint32_t* s)
 {
-    assert(ctx != NULL);
+    abort_if_invalid_pointer_argument (ctx);
 
     JNIEnv* env = GetJNIEnv();
     int32_t ret = FAIL;

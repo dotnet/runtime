@@ -561,7 +561,7 @@ namespace System.Net.Sockets.Tests
                 const int acceptBufferSize = acceptBufferOverheadSize + acceptBufferDataSize;
 
                 byte[] sendBuffer = new byte[acceptBufferDataSize];
-                new Random().NextBytes(sendBuffer);
+                Random.Shared.NextBytes(sendBuffer);
 
                 SocketAsyncEventArgs acceptArgs = new SocketAsyncEventArgs();
                 acceptArgs.Completed += OnAcceptCompleted;
@@ -577,18 +577,13 @@ namespace System.Net.Sockets.Tests
                     client.Shutdown(SocketShutdown.Both);
                 }
 
-                Assert.True(
-                    accepted.WaitOne(TestSettings.PassingTestTimeout), "Test completed in allotted time");
+                Assert.True(accepted.WaitOne(TestSettings.PassingTestTimeout), "Test completed in allotted time");
 
-                Assert.Equal(
-                    SocketError.Success, acceptArgs.SocketError);
+                Assert.Equal(SocketError.Success, acceptArgs.SocketError);
 
-                Assert.Equal(
-                    acceptBufferDataSize, acceptArgs.BytesTransferred);
+                Assert.Equal(acceptBufferDataSize, acceptArgs.BytesTransferred);
 
-                Assert.Equal(
-                    new ArraySegment<byte>(sendBuffer),
-                    new ArraySegment<byte>(acceptArgs.Buffer, 0, acceptArgs.BytesTransferred));
+                AssertExtensions.SequenceEqual(sendBuffer, acceptArgs.Buffer.AsSpan().Slice(0, acceptArgs.BytesTransferred));
             }
         }
 

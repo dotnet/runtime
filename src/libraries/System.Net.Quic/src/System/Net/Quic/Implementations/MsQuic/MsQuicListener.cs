@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -21,8 +22,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private GCHandle _stateHandle;
         private volatile bool _disposed;
 
-        private IPEndPoint _listenEndPoint;
-        private readonly List<SslApplicationProtocol> _applicationProtocols;
+        private readonly IPEndPoint _listenEndPoint;
 
         private sealed class State
         {
@@ -46,9 +46,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal MsQuicListener(QuicListenerOptions options)
         {
-            _applicationProtocols = options.ServerAuthenticationOptions!.ApplicationProtocols!;
-            _listenEndPoint = options.ListenEndPoint!;
-
             _state = new State(options);
             _stateHandle = GCHandle.Alloc(_state);
             try
@@ -63,10 +60,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch
             {
-                _state.Handle?.Dispose();
                 _stateHandle.Free();
                 throw;
             }
+
+            _listenEndPoint = Start(options);
         }
 
         internal override IPEndPoint ListenEndPoint
@@ -109,27 +107,43 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
-            StopAcceptingConnections();
+            Stop();
             _state?.Handle?.Dispose();
+
+            // Note that it's safe to free the state GCHandle here, because:
+            // (1) We called ListenerStop above, which will block until all listener events are processed. So we will not receive any more listener events.
+            // (2) This class is finalizable, which means we will always get called even if the user doesn't explicitly Dispose us.
+            // If we ever change this class to not be finalizable, and instead rely on the SafeHandle finalization, then we will need to make
+            // the SafeHandle responsible for freeing this GCHandle, since it will have the only chance to do so when finalized.
+
             if (_stateHandle.IsAllocated) _stateHandle.Free();
+
             _state?.ConnectionConfiguration?.Dispose();
             _disposed = true;
         }
 
-        internal override unsafe void Start()
+        private unsafe IPEndPoint Start(QuicListenerOptions options)
         {
-            ThrowIfDisposed();
+            List<SslApplicationProtocol> applicationProtocols = options.ServerAuthenticationOptions!.ApplicationProtocols!;
+            IPEndPoint listenEndPoint = options.ListenEndPoint!;
 
-            SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet(_listenEndPoint);
+            SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet(listenEndPoint);
 
             uint status;
+
+            Debug.Assert(_stateHandle.IsAllocated);
 
             MemoryHandle[]? handles = null;
             QuicBuffer[]? buffers = null;
             try
             {
-                MsQuicAlpnHelper.Prepare(_applicationProtocols, out handles, out buffers);
-                status = MsQuicApi.Api.ListenerStartDelegate(_state.Handle, (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0), (uint)_applicationProtocols.Count, ref address);
+                MsQuicAlpnHelper.Prepare(applicationProtocols, out handles, out buffers);
+                status = MsQuicApi.Api.ListenerStartDelegate(_state.Handle, (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0), (uint)applicationProtocols.Count, ref address);
+            }
+            catch
+            {
+                _stateHandle.Free();
+                throw;
             }
             finally
             {
@@ -139,21 +153,22 @@ namespace System.Net.Quic.Implementations.MsQuic
             QuicExceptionHelpers.ThrowIfFailed(status, "ListenerStart failed.");
 
             SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.LISTENER, (uint)QUIC_PARAM_LISTENER.LOCAL_ADDRESS);
-            _listenEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
+            return MsQuicAddressHelpers.INetToIPEndPoint(ref inetAddress);
         }
 
-        internal override void Close()
-        {
-            ThrowIfDisposed();
-            MsQuicApi.Api.ListenerStopDelegate(_state.Handle);
-        }
-
-        private void StopAcceptingConnections()
+        private void Stop()
         {
             // TODO finalizers are called even if the object construction fails.
-            if (_state != null)
+            if (_state == null)
             {
-                _state.AcceptConnectionQueue.Writer.TryComplete();
+                return;
+            }
+
+            _state.AcceptConnectionQueue?.Writer.TryComplete();
+
+            if (_state.Handle != null)
+            {
+                MsQuicApi.Api.ListenerStopDelegate(_state.Handle);
             }
         }
 
@@ -167,7 +182,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return MsQuicStatusCodes.InternalError;
             }
 
-            State state = (State)GCHandle.FromIntPtr(context).Target!;
+            GCHandle gcHandle = GCHandle.FromIntPtr(context);
+            Debug.Assert(gcHandle.IsAllocated);
+            Debug.Assert(gcHandle.Target is not null);
+            var state = (State)gcHandle.Target;
+
             SafeMsQuicConnectionHandle? connectionHandle = null;
 
             try
@@ -197,6 +216,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch (Exception ex)
             {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Error(state, $"[Listener#{state.GetHashCode()}] Exception occurred during handling {(QUIC_LISTENER_EVENT)evt.Type} connection callback: {ex}");
+                }
+
+                Debug.Fail($"[Listener#{state.GetHashCode()}] Exception occurred during handling {(QUIC_LISTENER_EVENT)evt.Type} connection callback: {ex}");
+
                 // This handle will be cleaned up by MsQuic by returning InternalError.
                 connectionHandle?.SetHandleAsInvalid();
                 state.AcceptConnectionQueue.Writer.TryComplete(ex);

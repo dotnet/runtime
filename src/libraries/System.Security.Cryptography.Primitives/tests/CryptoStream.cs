@@ -27,6 +27,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
         }
 
         protected override Type UnsupportedConcurrentExceptionType => null;
+        protected override bool BlocksOnZeroByteReads => true;
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/45080")]
         [Theory]
@@ -37,7 +38,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
         public static void Ctor()
         {
             var transform = new IdentityTransform(1, 1, true);
-            AssertExtensions.Throws<ArgumentException>(null, () => new CryptoStream(new MemoryStream(), transform, (CryptoStreamMode)12345));
+            AssertExtensions.Throws<ArgumentException>("mode", () => new CryptoStream(new MemoryStream(), transform, (CryptoStreamMode)12345));
             AssertExtensions.Throws<ArgumentException>(null, "stream", () => new CryptoStream(new MemoryStream(new byte[0], writable: false), transform, CryptoStreamMode.Write));
             AssertExtensions.Throws<ArgumentException>(null, "stream", () => new CryptoStream(new CryptoStream(new MemoryStream(new byte[0]), transform, CryptoStreamMode.Write), transform, CryptoStreamMode.Read));
         }

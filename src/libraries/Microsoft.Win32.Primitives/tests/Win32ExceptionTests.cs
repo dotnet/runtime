@@ -38,7 +38,7 @@ namespace System.ComponentModel.Tests
                                        null);
             if (result == 0)
             {
-                return (Marshal.GetLastWin32Error() == ERROR_INSUFFICIENT_BUFFER);
+                return (Marshal.GetLastPInvokeError() == ERROR_INSUFFICIENT_BUFFER);
             }
 
             return false;

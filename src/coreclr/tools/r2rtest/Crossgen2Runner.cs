@@ -122,6 +122,15 @@ namespace R2RTest
                 yield return "--composite";
             }
 
+            if (_options.MibcPath != null && _options.MibcPath.Length > 0)
+            {
+                yield return "--embed-pgo-data";
+                foreach (FileInfo mibc in _options.MibcPath)
+                {
+                    yield return $"-m:{mibc.FullName}";
+                }
+            }
+
             if (!string.IsNullOrEmpty(Crossgen2RunnerOptions.CompositeRoot))
             {
                 yield return $"--compositerootpath={Crossgen2RunnerOptions.CompositeRoot}";

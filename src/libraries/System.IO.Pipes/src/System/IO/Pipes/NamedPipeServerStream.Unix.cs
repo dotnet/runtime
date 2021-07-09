@@ -78,7 +78,7 @@ namespace System.IO.Pipes
                 WaitForConnectionAsyncCore();
 
             async Task WaitForConnectionAsyncCore() =>
-               HandleAcceptedSocket(await _instance!.ListeningSocket.AcceptAsync().ConfigureAwait(false));
+               HandleAcceptedSocket(await _instance!.ListeningSocket.AcceptAsync(cancellationToken).ConfigureAwait(false));
         }
 
         private void HandleAcceptedSocket(Socket acceptedSocket)

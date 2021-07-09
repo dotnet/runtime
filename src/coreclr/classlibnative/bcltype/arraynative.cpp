@@ -954,54 +954,50 @@ Done: ;
 }
 FCIMPLEND
 
-
-FCIMPL4(void, ArrayNative::GetReference, ArrayBase* refThisUNSAFE, TypedByRef* elemRef, INT32 rank, INT32* pIndices)
+FCIMPL2(Object*, ArrayNative::GetValue, ArrayBase* refThisUNSAFE, INT_PTR flattenedIndex)
 {
     CONTRACTL {
         FCALL_CHECK;
-        PRECONDITION(rank >= 0);
     } CONTRACTL_END;
 
-    // FC_GC_POLL not necessary. We poll for GC in Array.Rank that's always called
-    // right before this function
-    FC_GC_POLL_NOT_NEEDED();
+    BASEARRAYREF refThis(refThisUNSAFE);
 
-    BASEARRAYREF    refThis  = (BASEARRAYREF) refThisUNSAFE;
+    TypeHandle arrayElementType = refThis->GetArrayElementTypeHandle();
 
-    _ASSERTE(rank == (INT32)refThis->GetRank());
-
-    SIZE_T Offset               = 0;
-    const INT32 *pBoundsPtr     = refThis->GetBoundsPtr();
-
-    if (rank == 1)
+    // Legacy behavior
+    if (arrayElementType.IsTypeDesc())
     {
-        Offset = pIndices[0] - refThis->GetLowerBoundsPtr()[0];
+        CorElementType elemtype = arrayElementType.AsTypeDesc()->GetInternalCorElementType();
+        if (elemtype == ELEMENT_TYPE_PTR || elemtype == ELEMENT_TYPE_FNPTR)
+            FCThrowRes(kNotSupportedException, W("NotSupported_Type"));
+    }
 
-        // Bounds check each index
-        // Casting to unsigned allows us to use one compare for [0..limit-1]
-        if (((UINT32) Offset) >= ((UINT32) pBoundsPtr[0]))
-            FCThrowVoid(kIndexOutOfRangeException);
+    _ASSERTE((SIZE_T)flattenedIndex < refThis->GetNumComponents());
+    void* pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
+    OBJECTREF Obj;
+
+    MethodTable* pElementTypeMT = arrayElementType.GetMethodTable();
+    if (pElementTypeMT->IsValueType())
+    {
+        HELPER_METHOD_FRAME_BEGIN_RET_0();
+        Obj = pElementTypeMT->Box(pData);
+        HELPER_METHOD_FRAME_END();
     }
     else
     {
-        // Avoid redundant computation in GetLowerBoundsPtr
-        const INT32 *pLowerBoundsPtr = pBoundsPtr + rank;
-        _ASSERTE(refThis->GetLowerBoundsPtr() == pLowerBoundsPtr);
-
-        SIZE_T Multiplier = 1;
-
-        for (int i = rank; i >= 1; i--) {
-            INT32 curIndex = pIndices[i-1] - pLowerBoundsPtr[i-1];
-
-            // Bounds check each index
-            // Casting to unsigned allows us to use one compare for [0..limit-1]
-            if (((UINT32) curIndex) >= ((UINT32) pBoundsPtr[i-1]))
-                FCThrowVoid(kIndexOutOfRangeException);
-
-            Offset += curIndex * Multiplier;
-            Multiplier *= pBoundsPtr[i-1];
-        }
+        Obj = ObjectToOBJECTREF(*((Object**)pData));
     }
+
+    return OBJECTREFToObject(Obj);
+}
+FCIMPLEND
+
+FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE, INT_PTR flattenedIndex)
+{
+    FCALL_CONTRACT;
+
+    BASEARRAYREF refThis(refThisUNSAFE);
+    OBJECTREF obj(objUNSAFE);
 
     TypeHandle arrayElementType = refThis->GetArrayElementTypeHandle();
 
@@ -1012,72 +1008,60 @@ FCIMPL4(void, ArrayNative::GetReference, ArrayBase* refThisUNSAFE, TypedByRef* e
         if (elemtype == ELEMENT_TYPE_PTR || elemtype == ELEMENT_TYPE_FNPTR)
             FCThrowResVoid(kNotSupportedException, W("NotSupported_Type"));
     }
-#ifdef _DEBUG
-    CorElementType elemtype = arrayElementType.GetInternalCorElementType();
-    _ASSERTE(elemtype != ELEMENT_TYPE_PTR && elemtype != ELEMENT_TYPE_FNPTR);
-#endif
 
-    elemRef->data = refThis->GetDataPtr() + (Offset * refThis->GetComponentSize());
-    elemRef->type = arrayElementType;
-}
-FCIMPLEND
+    _ASSERTE((SIZE_T)flattenedIndex < refThis->GetNumComponents());
 
-FCIMPL2(void, ArrayNative::SetValue, TypedByRef * target, Object* objUNSAFE)
-{
-    FCALL_CONTRACT;
+    MethodTable* pElementTypeMT = arrayElementType.GetMethodTable();
+    PREFIX_ASSUME(NULL != pElementTypeMT);
 
-    OBJECTREF obj = ObjectToOBJECTREF(objUNSAFE);
-
-    TypeHandle thTarget(target->type);
-
-    MethodTable* pTargetMT = thTarget.AsMethodTable();
-    PREFIX_ASSUME(NULL != pTargetMT);
+    void* pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
 
     if (obj == NULL)
     {
         // Null is the universal zero...
-        if (pTargetMT->IsValueType())
-            InitValueClass(target->data,pTargetMT);
+        if (pElementTypeMT->IsValueType())
+            InitValueClass(pData,pElementTypeMT);
         else
-            ClearObjectReference((OBJECTREF*)target->data);
+            ClearObjectReference((OBJECTREF*)pData);
     }
     else
-    if (thTarget == TypeHandle(g_pObjectClass))
+    if (arrayElementType == TypeHandle(g_pObjectClass))
     {
         // Everything is compatible with Object
-        SetObjectReference((OBJECTREF*)target->data,(OBJECTREF)obj);
+        SetObjectReference((OBJECTREF*)pData,(OBJECTREF)obj);
     }
     else
-    if (!pTargetMT->IsValueType())
+    if (!pElementTypeMT->IsValueType())
     {
-        if (ObjIsInstanceOfCached(OBJECTREFToObject(obj), thTarget) != TypeHandle::CanCast)
+        if (ObjIsInstanceOfCached(OBJECTREFToObject(obj), arrayElementType) != TypeHandle::CanCast)
         {
-            // target->data is protected by the caller
-            HELPER_METHOD_FRAME_BEGIN_1(obj);
+            HELPER_METHOD_FRAME_BEGIN_2(refThis, obj);
 
-            if (!ObjIsInstanceOf(OBJECTREFToObject(obj), thTarget))
+            if (!ObjIsInstanceOf(OBJECTREFToObject(obj), arrayElementType))
                 COMPlusThrow(kInvalidCastException,W("InvalidCast_StoreArrayElement"));
 
             HELPER_METHOD_FRAME_END();
+
+            // Refresh pData in case GC moved objects around
+            pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
         }
 
-        SetObjectReference((OBJECTREF*)target->data,obj);
+        SetObjectReference((OBJECTREF*)pData,obj);
     }
     else
     {
         // value class or primitive type
 
-        if (!pTargetMT->UnBoxInto(target->data, obj))
+        if (!pElementTypeMT->UnBoxInto(pData, obj))
         {
-            // target->data is protected by the caller
-            HELPER_METHOD_FRAME_BEGIN_1(obj);
+            HELPER_METHOD_FRAME_BEGIN_2(refThis, obj);
 
             ARG_SLOT value = 0;
 
             // Allow enum -> primitive conversion, disallow primitive -> enum conversion
             TypeHandle thSrc = obj->GetTypeHandle();
             CorElementType srcType = thSrc.GetVerifierCorElementType();
-            CorElementType targetType = thTarget.GetSignatureCorElementType();
+            CorElementType targetType = arrayElementType.GetSignatureCorElementType();
 
             if (!InvokeUtil::IsPrimitiveType(srcType) || !InvokeUtil::IsPrimitiveType(targetType))
                 COMPlusThrow(kInvalidCastException, W("InvalidCast_StoreArrayElement"));
@@ -1085,8 +1069,11 @@ FCIMPL2(void, ArrayNative::SetValue, TypedByRef * target, Object* objUNSAFE)
             // Get a properly widened type
             InvokeUtil::CreatePrimitiveValue(targetType,srcType,obj,&value);
 
+            // Refresh pData in case GC moved objects around
+            pData = refThis->GetDataPtr() + flattenedIndex * refThis->GetComponentSize();
+
             UINT cbSize = CorTypeInfo::Size(targetType);
-            memcpyNoGCRefs(target->data, ArgSlotEndianessFixup(&value, cbSize), cbSize);
+            memcpyNoGCRefs(pData, ArgSlotEndianessFixup(&value, cbSize), cbSize);
 
             HELPER_METHOD_FRAME_END();
         }

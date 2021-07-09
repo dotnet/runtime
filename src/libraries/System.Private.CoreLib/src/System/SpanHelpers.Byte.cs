@@ -51,49 +51,6 @@ namespace System
             return -1;
         }
 
-        public static int IndexOfAny(ref byte searchSpace, int searchSpaceLength, ref byte value, int valueLength)
-        {
-            Debug.Assert(searchSpaceLength >= 0);
-            Debug.Assert(valueLength >= 0);
-
-            if (valueLength == 0)
-                return -1;  // A zero-length set of values is always treated as "not found".
-
-            int offset = -1;
-            for (int i = 0; i < valueLength; i++)
-            {
-                int tempIndex = IndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
-                if ((uint)tempIndex < (uint)offset)
-                {
-                    offset = tempIndex;
-                    // Reduce space for search, cause we don't care if we find the search value after the index of a previously found value
-                    searchSpaceLength = tempIndex;
-
-                    if (offset == 0)
-                        break;
-                }
-            }
-            return offset;
-        }
-
-        public static int LastIndexOfAny(ref byte searchSpace, int searchSpaceLength, ref byte value, int valueLength)
-        {
-            Debug.Assert(searchSpaceLength >= 0);
-            Debug.Assert(valueLength >= 0);
-
-            if (valueLength == 0)
-                return -1;  // A zero-length set of values is always treated as "not found".
-
-            int offset = -1;
-            for (int i = 0; i < valueLength; i++)
-            {
-                int tempIndex = LastIndexOf(ref searchSpace, Unsafe.Add(ref value, i), searchSpaceLength);
-                if (tempIndex > offset)
-                    offset = tempIndex;
-            }
-            return offset;
-        }
-
         // Adapted from IndexOf(...)
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static bool Contains(ref byte searchSpace, byte value, int length)

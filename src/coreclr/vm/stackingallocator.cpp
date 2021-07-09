@@ -26,21 +26,8 @@
 #include "common.h"
 #include "excep.h"
 
-
-#if 0
-#define INC_COUNTER(_name, _amount) do { \
-    unsigned _count = REGUTIL::GetLong(W("AllocCounter_") _name, 0, NULL, HKEY_CURRENT_USER); \
-    REGUTIL::SetLong(W("AllocCounter_") _name, _count+(_amount), NULL, HKEY_CURRENT_USER); \
- } while (0)
-#define MAX_COUNTER(_name, _amount) do { \
-    unsigned _count = REGUTIL::GetLong(W("AllocCounter_") _name, 0, NULL, HKEY_CURRENT_USER); \
-    REGUTIL::SetLong(W("AllocCounter_") _name, max(_count, (_amount)), NULL, HKEY_CURRENT_USER); \
- } while (0)
-#else
 #define INC_COUNTER(_name, _amount)
 #define MAX_COUNTER(_name, _amount)
-#endif
-
 
 StackingAllocator::StackingAllocator()
 {

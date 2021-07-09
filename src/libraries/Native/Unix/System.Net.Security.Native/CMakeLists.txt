@@ -49,4 +49,4 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Net.Security.Native PROGRAMS .)
 endif()
 
-install (TARGETS System.Net.Security.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})
+install (TARGETS System.Net.Security.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)

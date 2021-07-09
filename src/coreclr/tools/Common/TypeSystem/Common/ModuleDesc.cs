@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 namespace Internal.TypeSystem
@@ -28,8 +29,13 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Gets a type in this module with the specified name.
+        /// If notFoundBehavior == NotFoundBehavior.ReturnResolutionFailure
+        /// then ModuleDesc.GetTypeResolutionFailure will be set to the failure, and the function will return null
         /// </summary>
-        public abstract MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true);
+        public abstract MetadataType GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw);
+
+        [ThreadStatic]
+        public static ResolutionFailure GetTypeResolutionFailure;
 
         /// <summary>
         /// Gets the global &lt;Module&gt; type.

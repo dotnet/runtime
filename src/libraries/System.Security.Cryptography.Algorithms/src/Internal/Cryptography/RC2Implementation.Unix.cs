@@ -9,7 +9,7 @@ namespace Internal.Cryptography
 {
     internal sealed partial class RC2Implementation
     {
-        private static ICryptoTransform CreateTransformCore(
+        private static UniversalCryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,
@@ -33,6 +33,8 @@ namespace Internal.Cryptography
                 default:
                     throw new NotSupportedException();
             }
+
+            Interop.Crypto.EnsureLegacyAlgorithmsRegistered();
 
             BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, effectiveKeyLength, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);

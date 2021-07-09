@@ -151,10 +151,10 @@ namespace Internal.Cryptography
             }
             else
             {
-#if NETSTANDARD || NETFRAMEWORK || NETCOREAPP3_0
-                byte[] buffer = new byte[inputCount];
-#else
+#if NET5_0_OR_GREATER
                 byte[] buffer = GC.AllocateUninitializedArray<byte>(inputCount);
+#else
+                byte[] buffer = new byte[inputCount];
 #endif
                 int written = UncheckedTransformFinalBlock(inputBuffer.AsSpan(inputOffset, inputCount), buffer);
                 Debug.Assert(written == buffer.Length);
@@ -170,18 +170,74 @@ namespace Internal.Cryptography
                 _heldoverCipher = null;
                 if (heldoverCipher != null)
                 {
-                    Array.Clear(heldoverCipher, 0, heldoverCipher.Length);
+                    Array.Clear(heldoverCipher);
                 }
             }
 
             base.Dispose(disposing);
         }
 
+        public override unsafe bool TransformOneShot(ReadOnlySpan<byte> input, Span<byte> output, out int bytesWritten)
+        {
+            if (input.Length % PaddingSizeBytes != 0)
+                throw new CryptographicException(SR.Cryptography_PartialBlock);
+
+            // If there is no padding that needs to be removed, and the output buffer is large enough to hold
+            // the resulting plaintext, we can decrypt directly in to the output buffer.
+            // We do not do this for modes that require padding removal.
+            //
+            // This is not done for padded ciphertexts because we don't know if the padding is valid
+            // until it's been decrypted. We don't want to decrypt in to a user-supplied buffer and then throw
+            // a padding exception after we've already filled the user buffer with plaintext. We should only
+            // release the plaintext to the caller once we know the padding is valid.
+            if (!DepaddingRequired)
+            {
+                if (output.Length >= input.Length)
+                {
+                    bytesWritten = BasicSymmetricCipher.TransformFinal(input, output);
+                    return true;
+                }
+
+                // If no padding is going to be removed, we know the buffer is too small and we can bail out.
+                bytesWritten = 0;
+                return false;
+            }
+
+            byte[] rentedBuffer = CryptoPool.Rent(input.Length);
+            Span<byte> buffer = rentedBuffer.AsSpan(0, input.Length);
+            Span<byte> decryptedBuffer = default;
+
+            fixed (byte* pBuffer = buffer)
+            {
+                try
+                {
+                    int transformWritten = BasicSymmetricCipher.TransformFinal(input, buffer);
+                    decryptedBuffer = buffer.Slice(0, transformWritten);
+                    int unpaddedLength = GetPaddingLength(decryptedBuffer); // validates padding
+
+                    if (unpaddedLength > output.Length)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+
+                    decryptedBuffer.Slice(0, unpaddedLength).CopyTo(output);
+                    bytesWritten = unpaddedLength;
+                    return true;
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(decryptedBuffer);
+                    CryptoPool.Return(rentedBuffer, clearSize: 0); // ZeroMemory clears the part of the buffer that was written to.
+                }
+            }
+        }
+
         private void Reset()
         {
             if (_heldoverCipher != null)
             {
-                Array.Clear(_heldoverCipher, 0, _heldoverCipher.Length);
+                Array.Clear(_heldoverCipher);
                 _heldoverCipher = null;
             }
         }

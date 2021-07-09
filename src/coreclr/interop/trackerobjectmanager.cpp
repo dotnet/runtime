@@ -176,8 +176,8 @@ namespace
 
             ManagedObjectWrapper* mow = ManagedObjectWrapper::MapFromIUnknown(target);
 
-            // Not a target we implemented.
-            if (mow == nullptr)
+            // Not a target we implemented or wrapper is marked to be destroyed.
+            if (mow == nullptr || mow->IsMarkedToDestroy())
                 return S_OK;
 
             // Notify the runtime a reference path was found.
@@ -331,16 +331,16 @@ HRESULT TrackerObjectManager::BeginReferenceTracking(_In_ RuntimeCallContext* cx
 
     s_HasTrackingStarted = TRUE;
 
-    // From this point, the tracker runtime decides whether a target
-    // should be pegged or not as the global pegging flag is now off.
-    InteropLibImports::SetGlobalPeggingState(false);
-
     // Let the tracker runtime know we are about to walk external objects so that
     // they can lock their reference cache. Note that the tracker runtime doesn't need to
     // unpeg all external objects at this point and they can do the pegging/unpegging.
     // in FindTrackerTargetsCompleted.
     _ASSERTE(s_TrackerManager != nullptr);
     RETURN_IF_FAILED(s_TrackerManager->ReferenceTrackingStarted());
+
+    // From this point, the tracker runtime decides whether a target
+    // should be pegged or not as the global pegging flag is now off.
+    InteropLibImports::SetGlobalPeggingState(false);
 
     // Time to walk the external objects
     RETURN_IF_FAILED(WalkExternalTrackerObjects(cxt));

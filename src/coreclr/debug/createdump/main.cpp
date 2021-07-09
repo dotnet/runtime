@@ -21,9 +21,17 @@ const char* g_help = "createdump [options] pid\n"
 "-h, --withheap - create minidump with heap (default).\n"
 "-t, --triage - create triage minidump.\n"
 "-u, --full - create full core dump.\n"
-"-d, --diag - enable diagnostic messages.\n";
+"-d, --diag - enable diagnostic messages.\n"
+"-v, --verbose - enable verbose diagnostic messages.\n"
+#ifdef HOST_UNIX
+"--crashreport - write crash report file.\n"
+"--crashthread <id> - the thread id of the crashing thread.\n"
+"--signal <code> - the signal code of the crash.\n"
+#endif
+;
 
 bool g_diagnostics = false;
+bool g_diagnosticsVerbose = false;
 
 //
 // Main entry point
@@ -39,17 +47,11 @@ int __cdecl main(const int argc, const char* argv[])
                                                  MiniDumpWithTokenInformation);
     const char* dumpType = "minidump with heap";
     const char* dumpPathTemplate = nullptr;
+    bool crashReport = false;
+    int signal = 0;
+    int crashThread = 0;
     int exitCode = 0;
     int pid = 0;
-
-#ifdef __APPLE__
-    char* enabled = getenv("COMPlus_DbgEnableElfDumpOnMacOS");
-    if (enabled == nullptr || strcmp(enabled, "1") != 0)
-    {
-        fprintf(stderr, "MachO coredumps are not supported. To enable ELF coredumps on MacOS, set the COMPlus_DbgEnableElfDumpOnMacOS environment variable to 1.\n");
-        return -1;
-    }
-#endif
 
 #ifdef HOST_UNIX
     exitCode = PAL_InitializeDLL();
@@ -109,9 +111,28 @@ int __cdecl main(const int argc, const char* argv[])
                                                MiniDumpWithThreadInfo |
                                                MiniDumpWithTokenInformation);
             }
+#ifdef HOST_UNIX
+            else if (strcmp(*argv, "--crashreport") == 0)
+            {
+                crashReport = true;
+            }
+            else if (strcmp(*argv, "--crashthread") == 0)
+            {
+                crashThread = atoi(*++argv);
+            }
+            else if (strcmp(*argv, "--signal") == 0)
+            {
+                signal = atoi(*++argv);
+            }
+#endif
             else if ((strcmp(*argv, "-d") == 0) || (strcmp(*argv, "--diag") == 0))
             {
                 g_diagnostics = true;
+            }
+            else if ((strcmp(*argv, "-v") == 0) || (strcmp(*argv, "--verbose") == 0))
+            {
+                g_diagnostics = true;
+                g_diagnosticsVerbose = true;
             }
             else {
                 pid = atoi(*argv);
@@ -140,7 +161,7 @@ int __cdecl main(const int argc, const char* argv[])
             dumpPathTemplate = tmpPath;
         }
 
-        if (CreateDump(dumpPathTemplate, pid, dumpType, minidumpType))
+        if (CreateDump(dumpPathTemplate, pid, dumpType, minidumpType, crashReport, crashThread, signal))
         {
             printf("Dump successfully written\n");
         }
@@ -168,7 +189,7 @@ void
 trace_printf(const char* format, ...)
 {
     if (g_diagnostics)
-    { 
+    {
         va_list args;
         va_start(args, format);
         vfprintf(stdout, format, args);
@@ -176,4 +197,18 @@ trace_printf(const char* format, ...)
         va_end(args);
     }
 }
+
+void
+trace_verbose_printf(const char* format, ...)
+{
+    if (g_diagnosticsVerbose)
+    {
+        va_list args;
+        va_start(args, format);
+        vfprintf(stdout, format, args);
+        fflush(stdout);
+        va_end(args);
+    }
+}
+
 

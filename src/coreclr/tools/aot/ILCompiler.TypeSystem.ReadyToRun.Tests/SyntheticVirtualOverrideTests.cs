@@ -153,6 +153,21 @@ namespace TypeSystemTests
                 foreach (var m in mdType.GetMethods())
                     yield return m;
             }
+
+            protected override IEnumerable<MethodDesc> GetAllVirtualMethods(TypeDesc type)
+            {
+                MetadataType mdType = type as MetadataType;
+
+                if (mdType.Name == "StructWithNoEqualsAndGetHashCode"
+                    || mdType.Name == "ClassWithInjectedEqualsAndGetHashCode")
+                {
+                    yield return GetEqualsMethod(type);
+                    yield return GetGetHashCodeMethod(type);
+                }
+
+                foreach (var m in mdType.GetVirtualMethods())
+                    yield return m;
+            }
         }
 
         private partial class SyntheticMethod : MethodDesc

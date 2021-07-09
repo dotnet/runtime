@@ -7,7 +7,6 @@ using Xunit;
 
 namespace Microsoft.Extensions.Options.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class OptionsFactoryTest
     {
         [Fact]
@@ -166,6 +165,15 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal("Default", factory.Create("Default").Message);
             Assert.Equal("Default0", factory.Create(Options.DefaultName).Message);
             Assert.Equal("Default1", factory.Create("1").Message);
+        }
+
+        [Fact]
+        public void CanCreateOptionsFactory()
+        {
+            var factory = new OptionsFactory<FakeOptions>(new IConfigureOptions<FakeOptions>[0],
+                new IPostConfigureOptions<FakeOptions>[] { });
+            
+            Assert.Equal("", factory.Create("").Message);
         }
 
         public class FakeOptionsSetupA : ConfigureOptions<FakeOptions>
@@ -343,6 +351,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50877", TestPlatforms.Android)]
         public void ConfigureOptionsThrowsWithAction()
         {
             var services = new ServiceCollection();
@@ -352,6 +361,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50877", TestPlatforms.Android)]
         public void ConfigureOptionsThrowsIfNothingFound()
         {
             var services = new ServiceCollection();

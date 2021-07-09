@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Numerics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
@@ -280,16 +281,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             typeName = _module.MetadataReader.GetString(typeNameHandle);
         }
 
-        // Algorithm "xor128" from p. 5 of Marsaglia, "Xorshift RNGs"
-        private uint XorShift128(uint[] state)
+        internal uint Xoshiro128StarStar(uint[] s)
         {
-            uint s, t = state[3];
-            state[3] = state[2];
-            state[2] = state[1];
-            state[1] = s = state[0];
-            t ^= t << 11;
-            t ^= t >> 8;
-            return state[0] = t ^ s ^ (s >> 19);
+            uint result = BitOperations.RotateLeft(s[1] * 5, 7) * 9;
+            uint t = s[1] << 9;
+
+            s[2] ^= s[0];
+            s[3] ^= s[1];
+            s[1] ^= s[2];
+            s[0] ^= s[3];
+
+            s[2] ^= t;
+            s[3] = BitOperations.RotateLeft(s[3], 11);
+
+            return result;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -341,7 +346,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     uint fingerprintHash = (uint)fingerprint;
                     uint bucketBIndex = (bucketAIndex ^ (fingerprintHash % bucketCount));
                     Debug.Assert(bucketAIndex == (bucketBIndex ^ (fingerprintHash % bucketCount)));
-                    if ((XorShift128(state) & 1) != 0) // Randomly choose which bucket to attempt to fill first
+                    if ((Xoshiro128StarStar(state) & 1) != 0) // Randomly choose which bucket to attempt to fill first
                     {
                         uint temp = bucketAIndex;
                         bucketAIndex = bucketBIndex;
@@ -406,7 +411,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     for (int n = 0; !success && n < MaxNumKicks; n++)
                     {
                         // Randomly swap an entry in bucket bucketAIndex with fingerprint
-                        uint entryIndexInBucket = XorShift128(state) & 0x7;
+                        uint entryIndexInBucket = Xoshiro128StarStar(state) & 0x7;
                         ushort temp = fingerprint;
                         fingerprint = pTable[(bucketAIndex * 8) + entryIndexInBucket];
                         pTable[(bucketAIndex * 8) + entryIndexInBucket] = temp;

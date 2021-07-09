@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Threading;
+using System.Diagnostics.Tracing;
 
 namespace System.Reflection
 {
@@ -85,6 +86,11 @@ namespace System.Reflection
             if (assembly == null)
                 throw new FileNotFoundException(null, assemblyRef.Name);
             return assembly;
+        }
+
+        internal static uint GetAssemblyCount()
+        {
+            return (uint)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.ASSEMBLY_COUNT);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

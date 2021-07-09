@@ -41,12 +41,15 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => list.EnsureCapacity(-1));
         }
 
-        const int MaxArraySize = 0X7FEFFFFF;
+        public static IEnumerable<object[]> EnsureCapacity_LargeCapacity_Throws_MemberData()
+        {
+            yield return new object[] { 5, Array.MaxLength + 1 };
+            yield return new object[] { 1, int.MaxValue };
+        }
 
         [Theory]
-        [InlineData(5, MaxArraySize + 1)]
-        [InlineData(1, int.MaxValue)]
-        [SkipOnMono("mono forces no restrictions on array size.")]
+        [MemberData(nameof(EnsureCapacity_LargeCapacity_Throws_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51411", TestRuntimes.Mono)]
         public void EnsureCapacity_LargeCapacity_Throws(int count, int requestCapacity)
         {
             List<T> list = GenericListFactory(count);

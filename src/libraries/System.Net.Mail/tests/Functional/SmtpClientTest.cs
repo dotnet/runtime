@@ -19,7 +19,7 @@ using Xunit;
 
 namespace System.Net.Mail.Tests
 {
-    [PlatformSpecific(~TestPlatforms.Browser)]  // SmtpClient is not supported on Browser
+    [SkipOnPlatform(TestPlatforms.Browser, "SmtpClient is not supported on Browser")]
     public class SmtpClientTest : FileCleanupTestBase
     {
         private SmtpClient _smtp;
@@ -312,7 +312,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         // [ActiveIssue("https://github.com/dotnet/runtime/issues/31719")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and may not time out for low values")]
-        [PlatformSpecific(~TestPlatforms.OSX)] // on OSX, not all synchronous operations (e.g. connect) can be aborted by closing the socket.
+        [SkipOnPlatform(TestPlatforms.OSX, "on OSX, not all synchronous operations (e.g. connect) can be aborted by closing the socket.")]
         public void TestZeroTimeout()
         {
             var testTask = Task.Run(() =>

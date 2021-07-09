@@ -56,6 +56,9 @@
 #include "mono/metadata/custom-attrs-internals.h"
 #include <mono/utils/w32subset.h>
 
+#include <mono/metadata/components.h>
+#include <mono/mini/debugger-agent-external.h>
+
 #include "mini.h"
 #include "jit.h"
 #include "aot-compiler.h"
@@ -66,7 +69,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
-#include "debugger-agent.h"
 #if TARGET_OSX
 #   include <sys/resource.h>
 #endif
@@ -1044,7 +1046,6 @@ test_thread_func (gpointer void_arg)
 	int mode = MODE_ALLOC;
 	int i = 0;
 	gulong lookup_successes = 0, lookup_failures = 0;
-	MonoDomain *domain = test_domain;
 	int thread_num = (int)(td - thread_datas);
 	gboolean modify_thread = thread_num < NUM_THREADS / 2; /* only half of the threads modify the table */
 
@@ -1073,7 +1074,7 @@ test_thread_func (gpointer void_arg)
 					guint pos = (*data)->start + random () % (*data)->length;
 					MonoJitInfo *ji;
 
-					ji = mono_jit_info_table_find (domain, (char*)(gsize)pos);
+					ji = mono_jit_info_table_find_internal ((char*)(gsize)pos, TRUE, FALSE);
 
 					g_assert (ji->cas_inited);
 					g_assert ((*data)->ji == ji);
@@ -1083,7 +1084,7 @@ test_thread_func (gpointer void_arg)
 				char *addr = (char*)(uintptr_t)pos;
 				MonoJitInfo *ji;
 
-				ji = mono_jit_info_table_find (domain, addr);
+				ji = mono_jit_info_table_find_internal (addr, TRUE, FALSE);
 
 				/*
 				 * FIXME: We are actually not allowed
@@ -1414,7 +1415,7 @@ static void main_thread_handler (gpointer user_data)
 
 		/* Treat the other arguments as assemblies to compile too */
 		for (i = 0; i < main_args->argc; ++i) {
-			assembly = mono_domain_assembly_open_internal (main_args->domain, mono_alc_get_default (), main_args->argv [i]);
+			assembly = mono_domain_assembly_open_internal (mono_alc_get_default (), main_args->argv [i]);
 			if (!assembly) {
 				fprintf (stderr, "Can not open image %s\n", main_args->argv [i]);
 				exit (1);
@@ -1444,7 +1445,7 @@ static void main_thread_handler (gpointer user_data)
 			}
 		}
 	} else {
-		assembly = mono_domain_assembly_open_internal (main_args->domain, mono_alc_get_default (), main_args->file);
+		assembly = mono_domain_assembly_open_internal (mono_alc_get_default (), main_args->file);
 		if (!assembly){
 			fprintf (stderr, "Can not open image %s\n", main_args->file);
 			exit (1);
@@ -1808,7 +1809,7 @@ mono_jit_parse_options (int argc, char * argv[])
 		if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
-			sdb_options = g_strdup (argv [i] + 17);
+			mono_debugger_agent_parse_options (g_strdup (argv [i] + 17));
 			opt->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
 		} else if (!strcmp (argv [i], "--soft-breakpoints")) {
@@ -2383,7 +2384,7 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
-			sdb_options = g_strdup (argv [i] + 17);
+			mono_debugger_agent_parse_options (g_strdup (argv [i] + 17));
 			opt->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
 		} else if (strcmp (argv [i], "--security") == 0) {
@@ -3260,4 +3261,10 @@ mono_parse_env_options (int *ref_argc, char **ref_argv [])
 		return;
 	fprintf (stderr, "%s", ret);
 	exit (1);
+}
+
+MonoDebugOptions *
+get_mini_debug_options (void)
+{
+	return &mini_debug_options;
 }

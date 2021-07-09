@@ -114,7 +114,7 @@ struct _EventPipeBufferManager_Internal {
 	EventPipeBuffer *current_buffer;
 	EventPipeBufferList *current_buffer_list;
 	// The total allocation size of buffers under management.
-	size_t size_of_all_buffers;
+	volatile size_t size_of_all_buffers;
 	// The maximum allowable size of buffers under management.
 	// Attempted allocations above this threshold result in
 	// dropped events.
@@ -125,6 +125,9 @@ struct _EventPipeBufferManager_Internal {
 	// The total amount of allocations we can do after one sequence
 	// point before triggering the next one
 	size_t sequence_point_alloc_budget;
+	// number of times an event was dropped due to it being too
+	// large to fit in the 64KB size limit
+	volatile int64_t num_oversized_events_dropped;
 
 #ifdef EP_CHECKED_BUILD
 	volatile int64_t num_events_stored;

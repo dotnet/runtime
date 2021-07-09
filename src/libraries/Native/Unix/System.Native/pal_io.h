@@ -41,6 +41,14 @@ typedef struct
     // add more fields when needed.
 } ProcessStatus;
 
+// NOTE: the layout of this type is intended to exactly  match the layout of a `struct iovec`. There are
+//       assertions in pal_networking.c that validate this.
+typedef struct
+{
+    uint8_t* Base;
+    uintptr_t Count;
+} IOVector;
+
 /* Provide consistent access to nanosecond fields, if they exist. */
 /* Seconds are always available through st_atime, st_mtime, st_ctime. */
 
@@ -605,6 +613,13 @@ PALEXPORT int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, 
 PALEXPORT int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, int32_t advice);
 
 /**
+ * Ensures that disk space is allocated.
+ *
+ * Returns -1 on ENOSPC, -2 on EFBIG. On success or ignorable error, 0 is returned.
+ */
+PALEXPORT int32_t SystemNative_PosixFAllocate(intptr_t fd, int64_t offset, int64_t length);
+
+/**
  * Reads the number of bytes specified into the provided buffer from the specified, opened file descriptor.
  *
  * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
@@ -723,3 +738,31 @@ PALEXPORT int32_t SystemNative_LChflagsCanSetHiddenFlag(void);
  * Returns 1 if the process status was read; otherwise, 0.
  */
 PALEXPORT int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus);
+
+/**
+ * Reads the number of bytes specified into the provided buffer from the specified, opened file descriptor at specified offset.
+ *
+ * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
+ */
+PALEXPORT int32_t SystemNative_PRead(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset);
+
+/**
+ * Writes the number of bytes specified in the buffer into the specified, opened file descriptor at specified offset.
+ *
+ * Returns the number of bytes written on success; otherwise, -1 is returned an errno is set.
+ */
+PALEXPORT int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64_t fileOffset);
+
+/**
+ * Reads the number of bytes specified into the provided buffers from the specified, opened file descriptor at specified offset.
+ *
+ * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
+ */
+PALEXPORT int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset);
+
+/**
+ * Writes the number of bytes specified in the buffers into the specified, opened file descriptor at specified offset.
+ *
+ * Returns the number of bytes written on success; otherwise, -1 is returned an errno is set.
+ */
+PALEXPORT int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset);

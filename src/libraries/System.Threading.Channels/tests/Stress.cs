@@ -50,12 +50,14 @@ namespace System.Threading.Channels.Tests
 
         private static async Task<bool> ReadSynchronous(ChannelReader<int> reader)
         {
-            while (!reader.TryRead(out int value))
+            while (!reader.TryRead(out _))
             {
                 if (!await reader.WaitToReadAsync())
                 {
                     return false;
                 }
+
+                reader.TryPeek(out _);
             }
 
             return true;

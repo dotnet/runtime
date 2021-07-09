@@ -284,7 +284,7 @@ namespace EventPipeTests
             // // { COR_PRF_EVENTPIPE_DATETIME, L"DateTime" }
             // CopyToBuffer<uint64_t>(buffer, 132243707160000000ULL, &offset);
             DateTime dt = ((DateTime)traceEvent.PayloadValue(14)).ToUniversalTime();
-            if (payloadNames[14] != "DateTime" || dt != DateTime.Parse("1/24/2020 8:18:36 PM"))
+            if (payloadNames[14] != "DateTime" || dt != DateTime.Parse("1/24/2020 8:18:36 PM", CultureInfo.InvariantCulture))
             {
                 Console.WriteLine($"Argument 14 failed to parse, got {dt}");
                 return false;

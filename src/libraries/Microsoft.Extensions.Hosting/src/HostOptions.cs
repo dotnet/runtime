@@ -17,6 +17,16 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
+        /// <summary>
+        /// The behavior the <see cref="IHost"/> will follow when any of
+        /// its <see cref="BackgroundService"/> instances throw an unhandled exception.
+        /// </summary>
+        /// <remarks>
+        /// Defaults to <see cref="BackgroundServiceExceptionBehavior.StopHost"/>.
+        /// </remarks>
+        public BackgroundServiceExceptionBehavior BackgroundServiceExceptionBehavior { get; set; } =
+            BackgroundServiceExceptionBehavior.StopHost;
+
         internal void Initialize(IConfiguration configuration)
         {
             var timeoutSeconds = configuration["shutdownTimeoutSeconds"];

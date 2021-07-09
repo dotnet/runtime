@@ -10,6 +10,7 @@
 #include "pal_errno.h"
 #include "pal_interfaceaddresses.h"
 #include "pal_io.h"
+#include "pal_iossupportversion.h"
 #include "pal_log.h"
 #include "pal_memory.h"
 #include "pal_mount.h"
@@ -89,6 +90,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_FTruncate)
     DllImportEntry(SystemNative_Poll)
     DllImportEntry(SystemNative_PosixFAdvise)
+    DllImportEntry(SystemNative_PosixFAllocate)
     DllImportEntry(SystemNative_Read)
     DllImportEntry(SystemNative_ReadLink)
     DllImportEntry(SystemNative_Rename)
@@ -106,10 +108,15 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LChflagsCanSetHiddenFlag)
     DllImportEntry(SystemNative_ReadProcessStatusInfo)
     DllImportEntry(SystemNative_Log)
-    DllImportEntry(SystemNative_MemAlloc)
-    DllImportEntry(SystemNative_MemReAlloc)
-    DllImportEntry(SystemNative_MemFree)
+    DllImportEntry(SystemNative_AlignedAlloc)
+    DllImportEntry(SystemNative_AlignedFree)
+    DllImportEntry(SystemNative_AlignedRealloc)
+    DllImportEntry(SystemNative_Calloc)
+    DllImportEntry(SystemNative_Free)
+    DllImportEntry(SystemNative_GetUsableSize)
+    DllImportEntry(SystemNative_Malloc)
     DllImportEntry(SystemNative_MemSet)
+    DllImportEntry(SystemNative_Realloc)
     DllImportEntry(SystemNative_GetSpaceInfoForMountPoint)
     DllImportEntry(SystemNative_GetFormatInfoForMountPoint)
     DllImportEntry(SystemNative_GetAllMountPoints)
@@ -209,10 +216,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetOSArchitecture)
     DllImportEntry(SystemNative_GetProcessArchitecture)
     DllImportEntry(SystemNative_SearchPath)
-    DllImportEntry(SystemNative_RegisterForCtrl)
-    DllImportEntry(SystemNative_UnregisterForCtrl)
     DllImportEntry(SystemNative_RegisterForSigChld)
-    DllImportEntry(SystemNative_RestoreAndHandleCtrl)
+    DllImportEntry(SystemNative_SetDelayedSigChildConsoleConfigurationHandler)
     DllImportEntry(SystemNative_SetTerminalInvalidationHandler)
     DllImportEntry(SystemNative_InitializeTerminalAndSignalHandling)
     DllImportEntry(SystemNative_SNPrintF)
@@ -237,6 +242,18 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LowLevelMonitor_Create)
     DllImportEntry(SystemNative_CreateAutoreleasePool)
     DllImportEntry(SystemNative_DrainAutoreleasePool)
+    DllImportEntry(SystemNative_iOSSupportVersion)
+    DllImportEntry(SystemNative_GetErrNo)
+    DllImportEntry(SystemNative_SetErrNo)
+    DllImportEntry(SystemNative_PRead)
+    DllImportEntry(SystemNative_PWrite)
+    DllImportEntry(SystemNative_PReadV)
+    DllImportEntry(SystemNative_PWriteV)
+    DllImportEntry(SystemNative_EnablePosixSignalHandling)
+    DllImportEntry(SystemNative_DisablePosixSignalHandling)
+    DllImportEntry(SystemNative_HandleNonCanceledPosixSignal)
+    DllImportEntry(SystemNative_SetPosixSignalHandler)
+    DllImportEntry(SystemNative_GetPlatformSignalNumber)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

@@ -67,12 +67,8 @@ namespace System.Security.Cryptography
         private static void Extract(HashAlgorithmName hashAlgorithmName, int hashLength, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
         {
             Debug.Assert(HashLength(hashAlgorithmName) == hashLength);
-
-            using (IncrementalHash hmac = IncrementalHash.CreateHMAC(hashAlgorithmName, salt))
-            {
-                hmac.AppendData(ikm);
-                GetHashAndReset(hmac, prk);
-            }
+            int written = HashOneShotHelpers.MacData(hashAlgorithmName, salt, ikm, prk);
+            Debug.Assert(written == prk.Length, $"Bytes written is {written} bytes which does not match output length ({prk.Length} bytes)");
         }
 
         /// <summary>
@@ -84,10 +80,15 @@ namespace System.Security.Cryptography
         /// <param name="outputLength">The length of the output keying material.</param>
         /// <param name="info">The optional context and application specific information.</param>
         /// <returns>The output keying material.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="prk"/>is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="outputLength"/> is less than 1.</exception>
         public static byte[] Expand(HashAlgorithmName hashAlgorithmName, byte[] prk, int outputLength, byte[]? info = null)
         {
             if (prk == null)
                 throw new ArgumentNullException(nameof(prk));
+
+            if (outputLength <= 0)
+                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedPosNum);
 
             int hashLength = HashLength(hashAlgorithmName);
 
@@ -110,9 +111,13 @@ namespace System.Security.Cryptography
         /// <param name="prk">The pseudorandom key of at least <see cref="HashLength"/> bytes (usually the output from Expand step).</param>
         /// <param name="output">The destination buffer to receive the output keying material.</param>
         /// <param name="info">The context and application specific information (can be an empty span).</param>
+        /// <exception cref="ArgumentException"><paramref name="output"/> is empty, or is larger than the maximum allowed length.</exception>
         public static void Expand(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
         {
             int hashLength = HashLength(hashAlgorithmName);
+
+            if (output.Length == 0)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(output));
 
             // Constant comes from section 2.3 (the constraint on L in the Inputs section)
             int maxOkmLength = 255 * hashLength;
@@ -134,12 +139,34 @@ namespace System.Security.Cryptography
             Span<byte> t = Span<byte>.Empty;
             Span<byte> remainingOutput = output;
 
+            const int MaxStackInfoBuffer = 64;
+            Span<byte> tempInfoBuffer = stackalloc byte[MaxStackInfoBuffer];
+            ReadOnlySpan<byte> infoBuffer = stackalloc byte[0];
+            byte[]? rentedTempInfoBuffer = null;
+
+            if (output.Overlaps(info))
+            {
+                if (info.Length > MaxStackInfoBuffer)
+                {
+                    rentedTempInfoBuffer = CryptoPool.Rent(info.Length);
+                    tempInfoBuffer = rentedTempInfoBuffer;
+                }
+
+                tempInfoBuffer = tempInfoBuffer.Slice(0, info.Length);
+                info.CopyTo(tempInfoBuffer);
+                infoBuffer = tempInfoBuffer;
+            }
+            else
+            {
+                infoBuffer = info;
+            }
+
             using (IncrementalHash hmac = IncrementalHash.CreateHMAC(hashAlgorithmName, prk))
             {
                 for (int i = 1; ; i++)
                 {
                     hmac.AppendData(t);
-                    hmac.AppendData(info);
+                    hmac.AppendData(infoBuffer);
                     counter = (byte)i;
                     hmac.AppendData(counterSpan);
 
@@ -163,6 +190,11 @@ namespace System.Security.Cryptography
                     }
                 }
             }
+
+            if (rentedTempInfoBuffer is not null)
+            {
+                CryptoPool.Return(rentedTempInfoBuffer, clearSize: info.Length);
+            }
         }
 
         /// <summary>
@@ -174,10 +206,15 @@ namespace System.Security.Cryptography
         /// <param name="salt">The optional salt value (a non-secret random value). If not provided it defaults to a byte array of <see cref="HashLength"/> zeros.</param>
         /// <param name="info">The optional context and application specific information.</param>
         /// <returns>The output keying material.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="ikm"/>is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="outputLength"/> is less than 1.</exception>
         public static byte[] DeriveKey(HashAlgorithmName hashAlgorithmName, byte[] ikm, int outputLength, byte[]? salt = null, byte[]? info = null)
         {
             if (ikm == null)
                 throw new ArgumentNullException(nameof(ikm));
+
+            if (outputLength <= 0)
+                throw new ArgumentOutOfRangeException(nameof(outputLength), SR.ArgumentOutOfRange_NeedPosNum);
 
             int hashLength = HashLength(hashAlgorithmName);
             Debug.Assert(hashLength <= 512 / 8, "hashLength is larger than expected, consider increasing this value or using regular allocation");
@@ -205,9 +242,13 @@ namespace System.Security.Cryptography
         /// <param name="output">The output buffer representing output keying material.</param>
         /// <param name="salt">The salt value (a non-secret random value).</param>
         /// <param name="info">The context and application specific information (can be an empty span).</param>
+        /// <exception cref="ArgumentException"><paramref name="ikm"/> is empty, or is larger than the maximum allowed length.</exception>
         public static void DeriveKey(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
         {
             int hashLength = HashLength(hashAlgorithmName);
+
+            if (output.Length == 0)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(output));
 
             // Constant comes from section 2.3 (the constraint on L in the Inputs section)
             int maxOkmLength = 255 * hashLength;

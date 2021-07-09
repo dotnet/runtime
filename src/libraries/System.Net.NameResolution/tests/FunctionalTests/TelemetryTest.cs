@@ -13,6 +13,7 @@ namespace System.Net.NameResolution.Tests
     public class TelemetryTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50928", TestPlatforms.Android)]
         public static void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(Dns).Assembly.GetType("System.Net.NameResolutionTelemetry", throwOnError: true, ignoreCase: false);

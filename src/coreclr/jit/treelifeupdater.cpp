@@ -50,9 +50,9 @@ bool TreeLifeUpdater<ForCodeGen>::UpdateLifeFieldVar(GenTreeLclVar* lclNode, uns
     bool isBorn  = ((lclNode->gtFlags & GTF_VAR_DEF) != 0);
     bool isDying = !isBorn && lclNode->IsLastUse(multiRegIndex);
     // GTF_SPILL will be set if any registers need to be spilled.
-    unsigned spillFlags = (lclNode->gtFlags & lclNode->GetRegSpillFlagByIdx(multiRegIndex));
-    bool     spill      = ((spillFlags & GTF_SPILL) != 0);
-    bool     isInMemory = false;
+    GenTreeFlags spillFlags = (lclNode->gtFlags & lclNode->GetRegSpillFlagByIdx(multiRegIndex));
+    bool         spill      = ((spillFlags & GTF_SPILL) != 0);
+    bool         isInMemory = false;
 
     if (isBorn || isDying)
     {

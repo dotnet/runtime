@@ -292,6 +292,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [MemberData(nameof(ConstantValuesAndSizes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51952", TestPlatforms.tvOS)]
         public void ResultPropertyFromEnumerable(object value, int blockSize)
         {
             ConstantExpression constant = Expression.Constant(value, value.GetType());

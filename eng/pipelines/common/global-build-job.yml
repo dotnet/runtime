@@ -14,12 +14,15 @@ parameters:
   dependsOn: []
   pool: ''
   platform: ''
+  pgoType: ''
   condition: true
   useContinueOnErrorDuringBuild: false
   shouldContinueOnError: false
   dependOnEvaluatePaths: false
   isOfficialBuild: false
+  buildingOnSourceBuildImage: false
   runtimeFlavor: 'coreclr'
+  runtimeVariant: ''
   helixQueues: ''
   enablePublishTestResults: false
   testResultsFormat: ''
@@ -51,7 +54,7 @@ jobs:
       dependsOn: ${{ parameters.dependsOn }}
 
     ${{ if eq(parameters.dependOnEvaluatePaths, true) }}:
-      dependsOn: 
+      dependsOn:
       - evaluate_paths
       - ${{ if ne(parameters.dependsOn,'') }}:
         - ${{ parameters.dependsOn }}
@@ -59,7 +62,7 @@ jobs:
     variables:
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
-      
+
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
         - name: _osParameter
           value: /p:RuntimeOS=linux-musl /p:OutputRid=linux-musl-${{ parameters.archType }}
@@ -79,12 +82,25 @@ jobs:
           value: /p:OfficialBuildId=$(Build.BuildNumber)
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
-      
+
+      - name: _buildDarwinFrameworksParameter
+        ${{ if in(parameters.osGroup, 'iOS', 'tvOS', 'MacCatalyst')}}:
+          value: /p:BuildDarwinFrameworks=true
+        ${{ if notin(parameters.osGroup, 'iOS', 'tvOS', 'MacCatalyst')}}:
+          value: ''
+
       - name: _richCodeNavigationParam
         ${{ if eq(parameters.enableRichCodeNavigation, true) }}:
           value: /p:EnableRichCodeNavigation=true
         ${{ if ne(parameters.enableRichCodeNavigation, true) }}:
           value: ''
+
+      - name: _sclEnableCommand
+        ${{ if eq(parameters.buildingOnSourceBuildImage, true) }}:
+          value: scl enable llvm-toolset-7.0 --
+        ${{ if ne(parameters.buildingOnSourceBuildImage, true) }}:
+          value: ''
+
 
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
@@ -104,7 +120,7 @@ jobs:
           artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'MacCatalyst') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
         displayName: Install Build Dependencies
 
@@ -124,7 +140,7 @@ jobs:
         displayName: Install native dependencies
 
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam)
+    - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter)
       displayName: Build product
       ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
         continueOnError: ${{ parameters.shouldContinueOnError }}
@@ -145,10 +161,12 @@ jobs:
           archType: ${{ parameters.archType }}
           buildConfig: ${{ parameters.buildConfig }}
           runtimeFlavor: ${{ parameters.runtimeFlavor }}
+          runtimeVariant: ${{ parameters.runtimeVariant }}
           helixQueues: ${{ parameters.helixQueues }}
           targetRid: ${{ parameters.targetRid }}
           nameSuffix: ${{ parameters.nameSuffix }}
           platform: ${{ parameters.platform }}
+          pgoType: ${{ parameters.pgoType }}
           shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
 

@@ -100,10 +100,10 @@ jobs:
 
     # Build CoreCLR JIT
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) -skipruntime -nopgooptimize
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) -nopgooptimize -component alljits
         displayName: Build CoreCLR JIT
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -skipruntime -nopgooptimize -skiprestoreoptdata
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -nopgooptimize -skiprestoreoptdata -component alljits
         displayName: Build CoreCLR JIT
 
     # Ensure the Python azure-storage-blob package is installed before doing the upload.

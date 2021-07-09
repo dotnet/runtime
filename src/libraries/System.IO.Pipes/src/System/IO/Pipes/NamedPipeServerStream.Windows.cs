@@ -146,7 +146,7 @@ namespace System.IO.Pipes
             {
                 if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle!, IntPtr.Zero))
                 {
-                    int errorCode = Marshal.GetLastWin32Error();
+                    int errorCode = Marshal.GetLastPInvokeError();
 
                     if (errorCode != Interop.Errors.ERROR_PIPE_CONNECTED)
                     {
@@ -211,7 +211,7 @@ namespace System.IO.Pipes
                 return new string(userName);
             }
 
-            return HandleGetImpersonationUserNameError(Marshal.GetLastWin32Error(), UserNameMaxLength, userName);
+            return HandleGetImpersonationUserNameError(Marshal.GetLastPInvokeError(), UserNameMaxLength, userName);
         }
 
         // This method calls a delegate while impersonating the client. Note that we will not have
@@ -254,7 +254,7 @@ namespace System.IO.Pipes
             }
             else
             {
-                execHelper._impersonateErrorCode = Marshal.GetLastWin32Error();
+                execHelper._impersonateErrorCode = Marshal.GetLastPInvokeError();
             }
 
             if (execHelper._mustRevert)
@@ -272,7 +272,7 @@ namespace System.IO.Pipes
             {
                 if (!Interop.Advapi32.RevertToSelf())
                 {
-                    execHelper._revertImpersonateErrorCode = Marshal.GetLastWin32Error();
+                    execHelper._revertImpersonateErrorCode = Marshal.GetLastPInvokeError();
                 }
             }
         }
@@ -306,7 +306,7 @@ namespace System.IO.Pipes
 
             if (!Interop.Kernel32.ConnectNamedPipe(InternalHandle!, completionSource.Overlapped))
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
                 switch (errorCode)
                 {

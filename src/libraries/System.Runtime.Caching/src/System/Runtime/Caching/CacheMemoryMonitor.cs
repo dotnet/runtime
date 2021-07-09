@@ -224,9 +224,7 @@ namespace System.Runtime.Caching
                 }
 
 #if PERF
-                Debug.WriteLine(string.Format("CacheMemoryMonitor.GetPercentToTrim: percent={0:N}, lastTrimPercent={1:N}{Environment.NewLine}",
-                                                    percent,
-                                                    lastTrimPercent));
+                Debug.WriteLine($"CacheMemoryMonitor.GetPercentToTrim: percent={percent:N}, lastTrimPercent={lastTrimPercent:N}{Environment.NewLine}");
 #endif
             }
             return percent;

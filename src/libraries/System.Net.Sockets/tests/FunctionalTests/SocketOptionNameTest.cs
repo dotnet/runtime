@@ -121,7 +121,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
-        [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()
         {
             if (PlatformDetection.IsRedHatFamily7)
@@ -226,10 +227,10 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // In WSL, the connect() call fails immediately.
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [PlatformSpecific(~TestPlatforms.FreeBSD)] // on FreeBSD Connect may or may not fail immediately based on timing.
+        [SkipOnPlatform(TestPlatforms.FreeBSD, "on FreeBSD Connect may or may not fail immediately based on timing.")]
         public void FailedConnect_GetSocketOption_SocketOptionNameError(bool simpleGet)
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { Blocking = false })
@@ -262,7 +263,7 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal((int)SocketError.ConnectionRefused, errorCode);
 
                 // Then get it again
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     // The Windows implementation doesn't clear the error code after retrieved.
                     // https://github.com/dotnet/runtime/issues/17260
@@ -366,7 +367,7 @@ namespace System.Net.Sockets.Tests
             ReuseAddress(exclusiveAddressUse, firstSocketReuseAddress, secondSocketReuseAddress, expectFailure);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows defaults are different
         public void ExclusiveAddress_Default_Unix()
         {
@@ -378,7 +379,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Theory]
         [InlineData(1)]
         [InlineData(0)]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix does not have separate options for ExclusiveAddressUse and ReuseAddress.
@@ -402,7 +403,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         public void ExclusiveAddressUseTcp()
         {
             using (Socket a = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -430,14 +431,14 @@ namespace System.Net.Sockets.Tests
             // that allow binding the same address.
             int SOL_SOCKET = -1;
             int option = -1;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (OperatingSystem.IsLinux())
             {
                 // Linux: use SO_REUSEADDR to allow binding the same address.
                 SOL_SOCKET = 1;
                 const int SO_REUSEADDR = 2;
                 option = SO_REUSEADDR;
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if (OperatingSystem.IsMacOS())
             {
                 // BSD: use SO_REUSEPORT to allow binding the same address.
                 SOL_SOCKET = 0xffff;
@@ -506,18 +507,20 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void GetSetRawSocketOption_Roundtrips(AddressFamily family)
         {
             int SOL_SOCKET;
             int SO_RCVBUF;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-                RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (OperatingSystem.IsWindows() ||
+                OperatingSystem.IsMacOS())
             {
                 SOL_SOCKET = 0xffff;
                 SO_RCVBUF = 0x1002;
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (OperatingSystem.IsLinux())
             {
                 SOL_SOCKET = 1;
                 SO_RCVBUF = 8;
@@ -531,7 +534,7 @@ namespace System.Net.Sockets.Tests
             {
                 const int SetSize = 8192;
                 int ExpectedGetSize =
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? SetSize * 2 : // Linux kernel documented to double the size
+                    OperatingSystem.IsLinux() ? SetSize * 2 : // Linux kernel documented to double the size
                     SetSize;
 
                 socket.SetRawSocketOption(SOL_SOCKET, SO_RCVBUF, BitConverter.GetBytes(SetSize));
@@ -544,7 +547,8 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Get_AcceptConnection_Succeeds()
         {
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

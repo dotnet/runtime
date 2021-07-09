@@ -228,7 +228,7 @@ private:
 class DynamicHelpers
 {
 private:
-    static void EmitHelperWithArg(BYTE*& pCode, LoaderAllocator * pAllocator, TADDR arg, PCODE target);
+    static void EmitHelperWithArg(BYTE*& pCode, size_t rxOffset, LoaderAllocator * pAllocator, TADDR arg, PCODE target);
 public:
     static PCODE CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target);
     static PCODE CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR arg, PCODE target);

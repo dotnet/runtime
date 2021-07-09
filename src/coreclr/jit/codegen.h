@@ -88,7 +88,7 @@ private:
 
     void genPrepForCompiler();
 
-    void genPrepForEHCodegen();
+    void genMarkLabelsForCodegen();
 
     inline RegState* regStateForType(var_types t)
     {
@@ -347,6 +347,8 @@ protected:
 #endif
 
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
+
+    void genPoisonFrame(regMaskTP bbRegLiveIn);
 
 #if defined(TARGET_ARM)
 
@@ -843,6 +845,7 @@ protected:
 
     void genCodeForDivMod(GenTreeOp* treeNode);
     void genCodeForMul(GenTreeOp* treeNode);
+    void genCodeForIncSaturate(GenTree* treeNode);
     void genCodeForMulHi(GenTreeOp* treeNode);
     void genLeaInstruction(GenTreeAddrMode* lea);
     void genSetRegToCond(regNumber dstReg, GenTree* tree);
@@ -862,8 +865,10 @@ protected:
     // Generate code for a GT_BITCAST that is not contained.
     void genCodeForBitCast(GenTreeOp* treeNode);
 
+#if defined(TARGET_XARCH)
     // Generate the instruction to move a value between register files
     void genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg);
+#endif // TARGET_XARCH
 
     struct GenIntCastDesc
     {
@@ -977,8 +982,6 @@ protected:
     void genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode);
@@ -1368,6 +1371,21 @@ public:
     void inst_SET(emitJumpKind condition, regNumber reg);
 
     void inst_RV(instruction ins, regNumber reg, var_types type, emitAttr size = EA_UNKNOWN);
+
+    void inst_Mov(var_types dstType,
+                  regNumber dstReg,
+                  regNumber srcReg,
+                  bool      canSkip,
+                  emitAttr  size  = EA_UNKNOWN,
+                  insFlags  flags = INS_FLAGS_DONT_CARE);
+
+    void inst_Mov_Extend(var_types srcType,
+                         bool      srcInReg,
+                         regNumber dstReg,
+                         regNumber srcReg,
+                         bool      canSkip,
+                         emitAttr  size  = EA_UNKNOWN,
+                         insFlags  flags = INS_FLAGS_DONT_CARE);
 
     void inst_RV_RV(instruction ins,
                     regNumber   reg1,

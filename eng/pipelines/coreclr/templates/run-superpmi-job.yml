@@ -46,10 +46,10 @@ jobs:
       displayName: '${{ parameters.jobName }}'
 
     # tests collection takes longer so increase timeout to 8 hours
-    ${{ if eq(parameters.collectionName, 'tests') }}:
+    ${{ if or(eq(parameters.collectionName, 'coreclr_tests'), eq(parameters.collectionName, 'libraries_tests')) }}:
       timeoutInMinutes: 480
-    ${{ if ne(parameters.collectionName, 'tests') }}:
-      timeoutInminutes: ${{ parameters.timeoutInMinutes }}
+    ${{ if and(ne(parameters.collectionName, 'coreclr_tests'), ne(parameters.collectionName, 'libraries_tests')) }}:
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:
 
@@ -98,9 +98,12 @@ jobs:
     - ${{ if eq(parameters.collectionName, 'benchmarks') }}:
       - name: InputDirectory
         value: '$(Core_Root_Dir)'
-    - ${{ if eq(parameters.collectionName, 'tests') }}:
+    - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
       - name: InputDirectory
         value: '$(managedTestArtifactRootFolderPath)'
+    - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
+      - name: InputDirectory
+        value: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
     workspace:
       clean: all
     pool:

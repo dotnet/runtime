@@ -17,33 +17,212 @@
 #include <unistd.h>
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-static struct sigaction g_origSigIntHandler, g_origSigQuitHandler; // saved signal handlers for ctrl handling
-static struct sigaction g_origSigContHandler, g_origSigChldHandler; // saved signal handlers for reinitialization
-static struct sigaction g_origSigWinchHandler; // saved signal handlers for SIGWINCH
-static volatile CtrlCallback g_ctrlCallback = NULL; // Callback invoked for SIGINT/SIGQUIT
-static volatile TerminalInvalidationCallback g_terminalInvalidationCallback = NULL; // Callback invoked for SIGCHLD/SIGCONT/SIGWINCH
-static volatile SigChldCallback g_sigChldCallback = NULL; // Callback invoked for SIGCHLD
+
+// Saved signal handlers
+static struct sigaction* g_origSigHandler;
+static bool* g_handlerIsInstalled;
+
+// Callback invoked for SIGCHLD/SIGCONT/SIGWINCH
+static volatile TerminalInvalidationCallback g_terminalInvalidationCallback = NULL;
+// Callback invoked for SIGCHLD
+static volatile SigChldCallback g_sigChldCallback = NULL;
+static volatile bool g_sigChldConsoleConfigurationDelayed;
+static void (*g_sigChldConsoleConfigurationCallback)(void);
+// Callback invoked for for SIGTTOU while terminal settings are changed.
+static volatile ConsoleSigTtouHandler g_consoleTtouHandler;
+
+// Callback invoked for PosixSignal handling.
+static PosixSignalHandler g_posixSignalHandler = NULL;
+// Tracks whether there are PosixSignal handlers registered.
+static volatile bool* g_hasPosixSignalRegistrations;
+
 static int g_signalPipe[2] = {-1, -1}; // Pipe used between signal handler and worker
+
+static int GetSignalMax() // Returns the highest usable signal number.
+{
+#ifdef SIGRTMAX
+    return SIGRTMAX;
+#else
+    return NSIG;
+#endif
+}
+
+static bool IsCancelableTerminationSignal(int sig)
+{
+    return sig == SIGINT ||
+           sig == SIGQUIT ||
+           sig == SIGTERM;
+}
+
+static bool IsSaSigInfo(struct sigaction* action)
+{
+    assert(action);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-conversion" // sa_flags is unsigned on Android.
+    return (action->sa_flags & SA_SIGINFO) != 0;
+#pragma clang diagnostic pop
+}
+
+static bool IsSigIgn(struct sigaction* action)
+{
+    assert(action);
+    return !IsSaSigInfo(action) && action->sa_handler == SIG_IGN;
+}
+
+static bool IsSigDfl(struct sigaction* action)
+{
+    assert(action);
+    return !IsSaSigInfo(action) && action->sa_handler == SIG_DFL;
+}
+
+static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
+{
+    assert(posixSignal != NULL);
+
+    switch (signalCode)
+    {
+        case SIGHUP:
+            *posixSignal = PosixSignalSIGHUP;
+            return true;
+
+        case SIGINT:
+            *posixSignal = PosixSignalSIGINT;
+            return true;
+
+        case SIGQUIT:
+            *posixSignal = PosixSignalSIGQUIT;
+            return true;
+
+        case SIGTERM:
+            *posixSignal = PosixSignalSIGTERM;
+            return true;
+
+        case SIGCHLD:
+            *posixSignal = PosixSignalSIGCHLD;
+            return true;
+
+        case SIGWINCH:
+            *posixSignal = PosixSignalSIGWINCH;
+            return true;
+
+        case SIGCONT:
+            *posixSignal = PosixSignalSIGCONT;
+            return true;
+
+        case SIGTTIN:
+            *posixSignal = PosixSignalSIGTTIN;
+            return true;
+
+        case SIGTTOU:
+            *posixSignal = PosixSignalSIGTTOU;
+            return true;
+
+        case SIGTSTP:
+            *posixSignal = PosixSignalSIGTSTP;
+            return true;
+
+        default:
+            *posixSignal = signalCode;
+            return false;
+    }
+}
+
+int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal)
+{
+    switch (signal)
+    {
+        case PosixSignalSIGHUP:
+            return SIGHUP;
+
+        case PosixSignalSIGINT:
+            return SIGINT;
+
+        case PosixSignalSIGQUIT:
+            return SIGQUIT;
+
+        case PosixSignalSIGTERM:
+            return SIGTERM;
+
+        case PosixSignalSIGCHLD:
+            return SIGCHLD;
+
+        case PosixSignalSIGWINCH:
+            return SIGWINCH;
+
+        case PosixSignalSIGCONT:
+            return SIGCONT;
+
+        case PosixSignalSIGTTIN:
+            return SIGTTIN;
+
+        case PosixSignalSIGTTOU:
+            return SIGTTOU;
+
+        case PosixSignalSIGTSTP:
+            return SIGTSTP;
+
+        case PosixSignalInvalid:
+            break;
+    }
+
+    if (signal > 0 && signal <= GetSignalMax())
+    {
+        return signal;
+    }
+
+    return 0;
+}
+
+void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandler)
+{
+    assert(signalHandler);
+    assert(g_posixSignalHandler == NULL || g_posixSignalHandler == signalHandler);
+
+    g_posixSignalHandler = signalHandler;
+}
 
 static struct sigaction* OrigActionFor(int sig)
 {
-    switch (sig)
-    {
-        case SIGINT:  return &g_origSigIntHandler;
-        case SIGQUIT: return &g_origSigQuitHandler;
-        case SIGCONT: return &g_origSigContHandler;
-        case SIGCHLD: return &g_origSigChldHandler;
-        case SIGWINCH: return &g_origSigWinchHandler;
-    }
+    return &g_origSigHandler[sig - 1];
+}
 
-    assert(false);
-    return NULL;
+static void RestoreSignalHandler(int sig)
+{
+    g_handlerIsInstalled[sig - 1] = false;
+    sigaction(sig, OrigActionFor(sig), NULL);
 }
 
 static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
 {
-    // Signal handler for signals where we want our background thread to do the real processing.
-    // It simply writes the signal code to a pipe that's read by the thread.
+    if (sig == SIGCONT)
+    {
+        ConsoleSigTtouHandler consoleTtouHandler = g_consoleTtouHandler;
+        if (consoleTtouHandler != NULL)
+        {
+            consoleTtouHandler();
+        }
+    }
+
+    // For these signals, the runtime original sa_sigaction/sa_handler will terminate the app.
+    // This termination can be canceled using the PosixSignal API.
+    // For other signals, we immediately invoke the original handler.
+    if (!IsCancelableTerminationSignal(sig))
+    {
+        struct sigaction* origHandler = OrigActionFor(sig);
+        if (IsSaSigInfo(origHandler))
+        {
+            assert(origHandler->sa_sigaction);
+            origHandler->sa_sigaction(sig, siginfo, context);
+        }
+        else if (origHandler->sa_handler != SIG_IGN &&
+                 origHandler->sa_handler != SIG_DFL)
+        {
+            origHandler->sa_handler(sig);
+        }
+    }
+
+    // Perform further processing on background thread.
+    // Write the signal code to a pipe that's read by the thread.
     uint8_t signalCodeByte = (uint8_t)sig;
     ssize_t writtenBytes;
     while ((writtenBytes = write(g_signalPipe[1], &signalCodeByte, 1)) < 0 && errno == EINTR);
@@ -52,19 +231,69 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
     {
         abort(); // fatal error
     }
+}
 
-    // Delegate to any saved handler we may have
-    // We assume the original SIGCHLD handler will not reap our children.
-    if (sig == SIGCONT || sig == SIGCHLD || sig == SIGWINCH)
+int32_t SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode, int32_t handlersDisposed)
+{
+    switch (signalCode)
     {
-        struct sigaction* origHandler = OrigActionFor(sig);
-        if (origHandler->sa_sigaction != NULL &&
-            (void*)origHandler->sa_sigaction != (void*)SIG_DFL &&
-            (void*)origHandler->sa_sigaction != (void*)SIG_IGN)
-        {
-            origHandler->sa_sigaction(sig, siginfo, context);
-        }
+        case SIGCONT:
+            // Default disposition is Continue.
+#ifdef HAS_CONSOLE_SIGNALS
+            ReinitializeTerminal();
+#endif
+            break;
+        case SIGTSTP:
+        case SIGTTIN:
+        case SIGTTOU:
+            // Default disposition is Stop.
+            // no-op.
+            break;
+        case SIGCHLD:
+            // Default disposition is Ignore.
+            if (g_sigChldConsoleConfigurationDelayed)
+            {
+                g_sigChldConsoleConfigurationDelayed = false;
+
+                assert(g_sigChldConsoleConfigurationCallback);
+                g_sigChldConsoleConfigurationCallback();
+            }
+            break;
+        case SIGURG:
+        case SIGWINCH:
+            // Default disposition is Ignore.
+            // no-op.
+            break;
+        default:
+            // Default disposition is Terminate.
+            if (!IsCancelableTerminationSignal(signalCode) && !IsSigDfl(OrigActionFor(signalCode)))
+            {
+                // We've already called the original handler in SignalHandler.
+                break;
+            }
+            if (IsSigIgn(OrigActionFor(signalCode)))
+            {
+                // Original handler doesn't do anything.
+                break;
+            }
+            if (handlersDisposed && g_hasPosixSignalRegistrations[signalCode - 1])
+            {
+                // New handlers got registered.
+                return 0;
+            }
+            // Restore and invoke the original handler.
+            pthread_mutex_lock(&lock);
+            {
+                RestoreSignalHandler(signalCode);
+            }
+            pthread_mutex_unlock(&lock);
+#ifdef HAS_CONSOLE_SIGNALS
+            UninitializeTerminal();
+#endif
+            kill(getpid(), signalCode);
+            break;
     }
+    return 1;
 }
 
 // Entrypoint for the thread that handles signals where our handling
@@ -106,25 +335,12 @@ static void* SignalHandlerLoop(void* arg)
             }
         }
 
-        if (signalCode == SIGQUIT || signalCode == SIGINT)
-        {
-            // We're now handling SIGQUIT and SIGINT. Invoke the callback, if we have one.
-            CtrlCallback callback = g_ctrlCallback;
-            CtrlCode ctrlCode = signalCode == SIGQUIT ? Break : Interrupt;
-            if (callback != NULL)
-            {
-                callback(ctrlCode);
-            }
-            else
-            {
-                SystemNative_RestoreAndHandleCtrl(ctrlCode);
-            }
-        }
-        else if (signalCode == SIGCHLD)
+        bool usePosixSignalHandler = g_hasPosixSignalRegistrations[signalCode - 1];
+        if (signalCode == SIGCHLD)
         {
             // When the original disposition is SIG_IGN, children that terminated did not become zombies.
             // Since we overwrote the disposition, we have become responsible for reaping those processes.
-            bool reapAll = (void*)OrigActionFor(signalCode)->sa_sigaction == (void*)SIG_IGN;
+            bool reapAll = IsSigIgn(OrigActionFor(signalCode));
             SigChldCallback callback = g_sigChldCallback;
 
             // double-checked locking
@@ -149,18 +365,27 @@ static void* SignalHandlerLoop(void* arg)
 
             if (callback != NULL)
             {
-                callback(reapAll ? 1 : 0);
+                if (callback(reapAll ? 1 : 0, usePosixSignalHandler ? 0 : 1 /* configureConsole */))
+                {
+                    g_sigChldConsoleConfigurationDelayed = true;
+                }
             }
         }
-        else if (signalCode == SIGCONT)
+
+        if (usePosixSignalHandler)
         {
-#ifdef HAS_CONSOLE_SIGNALS
-            ReinitializeTerminal();
-#endif
+            assert(g_posixSignalHandler != NULL);
+            PosixSignal signal;
+            if (!TryConvertSignalCodeToPosixSignal(signalCode, &signal))
+            {
+                signal = PosixSignalInvalid;
+            }
+            usePosixSignalHandler = g_posixSignalHandler(signalCode, signal) != 0;
         }
-        else if (signalCode != SIGWINCH)
+
+        if (!usePosixSignalHandler)
         {
-            assert_msg(false, "invalid signalCode", (int)signalCode);
+            SystemNative_HandleNonCanceledPosixSignal(signalCode, 0);
         }
     }
 }
@@ -175,72 +400,102 @@ static void CloseSignalHandlingPipe()
     g_signalPipe[1] = -1;
 }
 
-void SystemNative_RegisterForCtrl(CtrlCallback callback)
+static bool InstallSignalHandler(int sig, int flags)
 {
-    assert(callback != NULL);
-    assert(g_ctrlCallback == NULL);
-    g_ctrlCallback = callback;
-}
+    int rv;
+    struct sigaction* orig = OrigActionFor(sig);
+    bool* isInstalled = &g_handlerIsInstalled[sig - 1];
 
-void SystemNative_UnregisterForCtrl()
-{
-    assert(g_ctrlCallback != NULL);
-    g_ctrlCallback = NULL;
-}
+    if (*isInstalled)
+    {
+        // Already installed.
+        return true;
+    }
 
-void SystemNative_RestoreAndHandleCtrl(CtrlCode ctrlCode)
-{
-    int signalCode = ctrlCode == Break ? SIGQUIT : SIGINT;
-#ifdef HAS_CONSOLE_SIGNALS
-    UninitializeTerminal();
-#endif
-    sigaction(signalCode, OrigActionFor(signalCode), NULL);
-    kill(getpid(), signalCode);
+    // We respect ignored signals.
+    // Setting up a handler for them causes child processes to reset to the
+    // default handler on exec, which means they will terminate on some signals
+    // which were set to ignore.
+    rv = sigaction(sig, NULL, orig);
+    if (rv != 0)
+    {
+        return false;
+    }
+    if (IsSigIgn(orig))
+    {
+        *isInstalled = true;
+        return true;
+    }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-conversion" // sa_flags is unsigned on Android.
+    struct sigaction newAction;
+    if (!IsSigDfl(orig))
+    {
+        // Maintain flags and mask of original handler.
+        newAction = *orig;
+        newAction.sa_flags = orig->sa_flags & ~(SA_RESTART | SA_RESETHAND);
+    }
+    else
+    {
+        memset(&newAction, 0, sizeof(struct sigaction));
+    }
+    newAction.sa_flags |= flags | SA_SIGINFO;
+#pragma clang diagnostic pop
+    newAction.sa_sigaction = &SignalHandler;
+
+    rv = sigaction(sig, &newAction, orig);
+    if (rv != 0)
+    {
+        return false;
+    }
+    *isInstalled = true;
+    return true;
 }
 
 void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback)
 {
     assert(callback != NULL);
     assert(g_terminalInvalidationCallback == NULL);
-    g_terminalInvalidationCallback = callback;
+    bool installed;
+    (void)installed; // only used for assert
+
+    pthread_mutex_lock(&lock);
+    {
+        g_terminalInvalidationCallback = callback;
+
+        installed = InstallSignalHandler(SIGCONT, SA_RESTART);
+        assert(installed);
+        installed = InstallSignalHandler(SIGCHLD, SA_RESTART);
+        assert(installed);
+        installed = InstallSignalHandler(SIGWINCH, SA_RESTART);
+        assert(installed);
+    }
+    pthread_mutex_unlock(&lock);
 }
 
 void SystemNative_RegisterForSigChld(SigChldCallback callback)
 {
     assert(callback != NULL);
     assert(g_sigChldCallback == NULL);
+    bool installed;
+    (void)installed; // only used for assert
 
     pthread_mutex_lock(&lock);
     {
         g_sigChldCallback = callback;
+
+        installed = InstallSignalHandler(SIGCHLD, SA_RESTART);
+        assert(installed);
     }
     pthread_mutex_unlock(&lock);
 }
 
-static void InstallSignalHandler(int sig, bool skipWhenSigIgn)
+void SystemNative_SetDelayedSigChildConsoleConfigurationHandler(void (*callback)(void))
 {
-    int rv;
-    (void)rv; // only used for assert
-    struct sigaction* orig = OrigActionFor(sig);
+    assert(g_sigChldConsoleConfigurationCallback == NULL);
 
-    if (skipWhenSigIgn)
-    {
-        rv = sigaction(sig, NULL, orig);
-        assert(rv == 0);
-        if ((void*)orig->sa_sigaction == (void*)SIG_IGN)
-        {
-            return;
-        }
-    }
-
-    struct sigaction newAction;
-    memset(&newAction, 0, sizeof(struct sigaction));
-    newAction.sa_flags = SA_RESTART | SA_SIGINFO;
-    sigemptyset(&newAction.sa_mask);
-    newAction.sa_sigaction = &SignalHandler;
-
-    rv = sigaction(sig, &newAction, orig);
-    assert(rv == 0);
+    g_sigChldConsoleConfigurationCallback = callback;
 }
 
 static bool CreateSignalHandlerThread(int* readFdPtr)
@@ -276,6 +531,24 @@ static bool CreateSignalHandlerThread(int* readFdPtr)
 
 int32_t InitializeSignalHandlingCore()
 {
+    size_t signalMax = (size_t)GetSignalMax();
+    g_origSigHandler = (struct sigaction*)calloc(sizeof(struct sigaction), signalMax);
+    g_handlerIsInstalled = (bool*)calloc(sizeof(bool), signalMax);
+    g_hasPosixSignalRegistrations = (bool*)calloc(sizeof(bool), signalMax);
+    if (g_origSigHandler == NULL ||
+        g_handlerIsInstalled == NULL ||
+        g_hasPosixSignalRegistrations == NULL)
+    {
+        free(g_origSigHandler);
+        free(g_handlerIsInstalled);
+        free((void*)(size_t)g_hasPosixSignalRegistrations);
+        g_origSigHandler = NULL;
+        g_handlerIsInstalled = NULL;
+        g_hasPosixSignalRegistrations = NULL;
+        errno = ENOMEM;
+        return 0;
+    }
+
     // Create a pipe we'll use to communicate with our worker
     // thread.  We can't do anything interesting in the signal handler,
     // so we instead send a message to another thread that'll do
@@ -308,23 +581,104 @@ int32_t InitializeSignalHandlingCore()
         return 0;
     }
 
-    // Finally, register our signal handlers
-    // We don't handle ignored SIGINT/SIGQUIT signals. If we'd setup a handler, our child
-    // processes would reset to the default on exec causing them to terminate on these signals.
-    InstallSignalHandler(SIGINT , /* skipWhenSigIgn */ true);
-    InstallSignalHandler(SIGQUIT, /* skipWhenSigIgn */ true);
-    InstallSignalHandler(SIGCONT, /* skipWhenSigIgn */ false);
-    InstallSignalHandler(SIGCHLD, /* skipWhenSigIgn */ false);
-    InstallSignalHandler(SIGWINCH, /* skipWhenSigIgn */ false);
-
     return 1;
+}
+
+int32_t SystemNative_EnablePosixSignalHandling(int signalCode)
+{
+    assert(g_posixSignalHandler != NULL);
+    assert(signalCode > 0 && signalCode <= GetSignalMax());
+
+    bool installed;
+    pthread_mutex_lock(&lock);
+    {
+        installed = InstallSignalHandler(signalCode, SA_RESTART);
+
+        g_hasPosixSignalRegistrations[signalCode - 1] = installed;
+    }
+    pthread_mutex_unlock(&lock);
+
+    return installed ? 1 : 0;
+}
+
+void SystemNative_DisablePosixSignalHandling(int signalCode)
+{
+    assert(signalCode > 0 && signalCode <= GetSignalMax());
+
+    pthread_mutex_lock(&lock);
+    {
+        g_hasPosixSignalRegistrations[signalCode - 1] = false;
+
+        if (!(g_consoleTtouHandler && signalCode == SIGTTOU) &&
+            !(g_sigChldCallback && signalCode == SIGCHLD) &&
+            !(g_terminalInvalidationCallback && (signalCode == SIGCONT ||
+                                                 signalCode == SIGCHLD ||
+                                                 signalCode == SIGWINCH)))
+        {
+            RestoreSignalHandler(signalCode);
+        }
+    }
+    pthread_mutex_unlock(&lock);
+}
+
+void InstallTTOUHandlerForConsole(ConsoleSigTtouHandler handler)
+{
+    bool installed;
+
+    pthread_mutex_lock(&lock);
+    {
+        assert(g_consoleTtouHandler == NULL);
+        g_consoleTtouHandler = handler;
+
+        // When the process is running in background, changing terminal settings
+        // will stop it (default SIGTTOU action).
+        // We change SIGTTOU's disposition to get EINTR instead.
+        // This thread may be used to run a signal handler, which may write to
+        // stdout. We set SA_RESETHAND to avoid that handler's write loops infinitly
+        // on EINTR when the process is running in background and the terminal
+        // configured with TOSTOP.
+        RestoreSignalHandler(SIGTTOU);
+        installed = InstallSignalHandler(SIGTTOU, (int)SA_RESETHAND);
+        assert(installed);
+    }
+    pthread_mutex_unlock(&lock);
+}
+
+void UninstallTTOUHandlerForConsole(void)
+{
+    bool installed;
+    (void)installed; // only used for assert
+    pthread_mutex_lock(&lock);
+    {
+        g_consoleTtouHandler = NULL;
+
+        RestoreSignalHandler(SIGTTOU);
+        if (g_hasPosixSignalRegistrations[SIGTTOU - 1])
+        {
+            installed = InstallSignalHandler(SIGTTOU, SA_RESTART);
+            assert(installed);
+        }
+    }
+    pthread_mutex_unlock(&lock);
 }
 
 #ifndef HAS_CONSOLE_SIGNALS
 
 int32_t SystemNative_InitializeTerminalAndSignalHandling()
 {
-    return 0;
+    static int32_t initialized = 0;
+
+    // The Process, Console and PosixSignalRegistration classes call this method for initialization.
+    if (pthread_mutex_lock(&lock) == 0)
+    {
+        if (initialized == 0)
+        {
+            initialized = InitializeSignalHandlingCore();
+        }
+        pthread_mutex_unlock(&lock);
+    }
+
+    return initialized;
 }
 
 #endif

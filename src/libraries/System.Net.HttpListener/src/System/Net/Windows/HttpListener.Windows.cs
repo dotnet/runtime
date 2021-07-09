@@ -926,9 +926,7 @@ namespace System.Net
                             if (decodedOutgoingBlob != null)
                             {
                                 // Prefix SPNEGO token/NTLM challenge with scheme per RFC 4559, MS-NTHT
-                                outBlob = string.Format("{0} {1}",
-                                    headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate,
-                                    Convert.ToBase64String(decodedOutgoingBlob));
+                                outBlob = $"{(headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate)} {Convert.ToBase64String(decodedOutgoingBlob)}";
                             }
 
                             if (!error)

@@ -197,6 +197,16 @@ namespace System.Text.Json
             }
         }
 
+        public static InvalidOperationException GetInvalidOperationException_ExpectedArray(JsonTokenType tokenType)
+        {
+            return GetInvalidOperationException("array", tokenType);
+        }
+
+        public static InvalidOperationException GetInvalidOperationException_ExpectedObject(JsonTokenType tokenType)
+        {
+            return GetInvalidOperationException("object", tokenType);
+        }
+
         public static InvalidOperationException GetInvalidOperationException_ExpectedNumber(JsonTokenType tokenType)
         {
             return GetInvalidOperationException("number", tokenType);
@@ -626,6 +636,9 @@ namespace System.Text.Json
                 case DataType.DateTimeOffset:
                     message = SR.FormatDateTimeOffset;
                     break;
+                case DataType.TimeSpan:
+                    message = SR.FormatTimeSpan;
+                    break;
                 case DataType.Base64String:
                     message = SR.CannotDecodeInvalidBase64;
                     break;
@@ -713,6 +726,7 @@ namespace System.Text.Json
         Boolean,
         DateTime,
         DateTimeOffset,
+        TimeSpan,
         Base64String,
         Guid,
     }

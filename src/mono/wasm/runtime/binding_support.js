@@ -154,8 +154,7 @@ var BindingSupportLib = {
 			this._interned_string_full_root_buffers = [];
 			this._interned_string_current_root_buffer = null;
 			this._interned_string_current_root_buffer_count = 0;
-			this._interned_string_table = new Map ();
-			this._managed_pointer_to_interned_string_table = new Map ();
+			this._interned_js_string_table = new Map ();
 		},
 
 		// Ensures the string is already interned on both the managed and JavaScript sides,
@@ -165,7 +164,7 @@ var BindingSupportLib = {
 				return this._empty_string;
 
 			var ptr = this.js_string_to_mono_string_interned (string);
-			var result = this._managed_pointer_to_interned_string_table.get (ptr);
+			var result = MONO.interned_string_table.get (ptr);
 			return result;
 		},
 
@@ -199,8 +198,10 @@ var BindingSupportLib = {
 			if (!ptr)
 				throw new Error ("mono_wasm_intern_string produced a null pointer");
 
-			this._interned_string_table.set (string, ptr);
-			this._managed_pointer_to_interned_string_table.set (ptr, string);
+			this._interned_js_string_table.set (string, ptr);
+			if (!MONO.interned_string_table)
+				MONO.interned_string_table = new Map();
+			MONO.interned_string_table.set (ptr, string);
 
 			if ((string.length === 0) && !this._empty_string_ptr)
 				this._empty_string_ptr = ptr;
@@ -216,7 +217,7 @@ var BindingSupportLib = {
 			if ((text.length === 0) && this._empty_string_ptr)
 				return this._empty_string_ptr;
 
-			var ptr = this._interned_string_table.get (string);
+			var ptr = this._interned_js_string_table.get (string);
 			if (ptr)
 				return ptr;
 
@@ -243,7 +244,7 @@ var BindingSupportLib = {
 			//  very expensive. Because we can not guarantee it won't happen, try to minimize
 			//  the cost of this and prevent performance issues for large strings
 			if (string.length <= 256) {
-				var interned = this._interned_string_table.get (string);
+				var interned = this._interned_js_string_table.get (string);
 				if (interned)
 					return interned;
 			}
@@ -278,17 +279,14 @@ var BindingSupportLib = {
 			return null;
 		},
 
-		conv_string: function (mono_obj, interned) {
-			var interned_instance = this._managed_pointer_to_interned_string_table.get (mono_obj);
-			if (interned_instance !== undefined)
-				return interned_instance;
+		_get_string_from_intern_table: function (mono_obj) {
+			if (!MONO.interned_string_table)
+				return undefined;
+			return MONO.interned_string_table.get (mono_obj);
+		},
 
-			var result = MONO.string_decoder.copy (mono_obj);
-			if (interned) {
-				// This string is interned on the managed side but we didn't have it in our cache.
-				this._store_string_in_intern_table (result, mono_obj, false);
-			}
-			return result;
+		conv_string: function (mono_obj) {
+			return MONO.string_decoder.copy (mono_obj);
 		},
 
 		is_nested_array: function (ele) {
@@ -415,9 +413,8 @@ var BindingSupportLib = {
 					// TODO: Fix this once emscripten offers HEAPI64/HEAPU64 or can return them
 					throw new Error ("int64 not available");
 				case 3: // string
-					return this.conv_string (mono_obj, false);
 				case 29: // interned string
-					return this.conv_string (mono_obj, true);
+					return this.conv_string (mono_obj);
 				case 4: //vts
 					throw new Error ("no idea on how to unbox value types");
 				case 5: // delegate
@@ -437,7 +434,7 @@ var BindingSupportLib = {
 				case 18:
 					throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
 				case 20: // clr .NET DateTime
-					var dateValue = this.call_method(this.get_date_value, null, "md", [ mono_obj ]);
+					var dateValue = this.call_method(this.get_date_value, null, "m", [ mono_obj ]);
 					return new Date(dateValue);
 				case 21: // clr .NET DateTimeOffset
 					var dateoffsetValue = this._object_to_string (mono_obj);
@@ -1201,7 +1198,7 @@ var BindingSupportLib = {
 			if (exception === 0)
 				return null;
 
-			var msg = this.conv_string (result, false);
+			var msg = this.conv_string (result);
 			var err = new Error (msg); //the convention is that invoke_method ToString () any outgoing exception
 			// console.warn ("error", msg, "at location", err.stack);
 			return err;
@@ -1691,8 +1688,8 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
-		var js_name = BINDING.conv_string (method_name, false);
-		if (!js_name) {
+		var js_name = BINDING.unbox_mono_obj (method_name);
+		if (!js_name || (typeof(js_name) !== "string")) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid method name object '" + method_name + "'");
 		}
@@ -1725,7 +1722,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
-		var js_name = BINDING.conv_string (property_name, false);
+		var js_name = BINDING.conv_string (property_name);
 		if (!js_name) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid property name object '" + js_name + "'");
@@ -1756,7 +1753,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
-		var property = BINDING.conv_string (property_name, false);
+		var property = BINDING.conv_string (property_name);
 		if (!property) {
 			setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid property name object '" + property_name + "'");
@@ -1840,7 +1837,7 @@ var BindingSupportLib = {
 	mono_wasm_get_global_object: function(global_name, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var js_name = BINDING.conv_string (global_name, false);
+		var js_name = BINDING.conv_string (global_name);
 
 		var globalObj;
 
@@ -1898,7 +1895,7 @@ var BindingSupportLib = {
 	mono_wasm_new: function (core_name, args, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var js_name = BINDING.conv_string (core_name, false);
+		var js_name = BINDING.conv_string (core_name);
 
 		if (!js_name) {
 			setValue (is_exception, 1, "i32");

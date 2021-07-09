@@ -12,7 +12,11 @@
 
 extern "C" const void* GlobalizationResolveDllImport(const char* name);
 
-static PInvokeOverrideFn* s_overrideImpl = nullptr;
+namespace
+{
+    PInvokeOverrideFn* s_overrideImpls[(int)PInvokeOverride::Source::Last + 1] = {0};
+    bool s_hasOverrides = false;
+}
 
 #if defined(_WIN32)
 #define GLOBALIZATION_DLL_NAME "System.Globalization.Native"
@@ -31,20 +35,29 @@ static const void* DefaultResolveDllImport(const char* libraryName, const char* 
     return nullptr;
 }
 
-void PInvokeOverride::SetPInvokeOverride(PInvokeOverrideFn* overrideImpl)
+void PInvokeOverride::SetPInvokeOverride(PInvokeOverrideFn* overrideImpl, Source source)
 {
-    s_overrideImpl = overrideImpl;
+    _ASSERTE(s_overrideImpls[(int)source] == NULL);
+    s_overrideImpls[(int)source] = overrideImpl;
+    s_hasOverrides = true;
 }
 
 const void* PInvokeOverride::GetMethodImpl(const char* libraryName, const char* entrypointName)
 {
-    if (s_overrideImpl != nullptr)
+    if (s_hasOverrides)
     {
-        const void* result = s_overrideImpl(libraryName, entrypointName);
-        if (result != nullptr)
+        for (size_t i = 0; i < _countof(s_overrideImpls); ++i)
         {
-            LOG((LF_INTEROP, LL_INFO1000, "PInvoke overriden for: lib: %s, entry: %s \n", libraryName, entrypointName));
-            return result;
+            PInvokeOverrideFn* overrideImpl = s_overrideImpls[i];
+            if (overrideImpl == nullptr)
+                continue;
+
+            const void* result = overrideImpl(libraryName, entrypointName);
+            if (result != nullptr)
+            {
+                LOG((LF_INTEROP, LL_INFO1000, "PInvoke overriden for: lib: %s, entry: %s \n", libraryName, entrypointName));
+                return result;
+            }
         }
     }
 

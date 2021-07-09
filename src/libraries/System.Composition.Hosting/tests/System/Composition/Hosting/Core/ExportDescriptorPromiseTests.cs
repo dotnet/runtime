@@ -252,6 +252,7 @@ namespace System.Composition.Hosting.Core.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50917", TestPlatforms.Android)]
         public void ToString_Invoke_ReturnsExpected()
         {
             var promise = new ExportDescriptorPromise(new CompositionContract(typeof(int)), "Origin", true, () => Enumerable.Empty<CompositionDependency>(), depdendencies =>

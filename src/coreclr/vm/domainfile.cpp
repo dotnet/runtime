@@ -1273,35 +1273,6 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
 } // DomainAssembly::GetExposedAssemblyObject
 #endif // CROSSGEN_COMPILE
 
-DomainFile* DomainAssembly::FindIJWModule(HMODULE hMod)
-{
-    CONTRACT (DomainFile*)
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    ModuleIterator i = IterateModules(kModIterIncludeLoaded);
-    while (i.Next())
-    {
-        PEFile *pFile = i.GetDomainFile()->GetFile();
-
-        if (   !pFile->IsResource()
-            && !pFile->IsDynamic()
-            && !pFile->IsILOnly()
-            && pFile->GetIJWBase() == hMod)
-        {
-            RETURN i.GetDomainFile();
-        }
-    }
-    RETURN NULL;
-}
-
-
 void DomainAssembly::Begin()
 {
     STANDARD_VM_CONTRACT;
@@ -1445,23 +1416,14 @@ void DomainAssembly::Allocate()
     SetAssembly(pAssembly);
 
 #ifdef FEATURE_PREJIT
-    BOOL fInsertIntoAssemblySpecBindingCache = TRUE;
-
-    // Insert AssemblyDef details into AssemblySpecBindingCache if appropriate
-
-
-    fInsertIntoAssemblySpecBindingCache = fInsertIntoAssemblySpecBindingCache && GetFile()->CanUseWithBindingCache();
-
-    if (fInsertIntoAssemblySpecBindingCache)
+    // Insert AssemblyDef details into AssemblySpecBindingCache
+    AssemblySpec specAssemblyDef;
+    specAssemblyDef.InitializeSpec(GetFile());
+    if (specAssemblyDef.IsStrongNamed() && specAssemblyDef.HasPublicKey())
     {
-        AssemblySpec specAssemblyDef;
-        specAssemblyDef.InitializeSpec(GetFile());
-        if (specAssemblyDef.IsStrongNamed() && specAssemblyDef.HasPublicKey())
-        {
-            specAssemblyDef.ConvertPublicKeyToToken();
-        }
-        m_pDomain->AddAssemblyToCache(&specAssemblyDef, this);
+        specAssemblyDef.ConvertPublicKeyToToken();
     }
+    m_pDomain->AddAssemblyToCache(&specAssemblyDef, this);
 #endif
 } // DomainAssembly::Allocate
 

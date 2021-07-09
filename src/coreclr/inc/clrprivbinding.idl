@@ -3,13 +3,10 @@
 
 import "unknwn.idl";
 import "objidl.idl";
-import "fusion.idl";
 
 // Forward declarations
 interface ICLRPrivBinder;
 interface ICLRPrivAssembly;
-
-typedef LPCSTR LPCUTF8;
 
 /**************************************************************************************
  ** This IDL file defines the assembly binding host interfaces. Some things to keep
@@ -35,11 +32,11 @@ interface ICLRPrivBinder : IUnknown
      ** BindAssemblyByName -- Binds an assembly by name.
      **     NOTE: This method is required to be idempotent. See general comment above.
      **
-     ** pAssemblyName - name of the assembly for which a bind is being requested.
+     ** pAssemblyFullName - name of the assembly for which a bind is being requested.
      ** ppAssembly - upon success, receives the bound assembly.
      **********************************************************************************/
     HRESULT BindAssemblyByName(
-        [in]          IAssemblyName * pAssemblyName,
+        [in] struct AssemblyNameData* pAssemblyNameData,
         [out, retval] ICLRPrivAssembly ** ppAssembly);
 
     /**********************************************************************************

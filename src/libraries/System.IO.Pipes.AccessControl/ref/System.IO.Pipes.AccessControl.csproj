@@ -7,8 +7,7 @@
     <Compile Include="System.IO.Pipes.AccessControl.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
-    <ProjectReference Include="..\..\System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
-    <ProjectReference Include="..\..\System.IO.Pipes\ref\System.IO.Pipes.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes\ref\System.IO.Pipes.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
   </ItemGroup>
 </Project>

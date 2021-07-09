@@ -1253,7 +1253,7 @@ is_thread_in_critical_region (MonoThreadInfo *info)
 		return TRUE;
 
 	if (threads_callbacks.ip_in_critical_region)
-		return threads_callbacks.ip_in_critical_region ((MonoDomain *) state->unwind_data [MONO_UNWIND_DATA_DOMAIN], (char *) MONO_CONTEXT_GET_IP (&state->ctx));
+		return threads_callbacks.ip_in_critical_region ((char *) MONO_CONTEXT_GET_IP (&state->ctx));
 
 	return FALSE;
 }

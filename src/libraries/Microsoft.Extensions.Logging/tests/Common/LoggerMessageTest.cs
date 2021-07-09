@@ -191,9 +191,70 @@ namespace Microsoft.Extensions.Logging.Test
             var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(write.State);
             AssertLogValues(expectedValues, actualLogValues.ToList());
             Assert.Equal(expectedToString, actualLogValues.ToString());
+            Assert.Equal(2, testLogger.IsEnabledCallCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(LogMessagesDataSkipEnabledCheck))]
+        public void LogMessagesSkipEnabledCheck(Delegate messageDelegate, int argumentCount)
+        {
+            // Arrange
+            var testSink = new TestSink();
+            var testLogger = new TestLogger("testlogger", testSink, enabled: true);
+            var exception = new Exception("TestException");
+            var parameterNames = Enumerable.Range(0, argumentCount).Select(i => "P" + i).ToArray();
+            var parameters = new List<object>();
+            parameters.Add(testLogger);
+            parameters.AddRange(parameterNames);
+            parameters.Add(exception);
+
+            var expectedFormat = "Log " + string.Join(" ", parameterNames.Select(p => "{" + p + "}"));
+            var expectedToString = "Log " + string.Join(" ", parameterNames);
+            var expectedValues = parameterNames.Select(p => new KeyValuePair<string, object>(p, p)).ToList();
+            expectedValues.Add(new KeyValuePair<string, object>("{OriginalFormat}", expectedFormat));
+
+            // Act
+            messageDelegate.DynamicInvoke(parameters.ToArray());
+
+            // Assert
+            Assert.Single(testSink.Writes);
+            var write = testSink.Writes.First();
+            var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(write.State);
+            AssertLogValues(expectedValues, actualLogValues.ToList());
+            Assert.Equal(expectedToString, actualLogValues.ToString());
+            Assert.Equal(1, testLogger.IsEnabledCallCount);
         }
 
         [Fact]
+        public void LogMessage_WithNullParameter_DoesNotMutateArgument()
+        {
+            // Arrange
+            string format = "TestMessage {param1} {param2} {param3}";
+            string param1 = "foo";
+            string param2 = null;
+            int param3 = 10;
+            var testSink = new TestSink();
+            var testLogger = new TestLogger("testlogger", testSink, enabled: true);
+
+            // Act
+            testLogger.LogInformation(format, param1, param2, param3);
+
+            // Assert
+            Assert.Single(testSink.Writes);
+            var write = testSink.Writes.First();
+            var actualLogValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(write.State);
+            AssertLogValues(new[]
+            {
+                new KeyValuePair<string, object>("param1", param1),
+                new KeyValuePair<string, object>("param2", param2),
+                new KeyValuePair<string, object>("param3", param3),
+                new KeyValuePair<string, object>("{OriginalFormat}", format)
+            },
+            actualLogValues.ToArray());
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50875", TestPlatforms.Android)]
         public void DefineMessage_WithNoParameters_ThrowsException_WhenFormatString_HasNamedParameters()
         {
             // Arrange
@@ -215,6 +276,7 @@ namespace Microsoft.Extensions.Logging.Test
         [InlineData(4)]
         [InlineData(5)]
         [InlineData(6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50875", TestPlatforms.Android)]
         public void DefineMessage_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(
             int expectedNamedParameterCount)
         {
@@ -259,6 +321,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50875", TestPlatforms.Android)]
         public void DefineScope_WithNoParameters_ThrowsException_WhenFormatString_HasNamedParameters()
         {
             // Arrange
@@ -280,6 +343,7 @@ namespace Microsoft.Extensions.Logging.Test
         [InlineData(4)]
         [InlineData(5)]
         [InlineData(6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50875", TestPlatforms.Android)]
         public void DefineScope_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(
             int expectedNamedParameterCount)
         {
@@ -362,6 +426,17 @@ namespace Microsoft.Extensions.Logging.Test
             new object[] { LoggerMessage.Define<string, string, string, string>(LogLevel.Error, 4, "Log {P0} {P1} {P2} {P3}"), 4 },
             new object[] { LoggerMessage.Define<string, string, string, string, string>(LogLevel.Error, 5, "Log {P0} {P1} {P2} {P3} {P4}"), 5 },
             new object[] { LoggerMessage.Define<string, string, string, string, string, string>(LogLevel.Error, 6, "Log {P0} {P1} {P2} {P3} {P4} {P5}"), 6 },
+        };
+
+        public static IEnumerable<object[]> LogMessagesDataSkipEnabledCheck => new[]
+        {
+            new object[] { LoggerMessage.Define(LogLevel.Error, 0, "Log ", options: new LogDefineOptions() { SkipEnabledCheck = true }), 0 },
+            new object[] { LoggerMessage.Define<string>(LogLevel.Error, 1, "Log {P0}", options: new LogDefineOptions() { SkipEnabledCheck = true }), 1 },
+            new object[] { LoggerMessage.Define<string, string>(LogLevel.Error, 2, "Log {P0} {P1}", options: new LogDefineOptions() { SkipEnabledCheck = true }), 2 },
+            new object[] { LoggerMessage.Define<string, string, string>(LogLevel.Error, 3, "Log {P0} {P1} {P2}", options: new LogDefineOptions() { SkipEnabledCheck = true }), 3 },
+            new object[] { LoggerMessage.Define<string, string, string, string>(LogLevel.Error, 4, "Log {P0} {P1} {P2} {P3}", options: new LogDefineOptions() { SkipEnabledCheck = true }), 4 },
+            new object[] { LoggerMessage.Define<string, string, string, string, string>(LogLevel.Error, 5, "Log {P0} {P1} {P2} {P3} {P4}", options: new LogDefineOptions() { SkipEnabledCheck = true }), 5 },
+            new object[] { LoggerMessage.Define<string, string, string, string, string, string>(LogLevel.Error, 6, "Log {P0} {P1} {P2} {P3} {P4} {P5}", options: new LogDefineOptions() { SkipEnabledCheck = true }), 6 },
         };
 
         private delegate Delegate Define(LogLevel logLevel, EventId eventId, string formatString);

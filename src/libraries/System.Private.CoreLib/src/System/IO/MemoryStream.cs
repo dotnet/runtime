@@ -155,11 +155,11 @@ namespace System.IO
                     newCapacity = _capacity * 2;
                 }
 
-                // We want to expand the array up to Array.MaxByteArrayLength
+                // We want to expand the array up to Array.MaxLength.
                 // And we want to give the user the value that they asked for
-                if ((uint)(_capacity * 2) > Array.MaxByteArrayLength)
+                if ((uint)(_capacity * 2) > Array.MaxLength)
                 {
-                    newCapacity = Math.Max(value, Array.MaxByteArrayLength);
+                    newCapacity = Math.Max(value, Array.MaxLength);
                 }
 
                 Capacity = newCapacity;
@@ -602,8 +602,8 @@ namespace System.IO
             int count = _length - _origin;
             if (count == 0)
                 return Array.Empty<byte>();
-            byte[] copy = new byte[count];
-            Buffer.BlockCopy(_buffer, _origin, copy, 0, count);
+            byte[] copy = GC.AllocateUninitializedArray<byte>(count);
+            _buffer.AsSpan(_origin, count).CopyTo(copy);
             return copy;
         }
 

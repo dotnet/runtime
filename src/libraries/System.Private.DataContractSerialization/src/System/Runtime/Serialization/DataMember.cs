@@ -8,7 +8,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Xml;
 using System.Security;
-
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
@@ -89,12 +89,14 @@ namespace System.Runtime.Serialization
 
         internal DataContract MemberTypeContract
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             { return _helper.MemberTypeContract; }
         }
 
         internal PrimitiveDataContract? MemberPrimitiveContract
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 return _helper.MemberPrimitiveContract;
@@ -164,6 +166,7 @@ namespace System.Runtime.Serialization
             {
                 _emitDefaultValue = Globals.DefaultEmitDefaultValue;
                 _memberInfo = memberInfo;
+                _memberPrimitiveContract = PrimitiveDataContract.NullContract;
             }
 
             internal MemberInfo MemberInfo
@@ -228,6 +231,7 @@ namespace System.Runtime.Serialization
 
             internal DataContract MemberTypeContract
             {
+                [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
                 get
                 {
                     if (_memberTypeContract == null)
@@ -262,10 +266,11 @@ namespace System.Runtime.Serialization
                 set { _conflictingMember = value; }
             }
 
-            private PrimitiveDataContract? _memberPrimitiveContract = PrimitiveDataContract.NullContract;
+            private PrimitiveDataContract? _memberPrimitiveContract;
 
             internal PrimitiveDataContract? MemberPrimitiveContract
             {
+                [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
                 get
                 {
                     if (_memberPrimitiveContract == PrimitiveDataContract.NullContract)

@@ -87,6 +87,8 @@
                              message="$(string.RuntimePublisher.TypeDiagnosticKeywordMessage)" symbol="CLR_TYPEDIAGNOSTIC_KEYWORD" />
                     <keyword name="JitInstrumentationDataKeyword" mask="0x10000000000"
                              message="$(string.RuntimePublisher.JitInstrumentationDataKeywordMessage)" symbol="CLR_JITINSTRUMENTEDDATA_KEYWORD" />
+                    <keyword name="ProfilerKeyword" mask="0x20000000000"
+                             message="$(string.RuntimePublisher.ProfilerKeywordMessage)" symbol="CLR_PROFILER_KEYWORD" />
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -422,7 +424,21 @@
                             <opcode name="InstrumentationDataVerbose" message="$(string.RuntimePublisher.InstrumentationDataOpcodeMessage)" symbol="CLR_INSTRUMENTATION_DATA_VERBOSE_OPCODE" value="12"/>
                         </opcodes>
                     </task>
-                <!--Next available ID is 35-->
+                    <task name="ExecutionCheckpoint" symbol="CLR_EXECUTION_CHECKPOINT_TASK"
+                          value="35" eventGUID="{598832C8-DF4D-4E9E-ABE6-2C7BF0BA2DA2}"
+                          message="$(string.RuntimePublisher.ExecutionCheckpointTaskMessage)">
+                        <opcodes>
+                            <opcode name="ExecutionCheckpoint" message="$(string.RuntimePublisher.ExecutionCheckpointOpcodeMessage)" symbol="CLR_EXECUTIONCHECKPOINT_OPCODE" value="11"> </opcode>
+                        </opcodes>
+                    </task>
+                    <task name="Profiler" symbol="CLR_PROFILER_TASK"
+                          value="36" eventGUID="{68895E46-FD03-4528-89D2-5E1FBB1D3BCF}"
+                          message="$(string.RuntimePublisher.ProfilerTaskMessage)">
+                        <opcodes>
+                            <opcode name="Profiler" message="$(string.RuntimePublisher.ProfilerOpcodeMessage)" symbol="CLR_PROFILER_OPCODE" value="11"/>
+                        </opcodes>
+                    </task>
+                <!--Next available ID is 37-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -2876,6 +2892,30 @@
                         </Settings>
                       </UserData>
                     </template>
+
+                    <template tid="ExecutionCheckpoint">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="Name" inType="win:UnicodeString" />
+                        <data name="Timestamp" inType="win:Int64" />
+                        <UserData>
+                            <ExecutionCheckpoint xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <Name> %2 </Name>
+                                <Timestamp> %3 </Timestamp>
+                            </ExecutionCheckpoint>
+                        </UserData>
+                    </template>
+
+                    <template tid="ProfilerMessage">
+                      <data name="ClrInstanceID" inType="win:UInt16"/>
+                      <data name="Message" inType="win:UnicodeString" />
+                      <UserData>
+                        <Settings xmlns="myNs">
+                          <ClrInstanceID> %1 </ClrInstanceID>
+                          <Message> %2 </Message>
+                        </Settings>
+                      </UserData>
+                    </template>
                 </templates>
 
                 <events>
@@ -3900,6 +3940,16 @@
                            keywords ="JitInstrumentationDataKeyword" opcode="InstrumentationDataVerbose"
                            task="JitInstrumentationData"
                            symbol="JitInstrumentationDataVerbose" message="$(string.RuntimePublisher.JitInstrumentationDataEventMessage)"/>
+
+                    <event value="299" version="0" level="win:Informational"  template="ProfilerMessage"
+                           keywords ="ProfilerKeyword" opcode="Profiler"
+                           task="Profiler"
+                           symbol="ProfilerMessage" message="$(string.RuntimePublisher.ProfilerEventMessage)"/>
+
+                    <!-- Execution Checkpoint event 300 -->
+                    <event value="300" version="0" level="win:Informational"  template="ExecutionCheckpoint"
+                           keywords ="PerfTrackKeyword" opcode="ExecutionCheckpoint" task="ExecutionCheckpoint" symbol="ExecutionCheckpoint"
+                           message="$(string.RuntimePublisher.ExecutionCheckpointEventMessage)"/>
                 </events>
             </provider>
 
@@ -4004,6 +4054,14 @@
                           message="$(string.RundownPublisher.TieredCompilationTaskMessage)">
                         <opcodes>
                             <opcode name="SettingsDCStart" message="$(string.RundownPublisher.TieredCompilationSettingsDCStartOpcodeMessage)" symbol="CLR_TIERED_COMPILATION_SETTINGS_DCSTART_OPCODE" value="11"/>
+                        </opcodes>
+                    </task>
+
+                    <task name="ExecutionCheckpointRundown" symbol="CLR_EXECUTION_CHECKPOINT_RUNDOWN_TASK"
+                          value="35" eventGUID="{DFF63ECA-ADAA-431F-8F91-72820C7217DB}"
+                          message="$(string.RundownPublisher.ExecutionCheckpointTaskMessage)">
+                        <opcodes>
+                            <opcode name="ExecutionCheckpointDCEnd" message="$(string.RundownPublisher.ExecutionCheckpointDCEndOpcodeMessage)" symbol="CLR_EXECUTIONCHECKPOINT_DCSTART_OPCODE" value="11"/>
                         </opcodes>
                     </task>
                 </tasks>
@@ -4540,6 +4598,19 @@
                         </Settings>
                       </UserData>
                     </template>
+
+                    <template tid="ExecutionCheckpointRundown">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="Name" inType="win:UnicodeString" />
+                        <data name="Timestamp" inType="win:Int64" />
+                        <UserData>
+                            <ExecutionCheckpointRundown xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <Name> %2 </Name>
+                                <Timestamp> %3 </Timestamp>
+                            </ExecutionCheckpointRundown>
+                        </UserData>
+                    </template>
                 </templates>
 
                 <events>
@@ -4778,6 +4849,11 @@
                     <event value="280" version="0" level="win:Informational" template="TieredCompilationSettings"
                            keywords="CompilationKeyword" task="TieredCompilationRundown" opcode="SettingsDCStart"
                            symbol="TieredCompilationSettingsDCStart" message="$(string.RundownPublisher.TieredCompilationSettingsDCStartEventMessage)"/>
+
+                    <!-- Execution Checkpoint event 300 -->
+                    <event value="300" version="0" level="win:Informational"  template="ExecutionCheckpointRundown"
+                           opcode="ExecutionCheckpointDCEnd" task="ExecutionCheckpointRundown"
+                           symbol="ExecutionCheckpointDCEnd" message="$(string.RundownPublisher.ExecutionCheckpointDCEndEventMessage)"/>
                 </events>
             </provider>
 
@@ -7132,6 +7208,7 @@
                 <string id="RuntimePublisher.AssemblyLoadFromResolveHandlerInvokedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nIsTrackedLoad=%3;%nRequestingAssemblyPath=%4;%nComputedRequestedAssemblyPath=%5" />
                 <string id="RuntimePublisher.KnownPathProbedEventMessage" value="ClrInstanceID=%1;%nFilePath=%2;%nSource=%3;%nResult=%4" />
                 <string id="RuntimePublisher.JitInstrumentationDataEventMessage" value="%MethodId=%4" />
+                <string id="RuntimePublisher.ProfilerEventMessage" value="%Message=%2" />
                 <string id="RuntimePublisher.ResolutionAttemptedEventMessage" value="ClrInstanceID=%1;%nAssemblyName=%2;%nStage=%3;%nAssemblyLoadContext=%4;%nResult=%5;%nResultAssemblyName=%6;%nResultAssemblyPath=%7;%nErrorMessage=%8" />
                 <string id="RuntimePublisher.StackEventMessage" value="ClrInstanceID=%1;%nReserved1=%2;%nReserved2=%3;%nFrameCount=%4;%nStack=%5" />
                 <string id="RuntimePublisher.AppDomainMemAllocatedEventMessage" value="AppDomainID=%1;%nAllocated=%2;%nClrInstanceID=%3" />
@@ -7164,6 +7241,7 @@
                 <string id="RuntimePublisher.TieredCompilationResumeEventMessage" value="ClrInstanceID=%1;%nNewMethodCount=%2" />
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStartEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2" />
                 <string id="RuntimePublisher.TieredCompilationBackgroundJitStopEventMessage" value="ClrInstanceID=%1;%nPendingMethodCount=%2;%nJittedMethodCount=%3" />
+                <string id="RuntimePublisher.ExecutionCheckpointEventMessage" value="ClrInstanceID=%1;Checkpoint=%2;Timestamp=%3"/>
 
                 <string id="RundownPublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
                 <string id="RundownPublisher.MethodDCStart_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
@@ -7208,6 +7286,7 @@
                 <string id="RundownPublisher.ModuleRangeDCStartEventMessage" value="ClrInstanceID=%1;%ModuleID=%2;%nRangeBegin=%3;%nRangeSize=%4;%nRangeType=%5" />
                 <string id="RundownPublisher.ModuleRangeDCEndEventMessage" value= "ClrInstanceID=%1;%ModuleID=%2;%nRangeBegin=%3;%nRangeSize=%4;%nRangeType=%5" />
                 <string id="RundownPublisher.TieredCompilationSettingsDCStartEventMessage" value="ClrInstanceID=%1;%nFlags=%2" />
+                <string id="RundownPublisher.ExecutionCheckpointDCEndEventMessage" value="ClrInstanceID=%1;Checkpoint=%2;Timestamp=%3"/>
 
                 <string id="StressPublisher.StressLogEventMessage" value="Facility=%1;%nLevel=%2;%nMessage=%3" />
                 <string id="StressPublisher.StressLog_V1EventMessage" value="Facility=%1;%nLevel=%2;%nMessage=%3;%nClrInstanceID=%4" />
@@ -7329,6 +7408,8 @@
                 <string id="RuntimePublisher.AssemblyLoaderTaskMessage" value="AssemblyLoader" />
                 <string id="RuntimePublisher.TypeLoadTaskMessage" value="TypeLoad" />
                 <string id="RuntimePublisher.JitInstrumentationDataTaskMessage" value="JitInstrumentationData" />
+                <string id="RuntimePublisher.ExecutionCheckpointTaskMessage" value="ExecutionCheckpoint" />
+                <string id="RuntimePublisher.ProfilerTaskMessage" value="Profiler" />
 
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
                 <string id="RundownPublisher.MethodTaskMessage" value="Method" />
@@ -7336,6 +7417,7 @@
                 <string id="RundownPublisher.StackTaskMessage" value="ClrStack" />
                 <string id="RundownPublisher.PerfTrackTaskMessage" value="ClrPerfTrack" />
                 <string id="RundownPublisher.TieredCompilationTaskMessage" value="TieredCompilation" />
+                <string id="RundownPublisher.ExecutionCheckpointTaskMessage" value="ExecutionCheckpoint" />
 
                 <string id="PrivatePublisher.GarbageCollectionTaskMessage" value="GC" />
                 <string id="PrivatePublisher.StartupTaskMessage" value="Startup"/>
@@ -7657,6 +7739,7 @@
                 <string id="RuntimePublisher.MethodDiagnosticKeywordMessage" value="MethodDiagnostic" />
                 <string id="RuntimePublisher.TypeDiagnosticKeywordMessage" value="TypeDiagnostic" />
                 <string id="RuntimePublisher.JitInstrumentationDataKeywordMessage" value="JitInstrumentationData" />
+                <string id="RuntimePublisher.ProfilerKeywordMessage" value="Profiler" />
                 <string id="RuntimePublisher.GenAwareBeginEventMessage" value="NONE" />
                 <string id="RuntimePublisher.GenAwareEndEventMessage" value="NONE" />
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
@@ -7798,6 +7881,10 @@
 
                 <string id="RuntimePublisher.InstrumentationDataOpcodeMessage" value="InstrumentationData" />
 
+                <string id="RuntimePublisher.ExecutionCheckpointOpcodeMessage" value="ExecutionCheckpoint" />
+
+                <string id="RuntimePublisher.ProfilerOpcodeMessage" value="ProfilerMessage" />
+
                 <string id="RundownPublisher.MethodDCStartOpcodeMessage" value="DCStart" />
                 <string id="RundownPublisher.MethodDCEndOpcodeMessage" value="DCStop" />
                 <string id="RundownPublisher.MethodDCStartVerboseOpcodeMessage" value="DCStartVerbose" />
@@ -7821,6 +7908,7 @@
                 <string id="RundownPublisher.ModuleRangeDCStartOpcodeMessage" value="ModuleRangeDCStart" />
                 <string id="RundownPublisher.ModuleRangeDCEndOpcodeMessage" value="ModuleRangeDCEnd" />
                 <string id="RundownPublisher.TieredCompilationSettingsDCStartOpcodeMessage" value="SettingsDCStart" />
+                <string id="RundownPublisher.ExecutionCheckpointDCEndOpcodeMessage" value="ExecutionCheckpointDCEnd" />
 
                 <string id="PrivatePublisher.FailFastOpcodeMessage" value="FailFast" />
 

@@ -2,13 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Microsoft.NET.HostModel.ComHost
 {
     public class ComHost
     {
+        private const int E_INVALIDARG = unchecked((int)0x80070057);
         // These need to match RESOURCEID_CLSIDMAP and RESOURCETYPE_CLSIDMAP defined in comhost.h.
         private const int ClsidmapResourceId = 64;
         private const int ClsidmapResourceType = 1024;
@@ -19,10 +22,12 @@ namespace Microsoft.NET.HostModel.ComHost
         /// <param name="comHostSourceFilePath">The path of Apphost template, which has the place holder</param>
         /// <param name="comHostDestinationFilePath">The destination path for desired location to place, including the file name</param>
         /// <param name="clsidmapFilePath">The path to the *.clsidmap file.</param>
+        /// <param name="typeLibraries">Resource ids for tlbs and paths to the tlb files to be embedded.</param>
         public static void Create(
             string comHostSourceFilePath,
             string comHostDestinationFilePath,
-            string clsidmapFilePath)
+            string clsidmapFilePath,
+            IReadOnlyDictionary<int, string> typeLibraries = null)
         {
             var destinationDirectory = new FileInfo(comHostDestinationFilePath).Directory.FullName;
             if (!Directory.Exists(destinationDirectory))
@@ -44,6 +49,30 @@ namespace Microsoft.NET.HostModel.ComHost
             using (ResourceUpdater updater = new ResourceUpdater(comHostDestinationFilePath))
             {
                 updater.AddResource(clsidMapBytes, (IntPtr)ClsidmapResourceType, (IntPtr)ClsidmapResourceId);
+                if (typeLibraries is not null)
+                {
+                    foreach (var typeLibrary in typeLibraries)
+                    {
+                        if (!ResourceUpdater.IsIntResource((IntPtr)typeLibrary.Key))
+                        {
+                            throw new InvalidTypeLibraryIdException(typeLibrary.Value, typeLibrary.Key);
+                        }
+
+                        try
+                        {
+                            byte[] tlbFileBytes = File.ReadAllBytes(typeLibrary.Value);
+                            updater.AddResource(tlbFileBytes, "typelib", (IntPtr)typeLibrary.Key);
+                        }
+                        catch (FileNotFoundException ex)
+                        {
+                            throw new TypeLibraryDoesNotExistException(typeLibrary.Value, ex);
+                        }
+                        catch (HResultException hr) when (hr.Win32HResult == E_INVALIDARG)
+                        {
+                            throw new InvalidTypeLibraryException(typeLibrary.Value, hr);
+                        }
+                    }
+                }
                 updater.Update();
             }
         }

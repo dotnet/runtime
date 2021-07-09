@@ -25,7 +25,7 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidAccess_Throws()
         {
-            using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))
+            using (var handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write))
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("access", () => CreateFileStream(handle, ~FileAccess.Read));
             }
@@ -34,7 +34,7 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidAccess_DoesNotCloseHandle()
         {
-            using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))
+            using (var handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write))
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => CreateFileStream(handle, ~FileAccess.Read));
                 GC.Collect();

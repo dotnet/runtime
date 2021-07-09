@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 
+using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.Text;
 
@@ -38,6 +39,11 @@ namespace ILCompiler
             if (type1 == type2)
             {
                 return true;
+            }
+
+            if (type1 == null || type2 == null)
+            {
+                return false;
             }
 
             RuntimeDeterminedType runtimeDeterminedType1 = type1 as RuntimeDeterminedType;
@@ -91,6 +97,11 @@ namespace ILCompiler
             {
                 return true;
             }
+            if (method1 == null || method2 == null)
+            {
+                return false;
+            }
+
             if (!Equals(method1.OwningType, method2.OwningType) ||
                 method1.Signature.Length != method2.Signature.Length ||
                 !Equals(method1.Instantiation, method2.Instantiation) ||
@@ -106,6 +117,22 @@ namespace ILCompiler
                 }
             }
             return true;
+        }
+
+        public static bool Equals(MethodWithToken methodWithToken1, MethodWithToken methodWithToken2)
+        {
+            if (methodWithToken1 == methodWithToken2)
+            {
+                return true;
+            }
+            if (methodWithToken1 == null || methodWithToken2 == null)
+            {
+                return false;
+            }
+            return Equals(methodWithToken1.Method, methodWithToken2.Method)
+                && Equals(methodWithToken1.OwningType, methodWithToken2.OwningType)
+                && Equals(methodWithToken1.ConstrainedType, methodWithToken2.ConstrainedType)
+                && methodWithToken1.Unboxing == methodWithToken2.Unboxing;
         }
 
         public static bool Equals(FieldDesc field1, FieldDesc field2)
@@ -132,6 +159,10 @@ namespace ILCompiler
 
         public static int GetHashCode(TypeDesc type)
         {
+            if (type == null)
+            {
+                return 0;
+            }
             if (type is RuntimeDeterminedType runtimeDeterminedType)
             {
                 return runtimeDeterminedType.RuntimeDeterminedDetailsType.Index ^
@@ -142,12 +173,29 @@ namespace ILCompiler
 
         public static int GetHashCode(MethodDesc method)
         {
+            if (method == null)
+            {
+                return 0;
+            }
             return unchecked(GetHashCode(method.OwningType) + 97 * (
                 method.GetTypicalMethodDefinition().GetHashCode() + 31 * GetHashCode(method.Instantiation)));
         }
 
+        public static int GetHashCode(MethodWithToken method)
+        {
+            if (method == null)
+            {
+                return 0;
+            }
+            return unchecked(GetHashCode(method.Method) + 31 * GetHashCode(method.OwningType) + 97 * GetHashCode(method.ConstrainedType));
+        }
+
         public static int GetHashCode(FieldDesc field)
         {
+            if (field == null)
+            {
+                return 0;
+            }
             return unchecked(GetHashCode(field.OwningType) + 97 * GetHashCode(field.FieldType) + 31 * field.Name.GetHashCode());
         }
     }

@@ -28,7 +28,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "cominterfacemarshaler.h"
-#include <roerrorapi.h>
 #endif
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -819,25 +818,6 @@ BOOL CanCastComObject(OBJECTREF obj, MethodTable * pTargetMT)
     {
         return obj->GetMethodTable()->CanCastToClass(pTargetMT);
     }
-}
-
-// Returns TRUE iff the argument represents the "__ComObject" type or
-// any type derived from it (i.e. typelib-imported RCWs).
-BOOL IsComWrapperClass(TypeHandle type)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodTable* pMT = type.GetMethodTable();
-    if (pMT == NULL)
-        return FALSE;
-
-    return pMT->IsComObjectType();
 }
 
 // Returns TRUE iff the argument represents the "__ComObject" type.
@@ -3890,13 +3870,12 @@ void InitializeComInterop()
 //-------------------------------------------------------------------
 
 static int g_TraceCount = 0;
-static IUnknown* g_pTraceIUnknown = 0;
+static IUnknown* g_pTraceIUnknown = NULL;
 
 VOID IntializeInteropLogging()
 {
     WRAPPER_NO_CONTRACT;
 
-    g_pTraceIUnknown = g_pConfig->GetTraceIUnknown();
     g_TraceCount = g_pConfig->GetTraceWrapper();
 }
 

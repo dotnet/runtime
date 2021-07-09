@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Text;
 
 namespace System
 {
@@ -15,8 +14,6 @@ namespace System
     {
         partial void RestoreRemoteStackTrace(SerializationInfo info, StreamingContext context)
         {
-            _remoteStackTraceString = info.GetString("RemoteStackTraceString"); // Do not rename (binary serialization)
-
             // Get the WatsonBuckets that were serialized - this is particularly
             // done to support exceptions going across AD transitions.
             //
@@ -86,35 +83,6 @@ namespace System
                 _exceptionMethod = GetExceptionMethodFromStackTrace();
                 return _exceptionMethod;
             }
-        }
-
-        // Returns the stack trace as a string.  If no stack trace is
-        // available, null is returned.
-        public virtual string? StackTrace
-        {
-            get
-            {
-                string? stackTraceString = _stackTraceString;
-                string? remoteStackTraceString = _remoteStackTraceString;
-
-                // if no stack trace, try to get one
-                if (stackTraceString != null)
-                {
-                    return remoteStackTraceString + stackTraceString;
-                }
-                if (_stackTrace == null)
-                {
-                    return remoteStackTraceString;
-                }
-
-                return remoteStackTraceString + GetStackTrace(this);
-            }
-        }
-
-        private static string GetStackTrace(Exception e)
-        {
-            // Do not include a trailing newline for backwards compatibility
-            return new StackTrace(e, fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
         }
 
         private string? CreateSourceName()
@@ -246,24 +214,9 @@ namespace System
         // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
         private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
 
-        private string? SerializationRemoteStackTraceString => _remoteStackTraceString;
+        private bool HasBeenThrown => _stackTrace != null;
 
         private object? SerializationWatsonBuckets => _watsonBuckets;
-
-        private string? SerializationStackTraceString
-        {
-            get
-            {
-                string? stackTraceString = _stackTraceString;
-
-                if (stackTraceString == null && _stackTrace != null)
-                {
-                    stackTraceString = GetStackTrace(this);
-                }
-
-                return stackTraceString;
-            }
-        }
 
         // This piece of infrastructure exists to help avoid deadlocks
         // between parts of CoreLib that might throw an exception while
@@ -323,14 +276,16 @@ namespace System
                 _remoteStackTraceString, _ipForWatsonBuckets, _watsonBuckets);
         }
 
-        [StackTraceHidden]
-        internal void SetCurrentStackTrace()
+        // Returns true if setting the _remoteStackTraceString field is legal, false if not (immutable exception).
+        // A false return value means the caller should early-exit the operation.
+        // Can also throw InvalidOperationException if a stack trace is already set or if object has been thrown.
+        private bool CanSetRemoteStackTrace()
         {
             // If this is a preallocated singleton exception, silently skip the operation,
             // regardless of the value of throwIfHasExistingStack.
             if (IsImmutableAgileException(this))
             {
-                return;
+                return false;
             }
 
             // Check to see if the exception already has a stack set in it.
@@ -339,13 +294,7 @@ namespace System
                 ThrowHelper.ThrowInvalidOperationException();
             }
 
-            // Store the current stack trace into the "remote" stack trace, which was originally introduced to support
-            // remoting of exceptions cross app-domain boundaries, and is thus concatenated into Exception.StackTrace
-            // when it's retrieved.
-            var sb = new StringBuilder(256);
-            new StackTrace(fNeedFileInfo: true).ToString(System.Diagnostics.StackTrace.TraceFormat.TrailingNewLine, sb);
-            sb.AppendLine(SR.Exception_EndStackTraceFromPreviousThrow);
-            _remoteStackTraceString = sb.ToString();
+            return true;
         }
     }
 }

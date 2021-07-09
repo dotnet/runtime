@@ -57,6 +57,7 @@ mono_trace_push (GLogLevelFlags level, MonoTraceMask mask);
 void 
 mono_trace_pop (void);
 
+MONO_COMPONENT_API
 gboolean
 mono_trace_is_traced (GLogLevelFlags level, MonoTraceMask mask);
 
@@ -151,10 +152,10 @@ void mono_log_write_logcat (const char *log_domain, GLogLevelFlags level, mono_b
 void mono_log_close_logcat (void);
 #endif
 
-#if defined(HOST_IOS)
-void mono_log_open_asl (const char *path, void *userData);
-void mono_log_write_asl (const char *log_domain, GLogLevelFlags level, mono_bool hdr, const char *message);
-void mono_log_close_asl (void);
+#if defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_WATCHOS) || defined(HOST_MACCAT)
+void mono_log_open_os_log (const char *path, void *userData);
+void mono_log_write_os_log (const char *log_domain, GLogLevelFlags level, mono_bool hdr, const char *message);
+void mono_log_close_os_log (void);
 #endif
 
 void mono_log_open_recorder (const char *path, void *userData);

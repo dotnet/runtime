@@ -68,6 +68,7 @@ WARNING:   When setting properties based on their current state (for example:
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
     <PropertyGroup>
+      <CoreRunArgs>@(RuntimeHostConfigurationOption -> '-p &quot;%(Identity)=%(Value)&quot;', ' ')</CoreRunArgs>
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 IF NOT "%COMPlus_GCStress%"=="" (
@@ -281,7 +282,7 @@ if defined DoLink (
           </BatchLinkerTestCleanupCmds>
       </PropertyGroup>
       <PropertyGroup>      
-      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe"</_CLRTestRunFile>
+      <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs)</_CLRTestRunFile>
       <BatchCopyCoreShimLocalCmds Condition="'$(CLRTestScriptLocalCoreShim)' == 'true'"><![CDATA[
 REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
@@ -328,7 +329,7 @@ IF NOT "%XHARNESS_CLI_PATH%"=="" (
   set HARNESS_RUNNER=xharness
 )
 
-%__Command% %HARNESS_RUNNER% android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.%__Category%" --app="%__TestBinaryBase%\%__Category%.apk" --output-directory="%25cd%25" --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100 -v
+%__Command% %HARNESS_RUNNER% android run --instrumentation="net.dot.MonoRunner" --package-name="net.dot.%__Category%" --output-directory="%__OutputDir%" --arg=entrypoint:libname=$(MsBuildProjectName).dll --expected-exit-code=100 -v
 set CLRTestExitCode=!ERRORLEVEL!
 set CLRTestExpectedExitCode=0
     ]]></BatchCLRTestLaunchCmds>

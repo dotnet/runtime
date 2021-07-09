@@ -703,6 +703,13 @@ namespace ILCompiler.PEWriter
         /// <param name="offsetsAndTypes">16-bit entries encoding offset relative to the base RVA (low 12 bits) and relocation type (top 4 bite)</param>
         private static void FlushRelocationBlock(BlobBuilder builder, int baseRVA, List<ushort> offsetsAndTypes)
         {
+            // Ensure blocks are 4-byte aligned. This is required by kernel memory manager
+            // on Windows 8.1 and earlier.
+            if ((offsetsAndTypes.Count & 1) == 1)
+            {
+                offsetsAndTypes.Add(0);
+            }
+
             // First, emit the block header: 4 bytes starting RVA,
             builder.WriteInt32(baseRVA);
             // followed by the total block size comprising this header
@@ -834,6 +841,16 @@ namespace ILCompiler.PEWriter
                 SymbolTarget symbolTarget = _symbolMap[_win32ResourcesSymbol];
                 Section section = _sections[symbolTarget.SectionIndex];
                 Debug.Assert(section.RVAWhenPlaced != 0);
+
+                // Windows has a bug in its resource processing logic that occurs when 
+                // 1. A PE file is loaded as a data file
+                // 2. The resource data found in the resources has an RVA which has a magnitude greater than the size of the section which holds the resources
+                // 3. The offset of the start of the resource data from the start of the section is not zero.
+                //
+                // As it is impossible to effect condition 1 in the compiler, and changing condition 2 would require bloating the virtual size of the sections,
+                // instead require that the resource data is located at offset 0 within the section.
+                // We achieve that by sorting the Win32ResourcesNode as the first node.
+                Debug.Assert(symbolTarget.Offset == 0);
                 directoriesBuilder.ResourceTable = new DirectoryEntry(section.RVAWhenPlaced + symbolTarget.Offset, _win32ResourcesSize);
             }
 

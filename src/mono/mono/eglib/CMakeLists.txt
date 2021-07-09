@@ -1,6 +1,5 @@
 
 set(eglib_win32_sources
-    eglib-config.hw
     gdate-win32.c gdir-win32.c gfile-win32.c gmisc-win32.c
     gmodule-win32.c gtimer-win32.c gunicode-win32.c)
 
@@ -45,3 +44,5 @@ set(eglib_common_sources
     unicode-data.h)
 
 addprefix(eglib_sources ../eglib/ "${eglib_platform_sources};${eglib_common_sources}")
+
+add_library(eglib_objects OBJECT "${eglib_sources}")

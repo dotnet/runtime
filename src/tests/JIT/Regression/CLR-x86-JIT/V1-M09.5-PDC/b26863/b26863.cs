@@ -17,6 +17,14 @@ namespace Test
 
     class Obj
     {
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
         bool[] Method1() { return null; }
         uint Method2(bool param1) { return 0; }
         int Method3() { return 0; }
@@ -49,11 +57,11 @@ namespace Test
 
                     obj.Method1();
 
-                } while (new Random().Next(16) != 5 && new Obj().Method4());
+                } while (new Random(Seed).Next(16) != 5 && new Obj().Method4());
 
                 obj.Method1();
 
-            } while (new Random().Next(16) != 5 && new Obj().Method4());
+            } while (new Random(Seed).Next(16) != 5 && new Obj().Method4());
 
             return new float[4];
         }

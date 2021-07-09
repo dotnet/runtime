@@ -72,11 +72,12 @@ build_native()
     platformArch="$2"
     cmakeDir="$3"
     intermediatesDir="$4"
-    cmakeArgs="$5"
-    message="$6"
+    target="$5"
+    cmakeArgs="$6"
+    message="$7"
 
     # All set to commence the build
-    echo "Commencing build of \"$message\" for $__TargetOS.$__BuildArch.$__BuildType in $intermediatesDir"
+    echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__BuildArch.$__BuildType in $intermediatesDir"
 
     if [[ "$targetOS" == OSX || "$targetOS" == MacCatalyst ]]; then
         if [[ "$platformArch" == x64 ]]; then
@@ -90,7 +91,7 @@ build_native()
     fi
 
     if [[ "$targetOS" == MacCatalyst ]]; then
-        cmakeArgs="-DCLR_CMAKE_TARGET_MACCATALYST=1 $cmakeArgs"
+        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
     fi
 
     if [[ "$__UseNinja" == 1 ]]; then
@@ -188,20 +189,29 @@ EOF
         pushd "$intermediatesDir"
 
         buildTool="$SCAN_BUILD_COMMAND -o $__BinDir/scan-build-log $buildTool"
-        echo "Executing $buildTool install -j $__NumProc"
-        "$buildTool" install -j "$__NumProc"
+        echo "Executing $buildTool $target -j $__NumProc"
+        "$buildTool" $target -j "$__NumProc"
         exit_code="$?"
 
         popd
     else
         cmake_command=cmake
         if [[ "$build_arch" == "wasm" ]]; then
-            cmake_command="emcmake $cmake_command"
-        fi
+            cmake_command="emcmake cmake"
+            echo "Executing $cmake_command --build \"$intermediatesDir\" --target $target -- -j $__NumProc"
+            $cmake_command --build "$intermediatesDir" --target $target -- -j "$__NumProc"
+            exit_code="$?"
+        else
+            # For non-wasm Unix scenarios, we may have to use an old version of CMake that doesn't support
+            # multiple targets. Instead, directly invoke the build tool to build multiple targets in one invocation.
+            pushd "$intermediatesDir"
 
-        echo "Executing $cmake_command --build \"$intermediatesDir\" --target install -- -j $__NumProc"
-        $cmake_command --build "$intermediatesDir" --target install -- -j "$__NumProc"
-        exit_code="$?"
+            echo "Executing $buildTool $target -j $__NumProc"
+            "$buildTool" $target -j "$__NumProc"
+            exit_code="$?"
+
+            popd
+        fi
     fi
 
     CFLAGS="${SAVED_CFLAGS}"
@@ -266,14 +276,19 @@ __msbuildonunsupportedplatform=0
 # processors available to a single process.
 platform="$(uname)"
 if [[ "$platform" == "FreeBSD" ]]; then
-  output=("$(sysctl hw.ncpu)")
-  __NumProc="$((output[1] + 1))"
+  __NumProc=$(($(sysctl -n hw.ncpu)+1))
 elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
   __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
 elif [[ "$platform" == "Darwin" ]]; then
   __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
 else
-  __NumProc=$(nproc --all)
+  if command -v nproc > /dev/null 2>&1; then
+    __NumProc=$(nproc --all)
+  elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+    __NumProc=$(getconf _NPROCESSORS_ONLN)
+  else
+    __NumProc=1
+  fi
 fi
 
 while :; do
@@ -418,6 +433,10 @@ while :; do
 
         x64|-x64)
             __BuildArch=x64
+            ;;
+
+        s390x|-s390x)
+            __BuildArch=s390x
             ;;
 
         wasm|-wasm)

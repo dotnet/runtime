@@ -21,7 +21,7 @@
  */
 //#define mono_compiler_barrier() asm volatile("": : :"memory")
 
-#ifdef TARGET_WASM
+#ifdef HOST_WASM
 
 static inline void mono_memory_barrier (void)
 {

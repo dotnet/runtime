@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public sealed class EncryptDecrypt_Span : EncryptDecrypt
     {
         protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
@@ -104,6 +104,25 @@ namespace System.Security.Cryptography.Rsa.Tests
         public void Decrypt_WrongKey_OAEP_SHA256()
         {
             Decrypt_WrongKey(RSAEncryptionPadding.OaepSHA256);
+        }
+
+        [Fact]
+        public static void EncryptDefaultSpan()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                byte[] dest = new byte[rsa.KeySize / 8];
+
+                Assert.True(
+                    rsa.TryEncrypt(ReadOnlySpan<byte>.Empty, dest, RSAEncryptionPadding.Pkcs1, out int written));
+
+                Assert.Equal(dest.Length, written);
+
+                Assert.True(
+                    rsa.TryEncrypt(ReadOnlySpan<byte>.Empty, dest, RSAEncryptionPadding.OaepSHA1, out written));
+
+                Assert.Equal(dest.Length, written);
+            }
         }
 
         private static void Decrypt_WrongKey(RSAEncryptionPadding padding)

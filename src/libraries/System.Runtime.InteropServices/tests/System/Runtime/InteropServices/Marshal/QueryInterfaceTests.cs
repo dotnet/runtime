@@ -124,15 +124,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void QueryInterface_Unix_ThrowsPlatformNotSupportedException()
-        {
-            Guid iid = Guid.Empty;
-            Assert.Throws<PlatformNotSupportedException>(() => Marshal.QueryInterface(IntPtr.Zero, ref iid, out IntPtr ppv));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void QueryInterface_ZeroPointer_ThrowsArgumentNullException()
         {
             Guid iid = Guid.Empty;

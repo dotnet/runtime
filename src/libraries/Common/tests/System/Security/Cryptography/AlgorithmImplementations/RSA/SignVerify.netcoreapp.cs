@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
+
 namespace System.Security.Cryptography.Rsa.Tests
 {
     public sealed class SignVerify_Span : SignVerify
@@ -27,6 +29,39 @@ namespace System.Security.Cryptography.Rsa.Tests
                 {
                     Array.Resize(ref result, bytesWritten);
                     return result;
+                }
+            }
+        }
+
+        [Fact]
+        public static void SignDefaultSpanHash()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                byte[] signature = new byte[2048 / 8];
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => rsa.TrySignHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1, out _));
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => rsa.TrySignHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pss, out _));
+            }
+        }
+
+        [Fact]
+        public static void VerifyDefaultSpanHash()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                byte[] signature = new byte[2048 / 8];
+
+                Assert.False(
+                    rsa.VerifyHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1));
+
+                if (RSAFactory.SupportsPss)
+                {
+                    Assert.False(
+                        rsa.VerifyHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
                 }
             }
         }

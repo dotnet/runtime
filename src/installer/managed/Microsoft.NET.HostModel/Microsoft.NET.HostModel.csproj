@@ -15,6 +15,7 @@
     <!-- Historically, the key for the managed projects is the AspNetCore key Arcade carries. -->
     <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
+    <PackageId Condition="'$(PgoInstrument)' == 'true'">Microsoft.Net.HostModel.PGO</PackageId>
   </PropertyGroup>
 
   <ItemGroup>

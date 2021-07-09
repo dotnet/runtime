@@ -1023,7 +1023,7 @@ namespace System.Xml
                 }
 
                 node = node.ParentNode;
-            };
+            }
 
             if (scope != XmlNamespaceScope.Local)
             {

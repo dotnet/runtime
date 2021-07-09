@@ -939,7 +939,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceMembers(
             }
         }
 
-        if(Classification & mdcMethodImpl)
+        if (Classification & mdcMethodImpl)
         {   // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
         // of them this method participates in as the BODY.
@@ -1241,7 +1241,11 @@ VOID MethodTableBuilder::BuildInteropVTable_ExpandInterface(InterfaceInfo_t *pIn
     if (pNewInterface->GetNumInterfaces() != 0) {
         MethodTable::InterfaceMapIterator it = pNewInterface->IterateInterfaceMap();
         while (it.Next()) {
-            BuildInteropVTable_ExpandInterface(pInterfaceMap, it.GetInterface(),
+            MethodTable *pItf = it.GetInterfaceApprox();
+            if (pItf->HasInstantiation() || pItf->IsSpecialMarkerTypeForGenericCasting())
+                continue;
+            
+            BuildInteropVTable_ExpandInterface(pInterfaceMap, pItf,
                                                pwInterfaceListSize, pdwMaxInterfaceMethods, FALSE);
         }
     }
@@ -2807,7 +2811,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
         // on this type so we can just compare the tok with the body token found
         // from the overrides.
         for(DWORD impls = 0; impls < bmtMethodImpl->dwNumberMethodImpls; impls++) {
-            if(bmtMethodImpl->rgMethodImplTokens[impls].methodBody == tok) {
+            if ((bmtMethodImpl->rgMethodImplTokens[impls].methodBody == tok) && !IsMdStatic(dwMemberAttrs)) {
                 Classification |= mdcMethodImpl;
                 break;
             }
@@ -3311,7 +3315,7 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
             IfFailRet(pMDInternalImport->GetNameAndSigOfMemberRef(tkMethod, &pSig, &cSig, &szMember));
 
             if (isCallConv(
-                MetaSig::GetCallingConvention(NULL, Signature(pSig, cSig)),
+                MetaSig::GetCallingConvention(Signature(pSig, cSig)),
                 IMAGE_CEE_CS_CALLCONV_FIELD))
             {
                 return VLDTR_E_MR_BADCALLINGCONV;

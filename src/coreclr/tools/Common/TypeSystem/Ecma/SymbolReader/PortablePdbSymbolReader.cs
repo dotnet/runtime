@@ -123,12 +123,25 @@ namespace Internal.TypeSystem.Ecma
 
             var sequencePoints = debugInformation.GetSequencePoints();
 
+            DocumentHandle previousDocumentHandle = default;
+            string previousDocumentUrl = null;
+
             foreach (var sequencePoint in sequencePoints)
             {
-                if (sequencePoint.StartLine == 0xFEEFEE)
+                if (sequencePoint.StartLine == SequencePoint.HiddenLine)
                     continue;
 
-                var url = _reader.GetString(_reader.GetDocument(sequencePoint.Document).Name);
+                string url;
+                if (sequencePoint.Document == previousDocumentHandle)
+                {
+                    url = previousDocumentUrl;
+                }
+                else
+                {
+                    url = _reader.GetString(_reader.GetDocument(sequencePoint.Document).Name);
+                    previousDocumentHandle = sequencePoint.Document;
+                    previousDocumentUrl = url;
+                }
 
                 yield return new ILSequencePoint(sequencePoint.Offset, url, sequencePoint.StartLine);
             }

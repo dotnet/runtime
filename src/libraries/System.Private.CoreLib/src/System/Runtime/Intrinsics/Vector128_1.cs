@@ -42,7 +42,7 @@ namespace System.Runtime.Intrinsics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
                 return Vector128.Size / Unsafe.SizeOf<T>();
             }
         }
@@ -54,7 +54,7 @@ namespace System.Runtime.Intrinsics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
                 return default;
             }
         }
@@ -66,7 +66,7 @@ namespace System.Runtime.Intrinsics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
                 return Vector128.Create(0xFFFFFFFF).As<uint, T>();
             }
         }
@@ -108,7 +108,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector128<T> other)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             if (Sse.IsSupported && (typeof(T) == typeof(float)))
             {
@@ -165,7 +165,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public override int GetHashCode()
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             HashCode hashCode = default;
 
@@ -182,7 +182,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public override string ToString()
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             int lastElement = Count - 1;
             var sb = new ValueStringBuilder(stackalloc char[64]);

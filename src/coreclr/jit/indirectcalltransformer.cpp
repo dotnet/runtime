@@ -80,7 +80,7 @@ public:
     {
         int count = 0;
 
-        for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             count += TransformBlock(block);
         }
@@ -100,7 +100,7 @@ private:
     {
         int count = 0;
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             if (compiler->doesMethodHaveFatPointer() && ContainsFatCalli(stmt))
             {
@@ -230,7 +230,7 @@ private:
         void CreateRemainder()
         {
             remainderBlock = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
-            remainderBlock->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL | BBF_INTERNAL;
+            remainderBlock->bbFlags |= BBF_INTERNAL;
         }
 
         virtual void CreateCheck() = 0;
@@ -513,9 +513,11 @@ private:
         {
             origCall = GetCall(stmt);
 
-            JITDUMP("*** %s contemplating [%06u]\n", Name(), compiler->dspTreeID(origCall));
+            JITDUMP("\n----------------\n\n*** %s contemplating [%06u] in " FMT_BB " \n", Name(),
+                    compiler->dspTreeID(origCall), currBlock->bbNum);
 
             // We currently need inline candidate info to guarded devirt.
+            //
             if (!origCall->IsInlineCandidate())
             {
                 JITDUMP("*** %s Bailing on [%06u] -- not an inline candidate\n", Name(), compiler->dspTreeID(origCall));
@@ -523,30 +525,27 @@ private:
                 return;
             }
 
-            // For now, bail on transforming calls that still appear
-            // to return structs by value as there is deferred work
-            // needed to fix up the return type.
-            //
-            // See for instance fgUpdateInlineReturnExpressionPlaceHolder.
-            if (origCall->TypeGet() == TYP_STRUCT)
-            {
-                JITDUMP("*** %s Bailing on [%06u] -- can't handle by-value struct returns yet\n", Name(),
-                        compiler->dspTreeID(origCall));
-                ClearFlag();
-
-                // For stub calls restore the stub address
-                if (origCall->IsVirtualStub())
-                {
-                    origCall->gtStubCallStubAddr = origCall->gtInlineCandidateInfo->stubAddr;
-                }
-                return;
-            }
-
             likelihood = origCall->gtGuardedDevirtualizationCandidateInfo->likelihood;
             assert((likelihood >= 0) && (likelihood <= 100));
             JITDUMP("Likelihood of correct guess is %u\n", likelihood);
 
+            const bool isChainedGdv = (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) != 0;
+
+            if (isChainedGdv)
+            {
+                JITDUMP("Expansion will chain to the previous GDV\n");
+            }
+
             Transform();
+
+            if (isChainedGdv)
+            {
+                TransformForChainedGdv();
+            }
+
+            // Look ahead and see if there's another Gdv we might chain to this one.
+            //
+            ScoutForChainedGdv();
         }
 
     protected:
@@ -584,7 +583,10 @@ private:
         //
         virtual void CreateCheck()
         {
-            checkBlock = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
+            // There's no need for a new block here. We can just append to currBlock.
+            //
+            checkBlock             = currBlock;
+            checkBlock->bbJumpKind = BBJ_COND;
 
             // Fetch method table from object arg to call.
             GenTree* thisTree = compiler->gtCloneExpr(origCall->gtCallThisArg->GetNode());
@@ -605,14 +607,23 @@ private:
                 origCall->gtCallThisArg = compiler->gtNewCallArgs(compiler->gtNewLclvNode(thisTempNum, TYP_REF));
             }
 
-            GenTree* methodTable = compiler->gtNewMethodTableLookup(thisTree);
+            // Remember the current last statement. If we're doing a chained GDV, we'll clone/copy
+            // all the code in the check block up to and including this statement.
+            //
+            // Note it's important that we clone/copy the temp assign above, if we created one,
+            // because flow along the "cold path" is going to bypass the check block.
+            //
+            lastStmt = checkBlock->lastStmt();
 
             // Find target method table
+            //
+            GenTree*                              methodTable       = compiler->gtNewMethodTableLookup(thisTree);
             GuardedDevirtualizationCandidateInfo* guardedInfo       = origCall->gtGuardedDevirtualizationCandidateInfo;
             CORINFO_CLASS_HANDLE                  clsHnd            = guardedInfo->guardedClassHandle;
             GenTree*                              targetMethodTable = compiler->gtNewIconEmbClsHndNode(clsHnd);
 
             // Compare and jump to else (which does the indirect call) if NOT equal
+            //
             GenTree*   methodTableCompare = compiler->gtNewOperNode(GT_NE, TYP_INT, targetMethodTable, methodTable);
             GenTree*   jmpTree            = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, methodTableCompare);
             Statement* jmpStmt            = compiler->fgNewStmtFromTree(jmpTree, stmt->GetILOffsetX());
@@ -625,16 +636,13 @@ private:
         virtual void FixupRetExpr()
         {
             // If call returns a value, we need to copy it to a temp, and
-            // update the associated GT_RET_EXPR to refer to the temp instead
+            // bash the associated GT_RET_EXPR to refer to the temp instead
             // of the call.
             //
             // Note implicit by-ref returns should have already been converted
             // so any struct copy we induce here should be cheap.
-            //
-            // Todo: make sure we understand how this interacts with return type
-            // munging for small structs.
-            InlineCandidateInfo* inlineInfo = origCall->gtInlineCandidateInfo;
-            GenTree*             retExpr    = inlineInfo->retExpr;
+            InlineCandidateInfo* const inlineInfo = origCall->gtInlineCandidateInfo;
+            GenTree* const             retExpr    = inlineInfo->retExpr;
 
             // Sanity check the ret expr if non-null: it should refer to the original call.
             if (retExpr != nullptr)
@@ -644,8 +652,44 @@ private:
 
             if (origCall->TypeGet() != TYP_VOID)
             {
-                returnTemp = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt return temp"));
-                JITDUMP("Reworking call(s) to return value via a new temp V%02u\n", returnTemp);
+                // If there's a spill temp already associated with this inline candidate,
+                // use that instead of allocating a new temp.
+                //
+                returnTemp = inlineInfo->preexistingSpillTemp;
+
+                if (returnTemp != BAD_VAR_NUM)
+                {
+                    JITDUMP("Reworking call(s) to return value via a existing return temp V%02u\n", returnTemp);
+
+                    // We will be introducing multiple defs for this temp, so make sure
+                    // it is no longer marked as single def.
+                    //
+                    // Otherwise, we could make an incorrect type deduction. Say the
+                    // original call site returns a B, but after we devirtualize along the
+                    // GDV happy path we see that method returns a D. We can't then assume that
+                    // the return temp is type D, because we don't know what type the fallback
+                    // path returns. So we have to stick with the current type for B as the
+                    // return type.
+                    //
+                    // Note local vars always live in the root method's symbol table. So we
+                    // need to use the root compiler for lookup here.
+                    //
+                    LclVarDsc* const returnTempLcl = compiler->impInlineRoot()->lvaGetDesc(returnTemp);
+
+                    if (returnTempLcl->lvSingleDef == 1)
+                    {
+                        // In this case it's ok if we already updated the type assuming single def,
+                        // we just don't want any further updates.
+                        //
+                        JITDUMP("Return temp V%02u is no longer a single def temp\n", returnTemp);
+                        returnTempLcl->lvSingleDef = 0;
+                    }
+                }
+                else
+                {
+                    returnTemp = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt return temp"));
+                    JITDUMP("Reworking call(s) to return value via a new temp V%02u\n", returnTemp);
+                }
 
                 if (varTypeIsStruct(origCall))
                 {
@@ -654,23 +698,22 @@ private:
 
                 GenTree* tempTree = compiler->gtNewLclvNode(returnTemp, origCall->TypeGet());
 
-                JITDUMP("Updating GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(retExpr),
+                JITDUMP("Bashing GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(retExpr),
                         returnTemp);
-                retExpr->AsRetExpr()->gtInlineCandidate = tempTree;
+
+                retExpr->ReplaceWith(tempTree, compiler);
             }
             else if (retExpr != nullptr)
             {
                 // We still oddly produce GT_RET_EXPRs for some void
-                // returning calls. Just patch the ret expr to a NOP.
+                // returning calls. Just bash the ret expr to a NOP.
                 //
                 // Todo: consider bagging creation of these RET_EXPRs. The only possible
                 // benefit they provide is stitching back larger trees for failed inlines
                 // of void-returning methods. But then the calls likely sit in commas and
                 // the benefit of a larger tree is unclear.
-                JITDUMP("Updating GT_RET_EXPR [%06u] for VOID return to refer to a NOP\n",
-                        compiler->dspTreeID(retExpr));
-                GenTree* nopTree                        = compiler->gtNewNothingNode();
-                retExpr->AsRetExpr()->gtInlineCandidate = nopTree;
+                JITDUMP("Bashing GT_RET_EXPR [%06u] for VOID return to NOP\n", compiler->dspTreeID(retExpr));
+                retExpr->gtBashToNOP();
             }
             else
             {
@@ -703,53 +746,82 @@ private:
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), thenBlock->bbNum);
 
-            // Then invoke impDevirtualizeCall to actually
-            // transform the call for us. It should succeed.... as we have
-            // now provided an exact typed this.
-            CORINFO_METHOD_HANDLE  methodHnd              = inlineInfo->methInfo.ftn;
-            unsigned               methodFlags            = inlineInfo->methAttr;
+            // Then invoke impDevirtualizeCall to actually transform the call for us,
+            // given the original (base) method and the exact guarded class. It should succeed.
+            //
+            CORINFO_METHOD_HANDLE  methodHnd              = call->gtCallMethHnd;
+            unsigned               methodFlags            = compiler->info.compCompHnd->getMethodAttribs(methodHnd);
             CORINFO_CONTEXT_HANDLE context                = inlineInfo->exactContextHnd;
             const bool             isLateDevirtualization = true;
-            bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
-            compiler->impDevirtualizeCall(call, &methodHnd, &methodFlags, &context, nullptr, isLateDevirtualization,
-                                          explicitTailCall);
+            const bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
+            compiler->impDevirtualizeCall(call, nullptr, &methodHnd, &methodFlags, &context, nullptr,
+                                          isLateDevirtualization, explicitTailCall);
 
-            // Presumably devirt might fail? If so we should try and avoid
-            // making this a guarded devirt candidate instead of ending
-            // up here.
+            // We know this call can devirtualize or we would not have set up GDV here.
+            // So impDevirtualizeCall should succeed in devirtualizing.
+            //
             assert(!call->IsVirtual());
 
-            // Re-establish this call as an inline candidate.
-            GenTree* oldRetExpr = inlineInfo->retExpr;
-            // Todo -- pass this back from impdevirt...?
-            inlineInfo->clsHandle       = compiler->info.compCompHnd->getMethodClass(methodHnd);
-            inlineInfo->exactContextHnd = context;
-            call->gtInlineCandidateInfo = inlineInfo;
-
-            // Add the call.
-            compiler->fgNewStmtAtEnd(thenBlock, call);
-
-            // If there was a ret expr for this call, we need to create a new one
-            // and append it just after the call.
+            // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
+            // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
             //
-            // Note the original GT_RET_EXPR is sitting at the join point of the
-            // guarded expansion and for non-void calls, and now refers to a temp local;
-            // we set all this up in FixupRetExpr().
-            if (oldRetExpr != nullptr)
+            CORINFO_METHOD_HANDLE unboxedMethodHnd = inlineInfo->guardedMethodUnboxedEntryHandle;
+            if ((unboxedMethodHnd != nullptr) && (methodHnd != unboxedMethodHnd))
             {
-                GenTree* retExpr = compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet(), thenBlock->bbFlags);
-                inlineInfo->retExpr = retExpr;
+                // Demote this call to a non-inline candidate
+                //
+                JITDUMP("Devirtualization was unable to use the unboxed entry; so marking call (to boxed entry) as not "
+                        "inlineable\n");
+
+                call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+                call->gtInlineCandidateInfo = nullptr;
 
                 if (returnTemp != BAD_VAR_NUM)
                 {
-                    retExpr = compiler->gtNewTempAssign(returnTemp, retExpr);
+                    GenTree* const assign = compiler->gtNewTempAssign(returnTemp, call);
+                    compiler->fgNewStmtAtEnd(thenBlock, assign);
                 }
                 else
                 {
-                    // We should always have a return temp if we return results by value
-                    assert(origCall->TypeGet() == TYP_VOID);
+                    compiler->fgNewStmtAtEnd(thenBlock, call);
                 }
-                compiler->fgNewStmtAtEnd(thenBlock, retExpr);
+            }
+            else
+            {
+                // Add the call.
+                //
+                compiler->fgNewStmtAtEnd(thenBlock, call);
+
+                // Re-establish this call as an inline candidate.
+                //
+                GenTree* oldRetExpr              = inlineInfo->retExpr;
+                inlineInfo->clsHandle            = compiler->info.compCompHnd->getMethodClass(methodHnd);
+                inlineInfo->exactContextHnd      = context;
+                inlineInfo->preexistingSpillTemp = returnTemp;
+                call->gtInlineCandidateInfo      = inlineInfo;
+
+                // If there was a ret expr for this call, we need to create a new one
+                // and append it just after the call.
+                //
+                // Note the original GT_RET_EXPR has been bashed to a temp.
+                // we set all this up in FixupRetExpr().
+                if (oldRetExpr != nullptr)
+                {
+                    GenTree* retExpr =
+                        compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet(), thenBlock->bbFlags);
+                    inlineInfo->retExpr = retExpr;
+
+                    if (returnTemp != BAD_VAR_NUM)
+                    {
+                        retExpr = compiler->gtNewTempAssign(returnTemp, retExpr);
+                    }
+                    else
+                    {
+                        // We should always have a return temp if we return results by value
+                        assert(origCall->TypeGet() == TYP_VOID);
+                    }
+                    compiler->fgNewStmtAtEnd(thenBlock, retExpr);
+                }
             }
         }
 
@@ -789,11 +861,212 @@ private:
             compiler->fgInsertStmtAtEnd(elseBlock, newStmt);
 
             // Set the original statement to a nop.
+            //
             stmt->SetRootNode(compiler->gtNewNothingNode());
         }
 
+        // For chained gdv, we modify the expansion as follows:
+        //
+        // We verify the check block has two BBJ_NONE/ALWAYS predecessors, one of
+        // which (the "cold path") ends in a normal call, the other in an
+        // inline candidate call.
+        //
+        // All the statements in the check block before the type test are copied to the
+        // predecessor blocks (one via cloning, the other via direct copy).
+        //
+        // The cold path block is then modified to bypass the type test and jump
+        // directly to the else block.
+        //
+        void TransformForChainedGdv()
+        {
+            // Find the hot/cold predecessors. (Consider: just record these when
+            // we did the scouting).
+            //
+            BasicBlock* const coldBlock = checkBlock->bbPrev;
+
+            if (coldBlock->bbJumpKind != BBJ_NONE)
+            {
+                JITDUMP("Unexpected flow from cold path " FMT_BB "\n", coldBlock->bbNum);
+                return;
+            }
+
+            BasicBlock* const hotBlock = coldBlock->bbPrev;
+
+            if ((hotBlock->bbJumpKind != BBJ_ALWAYS) || (hotBlock->bbJumpDest != checkBlock))
+            {
+                JITDUMP("Unexpected flow from hot path " FMT_BB "\n", hotBlock->bbNum);
+                return;
+            }
+
+            JITDUMP("Hot pred block is " FMT_BB " and cold pred block is " FMT_BB "\n", hotBlock->bbNum,
+                    coldBlock->bbNum);
+
+            // Clone and and copy the statements in the check block up to
+            // and including lastStmt over to the hot block.
+            //
+            // This will be the "hot" copy of the code.
+            //
+            Statement* const afterLastStmt = lastStmt->GetNextStmt();
+
+            for (Statement* checkStmt = checkBlock->firstStmt(); checkStmt != afterLastStmt;)
+            {
+                Statement* const nextStmt = checkStmt->GetNextStmt();
+
+                // We should have ensured during scouting that all the statements
+                // here can safely be cloned.
+                //
+                // Consider: allow inline candidates here, and keep them viable
+                // in the hot copy, and demote them in the cold copy.
+                //
+                Statement* const clonedStmt = compiler->gtCloneStmt(checkStmt);
+                compiler->fgInsertStmtAtEnd(hotBlock, clonedStmt);
+                checkStmt = nextStmt;
+            }
+
+            // Now move the same span of statements to the cold block.
+            //
+            for (Statement* checkStmt = checkBlock->firstStmt(); checkStmt != afterLastStmt;)
+            {
+                Statement* const nextStmt = checkStmt->GetNextStmt();
+                compiler->fgUnlinkStmt(checkBlock, checkStmt);
+                compiler->fgInsertStmtAtEnd(coldBlock, checkStmt);
+                checkStmt = nextStmt;
+            }
+
+            // Finally, rewire the cold block to jump to the else block,
+            // not fall through to the the check block.
+            //
+            coldBlock->bbJumpKind = BBJ_ALWAYS;
+            coldBlock->bbJumpDest = elseBlock;
+        }
+
+        // When the current candidate hads sufficiently high likelihood, scan
+        // the remainer block looking for another GDV candidate.
+        //
+        // (also consider: if currBlock has sufficiently high execution frequency)
+        //
+        // We want to see if it makes sense to mark the subsequent GDV site as a "chained"
+        // GDV, where we duplicate the code in between to stitch together the high-likehood
+        // outcomes without a join.
+        //
+        void ScoutForChainedGdv()
+        {
+            // If the current call isn't sufficiently likely, don't try and form a chain.
+            //
+            const unsigned gdvChainLikelihood = JitConfig.JitGuardedDevirtualizationChainLikelihood();
+
+            if (likelihood < gdvChainLikelihood)
+            {
+                return;
+            }
+
+            JITDUMP("Scouting for possible GDV chain as likelihood %u >= %u\n", likelihood, gdvChainLikelihood);
+
+            const unsigned maxStatementDup   = JitConfig.JitGuardedDevirtualizationChainStatements();
+            unsigned       chainStatementDup = 0;
+            unsigned       chainNodeDup      = 0;
+            unsigned       chainLikelihood   = 0;
+            GenTreeCall*   chainedCall       = nullptr;
+
+            // Helper class to check a statement for uncloneable nodes and count
+            // the total number of nodes
+            //
+            class UnclonableVisitor final : public GenTreeVisitor<UnclonableVisitor>
+            {
+            public:
+                enum
+                {
+                    DoPreOrder = true
+                };
+
+                GenTree* m_unclonableNode;
+                unsigned m_nodeCount;
+
+                UnclonableVisitor(Compiler* compiler)
+                    : GenTreeVisitor<UnclonableVisitor>(compiler), m_unclonableNode(nullptr), m_nodeCount(0)
+                {
+                }
+
+                fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+                {
+                    GenTree* const node = *use;
+
+                    if (node->IsCall())
+                    {
+                        GenTreeCall* const call = node->AsCall();
+
+                        if (call->IsInlineCandidate() && !call->IsGuardedDevirtualizationCandidate())
+                        {
+                            m_unclonableNode = node;
+                            return fgWalkResult::WALK_ABORT;
+                        }
+                    }
+                    else if (node->OperIs(GT_RET_EXPR))
+                    {
+                        m_unclonableNode = node;
+                        return fgWalkResult::WALK_ABORT;
+                    }
+
+                    m_nodeCount++;
+                    return fgWalkResult::WALK_CONTINUE;
+                }
+            };
+
+            for (Statement* const nextStmt : remainderBlock->Statements())
+            {
+                JITDUMP(" Scouting " FMT_STMT "\n", nextStmt->GetID());
+
+                // See if this is a guarded devirt candidate.
+                // These will be top-level trees.
+                //
+                GenTree* const root = nextStmt->GetRootNode();
+
+                if (root->IsCall())
+                {
+                    GenTreeCall* const call = root->AsCall();
+
+                    if (call->IsGuardedDevirtualizationCandidate() &&
+                        (call->gtGuardedDevirtualizationCandidateInfo->likelihood >= gdvChainLikelihood))
+                    {
+                        JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
+                                compiler->dspTreeID(call), call->gtGuardedDevirtualizationCandidateInfo->likelihood,
+                                gdvChainLikelihood, chainStatementDup, chainNodeDup);
+
+                        call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_CHAIN;
+                        break;
+                    }
+                }
+
+                // Stop searching if we've accumulated too much dup cost.
+                // Consider: use node count instead.
+                //
+                if (chainStatementDup >= maxStatementDup)
+                {
+                    JITDUMP("  reached max statement dup limit of %u, bailing out\n", maxStatementDup);
+                    break;
+                }
+
+                // See if this statement's tree is one that we can clone.
+                //
+                UnclonableVisitor unclonableVisitor(compiler);
+                unclonableVisitor.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
+
+                if (unclonableVisitor.m_unclonableNode != nullptr)
+                {
+                    JITDUMP("  node [%06u] can't be cloned\n", compiler->dspTreeID(unclonableVisitor.m_unclonableNode));
+                    break;
+                }
+
+                // Looks like we can clone this, so keep scouting.
+                //
+                chainStatementDup++;
+                chainNodeDup += unclonableVisitor.m_nodeCount;
+            }
+        }
+
     private:
-        unsigned returnTemp;
+        unsigned   returnTemp;
+        Statement* lastStmt;
     };
 
     // Runtime lookup with dynamic dictionary expansion transformer,
@@ -1000,9 +1273,9 @@ void Compiler::CheckNoTransformableIndirectCallsRemain()
     assert(!doesMethodHaveGuardedDevirtualization());
     assert(!doesMethodHaveExpRuntimeLookup());
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckForTransformableIndirectCalls);
         }

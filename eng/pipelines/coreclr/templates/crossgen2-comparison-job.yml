@@ -67,6 +67,8 @@ jobs:
       value: $(artifactsDirectory)$(dir)tests$(dir)coreclr$(dir)$(targetFlavor)$(dir)Tests$(dir)Core_Root
     - name: targetarch
       value: ${{ parameters.targetarch }}
+    - name: compiler_arch_os
+      value: ${{ format('{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     - name: crossgencompare_build_artifact
       value: crossgen_comparison_build_${{ parameters.targetos }}_${{ parameters.targetarch }}
     - name: displayname_comparison_job
@@ -146,34 +148,39 @@ jobs:
             echo Targeting $(targetFlavor) ;
             chmod +x     $HELIX_WORKITEM_PAYLOAD/corerun;
             mkdir -p     $HELIX_WORKITEM_PAYLOAD/log;
-            export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD;
+            export CORE_ROOT=$HELIX_WORKITEM_PAYLOAD;
             python3 -u $HELIX_CORRELATION_PAYLOAD/crossgen2_comparison.py crossgen_framework
             --crossgen    $HELIX_WORKITEM_PAYLOAD/crossgen2/crossgen2.dll
             --dotnet      $HELIX_WORKITEM_PAYLOAD/corerun
             --core_root   $HELIX_WORKITEM_PAYLOAD/prebuiltWork/dlls
             --result_dir  $HELIX_WORKITEM_PAYLOAD/log
             --target_os   $(target_crossgen2_os)
-            --target_arch $(targetarch);
+            --target_arch $(targetarch)
+            --compiler_arch_os $(compiler_arch_os);
             python3 -u $HELIX_CORRELATION_PAYLOAD/crossgen2_comparison.py compare
             --base_dir   $HELIX_WORKITEM_PAYLOAD/prebuiltWork/log
             --diff_dir   $HELIX_WORKITEM_PAYLOAD/log
+            --testresults $HELIX_WORKITEM_ROOT/testResults.xml
+            --target_arch_os $(target_crossgen2_os)_$(targetarch)
         ${{ if eq(parameters.osGroup, 'windows') }}:
           WorkItemCommand:
             echo $(displayname_comparison_job) &
             echo Targeting $(targetFlavor) &
             md        %HELIX_WORKITEM_PAYLOAD%\log &
-            set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD% &
+            set CORE_ROOT=%HELIX_WORKITEM_PAYLOAD%&
             python -u %HELIX_CORRELATION_PAYLOAD%\crossgen2_comparison.py crossgen_framework
             --crossgen    %HELIX_WORKITEM_PAYLOAD%\crossgen2\crossgen2.dll
             --dotnet      %HELIX_WORKITEM_PAYLOAD%\corerun.exe
             --core_root   %HELIX_WORKITEM_PAYLOAD%\prebuiltWork\dlls
             --result_dir  %HELIX_WORKITEM_PAYLOAD%\log
             --target_os   $(target_crossgen2_os)
-            --target_arch $(targetarch) &
+            --target_arch $(targetarch)
+            --compiler_arch_os $(compiler_arch_os) &
             python -u %HELIX_CORRELATION_PAYLOAD%\crossgen2_comparison.py compare
             --base_dir   %HELIX_WORKITEM_PAYLOAD%\prebuiltWork\log
             --diff_dir   %HELIX_WORKITEM_PAYLOAD%\log
-
+            --testresults %HELIX_WORKITEM_ROOT%\testResults.xml
+            --target_arch_os $(target_crossgen2_os)_$(targetarch)
     # Publish log
     - task: PublishPipelineArtifact@1
       displayName: Publish log

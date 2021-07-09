@@ -480,9 +480,7 @@ namespace System.Net
             }
         }
 
-#pragma warning disable SYSLIB0014
         public ServicePoint ServicePoint => _servicePoint ??= ServicePointManager.FindServicePoint(_uri);
-#pragma warning restore SYSLIB0014
 
         internal bool Aborted
         {
@@ -492,9 +490,7 @@ namespace System.Net
             }
         }
 
-#pragma warning disable SYSLIB0014
         internal FtpWebRequest(Uri uri)
-#pragma warning restore SYSLIB0014
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, uri);
 

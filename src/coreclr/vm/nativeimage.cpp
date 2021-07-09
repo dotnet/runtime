@@ -114,13 +114,15 @@ NativeImage *NativeImage::Open(
     Module *componentModule,
     LPCUTF8 nativeImageFileName,
     AssemblyLoadContext *pAssemblyLoadContext,
-    LoaderAllocator *pLoaderAllocator)
+    LoaderAllocator *pLoaderAllocator,
+    /* out */ bool *isNewNativeImage)
 {
     STANDARD_VM_CONTRACT;
 
     NativeImage *pExistingImage = AppDomain::GetCurrentDomain()->GetNativeImage(nativeImageFileName);
     if (pExistingImage != nullptr)
     {
+        *isNewNativeImage = false;
         return pExistingImage->GetAssemblyLoadContext() == pAssemblyLoadContext ? pExistingImage : nullptr;
     }
 
@@ -141,59 +143,69 @@ NativeImage *NativeImage::Open(
 
     NewHolder<PEImageLayout> peLoadedImage;
 
-    EX_TRY
+    BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(fullPath, /*pathIsBundleRelative */ true);
+    if (bundleFileLocation.IsValid())
     {
-        peLoadedImage = PEImageLayout::LoadNative(fullPath);
+        PEImageHolder pImage = PEImage::OpenImage(fullPath, MDInternalImport_NoCache, bundleFileLocation);
+        peLoadedImage = pImage->GetLayout(PEImageLayout::LAYOUT_MAPPED, PEImage::LAYOUT_CREATEIFNEEDED);
     }
-    EX_CATCH
-    {
-        SString searchPaths(searchPathsConfig);
-        SString::CIterator start = searchPaths.Begin();
-        while (start != searchPaths.End())
-        {
-            SString::CIterator end = start;
-            if (!searchPaths.Find(end, PATH_SEPARATOR_CHAR_W))
-            {
-                end = searchPaths.End();
-            }
-            fullPath.Set(searchPaths, start, (COUNT_T)(end - start));
-
-            if (end != searchPaths.End())
-            {
-                // Skip path separator character
-                ++end;
-            }
-            start = end;
-
-            if (fullPath.GetCount() == 0)
-            {
-                continue;
-            }
-
-            fullPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
-            fullPath += compositeImageFileName;
-            
-            EX_TRY
-            {
-                peLoadedImage = PEImageLayout::LoadNative(fullPath);
-                break;
-            }
-            EX_CATCH
-            {
-            }
-            EX_END_CATCH(SwallowAllExceptions)
-        }
-    }
-    EX_END_CATCH(SwallowAllExceptions)
 
     if (peLoadedImage.IsNull())
     {
-        // Failed to locate the native composite R2R image
-        LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load native image '%s' for component assembly '%S' using search paths: '%S'\n",
-            nativeImageFileName,
-            path.GetUnicode(),
-            searchPathsConfig != nullptr ? searchPathsConfig : W("<use COMPlus_NativeImageSearchPaths to set>")));
-        RaiseFailFastException(nullptr, nullptr, 0);
+        EX_TRY
+        {
+            peLoadedImage = PEImageLayout::LoadNative(fullPath);
+        }
+        EX_CATCH
+        {
+            SString searchPaths(searchPathsConfig);
+            SString::CIterator start = searchPaths.Begin();
+            while (start != searchPaths.End())
+            {
+                SString::CIterator end = start;
+                if (!searchPaths.Find(end, PATH_SEPARATOR_CHAR_W))
+                {
+                    end = searchPaths.End();
+                }
+                fullPath.Set(searchPaths, start, (COUNT_T)(end - start));
+
+                if (end != searchPaths.End())
+                {
+                    // Skip path separator character
+                    ++end;
+                }
+                start = end;
+
+                if (fullPath.GetCount() == 0)
+                {
+                    continue;
+                }
+
+                fullPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
+                fullPath += compositeImageFileName;
+                
+                EX_TRY
+                {
+                    peLoadedImage = PEImageLayout::LoadNative(fullPath);
+                    break;
+                }
+                EX_CATCH
+                {
+                }
+                EX_END_CATCH(SwallowAllExceptions)
+            }
+        }
+        EX_END_CATCH(SwallowAllExceptions)
+
+        if (peLoadedImage.IsNull())
+        {
+            // Failed to locate the native composite R2R image
+            LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load native image '%s' for component assembly '%S' using search paths: '%S'\n",
+                nativeImageFileName,
+                path.GetUnicode(),
+                searchPathsConfig != nullptr ? searchPathsConfig : W("<use COMPlus_NativeImageSearchPaths to set>")));
+            RaiseFailFastException(nullptr, nullptr, 0);
+        }
     }
 
     READYTORUN_HEADER *pHeader = (READYTORUN_HEADER *)peLoadedImage->GetExport("RTR_HEADER");
@@ -216,10 +228,12 @@ NativeImage *NativeImage::Open(
     if (pExistingImage == nullptr)
     {
         // No pre-existing image, new image has been stored in the map
+        *isNewNativeImage = true;
         amTracker.SuppressRelease();
         return image.Extract();
     }
     // Return pre-existing image if it was loaded into the same ALC, null otherwise
+    *isNewNativeImage = false;
     return (pExistingImage->GetAssemblyLoadContext() == pAssemblyLoadContext ? pExistingImage : nullptr);
 }
 #endif
@@ -286,7 +300,7 @@ void NativeImage::CheckAssemblyMvid(Assembly *assembly) const
 
     SString message;
     message.Printf(W("MVID mismatch between loaded assembly '%s' (MVID = %s) and an assembly with the same simple name embedded in the native image '%s' (MVID = %s)"),
-        assembly->GetSimpleName(),
+        SString(SString::Utf8, assembly->GetSimpleName()).GetUnicode(),
         assemblyMvidText,
         SString(SString::Utf8, GetFileName()).GetUnicode(),
         componentMvidText);

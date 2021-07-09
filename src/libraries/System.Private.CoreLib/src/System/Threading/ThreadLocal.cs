@@ -588,7 +588,7 @@ namespace System.Threading
         /// </summary>
         private static int GetNewTableSize(int minSize)
         {
-            if ((uint)minSize > Array.MaxArrayLength)
+            if ((uint)minSize > Array.MaxLength)
             {
                 // Intentionally return a value that will result in an OutOfMemoryException
                 return int.MaxValue;
@@ -623,9 +623,9 @@ namespace System.Threading
             newSize++;
 
             // Don't set newSize to more than Array.MaxArrayLength
-            if ((uint)newSize > Array.MaxArrayLength)
+            if ((uint)newSize > Array.MaxLength)
             {
-                newSize = Array.MaxArrayLength;
+                newSize = Array.MaxLength;
             }
 
             return newSize;

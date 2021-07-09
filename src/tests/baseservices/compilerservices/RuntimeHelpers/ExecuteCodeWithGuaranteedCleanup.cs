@@ -38,7 +38,9 @@ class ExecuteCodeWithGuaranteedCleanupTest
         int val = 21;
         try
         {
+#pragma warning disable SYSLIB0004 // CER is obsolete
             RuntimeHelpers.ExecuteCodeWithGuaranteedCleanup(t, c, val);
+#pragma warning restore SYSLIB0004
         }
         catch (Exception Ex)
         {

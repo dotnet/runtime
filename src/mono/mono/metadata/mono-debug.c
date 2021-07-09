@@ -692,14 +692,15 @@ find_method (MonoMethod *method, MonoDebugMethodJitInfo *jit)
 MonoDebugMethodJitInfo *
 mono_debug_find_method (MonoMethod *method, MonoDomain *domain)
 {
-	MonoDebugMethodJitInfo *res = g_new0 (MonoDebugMethodJitInfo, 1);
-
 	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
 		return NULL;
+
+	MonoDebugMethodJitInfo *res = g_new0 (MonoDebugMethodJitInfo, 1);
 
 	mono_debugger_lock ();
 	find_method (method, res);
 	mono_debugger_unlock ();
+
 	return res;
 }
 
@@ -854,7 +855,7 @@ mono_debug_method_lookup_location (MonoDebugMethodInfo *minfo, int il_offset)
  * The result should be freed using mono_debug_free_locals ().
  */
 MonoDebugLocalsInfo*
-mono_debug_lookup_locals (MonoMethod *method)
+mono_debug_lookup_locals (MonoMethod *method, mono_bool ignore_pdb)
 {
 	MonoDebugMethodInfo *minfo;
 	MonoDebugLocalsInfo *res;
@@ -869,13 +870,17 @@ mono_debug_lookup_locals (MonoMethod *method)
 		return NULL;
 	}
 
-	if (minfo->handle->ppdb) {
-		res = mono_ppdb_lookup_locals (minfo);
-	} else {
-		if (!minfo->handle->symfile || !mono_debug_symfile_is_loaded (minfo->handle->symfile))
-			res = NULL;
-		else
-			res = mono_debug_symfile_lookup_locals (minfo);
+	if (ignore_pdb)
+		res = mono_debug_symfile_lookup_locals (minfo);
+	else {
+		if (minfo->handle->ppdb) {
+			res = mono_ppdb_lookup_locals (minfo);
+		} else {
+			if (!minfo->handle->symfile || !mono_debug_symfile_is_loaded (minfo->handle->symfile))
+				res = NULL;
+			else
+				res = mono_debug_symfile_lookup_locals (minfo);
+		}
 	}
 	mono_debugger_unlock ();
 

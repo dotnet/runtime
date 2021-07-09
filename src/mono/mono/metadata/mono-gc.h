@@ -115,6 +115,7 @@ MONO_API void   mono_gc_collect         (int generation);
 MONO_API int    mono_gc_max_generation  (void);
 MONO_API int    mono_gc_get_generation  (MonoObject *object);
 MONO_API int    mono_gc_collection_count (int generation);
+MONO_API int64_t mono_gc_get_generation_size (int generation);
 MONO_API int64_t mono_gc_get_used_size   (void);
 MONO_API int64_t mono_gc_get_heap_size   (void);
 MONO_API MonoBoolean mono_gc_pending_finalizers (void);

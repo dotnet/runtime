@@ -281,9 +281,6 @@
   <data name="InvalidEx2BoundArgument" xml:space="preserve">
     <value>Value of '{1}' is not valid for '{0}'. '{0}' should be greater than or equal to {2} and less than or equal to {3}.</value>
   </data>
-  <data name="InvalidFrame" xml:space="preserve">
-    <value>Frame is not valid. Frame must be between 0 and FrameCount.</value>
-  </data>
   <data name="InvalidGDIHandle" xml:space="preserve">
     <value>Win32 handle that was passed to {0} is not valid or is the wrong type.</value>
   </data>

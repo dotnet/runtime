@@ -5222,7 +5222,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     SetIP(&frameContext, osrMethodCode);
 
     // Transition!
-    RtlRestoreContext(&frameContext, NULL);
+    ClrRestoreNonvolatileContext(&frameContext);
 }
 
 #else
@@ -5238,7 +5238,24 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
-HCIMPL2(void, JIT_ClassProfile, Object *obj, void* tableAddress)
+static unsigned ClassProfileRand()
+{
+    // generate a random number (xorshift32)
+    //
+    // intentionally simple so we can have multithreaded
+    // access w/o tearing state.
+    //
+    static volatile unsigned s_rng = 100;
+
+    unsigned x = s_rng;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    s_rng = x;
+    return x;
+}
+
+HCIMPL2(void, JIT_ClassProfile32, Object *obj, void* tableAddress)
 {
     FCALL_CONTRACT;
     FC_GC_POLL_NOT_NEEDED();
@@ -5246,11 +5263,11 @@ HCIMPL2(void, JIT_ClassProfile, Object *obj, void* tableAddress)
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
 
-    ICorJitInfo::ClassProfile* const classProfile = (ICorJitInfo::ClassProfile*) tableAddress;
+    ICorJitInfo::ClassProfile32* const classProfile = (ICorJitInfo::ClassProfile32*) tableAddress;
     volatile unsigned* pCount = (volatile unsigned*) &classProfile->Count;
     const unsigned count = (*pCount)++;
-    const unsigned S = ICorJitInfo::ClassProfile::SIZE;
-    const unsigned N = ICorJitInfo::ClassProfile::SAMPLE_INTERVAL;
+    const unsigned S = ICorJitInfo::ClassProfile32::SIZE;
+    const unsigned N = ICorJitInfo::ClassProfile32::SAMPLE_INTERVAL;
     _ASSERTE(N >= S);
 
     if (objRef == NULL)
@@ -5282,18 +5299,7 @@ HCIMPL2(void, JIT_ClassProfile, Object *obj, void* tableAddress)
     }
     else
     {
-        // generate a random number (xorshift32)
-        //
-        // intentionally simple so we can have multithreaded
-        // access w/o tearing state.
-        //
-        static volatile unsigned s_rng = 100;
-
-        unsigned x = s_rng;
-        x ^= x << 13;
-        x ^= x >> 17;
-        x ^= x << 5;
-        s_rng = x;
+        unsigned x = ClassProfileRand();
 
         // N is the sampling window size,
         // it should be larger than the table size.
@@ -5307,6 +5313,56 @@ HCIMPL2(void, JIT_ClassProfile, Object *obj, void* tableAddress)
         //
         // For S=4, N=128, we'll sample (on average) every 32nd call.
         //
+        if ((x % N) < S)
+        {
+            unsigned i = x % S;
+            classProfile->ClassTable[i] = (CORINFO_CLASS_HANDLE)pMT;
+        }
+    }
+}
+HCIMPLEND
+
+// Version of helper above used when the count is 64-bit
+HCIMPL2(void, JIT_ClassProfile64, Object *obj, void* tableAddress)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    OBJECTREF objRef = ObjectToOBJECTREF(obj);
+    VALIDATEOBJECTREF(objRef);
+
+    ICorJitInfo::ClassProfile64* const classProfile = (ICorJitInfo::ClassProfile64*) tableAddress;
+    volatile uint64_t* pCount = (volatile uint64_t*) &classProfile->Count;
+    const uint64_t count = (*pCount)++;
+    const unsigned S = ICorJitInfo::ClassProfile32::SIZE;
+    const unsigned N = ICorJitInfo::ClassProfile32::SAMPLE_INTERVAL;
+    _ASSERTE(N >= S);
+
+    if (objRef == NULL)
+    {
+        return;
+    }
+
+    MethodTable* pMT = objRef->GetMethodTable();
+
+    if (pMT->GetLoaderAllocator()->IsCollectible())
+    {
+        pMT = (MethodTable*)DEFAULT_UNKNOWN_TYPEHANDLE;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(classProfile);
+    PgoManager::VerifyAddress(classProfile + 1);
+#endif
+
+    if (count < S)
+    {
+        classProfile->ClassTable[count] = (CORINFO_CLASS_HANDLE)pMT;
+    }
+    else
+    {
+        unsigned x = ClassProfileRand();
+
         if ((x % N) < S)
         {
             unsigned i = x % S;
@@ -5415,7 +5471,7 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, vo
 // As a result, we specially decorate this method to have the correct calling convention
 // and argument ordering for an HCALL, but we don't use the HCALL macros and contracts
 // since this method doesn't follow the contracts.
-void F_CALL_CONV HCCALL3(JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, CORINFO_METHOD_HANDLE handle, void* secretArg)
+HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, CORINFO_METHOD_HANDLE handle, void* secretArg)
 {
     _ASSERTE(frame != NULL && handle != NULL);
 
@@ -5464,8 +5520,9 @@ void F_CALL_CONV HCCALL3(JIT_ReversePInvokeEnterTrackTransitions, ReversePInvoke
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
 #endif
 }
+HCIMPLEND_RAW
 
-void F_CALL_CONV HCCALL1(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
+HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
 
@@ -5496,8 +5553,9 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
 #endif
 }
+HCIMPLEND_RAW
 
-void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* frame)
+HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
     _ASSERTE(frame->currentThread == GetThread());
@@ -5518,8 +5576,9 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeF
     }
 #endif
 }
+HCIMPLEND_RAW
 
-void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
+HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
 {
     _ASSERTE(frame != NULL);
     _ASSERTE(frame->currentThread == GetThread());
@@ -5533,6 +5592,7 @@ void F_CALL_CONV HCCALL1(JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
     UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
 #endif
 }
+HCIMPLEND_RAW
 
 //========================================================================
 //

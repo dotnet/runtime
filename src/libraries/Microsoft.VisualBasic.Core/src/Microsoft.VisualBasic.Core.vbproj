@@ -18,6 +18,9 @@
     <RootNamespace />
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
   </PropertyGroup>
+  <PropertyGroup>
+    <ILLinkDescriptorsXml Condition="'$(TargetsWindows)' == 'true'">$(MSBuildProjectDirectory)\ILLink\ILLink.Descriptors.Windows.xml</ILLinkDescriptorsXml>
+  </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\VisualBasic\Helpers\NativeMethods.vb" />
     <Compile Include="Microsoft\VisualBasic\Helpers\NativeTypes.vb" />

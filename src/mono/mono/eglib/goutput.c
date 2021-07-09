@@ -322,28 +322,49 @@ default_stderr_handler (const gchar *message)
 }
 
 
-#elif defined(HOST_IOS)
-#include <asl.h>
+#elif defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_WATCHOS) || defined(HOST_MACCAT)
+#include <os/log.h>
 
 static int
-to_asl_priority (GLogLevelFlags log_level)
+to_os_log_priority (GLogLevelFlags log_level)
 {
 	switch (log_level & G_LOG_LEVEL_MASK)
 	{
-		case G_LOG_LEVEL_ERROR:     return ASL_LEVEL_CRIT;
-		case G_LOG_LEVEL_CRITICAL:  return ASL_LEVEL_ERR;
-		case G_LOG_LEVEL_WARNING:   return ASL_LEVEL_WARNING;
-		case G_LOG_LEVEL_MESSAGE:   return ASL_LEVEL_NOTICE;
-		case G_LOG_LEVEL_INFO:      return ASL_LEVEL_INFO;
-		case G_LOG_LEVEL_DEBUG:     return ASL_LEVEL_DEBUG;
+		case G_LOG_LEVEL_ERROR:     return OS_LOG_TYPE_ERROR;
+		case G_LOG_LEVEL_CRITICAL:  return OS_LOG_TYPE_ERROR;
+		case G_LOG_LEVEL_WARNING:   return OS_LOG_TYPE_DEFAULT;
+		case G_LOG_LEVEL_MESSAGE:   return OS_LOG_TYPE_DEFAULT;
+		case G_LOG_LEVEL_INFO:      return OS_LOG_TYPE_DEFAULT;
+		case G_LOG_LEVEL_DEBUG:     return OS_LOG_TYPE_DEFAULT;
 	}
-	return ASL_LEVEL_ERR;
+	return OS_LOG_TYPE_ERROR;
 }
 
+static const char *
+to_log_level_name (GLogLevelFlags log_level)
+{
+	switch (log_level & G_LOG_LEVEL_MASK)
+	{
+		case G_LOG_LEVEL_ERROR:     return "error";
+		case G_LOG_LEVEL_CRITICAL:  return "critical";
+		case G_LOG_LEVEL_WARNING:   return "warning";
+		case G_LOG_LEVEL_MESSAGE:   return "message";
+		case G_LOG_LEVEL_INFO:      return "info";
+		case G_LOG_LEVEL_DEBUG:     return "debug";
+	}
+	return "unknown";
+}
+
+// keep in sync with mono_log_write_os_log
 void
 g_log_default_handler (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer unused_data)
 {
-	asl_log (NULL, NULL, to_asl_priority (log_level), "%s", message);
+	os_log_with_type (OS_LOG_DEFAULT, to_os_log_priority (log_level), "%{public}s%{public}s%{public}s: %{public}s",
+		log_domain != NULL ? log_domain : "",
+		log_domain != NULL ? ": " : "",
+		to_log_level_name(log_level),
+		message);
+
 	if (log_level & fatal)
 		g_assert_abort ();
 }
@@ -351,13 +372,13 @@ g_log_default_handler (const gchar *log_domain, GLogLevelFlags log_level, const 
 static void
 default_stdout_handler (const gchar *message)
 {
-	asl_log (NULL, NULL, ASL_LEVEL_WARNING, "%s", message);
+	os_log (OS_LOG_DEFAULT, "%{public}s", message);
 }
 
 static void
 default_stderr_handler (const gchar *message)
 {
-	asl_log (NULL, NULL, ASL_LEVEL_WARNING, "%s", message);
+	os_log_error (OS_LOG_DEFAULT, "%{public}s", message);
 }
 
 #else

@@ -68,7 +68,6 @@ namespace System.Reflection.PortableExecutable
             }
         }
 
-
         // internal for testing
         internal static unsafe ImmutableArray<byte> DecodeEmbeddedPortablePdbDebugDirectoryData(AbstractMemoryBlock block)
         {
@@ -147,7 +146,7 @@ namespace System.Reflection.PortableExecutable
             }
             finally
             {
-                if (candidate == null)
+                if (provider == null)
                 {
                     candidate?.Dispose();
                 }

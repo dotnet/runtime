@@ -83,6 +83,7 @@ namespace System.Reflection
             return null;
         }
 
+        [RequiresAssemblyFiles(Message = "The code will throw for assemblies embedded in a single-file app")]
         public override string? CodeBase
         {
             get
@@ -114,8 +115,7 @@ namespace System.Reflection
                     GetHashAlgorithm(),
                     AssemblyVersionCompatibility.SameMachine,
                     codeBase,
-                    GetFlags() | AssemblyNameFlags.PublicKey,
-                    null); // strong name key pair
+                    GetFlags() | AssemblyNameFlags.PublicKey);
 
             Module manifestModule = ManifestModule;
             if (manifestModule.MDStreamVersion > 0x10000)

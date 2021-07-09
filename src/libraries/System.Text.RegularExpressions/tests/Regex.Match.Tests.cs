@@ -284,6 +284,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { "(?(cat)|dog)", "oof", RegexOptions.None, 0, 3, false, string.Empty };
             yield return new object[] { "(?(a:b))", "a", RegexOptions.None, 0, 1, true, string.Empty };
             yield return new object[] { "(?(a:))", "a", RegexOptions.None, 0, 1, true, string.Empty };
+            yield return new object[] { "[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest" };
 
             // No Negation
             yield return new object[] { "[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };

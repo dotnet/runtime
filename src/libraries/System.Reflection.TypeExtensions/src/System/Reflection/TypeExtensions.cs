@@ -113,7 +113,8 @@ namespace System.Reflection
             return type.GetGenericArguments();
         }
 
-        public static Type[] GetInterfaces(this Type type)
+        public static Type[] GetInterfaces(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] this Type type)
         {
             Requires.NotNull(type, nameof(type));
             return type.GetInterfaces();

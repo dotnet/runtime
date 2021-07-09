@@ -1152,6 +1152,8 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		/* Validate the cpu description against the info in mini-ops.h */
 #if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined (TARGET_RISCV)
+		/* Check that the table size is correct */
+		g_assert (MONO_ARCH_CPU_SPEC_IDX(MONO_ARCH_CPU_SPEC)[OP_LAST - OP_LOAD] == 0xffff);
 		for (i = OP_LOAD; i < OP_LAST; ++i) {
 			const char *ispec;
 
@@ -1159,11 +1161,11 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			ispec = INS_INFO (i);
 
 			if ((spec [MONO_INST_DEST] && (ispec [MONO_INST_DEST] == ' ')))
-				printf ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
 			if ((spec [MONO_INST_SRC1] && (ispec [MONO_INST_SRC1] == ' ')))
-				printf ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
 			if ((spec [MONO_INST_SRC2] && (ispec [MONO_INST_SRC2] == ' ')))
-				printf ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
+				g_error ("Instruction metadata for %s inconsistent.\n", mono_inst_name (i));
 		}
 #endif
 	}

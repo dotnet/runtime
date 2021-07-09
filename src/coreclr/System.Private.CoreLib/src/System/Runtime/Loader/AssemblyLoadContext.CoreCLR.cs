@@ -147,7 +147,7 @@ namespace System.Runtime.Loader
 
             AssemblyLoadContext? loadContextForAssembly = null;
 
-            RuntimeAssembly? rtAsm = assembly as RuntimeAssembly;
+            RuntimeAssembly? rtAsm = GetRuntimeAssembly(assembly);
 
             // We only support looking up load context for runtime assemblies.
             if (rtAsm != null)

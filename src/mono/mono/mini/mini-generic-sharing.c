@@ -1166,10 +1166,15 @@ get_wrapper_shared_vtype (MonoType *t)
 	// FIXME: Map 1 member structs to primitive types on platforms where its supported
 
 	klass = mono_class_from_mono_type_internal (t);
-	if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT)
+	/* Under mono, auto and sequential layout are the same for valuetypes, see mono_class_layout_fields () */
+	if (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT) &&
+		((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT))
 		return NULL;
 	mono_class_setup_fields (klass);
 	if (mono_class_has_failure (klass))
+		return NULL;
+
+	if (m_class_get_type_token (klass) && mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), NULL, NULL))
 		return NULL;
 
 	int num_fields = mono_class_get_field_count (klass);
@@ -1188,8 +1193,28 @@ get_wrapper_shared_vtype (MonoType *t)
 		if (findex >= 16)
 			break;
 	}
+
+#ifdef TARGET_WASM
+	guint32 align;
+	int size = mono_class_value_size (klass, &align);
+
+	/* Other platforms might pass small valuestypes or valuetypes with non-int fields differently */
+	if (align == 4 && size <= 4 * 5) {
+		findex = size / align;
+		for (int i = 0; i < findex; ++i)
+			args [i] = m_class_get_byval_arg (mono_get_int32_class ());
+	} else if (align == 8 && size <= 8 * 5) {
+		findex = size / align;
+		for (int i = 0; i < findex; ++i)
+			args [i] = m_class_get_byval_arg (mono_get_int64_class ());
+	} else {
+		if (findex > 5)
+			return NULL;
+	}
+#else
 	if (findex > 5)
 		return NULL;
+#endif
 
 	switch (findex) {
 	case 0:
@@ -1214,7 +1239,6 @@ get_wrapper_shared_vtype (MonoType *t)
 		g_assert_not_reached ();
 		break;
 	}
-
 	g_assert (tuple_class);
 
 	memset (&ctx, 0, sizeof (ctx));
@@ -2773,6 +2797,7 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type)
  * @method: a method
  * @in_mrgctx: whether to put the data into the MRGCTX
  * @data: the info data
+ * @did_register: whether data was registered
  * @info_type: the type of info to register about data
  * @generic_context: a generic context
  *
@@ -2781,7 +2806,7 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type)
  * encoded slot number.
  */
 static guint32
-lookup_or_register_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoMethod *method, gboolean in_mrgctx, gpointer data,
+lookup_or_register_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoMethod *method, gboolean in_mrgctx, gpointer data, gboolean *did_register,
 						 MonoRgctxInfoType info_type, MonoGenericContext *generic_context)
 {
 	int type_argc = 0;
@@ -2830,7 +2855,10 @@ lookup_or_register_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoM
 
 	/* We haven't found the info */
 	if (index == -1)
+	{
 		index = register_info (klass, type_argc, data, info_type);
+		*did_register = TRUE;
+	}
 
 	/* interlocked by loader lock */
 	if (index > UnlockedRead (&rgctx_max_slot_number))
@@ -2849,7 +2877,7 @@ lookup_or_register_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoM
 static inline int
 class_rgctx_array_size (int n)
 {
-	return 4 << n;
+	return 16 << n;
 }
 
 static inline int
@@ -2901,15 +2929,13 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 {
 	gpointer info;
 	int i, first_slot, size;
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoClass *klass = class_vtable->klass;
 	MonoGenericContext *class_context;
 	MonoRuntimeGenericContextInfoTemplate oti;
 	MonoRuntimeGenericContext *orig_rgctx;
 	int rgctx_index;
 	gboolean do_free;
-	// FIXME:
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	MonoJitMemoryManager *jit_mm = jit_mm_for_class (class_vtable->klass);
 
 	/*
 	 * Need a fastpath since this is called without trampolines in llvmonly mode.
@@ -2963,7 +2989,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	class_context = mono_class_is_ginst (klass) ? &mono_class_get_generic_class (klass)->context : NULL;
 	MonoGenericContext context = { class_context ? class_context->class_inst : NULL, method_inst };
 
-	mono_domain_lock (domain);
+	mono_mem_manager_lock (jit_mm->mem_manager);
 
 	/* First check whether that slot isn't already instantiated.
 	   This might happen because lookup doesn't lock.  Allocate
@@ -2984,7 +3010,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 			rgctx_index = slot - first_slot + 1 + offset;
 			info = (MonoRuntimeGenericContext*)rgctx [rgctx_index];
 			if (info) {
-				mono_domain_unlock (domain);
+				mono_mem_manager_unlock (jit_mm->mem_manager);
 				return info;
 			}
 			break;
@@ -3002,7 +3028,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 
 	g_assert (!rgctx [rgctx_index]);
 
-	mono_domain_unlock (domain);
+	mono_mem_manager_unlock (jit_mm->mem_manager);
 
 	oti = class_get_rgctx_template_oti (get_shared_class (klass),
 										method_inst ? method_inst->type_argc : 0, slot, TRUE, TRUE, &do_free);
@@ -3017,7 +3043,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	*/
 
 	/*FIXME We should use CAS here, no need to take a lock.*/
-	mono_domain_lock (domain);
+	mono_mem_manager_lock (jit_mm->mem_manager);
 
 	/* Check whether the slot hasn't been instantiated in the
 	   meantime. */
@@ -3029,7 +3055,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 		rgctx [rgctx_index] = info;
 	}
 
-	mono_domain_unlock (domain);
+	mono_mem_manager_unlock (jit_mm->mem_manager);
 
 	if (do_free)
 		free_inflated_info (oti.info_type, oti.data);
@@ -3049,8 +3075,7 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot,
 {
 	MonoRuntimeGenericContext *rgctx, *new_rgctx;
 	gpointer info;
-	// FIXME:
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	MonoJitMemoryManager *jit_mm = jit_mm_for_class (class_vtable->klass);
 
 	error_init (error);
 
@@ -3965,14 +3990,14 @@ shared_gparam_equal (gconstpointer ka, gconstpointer kb)
 MonoType*
 mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 {
-	MonoImageSet *set;
+	MonoMemoryManager *mm;
 	MonoGenericParam *par = t->data.generic_param;
 	MonoGSharedGenericParam *copy, key;
 	MonoType *res;
 	MonoImage *image = NULL;
 	char *name;
 
-	set = mono_metadata_merge_image_sets (mono_metadata_get_image_set_for_type (t), mono_metadata_get_image_set_for_type (constraint));
+	mm = mono_mem_manager_merge (mono_metadata_get_mem_manager_for_type (t), mono_metadata_get_mem_manager_for_type (constraint));
 
 	memset (&key, 0, sizeof (key));
 	key.parent = par;
@@ -3985,24 +4010,24 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	 * Need a cache to ensure the newly created gparam
 	 * is unique wrt T/CONSTRAINT.
 	 */
-	mono_image_set_lock (set);
-	if (!set->gshared_types) {
-		set->gshared_types_len = MONO_TYPE_INTERNAL;
-		set->gshared_types = g_new0 (GHashTable*, set->gshared_types_len);
+	mono_mem_manager_lock (mm);
+	if (!mm->gshared_types) {
+		mm->gshared_types_len = MONO_TYPE_INTERNAL;
+		mm->gshared_types = g_new0 (GHashTable*, mm->gshared_types_len);
 	}
-	if (!set->gshared_types [constraint->type])
-		set->gshared_types [constraint->type] = g_hash_table_new (shared_gparam_hash, shared_gparam_equal);
-	res = (MonoType *)g_hash_table_lookup (set->gshared_types [constraint->type], &key);
-	mono_image_set_unlock (set);
+	if (!mm->gshared_types [constraint->type])
+		mm->gshared_types [constraint->type] = g_hash_table_new (shared_gparam_hash, shared_gparam_equal);
+	res = (MonoType *)g_hash_table_lookup (mm->gshared_types [constraint->type], &key);
+	mono_mem_manager_unlock (mm);
 	if (res)
 		return res;
-	copy = (MonoGSharedGenericParam *)mono_image_set_alloc0 (set, sizeof (MonoGSharedGenericParam));
+	copy = (MonoGSharedGenericParam *)mono_mem_manager_alloc0 (mm, sizeof (MonoGSharedGenericParam));
 	memcpy (&copy->param, par, sizeof (MonoGenericParamFull));
 	copy->param.info.pklass = NULL;
 	// FIXME:
 	constraint = mono_metadata_type_dup (NULL, constraint);
 	name = get_shared_gparam_name (constraint->type, ((MonoGenericParamFull*)copy)->info.name);
-	copy->param.info.name = mono_image_set_strdup (set, name);
+	copy->param.info.name = mono_mem_manager_strdup (mm, name);
 	g_free (name);
 
 	copy->param.owner = par->owner;
@@ -4013,10 +4038,10 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	res = mono_metadata_type_dup (NULL, t);
 	res->data.generic_param = (MonoGenericParam*)copy;
 
-	mono_image_set_lock (set);
+	mono_mem_manager_lock (mm);
 	/* Duplicates are ok */
-	g_hash_table_insert (set->gshared_types [constraint->type], copy, res);
-	mono_image_set_unlock (set);
+	g_hash_table_insert (mm->gshared_types [constraint->type], copy, res);
+	mono_mem_manager_unlock (mm);
 
 	return res;
 }
@@ -4214,6 +4239,8 @@ int
 mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 {
 	gpointer entry_data = NULL;
+	gboolean did_register = FALSE;
+	guint32 result = -1;
 
 	switch (entry->data->type) {
 	case MONO_PATCH_INFO_CLASS:
@@ -4284,9 +4311,27 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 
 	if (entry->in_mrgctx)
-		return lookup_or_register_info (jit_mm->mem_manager, entry->d.method->klass, entry->d.method, entry->in_mrgctx, entry_data, entry->info_type, mono_method_get_context (entry->d.method));
+		result = lookup_or_register_info (jit_mm->mem_manager, entry->d.method->klass, entry->d.method, entry->in_mrgctx, entry_data, &did_register, entry->info_type, mono_method_get_context (entry->d.method));
 	else
-		return lookup_or_register_info (jit_mm->mem_manager, entry->d.klass, NULL, entry->in_mrgctx, entry_data, entry->info_type, mono_class_get_context (entry->d.klass));
+		result = lookup_or_register_info (jit_mm->mem_manager, entry->d.klass, NULL, entry->in_mrgctx, entry_data, &did_register, entry->info_type, mono_class_get_context (entry->d.klass));
+
+	if (!did_register)
+		switch (entry->data->type) {
+		case MONO_PATCH_INFO_GSHAREDVT_CALL:
+		case MONO_PATCH_INFO_VIRT_METHOD:
+		case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+			g_free (entry_data);
+			break;
+		case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
+			g_free (((MonoGSharedVtMethodInfo *) entry_data)->entries);
+			g_free (entry_data);
+			break;
+		}
+		default :
+			break;
+		}
+
+	return result;
 }
 
 static gboolean gsharedvt_supported;

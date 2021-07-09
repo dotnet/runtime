@@ -728,24 +728,29 @@ mono_array_new_n_icall (MonoMethod *cm, gint32 pcount, intptr_t *params)
 	const int pcount_sig = mono_method_signature_internal (cm)->param_count;
 	const int rank = m_class_get_rank (cm->klass);
 	g_assert (pcount == pcount_sig);
-	g_assert (rank == pcount || rank * 2 == pcount);
 
 	uintptr_t *lengths = (uintptr_t*)params;
+	MonoArray *arr;
 
-	if (rank == pcount) {
-		/* Only lengths provided. */
-		if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
-			lower_bounds = g_newa (intptr_t, rank);
-			memset (lower_bounds, 0, sizeof (intptr_t) * rank);
-		}
+	if (pcount > rank && m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_SZARRAY) {
+		// Special constructor for jagged arrays
+		arr = mono_array_new_jagged_checked (cm->klass, pcount, lengths, error);
 	} else {
-		g_assert (pcount == (rank * 2));
-		/* lower bounds are first. */
-		lower_bounds = params;
-		lengths += rank;
-	}
+		if (rank == pcount) {
+			/* Only lengths provided. */
+			if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
+				lower_bounds = g_newa (intptr_t, rank);
+				memset (lower_bounds, 0, sizeof (intptr_t) * rank);
+			}
+		} else {
+			g_assert (pcount == (rank * 2));
+			/* lower bounds are first. */
+			lower_bounds = params;
+			lengths += rank;
+		}
 
-	MonoArray *arr = mono_array_new_full_checked (cm->klass, lengths, lower_bounds, error);
+		arr = mono_array_new_full_checked (cm->klass, lengths, lower_bounds, error);
+	}
 
 	return mono_error_set_pending_exception (error) ? NULL : arr;
 }
@@ -807,8 +812,7 @@ mono_class_static_field_address (MonoClassField *field)
 {
 	ERROR_DECL (error);
 	MonoVTable *vtable;
-	gpointer addr;
-	
+
 	//printf ("SFLDA0 %s.%s::%s %d\n", field->parent->name_space, field->parent->name, field->name, field->offset, field->parent->inited);
 
 	mono_class_init_internal (field->parent);
@@ -827,15 +831,7 @@ mono_class_static_field_address (MonoClassField *field)
 
 	//printf ("SFLDA1 %p\n", (char*)vtable->data + field->offset);
 
-	if (field->offset == -1) {
-		/* Special static */
-		addr = mono_special_static_field_get_offset (field, error);
-		mono_error_assert_ok (error);
-		addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-	} else {
-		addr = (char*)mono_vtable_get_static_field_data (vtable) + field->offset;
-	}
-	return addr;
+	return mono_static_field_get_addr (vtable, field);
 }
 
 gpointer
@@ -1521,10 +1517,6 @@ mono_fill_class_rgctx (MonoVTable *vtable, int index)
 	ERROR_DECL (error);
 	gpointer res;
 
-	/*
-	 * This is perf critical.
-	 * fill_runtime_generic_context () contains a fallpath.
-	 */
 	res = mono_class_fill_runtime_generic_context (vtable, index, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);

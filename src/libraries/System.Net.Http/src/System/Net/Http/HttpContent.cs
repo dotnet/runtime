@@ -934,7 +934,6 @@ namespace System.Net.Http
 
         internal sealed class LimitArrayPoolWriteStream : Stream
         {
-            private const int MaxByteArrayLength = 0x7FFFFFC7;
             private const int InitialLength = 256;
 
             private readonly int _maxBufferSize;
@@ -1003,8 +1002,8 @@ namespace System.Net.Http
                 // allowed byte array, than shrink to that (and if the required length is actually
                 // longer than that, we'll let the runtime throw).
                 uint twiceLength = 2 * (uint)currentBuffer.Length;
-                int newCapacity = twiceLength > MaxByteArrayLength ?
-                    (value > MaxByteArrayLength ? value : MaxByteArrayLength) :
+                int newCapacity = twiceLength > Array.MaxLength ?
+                    Math.Max(value, Array.MaxLength) :
                     Math.Max(value, (int)twiceLength);
 
                 // Get a new buffer, copy the current one to it, return the current one, and

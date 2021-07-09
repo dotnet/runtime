@@ -62,10 +62,12 @@ namespace Microsoft.Extensions.DependencyModel
         public DependencyContext(Microsoft.Extensions.DependencyModel.TargetInfo target, Microsoft.Extensions.DependencyModel.CompilationOptions compilationOptions, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyModel.CompilationLibrary> compileLibraries, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyModel.RuntimeLibrary> runtimeLibraries, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyModel.RuntimeFallbacks> runtimeGraph) { }
         public Microsoft.Extensions.DependencyModel.CompilationOptions CompilationOptions { get { throw null; } }
         public System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.DependencyModel.CompilationLibrary> CompileLibraries { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute(Message = "DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         public static Microsoft.Extensions.DependencyModel.DependencyContext Default { get { throw null; } }
         public System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.DependencyModel.RuntimeFallbacks> RuntimeGraph { get { throw null; } }
         public System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.DependencyModel.RuntimeLibrary> RuntimeLibraries { get { throw null; } }
         public Microsoft.Extensions.DependencyModel.TargetInfo Target { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute(Message = "DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         public static Microsoft.Extensions.DependencyModel.DependencyContext Load(System.Reflection.Assembly assembly) { throw null; }
         public Microsoft.Extensions.DependencyModel.DependencyContext Merge(Microsoft.Extensions.DependencyModel.DependencyContext other) { throw null; }
     }
@@ -95,6 +97,7 @@ namespace Microsoft.Extensions.DependencyModel
     {
         public DependencyContextLoader() { }
         public static Microsoft.Extensions.DependencyModel.DependencyContextLoader Default { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute(Message = "DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         public Microsoft.Extensions.DependencyModel.DependencyContext Load(System.Reflection.Assembly assembly) { throw null; }
     }
     public partial class DependencyContextWriter

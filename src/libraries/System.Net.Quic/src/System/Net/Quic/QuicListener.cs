@@ -52,13 +52,6 @@ namespace System.Net.Quic
         public async ValueTask<QuicConnection> AcceptConnectionAsync(CancellationToken cancellationToken = default) =>
             new QuicConnection(await _provider.AcceptConnectionAsync(cancellationToken).ConfigureAwait(false));
 
-        public void Start() => _provider.Start();
-
-        /// <summary>
-        /// Stop listening and close the listener.
-        /// </summary>
-        public void Close() => _provider.Close();
-
         public void Dispose() => _provider.Dispose();
     }
 }

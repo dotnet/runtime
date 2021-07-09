@@ -16,15 +16,14 @@ namespace System.Threading
             // SOS's ThreadPool command depends on this layout
             private const byte NumProcessingWorkShift = 0;
             private const byte NumExistingThreadsShift = 16;
-            private const byte NumThreadsGoalShift = 32;
 
-            private ulong _data; // SOS's ThreadPool command depends on this name
+            private uint _data; // SOS's ThreadPool command depends on this name
 
-            private ThreadCounts(ulong data) => _data = data;
+            private ThreadCounts(uint data) => _data = data;
 
             private short GetInt16Value(byte shift) => (short)(_data >> shift);
             private void SetInt16Value(short value, byte shift) =>
-                _data = (_data & ~((ulong)ushort.MaxValue << shift)) | ((ulong)(ushort)value << shift);
+                _data = (_data & ~((uint)ushort.MaxValue << shift)) | ((uint)(ushort)value << shift);
 
             /// <summary>
             /// Number of threads processing work items.
@@ -44,7 +43,15 @@ namespace System.Threading
                 Debug.Assert(value >= 0);
                 Debug.Assert(value <= NumProcessingWork);
 
-                _data -= (ulong)(ushort)value << NumProcessingWorkShift;
+                _data -= (uint)(ushort)value << NumProcessingWorkShift;
+            }
+
+            public void InterlockedDecrementNumProcessingWork()
+            {
+                Debug.Assert(NumProcessingWorkShift == 0);
+
+                ThreadCounts counts = new ThreadCounts(Interlocked.Decrement(ref _data));
+                Debug.Assert(counts.NumProcessingWork >= 0);
             }
 
             /// <summary>
@@ -65,20 +72,7 @@ namespace System.Threading
                 Debug.Assert(value >= 0);
                 Debug.Assert(value <= NumExistingThreads);
 
-                _data -= (ulong)(ushort)value << NumExistingThreadsShift;
-            }
-
-            /// <summary>
-            /// Max possible thread pool threads we want to have.
-            /// </summary>
-            public short NumThreadsGoal
-            {
-                get => GetInt16Value(NumThreadsGoalShift);
-                set
-                {
-                    Debug.Assert(value > 0);
-                    SetInt16Value(value, NumThreadsGoalShift);
-                }
+                _data -= (uint)(ushort)value << NumExistingThreadsShift;
             }
 
             public ThreadCounts VolatileRead() => new ThreadCounts(Volatile.Read(ref _data));
@@ -90,7 +84,7 @@ namespace System.Threading
             public static bool operator !=(ThreadCounts lhs, ThreadCounts rhs) => lhs._data != rhs._data;
 
             public override bool Equals([NotNullWhen(true)] object? obj) => obj is ThreadCounts other && _data == other._data;
-            public override int GetHashCode() => (int)_data + (int)(_data >> 32);
+            public override int GetHashCode() => (int)_data;
         }
     }
 }

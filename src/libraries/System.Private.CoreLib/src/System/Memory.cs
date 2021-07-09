@@ -216,7 +216,7 @@ namespace System
             {
                 return (_object is string str) ? str.Substring(_index, _length) : Span.ToString();
             }
-            return string.Format("System.Memory<{0}>[{1}]", typeof(T).Name, _length);
+            return $"System.Memory<{typeof(T).Name}>[{_length}]";
         }
 
         /// <summary>

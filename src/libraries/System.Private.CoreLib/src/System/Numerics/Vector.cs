@@ -796,6 +796,27 @@ namespace System.Numerics
             return (Vector<double>)value;
         }
 
+        /// <summary>Reinterprets the bits of a specified vector into those of a vector of unsigned native integers.</summary>
+        /// <param name="value">The source vector.</param>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
+        /// <returns>The reinterpreted vector.</returns>
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<nuint> AsVectorNUInt<T>(Vector<T> value) where T : struct
+        {
+            return (Vector<nuint>)value;
+        }
+
+        /// <summary>Reinterprets the bits of a specified vector into those of a vector of native integers.</summary>
+        /// <param name="value">The source vector.</param>
+        /// <typeparam name="T">The vector type. <typeparamref name="T" /> can be any primitive numeric type.</typeparam>
+        /// <returns>The reinterpreted vector.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<nint> AsVectorNInt<T>(Vector<T> value) where T : struct
+        {
+            return (Vector<nint>)value;
+        }
+
         /// <summary>Widens a <c>Vector&lt;Byte&gt;</c> into two <c>Vector&lt;UInt16&gt;</c> instances.</summary>
         /// <param name="source">The source vector whose elements are widened into the outputs.</param>
         /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
@@ -1266,10 +1287,19 @@ namespace System.Numerics
             where TFrom : struct
             where TTo : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<TFrom>();
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<TTo>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<TFrom>();
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<TTo>();
 
             return Unsafe.As<Vector<TFrom>, Vector<TTo>>(ref vector);
+        }
+
+        /// <summary>
+        /// Returns the sum of all elements inside the vector.
+        /// </summary>
+        [Intrinsic]
+        public static T Sum<T>(Vector<T> value) where T : struct
+        {
+            return Vector<T>.Sum(value);
         }
     }
 }

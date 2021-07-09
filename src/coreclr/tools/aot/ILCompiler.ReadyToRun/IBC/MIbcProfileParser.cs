@@ -35,13 +35,18 @@ namespace ILCompiler.IBC
                 try
                 {
                     if (token == 0)
-                        return new TypeSystemEntityOrUnknown(0);
+                        return new TypeSystemEntityOrUnknown(null);
                     if ((token & 0xFF000000) == 0)
                     {
                         // token type is 0, therefore it can't be a type
                         return new TypeSystemEntityOrUnknown((int)token);
                     }
-                    return new TypeSystemEntityOrUnknown((TypeDesc)_ilBody.GetObject((int)token));
+                    TypeDesc foundType = _ilBody.GetObject((int)token, NotFoundBehavior.ReturnNull) as TypeDesc;
+                    if (foundType == null)
+                    {
+                        return new TypeSystemEntityOrUnknown((int)token & 0x00FFFFFF);
+                    }
+                    return new TypeSystemEntityOrUnknown(foundType);
                 }
                 catch
                 {
@@ -265,7 +270,9 @@ namespace ILCompiler.IBC
                                 metadataObject = null;
                                 try
                                 {
-                                    metadataObject = ilBody.GetObject(token);
+                                    metadataObject = ilBody.GetObject(token, NotFoundBehavior.ReturnNull);
+                                    if (metadataObject == null)
+                                        metadataObject = metadataNotResolvable;
                                 }
                                 catch (TypeSystemException)
                                 {
@@ -509,7 +516,7 @@ namespace ILCompiler.IBC
                     throw new NotImplementedException();
                 }
 
-                public override MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
+                public override MetadataType GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
                 {
                     TypeSystemContext context = Context;
 
@@ -519,9 +526,14 @@ namespace ILCompiler.IBC
                         return Context.UniversalCanonType;
                     else
                     {
-                        if (throwIfNotFound)
+                        if (notFoundBehavior != NotFoundBehavior.ReturnNull)
                         {
-                            throw new TypeLoadException($"{nameSpace}.{name}");
+                            var failure = ResolutionFailure.GetTypeLoadResolutionFailure(nameSpace, name, "System.Private.Canon");
+                            ModuleDesc.GetTypeResolutionFailure = failure;
+                            if (notFoundBehavior == NotFoundBehavior.Throw)
+                                failure.Throw();
+
+                            return null;
                         }
                         return null;
                     }

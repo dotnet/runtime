@@ -220,7 +220,10 @@ internal static class IOInputs
     }
 
     public static IEnumerable<string> GetReservedDeviceNames()
-    {   // See: https://docs.microsoft.com/en-us/windows/desktop/FileIO/naming-a-file
+    {   // See: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+        //
+        // Note - Recent versions of Win10 relax this restriction and allow reserved
+        // device names as filenames.
         yield return "CON";
         yield return "AUX";
         yield return "NUL";

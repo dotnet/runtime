@@ -13,11 +13,9 @@ set(BINDER_COMMON_SOURCES
     clrprivbindercoreclr.cpp
     coreclrbindercommon.cpp
     failurecache.cpp
-    fusionassemblyname.cpp
     stringlexer.cpp
     textualidentityparser.cpp
     utils.cpp
-    variables.cpp
 )
 
 set(BINDER_COMMON_HEADERS
@@ -42,15 +40,12 @@ set(BINDER_COMMON_HEADERS
     inc/coreclrbindercommon.h
     inc/failurecache.hpp
     inc/failurecachehashtraits.hpp
-    inc/fusionassemblyname.hpp
-    inc/fusionhelpers.hpp
     inc/loadcontext.hpp
     inc/loadcontext.inl
     inc/stringlexer.hpp
     inc/stringlexer.inl
     inc/textualidentityparser.hpp
     inc/utils.hpp
-    inc/variables.hpp
 )
 
 set(BINDER_SOURCES

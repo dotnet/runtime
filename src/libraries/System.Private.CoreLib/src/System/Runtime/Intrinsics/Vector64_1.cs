@@ -29,7 +29,7 @@ namespace System.Runtime.Intrinsics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
                 return Vector64.Size / Unsafe.SizeOf<T>();
             }
         }
@@ -41,7 +41,7 @@ namespace System.Runtime.Intrinsics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
                 return default;
             }
         }
@@ -54,7 +54,7 @@ namespace System.Runtime.Intrinsics
             [Intrinsic]
             get
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
                 return Vector64.Create(0xFFFFFFFF).As<uint, T>();
             }
         }
@@ -96,7 +96,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public bool Equals(Vector64<T> other)
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             for (int i = 0; i < Count; i++)
             {
@@ -123,7 +123,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public override int GetHashCode()
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             HashCode hashCode = default;
 
@@ -140,7 +140,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public override string ToString()
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             int lastElement = Count - 1;
             var sb = new ValueStringBuilder(stackalloc char[64]);

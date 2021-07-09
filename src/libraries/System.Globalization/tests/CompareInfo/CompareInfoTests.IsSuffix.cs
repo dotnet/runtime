@@ -112,6 +112,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(IsSuffix_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void IsSuffix(CompareInfo compareInfo, string source, string value, CompareOptions options, bool expected, int expectedMatchLength)
         {
             if (options == CompareOptions.None)

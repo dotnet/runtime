@@ -316,7 +316,7 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 
 	ERROR_DECL (error);
 	MonoClass *klass = vtable->klass;
-	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 	MonoException *ex;
 	gchar *full_name;
 
@@ -328,9 +328,9 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 	 * in the hash.
 	 */
 	ex = NULL;
-	mono_mem_manager_lock (memory_manager);
-	ex = (MonoException *)mono_g_hash_table_lookup (memory_manager->type_init_exception_hash, klass);
-	mono_mem_manager_unlock (memory_manager);
+	mono_mem_manager_lock (mem_manager);
+	ex = (MonoException *)mono_g_hash_table_lookup (mem_manager->type_init_exception_hash, klass);
+	mono_mem_manager_unlock (mem_manager);
 
 	if (!ex) {
 		const char *klass_name_space = m_class_get_name_space (klass);
@@ -429,7 +429,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		return TRUE;
 
 	MonoClass *klass = vtable->klass;
-	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 
 	MonoImage *klass_image = m_class_get_image (klass);
 	if (!mono_runtime_run_module_cctor (klass_image, error)) {
@@ -565,9 +565,9 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 			 * Store the exception object so it could be thrown on subsequent
 			 * accesses.
 			 */
-			mono_mem_manager_lock (memory_manager);
-			mono_g_hash_table_insert_internal (memory_manager->type_init_exception_hash, klass, exc_to_throw);
-			mono_mem_manager_unlock (memory_manager);
+			mono_mem_manager_lock (mem_manager);
+			mono_g_hash_table_insert_internal (mem_manager->type_init_exception_hash, klass, exc_to_throw);
+			mono_mem_manager_unlock (mem_manager);
 		}
 
 		/* Signal to the other threads that we are done */
@@ -1468,7 +1468,7 @@ static MonoImtBuilderEntry*
 get_generic_virtual_entries (MonoMemoryManager *mem_manager, gpointer *vtable_slot);
 
 /*
- * LOCKING: requires the loader and domain locks.
+ * LOCKING: assume the loader lock is held
  *
 */
 static void
@@ -1521,6 +1521,11 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 			method = mono_class_get_method_by_index (iface, method_slot_in_interface);
 			if (method->is_generic) {
 				has_generic_virtual = TRUE;
+				vt_slot ++;
+				continue;
+			}
+
+			if (m_method_is_static (method)) {
 				vt_slot ++;
 				continue;
 			}
@@ -1621,14 +1626,6 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 	vt->imt_collisions_bitmap |= imt_collisions_bitmap;
 }
 
-static void
-build_imt (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_interfaces)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	build_imt_slots (klass, vt, imt, extra_interfaces, -1);
-}
-
 /**
  * mono_vtable_build_imt_slot:
  * \param vtable virtual object table struct
@@ -1636,7 +1633,7 @@ build_imt (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_interf
  * Fill the given \p imt_slot in the IMT table of \p vtable with
  * a trampoline or a trampoline for the case of collisions.
  * This is part of the internal mono API.
- * LOCKING: Take the domain lock.
+ * LOCKING: Take the loader lock.
  */
 void
 mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
@@ -1652,12 +1649,10 @@ mono_vtable_build_imt_slot (MonoVTable* vtable, int imt_slot)
 	 * Update and heck needs to ahppen inside the proper domain lock, as all
 	 * the changes made to a MonoVTable.
 	 */
-	mono_loader_lock (); /*FIXME build_imt_slots requires the loader lock.*/
-	mono_domain_lock (vtable->domain);
+	mono_loader_lock ();
 	/* we change the slot only if it wasn't changed from the generic imt trampoline already */
 	if (!callbacks.imt_entry_inited (vtable, imt_slot))
 		build_imt_slots (vtable->klass, vtable, imt, NULL, imt_slot);
-	mono_domain_unlock (vtable->domain);
 	mono_loader_unlock ();
 }
 
@@ -1684,9 +1679,8 @@ get_generic_virtual_entries (MonoMemoryManager *mem_manager, gpointer *vtable_sl
 
   	GenericVirtualCase *list;
  	MonoImtBuilderEntry *entries;
-	MonoDomain *domain = mono_get_root_domain ();
 
- 	mono_domain_lock (domain);
+	mono_mem_manager_lock (mem_manager);
  	if (!mem_manager->generic_virtual_cases)
  		mem_manager->generic_virtual_cases = g_hash_table_new (mono_aligned_addr_hash, NULL);
  
@@ -1709,7 +1703,7 @@ get_generic_virtual_entries (MonoMemoryManager *mem_manager, gpointer *vtable_sl
  		entries = entry;
  	}
  
- 	mono_domain_unlock (domain);
+	mono_mem_manager_unlock (mem_manager);
  
  	/* FIXME: Leaking memory ? */
  	return entries;
@@ -1740,10 +1734,11 @@ mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 	GenericVirtualCase *gvc, *list;
 	MonoImtBuilderEntry *entries;
 	GPtrArray *sorted;
-	MonoDomain *domain = mono_get_root_domain ();
 	MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 
-	mono_domain_lock (domain);
+	mono_loader_lock ();
+
+	mono_mem_manager_lock (mem_manager);
 	if (!mem_manager->generic_virtual_cases)
 		mem_manager->generic_virtual_cases = g_hash_table_new (mono_aligned_addr_hash, NULL);
 
@@ -1774,6 +1769,8 @@ mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 
 		num_added++;
 	}
+
+	mono_mem_manager_unlock (mem_manager);
 
 	if (++gvc->count == THUNK_THRESHOLD) {
 		gpointer *old_thunk = (void **)*vtable_slot;
@@ -1812,7 +1809,7 @@ mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 		}
 	}
 
-	mono_domain_unlock (domain);
+	mono_loader_unlock ();
 }
 
 static MonoVTable *mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error);
@@ -1919,7 +1916,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 
 	MonoVTable *vt;
 	MonoClassField *field;
-	MonoMemoryManager *memory_manager;
+	MonoMemoryManager *mem_manager;
 	char *t;
 	int i, vtable_slots;
 	size_t imt_table_bytes;
@@ -2059,7 +2056,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 		UnlockedAdd (&mono_stats.class_static_data_size, class_size);
 	}
 
-	MonoMemoryManager *mem_manager = m_class_get_mem_manager (klass);
+	mem_manager = m_class_get_mem_manager (klass);
 
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
@@ -2113,7 +2110,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 			const char *data = mono_field_get_data (field);
 
 			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT));
-			t = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
+			t = (char*)mono_static_field_get_addr (vt, field);
 			/* some fields don't really have rva, they are just zeroed (bss? bug #343083) */
 			if (!data)
 				continue;
@@ -2173,7 +2170,6 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
 		vt->type = MONO_HANDLE_RAW (vt_type);
 		if (!is_ok (error)) {
-			mono_domain_unlock (domain);
 			mono_loader_unlock ();
 			MONO_PROFILER_RAISE (vtable_failed, (vt));
 			goto return_null;
@@ -2187,10 +2183,9 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 
 	/*  class_vtable_array keeps an array of created vtables
 	 */
-	memory_manager = mono_mem_manager_get_ambient ();
-	mono_mem_manager_lock (memory_manager);
-	g_ptr_array_add (memory_manager->class_vtable_array, vt);
-	mono_mem_manager_unlock (memory_manager);
+	mono_mem_manager_lock (mem_manager);
+	g_ptr_array_add (mem_manager->class_vtable_array, vt);
+	mono_mem_manager_unlock (mem_manager);
 
 	/*
 	 * Store the vtable in klass_vtable.
@@ -2786,16 +2781,8 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 	if ((field->type->attrs & FIELD_ATTRIBUTE_LITERAL))
 		return;
 
-	if (field->offset == -1) {
-		ERROR_DECL (error);
-		/* Special static */
-		gpointer addr = mono_special_static_field_get_offset (field, error);
-		mono_error_assert_ok (error);
-		dest = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-	} else {
-		dest = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
-	}
-	mono_copy_value (field->type, dest, value, FALSE);
+	dest = mono_static_field_get_addr (vt, field);
+	mono_copy_value (field->type, dest, value, value && field->type->type == MONO_TYPE_PTR);
 }
 
 gpointer
@@ -2847,20 +2834,28 @@ mono_field_get_addr (MonoObject *obj, MonoVTable *vt, MonoClassField *field)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+		return mono_static_field_get_addr (vt, field);
+	else
+		return (guint8*)obj + field->offset;
+}
+
+guint8*
+mono_static_field_get_addr (MonoVTable *vt, MonoClassField *field)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	guint8 *src;
 
-	if (field->type->attrs & FIELD_ATTRIBUTE_STATIC) {
-		if (field->offset == -1) {
-			/* Special static */
-			ERROR_DECL (error);
-			gpointer addr = mono_special_static_field_get_offset (field, error);
-			mono_error_assert_ok (error);
-			src = (guint8 *)mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-		} else {
-			src = (guint8*)mono_vtable_get_static_field_data (vt) + field->offset;
-		}
+	g_assert (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
+	if (field->offset == -1) {
+		/* Special static */
+		ERROR_DECL (error);
+		gpointer addr = mono_special_static_field_get_offset (field, error);
+		mono_error_assert_ok (error);
+		src = (guint8 *)mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 	} else {
-		src = (guint8*)obj + field->offset;
+		src = (guint8*)mono_vtable_get_static_field_data (vt) + field->offset;
 	}
 
 	return src;
@@ -3209,14 +3204,7 @@ mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *
 		return;
 	}
 
-	if (field->offset == -1) {
-		/* Special static */
-		gpointer addr = mono_special_static_field_get_offset (field, error);
-		mono_error_assert_ok (error);
-		src = mono_get_special_static_data_for_thread (thread, GPOINTER_TO_UINT (addr));
-	} else {
-		src = (char*)mono_vtable_get_static_field_data (vt) + field->offset;
-	}
+	src = mono_static_field_get_addr (vt, field);
 	mono_copy_value (field->type, value, src, TRUE);
 }
 
@@ -4386,7 +4374,7 @@ prepare_thread_to_exec_main (MonoMethod *method)
 		thread->apartment_state = ThreadApartmentState_MTA;
 	}
 	mono_thread_init_apartment_state ();
-
+	mono_thread_init_from_native ();
 }
 
 static int
@@ -5698,6 +5686,39 @@ mono_array_new_full_checked (MonoClass *array_class, uintptr_t *lengths, intptr_
 	return array;
 }
 
+static MonoArray*
+mono_array_new_jagged_helper (MonoClass *klass, int n, uintptr_t *lengths, int index, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoArray *ret = mono_array_new_full_checked (klass, &lengths [index], NULL, error);
+	goto_if_nok (error, exit);
+
+	MONO_HANDLE_PIN (ret);
+
+	if (index < (n - 1)) {
+		// We have a new dimension argument. This means the elements in the allocated array
+		// are also arrays and we allocate each one of them.
+		MonoClass *element_class = m_class_get_element_class (klass);
+		g_assert (m_class_get_rank (element_class) == 1);
+		for (int i = 0; i < lengths [index]; i++) {
+			MonoArray *o = mono_array_new_jagged_helper (element_class, n, lengths, index + 1, error);
+			goto_if_nok (error, exit);
+			mono_array_setref_fast (ret, i, o);
+		}
+	}
+
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (ret);
+}
+
+MonoArray *
+mono_array_new_jagged_checked (MonoClass *klass, int n, uintptr_t *lengths, MonoError *error)
+{
+	return mono_array_new_jagged_helper (klass, n, lengths, 0, error);
+}
+
+
 /**
  * mono_array_new:
  * \param domain domain where the object is created
@@ -5831,6 +5852,35 @@ ves_icall_array_new_specific (MonoVTable *vtable, uintptr_t n)
 	mono_error_set_pending_exception (error);
 
 	return arr;
+}
+
+gboolean
+mono_string_equal_internal (MonoString *s1, MonoString *s2)
+{
+	int l1 = mono_string_length_internal (s1);
+	int l2 = mono_string_length_internal (s2);
+
+	if (s1 == s2)
+		return TRUE;
+	if (l1 != l2)
+		return FALSE;
+
+	return memcmp (mono_string_chars_internal (s1), mono_string_chars_internal (s2), l1 * 2) == 0;
+}
+
+guint
+mono_string_hash_internal (MonoString *s)
+{
+	const gunichar2 *p = mono_string_chars_internal (s);
+	int i, len = mono_string_length_internal (s);
+	guint h = 0;
+
+	for (i = 0; i < len; i++) {
+		h = (h << 5) - h + *p;
+		p++;
+	}
+
+	return h;
 }
 
 /**
@@ -6724,16 +6774,36 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
 	res = (MonoString *)mono_g_hash_table_lookup (ldstr_table, MONO_HANDLE_RAW (str));
 	if (res)
 		MONO_HANDLE_ASSIGN_RAW (s, res);
-	else
+	else {
 		mono_g_hash_table_insert_internal (ldstr_table, MONO_HANDLE_RAW (s), MONO_HANDLE_RAW (s));
+
+#ifdef HOST_WASM
+		mono_set_string_interned_internal ((MonoObject *)MONO_HANDLE_RAW (s));
+#endif
+	}
 	ldstr_unlock ();
 	return s;
 }
 
+#ifdef HOST_WASM
+/**
+ * mono_string_instance_is_interned:
+ * Searches the interned string table for the provided string instance.
+ * \param str String to probe
+ * \returns TRUE if the string is interned, FALSE otherwise.
+ */
+int
+mono_string_instance_is_interned (MonoString *str)
+{
+	return mono_is_string_interned_internal ((MonoObject *)str);
+}
+#endif
+
 /**
  * mono_string_is_interned:
- * \param o String to probe
- * \returns Whether the string has been interned.
+ * Searches the interned string table for a string with value equal to the provided string.
+ * \param str String to probe
+ * \returns The string located within the intern table, or null.
  */
 MonoString*
 mono_string_is_interned (MonoString *str_raw)

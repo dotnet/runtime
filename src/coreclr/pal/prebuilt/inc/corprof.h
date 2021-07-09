@@ -4,10 +4,8 @@
 
 
  /* File created by MIDL compiler version 8.01.0622 */
-/* at Mon Jan 18 19:14:07 2038
- */
-/* Compiler settings for C:/git/runtime/src/coreclr/inc/corprof.idl:
-    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
+/* Compiler settings for corprof.idl:
+    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.01.0622 
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data 
     VC __declspec() decoration level: 
@@ -113,6 +111,13 @@ typedef interface ICorProfilerCallback9 ICorProfilerCallback9;
 typedef interface ICorProfilerCallback10 ICorProfilerCallback10;
 
 #endif  /* __ICorProfilerCallback10_FWD_DEFINED__ */
+
+
+#ifndef __ICorProfilerCallback11_FWD_DEFINED__
+#define __ICorProfilerCallback11_FWD_DEFINED__
+typedef interface ICorProfilerCallback11 ICorProfilerCallback11;
+
+#endif  /* __ICorProfilerCallback11_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo_FWD_DEFINED__
@@ -552,6 +557,7 @@ enum __MIDL___MIDL_itf_corprof_0000_0000_0005
         COR_PRF_ALL = 0x8fffffff,
         COR_PRF_REQUIRE_PROFILE_IMAGE   = ( ( COR_PRF_USE_PROFILE_IMAGES | COR_PRF_MONITOR_CODE_TRANSITIONS )  | COR_PRF_MONITOR_ENTERLEAVE ) ,
         COR_PRF_ALLOWABLE_AFTER_ATTACH  = ( ( ( ( ( ( ( ( ( ( COR_PRF_MONITOR_THREADS | COR_PRF_MONITOR_MODULE_LOADS )  | COR_PRF_MONITOR_ASSEMBLY_LOADS )  | COR_PRF_MONITOR_APPDOMAIN_LOADS )  | COR_PRF_ENABLE_STACK_SNAPSHOT )  | COR_PRF_MONITOR_GC )  | COR_PRF_MONITOR_SUSPENDS )  | COR_PRF_MONITOR_CLASS_LOADS )  | COR_PRF_MONITOR_EXCEPTIONS )  | COR_PRF_MONITOR_JIT_COMPILATION )  | COR_PRF_ENABLE_REJIT ) ,
+        COR_PRF_ALLOWABLE_NOTIFICATION_PROFILER = ( ( ( ( ( ( ( ( ( ( ( ( ( ( ( ( ( ( ( COR_PRF_MONITOR_FUNCTION_UNLOADS | COR_PRF_MONITOR_CLASS_LOADS )  | COR_PRF_MONITOR_MODULE_LOADS )  | COR_PRF_MONITOR_ASSEMBLY_LOADS )  | COR_PRF_MONITOR_APPDOMAIN_LOADS )  | COR_PRF_MONITOR_JIT_COMPILATION )  | COR_PRF_MONITOR_EXCEPTIONS )  | COR_PRF_MONITOR_OBJECT_ALLOCATED )  | COR_PRF_MONITOR_THREADS )  | COR_PRF_MONITOR_CODE_TRANSITIONS )  | COR_PRF_MONITOR_CCW )  | COR_PRF_MONITOR_SUSPENDS )  | COR_PRF_MONITOR_CACHE_SEARCHES )  | COR_PRF_DISABLE_INLINING )  | COR_PRF_DISABLE_OPTIMIZATIONS )  | COR_PRF_ENABLE_OBJECT_ALLOCATED )  | COR_PRF_MONITOR_CLR_EXCEPTIONS )  | COR_PRF_ENABLE_STACK_SNAPSHOT )  | COR_PRF_USE_PROFILE_IMAGES )  | COR_PRF_DISABLE_ALL_NGEN_IMAGES ) ,
         COR_PRF_MONITOR_IMMUTABLE   = ( ( ( ( ( ( ( ( ( ( ( ( ( ( COR_PRF_MONITOR_CODE_TRANSITIONS | COR_PRF_MONITOR_REMOTING )  | COR_PRF_MONITOR_REMOTING_COOKIE )  | COR_PRF_MONITOR_REMOTING_ASYNC )  | COR_PRF_ENABLE_INPROC_DEBUGGING )  | COR_PRF_ENABLE_JIT_MAPS )  | COR_PRF_DISABLE_OPTIMIZATIONS )  | COR_PRF_DISABLE_INLINING )  | COR_PRF_ENABLE_OBJECT_ALLOCATED )  | COR_PRF_ENABLE_FUNCTION_ARGS )  | COR_PRF_ENABLE_FUNCTION_RETVAL )  | COR_PRF_ENABLE_FRAME_INFO )  | COR_PRF_USE_PROFILE_IMAGES )  | COR_PRF_DISABLE_TRANSPARENCY_CHECKS_UNDER_FULL_TRUST )  | COR_PRF_DISABLE_ALL_NGEN_IMAGES ) 
     }   COR_PRF_MONITOR;
 
@@ -569,6 +575,7 @@ enum __MIDL___MIDL_itf_corprof_0000_0000_0006
         COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED  = 0x40,
         COR_PRF_HIGH_MONITOR_EVENT_PIPE = 0x80,
         COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH = ( ( ( ( ( COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED | COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS )  | COR_PRF_HIGH_BASIC_GC )  | COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS )  | COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED )  | COR_PRF_HIGH_MONITOR_EVENT_PIPE ) ,
+        COR_PRF_HIGH_ALLOWABLE_NOTIFICATION_PROFILER    = ( ( ( ( ( ( COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED | COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS )  | COR_PRF_HIGH_DISABLE_TIERED_COMPILATION )  | COR_PRF_HIGH_BASIC_GC )  | COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS )  | COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED )  | COR_PRF_HIGH_MONITOR_EVENT_PIPE ) ,
         COR_PRF_HIGH_MONITOR_IMMUTABLE  = COR_PRF_HIGH_DISABLE_TIERED_COMPILATION
     }   COR_PRF_HIGH_MONITOR;
 
@@ -8351,11 +8358,829 @@ EXTERN_C const IID IID_ICorProfilerCallback10;
 #endif  /* __ICorProfilerCallback10_INTERFACE_DEFINED__ */
 
 
-/* interface __MIDL_itf_corprof_0000_0010 */
+#ifndef __ICorProfilerCallback11_INTERFACE_DEFINED__
+#define __ICorProfilerCallback11_INTERFACE_DEFINED__
+
+/* interface ICorProfilerCallback11 */
+/* [local][unique][uuid][object] */ 
+
+
+EXTERN_C const IID IID_ICorProfilerCallback11;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("42350846-AAED-47F7-B128-FD0C98881CDE")
+    ICorProfilerCallback11 : public ICorProfilerCallback10
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE LoadAsNotficationOnly( 
+            BOOL *pbNotificationOnly) = 0;
+        
+    };
+    
+    
+#else   /* C style interface */
+
+    typedef struct ICorProfilerCallback11Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ICorProfilerCallback11 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *Initialize )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ IUnknown *pICorProfilerInfoUnk);
+        
+        HRESULT ( STDMETHODCALLTYPE *Shutdown )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *AppDomainCreationStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ AppDomainID appDomainId);
+        
+        HRESULT ( STDMETHODCALLTYPE *AppDomainCreationFinished )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ AppDomainID appDomainId,
+            /* [in] */ HRESULT hrStatus);
+        
+        HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ AppDomainID appDomainId);
+        
+        HRESULT ( STDMETHODCALLTYPE *AppDomainShutdownFinished )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ AppDomainID appDomainId,
+            /* [in] */ HRESULT hrStatus);
+        
+        HRESULT ( STDMETHODCALLTYPE *AssemblyLoadStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ AssemblyID assemblyId);
+        
+        HRESULT ( STDMETHODCALLTYPE *AssemblyLoadFinished )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ AssemblyID assemblyId,
+            /* [in] */ HRESULT hrStatus);
+        
+        HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ AssemblyID assemblyId);
+        
+        HRESULT ( STDMETHODCALLTYPE *AssemblyUnloadFinished )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ AssemblyID assemblyId,
+            /* [in] */ HRESULT hrStatus);
+        
+        HRESULT ( STDMETHODCALLTYPE *ModuleLoadStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ModuleID moduleId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ModuleLoadFinished )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ HRESULT hrStatus);
+        
+        HRESULT ( STDMETHODCALLTYPE *ModuleUnloadStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ModuleID moduleId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ModuleUnloadFinished )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ HRESULT hrStatus);
+        
+        HRESULT ( STDMETHODCALLTYPE *ModuleAttachedToAssembly )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ AssemblyID AssemblyId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ClassLoadStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ClassID classId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ClassLoadFinished )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ClassID classId,
+            /* [in] */ HRESULT hrStatus);
+        
+        HRESULT ( STDMETHODCALLTYPE *ClassUnloadStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ClassID classId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ClassUnloadFinished )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ClassID classId,
+            /* [in] */ HRESULT hrStatus);
+        
+        HRESULT ( STDMETHODCALLTYPE *FunctionUnloadStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId);
+        
+        HRESULT ( STDMETHODCALLTYPE *JITCompilationStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ BOOL fIsSafeToBlock);
+        
+        HRESULT ( STDMETHODCALLTYPE *JITCompilationFinished )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ HRESULT hrStatus,
+            /* [in] */ BOOL fIsSafeToBlock);
+        
+        HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId,
+            /* [out] */ BOOL *pbUseCachedFunction);
+        
+        HRESULT ( STDMETHODCALLTYPE *JITCachedFunctionSearchFinished )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ COR_PRF_JIT_CACHE result);
+        
+        HRESULT ( STDMETHODCALLTYPE *JITFunctionPitched )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId);
+        
+        HRESULT ( STDMETHODCALLTYPE *JITInlining )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID callerId,
+            /* [in] */ FunctionID calleeId,
+            /* [out] */ BOOL *pfShouldInline);
+        
+        HRESULT ( STDMETHODCALLTYPE *ThreadCreated )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ThreadID threadId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ThreadDestroyed )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ThreadID threadId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ThreadAssignedToOSThread )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ThreadID managedThreadId,
+            /* [in] */ DWORD osThreadId);
+        
+        HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationStarted )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *RemotingClientSendingMessage )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ GUID *pCookie,
+            /* [in] */ BOOL fIsAsync);
+        
+        HRESULT ( STDMETHODCALLTYPE *RemotingClientReceivingReply )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ GUID *pCookie,
+            /* [in] */ BOOL fIsAsync);
+        
+        HRESULT ( STDMETHODCALLTYPE *RemotingClientInvocationFinished )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *RemotingServerReceivingMessage )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ GUID *pCookie,
+            /* [in] */ BOOL fIsAsync);
+        
+        HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationStarted )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *RemotingServerInvocationReturned )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *RemotingServerSendingReply )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ GUID *pCookie,
+            /* [in] */ BOOL fIsAsync);
+        
+        HRESULT ( STDMETHODCALLTYPE *UnmanagedToManagedTransition )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ COR_PRF_TRANSITION_REASON reason);
+        
+        HRESULT ( STDMETHODCALLTYPE *ManagedToUnmanagedTransition )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ COR_PRF_TRANSITION_REASON reason);
+        
+        HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ COR_PRF_SUSPEND_REASON suspendReason);
+        
+        HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendFinished )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *RuntimeSuspendAborted )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *RuntimeResumeStarted )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *RuntimeResumeFinished )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *RuntimeThreadSuspended )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ThreadID threadId);
+        
+        HRESULT ( STDMETHODCALLTYPE *RuntimeThreadResumed )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ThreadID threadId);
+        
+        HRESULT ( STDMETHODCALLTYPE *MovedReferences )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ULONG cMovedObjectIDRanges,
+            /* [size_is][in] */ ObjectID oldObjectIDRangeStart[  ],
+            /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
+            /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
+        
+        HRESULT ( STDMETHODCALLTYPE *ObjectAllocated )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ObjectID objectId,
+            /* [in] */ ClassID classId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ObjectsAllocatedByClass )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ULONG cClassCount,
+            /* [size_is][in] */ ClassID classIds[  ],
+            /* [size_is][in] */ ULONG cObjects[  ]);
+        
+        HRESULT ( STDMETHODCALLTYPE *ObjectReferences )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ObjectID objectId,
+            /* [in] */ ClassID classId,
+            /* [in] */ ULONG cObjectRefs,
+            /* [size_is][in] */ ObjectID objectRefIds[  ]);
+        
+        HRESULT ( STDMETHODCALLTYPE *RootReferences )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ULONG cRootRefs,
+            /* [size_is][in] */ ObjectID rootRefIds[  ]);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionThrown )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ObjectID thrownObjectId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionEnter )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFunctionLeave )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterEnter )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionSearchFilterLeave )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionSearchCatcherFound )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerEnter )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ UINT_PTR __unused);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionOSHandlerLeave )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ UINT_PTR __unused);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionEnter )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFunctionLeave )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyEnter )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionUnwindFinallyLeave )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherEnter )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ ObjectID objectId);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionCatcherLeave )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *COMClassicVTableCreated )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ClassID wrappedClassId,
+            /* [in] */ REFGUID implementedIID,
+            /* [in] */ void *pVTable,
+            /* [in] */ ULONG cSlots);
+        
+        HRESULT ( STDMETHODCALLTYPE *COMClassicVTableDestroyed )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ClassID wrappedClassId,
+            /* [in] */ REFGUID implementedIID,
+            /* [in] */ void *pVTable);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherFound )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *ExceptionCLRCatcherExecute )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *ThreadNameChanged )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ThreadID threadId,
+            /* [in] */ ULONG cchName,
+            /* [annotation][in] */ 
+            _In_reads_opt_(cchName)  WCHAR name[  ]);
+        
+        HRESULT ( STDMETHODCALLTYPE *GarbageCollectionStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ int cGenerations,
+            /* [size_is][in] */ BOOL generationCollected[  ],
+            /* [in] */ COR_PRF_GC_REASON reason);
+        
+        HRESULT ( STDMETHODCALLTYPE *SurvivingReferences )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ULONG cSurvivingObjectIDRanges,
+            /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
+            /* [size_is][in] */ ULONG cObjectIDRangeLength[  ]);
+        
+        HRESULT ( STDMETHODCALLTYPE *GarbageCollectionFinished )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *FinalizeableObjectQueued )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ DWORD finalizerFlags,
+            /* [in] */ ObjectID objectID);
+        
+        HRESULT ( STDMETHODCALLTYPE *RootReferences2 )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ULONG cRootRefs,
+            /* [size_is][in] */ ObjectID rootRefIds[  ],
+            /* [size_is][in] */ COR_PRF_GC_ROOT_KIND rootKinds[  ],
+            /* [size_is][in] */ COR_PRF_GC_ROOT_FLAGS rootFlags[  ],
+            /* [size_is][in] */ UINT_PTR rootIds[  ]);
+        
+        HRESULT ( STDMETHODCALLTYPE *HandleCreated )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ GCHandleID handleId,
+            /* [in] */ ObjectID initialObjectId);
+        
+        HRESULT ( STDMETHODCALLTYPE *HandleDestroyed )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ GCHandleID handleId);
+        
+        HRESULT ( STDMETHODCALLTYPE *InitializeForAttach )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ IUnknown *pCorProfilerInfoUnk,
+            /* [in] */ void *pvClientData,
+            /* [in] */ UINT cbClientData);
+        
+        HRESULT ( STDMETHODCALLTYPE *ProfilerAttachComplete )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *ProfilerDetachSucceeded )( 
+            ICorProfilerCallback11 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *ReJITCompilationStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ ReJITID rejitId,
+            /* [in] */ BOOL fIsSafeToBlock);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetReJITParameters )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ mdMethodDef methodId,
+            /* [in] */ ICorProfilerFunctionControl *pFunctionControl);
+        
+        HRESULT ( STDMETHODCALLTYPE *ReJITCompilationFinished )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ ReJITID rejitId,
+            /* [in] */ HRESULT hrStatus,
+            /* [in] */ BOOL fIsSafeToBlock);
+        
+        HRESULT ( STDMETHODCALLTYPE *ReJITError )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ModuleID moduleId,
+            /* [in] */ mdMethodDef methodId,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ HRESULT hrStatus);
+        
+        HRESULT ( STDMETHODCALLTYPE *MovedReferences2 )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ULONG cMovedObjectIDRanges,
+            /* [size_is][in] */ ObjectID oldObjectIDRangeStart[  ],
+            /* [size_is][in] */ ObjectID newObjectIDRangeStart[  ],
+            /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
+        
+        HRESULT ( STDMETHODCALLTYPE *SurvivingReferences2 )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ULONG cSurvivingObjectIDRanges,
+            /* [size_is][in] */ ObjectID objectIDRangeStart[  ],
+            /* [size_is][in] */ SIZE_T cObjectIDRangeLength[  ]);
+        
+        HRESULT ( STDMETHODCALLTYPE *ConditionalWeakTableElementReferences )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ ULONG cRootRefs,
+            /* [size_is][in] */ ObjectID keyRefIds[  ],
+            /* [size_is][in] */ ObjectID valueRefIds[  ],
+            /* [size_is][in] */ GCHandleID rootIds[  ]);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetAssemblyReferences )( 
+            ICorProfilerCallback11 * This,
+            /* [string][in] */ const WCHAR *wszAssemblyPath,
+            /* [in] */ ICorProfilerAssemblyReferenceProvider *pAsmRefProvider);
+        
+        HRESULT ( STDMETHODCALLTYPE *ModuleInMemorySymbolsUpdated )( 
+            ICorProfilerCallback11 * This,
+            ModuleID moduleId);
+        
+        HRESULT ( STDMETHODCALLTYPE *DynamicMethodJITCompilationStarted )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ BOOL fIsSafeToBlock,
+            /* [in] */ LPCBYTE pILHeader,
+            /* [in] */ ULONG cbILHeader);
+        
+        HRESULT ( STDMETHODCALLTYPE *DynamicMethodJITCompilationFinished )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId,
+            /* [in] */ HRESULT hrStatus,
+            /* [in] */ BOOL fIsSafeToBlock);
+        
+        HRESULT ( STDMETHODCALLTYPE *DynamicMethodUnloaded )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ FunctionID functionId);
+        
+        HRESULT ( STDMETHODCALLTYPE *EventPipeEventDelivered )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ EVENTPIPE_PROVIDER provider,
+            /* [in] */ DWORD eventId,
+            /* [in] */ DWORD eventVersion,
+            /* [in] */ ULONG cbMetadataBlob,
+            /* [size_is][in] */ LPCBYTE metadataBlob,
+            /* [in] */ ULONG cbEventData,
+            /* [size_is][in] */ LPCBYTE eventData,
+            /* [in] */ LPCGUID pActivityId,
+            /* [in] */ LPCGUID pRelatedActivityId,
+            /* [in] */ ThreadID eventThread,
+            /* [in] */ ULONG numStackFrames,
+            /* [length_is][in] */ UINT_PTR stackFrames[  ]);
+        
+        HRESULT ( STDMETHODCALLTYPE *EventPipeProviderCreated )( 
+            ICorProfilerCallback11 * This,
+            /* [in] */ EVENTPIPE_PROVIDER provider);
+        
+        HRESULT ( STDMETHODCALLTYPE *LoadAsNotficationOnly )( 
+            ICorProfilerCallback11 * This,
+            BOOL *pbNotificationOnly);
+        
+        END_INTERFACE
+    } ICorProfilerCallback11Vtbl;
+
+    interface ICorProfilerCallback11
+    {
+        CONST_VTBL struct ICorProfilerCallback11Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ICorProfilerCallback11_QueryInterface(This,riid,ppvObject)  \
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ICorProfilerCallback11_AddRef(This) \
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ICorProfilerCallback11_Release(This)    \
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ICorProfilerCallback11_Initialize(This,pICorProfilerInfoUnk)    \
+    ( (This)->lpVtbl -> Initialize(This,pICorProfilerInfoUnk) ) 
+
+#define ICorProfilerCallback11_Shutdown(This)   \
+    ( (This)->lpVtbl -> Shutdown(This) ) 
+
+#define ICorProfilerCallback11_AppDomainCreationStarted(This,appDomainId)   \
+    ( (This)->lpVtbl -> AppDomainCreationStarted(This,appDomainId) ) 
+
+#define ICorProfilerCallback11_AppDomainCreationFinished(This,appDomainId,hrStatus) \
+    ( (This)->lpVtbl -> AppDomainCreationFinished(This,appDomainId,hrStatus) ) 
+
+#define ICorProfilerCallback11_AppDomainShutdownStarted(This,appDomainId)   \
+    ( (This)->lpVtbl -> AppDomainShutdownStarted(This,appDomainId) ) 
+
+#define ICorProfilerCallback11_AppDomainShutdownFinished(This,appDomainId,hrStatus) \
+    ( (This)->lpVtbl -> AppDomainShutdownFinished(This,appDomainId,hrStatus) ) 
+
+#define ICorProfilerCallback11_AssemblyLoadStarted(This,assemblyId) \
+    ( (This)->lpVtbl -> AssemblyLoadStarted(This,assemblyId) ) 
+
+#define ICorProfilerCallback11_AssemblyLoadFinished(This,assemblyId,hrStatus)   \
+    ( (This)->lpVtbl -> AssemblyLoadFinished(This,assemblyId,hrStatus) ) 
+
+#define ICorProfilerCallback11_AssemblyUnloadStarted(This,assemblyId)   \
+    ( (This)->lpVtbl -> AssemblyUnloadStarted(This,assemblyId) ) 
+
+#define ICorProfilerCallback11_AssemblyUnloadFinished(This,assemblyId,hrStatus) \
+    ( (This)->lpVtbl -> AssemblyUnloadFinished(This,assemblyId,hrStatus) ) 
+
+#define ICorProfilerCallback11_ModuleLoadStarted(This,moduleId) \
+    ( (This)->lpVtbl -> ModuleLoadStarted(This,moduleId) ) 
+
+#define ICorProfilerCallback11_ModuleLoadFinished(This,moduleId,hrStatus)   \
+    ( (This)->lpVtbl -> ModuleLoadFinished(This,moduleId,hrStatus) ) 
+
+#define ICorProfilerCallback11_ModuleUnloadStarted(This,moduleId)   \
+    ( (This)->lpVtbl -> ModuleUnloadStarted(This,moduleId) ) 
+
+#define ICorProfilerCallback11_ModuleUnloadFinished(This,moduleId,hrStatus) \
+    ( (This)->lpVtbl -> ModuleUnloadFinished(This,moduleId,hrStatus) ) 
+
+#define ICorProfilerCallback11_ModuleAttachedToAssembly(This,moduleId,AssemblyId)   \
+    ( (This)->lpVtbl -> ModuleAttachedToAssembly(This,moduleId,AssemblyId) ) 
+
+#define ICorProfilerCallback11_ClassLoadStarted(This,classId)   \
+    ( (This)->lpVtbl -> ClassLoadStarted(This,classId) ) 
+
+#define ICorProfilerCallback11_ClassLoadFinished(This,classId,hrStatus) \
+    ( (This)->lpVtbl -> ClassLoadFinished(This,classId,hrStatus) ) 
+
+#define ICorProfilerCallback11_ClassUnloadStarted(This,classId) \
+    ( (This)->lpVtbl -> ClassUnloadStarted(This,classId) ) 
+
+#define ICorProfilerCallback11_ClassUnloadFinished(This,classId,hrStatus)   \
+    ( (This)->lpVtbl -> ClassUnloadFinished(This,classId,hrStatus) ) 
+
+#define ICorProfilerCallback11_FunctionUnloadStarted(This,functionId)   \
+    ( (This)->lpVtbl -> FunctionUnloadStarted(This,functionId) ) 
+
+#define ICorProfilerCallback11_JITCompilationStarted(This,functionId,fIsSafeToBlock)    \
+    ( (This)->lpVtbl -> JITCompilationStarted(This,functionId,fIsSafeToBlock) ) 
+
+#define ICorProfilerCallback11_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)  \
+    ( (This)->lpVtbl -> JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) ) 
+
+#define ICorProfilerCallback11_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)  \
+    ( (This)->lpVtbl -> JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction) ) 
+
+#define ICorProfilerCallback11_JITCachedFunctionSearchFinished(This,functionId,result)  \
+    ( (This)->lpVtbl -> JITCachedFunctionSearchFinished(This,functionId,result) ) 
+
+#define ICorProfilerCallback11_JITFunctionPitched(This,functionId)  \
+    ( (This)->lpVtbl -> JITFunctionPitched(This,functionId) ) 
+
+#define ICorProfilerCallback11_JITInlining(This,callerId,calleeId,pfShouldInline)   \
+    ( (This)->lpVtbl -> JITInlining(This,callerId,calleeId,pfShouldInline) ) 
+
+#define ICorProfilerCallback11_ThreadCreated(This,threadId) \
+    ( (This)->lpVtbl -> ThreadCreated(This,threadId) ) 
+
+#define ICorProfilerCallback11_ThreadDestroyed(This,threadId)   \
+    ( (This)->lpVtbl -> ThreadDestroyed(This,threadId) ) 
+
+#define ICorProfilerCallback11_ThreadAssignedToOSThread(This,managedThreadId,osThreadId)    \
+    ( (This)->lpVtbl -> ThreadAssignedToOSThread(This,managedThreadId,osThreadId) ) 
+
+#define ICorProfilerCallback11_RemotingClientInvocationStarted(This)    \
+    ( (This)->lpVtbl -> RemotingClientInvocationStarted(This) ) 
+
+#define ICorProfilerCallback11_RemotingClientSendingMessage(This,pCookie,fIsAsync)  \
+    ( (This)->lpVtbl -> RemotingClientSendingMessage(This,pCookie,fIsAsync) ) 
+
+#define ICorProfilerCallback11_RemotingClientReceivingReply(This,pCookie,fIsAsync)  \
+    ( (This)->lpVtbl -> RemotingClientReceivingReply(This,pCookie,fIsAsync) ) 
+
+#define ICorProfilerCallback11_RemotingClientInvocationFinished(This)   \
+    ( (This)->lpVtbl -> RemotingClientInvocationFinished(This) ) 
+
+#define ICorProfilerCallback11_RemotingServerReceivingMessage(This,pCookie,fIsAsync)    \
+    ( (This)->lpVtbl -> RemotingServerReceivingMessage(This,pCookie,fIsAsync) ) 
+
+#define ICorProfilerCallback11_RemotingServerInvocationStarted(This)    \
+    ( (This)->lpVtbl -> RemotingServerInvocationStarted(This) ) 
+
+#define ICorProfilerCallback11_RemotingServerInvocationReturned(This)   \
+    ( (This)->lpVtbl -> RemotingServerInvocationReturned(This) ) 
+
+#define ICorProfilerCallback11_RemotingServerSendingReply(This,pCookie,fIsAsync)    \
+    ( (This)->lpVtbl -> RemotingServerSendingReply(This,pCookie,fIsAsync) ) 
+
+#define ICorProfilerCallback11_UnmanagedToManagedTransition(This,functionId,reason) \
+    ( (This)->lpVtbl -> UnmanagedToManagedTransition(This,functionId,reason) ) 
+
+#define ICorProfilerCallback11_ManagedToUnmanagedTransition(This,functionId,reason) \
+    ( (This)->lpVtbl -> ManagedToUnmanagedTransition(This,functionId,reason) ) 
+
+#define ICorProfilerCallback11_RuntimeSuspendStarted(This,suspendReason)    \
+    ( (This)->lpVtbl -> RuntimeSuspendStarted(This,suspendReason) ) 
+
+#define ICorProfilerCallback11_RuntimeSuspendFinished(This) \
+    ( (This)->lpVtbl -> RuntimeSuspendFinished(This) ) 
+
+#define ICorProfilerCallback11_RuntimeSuspendAborted(This)  \
+    ( (This)->lpVtbl -> RuntimeSuspendAborted(This) ) 
+
+#define ICorProfilerCallback11_RuntimeResumeStarted(This)   \
+    ( (This)->lpVtbl -> RuntimeResumeStarted(This) ) 
+
+#define ICorProfilerCallback11_RuntimeResumeFinished(This)  \
+    ( (This)->lpVtbl -> RuntimeResumeFinished(This) ) 
+
+#define ICorProfilerCallback11_RuntimeThreadSuspended(This,threadId)    \
+    ( (This)->lpVtbl -> RuntimeThreadSuspended(This,threadId) ) 
+
+#define ICorProfilerCallback11_RuntimeThreadResumed(This,threadId)  \
+    ( (This)->lpVtbl -> RuntimeThreadResumed(This,threadId) ) 
+
+#define ICorProfilerCallback11_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)  \
+    ( (This)->lpVtbl -> MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
+
+#define ICorProfilerCallback11_ObjectAllocated(This,objectId,classId)   \
+    ( (This)->lpVtbl -> ObjectAllocated(This,objectId,classId) ) 
+
+#define ICorProfilerCallback11_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)  \
+    ( (This)->lpVtbl -> ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects) ) 
+
+#define ICorProfilerCallback11_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds) \
+    ( (This)->lpVtbl -> ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds) ) 
+
+#define ICorProfilerCallback11_RootReferences(This,cRootRefs,rootRefIds)    \
+    ( (This)->lpVtbl -> RootReferences(This,cRootRefs,rootRefIds) ) 
+
+#define ICorProfilerCallback11_ExceptionThrown(This,thrownObjectId) \
+    ( (This)->lpVtbl -> ExceptionThrown(This,thrownObjectId) ) 
+
+#define ICorProfilerCallback11_ExceptionSearchFunctionEnter(This,functionId)    \
+    ( (This)->lpVtbl -> ExceptionSearchFunctionEnter(This,functionId) ) 
+
+#define ICorProfilerCallback11_ExceptionSearchFunctionLeave(This)   \
+    ( (This)->lpVtbl -> ExceptionSearchFunctionLeave(This) ) 
+
+#define ICorProfilerCallback11_ExceptionSearchFilterEnter(This,functionId)  \
+    ( (This)->lpVtbl -> ExceptionSearchFilterEnter(This,functionId) ) 
+
+#define ICorProfilerCallback11_ExceptionSearchFilterLeave(This) \
+    ( (This)->lpVtbl -> ExceptionSearchFilterLeave(This) ) 
+
+#define ICorProfilerCallback11_ExceptionSearchCatcherFound(This,functionId) \
+    ( (This)->lpVtbl -> ExceptionSearchCatcherFound(This,functionId) ) 
+
+#define ICorProfilerCallback11_ExceptionOSHandlerEnter(This,__unused)   \
+    ( (This)->lpVtbl -> ExceptionOSHandlerEnter(This,__unused) ) 
+
+#define ICorProfilerCallback11_ExceptionOSHandlerLeave(This,__unused)   \
+    ( (This)->lpVtbl -> ExceptionOSHandlerLeave(This,__unused) ) 
+
+#define ICorProfilerCallback11_ExceptionUnwindFunctionEnter(This,functionId)    \
+    ( (This)->lpVtbl -> ExceptionUnwindFunctionEnter(This,functionId) ) 
+
+#define ICorProfilerCallback11_ExceptionUnwindFunctionLeave(This)   \
+    ( (This)->lpVtbl -> ExceptionUnwindFunctionLeave(This) ) 
+
+#define ICorProfilerCallback11_ExceptionUnwindFinallyEnter(This,functionId) \
+    ( (This)->lpVtbl -> ExceptionUnwindFinallyEnter(This,functionId) ) 
+
+#define ICorProfilerCallback11_ExceptionUnwindFinallyLeave(This)    \
+    ( (This)->lpVtbl -> ExceptionUnwindFinallyLeave(This) ) 
+
+#define ICorProfilerCallback11_ExceptionCatcherEnter(This,functionId,objectId)  \
+    ( (This)->lpVtbl -> ExceptionCatcherEnter(This,functionId,objectId) ) 
+
+#define ICorProfilerCallback11_ExceptionCatcherLeave(This)  \
+    ( (This)->lpVtbl -> ExceptionCatcherLeave(This) ) 
+
+#define ICorProfilerCallback11_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)   \
+    ( (This)->lpVtbl -> COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots) ) 
+
+#define ICorProfilerCallback11_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable)    \
+    ( (This)->lpVtbl -> COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) ) 
+
+#define ICorProfilerCallback11_ExceptionCLRCatcherFound(This)   \
+    ( (This)->lpVtbl -> ExceptionCLRCatcherFound(This) ) 
+
+#define ICorProfilerCallback11_ExceptionCLRCatcherExecute(This) \
+    ( (This)->lpVtbl -> ExceptionCLRCatcherExecute(This) ) 
+
+
+#define ICorProfilerCallback11_ThreadNameChanged(This,threadId,cchName,name)    \
+    ( (This)->lpVtbl -> ThreadNameChanged(This,threadId,cchName,name) ) 
+
+#define ICorProfilerCallback11_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)   \
+    ( (This)->lpVtbl -> GarbageCollectionStarted(This,cGenerations,generationCollected,reason) ) 
+
+#define ICorProfilerCallback11_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)   \
+    ( (This)->lpVtbl -> SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
+
+#define ICorProfilerCallback11_GarbageCollectionFinished(This)  \
+    ( (This)->lpVtbl -> GarbageCollectionFinished(This) ) 
+
+#define ICorProfilerCallback11_FinalizeableObjectQueued(This,finalizerFlags,objectID)   \
+    ( (This)->lpVtbl -> FinalizeableObjectQueued(This,finalizerFlags,objectID) ) 
+
+#define ICorProfilerCallback11_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)   \
+    ( (This)->lpVtbl -> RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds) ) 
+
+#define ICorProfilerCallback11_HandleCreated(This,handleId,initialObjectId) \
+    ( (This)->lpVtbl -> HandleCreated(This,handleId,initialObjectId) ) 
+
+#define ICorProfilerCallback11_HandleDestroyed(This,handleId)   \
+    ( (This)->lpVtbl -> HandleDestroyed(This,handleId) ) 
+
+
+#define ICorProfilerCallback11_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)  \
+    ( (This)->lpVtbl -> InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData) ) 
+
+#define ICorProfilerCallback11_ProfilerAttachComplete(This) \
+    ( (This)->lpVtbl -> ProfilerAttachComplete(This) ) 
+
+#define ICorProfilerCallback11_ProfilerDetachSucceeded(This)    \
+    ( (This)->lpVtbl -> ProfilerDetachSucceeded(This) ) 
+
+
+#define ICorProfilerCallback11_ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock)  \
+    ( (This)->lpVtbl -> ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock) ) 
+
+#define ICorProfilerCallback11_GetReJITParameters(This,moduleId,methodId,pFunctionControl)  \
+    ( (This)->lpVtbl -> GetReJITParameters(This,moduleId,methodId,pFunctionControl) ) 
+
+#define ICorProfilerCallback11_ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock)    \
+    ( (This)->lpVtbl -> ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock) ) 
+
+#define ICorProfilerCallback11_ReJITError(This,moduleId,methodId,functionId,hrStatus)   \
+    ( (This)->lpVtbl -> ReJITError(This,moduleId,methodId,functionId,hrStatus) ) 
+
+#define ICorProfilerCallback11_MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) \
+    ( (This)->lpVtbl -> MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
+
+#define ICorProfilerCallback11_SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)  \
+    ( (This)->lpVtbl -> SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
+
+
+#define ICorProfilerCallback11_ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds)  \
+    ( (This)->lpVtbl -> ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds) ) 
+
+
+#define ICorProfilerCallback11_GetAssemblyReferences(This,wszAssemblyPath,pAsmRefProvider)  \
+    ( (This)->lpVtbl -> GetAssemblyReferences(This,wszAssemblyPath,pAsmRefProvider) ) 
+
+
+#define ICorProfilerCallback11_ModuleInMemorySymbolsUpdated(This,moduleId)  \
+    ( (This)->lpVtbl -> ModuleInMemorySymbolsUpdated(This,moduleId) ) 
+
+
+#define ICorProfilerCallback11_DynamicMethodJITCompilationStarted(This,functionId,fIsSafeToBlock,pILHeader,cbILHeader)  \
+    ( (This)->lpVtbl -> DynamicMethodJITCompilationStarted(This,functionId,fIsSafeToBlock,pILHeader,cbILHeader) ) 
+
+#define ICorProfilerCallback11_DynamicMethodJITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) \
+    ( (This)->lpVtbl -> DynamicMethodJITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) ) 
+
+
+#define ICorProfilerCallback11_DynamicMethodUnloaded(This,functionId)   \
+    ( (This)->lpVtbl -> DynamicMethodUnloaded(This,functionId) ) 
+
+
+#define ICorProfilerCallback11_EventPipeEventDelivered(This,provider,eventId,eventVersion,cbMetadataBlob,metadataBlob,cbEventData,eventData,pActivityId,pRelatedActivityId,eventThread,numStackFrames,stackFrames)  \
+    ( (This)->lpVtbl -> EventPipeEventDelivered(This,provider,eventId,eventVersion,cbMetadataBlob,metadataBlob,cbEventData,eventData,pActivityId,pRelatedActivityId,eventThread,numStackFrames,stackFrames) ) 
+
+#define ICorProfilerCallback11_EventPipeProviderCreated(This,provider)  \
+    ( (This)->lpVtbl -> EventPipeProviderCreated(This,provider) ) 
+
+
+#define ICorProfilerCallback11_LoadAsNotficationOnly(This,pbNotificationOnly)   \
+    ( (This)->lpVtbl -> LoadAsNotficationOnly(This,pbNotificationOnly) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif  /* C style interface */
+
+
+
+
+#endif  /* __ICorProfilerCallback11_INTERFACE_DEFINED__ */
+
+
+/* interface __MIDL_itf_corprof_0000_0011 */
 /* [local] */ 
 
 typedef /* [public] */ 
-enum __MIDL___MIDL_itf_corprof_0000_0010_0001
+enum __MIDL___MIDL_itf_corprof_0000_0011_0001
     {
         COR_PRF_CODEGEN_DISABLE_INLINING    = 0x1,
         COR_PRF_CODEGEN_DISABLE_ALL_OPTIMIZATIONS   = 0x2
@@ -8363,8 +9188,8 @@ enum __MIDL___MIDL_itf_corprof_0000_0010_0001
 
 
 
-extern RPC_IF_HANDLE __MIDL_itf_corprof_0000_0010_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_corprof_0000_0010_v0_0_s_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_corprof_0000_0011_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_corprof_0000_0011_v0_0_s_ifspec;
 
 #ifndef __ICorProfilerInfo_INTERFACE_DEFINED__
 #define __ICorProfilerInfo_INTERFACE_DEFINED__

@@ -1385,7 +1385,7 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public override string? ToString()
+        public override string ToString()
         {
             switch (TokenType)
             {
@@ -1402,10 +1402,10 @@ namespace System.Text.Json
                     {
                         // null parent should have hit the None case
                         Debug.Assert(_parent != null);
-                        return ((JsonDocument)_parent).GetRawValueAsString(_idx);
+                        return _parent.GetRawValueAsString(_idx);
                     }
                 case JsonTokenType.String:
-                    return GetString();
+                    return GetString()!;
                 case JsonTokenType.Comment:
                 case JsonTokenType.EndArray:
                 case JsonTokenType.EndObject:

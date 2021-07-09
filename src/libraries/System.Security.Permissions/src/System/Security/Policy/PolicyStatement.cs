@@ -5,11 +5,11 @@ namespace System.Security.Policy
 {
     public sealed partial class PolicyStatement : ISecurityEncodable, ISecurityPolicyEncodable
     {
-#if NET50_OBSOLETIONS
+#if NET5_0_OR_GREATER
         [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public PolicyStatement(PermissionSet permSet) { }
-#if NET50_OBSOLETIONS
+#if NET5_0_OR_GREATER
         [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public PolicyStatement(PermissionSet permSet, PolicyStatementAttribute attributes) { }

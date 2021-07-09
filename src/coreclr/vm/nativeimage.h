@@ -105,7 +105,8 @@ public:
         Module *componentModule,
         LPCUTF8 nativeImageFileName,
         AssemblyLoadContext *pAssemblyLoadContext,
-        LoaderAllocator *pLoaderAllocator);
+        LoaderAllocator *pLoaderAllocator,
+        /* out */ bool *isNewNativeImage);
 
     Crst *EagerFixupsLock() { return &m_eagerFixupsLock; }
     bool EagerFixupsHaveRun() const { return m_eagerFixupsHaveRun; }

@@ -1,40 +1,4 @@
 ﻿<Project>
-
-  <ItemGroup>
-    <IBCPackage Include="optimization.windows_nt-x64.ibc.corefx" Version="$(optimizationwindows_ntx64IBCCoreFxVersion)" />
-    <IBCPackage Include="optimization.linux-x64.ibc.corefx" Version="$(optimizationlinuxx64IBCCoreFxVersion)" />
-    <IBCPackage Include="optimization.windows_nt-x64.IBC.CoreCLR" Version="$(optimizationwindows_ntx64IBCCoreCLRVersion)" />
-    <IBCPackage Include="optimization.linux-x64.IBC.CoreCLR" Version="$(optimizationlinuxx64IBCCoreCLRVersion)" />
-    <PackageDownload Include="@(IBCPackage)" Version="[%(Version)]" />
-  </ItemGroup>
-
-  <!-- IBC data packages don't follow NuGet conventions.  -->
-  <Target Name="GetIBCData"
-          AfterTargets="Restore">
-
-    <ItemGroup>
-      <IBCPackage>
-        <PackagePath>$(NuGetPackageRoot)%(IBCPackage.Identity)\%(IBCPackage.Version)</PackagePath>
-      </IBCPackage>
-      <IBCPackage Condition="$([System.String]::new('%(Identity)').ToLower().Contains('windows_nt'))">
-        <SubdirectoryName>Windows</SubdirectoryName>
-      </IBCPackage>
-      <IBCPackage Condition="$([System.String]::new('%(Identity)').ToLower().Contains('linux'))">
-        <SubdirectoryName>Linux</SubdirectoryName>
-      </IBCPackage>
-      <_optimizationDataSourceFile Include="%(IBCPackage.PackagePath)\**\*.dll;%(IBCPackage.PackagePath)\**\*.ibc" SubdirectoryName="%(IBCPackage.SubdirectoryName)" />
-    </ItemGroup>
-
-    <Error Condition="'@(_optimizationDataSourceFile)' == ''" Text="Failed to restore optimization data" />
-
-    <Copy SourceFiles="@(_optimizationDataSourceFile)"
-          DestinationFiles="@(_optimizationDataSourceFile->'$(IbcOptimizationDataDir)%(SubdirectoryName)\%(RecursiveDir)%(Filename)%(Extension)')"
-          SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="true" />
-
-  </Target>
-
-
   <ItemGroup>
     <!-- Mibc data to use when exact architecture match is available -->
     <MIBCPackageDef Include="optimization.windows_nt-x86.mibc.runtime" Version="$(optimizationwindows_ntx86MIBCRuntimeVersion)" MibcArchitecture="Windows/x86"/>

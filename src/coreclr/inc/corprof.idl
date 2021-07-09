@@ -475,6 +475,7 @@ typedef enum
     // and ThreadNameChanged callbacks.
     COR_PRF_MONITOR_THREADS             = 0x00000200,
 
+    // CORECLR DEPRECATION WARNING: Remoting no longer exists in coreclr
     // MONITOR_REMOTING controls the Remoting*
     // callbacks.
     COR_PRF_MONITOR_REMOTING            = 0x00000400,
@@ -492,10 +493,12 @@ typedef enum
     // callbacks.
     COR_PRF_MONITOR_CCW                 = 0x00002000,
 
+    // CORECLR DEPRECATION WARNING: Remoting no longer exists in coreclr
     // MONITOR_REMOTING_COOKIE controls whether
     // a cookie will be passed to the Remoting* callbacks
     COR_PRF_MONITOR_REMOTING_COOKIE     = 0x00004000 | COR_PRF_MONITOR_REMOTING,
 
+    // CORECLR DEPRECATION WARNING: Remoting no longer exists in coreclr
     // MONITOR_REMOTING_ASYNC controls whether
     // the Remoting* callbacks will monitor async events
     COR_PRF_MONITOR_REMOTING_ASYNC      = 0x00008000 | COR_PRF_MONITOR_REMOTING,
@@ -594,6 +597,28 @@ typedef enum
                                           COR_PRF_MONITOR_JIT_COMPILATION |
                                           COR_PRF_ENABLE_REJIT,
 
+    COR_PRF_ALLOWABLE_NOTIFICATION_PROFILER
+                                        =     COR_PRF_MONITOR_FUNCTION_UNLOADS |
+                                              COR_PRF_MONITOR_CLASS_LOADS |
+                                              COR_PRF_MONITOR_MODULE_LOADS |
+                                              COR_PRF_MONITOR_ASSEMBLY_LOADS |
+                                              COR_PRF_MONITOR_APPDOMAIN_LOADS |
+                                              COR_PRF_MONITOR_JIT_COMPILATION |
+                                              COR_PRF_MONITOR_EXCEPTIONS |
+                                              COR_PRF_MONITOR_OBJECT_ALLOCATED |
+                                              COR_PRF_MONITOR_THREADS |
+                                              COR_PRF_MONITOR_CODE_TRANSITIONS |
+                                              COR_PRF_MONITOR_CCW |
+                                              COR_PRF_MONITOR_SUSPENDS |
+                                              COR_PRF_MONITOR_CACHE_SEARCHES |
+                                              COR_PRF_DISABLE_INLINING |
+                                              COR_PRF_DISABLE_OPTIMIZATIONS |
+                                              COR_PRF_ENABLE_OBJECT_ALLOCATED |
+                                              COR_PRF_MONITOR_CLR_EXCEPTIONS |
+                                              COR_PRF_ENABLE_STACK_SNAPSHOT |
+                                              COR_PRF_USE_PROFILE_IMAGES |
+                                              COR_PRF_DISABLE_ALL_NGEN_IMAGES,
+
     // MONITOR_IMMUTABLE represents all flags that may only be set during initialization.
     // Trying to change any of these flags elsewhere will result in a
     // failed HRESULT.
@@ -621,6 +646,7 @@ typedef enum
 {
     COR_PRF_HIGH_MONITOR_NONE                       = 0x00000000,
 
+    // CORECLR DEPRECATION WARNING: This flag is no longer checked by the runtime
     COR_PRF_HIGH_ADD_ASSEMBLY_REFERENCES            = 0x00000001,
 
     COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED          = 0x00000002,
@@ -647,6 +673,15 @@ typedef enum
                                                       COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS |
                                                       COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED |
                                                       COR_PRF_HIGH_MONITOR_EVENT_PIPE,
+
+    COR_PRF_HIGH_ALLOWABLE_NOTIFICATION_PROFILER
+                                        =     COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED |
+                                              COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS |
+                                              COR_PRF_HIGH_DISABLE_TIERED_COMPILATION |
+                                              COR_PRF_HIGH_BASIC_GC |
+                                              COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS |
+                                              COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED |
+                                              COR_PRF_HIGH_MONITOR_EVENT_PIPE,
 
     // MONITOR_IMMUTABLE represents all flags that may only be set during initialization.
     // Trying to change any of these flags elsewhere will result in a
@@ -2433,6 +2468,7 @@ interface ICorProfilerCallback5 : ICorProfilerCallback4
 ]
 interface ICorProfilerCallback6 : ICorProfilerCallback5
 {
+    // CORECLR DEPRECATION WARNING: This callback does not occur on coreclr.
     // Controlled by the COR_PRF_HIGH_ADD_ASSEMBLY_REFERENCES event mask flag.
     // Notifies the profiler of a very early stage in the loading of an Assembly, where the CLR
     // performs an assembly reference closure walk.  This is useful ONLY if the profiler will need
@@ -2553,6 +2589,17 @@ interface ICorProfilerCallback10 : ICorProfilerCallback9
         [in, length_is(numStackFrames)] UINT_PTR stackFrames[]);
 
     HRESULT EventPipeProviderCreated([in] EVENTPIPE_PROVIDER provider);
+}
+
+[
+    object,
+    uuid(42350846-AAED-47F7-B128-FD0C98881CDE),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerCallback11 : ICorProfilerCallback10
+{
+    HRESULT LoadAsNotficationOnly(BOOL *pbNotificationOnly);
 }
 
 /*

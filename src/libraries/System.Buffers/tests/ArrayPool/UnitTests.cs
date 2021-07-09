@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -278,21 +279,9 @@ namespace System.Buffers.ArrayPool.Tests
             for (int i = 1; i < 10000; i++)
             {
                 byte[] buffer = pool.Rent(i);
-                Assert.Equal(i <= 16 ? 16 : RoundUpToPowerOf2(i), buffer.Length);
+                Assert.Equal(i <= 16 ? 16 : (int)BitOperations.RoundUpToPowerOf2((uint)i), buffer.Length);
                 pool.Return(buffer);
             }
-        }
-
-        private static int RoundUpToPowerOf2(int i)
-        {
-            // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-            --i;
-            i |= i >> 1;
-            i |= i >> 2;
-            i |= i >> 4;
-            i |= i >> 8;
-            i |= i >> 16;
-            return i + 1;
         }
 
         [Theory]

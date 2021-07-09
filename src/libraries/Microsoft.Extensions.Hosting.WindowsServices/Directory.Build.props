@@ -1,7 +1,7 @@
 <Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <PackageDescription>.NET hosting infrastructure for Windows Services.</PackageDescription>
     <PackageTags>hosting</PackageTags>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms> 
   </PropertyGroup>
 </Project>

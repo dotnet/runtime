@@ -82,7 +82,7 @@ jobs:
     value: ''
   - ${{ if eq(parameters.pgoType, 'PGO' )}}:
     - name: pgoInstrumentArg
-      value: '-pgoInstrument '
+      value: '-pgoinstrument '
 
   # Set up non-PR build from internal project
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
@@ -217,6 +217,8 @@ jobs:
       # lowercase for RID format. (Detection normally converts, but we're preventing it.)
       - name: OutputRidArg
         value: /p:OutputRid=linux-musl-${{ parameters.archType }}
+      - name: RuntimeOSArg
+        value: /p:RuntimeOS=linux-musl
       - name: _PortableBuild
         value: true
 
@@ -227,9 +229,11 @@ jobs:
         /p:CrossBuild=${{ parameters.crossBuild }}
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)
+        $(pgoInstrumentArg)
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(OutputRidArg)
+        $(RuntimeOSArg)
 
     - name: PublishArguments
       value: >-

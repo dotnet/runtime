@@ -41,9 +41,6 @@ namespace System.Reflection.Metadata
             return InternalTryGetRawMetadata(new QCallAssembly(ref rtAsm), ref blob, ref length);
         }
 
-        [DllImport(RuntimeHelpers.QCall)]
-        private static extern unsafe void ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength);
-
         /// <summary>
         /// Updates the specified assembly using the provided metadata, IL and PDB deltas.
         /// </summary>
@@ -61,25 +58,12 @@ namespace System.Reflection.Metadata
         /// <exception cref="NotSupportedException">The update could not be applied.</exception>
         public static void ApplyUpdate(Assembly assembly, ReadOnlySpan<byte> metadataDelta, ReadOnlySpan<byte> ilDelta, ReadOnlySpan<byte> pdbDelta)
         {
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
+            MetadataUpdater.ApplyUpdate(assembly, metadataDelta, ilDelta, pdbDelta);
+        }
 
-            RuntimeAssembly? runtimeAssembly = assembly as RuntimeAssembly;
-            if (runtimeAssembly == null)
-            {
-                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
-            }
-
-            unsafe
-            {
-                RuntimeAssembly rtAsm = runtimeAssembly;
-                fixed (byte* metadataDeltaPtr = metadataDelta, ilDeltaPtr = ilDelta, pdbDeltaPtr = pdbDelta)
-                {
-                    ApplyUpdate(new QCallAssembly(ref rtAsm), metadataDeltaPtr, metadataDelta.Length, ilDeltaPtr, ilDelta.Length, pdbDeltaPtr, pdbDelta.Length);
-                }
-            }
+        internal static string GetApplyUpdateCapabilities()
+        {
+            return MetadataUpdater.GetCapabilities();
         }
     }
 }

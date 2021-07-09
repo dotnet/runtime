@@ -11,6 +11,7 @@ namespace System.Xml.Serialization
     using System.Collections;
     using System.Collections.Specialized;
     using System.Reflection;
+    using System.Diagnostics.CodeAnalysis;
 
     public class ImportContext
     {
@@ -214,6 +215,7 @@ namespace System.Xml.Serialization
             return (int)tmp;
         }
 
+        [RequiresUnreferencedCode("creates SchemaGraph")]
         internal void GenerateSchemaGraph(XmlSchemas schemas)
         {
             SchemaGraph graph = new SchemaGraph(Graph, schemas);
@@ -259,6 +261,7 @@ namespace System.Xml.Serialization
         private readonly Hashtable _scope;
         private readonly int _items;
 
+        [RequiresUnreferencedCode("Calls Compile")]
         internal SchemaGraph(Hashtable scope, XmlSchemas schemas)
         {
             _scope = scope;

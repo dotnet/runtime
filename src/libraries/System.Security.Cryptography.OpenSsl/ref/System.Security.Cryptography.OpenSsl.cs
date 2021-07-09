@@ -6,7 +6,7 @@
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class DSAOpenSsl : System.Security.Cryptography.DSA
+    public sealed class DSAOpenSsl : System.Security.Cryptography.DSA
     {
         public DSAOpenSsl() { }
         public DSAOpenSsl(int keySize) { }
@@ -19,10 +19,30 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateKeyHandle() { throw null; }
         public override System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters) { throw null; }
+        protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
+        protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public override void ImportParameters(System.Security.Cryptography.DSAParameters parameters) { }
         public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature) { throw null; }
     }
-    public sealed partial class ECDsaOpenSsl : System.Security.Cryptography.ECDsa
+    public sealed class ECDiffieHellmanOpenSsl : System.Security.Cryptography.ECDiffieHellman
+    {
+        public ECDiffieHellmanOpenSsl() { }
+        public ECDiffieHellmanOpenSsl(int keySize) { }
+        public ECDiffieHellmanOpenSsl(System.IntPtr handle) { }
+        public ECDiffieHellmanOpenSsl(System.Security.Cryptography.ECCurve curve) { }
+        public ECDiffieHellmanOpenSsl(System.Security.Cryptography.SafeEvpPKeyHandle pkeyHandle) { }
+        public override System.Security.Cryptography.ECDiffieHellmanPublicKey PublicKey { get { throw null; } }
+        public override byte[] DeriveKeyFromHash(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[]? secretPrepend, byte[]? secretAppend) { throw null; }
+        public override byte[] DeriveKeyFromHmac(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[]? hmacKey, byte[]? secretPrepend, byte[]? secretAppend) { throw null; }
+        public override byte[] DeriveKeyMaterial(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey) { throw null; }
+        public override byte[] DeriveKeyTls(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed) { throw null; }
+        public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateKeyHandle() { throw null; }
+        public override System.Security.Cryptography.ECParameters ExportExplicitParameters(bool includePrivateParameters) { throw null; }
+        public override System.Security.Cryptography.ECParameters ExportParameters(bool includePrivateParameters) { throw null; }
+        public override void GenerateKey(System.Security.Cryptography.ECCurve curve) { }
+        public override void ImportParameters(System.Security.Cryptography.ECParameters parameters) { }
+    }
+    public sealed class ECDsaOpenSsl : System.Security.Cryptography.ECDsa
     {
         public ECDsaOpenSsl() { }
         public ECDsaOpenSsl(int keySize) { }
@@ -42,7 +62,7 @@ namespace System.Security.Cryptography
         public override byte[] SignHash(byte[] hash) { throw null; }
         public override bool VerifyHash(byte[] hash, byte[] signature) { throw null; }
     }
-    public sealed partial class RSAOpenSsl : System.Security.Cryptography.RSA
+    public sealed class RSAOpenSsl : System.Security.Cryptography.RSA
     {
         public RSAOpenSsl() { }
         public RSAOpenSsl(int keySize) { }
@@ -62,10 +82,11 @@ namespace System.Security.Cryptography
         public override byte[] SignHash(byte[] hash, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { throw null; }
         public override bool VerifyHash(byte[] hash, byte[] signature, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding padding) { throw null; }
     }
-    public sealed partial class SafeEvpPKeyHandle : System.Runtime.InteropServices.SafeHandle
+    public sealed class SafeEvpPKeyHandle : System.Runtime.InteropServices.SafeHandle
     {
         public SafeEvpPKeyHandle() : base (default(System.IntPtr), default(bool)) { }
         public SafeEvpPKeyHandle(System.IntPtr handle, bool ownsHandle) : base (default(System.IntPtr), default(bool)) { }
+        public static long OpenSslVersion { get { throw null; } }
         public override bool IsInvalid { get { throw null; } }
         public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateHandle() { throw null; }
         protected override bool ReleaseHandle() { throw null; }

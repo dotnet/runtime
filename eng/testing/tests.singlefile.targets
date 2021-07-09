@@ -1,0 +1,64 @@
+<Project>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+
+    <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
+
+    <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'publish'))</BundleDir>
+    <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+
+    <RunScriptCommand Condition="'$(TargetOS)' == 'windows'">$(AssemblyName).exe</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TargetOS)' != 'windows'">chmod +rwx $(AssemblyName) &amp;&amp; ./$(AssemblyName)</RunScriptCommand>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <PublishSingleFile>true</PublishSingleFile>
+    <UseAppHost>true</UseAppHost>
+    <SelfContained>true</SelfContained>
+    <SingleFileHostSourcePath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)', 'corehost'))/singlefilehost</SingleFileHostSourcePath>
+    <SingleFileHostSourcePath Condition="'$(TargetOS)' == 'windows'">$(SingleFileHostSourcePath).exe</SingleFileHostSourcePath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)SingleFileTestRunner\SingleFileTestRunner.cs"
+             Link="Common\SingleFileTestRunner\SingleFileTestRunner.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.runner.utility" Version="$(XUnitVersion)" />
+  </ItemGroup>
+
+  <Target Name="__ExcludeAssembliesFromSingleFile"
+          Inputs="%(ResolvedFileToPublish.Identity)"
+          Outputs="__NewResolvedFiles"
+          BeforeTargets="_ComputeFilesToBundle">
+    <PropertyGroup>
+      <__Identity>%(ResolvedFileToPublish.Identity)</__Identity>
+      <__FileName>%(ResolvedFileToPublish.Filename)%(ResolvedFileToPublish.Extension)</__FileName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <__NewResolvedFiles Include="@(ResolvedFileToPublish)">
+        <ExcludeFromSingleFile Condition="'%(__ExcludeFromBundle.Identity)' == '$(__FileName)'">true</ExcludeFromSingleFile>
+      </__NewResolvedFiles>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="__UpdateExcludedAssembliesFromSingleFile"
+          Inputs="ExcludeFromSingleFile"
+          Outputs="ResolvedFileToPublish"
+          DependsOnTargets="ComputeResolvedFilesToPublishList"
+          BeforeTargets="_ComputeFilesToBundle">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" />
+      <ResolvedFileToPublish Include="@(__NewResolvedFiles)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PublishTestAsSingleFile"
+          Condition="'$(IsCrossTargetingBuild)' != 'true'"
+          AfterTargets="Build"
+          DependsOnTargets="Publish;ArchiveTests" />
+
+</Project>

@@ -19,7 +19,6 @@ namespace System.Diagnostics
         private static volatile bool s_initialized;
         private static readonly object s_initializedGate = new object();
         private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
-        private static int s_childrenUsingTerminalCount;
 
         /// <summary>
         /// Puts a Process component in state to interact with operating system processes that run in a
@@ -55,6 +54,7 @@ namespace System.Diagnostics
 
         /// <summary>Terminates the associated process immediately.</summary>
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         public void Kill()
         {
@@ -308,11 +308,29 @@ namespace System.Diagnostics
         }
 
         /// <summary>Checks whether the argument is a direct child of this process.</summary>
-        private bool IsParentOf(Process possibleChildProcess) =>
-            Id == possibleChildProcess.ParentProcessId;
+        private bool IsParentOf(Process possibleChildProcess)
+        {
+            try
+            {
+                return Id == possibleChildProcess.ParentProcessId;
+            }
+            catch (Exception e) when (IsProcessInvalidException(e))
+            {
+                return false;
+            }
+        }
 
-        private bool Equals(Process process) =>
-            Id == process.Id;
+        private bool Equals(Process process)
+        {
+            try
+            {
+                return Id == process.Id;
+            }
+            catch (Exception e) when (IsProcessInvalidException(e))
+            {
+                return false;
+            }
+        }
 
         partial void ThrowIfExited(bool refresh)
         {
@@ -1009,6 +1027,7 @@ namespace System.Diagnostics
 
                     // Register our callback.
                     Interop.Sys.RegisterForSigChld(&OnSigChild);
+                    SetDelayedSigChildConsoleConfigurationHandler();
 
                     s_initialized = true;
                 }
@@ -1016,45 +1035,28 @@ namespace System.Diagnostics
         }
 
         [UnmanagedCallersOnly]
-        private static void OnSigChild(int reapAll)
+        private static int OnSigChild(int reapAll, int configureConsole)
         {
+            // configureConsole is non zero when there are PosixSignalRegistrations that
+            // may Cancel the terminal configuration that happens when there are no more
+            // children using the terminal.
+            // When the registrations don't cancel the terminal configuration,
+            // DelayedSigChildConsoleConfiguration will be called.
+
             // Lock to avoid races with Process.Start
             s_processStartLock.EnterWriteLock();
             try
             {
-                ProcessWaitState.CheckChildren(reapAll != 0);
+                bool childrenUsingTerminalPre = AreChildrenUsingTerminal;
+                ProcessWaitState.CheckChildren(reapAll != 0, configureConsole != 0);
+                bool childrenUsingTerminalPost = AreChildrenUsingTerminal;
+
+                // return whether console configuration was skipped.
+                return childrenUsingTerminalPre && !childrenUsingTerminalPost && configureConsole == 0 ? 1 : 0;
             }
             finally
             {
                 s_processStartLock.ExitWriteLock();
-            }
-        }
-
-        /// <summary>
-        /// This method is called when the number of child processes that are using the terminal changes.
-        /// It updates the terminal configuration if necessary.
-        /// </summary>
-        internal static void ConfigureTerminalForChildProcesses(int increment)
-        {
-            Debug.Assert(increment != 0);
-
-            int childrenUsingTerminalRemaining = Interlocked.Add(ref s_childrenUsingTerminalCount, increment);
-            if (increment > 0)
-            {
-                Debug.Assert(s_processStartLock.IsReadLockHeld);
-
-                // At least one child is using the terminal.
-                Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: true);
-            }
-            else
-            {
-                Debug.Assert(s_processStartLock.IsWriteLockHeld);
-
-                if (childrenUsingTerminalRemaining == 0)
-                {
-                    // No more children are using the terminal.
-                    Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: false);
-                }
             }
         }
 

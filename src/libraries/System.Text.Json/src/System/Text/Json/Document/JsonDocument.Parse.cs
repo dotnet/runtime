@@ -137,6 +137,39 @@ namespace System.Text.Json
             }
         }
 
+        internal static JsonDocument ParseValue(Stream utf8Json, JsonDocumentOptions options)
+        {
+            Debug.Assert(utf8Json != null);
+
+            ArraySegment<byte> drained = ReadToEnd(utf8Json);
+            Debug.Assert(drained.Array != null);
+
+            byte[] owned = new byte[drained.Count];
+            Buffer.BlockCopy(drained.Array, 0, owned, 0, drained.Count);
+
+            // Holds document content, clear it before returning it.
+            drained.AsSpan().Clear();
+            ArrayPool<byte>.Shared.Return(drained.Array);
+
+            return ParseUnrented(owned.AsMemory(), options.GetReaderOptions());
+        }
+
+        internal static JsonDocument ParseValue(ReadOnlySpan<byte> utf8Json, JsonDocumentOptions options)
+        {
+            Debug.Assert(utf8Json != null);
+
+            byte[] owned = new byte[utf8Json.Length];
+            utf8Json.CopyTo(owned);
+
+            return ParseUnrented(owned.AsMemory(), options.GetReaderOptions());
+        }
+
+        internal static JsonDocument ParseValue(string json, JsonDocumentOptions options)
+        {
+            Debug.Assert(json != null);
+            return ParseValue(json.AsMemory(), options);
+        }
+
         /// <summary>
         ///   Parse a <see cref="Stream"/> as UTF-8-encoded data representing a single JSON value into a
         ///   JsonDocument.  The Stream will be read to completion.
@@ -228,6 +261,31 @@ namespace System.Text.Json
                 ArrayPool<byte>.Shared.Return(utf8Bytes);
                 throw;
             }
+        }
+
+        internal static JsonDocument ParseValue(ReadOnlyMemory<char> json, JsonDocumentOptions options)
+        {
+            ReadOnlySpan<char> jsonChars = json.Span;
+            int expectedByteCount = JsonReaderHelper.GetUtf8ByteCount(jsonChars);
+            byte[] owned;
+            byte[] utf8Bytes = ArrayPool<byte>.Shared.Rent(expectedByteCount);
+
+            try
+            {
+                int actualByteCount = JsonReaderHelper.GetUtf8FromText(jsonChars, utf8Bytes);
+                Debug.Assert(expectedByteCount == actualByteCount);
+
+                owned = new byte[actualByteCount];
+                Buffer.BlockCopy(utf8Bytes, 0, owned, 0, actualByteCount);
+            }
+            finally
+            {
+                // Holds document content, clear it before returning it.
+                utf8Bytes.AsSpan(0, expectedByteCount).Clear();
+                ArrayPool<byte>.Shared.Return(utf8Bytes);
+            }
+
+            return ParseUnrented(owned.AsMemory(), options.GetReaderOptions());
         }
 
         /// <summary>
@@ -639,7 +697,7 @@ namespace System.Text.Json
         private static JsonDocument ParseUnrented(
             ReadOnlyMemory<byte> utf8Json,
             JsonReaderOptions readerOptions,
-            JsonTokenType tokenType)
+            JsonTokenType tokenType = JsonTokenType.None)
         {
             // These tokens should already have been processed.
             Debug.Assert(

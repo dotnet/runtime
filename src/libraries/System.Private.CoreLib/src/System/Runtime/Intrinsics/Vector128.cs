@@ -44,8 +44,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
             where U : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<U>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<U>();
             return Unsafe.As<Vector128<T>, Vector128<U>>(ref vector);
         }
 
@@ -208,7 +208,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             Debug.Assert(Vector<T>.Count >= Vector128<T>.Count);
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
             return Unsafe.As<Vector<T>, Vector128<T>>(ref value);
         }
 
@@ -247,7 +247,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             Debug.Assert(Vector<T>.Count >= Vector128<T>.Count);
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             Vector<T> result = default;
             Unsafe.WriteUnaligned(ref Unsafe.As<Vector<T>, byte>(ref result), value);
@@ -1622,7 +1622,7 @@ namespace System.Runtime.Intrinsics
         public static T GetElement<T>(this Vector128<T> vector, int index)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             if ((uint)(index) >= (uint)(Vector128<T>.Count))
             {
@@ -1645,7 +1645,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> WithElement<T>(this Vector128<T> vector, int index, T value)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             if ((uint)(index) >= (uint)(Vector128<T>.Count))
             {
@@ -1667,7 +1667,7 @@ namespace System.Runtime.Intrinsics
         public static Vector64<T> GetLower<T>(this Vector128<T> vector)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
             return Unsafe.As<Vector128<T>, Vector64<T>>(ref vector);
         }
 
@@ -1690,7 +1690,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<T> SoftwareFallback(Vector128<T> vector, Vector64<T> value)
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
                 Vector128<T> result = vector;
                 Unsafe.As<Vector128<T>, Vector64<T>>(ref result) = value;
@@ -1707,7 +1707,7 @@ namespace System.Runtime.Intrinsics
         public static Vector64<T> GetUpper<T>(this Vector128<T> vector)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             ref Vector64<T> lower = ref Unsafe.As<Vector128<T>, Vector64<T>>(ref vector);
             return Unsafe.Add(ref lower, 1);
@@ -1732,7 +1732,7 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<T> SoftwareFallback(Vector128<T> vector, Vector64<T> value)
             {
-                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
                 Vector128<T> result = vector;
                 ref Vector64<T> lower = ref Unsafe.As<Vector128<T>, Vector64<T>>(ref result);
@@ -1750,7 +1750,7 @@ namespace System.Runtime.Intrinsics
         public static T ToScalar<T>(this Vector128<T> vector)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
             return Unsafe.As<Vector128<T>, T>(ref vector);
         }
 
@@ -1763,7 +1763,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> ToVector256<T>(this Vector128<T> vector)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             Vector256<T> result = Vector256<T>.Zero;
             Unsafe.As<Vector256<T>, Vector128<T>>(ref result) = vector;
@@ -1779,7 +1779,7 @@ namespace System.Runtime.Intrinsics
         public static unsafe Vector256<T> ToVector256Unsafe<T>(this Vector128<T> vector)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.

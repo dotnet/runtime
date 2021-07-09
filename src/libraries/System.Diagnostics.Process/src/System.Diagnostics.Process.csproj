@@ -10,6 +10,9 @@
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.Process_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
+  <PropertyGroup>
+    <IsiOSLike Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</IsiOSLike>
+  </PropertyGroup>  
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
     <Compile Include="System\Collections\Specialized\DictionaryWrapper.cs" />
@@ -236,8 +239,6 @@
              Link="Common\Interop\Unix\Interop.GetHostName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SysConf.cs"
              Link="Common\Interop\Unix\Interop.SysConf.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ConfigureTerminalForChildProcess.cs"
-             Link="Common\Interop\Unix\Interop.ConfigureTerminalForChildProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ForkAndExecProcess.cs"
              Link="Common\Interop\Unix\Interop.ForkAndExecProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetGroupList.cs"
@@ -258,6 +259,8 @@
              Link="Common\Interop\Unix\Interop.ReadLink.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RegisterForSigChld.cs"
              Link="Common\Interop\Unix\Interop.RegisterForRegisterForSigChld.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetDelayedSigChildConsoleConfigurationHandler.cs"
+             Link="Common\Interop\Unix\Interop.SetDelayedSigChildConsoleConfigurationHandler.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ResourceLimits.cs"
              Link="Common\Interop\Unix\Interop.ResourceLimits.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"
@@ -268,6 +271,14 @@
              Link="Common\Interop\Unix\Interop.WaitPid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Access.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Access.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(IsiOSLike)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ConfigureTerminalForChildProcess.cs"
+             Link="Common\Interop\Unix\Interop.ConfigureTerminalForChildProcess.cs" />
+    <Compile Include="System\Diagnostics\Process.ConfigureTerminalForChildProcesses.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(IsiOSLike)' == 'true'">
+    <Compile Include="System\Diagnostics\Process.ConfigureTerminalForChildProcesses.iOS.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true'">
     <Compile Include="System\Diagnostics\Process.Linux.cs" />

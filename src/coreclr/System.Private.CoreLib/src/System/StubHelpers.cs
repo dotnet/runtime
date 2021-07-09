@@ -508,6 +508,17 @@ namespace System.StubHelpers
             managed.Slice(0, numChars).CopyTo(native);
             native[numChars] = '\0';
         }
+
+        internal static unsafe string ConvertToManaged(IntPtr nativeHome, int length)
+        {
+            int end = SpanHelpers.IndexOf(ref *(char*)nativeHome, '\0', length);
+            if (end != -1)
+            {
+                length = end;
+            }
+
+            return new string((char*)nativeHome, 0, length);
+        }
     }  // class WSTRBufferMarshaler
 #if FEATURE_COMINTEROP
 
@@ -1228,6 +1239,24 @@ namespace System.StubHelpers
         internal static extern Exception InternalGetCOMHRExceptionObject(int hr, IntPtr pCPCMD, object? pThis);
 
 #endif // FEATURE_COMINTEROP
+
+        [ThreadStatic]
+        private static Exception? s_pendingExceptionObject;
+
+        internal static Exception? GetPendingExceptionObject()
+        {
+            Exception? ex = s_pendingExceptionObject;
+            if (ex != null)
+                ex.InternalPreserveStackTrace();
+
+            s_pendingExceptionObject = null;
+            return ex;
+        }
+
+        internal static void SetPendingExceptionObject(Exception? exception)
+        {
+            s_pendingExceptionObject = exception;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr CreateCustomMarshalerHelper(IntPtr pMD, int paramToken, IntPtr hndManagedType);

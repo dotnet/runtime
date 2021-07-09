@@ -10,6 +10,14 @@ partial class VectorTest
     const int Pass = 100;
     const int Fail = -1;
 
+    const int DefaultSeed = 20010415;
+    static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+    {
+        string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+        string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+        _ => DefaultSeed
+    };
+
     static Random random;
     // Arrays to use for creating random Vectors.
     static Double[] doubles;
@@ -78,7 +86,7 @@ partial class VectorTest
                                        (Byte)(SByte.MinValue), (Byte)(SByte.MaxValue) };
         }
 
-        random = new Random(1234);
+        random = new Random(Seed);
     }
 
     static T getRandomValue<T>(int i, int j) where T : struct

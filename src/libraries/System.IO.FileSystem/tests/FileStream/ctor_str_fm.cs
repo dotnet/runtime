@@ -12,6 +12,10 @@ namespace System.IO.Tests
             return new FileStream(path, mode);
         }
 
+        protected virtual long InitialLength => 0;
+
+        protected virtual string GetExpectedParamName(string paramName) => paramName;
+
         [Fact]
         public void NullPathThrows()
         {
@@ -33,7 +37,9 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidModeThrows()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", () => CreateFileStream(GetTestFilePath(), ~FileMode.Open));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                GetExpectedParamName("mode"),
+                () => CreateFileStream(GetTestFilePath(), ~FileMode.Open));
         }
 
         [Theory, MemberData(nameof(TrailingCharacters))]
@@ -49,7 +55,6 @@ namespace System.IO.Tests
             string path = Path.Combine(GetTestFilePath(), "file" + trailingChar);
             Assert.Throws<DirectoryNotFoundException>(() => CreateFileStream(path, FileMode.Open));
         }
-
 
         public static TheoryData<string> StreamSpecifiers
         {
@@ -91,7 +96,7 @@ namespace System.IO.Tests
             using (FileStream fs = CreateFileStream(fileName, FileMode.Create))
             {
                 // Ensure that the file was re-created
-                Assert.Equal(0L, fs.Length);
+                Assert.Equal(InitialLength, fs.Length);
                 Assert.Equal(0L, fs.Position);
                 Assert.True(fs.CanRead);
                 Assert.True(fs.CanWrite);
@@ -142,7 +147,7 @@ namespace System.IO.Tests
             using (FileStream fs = CreateFileStream(fileName, FileMode.Open))
             {
                 // Ensure that the file was re-opened
-                Assert.Equal(1L, fs.Length);
+                Assert.Equal(Math.Max(1L, InitialLength), fs.Length);
                 Assert.Equal(0L, fs.Position);
                 Assert.True(fs.CanRead);
                 Assert.True(fs.CanWrite);
@@ -171,7 +176,7 @@ namespace System.IO.Tests
             using (FileStream fs = CreateFileStream(fileName, FileMode.OpenOrCreate))
             {
                 // Ensure that the file was re-opened
-                Assert.Equal(1L, fs.Length);
+                Assert.Equal(Math.Max(1L, InitialLength), fs.Length);
                 Assert.Equal(0L, fs.Position);
                 Assert.True(fs.CanRead);
                 Assert.True(fs.CanWrite);
@@ -198,7 +203,7 @@ namespace System.IO.Tests
             using (FileStream fs = CreateFileStream(fileName, FileMode.Truncate))
             {
                 // Ensure that the file was re-opened and truncated
-                Assert.Equal(0L, fs.Length);
+                Assert.Equal(InitialLength, fs.Length);
                 Assert.Equal(0L, fs.Position);
                 Assert.True(fs.CanRead);
                 Assert.True(fs.CanWrite);
@@ -227,8 +232,8 @@ namespace System.IO.Tests
             using (FileStream fs = CreateFileStream(fileName, FileMode.Append))
             {
                 // Ensure that the file was re-opened and position set to end
-                Assert.Equal(1L, fs.Length);
-                Assert.Equal(1L, fs.Position);
+                Assert.Equal(Math.Max(1L, InitialLength), fs.Length);
+                Assert.Equal(fs.Length, fs.Position);
                 Assert.False(fs.CanRead);
                 Assert.True(fs.CanSeek);
                 Assert.True(fs.CanWrite);

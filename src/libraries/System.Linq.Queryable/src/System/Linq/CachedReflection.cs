@@ -224,6 +224,18 @@ namespace System.Linq
              (s_Distinct_TSource_2 ??= new Func<IQueryable<object>, IEqualityComparer<object>, IQueryable<object>>(Queryable.Distinct).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
+        private static MethodInfo? s_DistinctBy_TSource_TKey_2;
+
+        public static MethodInfo DistinctBy_TSource_TKey_2(Type TSource, Type TKey) =>
+             (s_DistinctBy_TSource_TKey_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IQueryable<object>>(Queryable.DistinctBy).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource, TKey);
+
+        private static MethodInfo? s_DistinctBy_TSource_TKey_3;
+
+        public static MethodInfo DistinctBy_TSource_TKey_3(Type TSource, Type TKey) =>
+             (s_DistinctBy_TSource_TKey_3 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IEqualityComparer<object>, IQueryable<object>>(Queryable.DistinctBy).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource, TKey);
+
         private static MethodInfo? s_ElementAt_Int32_TSource_2;
 
         public static MethodInfo ElementAt_Int32_TSource_2(Type TSource) =>
@@ -259,6 +271,18 @@ namespace System.Linq
         public static MethodInfo Except_TSource_3(Type TSource) =>
              (s_Except_TSource_3 ??= new Func<IQueryable<object>, IEnumerable<object>, IEqualityComparer<object>, IQueryable<object>>(Queryable.Except).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
+
+        private static MethodInfo? s_ExceptBy_TSource_TKey_3;
+
+        public static MethodInfo ExceptBy_TSource_TKey_3(Type TSource, Type TKey) =>
+             (s_ExceptBy_TSource_TKey_3 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, IQueryable<object>>(Queryable.ExceptBy).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource, TKey);
+
+        private static MethodInfo? s_ExceptBy_TSource_TKey_4;
+
+        public static MethodInfo ExceptBy_TSource_TKey_4(Type TSource, Type TKey) =>
+             (s_ExceptBy_TSource_TKey_4 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, IEqualityComparer<object>, IQueryable<object>>(Queryable.ExceptBy).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_First_TSource_1;
 
@@ -370,6 +394,18 @@ namespace System.Linq
              (s_Intersect_TSource_3 ??= new Func<IQueryable<object>, IEnumerable<object>, IEqualityComparer<object>, IQueryable<object>>(Queryable.Intersect).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
+        private static MethodInfo? s_IntersectBy_TSource_TKey_3;
+
+        public static MethodInfo IntersectBy_TSource_TKey_3(Type TSource, Type TKey) =>
+             (s_IntersectBy_TSource_TKey_3 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, IQueryable<object>>(Queryable.IntersectBy).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource, TKey);
+
+        private static MethodInfo? s_IntersectBy_TSource_TKey_4;
+
+        public static MethodInfo IntersectBy_TSource_TKey_4(Type TSource, Type TKey) =>
+             (s_IntersectBy_TSource_TKey_4 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, IEqualityComparer<object>, IQueryable<object>>(Queryable.IntersectBy).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource, TKey);
+
         private static MethodInfo? s_Join_TOuter_TInner_TKey_TResult_5;
 
         public static MethodInfo Join_TOuter_TInner_TKey_TResult_5(Type TOuter, Type TInner, Type TKey, Type TResult) =>
@@ -438,11 +474,29 @@ namespace System.Linq
              (s_Max_TSource_1 ??= new Func<IQueryable<object>, object?>(Queryable.Max).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
+        private static MethodInfo? s_Max_TSource_2;
+
+        public static MethodInfo Max_TSource_2(Type TSource) =>
+             (s_Max_TSource_2 ??= new Func<IQueryable<object>, IComparer<object>, object?>(Queryable.Max).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource);
+
         private static MethodInfo? s_Max_TSource_TResult_2;
 
         public static MethodInfo Max_TSource_TResult_2(Type TSource, Type TResult) =>
              (s_Max_TSource_TResult_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, object?>(Queryable.Max).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TResult);
+
+        private static MethodInfo? s_MaxBy_TSource_TKey_2;
+
+        public static MethodInfo MaxBy_TSource_TKey_2(Type TSource, Type TKey) =>
+             (s_MaxBy_TSource_TKey_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, object?>(Queryable.MaxBy).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource, TKey);
+
+        private static MethodInfo? s_MaxBy_TSource_TKey_3;
+
+        public static MethodInfo MaxBy_TSource_TKey_3(Type TSource, Type TKey) =>
+             (s_MaxBy_TSource_TKey_3 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IComparer<object>, object?>(Queryable.MaxBy).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_Min_TSource_1;
 
@@ -450,11 +504,29 @@ namespace System.Linq
              (s_Min_TSource_1 ??= new Func<IQueryable<object>, object?>(Queryable.Min).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
 
+        private static MethodInfo? s_Min_TSource_2;
+
+        public static MethodInfo Min_TSource_2(Type TSource) =>
+             (s_Min_TSource_2 ??= new Func<IQueryable<object>, IComparer<object>, object?>(Queryable.Min).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource);
+
         private static MethodInfo? s_Min_TSource_TResult_2;
 
         public static MethodInfo Min_TSource_TResult_2(Type TSource, Type TResult) =>
              (s_Min_TSource_TResult_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, object?>(Queryable.Min).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource, TResult);
+
+        private static MethodInfo? s_MinBy_TSource_TKey_2;
+
+        public static MethodInfo MinBy_TSource_TKey_2(Type TSource, Type TKey) =>
+             (s_MinBy_TSource_TKey_2 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, object?>(Queryable.MinBy).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource, TKey);
+
+        private static MethodInfo? s_MinBy_TSource_TKey_3;
+
+        public static MethodInfo MinBy_TSource_TKey_3(Type TSource, Type TKey) =>
+             (s_MinBy_TSource_TKey_3 ??= new Func<IQueryable<object>, Expression<Func<object, object>>, IComparer<object>, object?>(Queryable.MinBy).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_OfType_TResult_1;
 
@@ -765,6 +837,18 @@ namespace System.Linq
         public static MethodInfo Union_TSource_3(Type TSource) =>
              (s_Union_TSource_3 ??= new Func<IQueryable<object>, IEnumerable<object>, IEqualityComparer<object>, IQueryable<object>>(Queryable.Union).GetMethodInfo().GetGenericMethodDefinition())
               .MakeGenericMethod(TSource);
+
+        private static MethodInfo? s_UnionBy_TSource_TKey_3;
+
+        public static MethodInfo UnionBy_TSource_TKey_3(Type TSource, Type TKey) =>
+             (s_UnionBy_TSource_TKey_3 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, IQueryable<object>>(Queryable.UnionBy).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource, TKey);
+
+        private static MethodInfo? s_UnionBy_TSource_TKey_4;
+
+        public static MethodInfo UnionBy_TSource_TKey_4(Type TSource, Type TKey) =>
+             (s_UnionBy_TSource_TKey_4 ??= new Func<IQueryable<object>, IEnumerable<object>, Expression<Func<object, object>>, IEqualityComparer<object>, IQueryable<object>>(Queryable.UnionBy).GetMethodInfo().GetGenericMethodDefinition())
+              .MakeGenericMethod(TSource, TKey);
 
         private static MethodInfo? s_Where_TSource_2;
 

@@ -910,7 +910,6 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     }
     CONTRACTL_END;
 
-    m_pCurBlock                  = NULL;
     m_pFirstBlock                = NULL;
 
     m_dwReserveBlockSize         = dwReserveBlockSize;
@@ -982,6 +981,8 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
             fSuccess = ClrVirtualFree(pVirtualAddress, 0, MEM_RELEASE);
             _ASSERTE(fSuccess);
         }
+
+        delete pSearch;
     }
 
     if (m_reservedBlock.m_fReleaseMemory)
@@ -1047,11 +1048,21 @@ size_t UnlockedLoaderHeap::GetBytesAvailReservedRegion()
 
 #define SETUP_NEW_BLOCK(pData, dwSizeToCommit, dwSizeToReserve)                     \
         m_pPtrToEndOfCommittedRegion = (BYTE *) (pData) + (dwSizeToCommit);         \
-        m_pAllocPtr                  = (BYTE *) (pData) + sizeof(LoaderHeapBlock);  \
+        m_pAllocPtr                  = (BYTE *) (pData);                            \
         m_pEndReservedRegion         = (BYTE *) (pData) + (dwSizeToReserve);
 
 
 #ifndef DACCESS_COMPILE
+
+void ReleaseReservedMemory(BYTE* value)
+{
+    if (value)
+    {
+        ClrVirtualFree(value, 0, MEM_RELEASE);
+    }
+}
+
+using ReservedMemoryHolder = SpecializedWrapper<BYTE, ReleaseReservedMemory>;
 
 BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 {
@@ -1065,13 +1076,10 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 
     size_t dwSizeToReserve;
 
-    // Add sizeof(LoaderHeapBlock)
-    dwSizeToCommit += sizeof(LoaderHeapBlock);
-
     // Round to page size again
     dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
 
-    void *pData = NULL;
+    ReservedMemoryHolder pData = NULL;
     BOOL fReleaseMemory = TRUE;
 
     // We were provided with a reserved memory block at instance creation time, so use it if it's big enough.
@@ -1079,7 +1087,7 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         m_reservedBlock.dwVirtualSize >= dwSizeToCommit)
     {
         // Get the info out of the block.
-        pData = m_reservedBlock.pVirtualAddress;
+        pData = (PTR_BYTE)m_reservedBlock.pVirtualAddress;
         dwSizeToReserve = m_reservedBlock.dwVirtualSize;
         fReleaseMemory = m_reservedBlock.m_fReleaseMemory;
 
@@ -1126,15 +1134,16 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         return FALSE;
     }
 
+    if (!fReleaseMemory)
+    {
+        pData.SuppressRelease();
+    }
+
     // Commit first set of pages, since it will contain the LoaderHeapBlock
     void *pTemp = ClrVirtualAlloc(pData, dwSizeToCommit, MEM_COMMIT, (m_Options & LHF_EXECUTABLE) ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
     if (pTemp == NULL)
     {
         //_ASSERTE(!"Unable to ClrVirtualAlloc commit in a loaderheap");
-
-        // Unable to commit - release pages
-        if (fReleaseMemory)
-            ClrVirtualFree(pData, 0, MEM_RELEASE);
 
         return FALSE;
     }
@@ -1147,44 +1156,27 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
                                     ((const BYTE *) pData) + dwSizeToReserve,
                                     (void *) this))
         {
-
-            if (fReleaseMemory)
-                ClrVirtualFree(pData, 0, MEM_RELEASE);
-
             return FALSE;
         }
     }
 
+    LoaderHeapBlock *pNewBlock = new (nothrow) LoaderHeapBlock;
+    if (pNewBlock == NULL)
+    {
+        return FALSE;
+    }
+
     m_dwTotalAlloc += dwSizeToCommit;
 
-    LoaderHeapBlock *pNewBlock;
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    // Always assume we are touching executable heap
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-    pNewBlock = (LoaderHeapBlock *) pData;
+    pData.SuppressRelease();
 
     pNewBlock->dwVirtualSize    = dwSizeToReserve;
     pNewBlock->pVirtualAddress  = pData;
-    pNewBlock->pNext            = NULL;
+    pNewBlock->pNext            = m_pFirstBlock;
     pNewBlock->m_fReleaseMemory = fReleaseMemory;
 
-    LoaderHeapBlock *pCurBlock = m_pCurBlock;
-
-    // Add to linked list
-    while (pCurBlock != NULL &&
-           pCurBlock->pNext != NULL)
-        pCurBlock = pCurBlock->pNext;
-
-    if (pCurBlock != NULL)
-        m_pCurBlock->pNext = pNewBlock;
-    else
-        m_pFirstBlock = pNewBlock;
-
-    // If we want to use the memory immediately...
-    m_pCurBlock = pNewBlock;
+    // Add to the linked list
+    m_pFirstBlock = pNewBlock;
 
     SETUP_NEW_BLOCK(pData, dwSizeToCommit, dwSizeToReserve);
 
@@ -1338,8 +1330,14 @@ again:
         if (pData)
         {
 #ifdef _DEBUG
+            BYTE *pAllocatedBytes = (BYTE*)pData;
+            ExecutableWriterHolder<void> dataWriterHolder;
+            if (m_Options & LHF_EXECUTABLE)
+            {
+                dataWriterHolder = ExecutableWriterHolder<void>(pData, dwSize);
+                pAllocatedBytes = (BYTE *)dataWriterHolder.GetRW();
+            }
 
-            BYTE *pAllocatedBytes = (BYTE *)pData;
 #if LOADER_HEAP_DEBUG_BOUNDARY > 0
             // Don't fill the memory we allocated - it is assumed to be zeroed - fill the memory after it
             memset(pAllocatedBytes + dwRequestedSize, 0xEE, LOADER_HEAP_DEBUG_BOUNDARY);
@@ -1352,7 +1350,7 @@ again:
 
             if (!m_fExplicitControl)
             {
-                LoaderHeapValidationTag *pTag = AllocMem_GetTag(pData, dwRequestedSize);
+                LoaderHeapValidationTag *pTag = AllocMem_GetTag(pAllocatedBytes, dwRequestedSize);
                 pTag->m_allocationType  = kAllocMem;
                 pTag->m_dwRequestedSize = dwRequestedSize;
                 pTag->m_szFile          = szFile;
@@ -1522,7 +1520,14 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
     {
         // Cool. This was the last block allocated. We can just undo the allocation instead
         // of going to the freelist.
-        memset(pMem, 0x00, dwSize); // Fill freed region with 0
+        void *pMemRW = pMem;
+        ExecutableWriterHolder<void> memWriterHolder;
+        if (m_Options & LHF_EXECUTABLE)
+        {
+            memWriterHolder = ExecutableWriterHolder<void>(pMem, dwSize);
+            pMemRW = memWriterHolder.GetRW();
+        }
+        memset(pMemRW, 0x00, dwSize); // Fill freed region with 0
         m_pAllocPtr = (BYTE*)pMem;
     }
     else
@@ -1634,7 +1639,14 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
     ((BYTE*&)pResult) += extra;
 
 #ifdef _DEBUG
-     BYTE *pAllocatedBytes = (BYTE *)pResult;
+    BYTE *pAllocatedBytes = (BYTE *)pResult;
+    ExecutableWriterHolder<void> resultWriterHolder;
+    if (m_Options & LHF_EXECUTABLE)
+    {
+        resultWriterHolder = ExecutableWriterHolder<void>(pResult, dwSize - extra);
+        pAllocatedBytes = (BYTE *)resultWriterHolder.GetRW();
+    }
+
 #if LOADER_HEAP_DEBUG_BOUNDARY > 0
     // Don't fill the entire memory - we assume it is all zeroed -just the memory after our alloc
     memset(pAllocatedBytes + dwRequestedSize, 0xee, LOADER_HEAP_DEBUG_BOUNDARY);
@@ -1664,7 +1676,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
 
     if (!m_fExplicitControl)
     {
-        LoaderHeapValidationTag *pTag = AllocMem_GetTag(((BYTE*)pResult) - extra, dwRequestedSize + extra);
+        LoaderHeapValidationTag *pTag = AllocMem_GetTag(pAllocatedBytes - extra, dwRequestedSize + extra);
         pTag->m_allocationType  = kAllocMem;
         pTag->m_dwRequestedSize = dwRequestedSize + extra;
         pTag->m_szFile          = szFile;
@@ -1827,15 +1839,10 @@ void UnlockedLoaderHeap::DumpFreeList()
             size_t dwsize = pBlock->m_dwSize;
             BOOL ccbad = FALSE;
             BOOL sizeunaligned = FALSE;
-            BOOL sizesmall = FALSE;
 
             if ( 0 != (dwsize & ALLOC_ALIGN_CONSTANT) )
             {
                 sizeunaligned = TRUE;
-            }
-            if ( dwsize < sizeof(LoaderHeapBlock))
-            {
-                sizesmall = TRUE;
             }
 
             for (size_t i = sizeof(LoaderHeapFreeBlock); i < dwsize; i++)
@@ -1850,7 +1857,6 @@ void UnlockedLoaderHeap::DumpFreeList()
             printf("Addr = %pxh, Size = %lxh", pBlock, ((ULONG)dwsize));
             if (ccbad) printf(" *** ERROR: NOT CC'd ***");
             if (sizeunaligned) printf(" *** ERROR: size not a multiple of ALLOC_ALIGN_CONSTANT ***");
-            if (sizesmall) printf(" *** ERROR: size smaller than sizeof(LoaderHeapFreeBlock) ***");
             printf("\n");
 
             pBlock = pBlock->m_pNext;

@@ -84,15 +84,32 @@ namespace Internal.Cryptography.Pal
 
             if (key is RSAImplementation.RSASecurityTransforms rsa)
             {
-                return rsa.GetKeys().PrivateKey;
+                // Convert data key to legacy CSSM key that can be imported into keychain
+                byte[] rsaPrivateKey = rsa.ExportRSAPrivateKey();
+                using (PinAndClear.Track(rsaPrivateKey))
+                {
+                    return Interop.AppleCrypto.ImportEphemeralKey(rsaPrivateKey, true);
+                }
             }
 
             if (key is DSAImplementation.DSASecurityTransforms dsa)
             {
+                // DSA always uses legacy CSSM keys do no need to convert
                 return dsa.GetKeys().PrivateKey;
             }
 
-            return ((ECDsaImplementation.ECDsaSecurityTransforms)key).GetKeys().PrivateKey;
+            if (key is ECDsaImplementation.ECDsaSecurityTransforms ecdsa)
+            {
+                // Convert data key to legacy CSSM key that can be imported into keychain
+                byte[] ecdsaPrivateKey = ecdsa.ExportECPrivateKey();
+                using (PinAndClear.Track(ecdsaPrivateKey))
+                {
+                    return Interop.AppleCrypto.ImportEphemeralKey(ecdsaPrivateKey, true);
+                }
+            }
+
+            Debug.Fail("Invalid key implementation");
+            return null;
         }
     }
 }

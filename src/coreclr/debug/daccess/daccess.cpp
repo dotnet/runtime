@@ -28,7 +28,7 @@
 #ifdef USE_DAC_TABLE_RVA
 #include <dactablerva.h>
 #else
-extern bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
+extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
 #endif
 #endif
 
@@ -3290,6 +3290,10 @@ ClrDataAccess::QueryInterface(THIS_
     else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface10)))
     {
         ifaceRet = static_cast<ISOSDacInterface10*>(this);
+    }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface11)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface11*>(this);
     }
     else
     {
@@ -7084,7 +7088,7 @@ HRESULT ClrDataAccess::VerifyDlls()
         // Note that we check this knob every time because it may be handy to turn it on in
         // the environment mid-flight.
         DWORD dwAssertDefault = m_fEnableDllVerificationAsserts ? 1 : 0;
-        if (REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_DbgDACAssertOnMismatch, dwAssertDefault))
+        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgDACAssertOnMismatch, dwAssertDefault))
         {
             // Output a nice error message that contains the timestamps in string format.
             time_t actualTime = timestamp;
@@ -7238,7 +7242,7 @@ GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG6
     // On MacOS, FreeBSD or NetBSD use the RVA include file
     *dacTableAddress = baseAddress + DAC_TABLE_RVA;
 #else
-    // On Linux try to get the dac table address via the export symbol
+    // On Linux/MacOS try to get the dac table address via the export symbol
     if (!TryGetSymbol(dataTarget, baseAddress, "g_dacTable", dacTableAddress))
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
@@ -8156,9 +8160,10 @@ void DacHandleWalker::GetRefCountedHandleInfo(
     if (pIsPegged)
         *pIsPegged = FALSE;
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
     if (uType == HNDTYPE_REFCOUNTED)
     {
+#if defined(FEATURE_COMINTEROP)
         // get refcount from the CCW
         PTR_ComCallWrapper pWrap = ComCallWrapper::GetWrapperForObject(oref);
         if (pWrap != NULL)
@@ -8171,8 +8176,12 @@ void DacHandleWalker::GetRefCountedHandleInfo(
 
             return;
         }
+#endif
+#if defined(FEATURE_OBJCMARSHAL)
+        // [TODO] FEATURE_OBJCMARSHAL
+#endif // FEATURE_OBJCMARSHAL
     }
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
 
     if (pRefCount)
         *pRefCount = 0;

@@ -15,3 +15,9 @@ PALEXPORT void* SystemNative_CreateAutoreleasePool(void);
  * Drains and releases a pool created by SystemNative_CreateAutoreleasePool.
  */
 PALEXPORT void SystemNative_DrainAutoreleasePool(void* pool);
+
+/**
+ * Ensure that NSThread is in multi-threading mode when POSIX APIs are used to
+ * start new threads.
+ */
+void EnsureNSThreadIsMultiThreaded(void);

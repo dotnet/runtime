@@ -11,6 +11,8 @@
                       Condition="'$(TargetOS)' != 'Browser'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)AotCompilerTask\MonoAOTCompiler.csproj"
                       Condition="'$(TargetsMobile)' != 'true'" />
+    <ProjectReference Remove="$(MSBuildThisFileDirectory)RuntimeConfigParser\RuntimeConfigParser.csproj"
+                      Condition="'$(TargetsMobile)' != 'true'" />
   </ItemGroup>
 
   <!--

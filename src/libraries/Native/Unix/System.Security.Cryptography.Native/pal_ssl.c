@@ -61,7 +61,7 @@ static void DetectCiphersuiteConfiguration()
     //
     // The method uses OpenSSL 1.0.x API, except for the fallback function SSL_CTX_config, to
     // make the portable version easier.
-#ifdef NEED_OPENSSL_1_1
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
 
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
@@ -397,7 +397,7 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
-    return SSL_get_peer_certificate(ssl);
+    return SSL_get1_peer_certificate(ssl);
 }
 
 X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)

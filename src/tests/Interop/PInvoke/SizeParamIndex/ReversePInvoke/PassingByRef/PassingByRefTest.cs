@@ -167,7 +167,7 @@ public class ReversePInvoke_MashalArrayByRef_AsManagedTest
         Console.WriteLine("\t\tMarshalSbyteArray_AsReversePInvokeByRef_AsCdecl Passed!");
 
         // We don't support exception interop in .NET off-Windows.
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             Console.WriteLine("\tScenario 3 : short ==> SHORT, Array_Size = -1, Return_Array_Size = 20");
             Assert.Throws<OverflowException>(() => DoCallBack_MarshalShortArray_AsParam_AsByRef(new DelShortArrByRefAsCdeclCaller(TestMethodForShortArray_AsReversePInvokeByRef_AsCdecl)));
@@ -199,7 +199,7 @@ public class ReversePInvoke_MashalArrayByRef_AsManagedTest
         Assert.IsTrue(DoCallBack_MarshalUlongArray_AsParam_AsByRef(new DelUlongArrByRefAsCdeclCaller(TestMethodForUlongArray_AsReversePInvokeByRef_AsCdecl)));
         Console.WriteLine("\t\tMarshalUlongArray_AsReversePInvokeByRef_AsCdecl Passed!");
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             Console.WriteLine("\tScenario 10 : string ==> BSTR, Array_Size = 10, Return_Array_Size = 20");
             Assert.IsTrue(DoCallBack_MarshalStringArray_AsParam_AsByRef(new DelStringArrByRefAsCdeclCaller(TestMethodForStringArray_AsReversePInvokeByRef_AsCdecl)));

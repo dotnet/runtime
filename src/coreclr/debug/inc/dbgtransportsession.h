@@ -145,8 +145,8 @@ inline void DbgTransportLog(DbgTransportLogClass eClass, const char *szFormat, .
 
     if (s_dwLoggingEnabled == LE_Unknown)
     {
-        s_dwLoggingEnabled = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_DbgTransportLog, LE_None);
-        s_dwLoggingClass = REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_DbgTransportLogClass, LC_All);
+        s_dwLoggingEnabled = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgTransportLog);
+        s_dwLoggingClass = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgTransportLogClass);
     }
 
     if ((s_dwLoggingEnabled & DBG_TRANSPORT_LOG_THIS_SIDE) &&

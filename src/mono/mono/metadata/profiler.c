@@ -595,6 +595,12 @@ mono_profiler_enable_clauses (void)
 	return mono_profiler_state.clauses = TRUE;
 }
 
+gboolean
+mono_component_profiler_clauses_enabled (void)
+{
+	return mono_profiler_clauses_enabled ();
+}
+
 /**
  * mono_profiler_set_call_instrumentation_filter_callback:
  *

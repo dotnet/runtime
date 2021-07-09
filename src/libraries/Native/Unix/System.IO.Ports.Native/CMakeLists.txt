@@ -21,4 +21,4 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.IO.Ports.Native PROGRAMS .)
 endif()
 
-install (TARGETS System.IO.Ports.Native-Static DESTINATION ${STATIC_LIB_DESTINATION})
+install (TARGETS System.IO.Ports.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)

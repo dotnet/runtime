@@ -17,7 +17,10 @@ typedef enum {
 /*
 The error codes used when verifying X509 certificate chains.
 
-These values should be kept in sync with Interop.Crypto.X509VerifyStatusCode.
+These values should be kept in sync with Interop.Crypto.X509VerifyStatusCodeUniversal.
+
+Codes specific to specific versions of OpenSSL can also be returned,
+but are not represented in this enum due to their non-constant nature.
 */
 typedef enum {
     PAL_X509_V_OK = 0,
@@ -42,7 +45,9 @@ typedef enum {
     PAL_X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE = 21,
     PAL_X509_V_ERR_CERT_CHAIN_TOO_LONG = 22,
     PAL_X509_V_ERR_CERT_REVOKED = 23,
-    PAL_X509_V_ERR_INVALID_CA = 24,
+
+    // Code 24 varies
+
     PAL_X509_V_ERR_PATH_LENGTH_EXCEEDED = 25,
     PAL_X509_V_ERR_INVALID_PURPOSE = 26,
     PAL_X509_V_ERR_CERT_UNTRUSTED = 27,
@@ -57,6 +62,26 @@ typedef enum {
     PAL_X509_V_ERR_INVALID_EXTENSION = 41,
     PAL_X509_V_ERR_INVALID_POLICY_EXTENSION = 42,
     PAL_X509_V_ERR_NO_EXPLICIT_POLICY = 43,
+    PAL_X509_V_ERR_DIFFERENT_CRL_SCOPE = 44,
+    PAL_X509_V_ERR_UNSUPPORTED_EXTENSION_FEATURE = 45,
+    PAL_X509_V_ERR_UNNESTED_RESOURCE = 46,
+    PAL_X509_V_ERR_PERMITTED_VIOLATION = 47,
+    PAL_X509_V_ERR_EXCLUDED_VIOLATION = 48,
+    PAL_X509_V_ERR_SUBTREE_MINMAX = 49,
+    PAL_X509_V_ERR_APPLICATION_VERIFICATION = 50,
+    PAL_X509_V_ERR_UNSUPPORTED_CONSTRAINT_TYPE = 51,
+    PAL_X509_V_ERR_UNSUPPORTED_CONSTRAINT_SYNTAX = 52,
+    PAL_X509_V_ERR_UNSUPPORTED_NAME_SYNTAX = 53,
+    PAL_X509_V_ERR_CRL_PATH_VALIDATION_ERROR = 54,
+    PAL_X509_V_ERR_SUITE_B_INVALID_VERSION = 56,
+    PAL_X509_V_ERR_SUITE_B_INVALID_ALGORITHM = 57,
+    PAL_X509_V_ERR_SUITE_B_INVALID_CURVE = 58,
+    PAL_X509_V_ERR_SUITE_B_INVALID_SIGNATURE_ALGORITHM = 59,
+    PAL_X509_V_ERR_SUITE_B_LOS_NOT_ALLOWED = 60,
+    PAL_X509_V_ERR_SUITE_B_CANNOT_SIGN_P_384_WITH_P_256 = 61,
+    PAL_X509_V_ERR_HOSTNAME_MISMATCH = 62,
+    PAL_X509_V_ERR_EMAIL_MISMATCH = 63,
+    PAL_X509_V_ERR_IP_ADDRESS_MISMATCH = 64,
 } X509VerifyStatusCode;
 
 typedef int32_t (*X509StoreVerifyCallback)(int32_t, X509_STORE_CTX*);
@@ -248,7 +273,7 @@ PALEXPORT X509* CryptoNative_X509StoreCtxGetTargetCert(X509_STORE_CTX* ctx);
 /*
 Shims the X509_STORE_CTX_get_error method.
 */
-PALEXPORT X509VerifyStatusCode CryptoNative_X509StoreCtxGetError(X509_STORE_CTX* ctx);
+PALEXPORT int32_t CryptoNative_X509StoreCtxGetError(X509_STORE_CTX* ctx);
 
 /*
 Resets ctx to before the chain was built, preserving the target cert, trust store, extra cert context,
@@ -276,7 +301,7 @@ PALEXPORT void CryptoNative_X509StoreCtxSetVerifyCallback(X509_STORE_CTX* ctx, X
 /*
 Shims the X509_verify_cert_error_string method.
 */
-PALEXPORT const char* CryptoNative_X509VerifyCertErrorString(X509VerifyStatusCode n);
+PALEXPORT const char* CryptoNative_X509VerifyCertErrorString(int32_t n);
 
 /*
 Shims the X509_CRL_free method.
@@ -353,7 +378,7 @@ PALEXPORT int32_t CryptoNative_X509StoreCtxResetForSignatureError(X509_STORE_CTX
 Look for a cached OCSP response appropriate to the end-entity certificate using the issuer as
 determined by the chain in storeCtx.
 */
-PALEXPORT X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath, int chainDepth);
+PALEXPORT int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath, int chainDepth);
 
 /*
 Build an OCSP request appropriate for the end-entity certificate using the issuer (and trust) as
@@ -365,8 +390,8 @@ PALEXPORT OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* s
 Determine if the OCSP response is acceptable, and if acceptable report the status and
 cache the result (if appropriate)
 */
-PALEXPORT X509VerifyStatusCode CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx,
-                                                                OCSP_REQUEST* req,
-                                                                OCSP_RESPONSE* resp,
-                                                                char* cachePath,
-                                                                int chainDepth);
+PALEXPORT int32_t CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx,
+                                                   OCSP_REQUEST* req,
+                                                   OCSP_RESPONSE* resp,
+                                                   char* cachePath,
+                                                   int chainDepth);

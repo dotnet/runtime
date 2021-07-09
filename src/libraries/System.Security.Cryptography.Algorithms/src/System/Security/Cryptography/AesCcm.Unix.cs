@@ -11,6 +11,8 @@ namespace System.Security.Cryptography
     {
         private byte[] _key;
 
+        public static bool IsSupported { get; } = Interop.OpenSslNoInit.OpenSslIsAvailable;
+
         [MemberNotNull(nameof(_key))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
@@ -19,7 +21,7 @@ namespace System.Security.Cryptography
             _key = key.ToArray();
         }
 
-        private void EncryptInternal(
+        private void EncryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,
@@ -73,7 +75,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private void DecryptInternal(
+        private void DecryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> tag,

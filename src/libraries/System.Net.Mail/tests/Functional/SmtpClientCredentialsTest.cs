@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Net.Mail.Functional.Tests
 {
-    [PlatformSpecific(~TestPlatforms.Browser)]  // SmtpClient is not supported on Browser
+    [SkipOnPlatform(TestPlatforms.Browser, "SmtpClient is not supported on Browser")]
     public class SmtpClientCredentialsTest
     {
         private readonly string UserName = "user";

@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net.Cache;
-using System.Net.Http;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -217,7 +216,7 @@ namespace System.Net
 
         protected virtual WebRequest GetWebRequest(Uri address)
         {
-#pragma warning disable SYSLIB0014
+#pragma warning disable SYSLIB0014 // WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.
             WebRequest request = WebRequest.Create(address);
 #pragma warning restore SYSLIB0014
 

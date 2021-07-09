@@ -22,11 +22,9 @@
 #include "comreflectioncache.hpp"
 #include "comutilnative.h"
 #include "domainfile.h"
-#include "objectlist.h"
 #include "fptrstubs.h"
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
-#include "../binder/inc/applicationcontext.hpp"
 #include "rejit.h"
 
 #ifdef FEATURE_MULTICOREJIT
@@ -41,24 +39,19 @@ class BaseDomain;
 class SystemDomain;
 class AppDomain;
 class CompilationDomain;
-class AppDomainEnum;
-class AssemblySink;
-class EEMarshalingData;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
 class MngStdInterfacesInfo;
-class DomainModule;
 class DomainAssembly;
-struct InteropMethodTableData;
 class LoadLevelLimiter;
 class TypeEquivalenceHashTable;
-class StringArrayList;
 
 #ifdef FEATURE_COMINTEROP
-class ComCallWrapperCache;
-struct SimpleComCallWrapper;
+class RCWCache;
+#endif //FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
 class RCWRefCache;
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -67,13 +60,6 @@ class RCWRefCache;
 
 
 GPTR_DECL(IdDispenser,       g_pModuleIndexDispenser);
-
-// This enum is aligned to System.ExceptionCatcherType.
-enum ExceptionCatcher {
-    ExceptionCatcher_ManagedCode = 0,
-    ExceptionCatcher_AppDomainTransition = 1,
-    ExceptionCatcher_COMInterop = 2,
-};
 
 // We would like *ALLOCATECLASS_FLAG to AV (in order to catch errors), so don't change it
 struct ClassInitFlags {
@@ -1131,17 +1117,11 @@ protected:
     // Helper method to initialize the large heap handle table.
     void InitPinnedHeapHandleTable();
 
-    //****************************************************************************************
-    //
-    // Hash table that maps a MethodTable to COM Interop compatibility data.
-    PtrHashMap          m_interopDataHash;
-
     // Critical sections & locks
     PEFileListLock   m_FileLoadLock;            // Protects the list of assemblies in the domain
     CrstExplicitInit m_DomainCrst;              // General Protection for the Domain
     CrstExplicitInit m_DomainCacheCrst;         // Protects the Assembly and Unmanaged caches
     CrstExplicitInit m_DomainLocalBlockCrst;
-    CrstExplicitInit m_InteropDataCrst;         // Used for COM Interop compatiblilty
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
 
@@ -1190,17 +1170,6 @@ public:
         }
     };
     friend class LockHolder;
-
-    class CacheLockHolder : public CrstHolder
-    {
-    public:
-        CacheLockHolder(BaseDomain *pD)
-            : CrstHolder(&pD->m_DomainCacheCrst)
-        {
-            WRAPPER_NO_CONTRACT;
-        }
-    };
-    friend class CacheLockHolder;
 
     class DomainLocalBlockLockHolder : public CrstHolder
     {
@@ -1510,13 +1479,11 @@ const DWORD DefaultADID = 1;
 class AppDomain : public BaseDomain
 {
     friend class SystemDomain;
-    friend class AssemblySink;
     friend class AppDomainNative;
     friend class AssemblyNative;
     friend class AssemblySpec;
     friend class ClassLoader;
     friend class ThreadNative;
-    friend class RCWCache;
     friend class ClrDataAccess;
     friend class CheckAsmOffsets;
 
@@ -1892,8 +1859,6 @@ public:
 
 #ifndef DACCESS_COMPILE // needs AssemblySpec
 
-    void GetCacheAssemblyList(SetSHash<PTR_DomainAssembly>& assemblyList);
-
     //****************************************************************************************
     // Returns and Inserts assemblies into a lookup cache based on the binding information
     // in the AssemblySpec. There can be many AssemblySpecs to a single assembly.
@@ -1989,9 +1954,7 @@ public:
 #ifdef FEATURE_COMINTEROP
 public:
     OBJECTREF GetMissingObject();    // DispatchInfo will call function to retrieve the Missing.Value object.
-#endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_COMINTEROP
     RCWCache *GetRCWCache()
     {
         WRAPPER_NO_CONTRACT;
@@ -2011,11 +1974,12 @@ public:
         return m_pRCWCache;
     }
 
-    RCWRefCache *GetRCWRefCache();
 #endif // FEATURE_COMINTEROP
 
-    //****************************************************************************************
-    // Get the proxy for this app domain
+#ifdef FEATURE_COMWRAPPERS
+public:
+    RCWRefCache *GetRCWRefCache();
+#endif // FEATURE_COMWRAPPERS
 
     TPIndex GetTPIndex()
     {
@@ -2247,8 +2211,6 @@ public:
     void AddMemoryPressure();
     void RemoveMemoryPressure();
 
-    void UnlinkClass(MethodTable *pMT);
-
     Assembly *GetRootAssembly()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2284,10 +2246,11 @@ private:
 #ifdef FEATURE_COMINTEROP
     // this cache stores the RCWs in this domain
     RCWCache *m_pRCWCache;
-
+#endif //FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
     // this cache stores the RCW -> CCW references in this domain
     RCWRefCache *m_pRCWRefCache;
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 
     // The thread-pool index of this app domain among existing app domains (starting from 1)
     TPIndex m_tpIndex;
@@ -2357,13 +2320,30 @@ public:
     };
 
     AssemblySpecBindingCache  m_AssemblyCache;
-    DomainAssemblyCache       m_UnmanagedCache;
     size_t                    m_MemoryPressure;
 
     ArrayList m_NativeDllSearchDirectories;
     bool m_ForceTrivialWaitOperations;
 
-public:
+private:
+    struct UnmanagedImageCacheEntry
+    {
+        LPCWSTR Name;
+        NATIVE_LIBRARY_HANDLE Handle;
+    };
+
+    class UnmanagedImageCacheTraits : public NoRemoveSHashTraits<DefaultSHashTraits<UnmanagedImageCacheEntry>>
+    {
+    public:
+        using key_t = LPCWSTR;
+        static const key_t GetKey(_In_ const element_t& e) { return e.Name; }
+        static count_t Hash(_In_ key_t key) { return HashString(key); }
+        static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { return wcscmp(lhs, rhs) == 0; }
+        static bool IsNull(_In_ const element_t& e) { return e.Handle == NULL; }
+        static const element_t Null() { return UnmanagedImageCacheEntry(); }
+    };
+
+    SHash<UnmanagedImageCacheTraits> m_unmanagedCache;
 
 #ifdef FEATURE_TYPEEQUIVALENCE
 private:
@@ -2409,38 +2389,6 @@ private:
     TieredCompilationManager m_tieredCompilationManager;
 
 #endif
-
-#ifdef FEATURE_COMINTEROP
-
-private:
-
-#endif //FEATURE_COMINTEROP
-
-public:
-
-    class ComInterfaceReleaseList
-    {
-        SArray<IUnknown *> m_objects;
-    public:
-        ~ComInterfaceReleaseList()
-        {
-            WRAPPER_NO_CONTRACT;
-
-            for (COUNT_T i = 0; i < m_objects.GetCount(); i++)
-            {
-                IUnknown *pItf = *(m_objects.GetElements() + i);
-                if (pItf != nullptr)
-                    pItf->Release();
-            }
-        }
-
-        // Append to the list of object to free. Only use under the AppDomain "LockHolder(pAppDomain)"
-        void Append(IUnknown *pInterfaceToRelease)
-        {
-            WRAPPER_NO_CONTRACT;
-            m_objects.Append(pInterfaceToRelease);
-        }
-    } AppDomainInterfaceReleaseList;
 
 private:
     //-----------------------------------------------------------

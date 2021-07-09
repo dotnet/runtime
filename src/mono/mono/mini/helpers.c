@@ -52,7 +52,7 @@ static const gint16 opidx [] = {
 
 #endif /* DISABLE_LOGGING */
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64)
 #if !defined(TARGET_ARM64) && !defined(__APPLE__)
 #define emit_debug_info  TRUE
 #else

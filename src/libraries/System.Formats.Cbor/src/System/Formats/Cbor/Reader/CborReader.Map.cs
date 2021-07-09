@@ -11,28 +11,21 @@ namespace System.Formats.Cbor
         private KeyEncodingComparer? _keyEncodingComparer;
         private Stack<HashSet<(int Offset, int Length)>>? _pooledKeyEncodingRangeAllocations;
 
-        /// <summary>
-        ///   Reads the next data item as the start of a map (major type 5).
-        /// </summary>
-        /// <returns>
-        ///   The number of key-value pairs in a definite-length map, or <see langword="null" /> if the map is indefinite-length.
-        /// </returns>
-        /// <exception cref="InvalidOperationException">
-        ///   the next data item does not have the correct major type.
-        /// </exception>
-        /// <exception cref="CborContentException">
-        ///   the next value has an invalid CBOR encoding. -or-
-        ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
-        /// </exception>
+        /// <summary>Reads the next data item as the start of a map (major type 5).</summary>
+        /// <returns>The number of key-value pairs in a definite-length map, or <see langword="null" /> if the map is indefinite-length.</returns>
+        /// <exception cref="InvalidOperationException">The next data item does not have the correct major type.</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
+        /// -or-
+        /// There was an unexpected end of CBOR encoding data.
+        /// -or-
+        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
         /// <remarks>
-        ///   Map contents are consumed as if they were arrays twice the length of the map's declared size.
-        ///   For instance, a map of size <c>1</c> containing a key of type int with a value of type string
-        ///   must be consumed by successive calls to <see cref="ReadInt32"/> and <see cref="ReadTextString"/>.
-        ///   It is up to the caller to keep track of whether the next value is a key or a value.
-        ///
-        ///   Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of arbitrary type,
-        ///   for instance a map can contain keys that are maps themselves.
+        /// Map contents are consumed as if they were arrays twice the length of the map's declared size.
+        /// For instance, a map of size 1 containing a key of type <see cref="int" /> with a value of type <see cref="string" />
+        /// must be consumed by successive calls to <see cref="ReadInt32" /> and <see cref="ReadTextString" />.
+        /// It is up to the caller to keep track of whether the next value is a key or a value.
+        /// Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of arbitrary type,
+        /// for instance a map can contain keys that are maps themselves.
         /// </remarks>
         public int? ReadStartMap()
         {
@@ -70,19 +63,15 @@ namespace System.Formats.Cbor
             return length;
         }
 
-
-        /// <summary>
-        ///   Reads the end of a map (major type 5).
-        /// </summary>
-        /// <exception cref="InvalidOperationException">
-        ///   the current context is not a map. -or-
-        ///   the reader is not at the end of the map
-        /// </exception>
-        /// <exception cref="CborContentException">
-        ///   the next value has an invalid CBOR encoding. -or-
-        ///   there was an unexpected end of CBOR encoding data. -or-
-        ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
-        /// </exception>
+        /// <summary>Reads the end of a map (major type 5).</summary>
+        /// <exception cref="InvalidOperationException">The current context is not a map.
+        /// -or-
+        /// The reader is not at the end of the map.</exception>
+        /// <exception cref="CborContentException">The next value has an invalid CBOR encoding.
+        /// -or-
+        /// There was an unexpected end of CBOR encoding data.
+        /// -or-
+        /// The next value uses a CBOR encoding that is not valid under the current conformance mode.</exception>
         public void ReadEndMap()
         {
             if (_definiteLength is null)

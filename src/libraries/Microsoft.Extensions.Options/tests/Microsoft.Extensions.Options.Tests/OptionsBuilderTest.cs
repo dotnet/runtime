@@ -12,7 +12,6 @@ using Xunit;
 
 namespace Microsoft.Extensions.Options.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class OptionsBuilderTest
     {
         [Fact]
@@ -633,11 +632,11 @@ namespace Microsoft.Extensions.Options.Tests
 
             var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<AnnotatedOptions>>().Value);
             ValidateFailure<AnnotatedOptions>(error, Options.DefaultName, 5,
-                "DataAnnotation validation failed for members: 'Required' with the error: 'The Required field is required.'.",
-                "DataAnnotation validation failed for members: 'StringLength' with the error: 'Too long.'.",
-                "DataAnnotation validation failed for members: 'IntRange' with the error: 'Out of range.'.",
-                "DataAnnotation validation failed for members: 'Custom' with the error: 'The field Custom is invalid.'.",
-                "DataAnnotation validation failed for members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.");
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Required' with the error: 'The Required field is required.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'StringLength' with the error: 'Too long.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'IntRange' with the error: 'Out of range.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Custom' with the error: 'The field Custom is invalid.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.");
         }
 
         [Fact]
@@ -659,16 +658,16 @@ namespace Microsoft.Extensions.Options.Tests
 
             var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<AnnotatedOptions>>().Value);
             ValidateFailure<AnnotatedOptions>(error, Options.DefaultName, 6,
-                "DataAnnotation validation failed for members: 'Required' with the error: 'The Required field is required.'.",
-                "DataAnnotation validation failed for members: 'StringLength' with the error: 'Too long.'.",
-                "DataAnnotation validation failed for members: 'IntRange' with the error: 'Out of range.'.",
-                "DataAnnotation validation failed for members: 'Custom' with the error: 'The field Custom is invalid.'.",
-                "DataAnnotation validation failed for members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Required' with the error: 'The Required field is required.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'StringLength' with the error: 'Too long.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'IntRange' with the error: 'Out of range.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Custom' with the error: 'The field Custom is invalid.'.",
+                "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.",
                 "I don't want to go to nowhere!");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void ValidateOnStart_CallValidateDataAnnotations_ValidationSuccessful()
         {
             var services = new ServiceCollection();
@@ -687,15 +686,15 @@ namespace Microsoft.Extensions.Options.Tests
 
             var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<AnnotatedOptions>>().Value);
             ValidateFailure<AnnotatedOptions>(error, Options.DefaultName, 5,
-                    "DataAnnotation validation failed for members: 'Required' with the error: 'The Required field is required.'.",
-                    "DataAnnotation validation failed for members: 'StringLength' with the error: 'Too long.'.",
-                    "DataAnnotation validation failed for members: 'IntRange' with the error: 'Out of range.'.",
-                    "DataAnnotation validation failed for members: 'Custom' with the error: 'The field Custom is invalid.'.",
-                    "DataAnnotation validation failed for members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.");
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Required' with the error: 'The Required field is required.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'StringLength' with the error: 'Too long.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'IntRange' with the error: 'Out of range.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Custom' with the error: 'The field Custom is invalid.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void ValidateOnStart_CallValidateAndValidateDataAnnotations_FailuresCaughtFromBothValidateAndValidateDataAnnotations()
         {
             var services = new ServiceCollection();
@@ -716,16 +715,16 @@ namespace Microsoft.Extensions.Options.Tests
 
             var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<AnnotatedOptions>>().Value);
             ValidateFailure<AnnotatedOptions>(error, Options.DefaultName, 6,
-                    "DataAnnotation validation failed for members: 'Required' with the error: 'The Required field is required.'.",
-                    "DataAnnotation validation failed for members: 'StringLength' with the error: 'Too long.'.",
-                    "DataAnnotation validation failed for members: 'IntRange' with the error: 'Out of range.'.",
-                    "DataAnnotation validation failed for members: 'Custom' with the error: 'The field Custom is invalid.'.",
-                    "DataAnnotation validation failed for members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Required' with the error: 'The Required field is required.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'StringLength' with the error: 'Too long.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'IntRange' with the error: 'Out of range.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Custom' with the error: 'The field Custom is invalid.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.",
                     "I don't want to go to nowhere!");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void ValidateOnStart_CallValidateOnStartFirst_ValidatesFailuresCorrectly()
         {
             var services = new ServiceCollection();
@@ -746,16 +745,16 @@ namespace Microsoft.Extensions.Options.Tests
 
             var error = Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<AnnotatedOptions>>().Value);
             ValidateFailure<AnnotatedOptions>(error, Options.DefaultName, 6,
-                    "DataAnnotation validation failed for members: 'Required' with the error: 'The Required field is required.'.",
-                    "DataAnnotation validation failed for members: 'StringLength' with the error: 'Too long.'.",
-                    "DataAnnotation validation failed for members: 'IntRange' with the error: 'Out of range.'.",
-                    "DataAnnotation validation failed for members: 'Custom' with the error: 'The field Custom is invalid.'.",
-                    "DataAnnotation validation failed for members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Required' with the error: 'The Required field is required.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'StringLength' with the error: 'Too long.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'IntRange' with the error: 'Out of range.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Custom' with the error: 'The field Custom is invalid.'.",
+                    "DataAnnotation validation failed for 'AnnotatedOptions' members: 'Dep1,Dep2' with the error: 'Dep1 != Dep2'.",
                     "I don't want to go to nowhere!");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34580", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void ValidateOnStart_ConfigureBasedOnDataAnnotationRestrictions_ValidationSuccessful()
         {
             var services = new ServiceCollection();

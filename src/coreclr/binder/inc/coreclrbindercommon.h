@@ -6,9 +6,7 @@
 #define __CORECLR_BINDER_COMMON_H__
 
 #include "clrprivbinding.h"
-#include "internalunknownimpl.h"
 #include "applicationcontext.hpp"
-
 
 namespace BINDER_SPACE
 {
@@ -21,10 +19,8 @@ class CLRPrivBinderCoreCLR;
 class CCoreCLRBinderHelper
 {
 public:
-    static HRESULT Init();
-
     static HRESULT DefaultBinderSetupContext(DWORD      dwAppDomainId,
-                                CLRPrivBinderCoreCLR **ppTPABinder);
+                                             CLRPrivBinderCoreCLR **ppTPABinder);
 
     // ABHI-TODO: The call indicates that this can come from a case where
     // pDomain->GetFusionContext() is null, hence this is static function

@@ -78,7 +78,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary.NodeSetFunctions
                     HasNameTable = true,
                     Value = "Fourth"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }

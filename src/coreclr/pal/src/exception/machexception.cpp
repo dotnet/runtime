@@ -1411,13 +1411,6 @@ SEHInitializeMachExceptions(DWORD flags)
 #endif // _DEBUG
     }
 
-    // Tell the system to ignore SIGPIPE signals rather than use the default
-    // behavior of terminating the process. Ignoring SIGPIPE will cause
-    // calls that would otherwise raise that signal to return EPIPE instead.
-    // The PAL expects EPIPE from those functions and won't handle a
-    // SIGPIPE signal.
-    signal(SIGPIPE, SIG_IGN);
-
     // We're done
     return TRUE;
 }

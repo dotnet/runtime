@@ -23,8 +23,8 @@ namespace System.Runtime.Intrinsics
             where T : struct
             where U : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<U>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<U>();
             return Unsafe.As<Vector64<T>, Vector64<U>>(ref vector);
         }
 
@@ -944,7 +944,7 @@ namespace System.Runtime.Intrinsics
         public static T GetElement<T>(this Vector64<T> vector, int index)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             if ((uint)(index) >= (uint)(Vector64<T>.Count))
             {
@@ -967,7 +967,7 @@ namespace System.Runtime.Intrinsics
         public static Vector64<T> WithElement<T>(this Vector64<T> vector, int index, T value)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             if ((uint)(index) >= (uint)(Vector64<T>.Count))
             {
@@ -989,7 +989,7 @@ namespace System.Runtime.Intrinsics
         public static T ToScalar<T>(this Vector64<T> vector)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
             return Unsafe.As<Vector64<T>, T>(ref vector);
         }
 
@@ -1002,7 +1002,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> ToVector128<T>(this Vector64<T> vector)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             Vector128<T> result = Vector128<T>.Zero;
             Unsafe.As<Vector128<T>, Vector64<T>>(ref result) = vector;
@@ -1018,7 +1018,7 @@ namespace System.Runtime.Intrinsics
         public static unsafe Vector128<T> ToVector128Unsafe<T>(this Vector64<T> vector)
             where T : struct
         {
-            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVectorBaseType<T>();
 
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.

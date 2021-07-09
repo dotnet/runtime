@@ -16,6 +16,7 @@ namespace System.Net.Http
     [UnsupportedOSPlatform("browser")]
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
+        [UnsupportedOSPlatformGuard("browser")]
         public static bool IsSupported => false;
 
         public bool UseCookies
@@ -134,6 +135,12 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public int InitialHttp2StreamWindowSize
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
         public TimeSpan KeepAlivePingDelay
         {
             get => throw new PlatformNotSupportedException();
@@ -145,7 +152,6 @@ namespace System.Net.Http
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
-
 
         public HttpKeepAlivePingPolicy KeepAlivePingPolicy
         {
@@ -183,12 +189,6 @@ namespace System.Net.Http
         }
 
         public Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? PlaintextStreamFilter
-        {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
-        }
-
-        public QuicImplementationProvider? QuicImplementationProvider
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

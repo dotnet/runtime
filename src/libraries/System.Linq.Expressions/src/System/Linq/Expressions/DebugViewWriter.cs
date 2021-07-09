@@ -401,13 +401,7 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitLambda<T>(Expression<T> node)
         {
-            Out(
-                string.Format(CultureInfo.CurrentCulture,
-                    ".Lambda {0}<{1}>",
-                    GetLambdaName(node),
-                    node.Type.ToString()
-                )
-            );
+            Out($".Lambda {GetLambdaName(node)}<{node.Type}>");
 
             if (_lambdas == null)
             {
@@ -471,17 +465,11 @@ namespace System.Linq.Expressions
             }
             else if ((value is string) && node.Type == typeof(string))
             {
-                Out(string.Format(
-                    CultureInfo.CurrentCulture,
-                    "\"{0}\"",
-                    value));
+                Out($"\"{value}\"");
             }
             else if ((value is char) && node.Type == typeof(char))
             {
-                Out(string.Format(
-                    CultureInfo.CurrentCulture,
-                    "'{0}'",
-                    value));
+                Out($"'{value}'");
             }
             else if ((value is int) && node.Type == typeof(int)
               || (value is bool) && node.Type == typeof(bool))
@@ -498,11 +486,7 @@ namespace System.Linq.Expressions
                 }
                 else
                 {
-                    Out(string.Format(
-                        CultureInfo.CurrentCulture,
-                        ".Constant<{0}>({1})",
-                        node.Type.ToString(),
-                        value));
+                    Out($".Constant<{node.Type}>({value})");
                 }
             }
             return node;
@@ -994,7 +978,7 @@ namespace System.Linq.Expressions
             // last expression's type in the block.
             if (node.Type != node.GetExpression(node.ExpressionCount - 1).Type)
             {
-                Out(string.Format(CultureInfo.CurrentCulture, "<{0}>", node.Type.ToString()));
+                Out($"<{node.Type}>");
             }
 
             VisitDeclarations(node.Variables);
@@ -1149,7 +1133,7 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitExtension(Expression node)
         {
-            Out(string.Format(CultureInfo.CurrentCulture, ".Extension<{0}>", node.GetType().ToString()));
+            Out($".Extension<{node.GetType()}>");
 
             if (node.CanReduce)
             {
@@ -1165,22 +1149,14 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitDebugInfo(DebugInfoExpression node)
         {
-            Out(string.Format(
-                CultureInfo.CurrentCulture,
-                ".DebugInfo({0}: {1}, {2} - {3}, {4})",
-                node.Document.FileName,
-                node.StartLine,
-                node.StartColumn,
-                node.EndLine,
-                node.EndColumn)
-            );
+            Out($".DebugInfo({node.Document.FileName}: {node.StartLine}, {node.StartColumn} - {node.EndLine}, {node.EndColumn})");
             return node;
         }
 
 
         private void DumpLabel(LabelTarget target)
         {
-            Out(string.Format(CultureInfo.CurrentCulture, ".LabelTarget {0}:", GetLabelTargetName(target)));
+            Out($".LabelTarget {GetLabelTargetName(target)}:");
         }
 
         private string GetLabelTargetName(LabelTarget target)
@@ -1198,13 +1174,7 @@ namespace System.Linq.Expressions
 
         private void WriteLambda(LambdaExpression lambda)
         {
-            Out(
-                string.Format(
-                    CultureInfo.CurrentCulture,
-                    ".Lambda {0}<{1}>",
-                    GetLambdaName(lambda),
-                    lambda.Type.ToString())
-            );
+            Out($".Lambda {GetLambdaName(lambda)}<{lambda.Type}>");
 
             VisitDeclarations(lambda.Parameters);
 

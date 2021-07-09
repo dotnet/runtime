@@ -32,9 +32,9 @@ namespace System.Security.Cryptography
         {
             return s_hashSizes.GetOrAdd(
                 hashAlgorithm,
-                alg =>
+                static hashAlgorithm =>
                 {
-                    using (HashProviderCng hashProvider = new HashProviderCng(alg.Name!, null))
+                    using (HashProviderCng hashProvider = new HashProviderCng(hashAlgorithm.Name!, null))
                     {
                         return hashProvider.HashSizeInBytes;
                     }

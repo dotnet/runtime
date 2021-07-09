@@ -25,7 +25,7 @@
 
     <MSBuild Projects="@(WasmAppBuildProject)"
          Properties="Configuration=Debug"
-         Targets="Build;Publish"/>
+         Targets="Build"/>
   </Target>
 
   <Target Name="CopyAppZipToHelixTestDir"

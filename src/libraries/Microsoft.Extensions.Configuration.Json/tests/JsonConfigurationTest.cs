@@ -152,6 +152,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50868", TestPlatforms.Android)]
         public void ThrowExceptionWhenUnexpectedEndFoundBeforeFinishParsing()
         {
             var json = @"{
@@ -166,6 +167,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50868", TestPlatforms.Android)]
         public void ThrowExceptionWhenMissingCurlyBeforeFinishParsing()
         {
             var json = @"
@@ -198,13 +200,14 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50868", TestPlatforms.Android)]
         public void JsonConfiguration_Throws_On_Missing_Configuration_File()
         {
             var config = new ConfigurationBuilder().AddJsonFile("NotExistingConfig.json", optional: false);
             var exception = Assert.Throws<FileNotFoundException>(() => config.Build());
 
             // Assert
-            Assert.StartsWith($"The configuration file 'NotExistingConfig.json' was not found and is not optional. The physical path is '", exception.Message);
+            Assert.StartsWith($"The configuration file 'NotExistingConfig.json' was not found and is not optional. The expected physical path was '", exception.Message);
         }
 
         [Fact]
@@ -214,6 +217,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50868", TestPlatforms.Android)]
         public void ThrowFormatExceptionWhenFileIsEmpty()
         {
             var exception = Assert.Throws<FormatException>(() => LoadProvider(@""));

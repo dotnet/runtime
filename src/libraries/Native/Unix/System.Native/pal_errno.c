@@ -17,3 +17,13 @@ const char* SystemNative_StrErrorR(int32_t platformErrno, char* buffer, int32_t 
 {
     return StrErrorR(platformErrno, buffer, bufferSize);
 }
+
+int32_t SystemNative_GetErrNo(void)
+{
+    return errno;
+}
+
+void SystemNative_SetErrNo(int32_t errorCode)
+{
+    errno = errorCode;
+}

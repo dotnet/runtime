@@ -1,0 +1,126 @@
+<Project>
+  <PropertyGroup>
+    <AssemblyName>crossgen2</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <NoWarn>8002,NU1701</NoWarn>
+    <Platforms>x64;x86;arm64;arm</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <Configurations>Debug;Release;Checked</Configurations>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup Label="Embedded Resources">
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>System.SR</ClassName>
+    </EmbeddedResource>
+
+    <EmbeddedResource Include="..\..\Common\CommandLine\Resources\Strings.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>Internal.CommandLine.Strings</ClassName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
+    <ProjectReference Include="..\ILCompiler.ReadyToRun\ILCompiler.ReadyToRun.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Common\CommandLine\Argument.cs" />
+    <Compile Include="..\..\Common\CommandLine\Argument_1.cs" />
+    <Compile Include="..\..\Common\CommandLine\ArgumentCommand.cs" />
+    <Compile Include="..\..\Common\CommandLine\ArgumentCommand_1.cs" />
+    <Compile Include="..\..\Common\CommandLine\ArgumentLexer.cs" />
+    <Compile Include="..\..\Common\CommandLine\ArgumentList_1.cs" />
+    <Compile Include="..\..\Common\CommandLine\ArgumentParser.cs" />
+    <Compile Include="..\..\Common\CommandLine\ArgumentSyntax.cs" />
+    <Compile Include="..\..\Common\CommandLine\ArgumentSyntax_Definers.cs" />
+    <Compile Include="..\..\Common\CommandLine\ArgumentSyntaxException.cs" />
+    <Compile Include="..\..\Common\CommandLine\ArgumentToken.cs" />
+    <Compile Include="..\..\Common\CommandLine\CommandLineException.cs" />
+    <Compile Include="..\..\Common\CommandLine\CommandLineHelpers.cs" />
+    <Compile Include="..\..\Common\CommandLine\Enumerable.cs" />
+    <Compile Include="..\..\Common\CommandLine\HelpTextGenerator.cs" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetOSComponent>unix</TargetOSComponent>
+    <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>
+    <TargetOSComponent Condition="'$(TargetOS)' == 'osx' and '$(TargetArchitecture)' == 'arm64'">unix_osx</TargetOSComponent>
+
+    <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' == ''">$(TargetArchitecture)</TargetArchitectureForSharedLibraries>
+    <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' != ''">$(CrossHostArch)</TargetArchitectureForSharedLibraries>
+    <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitectureForSharedLibraries)'=='armel'">arm</TargetArchitectureForSharedLibraries>
+
+    <TargetArchitectureForLocalJitBuild Condition="'$(TargetArchitectureForLocalJitBuild)' == ''">$(TargetArchitecture)</TargetArchitectureForLocalJitBuild>
+    <TargetArchitectureForLocalJitBuild Condition="'$(TargetArchitecture)'=='armel'">arm</TargetArchitectureForLocalJitBuild>
+
+    <TargetSpec>$(TargetOSComponent)_$(TargetArchitectureForLocalJitBuild)_$(TargetArchitectureForSharedLibraries)</TargetSpec>
+
+    <JitInterfaceLibraryName>$(LibPrefix)jitinterface_$(TargetArchitectureForSharedLibraries)$(LibSuffix)</JitInterfaceLibraryName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="$(RuntimeBinDir)$(CrossHostArch)/$(JitInterfaceLibraryName)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="%(FileName)%(Extension)"
+      />
+
+    <Content Include="$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(LibSuffix)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="%(FileName)%(Extension)"
+      />
+  </ItemGroup>
+
+  <!-- On windows we can re-use the clrjit.dll produced in the build for aot compilation. On Linux
+       this works at runtime, but makes it difficult to debug the jit.-->
+  <ItemGroup Condition="'$(TargetOS)' == 'windows' and Exists('$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit$(LibSuffix)')">
+    <Content Remove="$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)" />
+    <Content Include="$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit$(LibSuffix)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)"
+      />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+    <Content Include="$(RuntimeBinDir)/pgort*.dll"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="%(FileName)%(Extension)"
+      Condition="'$(PgoInstrument)' != ''"
+      />
+
+    <PackageReference Include="Microsoft.DiaSymReader.Native"
+      Version="$(MicrosoftDiaSymReaderNativeVersion)"
+      IsImplicitlyDefined="true"
+      ExcludeAssets="all"
+      GeneratePathProperty="true"
+      />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+    <DiaSymReaderTargetArch>$(TargetArchitectureForSharedLibraries)</DiaSymReaderTargetArch>
+    <DiaSymReaderTargetArch Condition="'$(DiaSymReaderTargetArch)' == 'x64'">amd64</DiaSymReaderTargetArch>
+    <DiaSymReaderTargetArchFileName>Microsoft.DiaSymReader.Native.$(DiaSymReaderTargetArch).dll</DiaSymReaderTargetArchFileName>
+    <DiaSymReaderTargetArchPath>$(PkgMicrosoft_DiaSymReader_Native)\runtimes\win\native\$(DiaSymReaderTargetArchFileName)</DiaSymReaderTargetArchPath>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+    <Content Include="$(DiaSymReaderTargetArchPath)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="%(FileName)%(Extension)"
+      />
+  </ItemGroup>
+</Project>

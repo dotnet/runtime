@@ -2465,5 +2465,38 @@ namespace System.Drawing
             if (errorStatus != Gdip.Ok && image.RawFormat.Equals(ImageFormat.Emf))
                 errorStatus = Gdip.Ok;
         }
+
+        /// <summary>
+        /// Creates a Region class only if the native region is not infinite.
+        /// </summary>
+        internal Region? GetRegionIfNotInfinite()
+        {
+            Gdip.CheckStatus(Gdip.GdipCreateRegion(out IntPtr regionHandle));
+            try
+            {
+                Gdip.GdipGetClip(new HandleRef(this, NativeGraphics), new HandleRef(null, regionHandle));
+                Gdip.CheckStatus(Gdip.GdipIsInfiniteRegion(
+                    new HandleRef(null, regionHandle),
+                    new HandleRef(this, NativeGraphics),
+                    out int isInfinite));
+
+                if (isInfinite != 0)
+                {
+                    // Infinite
+                    return null;
+                }
+
+                Region region = new Region(regionHandle);
+                regionHandle = IntPtr.Zero;
+                return region;
+            }
+            finally
+            {
+                if (regionHandle != IntPtr.Zero)
+                {
+                    Gdip.GdipDeleteRegion(new HandleRef(null, regionHandle));
+                }
+            }
+        }
     }
 }

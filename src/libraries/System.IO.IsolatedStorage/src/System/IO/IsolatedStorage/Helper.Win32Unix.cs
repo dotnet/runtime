@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Security;
 using System.Threading;
@@ -27,6 +28,8 @@ namespace System.IO.IsolatedStorage
             return dataDirectory;
         }
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Code handles single-file deployment by using the information of the .exe file")]
         internal static void GetDefaultIdentityAndHash(out object identity, out string hash, char separator)
         {
             // In .NET Framework IsolatedStorage uses identity from System.Security.Policy.Evidence to build
@@ -53,9 +56,6 @@ namespace System.IO.IsolatedStorage
                 throw new IsolatedStorageException(SR.IsolatedStorage_Init);
 
             AssemblyName assemblyName = assembly.GetName();
-#pragma warning disable SYSLIB0012
-            Uri codeBase = new Uri(assembly.CodeBase!);
-#pragma warning restore SYSLIB0012
 
             hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName)!;
             if (hash != null)
@@ -65,8 +65,15 @@ namespace System.IO.IsolatedStorage
             }
             else
             {
-                hash = "Url" + separator + IdentityHelper.GetNormalizedUriHash(codeBase);
-                identity = codeBase;
+                string? location = assembly.Location;
+                // In case of SingleFile deployment, Assembly.Location is empty.
+                if (location == string.Empty)
+                    location = Environment.ProcessPath;
+                if (string.IsNullOrEmpty(location))
+                    throw new IsolatedStorageException(SR.IsolatedStorage_Init);
+                Uri locationUri = new Uri(location);
+                hash = "Url" + separator + IdentityHelper.GetNormalizedUriHash(locationUri);
+                identity = locationUri;
             }
         }
 

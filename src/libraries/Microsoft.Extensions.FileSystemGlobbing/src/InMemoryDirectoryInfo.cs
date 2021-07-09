@@ -119,13 +119,11 @@ namespace Microsoft.Extensions.FileSystemGlobbing
 
         private bool IsRootDirectory(string rootDir, string filePath)
         {
-            if (!filePath.StartsWith(rootDir, StringComparison.Ordinal) ||
-                filePath.IndexOf(Path.DirectorySeparatorChar, rootDir.Length) != rootDir.Length)
-            {
-                return false;
-            }
+            int rootDirLength = rootDir.Length;
 
-            return true;
+            return filePath.StartsWith(rootDir, StringComparison.Ordinal) &&
+                (rootDir[rootDirLength - 1] == Path.DirectorySeparatorChar ||
+                filePath.IndexOf(Path.DirectorySeparatorChar, rootDirLength) == rootDirLength);
         }
 
         /// <inheritdoc />

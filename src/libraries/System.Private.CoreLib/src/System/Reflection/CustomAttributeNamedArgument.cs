@@ -45,7 +45,7 @@ namespace System.Reflection
             if (m_memberInfo == null)
                 return base.ToString()!;
 
-            return string.Format("{0} = {1}", MemberInfo.Name, TypedValue.ToString(ArgumentType != typeof(object)));
+            return $"{MemberInfo.Name} = {TypedValue.ToString(ArgumentType != typeof(object))}";
         }
 
         public override int GetHashCode()

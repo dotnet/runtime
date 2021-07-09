@@ -50,7 +50,8 @@ test_create_delete_session (void)
 			1,
 			current_provider_config,
 			1,
-			false);
+			NULL,
+			NULL);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (test_session != NULL);
@@ -91,7 +92,8 @@ test_add_session_providers (void)
 			1,
 			current_provider_config,
 			1,
-			false);
+			NULL,
+			NULL);
 
 		ep_raise_error_if_nok_holding_lock (test_session != NULL, section1);
 
@@ -173,7 +175,8 @@ test_session_special_get_set (void)
 			1,
 			current_provider_config,
 			1,
-			false);
+			NULL,
+			NULL);
 	EP_LOCK_EXIT (section1)
 
 	ep_raise_error_if_nok (test_session != NULL);
@@ -196,21 +199,21 @@ test_session_special_get_set (void)
 
 	test_location = 4;
 
-	if (ep_session_get_ipc_streaming_enabled (test_session)) {
+	if (ep_session_get_streaming_enabled (test_session)) {
 		result = FAILED ("ep_session_get_ipc_streaming_enabled returned true, should be false");
 		ep_raise_error ();
 	}
 
 	test_location = 5;
 
-	ep_session_set_ipc_streaming_enabled (test_session, true);
+	ep_session_set_streaming_enabled (test_session, true);
 
-	if (!ep_session_get_ipc_streaming_enabled (test_session)) {
+	if (!ep_session_get_streaming_enabled (test_session)) {
 		result = FAILED ("ep_session_set_ipc_streaming_enabled returned false, should be true");
 		ep_raise_error ();
 	}
 
-	ep_session_set_ipc_streaming_enabled (test_session, false);
+	ep_session_set_streaming_enabled (test_session, false);
 
 	test_location = 6;
 

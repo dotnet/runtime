@@ -259,7 +259,7 @@ namespace System.Data.ProviderBase
             // to PERFMON.  They recommend that we translate them as shown below, to
             // prevent problems.
 
-            result = string.Format(null, "{0}[{1}]", instanceName, pid);
+            result = $"{instanceName}[{pid}]";
             result = result.Replace('(', '[').Replace(')', ']').Replace('#', '_').Replace('/', '_').Replace('\\', '_');
 
             // counter instance name cannot be greater than 127
@@ -272,13 +272,10 @@ namespace System.Data.ProviderBase
                 const string insertString = "[...]";
                 int firstPartLength = (CounterInstanceNameMaxLength - insertString.Length) / 2;
                 int lastPartLength = CounterInstanceNameMaxLength - firstPartLength - insertString.Length;
-                result = string.Format(null, "{0}{1}{2}",
-                    result.Substring(0, firstPartLength),
-                    insertString,
-                    result.Substring(result.Length - lastPartLength, lastPartLength));
+                result = $"{result.Substring(0, firstPartLength)}{insertString}{result.Substring(result.Length - lastPartLength, lastPartLength)}";
 
                 Debug.Assert(result.Length == CounterInstanceNameMaxLength,
-                    string.Format(null, "wrong calculation of the instance name: expected {0}, actual: {1}", CounterInstanceNameMaxLength, result.Length));
+                    $"wrong calculation of the instance name: expected {CounterInstanceNameMaxLength}, actual: {result.Length}");
             }
 
             return result;

@@ -208,8 +208,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
         }
         else
         {
-            // The host components will be statically linked with the app-host: https://github.com/dotnet/runtime/issues/32823
-            // Once this work is completed, an outdated hostfxr can only be found for framework-related apps.
+            // An outdated hostfxr can only be found for framework-related apps.
             trace::error(_X("The required library %s does not support single-file apps."), fxr.fxr_path().c_str());			
             need_newer_framework_error();
             rc = StatusCode::FrameworkMissingFailure;

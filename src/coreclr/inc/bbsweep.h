@@ -22,6 +22,10 @@
 #include <aclapi.h>
 #endif // !TARGET_UNIX
 
+#ifndef ARRAYSIZE
+#define ARRAYSIZE(x)    (sizeof(x)/sizeof(x[0]))
+#endif // !ARRAYSIZE
+
 // The CLR headers don't allow us to use methods like SetEvent directly (instead
 // we need to use the host APIs).  However, this file is included both in the CLR
 // and in the BBSweep tool, and the host API is not available in the tool.  Moreover,

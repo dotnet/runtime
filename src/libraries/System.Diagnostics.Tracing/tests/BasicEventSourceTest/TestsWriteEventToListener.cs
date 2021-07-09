@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -18,7 +19,8 @@ namespace BasicEventSourceTests
     {
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21569", TargetFrameworkMonikers.NetFramework)]
-        public void Test_WriteEvent_ArgsBasicTypes()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51382", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public unsafe void Test_WriteEvent_ArgsBasicTypes()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
 
@@ -104,11 +106,51 @@ namespace BasicEventSourceTests
 
                     #region Validate byte array arguments
 
+                    var rng = new Random(42);
+
                     byte[] arr = new byte[20];
+                    rng.NextBytes(arr);
                     log.EventWithByteArray(arr);
                     Assert.Equal(52, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
-                    Assert.Equal(arr.Length, ((byte[])LoudListener.t_lastEvent.Payload[0]).Length);
+                    Assert.Equal(arr, (byte[])LoudListener.t_lastEvent.Payload[0]);
+
+                    log.EventWithByteArray(new byte[0]);
+                    Assert.Equal(52, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Same(Array.Empty<byte>(), (byte[])LoudListener.t_lastEvent.Payload[0]);
+
+                    log.EventWithByteArray(null);
+                    Assert.Equal(52, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Same(Array.Empty<byte>(), (byte[])LoudListener.t_lastEvent.Payload[0]);
+
+                    arr = new byte[20];
+                    rng.NextBytes(arr);
+                    log.EventWithByteArrayCustom(arr);
+                    Assert.Equal(53, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal(arr, (byte[])LoudListener.t_lastEvent.Payload[0]);
+
+                    log.EventWithByteArrayCustom(new byte[0]);
+                    Assert.Equal(53, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Same(Array.Empty<byte>(), (byte[])LoudListener.t_lastEvent.Payload[0]);
+
+                    arr = new byte[20];
+                    rng.NextBytes(arr);
+                    fixed (byte* arrPtr = arr)
+                    {
+                        log.EventWithBytePointer(arrPtr, arr.Length);
+                    }
+                    Assert.Equal(54, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal(arr, (byte[])LoudListener.t_lastEvent.Payload[0]);
+
+                    log.EventWithBytePointer((byte*)IntPtr.Zero, 0);
+                    Assert.Equal(54, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Same(Array.Empty<byte>(), (byte[])LoudListener.t_lastEvent.Payload[0]);
 
                     #endregion
 
@@ -172,6 +214,7 @@ namespace BasicEventSourceTests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21569", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51382", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Test_WriteEvent_ArgsCornerCases()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -205,6 +248,7 @@ namespace BasicEventSourceTests
         static partial void Test_WriteEvent_ArgsCornerCases_TestEtw(EventSourceTest log);
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51382", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Test_WriteEvent_InvalidCalls()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -227,6 +271,7 @@ namespace BasicEventSourceTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51382", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Test_WriteEvent_ToChannel_Coverage()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -241,6 +286,7 @@ namespace BasicEventSourceTests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21569", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51382", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Test_WriteEvent_ZeroKwds()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -277,6 +323,7 @@ namespace BasicEventSourceTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51382", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Test_EventSourceCreatedEvents_BeforeListener()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -340,6 +387,7 @@ namespace BasicEventSourceTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51382", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Test_EventSourceCreatedEvents_AfterListener()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");

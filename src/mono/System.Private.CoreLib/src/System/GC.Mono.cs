@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
+using System.Diagnostics.Tracing;
 
 namespace System
 {
@@ -242,6 +244,7 @@ namespace System
         private static extern void _GetGCMemoryInfo(out long highMemoryLoadThresholdBytes,
                                         out long memoryLoadBytes,
                                         out long totalAvailableMemoryBytes,
+                                        out long totalCommittedBytes,
                                         out long heapSizeBytes,
                                         out long fragmentedBytes);
 
@@ -252,6 +255,7 @@ namespace System
             _GetGCMemoryInfo(out data._highMemoryLoadThresholdBytes,
                              out data._memoryLoadBytes,
                              out data._totalAvailableMemoryBytes,
+                             out data._totalCommittedBytes,
                              out data._heapSizeBytes,
                              out data._fragmentedBytes);
 
@@ -285,6 +289,29 @@ namespace System
             }
 
             return new T[length];
+        }
+
+        internal static ulong GetGenerationSize(int generation)
+        {
+            switch (generation) {
+            case 0 :
+                return EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.GC_NURSERY_SIZE_BYTES);
+            case 1 :
+            case 2 :
+                return EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.GC_MAJOR_SIZE_BYTES);
+            case 3 :
+                return EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.GC_LARGE_OBJECT_SIZE_BYTES);
+            case 4:
+                // Pinned object heap.
+                return 0;
+            default:
+                return 0;
+            }
+        }
+
+        internal static int GetLastGCPercentTimeInGC()
+        {
+            return (int)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.GC_LAST_PERCENT_TIME_IN_GC);
         }
     }
 }

@@ -1180,7 +1180,10 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                           pExactMT->GetCanonicalMethodTable(),
                                                                           FALSE,
                                                                           Instantiation(repInst, methodInst.GetNumArgs()),
-                                                                          TRUE);
+                                                                          /* allowInstParam */ TRUE,
+                                                                          /* forceRemotableMethod */ FALSE,
+                                                                          /* allowCreate */ TRUE,
+                                                                          /* level */ level);
 
                 _ASSERTE(pWrappedMD->IsSharedByGenericInstantiations());
                 _ASSERTE(!methodInst.IsEmpty() || !pWrappedMD->IsSharedByGenericMethodInstantiations());

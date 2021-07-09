@@ -138,9 +138,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             // Some current Linux RIDs are not supported in 2.0\2.1; just test for Ubuntu 16.
             return (
-                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-                RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
-                (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && RuntimeInformation.RuntimeIdentifier == "ubuntu.16.04-x64")
+                OperatingSystem.IsWindows() ||
+                OperatingSystem.IsMacOS() ||
+                (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier == "ubuntu.16.04-x64")
             );
         }
 

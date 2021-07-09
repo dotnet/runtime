@@ -919,25 +919,15 @@ namespace System
         /// <summary>Ensures that the console has been initialized for use.</summary>
         private static unsafe void EnsureInitializedCore()
         {
-            // Initialization is only needed when input isn't redirected.
-            if (Console.IsInputRedirected)
-            {
-                s_initialized = true;
-                return;
-            }
-
             lock (Console.Out) // ensure that writing the ANSI string and setting initialized to true are done atomically
             {
                 if (!s_initialized)
                 {
+                    // Do this even when redirected to make CancelKeyPress works.
                     if (!Interop.Sys.InitializeTerminalAndSignalHandling())
                     {
                         throw new Win32Exception();
                     }
-
-                    // Register a callback for signals that may invalidate our cached terminal settings.
-                    // This includes: SIGCONT, SIGCHLD, SIGWINCH.
-                    Interop.Sys.SetTerminalInvalidationHandler(&InvalidateTerminalSettings);
 
                     // Provide the native lib with the correct code from the terminfo to transition us into
                     // "application mode".  This will both transition it immediately, as well as allow
@@ -951,20 +941,27 @@ namespace System
                         }
                     }
 
-                    // Load special control character codes used for input processing
-                    var controlCharacterNames = new Interop.Sys.ControlCharacterNames[4]
+                    if (!Console.IsInputRedirected)
                     {
-                        Interop.Sys.ControlCharacterNames.VERASE,
-                        Interop.Sys.ControlCharacterNames.VEOL,
-                        Interop.Sys.ControlCharacterNames.VEOL2,
-                        Interop.Sys.ControlCharacterNames.VEOF
-                    };
-                    var controlCharacterValues = new byte[controlCharacterNames.Length];
-                    Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, controlCharacterNames.Length, out s_posixDisableValue);
-                    s_veraseCharacter = controlCharacterValues[0];
-                    s_veolCharacter = controlCharacterValues[1];
-                    s_veol2Character = controlCharacterValues[2];
-                    s_veofCharacter = controlCharacterValues[3];
+                        // Register a callback for signals that may invalidate our cached terminal settings.
+                        // This includes: SIGCONT, SIGCHLD, SIGWINCH.
+                        Interop.Sys.SetTerminalInvalidationHandler(&InvalidateTerminalSettings);
+
+                        // Load special control character codes used for input processing
+                        var controlCharacterNames = new Interop.Sys.ControlCharacterNames[4]
+                        {
+                            Interop.Sys.ControlCharacterNames.VERASE,
+                            Interop.Sys.ControlCharacterNames.VEOL,
+                            Interop.Sys.ControlCharacterNames.VEOL2,
+                            Interop.Sys.ControlCharacterNames.VEOF
+                        };
+                        var controlCharacterValues = new byte[controlCharacterNames.Length];
+                        Interop.Sys.GetControlCharacters(controlCharacterNames, controlCharacterValues, controlCharacterNames.Length, out s_posixDisableValue);
+                        s_veraseCharacter = controlCharacterValues[0];
+                        s_veolCharacter = controlCharacterValues[1];
+                        s_veol2Character = controlCharacterValues[2];
+                        s_veofCharacter = controlCharacterValues[3];
+                    }
 
                     // Mark us as initialized
                     s_initialized = true;
@@ -1447,50 +1444,32 @@ namespace System
 
         internal sealed class ControlCHandlerRegistrar
         {
-            private bool _handlerRegistered;
+            private PosixSignalRegistration? _sigIntRegistration;
+            private PosixSignalRegistration? _sigQuitRegistration;
 
             internal unsafe void Register()
             {
-                EnsureConsoleInitialized();
+                Debug.Assert(_sigIntRegistration is null);
 
-                Debug.Assert(!_handlerRegistered);
-                Interop.Sys.RegisterForCtrl(&OnBreakEvent);
-                _handlerRegistered = true;
+                _sigIntRegistration = PosixSignalRegistration.Create(PosixSignal.SIGINT, HandlePosixSignal);
+                _sigQuitRegistration = PosixSignalRegistration.Create(PosixSignal.SIGQUIT, HandlePosixSignal);
             }
 
             internal void Unregister()
             {
-                Debug.Assert(_handlerRegistered);
-                _handlerRegistered = false;
-                Interop.Sys.UnregisterForCtrl();
+                Debug.Assert(_sigIntRegistration is not null);
+
+                _sigIntRegistration?.Dispose();
+                _sigQuitRegistration?.Dispose();
             }
 
-            [UnmanagedCallersOnly]
-            private static void OnBreakEvent(Interop.Sys.CtrlCode ctrlCode)
+            private static void HandlePosixSignal(PosixSignalContext ctx)
             {
-                // This is called on the native signal handling thread. We need to move to another thread so
-                // signal handling is not blocked. Otherwise we may get deadlocked when the handler depends
-                // on work triggered from the signal handling thread.
-                // We use a new thread rather than queueing to the ThreadPool in order to prioritize handling
-                // in case the ThreadPool is saturated.
-                Thread handlerThread = new Thread(HandleBreakEvent)
-                {
-                    IsBackground = true,
-                    Name = ".NET Console Break"
-                };
-                handlerThread.Start(ctrlCode);
-            }
+                Debug.Assert(ctx.Signal == PosixSignal.SIGINT || ctx.Signal == PosixSignal.SIGQUIT);
 
-            private static void HandleBreakEvent(object? state)
-            {
-                Debug.Assert(state != null);
-                var ctrlCode = (Interop.Sys.CtrlCode)state;
-                ConsoleSpecialKey controlKey = (ctrlCode == Interop.Sys.CtrlCode.Break ? ConsoleSpecialKey.ControlBreak : ConsoleSpecialKey.ControlC);
-                bool cancel = Console.HandleBreakEvent(controlKey);
-                if (!cancel)
-                {
-                    Interop.Sys.RestoreAndHandleCtrl(ctrlCode);
-                }
+                ConsoleSpecialKey controlKey = ctx.Signal == PosixSignal.SIGINT ? ConsoleSpecialKey.ControlC : ConsoleSpecialKey.ControlBreak;
+                bool cancel = Console.HandleBreakEvent(controlKey, ctx.Cancel);
+                ctx.Cancel = cancel;
             }
         }
 

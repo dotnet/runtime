@@ -46,6 +46,8 @@ namespace
         ELF_MACHINE = EM_X86_64,
 #elif defined(HOST_ARM64)
         ELF_MACHINE = EM_AARCH64,
+#elif defined(HOST_S390X)
+        ELF_MACHINE = EM_S390,
 #else
 #error ELF_MACHINE unsupported for target
 #endif

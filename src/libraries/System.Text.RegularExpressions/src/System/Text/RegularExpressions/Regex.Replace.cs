@@ -174,7 +174,7 @@ namespace System.Text.RegularExpressions
 
             if (!regex.RightToLeft)
             {
-                regex.Run(input, startat, ref state, (ref (SegmentStringBuilder segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
+                regex.Run(input, startat, ref state, static (ref (SegmentStringBuilder segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
                 {
                     state.segments.Add(state.input.AsMemory(state.prevat, match.Index - state.prevat));
                     state.prevat = match.Index + match.Length;
@@ -193,11 +193,11 @@ namespace System.Text.RegularExpressions
             {
                 state.prevat = input.Length;
 
-                regex.Run(input, startat, ref state, (ref (SegmentStringBuilder segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
+                regex.Run(input, startat, ref state, static (ref (SegmentStringBuilder segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
                 {
                     state.segments.Add(state.input.AsMemory(match.Index + match.Length, state.prevat - match.Index - match.Length));
                     state.prevat = match.Index;
-                    state.segments.Add(evaluator(match).AsMemory());
+                    state.segments.Add(state.evaluator(match).AsMemory());
                     return --state.count != 0;
                 }, reuseMatchObject: false);
 

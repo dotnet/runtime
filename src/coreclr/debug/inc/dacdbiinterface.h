@@ -1065,6 +1065,17 @@ public:
 
     virtual
     VMPTR_OBJECTHANDLE GetThreadObject(VMPTR_Thread vmThread) = 0;
+    
+    //
+    // Get the allocation info corresponding to the specified thread.
+    //
+    // Arguments:
+    //    vmThread - the specified thread
+    //    threadAllocInfo - the allocated bytes from SOH and UOH so far on this thread
+    //
+
+    virtual
+    void GetThreadAllocInfo(VMPTR_Thread vmThread, DacThreadAllocInfo* threadAllocInfo) = 0;
 
     //
     // Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread

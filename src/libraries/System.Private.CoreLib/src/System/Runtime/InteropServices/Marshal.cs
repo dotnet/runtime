@@ -142,7 +142,44 @@ namespace System.Runtime.InteropServices
             return SizeOfHelper(t, throwIfNotMarshalable: true);
         }
 
-        public static int SizeOf<T>() => SizeOf(typeof(T));
+        public static int SizeOf<T>()
+        {
+            Type t = typeof(T);
+            if (t.IsGenericType)
+            {
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(T));
+            }
+
+            return SizeOfHelper(t, throwIfNotMarshalable: true);
+        }
+
+        public static unsafe int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
+        {
+            if (pUnk == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(pUnk));
+
+            fixed (Guid* pIID = &iid)
+            fixed (IntPtr* p = &ppv)
+            {
+                return ((delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)(*(*(void***)pUnk + 0 /* IUnknown.QueryInterface slot */)))(pUnk, pIID, p);
+            }
+        }
+
+        public static unsafe int AddRef(IntPtr pUnk)
+        {
+            if (pUnk == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(pUnk));
+
+            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
+        }
+
+        public static unsafe int Release(IntPtr pUnk)
+        {
+            if (pUnk == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(pUnk));
+
+            return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 2 /* IUnknown.Release slot */)))(pUnk);
+        }
 
         /// <summary>
         /// IMPORTANT NOTICE: This method does not do any verification on the array.
@@ -154,7 +191,7 @@ namespace System.Runtime.InteropServices
             if (arr is null)
                 throw new ArgumentNullException(nameof(arr));
 
-            void* pRawData = Unsafe.AsPointer(ref arr.GetRawArrayData());
+            void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
         }
 
@@ -536,7 +573,7 @@ namespace System.Runtime.InteropServices
         /// native memory block to it.
         /// </summary>
         public static object? PtrToStructure(IntPtr ptr,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type structureType)
         {
             if (ptr == IntPtr.Zero)
@@ -557,7 +594,9 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(structureType));
             }
 
-            return PtrToStructureHelper(ptr, structureType);
+            object structure = Activator.CreateInstance(structureType, nonPublic: true)!;
+            PtrToStructureHelper(ptr, structure, allowValueClasses: true);
+            return structure;
         }
 
         /// <summary>
@@ -570,12 +609,44 @@ namespace System.Runtime.InteropServices
 
         public static void PtrToStructure<T>(IntPtr ptr, [DisallowNull] T structure)
         {
-            PtrToStructure(ptr, (object)structure!);
+            PtrToStructureHelper(ptr, structure, allowValueClasses: false);
         }
 
-        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T))!;
+        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]T>(IntPtr ptr)
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                // Compat: this was originally implemented as a call to the non-generic version+cast.
+                // It would throw for non-nullable valuetypes here and return null for Nullable<T> even
+                // though it's generic.
+                return (T)(object)null!;
+            }
+
+            Type structureType = typeof(T);
+            if (structureType.IsGenericType)
+            {
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(T));
+            }
+
+            object structure = Activator.CreateInstance(structureType, nonPublic: true)!;
+            PtrToStructureHelper(ptr, structure, allowValueClasses: true);
+            return (T)structure;
+        }
 
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
+
+// CoreCLR has a different implementation for Windows only
+#if !CORECLR || !TARGET_WINDOWS
+        public static IntPtr GetHINSTANCE(Module m)
+        {
+            if (m is null)
+            {
+                throw new ArgumentNullException(nameof(m));
+            }
+
+            return (IntPtr)(-1);
+        }
+#endif
 
         /// <summary>
         /// Converts the HRESULT to a CLR exception.
@@ -932,7 +1003,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr ptr = AllocHGlobal((IntPtr)nb);
 
-            s.AsSpan().CopyTo(new Span<char>((char*)ptr, s.Length));
+            s.CopyTo(new Span<char>((char*)ptr, s.Length));
             ((char*)ptr)[s.Length] = '\0';
 
             return ptr;
@@ -979,7 +1050,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr ptr = AllocCoTaskMem(nb);
 
-            s.AsSpan().CopyTo(new Span<char>((char*)ptr, s.Length));
+            s.CopyTo(new Span<char>((char*)ptr, s.Length));
             ((char*)ptr)[s.Length] = '\0';
 
             return ptr;
@@ -1112,7 +1183,26 @@ namespace System.Runtime.InteropServices
 
         public static TDelegate GetDelegateForFunctionPointer<TDelegate>(IntPtr ptr)
         {
-            return (TDelegate)(object)GetDelegateForFunctionPointer(ptr, typeof(TDelegate));
+            if (ptr == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(ptr));
+            }
+
+            Type t = typeof(TDelegate);
+            if (t.IsGenericType)
+            {
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(TDelegate));
+            }
+
+            // For backward compatibility, we allow lookup of existing delegate to
+            // function pointer mappings using abstract MulticastDelegate type. We will check
+            // for the non-abstract delegate type later if no existing mapping is found.
+            if (t.BaseType != typeof(MulticastDelegate) && t != typeof(MulticastDelegate))
+            {
+                throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(TDelegate));
+            }
+
+            return (TDelegate)(object)GetDelegateForFunctionPointerInternal(ptr, t);
         }
 
         public static IntPtr GetFunctionPointerForDelegate(Delegate d)
@@ -1132,7 +1222,7 @@ namespace System.Runtime.InteropServices
 
         public static int GetHRForLastWin32Error()
         {
-            int dwLastError = GetLastWin32Error();
+            int dwLastError = GetLastPInvokeError();
             if ((dwLastError & 0x80000000) == 0x80000000)
             {
                 return dwLastError;
@@ -1205,7 +1295,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr bstr = AllocBSTR(s.Length);
 
-            s.AsSpan().CopyTo(new Span<char>((char*)bstr, s.Length)); // AllocBSTR already included the null terminator
+            s.CopyTo(new Span<char>((char*)bstr, s.Length)); // AllocBSTR already included the null terminator
 
             return bstr;
         }
@@ -1237,6 +1327,11 @@ namespace System.Runtime.InteropServices
         {
             // To help maximize performance of P/Invokes, don't check if safeHandle is null.
             safeHandle.SetHandle(handle);
+        }
+
+        public static int GetLastWin32Error()
+        {
+            return GetLastPInvokeError();
         }
     }
 }

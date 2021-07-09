@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
@@ -54,11 +55,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public TypeArray Bounds => Symbol.GetBounds();
 
-        public override Type AssociatedSystemType =>
-            (IsMethodTypeParameter
-                ? ((MethodInfo)((MethodSymbol)OwningSymbol).AssociatedMemberInfo).GetGenericArguments()
-                : ((AggregateSymbol)OwningSymbol).AssociatedSystemType.GetGenericArguments()
-            )[IndexInOwnParameters];
+        public override Type AssociatedSystemType
+        {
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            get =>
+                (IsMethodTypeParameter
+                    ? ((MethodInfo)((MethodSymbol)OwningSymbol).AssociatedMemberInfo).GetGenericArguments()
+                    : ((AggregateSymbol)OwningSymbol).AssociatedSystemType.GetGenericArguments()
+                )[IndexInOwnParameters];
+        }
 
         public override FUNDTYPE FundamentalType => FUNDTYPE.FT_VAR;
     }

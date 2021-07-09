@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
@@ -27,7 +29,7 @@ namespace System.Drawing
             return destinationType == typeof(byte[]) || destinationType == typeof(string);
         }
 
-        public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is Icon icon)
             {
@@ -101,6 +103,7 @@ namespace System.Drawing
             return null;
         }
 
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes)
         {
             return TypeDescriptor.GetProperties(typeof(Image), attributes);
@@ -112,20 +115,38 @@ namespace System.Drawing
         {
             try
             {
-                short signature = MemoryMarshal.Read<short>(rawData);
+                short signature = BinaryPrimitives.ReadInt16LittleEndian(rawData);
 
                 if (signature != 0x1c15)
                 {
                     return null;
                 }
 
-                // The data is in the form of OBJECTHEADER. It's an encoded format that Access uses to push imagesinto the DB.
-                OBJECTHEADER pHeader = MemoryMarshal.Read<OBJECTHEADER>(rawData);
+                // The data is in the form of OBJECTHEADER. It's an encoded format that Access uses to push images into the DB.
+                //
+                // The layout of OBJECTHEADER is as follows - we only need the signature
+                // and headersize fields, which need to be read as little-endian data:
+                //
+                //   [StructLayout(LayoutKind.Sequential)]
+                //   private struct OBJECTHEADER
+                //   {
+                //       public short signature; // it's always 0x1c15
+                //       public short headersize;
+                //       public short objectType;
+                //       public short nameLen;
+                //       public short classLen;
+                //       public short nameOffset;
+                //       public short classOffset;
+                //       public short width;
+                //       public short height;
+                //       public IntPtr pInfo;
+                //   }
+                short headersize = BinaryPrimitives.ReadInt16LittleEndian(rawData.Slice(2, 2));
 
                 // pHeader.signature will always be 0x1c15.
                 // "PBrush" should be the 6 chars after position 12 as well.
-                if (rawData.Length <= pHeader.headersize + 18 ||
-                    !rawData.Slice(pHeader.headersize + 12, 6).SequenceEqual(PBrush))
+                if (rawData.Length <= headersize + 18 ||
+                    !rawData.Slice(headersize + 12, 6).SequenceEqual(PBrush))
                 {
                     return null;
                 }
@@ -142,21 +163,6 @@ namespace System.Drawing
             }
 
             return null;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct OBJECTHEADER
-        {
-            public short signature; // it's always 0x1c15
-            public short headersize;
-            public short objectType;
-            public short nameLen;
-            public short classLen;
-            public short nameOffset;
-            public short classOffset;
-            public short width;
-            public short height;
-            public IntPtr pInfo;
         }
     }
 }

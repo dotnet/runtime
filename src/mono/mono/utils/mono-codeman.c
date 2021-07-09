@@ -47,7 +47,7 @@ static const MonoCodeManagerCallbacks *code_manager_callbacks;
 
 #define MIN_PAGES 16
 
-#if _WIN32 // These are the same.
+#if defined(_WIN32) && (defined(_M_IX86) || defined(_M_X64)) // These are the same.
 #define MIN_ALIGN MEMORY_ALLOCATION_ALIGNMENT
 #elif defined(__x86_64__)
 /*
@@ -70,6 +70,7 @@ static const MonoCodeManagerCallbacks *code_manager_callbacks;
 #endif
 
 #define MONO_PROT_RWX (MONO_MMAP_READ|MONO_MMAP_WRITE|MONO_MMAP_EXEC|MONO_MMAP_JIT)
+#define MONO_PROT_RW (MONO_MMAP_READ|MONO_MMAP_WRITE)
 
 typedef struct _CodeChunk CodeChunk;
 
@@ -94,6 +95,7 @@ struct _MonoCodeManager {
 	CodeChunk *last;
 	int dynamic : 1;
 	int read_only : 1;
+	int no_exec : 1;
 };
 
 #define ALIGN_INT(val,alignment) (((val) + (alignment - 1)) & ~(alignment - 1))
@@ -105,7 +107,7 @@ static GHashTable *valloc_freelists;
 static MonoNativeTlsKey write_level_tls_id;
 
 static void*
-codechunk_valloc (void *preferred, guint32 size)
+codechunk_valloc (void *preferred, guint32 size, gboolean no_exec)
 {
 	void *ptr;
 	GSList *freelist;
@@ -128,9 +130,14 @@ codechunk_valloc (void *preferred, guint32 size)
 		freelist = g_slist_delete_link (freelist, freelist);
 		g_hash_table_insert (valloc_freelists, GUINT_TO_POINTER (size), freelist);
 	} else {
-		ptr = mono_valloc (preferred, size, MONO_PROT_RWX | ARCH_MAP_FLAGS, MONO_MEM_ACCOUNT_CODE);
+		int prot;
+		if (!no_exec)
+			prot = MONO_PROT_RWX | ARCH_MAP_FLAGS;
+		else
+			prot = MONO_PROT_RW | ARCH_MAP_FLAGS;
+		ptr = mono_valloc (preferred, size, prot, MONO_MEM_ACCOUNT_CODE);
 		if (!ptr && preferred)
-			ptr = mono_valloc (NULL, size, MONO_PROT_RWX | ARCH_MAP_FLAGS, MONO_MEM_ACCOUNT_CODE);
+			ptr = mono_valloc (NULL, size, prot, MONO_MEM_ACCOUNT_CODE);
 	}
 	mono_os_mutex_unlock (&valloc_mutex);
 	return ptr;
@@ -173,14 +180,34 @@ codechunk_cleanup (void)
 	g_hash_table_destroy (valloc_freelists);
 }
 
+/* non-zero if we don't need to toggle write protection on individual threads */
+static int
+codeman_no_exec;
+
+/**
+ * mono_codeman_set_code_no_exec:
+ *
+ * If set to a non-zero value,
+ * \c mono_codeman_enable_write and \c mono_codeman_disable_write turn into no-ops.
+ *
+ * The AOT compiler should do this if it is allocating RW (no X) memory for code.
+ */
+static void
+mono_codeman_set_code_no_exec (int no_exec)
+{
+	codeman_no_exec = no_exec;
+}
+
 void
-mono_code_manager_init (void)
+mono_code_manager_init (gboolean no_exec)
 {
 	mono_counters_register ("Dynamic code allocs", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_alloc_count);
 	mono_counters_register ("Dynamic code bytes", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_bytes_count);
 	mono_counters_register ("Dynamic code frees", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_frees_count);
 
 	mono_native_tls_alloc (&write_level_tls_id, NULL);
+
+	mono_codeman_set_code_no_exec (no_exec);
 }
 
 void
@@ -206,6 +233,34 @@ mono_codeman_allocation_type (MonoCodeManager const *cman)
 #endif
 }
 
+enum CodeManagerType {
+	MONO_CODEMAN_TYPE_JIT,
+	MONO_CODEMAN_TYPE_DYNAMIC,
+	MONO_CODEMAN_TYPE_AOT,
+};
+
+static gboolean
+codeman_type_is_dynamic (int codeman_type)
+{
+	switch (codeman_type) {
+	case MONO_CODEMAN_TYPE_DYNAMIC:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static gboolean
+codeman_type_is_aot (int codeman_type)
+{
+	switch (codeman_type) {
+	case MONO_CODEMAN_TYPE_AOT:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
 /**
  * mono_code_manager_new_internal
  *
@@ -213,11 +268,12 @@ mono_codeman_allocation_type (MonoCodeManager const *cman)
  */
 static
 MonoCodeManager*
-mono_code_manager_new_internal (gboolean dynamic)
+mono_code_manager_new_internal (int codeman_type)
 {
 	MonoCodeManager* cman = g_new0 (MonoCodeManager, 1);
 	if (cman) {
-		cman->dynamic = dynamic;
+		cman->dynamic = codeman_type_is_dynamic (codeman_type);
+		cman->no_exec = codeman_type_is_aot (codeman_type);
 #if _WIN32
 		// It would seem the heap should live and die with the codemanager,
 		// but that was failing, so try a global.
@@ -250,7 +306,7 @@ mono_code_manager_new_internal (gboolean dynamic)
 MonoCodeManager* 
 mono_code_manager_new (void)
 {
-	return mono_code_manager_new_internal (FALSE);
+	return mono_code_manager_new_internal (MONO_CODEMAN_TYPE_JIT);
 }
 
 /**
@@ -265,7 +321,21 @@ mono_code_manager_new (void)
 MonoCodeManager* 
 mono_code_manager_new_dynamic (void)
 {
-	return mono_code_manager_new_internal (TRUE);
+	return mono_code_manager_new_internal (MONO_CODEMAN_TYPE_DYNAMIC);
+}
+
+/**
+ * mono_code_manager_new_aot:
+ *
+ * Creates a new code manager that will hold code that is never
+ * executed.  This can be used by the AOT compiler to allocate pages
+ * on W^X platforms without asking for execute permission (which may
+ * require additional entitlements, or AOT-time OS calls).
+ */
+MonoCodeManager*
+mono_code_manager_new_aot (void)
+{
+	return mono_code_manager_new_internal (MONO_CODEMAN_TYPE_AOT);
 }
 
 static gpointer
@@ -362,7 +432,7 @@ mono_code_manager_invalidate (MonoCodeManager *cman)
 {
 	CodeChunk *chunk;
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64)
 	int fill_value = 0xcc; /* x86 break */
 #else
 	int fill_value = 0x2a;
@@ -424,6 +494,7 @@ new_codechunk (MonoCodeManager *cman, int size)
 {
 	CodeChunk * const last = cman->last;
 	int const dynamic = cman->dynamic;
+	int const no_exec = cman->no_exec;
 	int chunk_size, bsize = 0;
 	CodeChunk *chunk;
 	void *ptr;
@@ -440,8 +511,8 @@ new_codechunk (MonoCodeManager *cman, int size)
 			chunk_size = minsize;
 		else {
 			/* Allocate MIN_ALIGN-1 more than we need so we can still */
-			/* guarantee MIN_ALIGN alignment for individual allocs    */
-			/* from mono_code_manager_reserve_align.                  */
+			/* guarantee MIN_ALIGN alignment for individual allocs	  */
+			/* from mono_code_manager_reserve_align.		  */
 			size += MIN_ALIGN - 1;
 			size &= ~(MIN_ALIGN - 1);
 			chunk_size = size;
@@ -476,9 +547,9 @@ new_codechunk (MonoCodeManager *cman, int size)
 		/* Try to allocate code chunks next to each other to help the VM */
 		ptr = NULL;
 		if (last)
-			ptr = codechunk_valloc ((guint8*)last->data + last->size, chunk_size);
+			ptr = codechunk_valloc ((guint8*)last->data + last->size, chunk_size, no_exec);
 		if (!ptr)
-			ptr = codechunk_valloc (NULL, chunk_size);
+			ptr = codechunk_valloc (NULL, chunk_size, no_exec);
 		if (!ptr)
 			return NULL;
 	}
@@ -661,6 +732,8 @@ mono_code_manager_size (MonoCodeManager *cman, int *used_size)
 void
 mono_codeman_enable_write (void)
 {
+	if (codeman_no_exec)
+		return;
 #ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
 	if (__builtin_available (macOS 11, *)) {
 		int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
@@ -668,6 +741,8 @@ mono_codeman_enable_write (void)
 		mono_native_tls_set_value (write_level_tls_id, GINT_TO_POINTER (level));
 		pthread_jit_write_protect_np (0);
 	}
+#elif defined(HOST_MACCAT) && defined(__aarch64__)
+	/* JITing in Catalyst apps is not allowed on Apple Silicon, so assume if we're here we don't really have executable pages. */
 #endif
 }
 
@@ -680,6 +755,8 @@ mono_codeman_enable_write (void)
 void
 mono_codeman_disable_write (void)
 {
+	if (codeman_no_exec)
+		return;
 #ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
 	if (__builtin_available (macOS 11, *)) {
 		int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
@@ -689,5 +766,7 @@ mono_codeman_disable_write (void)
 		if (level == 0)
 			pthread_jit_write_protect_np (1);
 	}
+#elif defined(HOST_MACCAT) && defined(__aarch64__)
+	/* JITing in Catalyst apps is not allowed on Apple Silicon, so assume if we're here we don't really have executable pages */
 #endif
 }

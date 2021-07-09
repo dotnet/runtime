@@ -614,6 +614,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50879", TestPlatforms.Android)]
         public void MetadataAttributes()
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
@@ -1468,6 +1469,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50879", TestPlatforms.Android)]
         public void RegionsSnippetsAndLinePragmas()
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
@@ -2588,6 +2590,7 @@ namespace System.CodeDom.Compiler.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50879", TestPlatforms.Android)]
         public void ProviderSupports()
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))

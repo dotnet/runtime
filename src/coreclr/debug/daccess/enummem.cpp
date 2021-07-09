@@ -19,6 +19,7 @@
 #include "daccess.h"
 #include "binder.h"
 #include "win32threadpool.h"
+#include "runtimeinfo.h"
 
 #ifdef FEATURE_COMWRAPPERS
 #include <interoplibinterface.h>
@@ -1556,6 +1557,27 @@ HRESULT ClrDataAccess::EnumMemCLRMainModuleInfo()
     {
         // In later releases, we should log the ERROR_RESOURCE_DATA_NOT_FOUND.
         status = E_UNEXPECTED;
+    }
+
+    if (pe.HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT))
+    {
+        COUNT_T size = 0;
+        TADDR pExportTablesOffset = pe.GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_EXPORT, &size);
+
+        ReportMem(pExportTablesOffset, size, true);
+
+        PTR_VOID runtimeExport = pe.GetExport(RUNTIME_INFO_SIGNATURE);
+        const char *runtimeExportSignature = dac_cast<PTR_STR>(runtimeExport);
+        if (runtimeExport != NULL &&
+            strcmp(runtimeExportSignature, RUNTIME_INFO_SIGNATURE) == 0)
+        {
+            ReportMem(dac_cast<TADDR>(runtimeExport), sizeof(RuntimeInfo), true);
+        }
+    }
+    else
+    {
+        // We always expect (attach state, metrics and such on windows, and dac table on mac and linux).
+        return E_UNEXPECTED;
     }
 
     return status;

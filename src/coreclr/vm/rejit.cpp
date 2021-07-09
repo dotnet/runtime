@@ -1079,12 +1079,12 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
             }
             else
             {
-                BEGIN_PIN_PROFILER(CORProfilerPresent());
-                hr = g_profControlBlock.pProfInterface->GetReJITParameters(
+                BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
+                hr = (&g_profControlBlock)->GetReJITParameters(
                     (ModuleID)pModule,
                     methodDef,
                     pFuncControl);
-                END_PIN_PROFILER();
+                END_PROFILER_CALLBACK();
             }
         }
 

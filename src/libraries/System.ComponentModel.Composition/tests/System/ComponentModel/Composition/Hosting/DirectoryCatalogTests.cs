@@ -23,11 +23,7 @@ namespace System.ComponentModel.Composition
             return assembly;
         }
 
-#if FEATURE_INTERNAL_REFLECTIONCONTEXT
-        public override Type MapType(Type type)
-#else
         public override TypeInfo MapType(TypeInfo type)
-#endif
         {
             return type;
         }
@@ -325,7 +321,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public void LoadedFiles_ContainsMultipleDllsAndSomeNonDll_ShouldOnlyContainDlls()
         {
                 // Add one text file

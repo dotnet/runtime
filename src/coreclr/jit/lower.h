@@ -217,9 +217,18 @@ private:
         GenTree* oldUseNode = use.Def();
         if ((oldUseNode->gtOper != GT_LCL_VAR) || (tempNum != BAD_VAR_NUM))
         {
-            use.ReplaceWithLclVar(comp, tempNum);
+            GenTree* assign;
+            use.ReplaceWithLclVar(comp, tempNum, &assign);
+
             GenTree* newUseNode = use.Def();
             ContainCheckRange(oldUseNode->gtNext, newUseNode);
+
+            // We need to lower the LclVar and assignment since there may be certain
+            // types or scenarios, such as TYP_SIMD12, that need special handling
+
+            LowerNode(assign);
+            LowerNode(newUseNode);
+
             return newUseNode->AsLclVar();
         }
         return oldUseNode->AsLclVar();
@@ -330,6 +339,8 @@ private:
 #if defined(TARGET_XARCH)
     void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
+    void LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
+    void LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
 #elif defined(TARGET_ARM64)
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);

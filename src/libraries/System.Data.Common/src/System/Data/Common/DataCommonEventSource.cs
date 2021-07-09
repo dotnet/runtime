@@ -66,17 +66,20 @@ namespace System.Data
             Trace(string.Format(format, arg0, arg1, arg2, arg3, arg4, arg5, arg6));
         }
 
-        [Event(EnterScopeId, Level = EventLevel.Verbose)]
+        [NonEvent]
         internal long EnterScope(string message)
         {
             long scopeId = 0;
             if (Log.IsEnabled())
             {
                 scopeId = Interlocked.Increment(ref s_nextScopeId);
-                WriteEvent(EnterScopeId, scopeId, message);
+                EnterScope(scopeId, message);
             }
             return scopeId;
         }
+
+        [Event(EnterScopeId, Level = EventLevel.Verbose)]
+        private void EnterScope(long scopeId, string message) => WriteEvent(EnterScopeId, scopeId, message);
 
         [NonEvent]
         internal long EnterScope<T1>(string format, T1 arg1) => Log.IsEnabled() ? EnterScope(string.Format(format, arg1)) : 0;

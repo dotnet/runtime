@@ -321,10 +321,7 @@ namespace System.Numerics
         /// <summary>Returns the string representation of this plane object.</summary>
         /// <returns>A string that represents this <see cref="System.Numerics.Plane" /> object.</returns>
         /// <remarks>The string representation of a <see cref="System.Numerics.Plane" /> object use the formatting conventions of the current culture to format the numeric values in the returned string. For example, a <see cref="System.Numerics.Plane" /> object whose string representation is formatted by using the conventions of the en-US culture might appear as <c>{Normal:&lt;1.1, 2.2, 3.3&gt; D:4.4}</c>.</remarks>
-        public override readonly string ToString()
-        {
-            CultureInfo ci = CultureInfo.CurrentCulture;
-            return string.Format(ci, "{{Normal:{0} D:{1}}}", Normal.ToString(), D.ToString(ci));
-        }
+        public override readonly string ToString() =>
+            $"{{Normal:{Normal.ToString()} D:{D.ToString()}}}";
     }
 }

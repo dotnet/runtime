@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             intermediateCert = TamperIfNeeded(intermediateCert, intermediateErrors);
             rootCert = TamperIfNeeded(rootCert, rootErrors);
 
-            if (OperatingSystem.IsMacOS())
+            if (PlatformDetection.UsesAppleCrypto)
             {
                 // For the lower levels, turn NotSignatureValid into PartialChain,
                 // and clear all errors at higher levels.
@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     rootErrors &= ~X509ChainStatusFlags.NotSignatureValid;
 
                     // On 10.13+ it becomes PartialChain, and UntrustedRoot goes away.
-                    if (PlatformDetection.IsOSX)
+                    if (PlatformDetection.UsesAppleCrypto)
                     {
                         rootErrors &= ~X509ChainStatusFlags.UntrustedRoot;
                         rootErrors |= X509ChainStatusFlags.PartialChain;
@@ -357,7 +357,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     }
                     else
                     {
-                        X509ChainElement certElement = chain.ChainElements.OfType<X509ChainElement>().Single();
+                        X509ChainElement certElement = chain.ChainElements.Single();
                         const X509ChainStatusFlags ExpectedFlag = X509ChainStatusFlags.HasNotSupportedCriticalExtension;
                         X509ChainStatusFlags actualFlags = certElement.AllStatusFlags();
                         Assert.True((actualFlags & ExpectedFlag) == ExpectedFlag, $"Has expected flag {ExpectedFlag} but was {actualFlags}");
@@ -367,7 +367,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Android)] // Android does not support AIA fetching
+        [SkipOnPlatform(TestPlatforms.Android, "Android does not support AIA fetching")]
         public static void TestInvalidAia()
         {
             using (RSA key = RSA.Create())
@@ -413,7 +413,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         // macOS (10.14) will not load certificates with NumericString in their subject
         // if the 0x12 (NumericString) is changed to 0x13 (PrintableString) then the cert
         // import doesn't fail.
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
         public static void VerifyNumericStringSubject()
         {
             X500DistinguishedName dn = new X500DistinguishedName(
@@ -559,7 +559,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] // macOS appears to just completely ignore min/max.
+        [SkipOnPlatform(PlatformSupport.AppleCrypto, "macOS appears to just completely ignore min/max.")]
         public static void NameConstraintViolation_PermittedTree_HasMin()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -575,9 +575,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        // Windows seems to skip over nonsense GeneralNames.
-        // Android will check for a match. Since the permitted name does match the subject alt name, it succeeds.
-        [PlatformSpecific(~(TestPlatforms.Windows | TestPlatforms.Android))]
+        [SkipOnPlatform(TestPlatforms.Windows, "Windows seems to skip over nonsense GeneralNames.")]
+        [SkipOnPlatform(TestPlatforms.Android, "Android will check for a match. Since the permitted name does match the subject alt name, it succeeds.")]
         public static void NameConstraintViolation_InvalidGeneralNames()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -593,6 +592,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52976", TestPlatforms.Android)]
         public static void MismatchKeyIdentifiers()
         {
             X509Extension[] intermediateExtensions = new []
@@ -632,7 +632,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.CustomTrustStore.Add(rootCert);
                 chain.ChainPolicy.ExtraStore.Add(intermediateCert);
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                if (OperatingSystem.IsLinux())
                 {
                     Assert.False(chain.Build(endEntityCert), "chain.Build");
                     Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
@@ -646,7 +646,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_RequireExplicitPolicy()
         {
             X509Extension[] intermediateExtensions = new []
@@ -703,7 +703,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_Valid()
         {
             X509Extension[] intermediateExtensions = new []
@@ -734,7 +734,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_Mismatch()
         {
             X509Extension[] intermediateExtensions = new []
@@ -769,7 +769,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_AnyPolicy()
         {
             X509Extension[] intermediateExtensions = new []
@@ -800,7 +800,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
         public static void PolicyConstraints_Mapped()
         {
             X509Extension[] intermediateExtensions = new []
@@ -845,7 +845,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags)
         {
-            if (OperatingSystem.IsMacOS())
+            if (PlatformDetection.UsesAppleCrypto)
             {
                 const X509ChainStatusFlags AnyNameConstraintFlags =
                     X509ChainStatusFlags.HasExcludedNameConstraint |
@@ -872,7 +872,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static X509ChainStatusFlags PlatformPolicyConstraints(X509ChainStatusFlags flags)
         {
-            if (OperatingSystem.IsMacOS())
+            if (PlatformDetection.UsesAppleCrypto)
             {
                 const X509ChainStatusFlags AnyPolicyConstraintFlags =
                     X509ChainStatusFlags.NoIssuanceChainPolicy;

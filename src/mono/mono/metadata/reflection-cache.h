@@ -46,65 +46,63 @@ free_reflected_entry (ReflectedEntry *entry)
 }
 
 static inline MonoObject*
-cache_object (MonoClass *klass, gpointer item, MonoObject* o)
+cache_object (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer item, MonoObject* o)
 {
 	MonoObject *obj;
-	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 	ReflectedEntry pe;
 	pe.item = item;
 	pe.refclass = klass;
 
-	mono_mem_manager_lock (memory_manager);
-	obj = (MonoObject *)mono_conc_g_hash_table_lookup (memory_manager->refobject_hash, &pe);
+	mono_mem_manager_lock (mem_manager);
+	obj = (MonoObject *)mono_conc_g_hash_table_lookup (mem_manager->refobject_hash, &pe);
 	if (obj == NULL) {
-		ReflectedEntry *e = alloc_reflected_entry (memory_manager);
+		ReflectedEntry *e = alloc_reflected_entry (mem_manager);
 		e->item = item;
 		e->refclass = klass;
-		mono_conc_g_hash_table_insert (memory_manager->refobject_hash, e, o);
+		mono_conc_g_hash_table_insert (mem_manager->refobject_hash, e, o);
 		obj = o;
 	}
-	mono_mem_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (mem_manager);
 	return obj;
 }
 
-
 static inline MonoObjectHandle
-cache_object_handle (MonoClass *klass, gpointer item, MonoObjectHandle o)
+cache_object_handle (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer item, MonoObjectHandle o)
 {
-	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 	ReflectedEntry pe;
 	pe.item = item;
 	pe.refclass = klass;
 
-	mono_mem_manager_lock (memory_manager);
-	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, (MonoObject *)mono_conc_g_hash_table_lookup (memory_manager->refobject_hash, &pe));
+	mono_mem_manager_lock (mem_manager);
+	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, (MonoObject *)mono_conc_g_hash_table_lookup (mem_manager->refobject_hash, &pe));
 	if (MONO_HANDLE_IS_NULL (obj)) {
-		ReflectedEntry *e = alloc_reflected_entry (memory_manager);
+		ReflectedEntry *e = alloc_reflected_entry (mem_manager);
 		e->item = item;
 		e->refclass = klass;
-		mono_conc_g_hash_table_insert (memory_manager->refobject_hash, e, MONO_HANDLE_RAW (o));
+		mono_conc_g_hash_table_insert (mem_manager->refobject_hash, e, MONO_HANDLE_RAW (o));
 		MONO_HANDLE_ASSIGN (obj, o);
 	}
-	mono_mem_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (mem_manager);
 	return obj;
 }
 
-#define CACHE_OBJECT(t,p,o,k) ((t) (cache_object ((k), (p), (o))))
-#define CACHE_OBJECT_HANDLE(t,p,o,k) (MONO_HANDLE_CAST (t, cache_object_handle ((k), (p), (o))))
+#define CACHE_OBJECT(t,mem_manager,p,o,k) ((t) (cache_object ((mem_manager), (k), (p), (o))))
+#define CACHE_OBJECT_HANDLE(t,mem_manager,p,o,k) (MONO_HANDLE_CAST (t, cache_object_handle ((mem_manager), (k), (p), (o))))
 
 static inline MonoObjectHandle
-check_object_handle (MonoClass *klass, gpointer item)
+check_object_handle (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer item)
 {
-	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
 	MonoObjectHandle obj_handle;
 	ReflectedEntry e;
 	e.item = item;
 	e.refclass = klass;
 
-	mono_mem_manager_lock (memory_manager);
-	MonoConcGHashTable *hash = memory_manager->refobject_hash;
+	// FIXME: May need a memory manager for item+klass ?
+
+	mono_mem_manager_lock (mem_manager);
+	MonoConcGHashTable *hash = mem_manager->refobject_hash;
 	obj_handle = MONO_HANDLE_NEW (MonoObject, (MonoObject *)mono_conc_g_hash_table_lookup (hash, &e));
-	mono_mem_manager_unlock (memory_manager);
+	mono_mem_manager_unlock (mem_manager);
 
 	return obj_handle;
 }
@@ -112,10 +110,10 @@ check_object_handle (MonoClass *klass, gpointer item)
 typedef MonoObjectHandle (*ReflectionCacheConstructFunc_handle) (MonoClass*, gpointer, gpointer, MonoError *);
 
 static inline MonoObjectHandle
-check_or_construct_handle (MonoClass *klass, gpointer item, gpointer user_data, MonoError *error, ReflectionCacheConstructFunc_handle construct)
+check_or_construct_handle (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer item, gpointer user_data, MonoError *error, ReflectionCacheConstructFunc_handle construct)
 {
 	error_init (error);
-	MonoObjectHandle obj = check_object_handle (klass, item);
+	MonoObjectHandle obj = check_object_handle (mem_manager, klass, item);
 	if (!MONO_HANDLE_IS_NULL (obj))
 		return obj;
 	MONO_HANDLE_ASSIGN (obj, construct (klass, item, user_data, error));
@@ -123,11 +121,11 @@ check_or_construct_handle (MonoClass *klass, gpointer item, gpointer user_data, 
 	if (MONO_HANDLE_IS_NULL (obj))
 		return obj;
 	/* note no caching if there was an error in construction */
-	return cache_object_handle (klass, item, obj);
+	return cache_object_handle (mem_manager, klass, item, obj);
 }
 
-#define CHECK_OR_CONSTRUCT_HANDLE(t,p,k,construct,ud) \
-	(MONO_HANDLE_CAST (t, check_or_construct_handle ( \
-		(k), (p), (ud), error, (ReflectionCacheConstructFunc_handle) (construct))))
+#define CHECK_OR_CONSTRUCT_HANDLE(type,mem_manager, item,klass,construct,user_data) \
+	(MONO_HANDLE_CAST (type, check_or_construct_handle ( \
+		(mem_manager), (klass), (item), (user_data), error, (ReflectionCacheConstructFunc_handle) (construct))))
 
 #endif /*__MONO_METADATA_REFLECTION_CACHE_H__*/

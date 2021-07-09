@@ -348,12 +348,15 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => queue.EnsureCapacity(-1));
         }
 
-        const int MaxArraySize = 0X7FEFFFFF;
+        public static IEnumerable<object[]> Queue_Generic_EnsureCapacity_LargeCapacityRequested_Throws_MemberData()
+        {
+            yield return new object[] { Array.MaxLength + 1 };
+            yield return new object[] { int.MaxValue };
+        }
 
         [Theory]
-        [InlineData(MaxArraySize + 1)]
-        [InlineData(int.MaxValue)]
-        [SkipOnMono("mono forces no restrictions on array size.")]
+        [MemberData(nameof(Queue_Generic_EnsureCapacity_LargeCapacityRequested_Throws_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51411", TestRuntimes.Mono)]
         public void Queue_Generic_EnsureCapacity_LargeCapacityRequested_Throws(int requestedCapacity)
         {
             var queue = GenericQueueFactory();

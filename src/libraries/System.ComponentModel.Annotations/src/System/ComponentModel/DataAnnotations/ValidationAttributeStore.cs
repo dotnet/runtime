@@ -149,9 +149,6 @@ namespace System.ComponentModel.DataAnnotations
         internal static bool IsPublic(PropertyInfo p) =>
             (p.GetMethod != null && p.GetMethod.IsPublic) || (p.SetMethod != null && p.SetMethod.IsPublic);
 
-        internal static bool IsStatic(PropertyInfo p) =>
-            (p.GetMethod != null && p.GetMethod.IsStatic) || (p.SetMethod != null && p.SetMethod.IsStatic);
-
         /// <summary>
         ///     Private abstract class for all store items
         /// </summary>

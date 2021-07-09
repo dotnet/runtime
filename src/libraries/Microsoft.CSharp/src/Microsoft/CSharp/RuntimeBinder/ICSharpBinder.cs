@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -16,8 +17,10 @@ namespace Microsoft.CSharp.RuntimeBinder
         // are only dispatched dynamically when the receiver is dynamic, and hence boxed.
         bool IsBinderThatCanHaveRefReceiver { get; }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments);
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals);
 
         BindingFlag BindingFlags { get; }

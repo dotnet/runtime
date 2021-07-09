@@ -10,7 +10,7 @@ public partial class Math
         int c = a + b;
         int d = c + b;
         int e = d + a;
-        int f = 0;
+        bool f = true;
         return e;
     }
 
@@ -556,3 +556,25 @@ public class HiddenSequencePointTest {
     }
 #line default
 }
+
+public class LoadDebuggerTestALC {
+    static System.Reflection.Assembly loadedAssembly;
+    public static void LoadLazyAssemblyInALC(string asm_base64, string pdb_base64)
+    {
+        var context = new System.Runtime.Loader.AssemblyLoadContext("testContext", true);
+        byte[] asm_bytes = Convert.FromBase64String(asm_base64);
+        byte[] pdb_bytes = null;
+        if (pdb_base64 != null)
+            pdb_bytes = Convert.FromBase64String(pdb_base64);
+
+        loadedAssembly = context.LoadFromStream(new System.IO.MemoryStream(asm_bytes), new System.IO.MemoryStream(pdb_bytes));
+        Console.WriteLine($"Loaded - {loadedAssembly}");
+    }
+    public static void RunMethodInALC(string type_name, string method_name)
+    {
+        var myType = loadedAssembly.GetType(type_name);
+        var myMethod = myType.GetMethod(method_name);
+        myMethod.Invoke(null, new object[] { 5, 10 });
+    }
+}
+

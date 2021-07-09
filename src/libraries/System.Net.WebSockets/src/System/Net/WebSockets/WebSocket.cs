@@ -58,6 +58,11 @@ namespace System.Net.WebSockets
                 new ValueTask(SendAsync(arraySegment, messageType, endOfMessage, cancellationToken)) :
                 SendWithArrayPoolAsync(buffer, messageType, endOfMessage, cancellationToken);
 
+        public virtual ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, WebSocketMessageFlags messageFlags, CancellationToken cancellationToken = default)
+        {
+            return SendAsync(buffer, messageType, messageFlags.HasFlag(WebSocketMessageFlags.EndOfMessage), cancellationToken);
+        }
+
         private async ValueTask SendWithArrayPoolAsync(
             ReadOnlyMemory<byte> buffer,
             WebSocketMessageType messageType,
@@ -157,7 +162,24 @@ namespace System.Net.WebSockets
                     0));
             }
 
-            return ManagedWebSocket.CreateFromConnectedStream(stream, isServer, subProtocol, keepAliveInterval);
+            return new ManagedWebSocket(stream, isServer, subProtocol, keepAliveInterval);
+        }
+
+        /// <summary>Creates a <see cref="WebSocket"/> that operates on a <see cref="Stream"/> representing a web socket connection.</summary>
+        /// <param name="stream">The <see cref="Stream"/> for the connection.</param>
+        /// <param name="options">The options with which the websocket must be created.</param>
+        public static WebSocket CreateFromStream(Stream stream, WebSocketCreationOptions options)
+        {
+            if (stream is null)
+                throw new ArgumentNullException(nameof(stream));
+
+            if (options is null)
+                throw new ArgumentNullException(nameof(options));
+
+            if (!stream.CanRead || !stream.CanWrite)
+                throw new ArgumentException(!stream.CanRead ? SR.NotReadableStream : SR.NotWriteableStream, nameof(stream));
+
+            return new ManagedWebSocket(stream, options);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -209,8 +231,7 @@ namespace System.Net.WebSockets
 
             // Ignore useZeroMaskingKey. ManagedWebSocket doesn't currently support that debugging option.
             // Ignore internalBuffer. ManagedWebSocket uses its own small buffer for headers/control messages.
-
-            return ManagedWebSocket.CreateFromConnectedStream(innerStream, false, subProtocol, keepAliveInterval);
+            return new ManagedWebSocket(innerStream, false, subProtocol, keepAliveInterval);
         }
     }
 }

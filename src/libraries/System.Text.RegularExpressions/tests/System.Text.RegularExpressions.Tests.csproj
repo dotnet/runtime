@@ -4,6 +4,7 @@
     <!-- xUnit2008 is about regexes and isn't appropriate in the test project for regexes -->
     <NoWarn>$(NoWarn);xUnit2008</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttRegexTests.cs" />

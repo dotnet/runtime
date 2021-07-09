@@ -26,7 +26,8 @@ namespace System.IO.Pipelines
             _disposed = true;
         }
 
-        public override int MaxBufferSize => 4096;
+        internal const int DefaultMaxBufferSize = 4096;
+        public override int MaxBufferSize => DefaultMaxBufferSize;
 
         internal void CheckDisposed()
         {

@@ -38,10 +38,11 @@ namespace System.Net.Http
 
         private readonly CreditManager _connectionWindow;
         private readonly CreditManager _concurrentStreams;
+        private RttEstimator _rttEstimator;
 
         private int _nextStream;
         private bool _expectingSettingsAck;
-        private int _initialWindowSize;
+        private int _initialServerStreamWindowSize;
         private int _maxConcurrentStreams;
         private int _pendingWindowUpdate;
         private long _idleSinceTickCount;
@@ -79,21 +80,24 @@ namespace System.Net.Http
 #else
         private const int InitialConnectionBufferSize = 4096;
 #endif
-
-        private const int DefaultInitialWindowSize = 65535;
+        // The default initial window size for streams and connections according to the RFC:
+        // https://datatracker.ietf.org/doc/html/rfc7540#section-5.2.1
+        // Unlike HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize, this value should never be changed.
+        internal const int DefaultInitialWindowSize = 65535;
 
         // We don't really care about limiting control flow at the connection level.
         // We limit it per stream, and the user controls how many streams are created.
         // So set the connection window size to a large value.
         private const int ConnectionWindowSize = 64 * 1024 * 1024;
 
-        // We hold off on sending WINDOW_UPDATE until we hit thi minimum threshold.
+        // We hold off on sending WINDOW_UPDATE until we hit the minimum threshold.
         // This value is somewhat arbitrary; the intent is to ensure it is much smaller than
         // the window size itself, or we risk stalling the server because it runs out of window space.
         // If we want to further reduce the frequency of WINDOW_UPDATEs, it's probably better to
         // increase the window size (and thus increase the threshold proportionally)
         // rather than just increase the threshold.
-        private const int ConnectionWindowThreshold = ConnectionWindowSize / 8;
+        private const int ConnectionWindowUpdateRatio = 8;
+        private const int ConnectionWindowThreshold = ConnectionWindowSize / ConnectionWindowUpdateRatio;
 
         // When buffering outgoing writes, we will automatically buffer up to this number of bytes.
         // Single writes that are larger than the buffer can cause the buffer to expand beyond
@@ -131,10 +135,12 @@ namespace System.Net.Http
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialWindowSize);
             _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
 
+            _rttEstimator = RttEstimator.Create();
+
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
             _nextStream = 1;
-            _initialWindowSize = DefaultInitialWindowSize;
+            _initialServerStreamWindowSize = DefaultInitialWindowSize;
 
             _maxConcurrentStreams = InitialMaxConcurrentStreams;
             _pendingWindowUpdate = 0;
@@ -168,32 +174,49 @@ namespace System.Net.Http
 
         public async ValueTask SetupAsync()
         {
-            _outgoingBuffer.EnsureAvailableSpace(s_http2ConnectionPreface.Length +
-                FrameHeader.Size + FrameHeader.SettingLength +
-                FrameHeader.Size + FrameHeader.WindowUpdateLength);
+            try
+            {
+                _outgoingBuffer.EnsureAvailableSpace(s_http2ConnectionPreface.Length +
+                    FrameHeader.Size + FrameHeader.SettingLength +
+                    FrameHeader.Size + FrameHeader.WindowUpdateLength);
 
-            // Send connection preface
-            s_http2ConnectionPreface.AsSpan().CopyTo(_outgoingBuffer.AvailableSpan);
-            _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
+                // Send connection preface
+                s_http2ConnectionPreface.AsSpan().CopyTo(_outgoingBuffer.AvailableSpan);
+                _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
 
-            // Send SETTINGS frame.  Disable push promise.
-            FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
-            _outgoingBuffer.Commit(FrameHeader.Size);
-            BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
-            _outgoingBuffer.Commit(2);
-            BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, 0);
-            _outgoingBuffer.Commit(4);
+                // Send SETTINGS frame.  Disable push promise & set initial window size.
+                FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, 2 * FrameHeader.SettingLength, FrameType.Settings, FrameFlags.None, streamId: 0);
+                _outgoingBuffer.Commit(FrameHeader.Size);
+                BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
+                _outgoingBuffer.Commit(2);
+                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, 0);
+                _outgoingBuffer.Commit(4);
+                BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.InitialWindowSize);
+                _outgoingBuffer.Commit(2);
+                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, (uint)_pool.Settings._initialHttp2StreamWindowSize);
+                _outgoingBuffer.Commit(4);
 
-            // Send initial connection-level WINDOW_UPDATE
-            FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId: 0);
-            _outgoingBuffer.Commit(FrameHeader.Size);
-            BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, ConnectionWindowSize - DefaultInitialWindowSize);
-            _outgoingBuffer.Commit(4);
+                // The connection-level window size can not be initialized by SETTINGS frames:
+                // https://datatracker.ietf.org/doc/html/rfc7540#section-6.9.2
+                // Send an initial connection-level WINDOW_UPDATE to setup the desired ConnectionWindowSize:
+                uint windowUpdateAmount = ConnectionWindowSize - DefaultInitialWindowSize;
+                if (NetEventSource.Log.IsEnabled()) Trace($"Initial connection-level WINDOW_UPDATE, windowUpdateAmount={windowUpdateAmount}");
+                FrameHeader.WriteTo(_outgoingBuffer.AvailableSpan, FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId: 0);
+                _outgoingBuffer.Commit(FrameHeader.Size);
+                BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, windowUpdateAmount);
+                _outgoingBuffer.Commit(4);
 
-            await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
-            _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
+                await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
+                _rttEstimator.OnInitialSettingsSent();
+                _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
 
-            _expectingSettingsAck = true;
+                _expectingSettingsAck = true;
+            }
+            catch (Exception e)
+            {
+                Dispose();
+                throw new IOException(SR.net_http_http2_connection_not_established, e);
+            }
 
             _ = ProcessIncomingFramesAsync();
             _ = ProcessOutgoingFramesAsync();
@@ -431,6 +454,7 @@ namespace System.Net.Http
             if (http2Stream != null)
             {
                 http2Stream.OnHeadersStart();
+                _rttEstimator.OnDataOrHeadersReceived(this);
                 headersHandler = http2Stream;
             }
             else
@@ -449,6 +473,7 @@ namespace System.Net.Http
             while (!frameHeader.EndHeadersFlag)
             {
                 frameHeader = await ReadFrameAsync().ConfigureAwait(false);
+
                 if (frameHeader.Type != FrameType.Continuation ||
                     frameHeader.StreamId != streamId)
                 {
@@ -562,6 +587,11 @@ namespace System.Net.Http
                 bool endStream = frameHeader.EndStreamFlag;
 
                 http2Stream.OnResponseData(frameData, endStream);
+
+                if (!endStream && frameData.Length > 0)
+                {
+                    _rttEstimator.OnDataOrHeadersReceived(this);
+                }
             }
 
             if (frameData.Length > 0)
@@ -596,6 +626,7 @@ namespace System.Net.Http
                 // We only send SETTINGS once initially, so we don't need to do anything in response to the ACK.
                 // Just remember that we received one and we won't be expecting any more.
                 _expectingSettingsAck = false;
+                _rttEstimator.OnInitialSettingsAckReceived(this);
             }
             else
             {
@@ -683,8 +714,8 @@ namespace System.Net.Http
 
             lock (SyncObject)
             {
-                int delta = newSize - _initialWindowSize;
-                _initialWindowSize = newSize;
+                int delta = newSize - _initialServerStreamWindowSize;
+                _initialServerStreamWindowSize = newSize;
 
                 // Adjust existing streams
                 foreach (KeyValuePair<int, Http2Stream> kvp in _httpStreams)
@@ -1054,7 +1085,7 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(index)}={index}, {nameof(value)}={value}");
 
             int bytesWritten;
-            while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexing(index, value, headerBuffer.AvailableSpan, out bytesWritten))
+            while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexing(index, value, valueEncoding: null, headerBuffer.AvailableSpan, out bytesWritten))
             {
                 headerBuffer.EnsureAvailableSpace(headerBuffer.AvailableLength + 1);
             }
@@ -1128,7 +1159,7 @@ namespace System.Net.Http
             ref string[]? tmpHeaderValuesArray = ref t_headerValues;
             foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
             {
-                int headerValuesCount = HttpHeaders.GetValuesAsStrings(header.Key, header.Value, ref tmpHeaderValuesArray);
+                int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref tmpHeaderValuesArray);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = tmpHeaderValuesArray.AsSpan(0, headerValuesCount);
 
@@ -1271,16 +1302,15 @@ namespace System.Net.Http
         {
             Debug.Assert(Monitor.IsEntered(SyncObject));
 
-            // Throw a retryable exception that will allow this unprocessed request to be processed on a new connection.
-            // In rare cases, such as receiving GOAWAY immediately after connection establishment, we will not
-            // actually retry the request, so we must give a useful exception here for these cases.
-
-            Exception innerException;
             if (_abortException != null)
             {
-                innerException = _abortException;
+                // We had an IO failure on the connection. Don't retry in this case.
+                throw new HttpRequestException(SR.net_http_client_execution_error, _abortException);
             }
-            else if (_lastStreamId != -1)
+
+            // Connection is being gracefully shutdown. Allow the request to be retried.
+            Exception innerException;
+            if (_lastStreamId != -1)
             {
                 // We must have received a GOAWAY.
                 innerException = new IOException(SR.net_http_server_shutdown);
@@ -1288,7 +1318,6 @@ namespace System.Net.Http
             else
             {
                 // We must either be disposed or out of stream IDs.
-                // Note that in this case, the exception should never be visible to the user (it should be retried).
                 Debug.Assert(_disposed || _nextStream == MaxStreamId);
 
                 innerException = new ObjectDisposedException(nameof(Http2Connection));
@@ -1307,7 +1336,7 @@ namespace System.Net.Http
                 {
                     if (_pool.EnableMultipleHttp2Connections)
                     {
-                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnNextConnection);
+                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnStreamLimitReached);
                     }
 
                     if (HttpTelemetry.Log.IsEnabled())
@@ -1389,7 +1418,7 @@ namespace System.Net.Http
                         // assigning the stream ID to ensure only one stream gets an ID, and it must be held
                         // across setting the initial window size (available credit) and storing the stream into
                         // collection such that window size updates are able to atomically affect all known streams.
-                        s.http2Stream.Initialize(s.thisRef._nextStream, s.thisRef._initialWindowSize);
+                        s.http2Stream.Initialize(s.thisRef._nextStream, s.thisRef._initialServerStreamWindowSize);
 
                         // Client-initiated streams are always odd-numbered, so increase by 2.
                         s.thisRef._nextStream += 2;
@@ -1446,7 +1475,7 @@ namespace System.Net.Http
             }
         }
 
-        private async Task SendStreamDataAsync(int streamId, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        private async Task SendStreamDataAsync(int streamId, ReadOnlyMemory<byte> buffer, bool finalFlush, CancellationToken cancellationToken)
         {
             ReadOnlyMemory<byte> remaining = buffer;
 
@@ -1458,9 +1487,22 @@ namespace System.Net.Http
 
                 ReadOnlyMemory<byte> current;
                 (current, remaining) = SplitBuffer(remaining, frameSize);
+
+                bool flush = false;
+                if (finalFlush && remaining.Length == 0)
+                {
+                    flush = true;
+                }
+
+                // Force a flush if we are out of credit, because we don't know that we will be sending more data any time soon
+                if (!_connectionWindow.IsCreditAvailable)
+                {
+                    flush = true;
+                }
+
                 try
                 {
-                    await PerformWriteAsync(FrameHeader.Size + current.Length, (thisRef: this, streamId, current), static (s, writeBuffer) =>
+                    await PerformWriteAsync(FrameHeader.Size + current.Length, (thisRef: this, streamId, current, flush), static (s, writeBuffer) =>
                     {
                         // Invoked while holding the lock:
                         if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.streamId, $"Started writing. {nameof(writeBuffer.Length)}={writeBuffer.Length}");
@@ -1468,7 +1510,7 @@ namespace System.Net.Http
                         FrameHeader.WriteTo(writeBuffer.Span, s.current.Length, FrameType.Data, FrameFlags.None, s.streamId);
                         s.current.CopyTo(writeBuffer.Slice(FrameHeader.Size));
 
-                        return false; // no need to flush, as the request content may do so explicitly, or worst case we'll do so as part of the end data frame
+                        return s.flush;
                     }, cancellationToken).ConfigureAwait(false);
                 }
                 catch
@@ -1587,12 +1629,19 @@ namespace System.Net.Http
                 (_httpStreams.Count == 0) &&
                 ((nowTicks - _idleSinceTickCount) > connectionIdleTimeout.TotalMilliseconds))
             {
-                if (NetEventSource.Log.IsEnabled()) Trace($"Connection no longer usable. Idle {TimeSpan.FromMilliseconds(nowTicks - _idleSinceTickCount)} > {connectionIdleTimeout}.");
+                if (NetEventSource.Log.IsEnabled()) Trace($"HTTP/2 connection no longer usable. Idle {TimeSpan.FromMilliseconds(nowTicks - _idleSinceTickCount)} > {connectionIdleTimeout}.");
 
                 return true;
             }
 
-            return LifetimeExpired(nowTicks, connectionLifetime);
+            if (LifetimeExpired(nowTicks, connectionLifetime))
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace($"HTTP/2 connection no longer usable. Lifetime {TimeSpan.FromMilliseconds(nowTicks - CreationTickCount)} > {connectionLifetime}.");
+
+                return true;
+            }
+
+            return false;
         }
 
         private void AbortStreams(Exception abortException)
@@ -1639,6 +1688,9 @@ namespace System.Net.Http
             // We should not try to grab pool lock while holding connection lock as on disposing pool,
             // we could hold pool lock while trying to grab connection lock in Dispose().
             _pool.InvalidateHttp2Connection(this);
+
+            // There is no point sending more PING frames for RTT estimation:
+            _rttEstimator.OnGoAwayReceived();
 
             List<Http2Stream> streamsToAbort = new List<Http2Stream>();
 
@@ -1949,11 +2001,20 @@ namespace System.Net.Http
 
         private void ProcessPingAck(long payload)
         {
-            if (_keepAliveState != KeepAliveState.PingSent)
-                ThrowProtocolError();
-            if (Interlocked.Read(ref _keepAlivePingPayload) != payload)
-                ThrowProtocolError();
-            _keepAliveState = KeepAliveState.None;
+            // RttEstimator is using negative values in PING payloads.
+            // _keepAlivePingPayload is always non-negative.
+            if (payload < 0) // RTT ping
+            {
+                _rttEstimator.OnPingAckReceived(payload, this);
+            }
+            else // Keepalive ping
+            {
+                if (_keepAliveState != KeepAliveState.PingSent)
+                    ThrowProtocolError();
+                if (Interlocked.Read(ref _keepAlivePingPayload) != payload)
+                    ThrowProtocolError();
+                _keepAliveState = KeepAliveState.None;
+            }
         }
 
         private void VerifyKeepAlive()
@@ -2007,7 +2068,7 @@ namespace System.Net.Http
 
         [DoesNotReturn]
         private static void ThrowRetry(string message, Exception innerException) =>
-            throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnSameOrNextProxy);
+            throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>
             new IOException(SR.net_http_request_aborted, innerException);

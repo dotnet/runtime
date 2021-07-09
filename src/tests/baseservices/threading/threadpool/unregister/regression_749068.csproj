@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- Disable for GCStress due to test failure: https://github.com/dotnet/runtime/issues/37237 -->
+    <!-- Disable for GCStress due to test failure: https://github.com/dotnet/runtime/issues/13453 -->
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>

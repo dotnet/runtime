@@ -12,79 +12,77 @@
 #include <utils.h>
 #include <fx_ver.h>
 
-const pal::string_t MissingAssemblyMessage = _X(
-    "%s:\n"
-    "  An assembly specified in the application dependencies manifest (%s) was not found:\n"
-    "    package: '%s', version: '%s'\n"
-    "    path: '%s'");
-
-const pal::string_t ManifestListMessage = _X(
-    "  This assembly was expected to be in the local runtime store as the application was published using the following target manifest files:\n"
-    "    %s");
-
-const pal::string_t DuplicateAssemblyWithDifferentExtensionMessage = _X(
-    "Error:\n"
-    "  An assembly specified in the application dependencies manifest (%s) has already been found but with a different file extension:\n"
-    "    package: '%s', version: '%s'\n"
-    "    path: '%s'\n"
-    "    previously found assembly: '%s'");
-
 namespace
 {
-// -----------------------------------------------------------------------------
-// A uniqifying append helper that doesn't let two "paths" to be identical in
-// the "output" string.
-//
-void add_unique_path(
-    deps_entry_t::asset_types asset_type,
-    const pal::string_t& path,
-    std::unordered_set<pal::string_t>* existing,
-    pal::string_t* serviced,
-    pal::string_t* non_serviced,
-    const pal::string_t& svc_dir)
-{
-    // Resolve sym links.
-    pal::string_t real = path;
-    pal::realpath(&real);
+    const pal::char_t* MissingAssemblyMessage = _X(
+        "%s:\n"
+        "  An assembly specified in the application dependencies manifest (%s) was not found:\n"
+        "    package: '%s', version: '%s'\n"
+        "    path: '%s'");
 
-    if (existing->count(real))
+    const pal::char_t* ManifestListMessage = _X(
+        "  This assembly was expected to be in the local runtime store as the application was published using the following target manifest files:\n"
+        "    %s");
+
+    const pal::char_t* DuplicateAssemblyWithDifferentExtensionMessage = _X(
+        "Error:\n"
+        "  An assembly specified in the application dependencies manifest (%s) has already been found but with a different file extension:\n"
+        "    package: '%s', version: '%s'\n"
+        "    path: '%s'\n"
+        "    previously found assembly: '%s'");
+
+    // -----------------------------------------------------------------------------
+    // A uniqifying append helper that doesn't let two "paths" to be identical in
+    // the "output" string.
+    //
+    void add_unique_path(
+        deps_entry_t::asset_types asset_type,
+        const pal::string_t& path,
+        std::unordered_set<pal::string_t>* existing,
+        pal::string_t* serviced,
+        pal::string_t* non_serviced,
+        const pal::string_t& svc_dir)
     {
-        return;
+        // To optimize startup time, we avoid calling realpath here.
+        // Because of this, there might be duplicates in the output
+        // whenever path is eiter non-normalized or a symbolic link.
+        if (existing->count(path))
+        {
+            return;
+        }
+
+        trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], path.c_str());
+
+        if (starts_with(path, svc_dir, false))
+        {
+            serviced->append(path);
+            serviced->push_back(PATH_SEPARATOR);
+        }
+        else
+        {
+            non_serviced->append(path);
+            non_serviced->push_back(PATH_SEPARATOR);
+        }
+
+        existing->insert(path);
     }
 
-    trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], real.c_str());
-
-    if (starts_with(real, svc_dir, false))
+    // Return the filename from deps path; a deps path always uses a '/' for the separator.
+    pal::string_t get_deps_filename(const pal::string_t& path)
     {
-        serviced->append(real);
-        serviced->push_back(PATH_SEPARATOR);
+        if (path.empty())
+        {
+            return path;
+        }
+
+        auto name_pos = path.find_last_of('/');
+        if (name_pos == pal::string_t::npos)
+        {
+            return path;
+        }
+
+        return path.substr(name_pos + 1);
     }
-    else
-    {
-        non_serviced->append(real);
-        non_serviced->push_back(PATH_SEPARATOR);
-    }
-
-    existing->insert(real);
-}
-
-// Return the filename from deps path; a deps path always uses a '/' for the separator.
-pal::string_t get_deps_filename(const pal::string_t& path)
-{
-    if (path.empty())
-    {
-        return path;
-    }
-
-    auto name_pos = path.find_last_of('/');
-    if (name_pos == pal::string_t::npos)
-    {
-        return path;
-    }
-
-    return path.substr(name_pos + 1);
-}
-
 } // end of anonymous namespace
 
   // -----------------------------------------------------------------------------
@@ -98,10 +96,13 @@ void deps_resolver_t::add_tpa_asset(
     name_to_resolved_asset_map_t::iterator existing = items->find(resolved_asset.asset.name);
     if (existing == items->end())
     {
-        trace::verbose(_X("Adding tpa entry: %s, AssemblyVersion: %s, FileVersion: %s"),
-            resolved_asset.resolved_path.c_str(),
-            resolved_asset.asset.assembly_version.as_str().c_str(),
-            resolved_asset.asset.file_version.as_str().c_str());
+        if (trace::is_enabled())
+        {
+            trace::verbose(_X("Adding tpa entry: %s, AssemblyVersion: %s, FileVersion: %s"),
+                resolved_asset.resolved_path.c_str(),
+                resolved_asset.asset.assembly_version.as_str().c_str(),
+                resolved_asset.asset.file_version.as_str().c_str());
+        }
 
         items->emplace(resolved_asset.asset.name, resolved_asset);
     }
@@ -185,6 +186,7 @@ void deps_resolver_t::setup_shared_store_probes(
         {
             // Shared Store probe: DOTNET_SHARED_STORE environment variable
             m_probes.push_back(probe_config_t::lookup(shared));
+            m_needs_file_existence_checks = true;
         }
     }
 
@@ -192,6 +194,7 @@ void deps_resolver_t::setup_shared_store_probes(
     {
         // Path relative to the location of "dotnet.exe" if it's being used to run the app
         m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_store));
+        m_needs_file_existence_checks = true;
     }
 
     for (const auto& global_shared : args.global_shared_stores)
@@ -200,6 +203,7 @@ void deps_resolver_t::setup_shared_store_probes(
         {
             // Global store probe: the global location
             m_probes.push_back(probe_config_t::lookup(global_shared));
+            m_needs_file_existence_checks = true;
         }
     }
 }
@@ -236,6 +240,8 @@ void deps_resolver_t::setup_probe_config(
         pal::string_t ext_pkgs = args.core_servicing;
         append_path(&ext_pkgs, _X("pkgs"));
         m_probes.push_back(probe_config_t::svc(ext_pkgs));
+
+        m_needs_file_existence_checks = true;
     }
 
     // The published deps directory to be probed: either app or FX directory.
@@ -253,10 +259,15 @@ void deps_resolver_t::setup_probe_config(
 
     setup_shared_store_probes(args);
 
-    for (const auto& probe : m_additional_probes)
+    if (m_additional_probes.size() > 0)
     {
-        // Additional paths
-        m_probes.push_back(probe_config_t::lookup(probe));
+        for (const auto& probe : m_additional_probes)
+        {
+            // Additional paths
+            m_probes.push_back(probe_config_t::lookup(probe));
+        }
+
+        m_needs_file_existence_checks = true;
     }
 
     if (trace::is_enabled())
@@ -303,7 +314,13 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             trace::verbose(_X("    Skipping... not runtime asset"));
             continue;
         }
-        pal::string_t probe_dir = config.probe_dir;
+
+        const pal::string_t& probe_dir = config.probe_dir;
+        uint32_t search_options = deps_entry_t::search_options::none;
+        if (needs_file_existence_checks())
+        {
+            search_options |= deps_entry_t::search_options::file_existence;
+        }
 
         if (config.is_fx())
         {
@@ -318,7 +335,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
                 // If the deps json has the package name and version, then someone has already done rid selection and
                 // put the right asset in the dir. So checking just package name and version would suffice.
                 // No need to check further for the exact asset relative sub path.
-                if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(probe_dir, false, candidate, found_in_bundle))
+                if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(probe_dir, candidate, search_options, found_in_bundle))
                 {
                     assert(!found_in_bundle);
                     trace::verbose(_X("    Probed deps json and matched '%s'"), candidate->c_str());
@@ -337,7 +354,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             {
                 if (entry.is_rid_specific)
                 {
-                    if (entry.to_rel_path(deps_dir, true, false, candidate))
+                    if (entry.to_rel_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle))
                     {
                         trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
                         return true;
@@ -346,7 +363,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
                 else
                 {
                     // Non-rid assets, lookup in the published dir.
-                    if (entry.to_dir_path(deps_dir, true, candidate, found_in_bundle))
+                    if (entry.to_dir_path(deps_dir, candidate, search_options | deps_entry_t::search_options::look_in_bundle, found_in_bundle))
                     {
                         trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
                         return true;
@@ -356,7 +373,7 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
 
             trace::verbose(_X("    Skipping... not found in deps dir '%s'"), deps_dir.c_str());
         }
-        else if (entry.to_full_path(probe_dir, config.only_serviceable_assets, candidate))
+        else if (entry.to_full_path(probe_dir, candidate, search_options | (config.only_serviceable_assets ? deps_entry_t::search_options::is_servicing : 0)))
         {
             trace::verbose(_X("    Probed package dir and matched '%s'"), candidate->c_str());
             return true;
@@ -377,32 +394,32 @@ bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continu
         // Treat missing resource assemblies as informational.
         continueResolving = true;
 
-        trace::info(MissingAssemblyMessage.c_str(), _X("Info"),
+        trace::info(MissingAssemblyMessage, _X("Info"),
             entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
         if (showManifestListMessage)
         {
-            trace::info(ManifestListMessage.c_str(), entry.runtime_store_manifest_list.c_str());
+            trace::info(ManifestListMessage, entry.runtime_store_manifest_list.c_str());
         }
     }
     else if (continueResolving)
     {
-        trace::warning(MissingAssemblyMessage.c_str(), _X("Warning"),
+        trace::warning(MissingAssemblyMessage, _X("Warning"),
             entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
         if (showManifestListMessage)
         {
-            trace::warning(ManifestListMessage.c_str(), entry.runtime_store_manifest_list.c_str());
+            trace::warning(ManifestListMessage, entry.runtime_store_manifest_list.c_str());
         }
     }
     else
     {
-        trace::error(MissingAssemblyMessage.c_str(), _X("Error"),
+        trace::error(MissingAssemblyMessage, _X("Error"),
             entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
         if (showManifestListMessage)
         {
-            trace::error(ManifestListMessage.c_str(), entry.runtime_store_manifest_list.c_str());
+            trace::error(ManifestListMessage, entry.runtime_store_manifest_list.c_str());
         }
     }
 
@@ -462,7 +479,7 @@ bool deps_resolver_t::resolve_tpa_list(
             if (get_deps_filename(entry.asset.relative_path) != get_filename(existing->second.resolved_path))
             {
                 trace::error(
-                    DuplicateAssemblyWithDifferentExtensionMessage.c_str(),
+                    DuplicateAssemblyWithDifferentExtensionMessage,
                     entry.deps_file.c_str(),
                     entry.library_name.c_str(),
                     entry.library_version.c_str(),
@@ -585,13 +602,10 @@ bool deps_resolver_t::resolve_tpa_list(
         }
     }
 
-    // Convert the paths into a string and return it 
+    // Convert the paths into a string and return it
     for (const auto& item : items)
     {
-        // Workaround for CoreFX not being able to resolve sym links.
-        pal::string_t real_asset_path = item.second.resolved_path;
-        pal::realpath(&real_asset_path);
-        output->append(real_asset_path);
+        output->append(item.second.resolved_path);
         output->push_back(PATH_SEPARATOR);
     }
 
@@ -653,14 +667,14 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
         {
             if (pal::file_exists(additional_deps_path))
             {
-                trace::verbose(_X("Using specified additional deps.json: '%s'"), 
+                trace::verbose(_X("Using specified additional deps.json: '%s'"),
                     additional_deps_path.c_str());
 
                 m_additional_deps_files.push_back(additional_deps_path);
             }
             else
             {
-                trace::warning(_X("Warning: Specified additional deps.json does not exist: '%s'"), 
+                trace::warning(_X("Warning: Specified additional deps.json does not exist: '%s'"),
                     additional_deps_path.c_str());
             }
         }
@@ -804,7 +818,7 @@ bool deps_resolver_t::resolve_probe_dirs(
             return true;
         }
 
-        trace::verbose(_X("Processing native/culture for deps entry [%s, %s, %s]"), 
+        trace::verbose(_X("Processing native/culture for deps entry [%s, %s, %s]"),
             entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
         bool found_in_bundle = false;

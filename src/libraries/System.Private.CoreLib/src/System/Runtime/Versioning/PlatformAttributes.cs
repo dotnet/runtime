@@ -103,4 +103,56 @@ namespace System.Runtime.Versioning
         {
         }
     }
+
+    /// <summary>
+    /// Annotates a custom guard field, property or method with a supported platform name and optional version.
+    /// Multiple attributes can be applied to indicate guard for multiple supported platforms.
+    /// </summary>
+    /// <remarks>
+    /// Callers can apply a <see cref="System.Runtime.Versioning.SupportedOSPlatformGuardAttribute " /> to a field, property or method
+    /// and use that field, property or method in a conditional or assert statements in order to safely call platform specific APIs.
+    ///
+    /// The type of the field or property should be boolean, the method return type should be boolean in order to be used as platform guard.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Field |
+                    AttributeTargets.Method |
+                    AttributeTargets.Property,
+                    AllowMultiple = true, Inherited = false)]
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        sealed class SupportedOSPlatformGuardAttribute : OSPlatformAttribute
+    {
+        public SupportedOSPlatformGuardAttribute(string platformName) : base(platformName)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Annotates the custom guard field, property or method with an unsupported platform name and optional version.
+    /// Multiple attributes can be applied to indicate guard for multiple unsupported platforms.
+    /// </summary>
+    /// <remarks>
+    /// Callers can apply a <see cref="System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute " /> to a field, property or method
+    /// and use that  field, property or method in a conditional or assert statements as a guard to safely call APIs unsupported on those platforms.
+    ///
+    /// The type of the field or property should be boolean, the method return type should be boolean in order to be used as platform guard.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Field |
+                    AttributeTargets.Method |
+                    AttributeTargets.Property,
+                    AllowMultiple = true, Inherited = false)]
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+        sealed class UnsupportedOSPlatformGuardAttribute : OSPlatformAttribute
+    {
+        public UnsupportedOSPlatformGuardAttribute(string platformName) : base(platformName)
+        {
+        }
+    }
 }

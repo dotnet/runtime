@@ -40,6 +40,7 @@ instructionset     ,X86   ,Pclmulqdq ,        ,14 ,PCLMULQDQ,pclmul
 instructionset     ,X86   ,Popcnt    ,        ,15 ,POPCNT   ,popcnt
 instructionset     ,X86   ,          ,        ,   ,Vector128,
 instructionset     ,X86   ,          ,        ,   ,Vector256,
+instructionset     ,X86   ,AvxVnni   ,        ,25 ,AVXVNNI  ,avxvnni
 
 instructionset64bit,X86   ,X86Base
 instructionset64bit,X86   ,SSE
@@ -57,6 +58,7 @@ instructionset64bit,X86   ,FMA
 instructionset64bit,X86   ,LZCNT
 instructionset64bit,X86   ,PCLMULQDQ
 instructionset64bit,X86   ,POPCNT
+instructionset64bit,X86   ,AVXVNNI
 
 implication        ,X86   ,SSE       ,X86Base
 implication        ,X86   ,SSE2      ,SSE

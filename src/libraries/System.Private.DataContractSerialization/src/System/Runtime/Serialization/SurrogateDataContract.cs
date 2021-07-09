@@ -7,11 +7,13 @@ namespace System.Runtime.Serialization
     using System.Security;
     using System.Runtime.CompilerServices;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
 
     internal sealed class SurrogateDataContract : DataContract
     {
         private readonly SurrogateDataContractCriticalHelper _helper;
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal SurrogateDataContract(Type type, ISerializationSurrogate serializationSurrogate)
             : base(new SurrogateDataContractCriticalHelper(type, serializationSurrogate))
         {
@@ -23,6 +25,7 @@ namespace System.Runtime.Serialization
             get { return _helper.SerializationSurrogate; }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             Debug.Assert(context != null);
@@ -56,6 +59,7 @@ namespace System.Runtime.Serialization
             SerializationSurrogate.GetObjectData(obj, serInfo, context);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
             Debug.Assert(context != null);
@@ -82,7 +86,11 @@ namespace System.Runtime.Serialization
         {
             private readonly ISerializationSurrogate serializationSurrogate;
 
-            internal SurrogateDataContractCriticalHelper(Type type, ISerializationSurrogate serializationSurrogate)
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            internal SurrogateDataContractCriticalHelper(
+                [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
+                Type type,
+                ISerializationSurrogate serializationSurrogate)
                 : base(type)
             {
                 this.serializationSurrogate = serializationSurrogate;

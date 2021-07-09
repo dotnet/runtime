@@ -313,8 +313,7 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
             // Now load assembly into domain.
             DomainAssembly * pDomainAssembly = pDomain->LoadDomainAssembly(&spec, pAssemblyHolder, FILE_LOAD_BEGIN);
 
-            if (spec.CanUseWithBindingCache() && pDomainAssembly->CanUseWithBindingCache())
-                pDomain->AddAssemblyToCache(&spec, pDomainAssembly);
+            pDomain->AddAssemblyToCache(&spec, pDomainAssembly);
 
             pAssembly = pDomain->LoadAssembly(&spec, pAssemblyHolder, FILE_LOADED);
 
@@ -967,6 +966,14 @@ BOOL CEEPreloader::DoesMethodNeedRestoringBeforePrestubIsRun(
     }
 
     return FALSE;
+}
+
+BOOL CEECompileInfo::IsUnmanagedCallConvMethod(CORINFO_METHOD_HANDLE handle)
+{
+    WRAPPER_NO_CONTRACT;
+
+    MethodDesc * pMethod = GetMethod(handle);
+    return pMethod->HasUnmanagedCallConvAttribute();
 }
 
 BOOL CEECompileInfo::IsUnmanagedCallersOnlyMethod(CORINFO_METHOD_HANDLE handle)
@@ -5228,7 +5235,7 @@ void CEEPreloader::ExpandTypeDependencies(TypeHandle th)
     MethodTable::InterfaceMapIterator intIterator = pMT->IterateInterfaceMap();
     while (intIterator.Next())
     {
-        TriageTypeForZap(intIterator.GetInterface(), TRUE);
+        TriageTypeForZap(intIterator.GetInterfaceApprox(), TRUE);
     }
 
     // Make sure approx types for all fields are saved
@@ -5416,7 +5423,7 @@ void CEEPreloader::TriageTypeFromSoftBoundModule(TypeHandle th, Module * pSoftBo
         MethodTable::InterfaceMapIterator intIterator = pMT->IterateInterfaceMap();
         while (intIterator.Next())
         {
-            TriageTypeFromSoftBoundModule(intIterator.GetInterface(), pSoftBoundModule);
+            TriageTypeFromSoftBoundModule(intIterator.GetInterfaceApprox(), pSoftBoundModule);
         }
 
         // It does not seem worth it to reject the remaining items
@@ -5736,7 +5743,7 @@ void CEEPreloader::GenerateMethodStubs(
         {
             NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
             PInvokeStaticSigInfo sigInfo;
-            NDirect::PopulateNDirectMethodDesc(pNMD, &sigInfo);
+            NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
             pStubMD = NDirect::GetILStubMethodDesc((NDirectMethodDesc*)pMD, &sigInfo, dwNGenStubFlags);
         }
 #ifdef FEATURE_COMINTEROP
@@ -6480,8 +6487,6 @@ HRESULT CompilationDomain::AddDependency(AssemblySpec *pRefSpec,
         spec.ConvertPublicKeyToToken();
         pRefSpec = &spec;
     }
-
-    _ASSERTE(pRefSpec->HasUniqueIdentity());
 
     //
     // See if we've already added the contents of the ref

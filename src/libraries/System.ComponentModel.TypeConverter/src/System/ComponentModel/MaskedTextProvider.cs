@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Versioning;
 using System.Text;
@@ -19,6 +19,7 @@ namespace System.ComponentModel
     /// to the test string itself, since mask literals cannot be modified (i.e: replacing on a literal position
     /// will actually replace on the nearest edit position forward).
     /// </summary>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] // needed by Clone() to preserve derived ctors
     public class MaskedTextProvider : ICloneable
     {
         ///
@@ -179,7 +180,7 @@ namespace System.ComponentModel
         /// 'culture' is used to set the separator characters to the corresponding locale character; if null, the current
         ///      culture is used.
         /// </summary>
-        public MaskedTextProvider(string mask, CultureInfo culture)
+        public MaskedTextProvider(string mask, CultureInfo? culture)
             : this(mask, culture, DEFAULT_ALLOW_PROMPT, DEFAULT_PROMPT_CHAR, NULL_PASSWORD_CHAR, false)
         {
         }
@@ -190,7 +191,7 @@ namespace System.ComponentModel
         ///      culture is used.
         /// 'restrictToAscii' specifies whether the input characters should be restricted to ASCII characters only.
         /// </summary>
-        public MaskedTextProvider(string mask, CultureInfo culture, bool restrictToAscii)
+        public MaskedTextProvider(string mask, CultureInfo? culture, bool restrictToAscii)
             : this(mask, culture, DEFAULT_ALLOW_PROMPT, DEFAULT_PROMPT_CHAR, NULL_PASSWORD_CHAR, restrictToAscii)
         {
         }
@@ -210,7 +211,7 @@ namespace System.ComponentModel
         /// 'passwordChar' specifies the character to be used in the password string.
         /// 'allowPromptAsInput' specifies whether the prompt character should be accepted as a valid input or not.
         /// </summary>
-        public MaskedTextProvider(string mask, CultureInfo culture, char passwordChar, bool allowPromptAsInput)
+        public MaskedTextProvider(string mask, CultureInfo? culture, char passwordChar, bool allowPromptAsInput)
             : this(mask, culture, allowPromptAsInput, DEFAULT_PROMPT_CHAR, passwordChar, false)
         {
         }
@@ -224,7 +225,7 @@ namespace System.ComponentModel
         /// 'passwordChar' specifies the character to be used in the password string.
         /// 'restrictToAscii' specifies whether the input characters should be restricted to ASCII characters only.
         /// </summary>
-        public MaskedTextProvider(string mask, CultureInfo culture, bool allowPromptAsInput, char promptChar, char passwordChar, bool restrictToAscii)
+        public MaskedTextProvider(string mask, CultureInfo? culture, bool allowPromptAsInput, char promptChar, char passwordChar, bool restrictToAscii)
         {
             if (string.IsNullOrEmpty(mask))
             {
@@ -299,6 +300,8 @@ namespace System.ComponentModel
         /// Initializes the test string according to the mask and populates the character descriptor table
         /// (stringDescriptor).
         /// </summary>
+        [MemberNotNull(nameof(_testString))]
+        [MemberNotNull(nameof(_stringDescriptor))]
         private void Initialize()
         {
             _testString = new StringBuilder();
@@ -496,7 +499,7 @@ namespace System.ComponentModel
                     AsciiOnly
                 };
 
-                clonedProvider = Activator.CreateInstance(providerType, parameters) as MaskedTextProvider;
+                clonedProvider = (Activator.CreateInstance(providerType, parameters) as MaskedTextProvider)!;
             }
 
             clonedProvider.ResetOnPrompt = false;

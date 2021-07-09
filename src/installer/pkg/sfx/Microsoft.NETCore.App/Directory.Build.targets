@@ -9,9 +9,11 @@
   <Target Name="ReturnProductVersion" Returns="$(Version)" />
 
   <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
+    <PackageReference Condition="'$(SkipInstallersPackageReference)' != 'true'" Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
   </ItemGroup>
+
+  <UsingTask TaskName="GenerateFileFromTemplate" AssemblyFile="$(WorkloadTasksAssemblyPath)" />
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 </Project>

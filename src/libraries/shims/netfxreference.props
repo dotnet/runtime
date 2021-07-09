@@ -2,7 +2,7 @@
   <!-- IMPORTANT: please rebuild generateShims.proj when making changes to this file -->
   <ItemGroup>
     <NetFxReference Include="mscorlib" />
-    <NetFxReference Condition="'$(TargetFramework)' != 'netcoreapp2.0'" Include="Microsoft.VisualBasic" />
+    <NetFxReference Include="Microsoft.VisualBasic" />
     <NetFxReference Include="System" />
     <NetFxReference Include="System.ComponentModel.DataAnnotations" />
     <NetFxReference Include="System.Configuration" />

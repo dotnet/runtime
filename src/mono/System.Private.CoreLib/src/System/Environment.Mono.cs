@@ -24,12 +24,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int GetProcessorCount();
 
-        public static string StackTrace
-        {
-            [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
-            get => new StackTrace(true).ToString(Diagnostics.StackTrace.TraceFormat.Normal);
-        }
-
         public static extern int TickCount
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]

@@ -233,5 +233,29 @@ namespace System.Runtime.InteropServices
 
             return GetTypeFromCLSID(clsid, server, throwOnError);
         }
+
+        /// <summary>
+        /// Get the last system error on the current thread
+        /// </summary>
+        /// <returns>The last system error</returns>
+        /// <remarks>
+        /// The error is that for the current operating system (e.g. errno on Unix, GetLastError on Windows)
+        /// </remarks>
+        public static int GetLastSystemError()
+        {
+            return Interop.Kernel32.GetLastError();
+        }
+
+        /// <summary>
+        /// Set the last system error on the current thread
+        /// </summary>
+        /// <param name="error">Error to set</param>
+        /// <remarks>
+        /// The error is that for the current operating system (e.g. errno on Unix, SetLastError on Windows)
+        /// </remarks>
+        public static void SetLastSystemError(int error)
+        {
+            Interop.Kernel32.SetLastError(error);
+        }
     }
 }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Net.Http;
 using System.Net.Security;
 using System.Net.Test.Common;
 using System.Security.Cryptography.X509Certificates;
@@ -17,7 +18,7 @@ namespace System.Net.WebSockets.Client.Tests
         public ClientWebSocketOptionsTests(ITestOutputHelper output) : base(output) { }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Credentials not supported on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials not supported on browser")]
         public static void UseDefaultCredentials_Roundtrips()
         {
             var cws = new ClientWebSocket();
@@ -29,7 +30,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Proxy not supported on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "Proxy not supported on browser")]
         public static void Proxy_Roundtrips()
         {
             var cws = new ClientWebSocket();
@@ -102,7 +103,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Buffer not supported on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "Buffer not supported on browser")]
         public static void SetBuffer_InvalidArgs_Throws()
         {
             // Recreate the minimum WebSocket buffer size values from the .NET Framework version of WebSocket,
@@ -124,7 +125,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // KeepAlive not supported on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "KeepAlive not supported on browser")]
         public static void KeepAliveInterval_Roundtrips()
         {
             var cws = new ClientWebSocket();
@@ -143,7 +144,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Certificates not supported on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "Certificates not supported on browser")]
         public void RemoteCertificateValidationCallback_Roundtrips()
         {
             using (var cws = new ClientWebSocket())
@@ -163,7 +164,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported))]
         [InlineData(false)]
         [InlineData(true)]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Certificates not supported on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "Certificates not supported on browser")]
         public async Task RemoteCertificateValidationCallback_PassedRemoteCertificateInfo(bool secure)
         {
             if (PlatformDetection.IsWindows7)
@@ -200,7 +201,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Connects to remote service")]
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Credentials not supported on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials not supported on browser")]
         public async Task ClientCertificates_ValidCertificate_ServerReceivesCertificateAndConnectAsyncSucceeds()
         {
             if (PlatformDetection.IsWindows7)
@@ -236,10 +237,10 @@ namespace System.Net.WebSockets.Client.Tests
 
         [ConditionalTheory(nameof(WebSocketsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [InlineData("ws://")]
-        [InlineData("wss://")]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Credentials not supported on browser
-        public async Task NonSecureConnect_ConnectThruProxy_CONNECTisUsed(string connectionType)
+        [InlineData("ws")]
+        [InlineData("wss")]
+        [SkipOnPlatform(TestPlatforms.Browser, "Credentials not supported on browser")]
+        public async Task Connect_ViaProxy_ProxyTunnelRequestIssued(string scheme)
         {
             if (PlatformDetection.IsWindows7)
             {
@@ -253,12 +254,21 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var cws = new ClientWebSocket())
                 {
                     cws.Options.Proxy = new WebProxy(proxyUri);
-                    try { await cws.ConnectAsync(new Uri(connectionType + Guid.NewGuid().ToString("N")), default); } catch { }
+                    WebSocketException wse = await Assert.ThrowsAnyAsync<WebSocketException>(async () => await cws.ConnectAsync(new Uri($"{scheme}://doesntmatter.invalid"), default));
+
+                    // Inner exception should indicate proxy connect failure with the error code we send (403)
+                    HttpRequestException hre = Assert.IsType<HttpRequestException>(wse.InnerException);
+                    Assert.Contains("403", hre.Message);
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
-                Assert.Contains("CONNECT", await connection.ReadLineAsync());
+                var lines = await connection.ReadRequestHeaderAsync();
+                Assert.Contains("CONNECT", lines[0]);
                 connectionAccepted = true;
+
+                // Send non-success error code so that SocketsHttpHandler won't retry.
+                await connection.SendResponseAsync(statusCode: HttpStatusCode.Forbidden);
+                connection.Dispose();
             }));
 
             Assert.True(connectionAccepted);

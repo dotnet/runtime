@@ -78,6 +78,9 @@ typedef struct {
 	const char* (*lookup_icall_symbol) (void* func);
 } MonoIcallTableCallbacks;
 
+int
+mono_string_instance_is_interned (MonoString *str_raw);
+
 void
 mono_install_icall_table_callbacks (const MonoIcallTableCallbacks *cb);
 
@@ -95,19 +98,19 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 	if (str == NULL)
 		return NULL;
 
-	mono_unichar2 *native_val = mono_string_chars (str);
-	int native_len = mono_string_length (str) * 2;
-	int native_res_len;
+	int native_res_len = 0;
 	int *p_native_res_len = &native_res_len;
 
 	mono_unichar2 *native_res = (mono_unichar2*)EM_ASM_INT ({
-		var str = MONO.string_decoder.decode ($0, $0 + $1);
+		var js_str = MONO.string_decoder.copy ($0);
+
 		try {
-			var res = eval (str);
-			if (res === null || res == undefined)
-				return 0;
-			res = res.toString ();
+			var res = eval (js_str);
 			setValue ($2, 0, "i32");
+			if (res === null || res === undefined)
+				return 0;
+			else
+				res = res.toString ();
 		} catch (e) {
 			res = e.toString();
 			setValue ($2, 1, "i32");
@@ -126,9 +129,9 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 		}
 		var buff = Module._malloc((res.length + 1) * 2);
 		stringToUTF16 (res, buff, (res.length + 1) * 2);
-		setValue ($3, res.length, "i32");
+		setValue ($1, res.length, "i32");
 		return buff;
-	}, (int)native_val, native_len, is_exception, p_native_res_len);
+	}, (int)str, p_native_res_len, is_exception);
 
 	if (native_res == NULL)
 		return NULL;
@@ -178,6 +181,9 @@ wasm_trace_logger (const char *log_domain, const char *log_level, const char *me
 				break;
 		}
 	}, log_level, message, fatal, log_domain, user_data);
+
+	if (fatal)
+		exit (1);
 }
 
 typedef uint32_t target_mword;
@@ -504,6 +510,8 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 
 #ifdef ENABLE_AOT
+	monoeg_g_setenv ("MONO_AOT_MODE", "aot", 1);
+
 	// Defined in driver-gen.c
 	register_aot_modules ();
 #ifdef EE_MODE_LLVMONLY_INTERP
@@ -713,6 +721,7 @@ mono_wasm_string_get_utf8 (MonoString *str)
 	return mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
 }
 
+// Deprecated
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_string_convert (MonoString *str)
 {
@@ -918,7 +927,7 @@ mono_wasm_get_obj_type (MonoObject *obj)
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
 	if ((klass == mono_get_string_class ()) &&
-		(mono_string_is_interned ((MonoString *)obj) == (MonoString *)obj))
+		mono_string_instance_is_interned ((MonoString *)obj))
 		return MARSHAL_TYPE_STRING_INTERNED;
 
 	MonoType *type = mono_class_get_type (klass);
@@ -945,7 +954,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
 	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
 	MonoClass *klass = mono_object_get_class (obj);
 	if ((klass == mono_get_string_class ()) &&
-		(mono_string_is_interned ((MonoString *)obj) == (MonoString *)obj)) {
+		mono_string_instance_is_interned ((MonoString *)obj)) {
 		*resultL = 0;
 		return MARSHAL_TYPE_STRING_INTERNED;
 	}
@@ -1113,4 +1122,27 @@ EMSCRIPTEN_KEEPALIVE MonoString *
 mono_wasm_intern_string (MonoString *string) 
 {
 	return mono_string_intern (string);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_string_get_data (
+	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
+) {
+	if (!string) {
+		if (outChars)
+			*outChars = 0;
+		if (outLengthBytes)
+			*outLengthBytes = 0;
+		if (outIsInterned)
+			*outIsInterned = 1;
+		return;
+	}
+
+	if (outChars)
+		*outChars = mono_string_chars (string);
+	if (outLengthBytes)
+		*outLengthBytes = mono_string_length (string) * 2;
+	if (outIsInterned)
+		*outIsInterned = mono_string_instance_is_interned (string);
+	return;
 }

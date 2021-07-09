@@ -11,8 +11,23 @@ namespace System.Runtime.InteropServices
 {
     public partial class Marshal
     {
+        /// <summary>
+        /// Get the last platform invoke error on the current thread
+        /// </summary>
+        /// <returns>The last platform invoke error</returns>
+        /// <remarks>
+        /// The last platform invoke error corresponds to the error set by either the most recent platform
+        /// invoke that was configured to set the last error or a call to <see cref="SetLastPInvokeError(int)" />.
+        /// </remarks>
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern int GetLastWin32Error();
+        public static extern int GetLastPInvokeError();
+
+        /// <summary>
+        /// Set the last platform invoke error on the current thread
+        /// </summary>
+        /// <param name="error">Error to set</param>
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern void SetLastPInvokeError(int error);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
@@ -35,9 +50,6 @@ namespace System.Runtime.InteropServices
             //return !type.IsValueType || RuntimeTypeHandle.HasReferences (type as RuntimeType);
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SetLastWin32Error(int error);
-
         private static void PrelinkCore(MethodInfo m)
         {
             if (!(m is RuntimeMethodInfo))
@@ -55,16 +67,9 @@ namespace System.Runtime.InteropServices
         {
             if (structure == null)
                 throw new ArgumentNullException(nameof(structure));
+            if (ptr == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(ptr));
             PtrToStructureInternal(ptr, structure, allowValueClasses);
-        }
-
-        private static object PtrToStructureHelper(IntPtr ptr,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-            Type structureType)
-        {
-            object obj = Activator.CreateInstance(structureType)!;
-            PtrToStructureHelper(ptr, obj, true);
-            return obj;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

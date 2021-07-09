@@ -19,7 +19,6 @@
 #include "corimage.h"
 #include "metadata.h"
 #include <sstring.h>
-#include "peinformation.h"
 //
 
 interface IAssemblyName;

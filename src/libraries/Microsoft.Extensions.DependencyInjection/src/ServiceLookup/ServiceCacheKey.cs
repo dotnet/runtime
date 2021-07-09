@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal struct ServiceCacheKey: IEquatable<ServiceCacheKey>
+    internal readonly struct ServiceCacheKey : IEquatable<ServiceCacheKey>
     {
         public static ServiceCacheKey Empty { get; } = new ServiceCacheKey(null, 0);
 
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             unchecked
             {
-                return (Type.GetHashCode() * 397) ^ Slot;
+                return ((Type?.GetHashCode() ?? 23) * 397) ^ Slot;
             }
         }
     }

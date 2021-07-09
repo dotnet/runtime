@@ -19,7 +19,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         CONTEXT,
         FILE,
         FILE_PROTECTED,
-        STUB_NULL = 0xF0000000, // Pass as server cert to stubtls implementation.
+        PKCS12,
     }
 
     [Flags]
@@ -34,6 +34,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         DEFER_CERTIFICATE_VALIDATION = 0x00000020, // Schannel only currently.
         REQUIRE_CLIENT_AUTHENTICATION = 0x00000040, // Schannel only currently.
         USE_TLS_BUILTIN_CERTIFICATE_VALIDATION = 0x00000080,
+        USE_PORTABLE_CERTIFICATES = 0x00004000,
     }
 
     internal enum QUIC_CERTIFICATE_HASH_STORE_FLAGS

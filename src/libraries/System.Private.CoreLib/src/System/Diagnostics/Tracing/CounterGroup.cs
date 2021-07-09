@@ -15,7 +15,9 @@ namespace Microsoft.Diagnostics.Tracing
 namespace System.Diagnostics.Tracing
 #endif
 {
+#if NETCOREAPP
     [UnsupportedOSPlatform("browser")]
+#endif
     internal sealed class CounterGroup
     {
         private readonly EventSource _eventSource;
@@ -249,10 +251,9 @@ namespace System.Diagnostics.Tracing
                 lock (s_counterGroupLock)
                 {
                     _timeStampSinceCollectionStarted = now;
-                    do
-                    {
-                        _nextPollingTimeStamp += new TimeSpan(0, 0, 0, 0, _pollingIntervalInMilliseconds);
-                    } while (_nextPollingTimeStamp <= now);
+                    TimeSpan delta = now - _nextPollingTimeStamp;
+                    if (delta > TimeSpan.Zero && _pollingIntervalInMilliseconds > 0)
+                        _nextPollingTimeStamp += TimeSpan.FromMilliseconds(_pollingIntervalInMilliseconds * Math.Ceiling(delta.TotalMilliseconds / _pollingIntervalInMilliseconds));
                 }
             }
         }
@@ -271,10 +272,9 @@ namespace System.Diagnostics.Tracing
             // We cache these outside of the scope of s_counterGroupLock because
             // calling into the callbacks can cause a re-entrancy into CounterGroup.Enable()
             // and result in a deadlock. (See https://github.com/dotnet/runtime/issues/40190 for details)
-            List<Action> onTimers = new List<Action>();
+            var onTimers = new List<CounterGroup>();
             while (true)
             {
-                onTimers.Clear();
                 int sleepDurationInMilliseconds = int.MaxValue;
                 lock (s_counterGroupLock)
                 {
@@ -284,7 +284,7 @@ namespace System.Diagnostics.Tracing
                         DateTime now = DateTime.UtcNow;
                         if (counterGroup._nextPollingTimeStamp < now + new TimeSpan(0, 0, 0, 0, 1))
                         {
-                            onTimers.Add(() => counterGroup.OnTimer());
+                            onTimers.Add(counterGroup);
                         }
 
                         int millisecondsTillNextPoll = (int)((counterGroup._nextPollingTimeStamp - now).TotalMilliseconds);
@@ -292,10 +292,11 @@ namespace System.Diagnostics.Tracing
                         sleepDurationInMilliseconds = Math.Min(sleepDurationInMilliseconds, millisecondsTillNextPoll);
                     }
                 }
-                foreach (Action onTimer in onTimers)
+                foreach (CounterGroup onTimer in onTimers)
                 {
-                    onTimer.Invoke();
+                    onTimer.OnTimer();
                 }
+                onTimers.Clear();
                 if (sleepDurationInMilliseconds == int.MaxValue)
                 {
                     sleepDurationInMilliseconds = -1; // WaitOne uses -1 to mean infinite

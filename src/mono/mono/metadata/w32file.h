@@ -142,12 +142,15 @@ typedef struct {
 void
 mono_w32file_init (void);
 
+MONO_COMPONENT_API
 gpointer
 mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode, guint32 createmode, guint32 attrs);
 
+MONO_COMPONENT_API
 gboolean
 mono_w32file_close (gpointer handle);
 
+MONO_COMPONENT_API
 gboolean
 mono_w32file_write (gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten, gint32 *win32error);
 

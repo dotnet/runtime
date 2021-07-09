@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization
 {
@@ -30,6 +31,7 @@ namespace System.Runtime.Serialization
         }
 #endif
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal DataContractSet(DataContractSet dataContractSet)
         {
             if (dataContractSet == null)
@@ -88,6 +90,7 @@ namespace System.Runtime.Serialization
         }
 #endif
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void Add(Type type)
         {
             DataContract dataContract = GetDataContract(type);
@@ -101,11 +104,13 @@ namespace System.Runtime.Serialization
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.GenericTypeNotExportable, type)));
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void Add(DataContract dataContract)
         {
             Add(dataContract.StableName, dataContract);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void Add(XmlQualifiedName name, DataContract dataContract)
         {
             if (dataContract.IsBuiltInDataContract)
@@ -113,6 +118,7 @@ namespace System.Runtime.Serialization
             InternalAdd(name, dataContract);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void InternalAdd(XmlQualifiedName name, DataContract dataContract)
         {
             DataContract? dataContractInSet = null;
@@ -148,6 +154,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddClassDataContract(ClassDataContract classDataContract)
         {
             if (classDataContract.BaseContract != null)
@@ -180,6 +187,7 @@ namespace System.Runtime.Serialization
             AddKnownDataContracts(classDataContract.KnownDataContracts);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddCollectionDataContract(CollectionDataContract collectionDataContract)
         {
             if (collectionDataContract.IsDictionary)
@@ -196,11 +204,13 @@ namespace System.Runtime.Serialization
             AddKnownDataContracts(collectionDataContract.KnownDataContracts);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddXmlDataContract(XmlDataContract xmlDataContract)
         {
             AddKnownDataContracts(xmlDataContract.KnownDataContracts);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddKnownDataContracts(DataContractDictionary? knownDataContracts)
         {
             if (knownDataContracts != null)
@@ -212,6 +222,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal DataContract GetDataContract(Type clrType)
         {
 #if SUPPORT_SURROGATE
@@ -241,6 +252,7 @@ namespace System.Runtime.Serialization
             return dataContract;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal DataContract GetMemberTypeDataContract(DataMember dataMember)
         {
             Type dataMemberType = dataMember.MemberType;
@@ -265,6 +277,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal DataContract GetItemTypeDataContract(CollectionDataContract collectionContract)
         {
             if (collectionContract.ItemType != null)

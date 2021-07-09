@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
     internal sealed class ConstantCallSite : ServiceCallSite
     {
         private readonly Type _serviceType;
-        internal object DefaultValue { get; }
+        internal object DefaultValue => Value;
 
         public ConstantCallSite(Type serviceType, object defaultValue): base(ResultCache.None)
         {
@@ -18,10 +18,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 throw new ArgumentException(SR.Format(SR.ConstantCantBeConvertedToServiceType, defaultValue.GetType(), serviceType));
             }
 
-            DefaultValue = defaultValue;
+            Value = defaultValue;
         }
 
-        public override Type ServiceType => DefaultValue?.GetType() ?? _serviceType;
+        public override Type ServiceType => _serviceType;
         public override Type ImplementationType => DefaultValue?.GetType() ?? _serviceType;
         public override CallSiteKind Kind { get; } = CallSiteKind.Constant;
     }

@@ -63,15 +63,7 @@ namespace System.Net.Http
                         if (response.Headers.ConnectionClose.GetValueOrDefault())
                         {
                             // Server is closing the connection and asking us to authenticate on a new connection.
-                            // expression returns null connection on error, was not able to use '!' for the expression
-#pragma warning disable CS8600
-                            (connection, response) = await connectionPool.CreateHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
-#pragma warning restore CS8600
-                            if (response != null)
-                            {
-                                return response;
-                            }
-
+                            connection = await connectionPool.CreateHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
                             connectionPool.IncrementConnectionCount();
                             connection!.Acquire();
                             isNewConnection = true;
@@ -127,7 +119,7 @@ namespace System.Net.Http
                         }
 
                         ChannelBinding? channelBinding = connection.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint);
-                        NTAuthentication authContext = new NTAuthentication(isServer: false, challenge.SchemeName, challenge.Credential, spn, ContextFlagsPal.Connection, channelBinding);
+                        NTAuthentication authContext = new NTAuthentication(isServer: false, challenge.SchemeName, challenge.Credential, spn, ContextFlagsPal.Connection | ContextFlagsPal.InitIntegrity, channelBinding);
                         string? challengeData = challenge.ChallengeData;
                         try
                         {

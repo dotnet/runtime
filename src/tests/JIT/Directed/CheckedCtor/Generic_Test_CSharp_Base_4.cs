@@ -31,7 +31,15 @@ namespace Test
 
     public class DerivedClass<T> : BaseClass
     {
-        private static readonly Random Generator = new Random();
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
+        private static readonly Random Generator = new Random(Seed);
         private static string GetString() { return "Text"; }
         public int Field1 = ((Generator.Next(5, 8) == 10) ? 10 : 20);
         public string Field2 = (GetString() ?? "NeededToFallBack");

@@ -11,6 +11,8 @@ namespace System.Security.Cryptography
     {
         private SafeEvpCipherCtxHandle _ctxHandle;
 
+        public static bool IsSupported => true;
+
         [MemberNotNull(nameof(_ctxHandle))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
@@ -26,7 +28,7 @@ namespace System.Security.Cryptography
             Interop.Crypto.CipherSetNonceLength(_ctxHandle, NonceSize);
         }
 
-        private void EncryptInternal(
+        private void EncryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,
@@ -101,7 +103,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private void DecryptInternal(
+        private void DecryptCore(
             ReadOnlySpan<byte> nonce,
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> tag,

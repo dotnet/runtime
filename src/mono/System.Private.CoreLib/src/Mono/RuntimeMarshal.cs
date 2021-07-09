@@ -33,7 +33,7 @@ namespace Mono
             }
         }
 
-        internal static SafeStringMarshal MarshalString(string str)
+        internal static SafeStringMarshal MarshalString(string? str)
         {
             return new SafeStringMarshal(str);
         }
@@ -76,15 +76,6 @@ namespace Mono
             byte[] res = new byte[size];
             Marshal.Copy(out_ptr, res, 0, size);
             return res;
-        }
-
-        internal static int AsciHexDigitValue(int c)
-        {
-            if (c >= '0' && c <= '9')
-                return c - '0';
-            if (c >= 'a' && c <= 'f')
-                return c - 'a' + 10;
-            return c - 'A' + 10;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

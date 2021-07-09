@@ -74,8 +74,8 @@ namespace BINDER_SPACE
         }
     }
 
-    void CombinePath(SString &pathA,
-                     SString &pathB,
+    void CombinePath(const SString &pathA,
+                     const SString &pathB,
                      SString &combinedPath)
     {
         SString platformPathSeparator(SString::Literal, GetPlatformPathSeparator());

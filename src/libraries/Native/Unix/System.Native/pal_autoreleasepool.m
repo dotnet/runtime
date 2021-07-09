@@ -15,7 +15,7 @@
 }
 @end
 
-void* SystemNative_CreateAutoreleasePool(void)
+void EnsureNSThreadIsMultiThreaded(void)
 {
     if (![NSThread isMultiThreaded])
     {
@@ -30,7 +30,11 @@ void* SystemNative_CreateAutoreleasePool(void)
         [NSThread detachNewThreadSelector:@selector(noop:) toTarget:placeholderObject withObject:nil];
     }
     assert([NSThread isMultiThreaded]);
+}
 
+void* SystemNative_CreateAutoreleasePool(void)
+{
+    EnsureNSThreadIsMultiThreaded();
     return [[NSAutoreleasePool alloc] init];
 }
 

@@ -1,19 +1,37 @@
 #ifndef __EGLIB_CONFIG_H
 #define __EGLIB_CONFIG_H
 
-/*
- * System-dependent settings
- */
-#define G_GNUC_PRETTY_FUNCTION   @GNUC_PRETTY@
-#define G_GNUC_UNUSED            @GNUC_UNUSED@
-#define G_BYTE_ORDER             @ORDER@
-#define G_GNUC_NORETURN          @GNUC_NORETURN@
-#define G_SEARCHPATH_SEPARATOR_S "@SEARCHSEP@"
-#define G_SEARCHPATH_SEPARATOR   '@SEARCHSEP@'
-#define G_DIR_SEPARATOR          '@PATHSEP@'
-#define G_DIR_SEPARATOR_S        "@PATHSEP@"
-#define G_BREAKPOINT()           @BREAKPOINT@
-#define G_OS_@OS@
+#ifdef _MSC_VER
+
+#include <io.h>
+#include <stddef.h>
+
+#define MAXPATHLEN 242
+
+#define STDOUT_FILENO (1)
+#define STDERR_FILENO (2)
+
+/* FIXME: what should this be ?*/
+#define X_OK 4 /* This is really read */
+#define WNOHANG 1
+#define F_SETFD 1
+#define FD_CLOEXEC 1
+
+#ifndef __cplusplus
+#undef inline
+#define inline __inline
+#endif
+
+#define strtok_r strtok_s
+
+#undef G_HAVE_UNISTD_H
+#undef G_HAVE_SYS_TIME_H
+#undef G_HAVE_SYS_WAIT_H
+#undef G_HAVE_PWD_H
+#undef G_HAVE_STRNDUP
+#define G_HAVE_GETOPT_H 1
+
+#else
 
 #if @HAVE_ALLOCA_H@ == 1
 #define G_HAVE_ALLOCA_H
@@ -23,10 +41,22 @@
 #define G_HAVE_UNISTD_H
 #endif
 
-typedef @GSIZE@ gsize;
-typedef @GSSIZE@ gssize;
+#endif
 
-#define G_GSIZE_FORMAT   @GSIZE_FORMAT@
+/*
+ * System-dependent settings
+ */
+#define G_GNUC_PRETTY_FUNCTION   @EGLIB_GNUC_PRETTY@
+#define G_GNUC_UNUSED            @EGLIB_GNUC_UNUSED@
+#define G_BYTE_ORDER             @TARGET_BYTE_ORDER@
+#define G_GNUC_NORETURN          @EGLIB_GNUC_NORETURN@
+#define G_SEARCHPATH_SEPARATOR_S "@EGLIB_SEARCHSEP@"
+#define G_SEARCHPATH_SEPARATOR   '@EGLIB_SEARCHSEP@'
+#define G_DIR_SEPARATOR          '@EGLIB_PATHSEP@'
+#define G_DIR_SEPARATOR_S        "@EGLIB_PATHSEP@"
+#define G_BREAKPOINT()           @EGLIB_BREAKPOINT@
+#define G_OS_@EGLIB_OS@          1
+#define G_GSIZE_FORMAT           @EGLIB_GSIZE_FORMAT@
 
 #if defined (HOST_WATCHOS)
 #undef G_BREAKPOINT
@@ -38,6 +68,12 @@ typedef @GSSIZE@ gssize;
 #define G_BREAKPOINT() do { printf ("MONO: BREAKPOINT\n"); abort (); } while (0)
 #endif
 
-typedef @PIDTYPE@ GPid;
+typedef @EGLIB_GSIZE@ gsize;
+typedef @EGLIB_GSSIZE@ gssize;
+typedef @EGLIB_PIDTYPE@ GPid;
+
+#ifdef _MSC_VER
+typedef int pid_t;
+#endif
 
 #endif

@@ -402,7 +402,7 @@ BOOL Silent_ExtractFormatA(LPCSTR *Fmt, LPSTR Out, LPINT Flags, LPINT Width, LPI
         if (*Width < 0)
         {
             SetLastError(ERROR_INTERNAL_ERROR);
-            return Result;
+            goto EXIT;
         }
     }
     else if (**Fmt == '*')
@@ -439,7 +439,7 @@ BOOL Silent_ExtractFormatA(LPCSTR *Fmt, LPSTR Out, LPINT Flags, LPINT Width, LPI
             if (*Precision < 0)
             {
                 SetLastError(ERROR_INTERNAL_ERROR);
-                return Result;
+                goto EXIT;
             }
         }
         else if (**Fmt == '*')
@@ -595,6 +595,8 @@ BOOL Silent_ExtractFormatA(LPCSTR *Fmt, LPSTR Out, LPINT Flags, LPINT Width, LPI
     }
 
     *Out = 0;  /* end the string */
+
+EXIT:
     PAL_free(TempStr);
     return Result;
 }

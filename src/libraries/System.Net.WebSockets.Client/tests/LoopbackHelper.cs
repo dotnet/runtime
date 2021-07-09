@@ -11,7 +11,7 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public static class LoopbackHelper
     {
-        public static async Task<Dictionary<string, string>> WebSocketHandshakeAsync(LoopbackServer.Connection connection)
+        public static async Task<Dictionary<string, string>> WebSocketHandshakeAsync(LoopbackServer.Connection connection, string? extensions = null)
         {
             string serverResponse = null;
             List<string> headers = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
@@ -34,6 +34,7 @@ namespace System.Net.WebSockets.Client.Tests
                             "Content-Length: 0\r\n" +
                             "Upgrade: websocket\r\n" +
                             "Connection: Upgrade\r\n" +
+                            (extensions is null ? null : $"Sec-WebSocket-Extensions: {extensions}\r\n") +
                             "Sec-WebSocket-Accept: " + responseSecurityAcceptValue + "\r\n\r\n";
                     }
                 }

@@ -7,7 +7,11 @@ using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Logging.Console
 {
+    [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("maccatalyst")]
+    [UnsupportedOSPlatform("tvos")]
     internal sealed class AnsiParsingLogConsole : IConsole
     {
         private readonly TextWriter _textWriter;

@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.ComponentModel.Tests
 {
+    [Collection("NoParallelTests")] // manipulates cache
     public class TypeDescriptorTests
     {
         [Fact]

@@ -19,7 +19,7 @@ namespace System.Threading
         {
             uint mutexFlags = initiallyOwned ? Interop.Kernel32.CREATE_MUTEX_INITIAL_OWNER : 0;
             SafeWaitHandle mutexHandle = Interop.Kernel32.CreateMutexEx(IntPtr.Zero, name, mutexFlags, AccessRights);
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
 
             if (mutexHandle.IsInvalid)
             {
@@ -60,7 +60,7 @@ namespace System.Threading
 
             if (myHandle.IsInvalid)
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 #if TARGET_UNIX || TARGET_BROWSER
                 if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                 {

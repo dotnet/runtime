@@ -36,6 +36,10 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                     Assert.Equal(Architecture.Wasm, processArch);
                     break;
 
+                case Architecture.S390x:
+                    Assert.Equal(Architecture.S390x, processArch);
+                    break;
+
                 default:
                     Assert.False(true, "Unexpected Architecture.");
                     break;

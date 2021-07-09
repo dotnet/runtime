@@ -1982,9 +1982,8 @@ mono_custom_attrs_from_param_checked (MonoMethod *method, guint32 param, MonoErr
 
 	/* FIXME: metadata-update */
 	param_list = mono_metadata_decode_row_col (ca, method_index - 1, MONO_METHOD_PARAMLIST);
-	int rows = table_info_get_rows (ca);
-	if (method_index == rows) {
-		param_last = rows + 1;
+	if (method_index == table_info_get_rows (ca)) {
+		param_last = table_info_get_rows (&image->tables [MONO_TABLE_PARAM]) + 1;
 	} else {
 		param_last = mono_metadata_decode_row_col (ca, method_index, MONO_METHOD_PARAMLIST);
 	}

@@ -1,12 +1,6 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <PackageDescription>Abstractions of files and directories.
-
-Commonly Used Types:
-Microsoft.Extensions.FileProviders.IDirectoryContents
-Microsoft.Extensions.FileProviders.IFileInfo
-Microsoft.Extensions.FileProviders.IFileProvider</PackageDescription>
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
   </PropertyGroup>
 </Project>

@@ -8,17 +8,14 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class IDispatchImplAttributeTests
     {
-        private const string TypeName = "System.Runtime.InteropServices.IDispatchImplAttribute";
-        private const string ValueName = "Value";
-
         [Theory]
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(2)]
         public void Ctor_ImplTypeShort(short implType)
         {
-            Type type = typeof(HandleCollector).Assembly.GetType(TypeName);
-            PropertyInfo valueProperty = type.GetProperty(ValueName);
+            Type type = Type.GetType("System.Runtime.InteropServices.IDispatchImplAttribute, System.Runtime.InteropServices");
+            PropertyInfo valueProperty = type.GetProperty("Value");
             Assert.NotNull(type);
             Assert.NotNull(valueProperty);
 

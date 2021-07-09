@@ -12,6 +12,10 @@
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
 
+#if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE)
+#include "executableallocator.h"
+#endif
+
 #ifndef THUMB_CODE
 #define THUMB_CODE 1
 #endif
@@ -159,7 +163,14 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
     // In a DAC build, this function assumes the input is an host address.
     LIMITED_METHOD_DAC_CONTRACT;
 
-    CORDB_ADDRESS ptraddr = (CORDB_ADDRESS)address;
+#if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE)
+    ExecutableWriterHolder<CORDB_ADDRESS_TYPE> instructionWriterHolder(address, sizeof(PRD_TYPE));
+    CORDB_ADDRESS_TYPE* addressRW = instructionWriterHolder.GetRW();
+#else // !DBI_COMPILE && !DACCESS_COMPILE
+    CORDB_ADDRESS_TYPE* addressRW = address;
+#endif // !DBI_COMPILE && !DACCESS_COMPILE
+
+    CORDB_ADDRESS ptraddr = (CORDB_ADDRESS)addressRW;
     _ASSERTE(ptraddr & THUMB_CODE);
     ptraddr &= ~THUMB_CODE;
 

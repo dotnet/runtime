@@ -171,7 +171,7 @@ static NTSTATUS OutOfProcessFunctionTableCallback_JIT(IN  ReadMemoryFunction    
 
         move(Hp, pHp);
 
-        if (pHp == MinAddress)
+        if (Hp.GetModuleBase() == MinAddress)
         {
             DWORD_PTR          pThisHeader;
             DWORD_PTR          hdrOffset;

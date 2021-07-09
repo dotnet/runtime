@@ -68,6 +68,26 @@ namespace System.Security.Cryptography
             };
         }
 
+        internal static void ReadRsaPublicKey(
+            ReadOnlyMemory<byte> keyData,
+            out int bytesRead)
+        {
+            int read;
+
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(keyData.Span, AsnEncodingRules.DER);
+                read = reader.PeekEncodedValue().Length;
+                RSAPublicKeyAsn.Decode(keyData, AsnEncodingRules.BER);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+
+            bytesRead = read;
+        }
+
         internal static void ReadSubjectPublicKeyInfo(
             ReadOnlySpan<byte> source,
             out int bytesRead,

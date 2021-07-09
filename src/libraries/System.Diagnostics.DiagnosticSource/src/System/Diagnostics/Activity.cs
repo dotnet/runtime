@@ -79,8 +79,8 @@ namespace System.Diagnostics
 
         private TagsLinkedList? _tags;
         private BaggageLinkedList? _baggage;
-        private LinkedList<ActivityLink>? _links;
-        private LinkedList<ActivityEvent>? _events;
+        private DiagLinkedList<ActivityLink>? _links;
+        private DiagLinkedList<ActivityEvent>? _events;
         private Dictionary<string, object>? _customProperties;
         private string? _displayName;
         private ActivityStatusCode _statusCode;
@@ -341,7 +341,7 @@ namespace System.Diagnostics
                     {
                         if (activity._baggage != null)
                         {
-                            for (LinkedListNode<KeyValuePair<string, string?>>? current = activity._baggage.First; current != null; current = current.Next)
+                            for (DiagNode<KeyValuePair<string, string?>>? current = activity._baggage.First; current != null; current = current.Next)
                             {
                                 yield return current.Value;
                             }
@@ -455,7 +455,7 @@ namespace System.Diagnostics
         /// <returns>'this' for convenient chaining</returns>
         public Activity AddEvent(ActivityEvent e)
         {
-            if (_events != null || Interlocked.CompareExchange(ref _events, new LinkedList<ActivityEvent>(e), null) != null)
+            if (_events != null || Interlocked.CompareExchange(ref _events, new DiagLinkedList<ActivityEvent>(e), null) != null)
             {
                 _events.Add(e);
             }
@@ -1030,7 +1030,7 @@ namespace System.Diagnostics
                 {
                     if (enumerator.MoveNext())
                     {
-                        activity._links = new LinkedList<ActivityLink>(enumerator);
+                        activity._links = new DiagLinkedList<ActivityLink>(enumerator);
                     }
                 }
             }
@@ -1058,13 +1058,6 @@ namespace System.Diagnostics
                 }
             }
 
-            activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
-
-            if (request == ActivitySamplingResult.AllDataAndRecorded)
-            {
-                activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
-            }
-
             if (parentId != null)
             {
                 activity._parentId = parentId;
@@ -1081,6 +1074,13 @@ namespace System.Diagnostics
                 activity.ActivityTraceFlags = parentContext.TraceFlags;
                 activity._parentTraceFlags = (byte) parentContext.TraceFlags;
                 activity._traceState = parentContext.TraceState;
+            }
+
+            activity.IsAllDataRequested = request == ActivitySamplingResult.AllData || request == ActivitySamplingResult.AllDataAndRecorded;
+
+            if (request == ActivitySamplingResult.AllDataAndRecorded)
+            {
+                activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
             }
 
             if (startTime != default)
@@ -1323,73 +1323,17 @@ namespace System.Diagnostics
             private set => _state = (_state & ~State.FormatFlags) | (State)((byte)value & (byte)State.FormatFlags);
         }
 
-        private sealed partial class LinkedListNode<T>
-        {
-            public LinkedListNode(T value) => Value = value;
-            public T Value;
-            public LinkedListNode<T>? Next;
-        }
-
-        // We are not using the public LinkedList<T> because we need to ensure thread safety operation on the list.
-        private sealed class LinkedList<T> : IEnumerable<T>
-        {
-            private LinkedListNode<T> _first;
-            private LinkedListNode<T> _last;
-
-            public LinkedList(T firstValue) => _last = _first = new LinkedListNode<T>(firstValue);
-
-            public LinkedList(IEnumerator<T> e)
-            {
-                _last = _first = new LinkedListNode<T>(e.Current);
-
-                while (e.MoveNext())
-                {
-                    _last.Next = new LinkedListNode<T>(e.Current);
-                    _last = _last.Next;
-                }
-            }
-
-            public LinkedListNode<T> First => _first;
-
-            public void Add(T value)
-            {
-                LinkedListNode<T> newNode = new LinkedListNode<T>(value);
-
-                lock (this)
-                {
-                    _last.Next = newNode;
-                    _last = newNode;
-                }
-            }
-
-            public void AddFront(T value)
-            {
-                LinkedListNode<T> newNode = new LinkedListNode<T>(value);
-
-                lock (this)
-                {
-                    newNode.Next = _first;
-                    _first = newNode;
-                }
-            }
-
-            // Note: Some consumers use this GetEnumerator dynamically to avoid allocations.
-            public Enumerator<T> GetEnumerator() => new Enumerator<T>(_first);
-            IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        }
-
         private sealed class BaggageLinkedList : IEnumerable<KeyValuePair<string, string?>>
         {
-            private LinkedListNode<KeyValuePair<string, string?>>? _first;
+            private DiagNode<KeyValuePair<string, string?>>? _first;
 
-            public BaggageLinkedList(KeyValuePair<string, string?> firstValue, bool set = false) => _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, string?>>(firstValue));
+            public BaggageLinkedList(KeyValuePair<string, string?> firstValue, bool set = false) => _first = ((set && firstValue.Value == null) ? null : new DiagNode<KeyValuePair<string, string?>>(firstValue));
 
-            public LinkedListNode<KeyValuePair<string, string?>>? First => _first;
+            public DiagNode<KeyValuePair<string, string?>>? First => _first;
 
             public void Add(KeyValuePair<string, string?> value)
             {
-                LinkedListNode<KeyValuePair<string, string?>> newNode = new LinkedListNode<KeyValuePair<string, string?>>(value);
+                DiagNode<KeyValuePair<string, string?>> newNode = new DiagNode<KeyValuePair<string, string?>>(value);
 
                 lock (this)
                 {
@@ -1408,7 +1352,7 @@ namespace System.Diagnostics
 
                 lock (this)
                 {
-                    LinkedListNode<KeyValuePair<string, string?>>? current = _first;
+                    DiagNode<KeyValuePair<string, string?>>? current = _first;
                     while (current != null)
                     {
                         if (current.Value.Key == value.Key)
@@ -1420,7 +1364,7 @@ namespace System.Diagnostics
                         current = current.Next;
                     }
 
-                    LinkedListNode<KeyValuePair<string, string?>> newNode = new LinkedListNode<KeyValuePair<string, string?>>(value);
+                    DiagNode<KeyValuePair<string, string?>> newNode = new DiagNode<KeyValuePair<string, string?>>(value);
                     newNode.Next = _first;
                     _first = newNode;
                 }
@@ -1441,7 +1385,7 @@ namespace System.Diagnostics
                         return;
                     }
 
-                    LinkedListNode<KeyValuePair<string, string?>> previous = _first;
+                    DiagNode<KeyValuePair<string, string?>> previous = _first;
 
                     while (previous.Next != null)
                     {
@@ -1463,20 +1407,20 @@ namespace System.Diagnostics
 
         private sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
         {
-            private LinkedListNode<KeyValuePair<string, object?>>? _first;
-            private LinkedListNode<KeyValuePair<string, object?>>? _last;
+            private DiagNode<KeyValuePair<string, object?>>? _first;
+            private DiagNode<KeyValuePair<string, object?>>? _last;
 
             private StringBuilder? _stringBuilder;
 
-            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, object?>>(firstValue));
+            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value == null) ? null : new DiagNode<KeyValuePair<string, object?>>(firstValue));
 
             public TagsLinkedList(IEnumerator<KeyValuePair<string, object?>> e)
             {
-                _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                _last = _first = new DiagNode<KeyValuePair<string, object?>>(e.Current);
 
                 while (e.MoveNext())
                 {
-                    _last.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last.Next = new DiagNode<KeyValuePair<string, object?>>(e.Current);
                     _last = _last.Next;
                 }
             }
@@ -1494,24 +1438,24 @@ namespace System.Diagnostics
 
                 if (_first == null)
                 {
-                    _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last = _first = new DiagNode<KeyValuePair<string, object?>>(e.Current);
                 }
                 else
                 {
-                    _last!.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last!.Next = new DiagNode<KeyValuePair<string, object?>>(e.Current);
                     _last = _last.Next;
                 }
 
                 while (e.MoveNext())
                 {
-                    _last.Next = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
+                    _last.Next = new DiagNode<KeyValuePair<string, object?>>(e.Current);
                     _last = _last.Next;
                 }
             }
 
             public void Add(KeyValuePair<string, object?> value)
             {
-                LinkedListNode<KeyValuePair<string, object?>> newNode = new LinkedListNode<KeyValuePair<string, object?>>(value);
+                DiagNode<KeyValuePair<string, object?>> newNode = new DiagNode<KeyValuePair<string, object?>>(value);
 
                 lock (this)
                 {
@@ -1531,7 +1475,7 @@ namespace System.Diagnostics
             public object? Get(string key)
             {
                 // We don't take the lock here so it is possible the Add/Remove operations mutate the list during the Get operation.
-                LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                DiagNode<KeyValuePair<string, object?>>? current = _first;
                 while (current != null)
                 {
                     if (current.Value.Key == key)
@@ -1547,7 +1491,6 @@ namespace System.Diagnostics
 
             public void Remove(string key)
             {
-
                 lock (this)
                 {
                     if (_first == null)
@@ -1557,15 +1500,23 @@ namespace System.Diagnostics
                     if (_first.Value.Key == key)
                     {
                         _first = _first.Next;
+                        if (_first is null)
+                        {
+                            _last = null;
+                        }
                         return;
                     }
 
-                    LinkedListNode<KeyValuePair<string, object?>> previous = _first;
+                    DiagNode<KeyValuePair<string, object?>> previous = _first;
 
                     while (previous.Next != null)
                     {
                         if (previous.Next.Value.Key == key)
                         {
+                            if (object.ReferenceEquals(_last, previous.Next))
+                            {
+                                _last = previous;
+                            }
                             previous.Next = previous.Next.Next;
                             return;
                         }
@@ -1584,7 +1535,7 @@ namespace System.Diagnostics
 
                 lock (this)
                 {
-                    LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                    DiagNode<KeyValuePair<string, object?>>? current = _first;
                     while (current != null)
                     {
                         if (current.Value.Key == value.Key)
@@ -1596,7 +1547,7 @@ namespace System.Diagnostics
                         current = current.Next;
                     }
 
-                    LinkedListNode<KeyValuePair<string, object?>> newNode = new LinkedListNode<KeyValuePair<string, object?>>(value);
+                    DiagNode<KeyValuePair<string, object?>> newNode = new DiagNode<KeyValuePair<string, object?>>(value);
                     if (_first == null)
                     {
                         _first = _last = newNode;
@@ -1617,7 +1568,7 @@ namespace System.Diagnostics
 
             public IEnumerable<KeyValuePair<string, string?>> EnumerateStringValues()
             {
-                LinkedListNode<KeyValuePair<string, object?>>? current = _first;
+                DiagNode<KeyValuePair<string, object?>>? current = _first;
 
                 while (current != null)
                 {
@@ -1644,7 +1595,7 @@ namespace System.Diagnostics
                     _stringBuilder.Append(':');
                     _stringBuilder.Append(_first.Value.Value);
 
-                    LinkedListNode<KeyValuePair<string, object?>>? current = _first.Next;
+                    DiagNode<KeyValuePair<string, object?>>? current = _first.Next;
                     while (current != null)
                     {
                         _stringBuilder.Append(", ");
@@ -1659,42 +1610,6 @@ namespace System.Diagnostics
                     _stringBuilder.Clear();
                     return result;
                 }
-            }
-        }
-
-        // Note: Some consumers use this Enumerator dynamically to avoid allocations.
-        private struct Enumerator<T> : IEnumerator<T>
-        {
-            private LinkedListNode<T>? _nextNode;
-            [AllowNull, MaybeNull] private T _currentItem;
-
-            public Enumerator(LinkedListNode<T>? head)
-            {
-                _nextNode = head;
-                _currentItem = default;
-            }
-
-            public T Current => _currentItem!;
-
-            object? IEnumerator.Current => Current;
-
-            public bool MoveNext()
-            {
-                if (_nextNode == null)
-                {
-                    _currentItem = default;
-                    return false;
-                }
-
-                _currentItem = _nextNode.Value;
-                _nextNode = _nextNode.Next;
-                return true;
-            }
-
-            public void Reset() => throw new NotSupportedException();
-
-            public void Dispose()
-            {
             }
         }
 

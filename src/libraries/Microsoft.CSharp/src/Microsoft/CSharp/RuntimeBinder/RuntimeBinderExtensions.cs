@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -315,6 +316,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             return mi1.Module.Equals(mi2.Module) && s_MemberEquivalence(mi1, mi2);
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public static string GetIndexerName(this Type type)
         {
             Debug.Assert(type != null);
@@ -334,6 +336,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             return name;
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         private static string GetTypeIndexerName(Type type)
         {
             Debug.Assert(type != null);

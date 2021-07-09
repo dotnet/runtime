@@ -102,9 +102,8 @@ namespace System.Tests
         [Fact]
         public void CanGetAllVariablesIndividually()
         {
-            Random r = new Random();
-            string envVar1 = "TestVariable_CanGetVariablesIndividually_" + r.Next().ToString();
-            string envVar2 = "TestVariable_CanGetVariablesIndividually_" + r.Next().ToString();
+            string envVar1 = "TestVariable_CanGetVariablesIndividually_" + Random.Shared.Next().ToString();
+            string envVar2 = "TestVariable_CanGetVariablesIndividually_" + Random.Shared.Next().ToString();
 
             try
             {

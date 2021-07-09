@@ -28,12 +28,11 @@ namespace System.Net.Sockets.Tests
             await Assert.ThrowsAsync<ObjectDisposedException>(() => SendFileAsync(s, null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
         }
 
-
         [Fact]
         public async Task NotConnected_ThrowsNotSupportedException()
         {
             using Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            
+
             await Assert.ThrowsAsync<NotSupportedException>(() => SendFileAsync(s, null));
             await Assert.ThrowsAsync<NotSupportedException>(() => SendFileAsync(s, null, null, null, TransmitFileOptions.UseDefaultWorkerThread));
         }
@@ -308,7 +307,7 @@ namespace System.Net.Sockets.Tests
                     await disposeTask;
 
                     SocketError? localSocketError = null;
-                    bool thrownDisposed = false;
+                    bool disposedException = false;
                     try
                     {
                         await socketOperation;
@@ -319,18 +318,22 @@ namespace System.Net.Sockets.Tests
                     }
                     catch (ObjectDisposedException)
                     {
-                        thrownDisposed = true;
+                        disposedException = true;
                     }
 
-                    if (UsesSync)
+                    if (UsesApm)
+                    {
+                        Assert.Null(localSocketError);
+                        Assert.True(disposedException);
+                    }
+                    else if (UsesSync)
                     {
                         Assert.Equal(SocketError.ConnectionAborted, localSocketError);
                     }
                     else
                     {
-                        Assert.True(thrownDisposed);
+                        Assert.Equal(SocketError.OperationAborted, localSocketError);
                     }
-                    
 
                     // On OSX, we're unable to unblock the on-going socket operations and
                     // perform an abortive close.
@@ -413,6 +416,70 @@ namespace System.Net.Sockets.Tests
     public sealed class SendFile_SyncForceNonBlocking : SendFile<SocketHelperSyncForceNonBlocking>
     {
         public SendFile_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendFile_Task : SendFile<SocketHelperTask>
+    {
+        public SendFile_Task(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendFile_CancellableTask : SendFile<SocketHelperCancellableTask>
+    {
+        public SendFile_CancellableTask(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task SendFileAsync_Precanceled_Throws()
+        {
+            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.BindToAnonymousPort(IPAddress.Loopback);
+                listener.Listen(1);
+
+                await client.ConnectAsync(listener.LocalEndPoint);
+                using (Socket server = await listener.AcceptAsync())
+                {
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await server.SendFileAsync(null, ReadOnlyMemory<byte>.Empty, ReadOnlyMemory<byte>.Empty, TransmitFileOptions.UseDefaultWorkerThread, cts.Token));
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SendFileAsync_CanceledDuringOperation_Throws(bool ipv6)
+        {
+            const int CancelAfter = 200; // ms
+            const int NumOfSends = 100;
+            const int SendBufferSize = 1024;
+
+            (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair(ipv6);
+            byte[] buffer = new byte[1024 * 64];
+            using (client)
+            using (server)
+            {
+                client.SendBufferSize = SendBufferSize;
+                CancellationTokenSource cts = new CancellationTokenSource();
+
+                List<Task> tasks = new List<Task>();
+
+                // After flooding the socket with a high number of SendFile tasks,
+                // we assume some of them won't complete before the "CancelAfter" period expires.
+                for (int i = 0; i < NumOfSends; i++)
+                {
+                    var task = server.SendFileAsync(null, buffer, ReadOnlyMemory<byte>.Empty, TransmitFileOptions.UseDefaultWorkerThread, cts.Token).AsTask();
+                    tasks.Add(task);
+                }
+
+                cts.CancelAfter(CancelAfter);
+
+                // We shall see at least one cancellation amongst all the scheduled sends:
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.WhenAll(tasks));
+            }
+        }
     }
 
     public sealed class SendFile_Apm : SendFile<SocketHelperApm>

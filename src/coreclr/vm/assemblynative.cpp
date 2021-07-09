@@ -94,11 +94,6 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
 
     spec.SetCodeBase(NULL);
 
-    if (!spec.HasUniqueIdentity())
-    {   // Insuficient assembly name for binding (e.g. ContentType=WindowsRuntime cannot bind by assembly name)
-        EEFileLoadException::Throw(&spec, COR_E_NOTSUPPORTED);
-    }
-
     if (pParentAssembly != NULL)
         spec.SetParentAssembly(pParentAssembly);
 
@@ -1454,4 +1449,22 @@ void QCALLTYPE AssemblyNative::ApplyUpdate(
 #endif
 
     END_QCALL;
+}
+
+// static
+BOOL QCALLTYPE AssemblyNative::IsApplyUpdateSupported()
+{
+    QCALL_CONTRACT;
+
+    BOOL result = false;
+
+    BEGIN_QCALL;
+
+#ifdef EnC_SUPPORTED
+    BOOL result = CORDebuggerAttached() || g_pConfig->ForceEnc() || g_pConfig->DebugAssembliesModifiable();
+#endif
+
+    END_QCALL;
+
+    return result;
 }

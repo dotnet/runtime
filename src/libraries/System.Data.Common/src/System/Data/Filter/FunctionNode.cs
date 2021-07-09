@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 
 namespace System.Data
@@ -110,11 +111,13 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval()
         {
             return Eval(null, DataRowVersion.Default);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(DataRow? row, DataRowVersion version)
         {
             Debug.Assert(_info < s_funcs.Length && _info >= 0, "Invalid function info.");
@@ -173,6 +176,7 @@ namespace System.Data
             return EvalFunction(s_funcs[_info]._id, argumentValues, row, version);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(int[] recordNos)
         {
             throw ExprException.ComputeNotAggregate(ToString()!);
@@ -242,6 +246,8 @@ namespace System.Data
             return false;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Constant expressions are safe to be evaluated.")]
         internal override ExpressionNode Optimize()
         {
             for (int i = 0; i < _argumentCount; i++)
@@ -270,6 +276,7 @@ namespace System.Data
             return this;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private Type GetDataType(ExpressionNode node)
         {
             Type nodeType = node.GetType();
@@ -304,6 +311,7 @@ namespace System.Data
             return dataType;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         private object EvalFunction(FunctionId id, object[] argumentValues, DataRow? row, DataRowVersion version)
         {
             StorageType storageType;

@@ -124,7 +124,7 @@ typedef struct {
 } MonoBundledAssembly;
 
 MONO_API void          mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies);
-MONO_API void          mono_register_config_for_assembly (const char* assembly_name, const char* config_xml);
+MONO_API MONO_RT_EXTERNAL_ONLY void          mono_register_config_for_assembly (const char* assembly_name, const char* config_xml);
 MONO_API void          mono_register_symfile_for_assembly (const char* assembly_name, const mono_byte *raw_contents, int size);
 MONO_API void	      mono_register_machine_config (const char *config_xml);
 

@@ -37,6 +37,7 @@ namespace System.Runtime.Serialization.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50936", TestPlatforms.Android)]
         public void Ctor_SerializationInfo_StreamingContext()
         {
             using (var memoryStream = new MemoryStream())

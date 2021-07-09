@@ -3,6 +3,7 @@
 
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="XslCompiledTransformTests.cs" />
+    <TestConsoleAppSourceFiles Include="XmlSchema.Write.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

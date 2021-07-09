@@ -103,6 +103,9 @@ public:
     // Indicate if the wrapper should be considered a GC root.
     bool IsRooted() const;
 
+    // Check if the wrapper has been marked to be destroyed.
+    bool IsMarkedToDestroy() const;
+
 public: // IReferenceTrackerTarget
     ULONG AddRefFromReferenceTracker();
     ULONG ReleaseFromReferenceTracker();

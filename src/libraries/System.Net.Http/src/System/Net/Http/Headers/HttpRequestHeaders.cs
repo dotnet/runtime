@@ -102,10 +102,6 @@ namespace System.Net.Http.Headers
                     value = null;
                 }
 
-                if ((value != null) && !HeaderUtilities.IsValidEmailAddress(value))
-                {
-                    throw new FormatException(SR.net_http_headers_invalid_from_header);
-                }
                 SetOrRemoveParsedValue(KnownHeaders.From.Descriptor, value);
             }
         }
@@ -262,11 +258,6 @@ namespace System.Net.Http.Headers
 
         internal HttpRequestHeaders()
             : base(HttpHeaderType.General | HttpHeaderType.Request | HttpHeaderType.Custom, HttpHeaderType.Response)
-        {
-        }
-
-        internal HttpRequestHeaders(bool forceHeaderStoreItems)
-            : base(HttpHeaderType.General | HttpHeaderType.Request | HttpHeaderType.Custom, HttpHeaderType.Response, forceHeaderStoreItems)
         {
         }
 

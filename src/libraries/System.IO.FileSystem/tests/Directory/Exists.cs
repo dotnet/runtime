@@ -236,6 +236,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(CaseSensitivePlatforms)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52857", TestPlatforms.MacCatalyst)]
         public void DoesCaseSensitiveComparisons()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -291,10 +292,9 @@ namespace System.IO.Tests
 
         }
 
-        [Theory,
-            MemberData(nameof(PathsWithReservedDeviceNames))]
+        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked))] // device names
+        [MemberData(nameof(PathsWithReservedDeviceNames))]
         [OuterLoop]
-        [PlatformSpecific(TestPlatforms.Windows)] // device names
         public void PathWithReservedDeviceNameAsPath_ReturnsFalse(string component)
         {
             Assert.False(Exists(component));
@@ -302,6 +302,7 @@ namespace System.IO.Tests
 
         [Theory,
             MemberData(nameof(UncPathsWithoutShareName))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void UncPathWithoutShareNameAsPath_ReturnsFalse(string component)
         {
             Assert.False(Exists(component));

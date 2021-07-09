@@ -670,9 +670,16 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 	int offset;
 	gboolean special_array_interface = m_class_is_array_special_interface (cmethod->klass);
 
-	if (cfg->interp && can_enter_interp (cfg, cmethod, TRUE))
+	if (cfg->interp && can_enter_interp (cfg, cmethod, TRUE)) {
 		/* Need wrappers for this signature to be able to enter interpreter */
 		cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, fsig);
+
+		if (m_class_is_delegate (cmethod->klass) && !strcmp (cmethod->name, "Invoke")) {
+			/* To support dynamically generated code, add a signature for the actual method called by the delegate as well. */
+			MonoMethodSignature *nothis_sig = mono_metadata_signature_dup_add_this (m_class_get_image (cmethod->klass), fsig, mono_get_object_class ());
+			cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, nothis_sig);
+		}
+	}
 
 	/*
 	 * In llvm-only mode, vtables contain function descriptors instead of

@@ -76,21 +76,25 @@ There is a relatively small number of entry-points to the loader. Although the s
 
 There are usually many calls to the type loader during JITting. Consider:
 
-	object CreateClass()
-	{
-	    return new MyClass();
-	}
+```csharp
+object CreateClass()
+{
+    return new MyClass();
+}
+```
 
 In the IL, MyClass is referred to using a metadata token. In order to generate a call to the `JIT_New` helper which takes care of the actual instantiation, the JIT will ask the type loader to load the type and return a handle to it. This handle will be then directly embedded in the JITted code as an immediate value. The fact that types and members are usually resolved and loaded at JIT time and not at run-time also explains the sometimes confusing behavior easily hit with code like this:
 
-	object CreateClass()
-	{
-	    try {
-	        return new MyClass();
-	    } catch (TypeLoadException) {
-	        return null;
-	    }
-	}
+```csharp
+object CreateClass()
+{
+    try {
+        return new MyClass();
+    } catch (TypeLoadException) {
+        return null;
+    }
+}
+```
 
 If `MyClass` fails to load, for example because it's supposed to be defined in another assembly and it was accidentally removed in the newest build, then this code will still throw `TypeLoadException`. The reason that the catch block did not catch it is that it never ran! The exception occurred during JITting and would only be catchable in the method that called `CreateClass` and caused it to be JITted. In addition, it may not be always obvious at which point the JITting is triggered due to inlining, so users should not expect and rely on deterministic behavior.
 
@@ -153,14 +157,16 @@ both the same type.
 
 When the type loader is asked to load a specified type, identified for example by a typedef/typeref/typespec **token** and a **Module** , it does not do all the work atomically at once. The loading is done in phases instead. The reason for this is that the type usually depends on other types and requiring it to be fully loaded before it can be referred to by other types would result in infinite recursion and deadlocks. Consider:
 
-	class A<T> : C<B<T>>
-	{ }
+```csharp
+class A<T> : C<B<T>>
+{ }
 
-	class B<T> : C<A<T>>
-	{ }
+class B<T> : C<A<T>>
+{ }
 
-	class C<T>
-	{ }
+class C<T>
+{ }
+```
 
 These are valid types and apparently `A` depends on `B` and `B` depends on `A`.
 
@@ -195,10 +201,12 @@ A placeholder to be substituted by another type; the `T` in the declaration of `
 
 A type being substituted for a generic parameter; the `int` in `List<int>`. Note that a generic parameter can also be used as an argument. Consider:
 
-	List<T> GetList<T>()
-	{
-	    return new List<T>();
-	}
+```csharp
+List<T> GetList<T>()
+{
+    return new List<T>();
+}
+```
 
 The method has one generic parameter `T` which is used as a generic argument for the generic list class.
 
@@ -209,28 +217,38 @@ An optional requirement placed by generic parameters on its potential generic ar
 1. Special constraints
   - Reference type constraint - the generic argument must be a reference type (as opposed to a value type). The `class` keyword is used in C# to express this constraint.
 
-			public class A<T> where T : class
+    ```csharp
+    public class A<T> where T : class
+    ```
 
   - Value type constraint - the generic argument must be a value type different from `System.Nullable<T>`. C# uses the `struct` keyword.
 
-			public class A<T> where T : struct
+    ```csharp
+    public class A<T> where T : struct
+    ```
 
   - Default constructor constraint - the generic argument must have a public parameterless constructor. This is expressed by `new()` in C#.
 
-			public class A<T> where T : new()
+    ```csharp
+    public class A<T> where T : new()
+    ```
 
 2. Base type constraints - the generic argument must be derived from
 (or directly be of) the given non-interface type. It obviously makes
 sense to use only zero or one reference type as a base types
 constraint.
 
-		public class A<T> where T : EventArgs
+    ```csharp
+    public class A<T> where T : EventArgs
+    ```
 
 3. Implemented interface constraints - the generic argument must
 implement (or directly be of) the given interface type.  Zero or more
 interfaces can be given.
 
-		public class A<T> where T : ICloneable, IComparable<T>
+    ```csharp
+    public class A<T> where T : ICloneable, IComparable<T>
+    ```
 
 The above constraints are combined with an implicit AND, i.e. a
 generic parameter can be constrained to be derived from a given type,
@@ -239,11 +257,13 @@ generic parameters of the declaring type can be used to express the
 constraints, introducing interdependencies among the parameters. For
 example:
 
-	public class A<S, T, U>
-		where S : T
-		where T : IList<U> {
-	    void f<V>(V v) where V : S {}
-	}
+```csharp
+public class A<S, T, U>
+	where S : T
+	where T : IList<U> {
+    void f<V>(V v) where V : S {}
+}
+```
 
 **Instantiation**
 
@@ -259,7 +279,9 @@ declared. There exists exactly one typical instantiation for each
 generic type and method. Usually when one talks about an open generic
 type, they have the typical instantiation in mind. Example:
 
-	public class A<S, T, U> {}
+```csharp
+public class A<S, T, U> {}
+```
 
 The C# `typeof(A<,,>)` compiles to ldtoken A\'3 which makes the
 runtime load ``A`3`` instantiated at `S` , `T` , `U`.

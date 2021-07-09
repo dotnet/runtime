@@ -15,7 +15,9 @@ EXPORTS
     CompressionNative_Crc32
     CompressionNative_Deflate
     CompressionNative_DeflateEnd
+    CompressionNative_DeflateReset
     CompressionNative_DeflateInit2_
     CompressionNative_Inflate
     CompressionNative_InflateEnd
+    CompressionNative_InflateReset
     CompressionNative_InflateInit2_

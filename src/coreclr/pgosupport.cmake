@@ -30,7 +30,7 @@ function(add_pgo TargetName)
         if(CLR_CMAKE_HOST_WIN32)
             set(ProfileFileName "${TargetName}.pgd")
         else(CLR_CMAKE_HOST_WIN32)
-            set(ProfileFileName "${TargetName}.profdata")
+            set(ProfileFileName "coreclr.profdata")
         endif(CLR_CMAKE_HOST_WIN32)
 
         file(TO_NATIVE_PATH
@@ -41,6 +41,10 @@ function(add_pgo TargetName)
         # If we don't have profile data availble, gracefully fall back to a non-PGO opt build
         if(NOT EXISTS ${ProfilePath})
             message("PGO data file NOT found: ${ProfilePath}")
+        elseif(CMAKE_GENERATOR MATCHES "Visual Studio")
+            # MSVC is sensitive to exactly the options passed during PGO optimization and Ninja and
+            # MSBuild differ slightly (but not meaningfully for runtime behavior)
+            message("Cannot use PGO optimization built with Ninja from MSBuild. Re-run build with Ninja to apply PGO information")
         else(NOT EXISTS ${ProfilePath})
             if(CLR_CMAKE_HOST_WIN32)
                 set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE        " /LTCG /USEPROFILE:PGD=\"${ProfilePath}\"")

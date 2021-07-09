@@ -127,8 +127,13 @@ class EventExclusions:
         self.noclrinstance   = set()
 
 def parseExclusionList(exclusion_filename):
+
+    exclusionInfo = EventExclusions()
+
+    if not os.path.isfile(exclusion_filename):
+        return exclusionInfo
+
     with open(exclusion_filename,'r') as ExclusionFile:
-        exclusionInfo   = EventExclusions()
 
         for line in ExclusionFile:
             line = line.strip()
@@ -165,3 +170,44 @@ def parseExclusionList(exclusion_filename):
                 exclusionInfo.noclrinstance.add(entry)
 
     return exclusionInfo
+
+def parseInclusionList(inclusion_filename):
+
+    inclusion_list = {}
+
+    if not os.path.isfile(inclusion_filename):
+        return inclusion_list
+
+    with open(inclusion_filename,'r') as InclusionFile:
+        for line in InclusionFile:
+            line = line.strip()
+
+            #remove comments
+            if not line or line.startswith('#'):
+                continue
+
+            tokens = line.split(':')
+
+            if len(tokens) == 0:
+                continue
+
+            if len(tokens) > 2:
+                raise Exception("Invalid Entry " + line + "in "+ inclusion_filename)
+
+            providerName = ""
+            eventName = ""
+
+            if len(tokens) == 2:
+                providerName = tokens[0]
+                eventName = tokens[1]
+
+            if len(tokens) == 1:
+                providerName = "*"
+                eventName = tokens[0]
+
+            if providerName not in inclusion_list:
+                inclusion_list[providerName] = set()
+
+            inclusion_list[providerName].add(eventName)
+
+    return inclusion_list
