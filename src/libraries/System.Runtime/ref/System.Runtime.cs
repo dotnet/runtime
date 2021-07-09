@@ -10175,6 +10175,7 @@ namespace System.IO
     public static partial class Directory
     {
         public static System.IO.DirectoryInfo CreateDirectory(string path) { throw null; }
+        public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
         public static void Delete(string path) { }
         public static void Delete(string path, bool recursive) { }
         public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path) { throw null; }
@@ -10213,6 +10214,7 @@ namespace System.IO
         public static string[] GetLogicalDrives() { throw null; }
         public static System.IO.DirectoryInfo? GetParent(string path) { throw null; }
         public static void Move(string sourceDirName, string destDirName) { }
+        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false) { throw null; }
         public static void SetCreationTime(string path, System.DateTime creationTime) { }
         public static void SetCreationTimeUtc(string path, System.DateTime creationTimeUtc) { }
         public static void SetCurrentDirectory(string path) { }
@@ -10237,10 +10239,13 @@ namespace System.IO
         public System.DateTime LastAccessTimeUtc { get { throw null; } set { } }
         public System.DateTime LastWriteTime { get { throw null; } set { } }
         public System.DateTime LastWriteTimeUtc { get { throw null; } set { } }
+        public string? LinkTarget { get { throw null; } }
         public abstract string Name { get; }
+        public void CreateAsSymbolicLink(string pathToTarget) { }
         public abstract void Delete();
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void Refresh() { }
+        public System.IO.FileSystemInfo? ResolveLinkTarget(bool returnFinalTarget) { throw null; }
         public override string ToString() { throw null; }
     }
     public sealed partial class DirectoryInfo : System.IO.FileSystemInfo
@@ -10325,6 +10330,7 @@ namespace System.IO
         public static System.IO.FileStream Create(string path) { throw null; }
         public static System.IO.FileStream Create(string path, int bufferSize) { throw null; }
         public static System.IO.FileStream Create(string path, int bufferSize, System.IO.FileOptions options) { throw null; }
+        public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
         public static System.IO.StreamWriter CreateText(string path) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void Decrypt(string path) { }
@@ -10363,6 +10369,7 @@ namespace System.IO
         public static System.Collections.Generic.IEnumerable<string> ReadLines(string path, System.Text.Encoding encoding) { throw null; }
         public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName) { }
         public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors) { }
+        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false) { throw null; }
         public static void SetAttributes(string path, System.IO.FileAttributes fileAttributes) { }
         public static void SetCreationTime(string path, System.DateTime creationTime) { }
         public static void SetCreationTimeUtc(string path, System.DateTime creationTimeUtc) { }
