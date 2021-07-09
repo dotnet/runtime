@@ -1381,6 +1381,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     if (size >= XMM_REGSIZE_BYTES)
                     {
                         buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                        // SetContainsAVXFlags();
                         SetContainsAVXFlags(size);
                     }
                     break;

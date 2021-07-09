@@ -3017,12 +3017,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         instruction simdMov = simdUnalignedMovIns();
 
-        unsigned regSize = XMM_REGSIZE_BYTES; // compiler->getSIMDVectorRegisterByteLength();
-
-        if (regSize == YMM_REGSIZE_BYTES && size < regSize)
-        {
-            regSize = XMM_REGSIZE_BYTES;
-        }
+        // Get the largest SIMD register available if the size is larger than an xmm register
+        unsigned regSize = size >= YMM_REGSIZE_BYTES ? compiler->getSIMDVectorRegisterByteLength() : XMM_REGSIZE_BYTES;
 
         for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
         {
@@ -3082,36 +3078,33 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         return;
     }
 
-    if (size > 0)
+    regNumber tempReg = node->GetSingleTempReg(RBM_ALLINT);
+
+    for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += regSize, dstOffset += regSize)
     {
-        regNumber tempReg = node->GetSingleTempReg(RBM_ALLINT);
-
-        for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += regSize, dstOffset += regSize)
+        while (regSize > size)
         {
-            while (regSize > size)
-            {
-                regSize /= 2;
-            }
+            regSize /= 2;
+        }
 
-            if (srcLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_R_S(INS_mov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
-            }
-            else
-            {
-                emit->emitIns_R_ARX(INS_mov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
-                                    srcAddrIndexScale, srcOffset);
-            }
+        if (srcLclNum != BAD_VAR_NUM)
+        {
+            emit->emitIns_R_S(INS_mov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+        }
+        else
+        {
+            emit->emitIns_R_ARX(INS_mov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg, srcAddrIndexScale,
+                                srcOffset);
+        }
 
-            if (dstLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
-            }
-            else
-            {
-                emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
-                                    dstAddrIndexScale, dstOffset);
-            }
+        if (dstLclNum != BAD_VAR_NUM)
+        {
+            emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+        }
+        else
+        {
+            emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg, dstAddrIndexScale,
+                                dstOffset);
         }
     }
 }
