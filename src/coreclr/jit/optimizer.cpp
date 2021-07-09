@@ -7701,7 +7701,37 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
     // Check if m_b1 and m_b2 jump to the same target and get back pointers to m_testInfo1 and t2 tree nodes
 
     m_t3         = nullptr;
-    m_sameTarget = false; // Do m_b1 and m_b2 have the same bbJumpDest?
+
+    // Check if m_b1 and m_b2 have the same bbJumpDest
+
+    if (m_b1->bbJumpDest == m_b2->bbJumpDest)
+    {
+        // Given the following sequence of blocks :
+        //        B1: brtrue(t1, BX)
+        //        B2: brtrue(t2, BX)
+        //        B3:
+        // we will try to fold it to :
+        //        B1: brtrue(t1|t2, BX)
+        //        B3:
+
+        m_sameTarget = true;
+    }
+    else if (m_b1->bbJumpDest == m_b2->bbNext)
+    {
+        // Given the following sequence of blocks :
+        //        B1: brtrue(t1, B3)
+        //        B2: brtrue(t2, BX)
+        //        B3:
+        // we will try to fold it to :
+        //        B1: brtrue((!t1)&&t2, BX)
+        //        B3:
+
+        m_sameTarget = false;
+    }
+    else
+    {
+        return false;
+    }
 
     Statement* const s1 = optOptimizeBoolsChkBlkCond();
     if (s1 == nullptr)
@@ -7850,54 +7880,6 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
     if (m_b3 != nullptr)
     {
         optReturnBlock = true;
-    }
-
-    // Check jump destination condition
-
-    if (!optReturnBlock)
-    {
-        if (m_b1->bbJumpDest == m_b2->bbJumpDest)
-        {
-            // Given the following sequence of blocks :
-            //        B1: brtrue(t1, BX)
-            //        B2: brtrue(t2, BX)
-            //        B3:
-            // we will try to fold it to :
-            //        B1: brtrue(t1|t2, BX)
-            //        B3:
-
-            m_sameTarget = true;
-        }
-        else if (m_b1->bbJumpDest == m_b2->bbNext)
-        {
-            // Given the following sequence of blocks :
-            //        B1: brtrue(t1, B3)
-            //        B2: brtrue(t2, BX)
-            //        B3:
-            // we will try to fold it to :
-            //        B1: brtrue((!t1)&&t2, BX)
-            //        B3:
-
-            m_sameTarget = false;
-        }
-        else
-        {
-            return nullptr;
-        }
-    }
-    else
-    {
-        // Does m_b1 jump to m_b3?
-        // One example: Given the following sequence of blocks :
-        //        B1: brtrue(!t1, B3)
-        //        B2: return(t2)
-        //        B3: return(false)
-        //    we will try to fold it to :
-        //        B1: return(t1|t2)
-        if (m_b1->bbJumpDest != m_b3)
-        {
-            return nullptr;
-        }
     }
 
     // Find the block conditions of m_b1 and m_b2
@@ -8582,12 +8564,18 @@ void Compiler::optOptimizeBools()
 
             if (b2->bbJumpKind == BBJ_COND)
             {
+                if ((b1->bbJumpDest != b2->bbJumpDest) && (b1->bbJumpDest != b2->bbNext))
+                {
+                    continue;
+                }
+
                 // When it is conditional jumps
                 OptBoolsDsc optBoolsDsc;
                 optBoolsDsc.m_b1   = b1;
                 optBoolsDsc.m_b2   = b2;
                 optBoolsDsc.m_b3   = nullptr;
                 optBoolsDsc.m_comp = this;
+
                 if (optBoolsDsc.optOptimizeBoolsCondBlock())
                 {
                     change = true;
