@@ -111,7 +111,4 @@
   <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
     <value>Specified file length was too large for the file system.</value>
   </data>
-  <data name="IO_AlreadyExists_Name" xml:space="preserve">
-    <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
-  </data>
 </root>
