@@ -5577,8 +5577,8 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     GenTree* arrRef = asIndex->Arr();
     GenTree* index  = asIndex->Index();
 
-    bool chkd             = ((tree->gtFlags & GTF_INX_RNGCHK) != 0);    // if false, range checking will be disabled
-    bool indexNonFaulting = ((tree->gtFlags & GTF_INX_NOFAULT) != 0);   // if true, mark GTF_IND_NONFAULTING
+    bool chkd             = ((tree->gtFlags & GTF_INX_RNGCHK) != 0);  // if false, range checking will be disabled
+    bool indexNonFaulting = ((tree->gtFlags & GTF_INX_NOFAULT) != 0); // if true, mark GTF_IND_NONFAULTING
     bool nCSE             = ((tree->gtFlags & GTF_DONT_CSE) != 0);
 
     GenTree* arrRefDefn = nullptr; // non-NULL if we need to allocate a temp for the arrRef expression
