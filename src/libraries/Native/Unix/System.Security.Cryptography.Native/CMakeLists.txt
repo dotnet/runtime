@@ -61,6 +61,8 @@ if (FEATURE_DISTRO_AGNOSTIC_SSL)
         opensslshim.c
     )
     add_definitions(-DFEATURE_DISTRO_AGNOSTIC_SSL)
+    add_compile_options(-pthread)
+    add_link_options(-pthread)
 endif()
 
 add_library(objlib OBJECT ${NATIVECRYPTO_SOURCES} ${VERSION_FILE_PATH})
@@ -82,9 +84,6 @@ set_target_properties(System.Security.Cryptography.Native.OpenSsl-Static PROPERT
 
 if (GEN_SHARED_LIB)
     if (FEATURE_DISTRO_AGNOSTIC_SSL)
-        target_compile_options(System.Security.Cryptography.Native.OpenSsl PRIVATE -pthread)
-        target_link_options(System.Security.Cryptography.Native.OpenSsl PRIVATE -pthread)
-
         # on macOS the link step fails with undefined symbols, and the script doesn't run.
         # if the build succeeds, the script would succeed, except it uses a Linux-only command.
         #
