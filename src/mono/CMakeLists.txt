@@ -16,7 +16,7 @@ if(NOT MONO_LIB_NAME)
 endif()
 
 if(NOT MONO_SHARED_LIB_NAME)
-  set(MONO_SHARED_LIB_NAME "$(MONO_LIB_NAME)")
+  set(MONO_SHARED_LIB_NAME "${MONO_LIB_NAME}")
 endif()
 
 include(GNUInstallDirs)
@@ -712,8 +712,15 @@ endif()
 ######################################
 # EXTRACT VERSION
 ######################################
-if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
+  if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "#undef VER_PRODUCTVERSION_STR\n#define VER_PRODUCTVERSION_STR \"42.42.42.42424\"\n")
+  else()
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+  endif()
+endif()
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/NativeVersion.rc")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/NativeVersion.rc" "\n")
 endif()
 if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h")
   file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h"

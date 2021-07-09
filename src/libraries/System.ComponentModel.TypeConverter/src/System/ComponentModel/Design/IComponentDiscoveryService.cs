@@ -16,6 +16,6 @@ namespace System.ComponentModel.Design
         /// IComponent. If baseType is null, all components are retrieved; otherwise
         /// only component types derived from the specified baseType are returned.
         /// </summary>
-        ICollection GetComponentTypes(IDesignerHost designerHost, Type baseType);
+        ICollection GetComponentTypes(IDesignerHost? designerHost, Type? baseType);
     }
 }

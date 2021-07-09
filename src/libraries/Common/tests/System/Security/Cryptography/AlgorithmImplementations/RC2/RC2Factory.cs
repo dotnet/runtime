@@ -8,6 +8,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
     public interface IRC2Provider
     {
         RC2 Create();
+        bool OneShotSupported { get; }
     }
 
     public static partial class RC2Factory
@@ -16,6 +17,8 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         {
             return s_provider.Create();
         }
+
+        public static bool OneShotSupported => s_provider.OneShotSupported;
 
         public static bool IsSupported { get; } = Test.Cryptography.PlatformSupport.IsRC2Supported;
     }

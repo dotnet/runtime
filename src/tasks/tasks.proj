@@ -13,6 +13,8 @@
                       Condition="'$(TargetsMobile)' != 'true'" />
     <ProjectReference Remove="$(MSBuildThisFileDirectory)RuntimeConfigParser\RuntimeConfigParser.csproj"
                       Condition="'$(TargetsMobile)' != 'true'" />
+    <ProjectReference Remove="$(MSBuildThisFileDirectory)JsonToItemsTaskFactory\JsonToItemsTaskFactory.csproj"
+                      Condition="'$(TargetsMobile)' != 'true'" />
   </ItemGroup>
 
   <!--

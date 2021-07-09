@@ -171,7 +171,7 @@ CrashInfo::EnumerateMemoryRegions()
                 {
                     if (region.Contains(*found))
                     {
-                        MemoryRegion gap(region.Flags(), previousEndAddress, found->StartAddress(), region.Offset(), std::string());
+                        MemoryRegion gap(region.Flags(), previousEndAddress, found->StartAddress(), region.Offset());
                         if (gap.Size() > 0)
                         {
                             TRACE("     Gap: ");
@@ -182,7 +182,7 @@ CrashInfo::EnumerateMemoryRegions()
                     }
                 }
 
-                MemoryRegion endgap(region.Flags(), previousEndAddress, region.EndAddress(), region.Offset(), std::string());
+                MemoryRegion endgap(region.Flags(), previousEndAddress, region.EndAddress(), region.Offset());
                 if (endgap.Size() > 0)
                 {
                     TRACE("   EndGap:");
@@ -237,17 +237,12 @@ CrashInfo::TryFindDyLinker(mach_vm_address_t address, mach_vm_size_t size, bool*
 
 void CrashInfo::VisitModule(MachOModule& module)
 {
+    AddModuleInfo(false, module.BaseAddress(), nullptr, module.Name());
+
     // Get the process name from the executable module file type
     if (m_name.empty() && module.Header().filetype == MH_EXECUTE)
     {
-        size_t last = module.Name().rfind(DIRECTORY_SEPARATOR_STR_A);
-        if (last != std::string::npos) {
-            last++;
-        }
-        else {
-            last = 0;
-        }
-        m_name = module.Name().substr(last);
+        m_name = GetFileName(module.Name());
     }
     // Save the runtime module path
     if (m_coreclrPath.empty())
@@ -291,7 +286,7 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
             _ASSERTE(end > 0);
 
             // Add module memory region if not already on the list
-            MemoryRegion moduleRegion(regionFlags, start, end, offset, module.Name());
+            MemoryRegion moduleRegion(regionFlags, start, end, offset);
             const auto& found = m_moduleMappings.find(moduleRegion);
             if (found == m_moduleMappings.end())
             {
@@ -303,9 +298,8 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                 // Add this module segment to the module mappings list
                 m_moduleMappings.insert(moduleRegion);
 
-                // Add module segment ip to base address lookup
-                MemoryRegion addressRegion(0, start, end, module.BaseAddress());
-                m_moduleAddresses.insert(addressRegion);
+                // Add this module segment to the set used by the thread unwinding to lookup the module base address for an ip.
+                AddModuleAddressRange(start, end, module.BaseAddress());
             }
             else
             {
