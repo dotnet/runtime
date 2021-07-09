@@ -159,6 +159,8 @@ namespace System.Net.Security
                 }
 
                 bool done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer, out output, out outputSize);
+                // sometimes during renegotiation processing messgae does not yield new output.
+                // That seems to be flaw in OpenSSL state machine and we have workaround to peek it and try it again.
                 if (outputSize == 0 && Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)context).SslContext))
                 {
                     done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, ReadOnlySpan<byte>.Empty, out output, out outputSize);

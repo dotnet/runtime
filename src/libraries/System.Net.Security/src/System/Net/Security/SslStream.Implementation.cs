@@ -356,12 +356,21 @@ namespace System.Net.Security
                     }
                 } while (message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
 
+                if (_handshakeBuffer.ActiveLength > 0)
+                {
+                    // If we read more than we needed for handshake, move it to input buffer for further processing.
+                    ResetReadBuffer();
+                    _handshakeBuffer.ActiveSpan.CopyTo(_internalBuffer);
+                    _internalBufferCount = _handshakeBuffer.ActiveLength;
+                }
+
                 CompleteHandshake(_sslAuthenticationOptions!);
             }
             finally
             {
                 _nestedRead = 0;
                 _nestedWrite = 0;
+                _isRenego = false;
                 // We will not release _nestedAuth at this point to prevent another renegotiation attempt.
             }
         }
@@ -544,9 +553,7 @@ namespace System.Net.Security
                     }
                     break;
                 case TlsContentType.Handshake:
-                    // During renegotiation the client hello is encrypted. Possibly race condition when the encrypted client hello flag is 0x01 but the content of the message is encrypted.
-                    // Assume the Client Hello is not encrypted. It doesn't apply for renegotiation.
-                    if (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
+                    if (!_isRenego && _handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
                         (_sslAuthenticationOptions!.ServerCertSelectionDelegate != null ||
                         _sslAuthenticationOptions!.ServerOptionDelegate != null))
                     {

@@ -54,6 +54,7 @@
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
 
 // Remove problematic #defines
+#undef SSL_get_state
 #undef SSL_is_init_finished
 #undef X509_get_X509_PUBKEY
 #undef X509_get_version
@@ -483,9 +484,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LEGACY_FUNCTION(SSL_load_error_strings) \
     REQUIRED_FUNCTION(SSL_new) \
     REQUIRED_FUNCTION(SSL_peek) \
-    REQUIRED_FUNCTION(SSL_state_string_long) \
     REQUIRED_FUNCTION(SSL_read) \
-    REQUIRED_FUNCTION(ERR_print_errors_fp) \
     REQUIRED_FUNCTION(SSL_renegotiate) \
     REQUIRED_FUNCTION(SSL_renegotiate_pending) \
     FALLBACK_FUNCTION(SSL_session_reused) \
