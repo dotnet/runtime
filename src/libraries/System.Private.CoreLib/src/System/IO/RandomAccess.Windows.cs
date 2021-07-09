@@ -208,7 +208,7 @@ namespace System.IO
             }
         }
 
-        private static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        internal static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
             => handle.IsAsync
                 ? Map(QueueAsyncReadFile(handle, buffer, fileOffset, cancellationToken))
                 : ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
@@ -269,7 +269,7 @@ namespace System.IO
             return (vts, -1);
         }
 
-        private static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        internal static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
             => handle.IsAsync
                 ? Map(QueueAsyncWriteFile(handle, buffer, fileOffset, cancellationToken))
                 : ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
