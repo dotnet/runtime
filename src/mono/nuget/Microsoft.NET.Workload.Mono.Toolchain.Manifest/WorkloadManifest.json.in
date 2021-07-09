@@ -4,8 +4,8 @@
     "Microsoft.NET.Workload.Emscripten": "${EmscriptenVersion}"
   },
   "workloads": {
-    "microsoft-net-sdk-blazorwebassembly-aot": {
-      "description": "Browser Runtime native performance tools",
+    "wasm-tools": {
+      "description": ".NET WebAssembly build tools",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Sdk",
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
@@ -14,6 +14,7 @@
       "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
+    "microsoft-net-sdk-blazorwebassembly-aot": { "redirect-to": "wasm-tools" },
     "microsoft-net-runtime-android": {
       "abstract": true,
       "description": "Android Mono Runtime",
