@@ -422,6 +422,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileShare.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystemInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\HandleInheritability.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\InvalidDataException.cs" />
@@ -1428,8 +1429,14 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile_IntPtr.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateFile_IntPtr.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateSymbolicLink.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.CreateSymbolicLink.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CriticalSection.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CriticalSection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeviceIoControl.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.DeviceIoControl.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
@@ -1508,6 +1515,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs</Link>
@@ -1619,6 +1629,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.RemoveDirectory.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.RemoveDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.REPARSE_DATA_BUFFER.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.REPARSE_DATA_BUFFER.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReplaceFile.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.ReplaceFile.cs</Link>
@@ -1893,6 +1906,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.DefaultPathBufferSize.cs">
+      <Link>Common\Interop\Unix\Interop.DefaultPathBufferSize.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Access.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Access.cs</Link>
     </Compile>
@@ -1910,6 +1926,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ErrNo.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.ErrNo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FLock.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.FLock.cs</Link>
@@ -2033,6 +2052,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.Span.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Stat.Span.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SymLink.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.SymLink.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SysConf.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.SysConf.cs</Link>

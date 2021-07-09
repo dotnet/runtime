@@ -5366,9 +5366,9 @@ struct GenTreeBoundsChk : public GenTree
     }
 };
 
-// gtArrElem -- general array element (GT_ARR_ELEM), for non "SZ_ARRAYS"
-//              -- multidimensional arrays, or 1-d arrays with non-zero lower bounds.
-
+// GenTreeArrElem - bounds checked address (byref) of a general array element,
+//    for multidimensional arrays, or 1-d arrays with non-zero lower bounds.
+//
 struct GenTreeArrElem : public GenTree
 {
     GenTree* gtArrObj;
@@ -5384,7 +5384,7 @@ struct GenTreeArrElem : public GenTree
                                  // This has caused VSW 571394.
     var_types gtArrElemType;     // The array element type
 
-    // Requires that "inds" is a pointer to an array of "rank" GenTreePtrs for the indices.
+    // Requires that "inds" is a pointer to an array of "rank" nodes for the indices.
     GenTreeArrElem(
         var_types type, GenTree* arr, unsigned char rank, unsigned char elemSize, var_types elemType, GenTree** inds)
         : GenTree(GT_ARR_ELEM, type), gtArrObj(arr), gtArrRank(rank), gtArrElemSize(elemSize), gtArrElemType(elemType)

@@ -270,9 +270,9 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
         {
             JITDUMP("VN based copy assertion for ");
             printTreeID(tree);
-            printf(" V%02d @%08X by ", lclNum, tree->GetVN(VNK_Conservative));
+            printf(" V%02d " FMT_VN " by ", lclNum, tree->GetVN(VNK_Conservative));
             printTreeID(op);
-            printf(" V%02d @%08X.\n", newLclNum, op->GetVN(VNK_Conservative));
+            printf(" V%02d " FMT_VN ".\n", newLclNum, op->GetVN(VNK_Conservative));
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif

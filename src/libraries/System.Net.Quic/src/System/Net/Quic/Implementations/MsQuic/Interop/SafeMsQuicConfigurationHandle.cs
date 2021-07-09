@@ -35,14 +35,36 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         // TODO: consider moving the static code from here to keep all the handle classes small and simple.
         public static unsafe SafeMsQuicConfigurationHandle Create(QuicClientConnectionOptions options)
         {
-            // TODO: lots of ClientAuthenticationOptions are not yet supported by MsQuic.
-            return Create(options, QUIC_CREDENTIAL_FLAGS.CLIENT, certificate: null, certificateContext: null, options.ClientAuthenticationOptions?.ApplicationProtocols);
+            X509Certificate? certificate = null;
+            if (options.ClientAuthenticationOptions?.ClientCertificates != null)
+            {
+                foreach (var cert in options.ClientAuthenticationOptions.ClientCertificates)
+                {
+                    try
+                    {
+                        if (((X509Certificate2)cert).HasPrivateKey)
+                        {
+                            // Pick first certificate with private key.
+                            certificate = cert;
+                            break;
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            return Create(options, QUIC_CREDENTIAL_FLAGS.CLIENT, certificate: certificate, certificateContext: null, options.ClientAuthenticationOptions?.ApplicationProtocols);
         }
 
         public static unsafe SafeMsQuicConfigurationHandle Create(QuicListenerOptions options)
         {
-            // TODO: lots of ServerAuthenticationOptions are not yet supported by MsQuic.
-            return Create(options, QUIC_CREDENTIAL_FLAGS.NONE, options.ServerAuthenticationOptions?.ServerCertificate, options.ServerAuthenticationOptions?.ServerCertificateContext, options.ServerAuthenticationOptions?.ApplicationProtocols);
+            QUIC_CREDENTIAL_FLAGS flags = QUIC_CREDENTIAL_FLAGS.NONE;
+            if (options.ServerAuthenticationOptions != null && options.ServerAuthenticationOptions.ClientCertificateRequired)
+            {
+                flags |= QUIC_CREDENTIAL_FLAGS.REQUIRE_CLIENT_AUTHENTICATION | QUIC_CREDENTIAL_FLAGS.INDICATE_CERTIFICATE_RECEIVED | QUIC_CREDENTIAL_FLAGS.NO_CERTIFICATE_VALIDATION;
+            }
+
+            return Create(options, flags, options.ServerAuthenticationOptions?.ServerCertificate, options.ServerAuthenticationOptions?.ServerCertificateContext, options.ServerAuthenticationOptions?.ApplicationProtocols);
         }
 
         // TODO: this is called from MsQuicListener and when it fails it wreaks havoc in MsQuicListener finalizer.

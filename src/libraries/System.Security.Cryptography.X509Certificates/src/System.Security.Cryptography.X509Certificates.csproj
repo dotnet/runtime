@@ -324,10 +324,14 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.DefaultPathBufferSize.cs"
+             Link="Common\Interop\Unix\Interop.DefaultPathBufferSize.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Permissions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs"
              Link="Common\Interop\Unix\System.Native\Interop.ReadLink.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
+             Link="Common\System\Text\ValueUtf8Converter.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.GetIntegerBytes.cs"
