@@ -1361,15 +1361,31 @@ namespace System.Diagnostics
 
         public override string ToString()
         {
-            if (Associated)
+            string result = base.ToString();
+
+            try
             {
-                string processName = ProcessName;
-                if (processName.Length != 0)
+                if (Associated)
                 {
-                    return $"{base.ToString()} ({processName})";
+                    _processInfo ??= ProcessManager.GetProcessInfo(_processId, _machineName);
+                    if (_processInfo is not null)
+                    {
+                        string processName = _processInfo.ProcessName;
+                        if (processName.Length != 0)
+                        {
+                            result = $"{result} ({processName})";
+                        }
+                    }
                 }
             }
-            return base.ToString();
+            catch
+            {
+                // Common contract for ToString methods is never throw.
+                // Handle cases where a process would terminates immediately after our checks
+                // and/or cause ProcessManager to throw an exception.
+            }
+
+            return result;
         }
 
         /// <devdoc>
