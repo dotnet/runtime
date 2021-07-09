@@ -15,7 +15,7 @@ HRESULT GCAllocateProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     Profiler::Initialize(pICorProfilerInfoUnk);
 
     HRESULT hr = S_OK;
-    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(COR_PRF_ENABLE_OBJECT_ALLOCATED, COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED | COR_PRF_HIGH_MONITOR_PINNEDOBJECT_ALLOCATED)))
+    if (FAILED(hr = pCorProfilerInfo->SetEventMask2(COR_PRF_ENABLE_OBJECT_ALLOCATED, COR_PRF_HIGH_BASIC_GC | COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED | COR_PRF_HIGH_MONITOR_PINNEDOBJECT_ALLOCATED)))
     {
         printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x", hr);
         return hr;
@@ -31,14 +31,20 @@ HRESULT STDMETHODCALLTYPE GCAllocateProfiler::ObjectAllocated(ObjectID objectId,
     if (FAILED(hr))
     {
         printf("GetObjectGeneration failed hr=0x%x\n", hr);
+        _failures++;
+    }
+    else if (gen.generation == COR_PRF_GC_LARGE_OBJECT_HEAP)
+    {
+        _gcLOHAllocations++;
     }
     else if (gen.generation == COR_PRF_GC_PINNED_OBJECT_HEAP)
     {
         _gcPOHAllocations++;
     }
-    else if (gen.generation == COR_PRF_GC_LARGE_OBJECT_HEAP)
+    else
     {
-        _gcLOHAllocations++;
+        printf("Unexpected object allocation captured, gen.generation=0x%x\n", gen.generation);
+        _failures++;
     }
 
     return S_OK;
@@ -47,9 +53,20 @@ HRESULT STDMETHODCALLTYPE GCAllocateProfiler::ObjectAllocated(ObjectID objectId,
 HRESULT GCAllocateProfiler::Shutdown()
 {
     Profiler::Shutdown();
-    assert(_gcPOHAllocations > 0);
-    assert(_gcLOHAllocations > 0);
-    printf("PROFILER TEST PASSES. PinnedObjectAllocations=%d, LargeObjectAllocations=%d.\n", (int)_gcPOHAllocations, (int)_gcLOHAllocations);
+    if (_gcPOHAllocations == 0)
+    {
+        printf("There is no POH allocations\n");
+    }
+    else if (_gcLOHAllocations == 0)
+    {
+        printf("There is no LOH allocations\n");
+    }
+    else if (_failures == 0)
+    {
+        printf("%d LOH objects allocated\n", (int)_gcLOHAllocations);
+        printf("%d POH objects allocated\n", (int)_gcPOHAllocations);
+        printf("PROFILER TEST PASSES\n");
+    }
     fflush(stdout);
 
     return S_OK;
