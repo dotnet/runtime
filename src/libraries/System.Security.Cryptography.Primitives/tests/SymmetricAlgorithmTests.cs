@@ -462,6 +462,40 @@ namespace System.Security.Cryptography.Primitives.Tests
         }
 
         [Fact]
+        public static void EncryptCbc_BadInitializationVectorLength()
+        {
+            static bool EncryptImpl(
+                ReadOnlySpan<byte> plaintext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                out int bytesWritten)
+            {
+                Assert.True(false, "Initialization vector was not validated, core should not have been called.");
+                bytesWritten = 0;
+                return false;
+            }
+
+            OneShotSymmetricAlgorithm alg = new OneShotSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryEncryptCbcCoreImpl = EncryptImpl,
+            };
+
+            byte[] badIv = new byte[alg.BlockSize / 8 + 1];
+            byte[] destination = new byte[alg.BlockSize / 8];
+
+            AssertExtensions.Throws<ArgumentException>("iv", () =>
+                alg.EncryptCbc(Array.Empty<byte>(), badIv, PaddingMode.None));
+
+            AssertExtensions.Throws<ArgumentException>("iv", () =>
+                alg.EncryptCbc(Array.Empty<byte>(), badIv, destination, PaddingMode.None));
+
+            AssertExtensions.Throws<ArgumentException>("iv", () =>
+                alg.TryEncryptCbc(Array.Empty<byte>(), badIv, destination, out _, PaddingMode.None));
+        }
+
+        [Fact]
         public static void EncryptCfb_NotSupportedInDerived()
         {
             AnySizeAlgorithm alg = new AnySizeAlgorithm { BlockSize = 128 };
