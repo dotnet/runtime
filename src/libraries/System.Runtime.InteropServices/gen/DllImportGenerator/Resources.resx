@@ -141,6 +141,9 @@
   <data name="ConfigurationNotSupportedMessage" xml:space="preserve">
     <value>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</value>
   </data>
+  <data name="ConfigurationNotSupportedMessageMarshallingInfo" xml:space="preserve">
+    <value>The specified marshalling configuration is not supported by source-generated P/Invokes. {0}.</value>
+  </data>
   <data name="ConfigurationNotSupportedMessageParameter" xml:space="preserve">
     <value>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</value>
   </data>
@@ -152,6 +155,9 @@
   </data>
   <data name="ConfigurationNotSupportedTitle" xml:space="preserve">
     <value>Specified configuration is not supported by source-generated P/Invokes.</value>
+  </data>
+  <data name="ConstantAndElementCountInfoDisallowed" xml:space="preserve">
+    <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionLevel'</value>
   </data>
   <data name="ConvertToGeneratedDllImportDescription" xml:space="preserve">
     <value>Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</value>
@@ -177,6 +183,18 @@
   </data>
   <data name="CustomTypeMarshallingNativeToManagedUnsupported" xml:space="preserve">
     <value>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</value>
+  </data>
+  <data name="CyclicalCountInfo" xml:space="preserve">
+    <value>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</value>
+  </data>
+  <data name="DuplicateCountInfo" xml:space="preserve">
+    <value>Count information for a given element at a given indirection level can only be specified once</value>
+  </data>
+  <data name="DuplicateMarshallingInfo" xml:space="preserve">
+    <value>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</value>
+  </data>
+  <data name="ExtraneousMarshallingInfo" xml:space="preserve">
+    <value>Marshalling info was specified for 'ElementIndirectionLevel' {0}, but marshalling info was only needed for {1} level(s) of indirection</value>
   </data>
   <data name="GeneratedDllImportContainingTypeMissingModifiersDescription" xml:space="preserve">
     <value>Types that contain methods marked with 'GeneratedDllImportAttribute' must be 'partial'. P/Invoke source generation will ignore methods contained within non-partial types.</value>

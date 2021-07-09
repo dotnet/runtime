@@ -186,7 +186,7 @@ namespace Microsoft.Interop
                 {
                     if (marshallingAttributesByIndirectionLevel.ContainsKey(indirectionLevel))
                     {
-                        _diagnostics.ReportConfigurationNotSupported(attribute, "Marshalling Data for Indirection Level", indirectionLevel.ToString());
+                        _diagnostics.ReportInvalidMarshallingAttributeInfo(attribute, nameof(Resources.DuplicateMarshallingInfo), indirectionLevel.ToString());
                         return NoMarshallingInfo.Instance;
                     }
                     marshallingAttributesByIndirectionLevel.Add(indirectionLevel, attribute);
@@ -203,7 +203,11 @@ namespace Microsoft.Interop
                 ref maxIndirectionLevelUsed);
             if (maxIndirectionLevelUsed < maxIndirectionLevelDataProvided)
             {
-                _diagnostics.ReportConfigurationNotSupported(marshallingAttributesByIndirectionLevel[maxIndirectionLevelDataProvided], ManualTypeMarshallingHelper.MarshalUsingProperties.ElementIndirectionLevel, maxIndirectionLevelDataProvided.ToString());
+                _diagnostics.ReportInvalidMarshallingAttributeInfo(
+                    marshallingAttributesByIndirectionLevel[maxIndirectionLevelDataProvided],
+                    nameof(Resources.ExtraneousMarshallingInfo),
+                    maxIndirectionLevelDataProvided.ToString(),
+                    maxIndirectionLevelUsed.ToString());
             }
             return info;
         }
@@ -232,7 +236,7 @@ namespace Microsoft.Interop
                 {
                     if (parsedCountInfo != NoCountInfo.Instance)
                     {
-                        _diagnostics.ReportConfigurationNotSupported(useSiteAttribute, "Duplicate Count Info");
+                        _diagnostics.ReportInvalidMarshallingAttributeInfo(useSiteAttribute, nameof(Resources.DuplicateCountInfo));
                         return NoMarshallingInfo.Instance;
                     }
                     parsedCountInfo = CreateCountInfo(useSiteAttribute, inspectedElements);
@@ -333,7 +337,7 @@ namespace Microsoft.Interop
 
             if (constSize is not null && elementName is not null)
             {
-                _diagnostics.ReportConfigurationNotSupported(marshalUsingData, $"{ManualTypeMarshallingHelper.MarshalUsingProperties.ConstantElementCount} and {ManualTypeMarshallingHelper.MarshalUsingProperties.CountElementName} combined");
+                _diagnostics.ReportInvalidMarshallingAttributeInfo(marshalUsingData, nameof(Resources.ConstantAndElementCountInfoDisallowed));
             }
             else if (constSize is not null)
             {
@@ -360,7 +364,7 @@ namespace Microsoft.Interop
                 // This ensures that we've unwound the whole cycle so when we return NoCountInfo.Instance, there will be no cycles in the count info.
                 catch (CyclicalCountElementInfoException ex) when (ex.StartOfCycle == elementName)
                 {
-                    _diagnostics.ReportConfigurationNotSupported(marshalUsingData, $"Cyclical {ManualTypeMarshallingHelper.MarshalUsingProperties.CountElementName}");
+                    _diagnostics.ReportInvalidMarshallingAttributeInfo(marshalUsingData, nameof(Resources.CyclicalCountInfo), elementName);
                     return NoCountInfo.Instance;
                 }
             }
@@ -392,7 +396,7 @@ namespace Microsoft.Interop
             // This ensures that we've unwound the whole cycle so when we return, there will be no cycles in the count info.
             catch (CyclicalCountElementInfoException ex) when (ex.StartOfCycle == param.Name)
             {
-                _diagnostics.ReportConfigurationNotSupported(attrData, $"Cyclical {ManualTypeMarshallingHelper.MarshalUsingProperties.CountElementName}");
+                _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(Resources.CyclicalCountInfo), param.Name);
                 return SizeAndParamIndexInfo.UnspecifiedParam;
             }
         }
@@ -571,14 +575,14 @@ namespace Microsoft.Interop
             {
                 if (isMarshalUsingAttribute)
                 {
-                    _diagnostics.ReportConfigurationNotSupported(attrData, "Native Type", nativeType.ToDisplayString());
+                    _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(Resources.NativeGenericTypeMustBeClosedOrMatchArityMessage), nativeType.ToDisplayString());
                     return NoMarshallingInfo.Instance;
                 }
                 else if (type is INamedTypeSymbol namedType)
                 {
                     if (namedType.Arity != nativeType.Arity)
                     {
-                        _diagnostics.ReportConfigurationNotSupported(attrData, "Native Type", nativeType.ToDisplayString());
+                        _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(Resources.NativeGenericTypeMustBeClosedOrMatchArityMessage), nativeType.ToDisplayString());
                         return NoMarshallingInfo.Instance;
                     }
                     else
@@ -588,7 +592,7 @@ namespace Microsoft.Interop
                 }
                 else
                 {
-                    _diagnostics.ReportConfigurationNotSupported(attrData, "Native Type", nativeType.ToDisplayString());
+                    _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(Resources.NativeGenericTypeMustBeClosedOrMatchArityMessage), nativeType.ToDisplayString());
                     return NoMarshallingInfo.Instance;
                 }
             }
@@ -632,7 +636,12 @@ namespace Microsoft.Interop
 
             if (methods == SupportedMarshallingMethods.None)
             {
-                _diagnostics.ReportConfigurationNotSupported(attrData, "Native Type", nativeType.ToDisplayString());
+                _diagnostics.ReportInvalidMarshallingAttributeInfo(
+                    attrData,
+                    isContiguousCollectionMarshaller
+                        ? nameof(Resources.CollectionNativeTypeMustHaveRequiredShapeMessage)
+                        : nameof(Resources.NativeTypeMustHaveRequiredShapeMessage),
+                    nativeType.ToDisplayString());
                 return NoMarshallingInfo.Instance;
             }
 
@@ -640,13 +649,13 @@ namespace Microsoft.Interop
             {
                 if (!ManualTypeMarshallingHelper.HasNativeValueStorageProperty(nativeType, spanOfByte))
                 {
-                    _diagnostics.ReportConfigurationNotSupported(attrData, "Native Type", nativeType.ToDisplayString());
+                    _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(Resources.CollectionNativeTypeMustHaveRequiredShapeMessage), nativeType.ToDisplayString());
                     return NoMarshallingInfo.Instance;
                 }
 
                 if (!ManualTypeMarshallingHelper.TryGetElementTypeFromContiguousCollectionMarshaller(nativeType, out ITypeSymbol elementType))
                 {
-                    _diagnostics.ReportConfigurationNotSupported(attrData, "Native Type", nativeType.ToDisplayString());
+                    _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(Resources.CollectionNativeTypeMustHaveRequiredShapeMessage), nativeType.ToDisplayString());
                     return NoMarshallingInfo.Instance;
                 }
 

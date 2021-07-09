@@ -151,6 +151,15 @@ namespace Microsoft.Interop {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The specified marshalling configuration is not supported by source-generated P/Invokes. {0}.
+        /// </summary>
+        internal static string ConfigurationNotSupportedMessageMarshallingInfo {
+            get {
+                return ResourceManager.GetString("ConfigurationNotSupportedMessageMarshallingInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The specified &apos;{0}&apos; configuration for parameter &apos;{1}&apos; is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead..
         /// </summary>
         internal static string ConfigurationNotSupportedMessageParameter {
@@ -183,6 +192,15 @@ namespace Microsoft.Interop {
         internal static string ConfigurationNotSupportedTitle {
             get {
                 return ResourceManager.GetString("ConfigurationNotSupportedTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Only one of &apos;ConstantElementCount&apos; or &apos;ElementCountInfo&apos; may be used in a &apos;MarshalUsingAttribute&apos; for a given &apos;ElementIndirectionLevel&apos;.
+        /// </summary>
+        internal static string ConstantAndElementCountInfoDisallowed {
+            get {
+                return ResourceManager.GetString("ConstantAndElementCountInfoDisallowed", resourceCulture);
             }
         }
         
@@ -255,6 +273,42 @@ namespace Microsoft.Interop {
         internal static string CustomTypeMarshallingNativeToManagedUnsupported {
             get {
                 return ResourceManager.GetString("CustomTypeMarshallingNativeToManagedUnsupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This element cannot depend on &apos;{0}&apos; for collection size information without creating a dependency cycle.
+        /// </summary>
+        internal static string CyclicalCountInfo {
+            get {
+                return ResourceManager.GetString("CyclicalCountInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Count information for a given element at a given indirection level can only be specified once.
+        /// </summary>
+        internal static string DuplicateCountInfo {
+            get {
+                return ResourceManager.GetString("DuplicateCountInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}.
+        /// </summary>
+        internal static string DuplicateMarshallingInfo {
+            get {
+                return ResourceManager.GetString("DuplicateMarshallingInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Marshalling info was specified for &apos;ElementIndirectionLevel&apos; {0}, but marshalling info was only needed for {1} levels of indirection.
+        /// </summary>
+        internal static string ExtraneousMarshallingInfo {
+            get {
+                return ResourceManager.GetString("ExtraneousMarshallingInfo", resourceCulture);
             }
         }
         

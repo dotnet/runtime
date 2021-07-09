@@ -154,6 +154,16 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
 
+        public readonly static DiagnosticDescriptor MarshallingAttributeConfigurationNotSupported =
+            new DiagnosticDescriptor(
+                Ids.ConfigurationNotSupported,
+                GetResourceString(nameof(Resources.ConfigurationNotSupportedTitle)),
+                GetResourceString(nameof(Resources.ConfigurationNotSupportedMessageMarshallingInfo)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(Resources.ConfigurationNotSupportedDescription)));
+
         public readonly static DiagnosticDescriptor TargetFrameworkNotSupported =
             new DiagnosticDescriptor(
                 Ids.TargetFrameworkNotSupported,
@@ -278,6 +288,17 @@ namespace Microsoft.Interop
                             paramSymbol.Name));
                 }
             }
+        }
+
+        internal void ReportInvalidMarshallingAttributeInfo(
+            AttributeData attributeData,
+            string reasonResourceName,
+            params string[] reasonArgs)
+        {
+            this.context.ReportDiagnostic(
+                attributeData.CreateDiagnostic(
+                    GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported,
+                    new LocalizableResourceString(reasonResourceName, Resources.ResourceManager, typeof(Resources), reasonArgs)));
         }
 
         /// <summary>
