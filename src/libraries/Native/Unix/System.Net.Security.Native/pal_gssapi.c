@@ -19,6 +19,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 
 #if defined(GSS_SHIM)
 #include <dlfcn.h>
