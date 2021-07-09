@@ -15,7 +15,7 @@ namespace System
 {
     public sealed partial class TimeZoneInfo
     {
-        private const string _defaultTimeZoneDirectory = "/usr/share/zoneinfo/";
+        private const string DefaultTimeZoneDirectory = "/usr/share/zoneinfo/";
 
         // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
         // Hard-coded because we need to treat all aliases of UTC the same even when globalization data is not available.

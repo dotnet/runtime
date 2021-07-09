@@ -11,12 +11,12 @@ namespace System
 {
     public sealed partial class TimeZoneInfo
     {
-        private const string _timeZoneFileName = "tzdata";
+        private const string TimeZoneFileName = "tzdata";
 
         private static AndroidTzData? s_tzData;
         private static readonly object s_tzDataLock = new object();
 
-        private static AndroidTzData s_androidTzDataInstance
+        private static AndroidTzData AndroidTzDataInstance
         {
             get
             {
@@ -118,12 +118,11 @@ namespace System
 
             try
             {
-                byte[] buffer = s_androidTzDataInstance.GetTimeZoneData(name);
+                byte[] buffer = AndroidTzDataInstance.GetTimeZoneData(name);
                 return GetTimeZoneFromTzData(buffer, id);
             }
             catch
             {
-                // How should we handle
                 return null;
             }
         }
@@ -175,21 +174,21 @@ namespace System
         private static string GetTimeZoneDirectory()
         {
             // Android 10+, TimeData module where the updates land
-            if (File.Exists(Path.Combine(GetApexTimeDataRoot() + "/etc/tz/", _timeZoneFileName)))
+            if (File.Exists(Path.Combine(GetApexTimeDataRoot() + "/etc/tz/", TimeZoneFileName)))
             {
                 return GetApexTimeDataRoot() + "/etc/tz/";
             }
             // Android 10+, Fallback location if the above isn't found or corrupted
-            if (File.Exists(Path.Combine(GetApexRuntimeRoot() + "/etc/tz/", _timeZoneFileName)))
+            if (File.Exists(Path.Combine(GetApexRuntimeRoot() + "/etc/tz/", TimeZoneFileName)))
             {
                 return GetApexRuntimeRoot() + "/etc/tz/";
             }
-            if (File.Exists(Path.Combine(Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/", _timeZoneFileName)))
+            if (File.Exists(Path.Combine(Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/", TimeZoneFileName)))
             {
                 return Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/";
             }
 
-            return Environment.GetEnvironmentVariable("ANDROID_ROOT") + _defaultTimeZoneDirectory;
+            return Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory;
         }
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
@@ -201,7 +200,7 @@ namespace System
 
             if (value == null)
             {
-                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, GetTimeZoneDirectory() + _timeZoneFileName));
+                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, GetTimeZoneDirectory() + TimeZoneFileName));
                 return TimeZoneInfoResult.TimeZoneNotFoundException;
             }
 
@@ -210,7 +209,7 @@ namespace System
 
         private static string[] GetTimeZoneIds()
         {
-            return s_androidTzDataInstance.GetTimeZoneIds();
+            return AndroidTzDataInstance.GetTimeZoneIds();
         }
 
         /*
@@ -252,7 +251,7 @@ namespace System
 
             public AndroidTzData()
             {
-                ReadHeader(GetTimeZoneDirectory() + _timeZoneFileName);
+                ReadHeader(GetTimeZoneDirectory() + TimeZoneFileName);
             }
 
             private unsafe void ReadHeader(string tzFilePath)
@@ -372,7 +371,7 @@ namespace System
                 int length = _lengths![i];
                 var buffer = new byte[length];
                 // Do we need to lock to prevent multithreading issues like the mono/mono implementation?
-                string tzFilePath = GetTimeZoneDirectory() + _timeZoneFileName;
+                string tzFilePath = GetTimeZoneDirectory() + TimeZoneFileName;
                 using (FileStream fs = File.OpenRead(tzFilePath))
                 {
                     fs.Position = offset;
