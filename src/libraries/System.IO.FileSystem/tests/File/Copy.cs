@@ -239,6 +239,18 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2));
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2 + alternateStream));
         }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [InlineData("/proc/cmdline")]
+        [InlineData("/proc/version")]
+        [InlineData("/proc/filesystems")]
+        public void Linux_CopyFromProcfsToFile(string path)
+        {
+            string testFile = GetTestFilePath();
+            File.Copy(path, testFile);
+            Assert.Equal(File.ReadAllText(path), File.ReadAllText(testFile)); // assumes chosen files won't change between reads
+        }
         #endregion
     }
 
