@@ -1762,12 +1762,12 @@ private:
     void          emitJumpDistBind(); // Bind all the local jumps in method
 
 #if FEATURE_LOOP_ALIGN
-    instrDescAlign* emitCurIGAlignList;          // list of align instructions in current IG
-    unsigned        emitLastInnerLoopStartIgNum; // Start IG of last inner loop
-    unsigned        emitLastInnerLoopEndIgNum;   // End IG of last inner loop
-    unsigned        emitLastAlignedIgNum;        // last IG that has align instruction
-    instrDescAlign* emitAlignList;               // list of local align instructions in method
-    instrDescAlign* emitAlignLast;               // last align instruction in method
+    instrDescAlign* emitCurIGAlignList;   // list of align instructions in current IG
+    unsigned        emitLastLoopStart;    // Start IG of last inner loop
+    unsigned        emitLastLoopEnd;      // End IG of last inner loop
+    unsigned        emitLastAlignedIgNum; // last IG that has align instruction
+    instrDescAlign* emitAlignList;        // list of local align instructions in method
+    instrDescAlign* emitAlignLast;        // last align instruction in method
     unsigned getLoopSize(insGroup* igLoopHeader,
                          unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)); // Get the smallest loop size
     void emitLoopAlignment();

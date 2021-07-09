@@ -138,9 +138,9 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(9, Keywords = Keywords.TimeSeriesValues | Keywords.Messages | Keywords.InstrumentPublishing)]
-        public void Error(string sessionId, string errorMessage, string errorStack)
+        public void Error(string sessionId, string errorMessage)
         {
-            WriteEvent(9, sessionId, errorMessage, errorStack);
+            WriteEvent(9, sessionId, errorMessage);
         }
 
         [Event(10, Keywords = Keywords.TimeSeriesValues | Keywords.InstrumentPublishing)]
@@ -203,7 +203,7 @@ namespace System.Diagnostics.Metrics
                         // This limitation shouldn't really matter because browser also doesn't support out-of-proc EventSource communication
                         // which is the intended scenario for this EventSource. If it matters in the future AggregationManager can be
                         // modified to have some other fallback path that works for browser.
-                        Log.Error("", "System.Diagnostics.Metrics EventSource not supported on browser", "");
+                        Log.Error("", "System.Diagnostics.Metrics EventSource not supported on browser");
                         return;
                     }
 #endif
@@ -301,7 +301,7 @@ namespace System.Diagnostics.Metrics
                             i => Log.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
                             i => Log.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
                             () => Log.InitialInstrumentEnumerationComplete(sessionId),
-                            e => Log.Error(sessionId, e.Message, e.StackTrace?.ToString() ?? ""),
+                            e => Log.Error(sessionId, e.ToString()),
                             () => Log.TimeSeriesLimitReached(sessionId),
                             () => Log.HistogramLimitReached(sessionId));
 
@@ -328,7 +328,7 @@ namespace System.Diagnostics.Metrics
 
             private bool LogError(Exception e)
             {
-                Log.Error(_sessionId, e.Message, e.StackTrace?.ToString() ?? "");
+                Log.Error(_sessionId, e.ToString());
                 // this code runs as an exception filter
                 // returning false ensures the catch handler isn't run
                 return false;

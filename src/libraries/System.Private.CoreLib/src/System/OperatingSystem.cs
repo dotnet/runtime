@@ -197,6 +197,13 @@ namespace System
             false;
 #endif
 
+        internal static bool IsOSXLike() =>
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            true;
+#else
+            false;
+#endif
+
         /// <summary>
         /// Check for the macOS version (returned by 'libobjc.get_operatingSystemVersion') with a >= version comparison. Used to guard APIs that were added in the given macOS release.
         /// </summary>
