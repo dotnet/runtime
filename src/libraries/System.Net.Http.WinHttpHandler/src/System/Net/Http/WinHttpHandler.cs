@@ -873,7 +873,6 @@ namespace System.Net.Http
         {
             Debug.Assert(state.RequestMessage != null);
             Debug.Assert(state.RequestMessage.RequestUri != null);
-            Debug.Assert(state.RequestHandle != null);
             Debug.Assert(state.Handler != null);
             Debug.Assert(state.Tcs != null);
 
