@@ -356,7 +356,7 @@
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
         <PayloadArchive>%(Identity)</PayloadArchive>
         <!-- No RunTests script generated for the sample project so we just use the direct command -->
-        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --engine=NodeJS  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$(XHarnessOutput) --run %(FileName).dll</Command>
+        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --engine=NodeJS  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$(XHarnessOutput) -- --run %(FileName).dll</Command>
       </HelixWorkItem>
     </ItemGroup>
 

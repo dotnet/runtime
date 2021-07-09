@@ -21,9 +21,9 @@ namespace Wasm.Build.Tests
         [BuildAndRun(host: RunHost.V8, aot: false, parameters: false)]
         [BuildAndRun(host: RunHost.V8, aot: false, parameters: true)]
         [BuildAndRun(host: RunHost.V8, aot: true,  parameters: false)]
-        [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: false)]
-        [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: true)]
-        [BuildAndRun(host: RunHost.NodeJS, aot: true,  parameters: false)]
+        // [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: false)] // causes tests to be built for node but they still are run as V8 TODO fix
+        // [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: true)]
+        // [BuildAndRun(host: RunHost.NodeJS, aot: true,  parameters: false)]
         public void NoOpRebuild(BuildArgs buildArgs, bool nativeRelink, RunHost host, string id)
         {
             string projectName = $"rebuild_{buildArgs.Config}_{buildArgs.AOT}";

@@ -2936,6 +2936,13 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/*">
             <Issue>https://github.com/dotnet/runtime/issues/41471</Issue>
         </ExcludeList>
+        
+        <!-- NodeJS temporary exclude list -->
+        <ItemGroup Condition="'$(ForNode)' == 'true'">
+            <ExcludeList Include = "$(XunitTestBinBase)/JIT/**">
+                <Issue>needs testing infrastructure changes that are being delayed to work incrementally from a green build</Issue>
+            </ExcludeList>
+        </ItemGroup>
     </ItemGroup>
 
     <ItemGroup Condition=" $(TargetOS) == 'Android' " >
