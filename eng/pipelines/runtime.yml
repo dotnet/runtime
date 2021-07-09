@@ -576,10 +576,10 @@ jobs:
     jobParameters:
       runtimeVariant: crossaot
       dependsOn:
-      - mono_android_offsets
+      #- mono_android_offsets
       - mono_browser_offsets
       monoCrossAOTTargetOS:
-      - Android
+      #- Android
       - Browser
       condition: >-
         or(
