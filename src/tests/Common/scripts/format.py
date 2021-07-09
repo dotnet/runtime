@@ -235,7 +235,7 @@ def main(argv):
         print("2. Select the '1 artifact produced' at the end of the log.")
         print("3. Artifacts are located in alphabetical order, target artifact name is")
         print("   'format.<OS>.<architecture>.patch.'. Find appropriate format patch artifact.")
-        print("4. On the rigth side of the artifact there is a 'More actions' menu drawed by")
+        print("4. On the right side of the artifact there is a 'More actions' menu shown by a")
         print("   vertical three-dot symbol. Click on it and select 'Download artifacts' option.")
         print("5. Unzip the patch file.")
         print("6. git apply format.patch")
