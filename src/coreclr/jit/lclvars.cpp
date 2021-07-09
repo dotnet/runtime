@@ -3493,13 +3493,21 @@ void Compiler::lvaSortByRefCount()
             {
                 varDsc->lvTracked = 0;
             }
-            else if ((varDsc->lvType == TYP_STRUCT) && !varDsc->lvRegStruct && !compEnregStructLocals())
-            {
-                lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
-            }
             else if (!varDsc->IsEnregisterableType())
             {
                 lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
+            }
+            else if (varDsc->lvType == TYP_STRUCT)
+            {
+                if (!varDsc->lvRegStruct && !compEnregStructLocals())
+                {
+                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
+                }
+                else if (varDsc->lvIsMultiRegArgOrRet())
+                {
+                    // Prolog and return generators do not support SIMD<->general register moves.
+                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStructArg));
+                }
             }
             else if (varDsc->lvType == TYP_STRUCT)
             {
@@ -4170,7 +4178,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                     // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
                     // such variable. In future, need to enable enregisteration for such variables.
-                    if (!varTypeNeedsPartialCalleeSave(varDsc->lvType))
+                    if (!varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()))
 #endif
                     {
                         varDsc->lvSingleDefRegCandidate = true;

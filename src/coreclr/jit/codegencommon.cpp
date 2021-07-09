@@ -3783,7 +3783,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 varNum = regArgTab[argNum].varNum;
                 noway_assert(varNum < compiler->lvaCount);
-                varDsc = compiler->lvaTable + varNum;
+                varDsc                     = compiler->lvaTable + varNum;
+                const var_types varRegType = varDsc->GetRegisterType();
                 noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
 
                 /* cannot possibly have stack arguments */
@@ -3827,7 +3828,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     assert(argNum > 0);
                     assert(regArgTab[argNum - 1].slot == 1);
                     assert(regArgTab[argNum - 1].varNum == varNum);
-                    assert((varDsc->lvType == TYP_SIMD12) || (varDsc->lvType == TYP_SIMD16));
+                    assert((varRegType == TYP_SIMD12) || (varRegType == TYP_SIMD16));
                     regArgMaskLive &= ~genRegMask(regNum);
                     regArgTab[argNum].circular = false;
                     change                     = true;
@@ -4338,9 +4339,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
             varNum = regArgTab[argNum].varNum;
             noway_assert(varNum < compiler->lvaCount);
-            varDsc            = compiler->lvaTable + varNum;
-            var_types regType = regArgTab[argNum].getRegType(compiler);
-            regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType);
+            varDsc                     = compiler->lvaTable + varNum;
+            const var_types regType    = regArgTab[argNum].getRegType(compiler);
+            const regNumber regNum     = genMapRegArgNumToRegNum(argNum, regType);
+            const var_types varRegType = varDsc->GetRegisterType();
 
 #if defined(UNIX_AMD64_ABI)
             if (regType == TYP_UNDEF)
@@ -4439,7 +4441,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 assert(regArgTab[argNum].slot == 2);
                 assert(argNum > 0);
                 assert(regArgTab[argNum - 1].slot == 1);
-                assert((varDsc->lvType == TYP_SIMD12) || (varDsc->lvType == TYP_SIMD16));
+                assert((varRegType == TYP_SIMD12) || (varRegType == TYP_SIMD16));
                 destRegNum = varDsc->GetRegNum();
                 noway_assert(regNum != destRegNum);
                 continue;
@@ -4509,7 +4511,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 noway_assert(regArgTab[nextArgNum].varNum == varNum);
                 // Emit a shufpd with a 0 immediate, which preserves the 0th element of the dest reg
                 // and moves the 0th element of the src reg into the 1st element of the dest reg.
-                GetEmitter()->emitIns_R_R_I(INS_shufpd, emitActualTypeSize(varDsc->lvType), destRegNum, nextRegNum, 0);
+                GetEmitter()->emitIns_R_R_I(INS_shufpd, emitActualTypeSize(varRegType), destRegNum, nextRegNum, 0);
                 // Set destRegNum to regNum so that we skip the setting of the register below,
                 // but mark argNum as processed and clear regNum from the live mask.
                 destRegNum = regNum;
@@ -11245,11 +11247,15 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     assert(regCount <= MAX_RET_REG_COUNT);
 
 #if FEATURE_MULTIREG_RET
+    // Right now the only enregisterable structs supported are SIMD vector types.
     if (genIsRegCandidateLocal(actualOp1))
     {
-        // Right now the only enregisterable structs supported are SIMD vector types.
-        assert(varTypeIsSIMD(op1));
-        assert(!actualOp1->AsLclVar()->IsMultiReg());
+#if defined(DEBUG)
+        const GenTreeLclVar* lclVar = actualOp1->AsLclVar();
+        const LclVarDsc*     varDsc = compiler->lvaGetDesc(lclVar);
+        assert(varTypeIsSIMD(varDsc->GetRegisterType()));
+        assert(!lclVar->IsMultiReg());
+#endif // DEBUG
 #ifdef FEATURE_SIMD
         genSIMDSplitReturn(op1, &retTypeDesc);
 #endif // FEATURE_SIMD
