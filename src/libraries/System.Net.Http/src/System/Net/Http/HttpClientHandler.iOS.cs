@@ -27,7 +27,7 @@ namespace System.Net.Http
         private bool GetAllowAutoRedirect() => (bool)InvokeNativeHandlerMethod("get_AllowAutoRedirect");
 
         [DynamicDependency("set_AllowAutoRedirect", "System.Net.Http.NSUrlSessionHandler", "Xamarin.iOS")]
-        void SetAllowAutoRedirect(bool value) => InvokeNativeHandlerMethod("set_AllowAutoRedirect", value);
+        private void SetAllowAutoRedirect(bool value) => InvokeNativeHandlerMethod("set_AllowAutoRedirect", value);
 
         [DynamicDependency("get_Credentials", "System.Net.Http.NSUrlSessionHandler", "Xamarin.iOS")]
         private ICredentials GetCredentials() => (ICredentials)InvokeNativeHandlerMethod("get_Credentials");
@@ -35,8 +35,6 @@ namespace System.Net.Http
         [DynamicDependency("set_Credentials", "System.Net.Http.NSUrlSessionHandler", "Xamarin.iOS")]
         private void SetCredentials(ICredentials? value) => InvokeNativeHandlerMethod("set_Credentials", value);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Xamarin dependencies are not available during libraries build")]
         private HttpMessageHandler CreateNativeHandler()
         {
             if (_underlyingHandlerMethod == null)

@@ -64,8 +64,6 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        public virtual bool SupportsProxy => false;
-
         [UnsupportedOSPlatform("browser")]
         public bool UseCookies
         {
@@ -127,20 +125,9 @@ namespace System.Net.Http
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
-        //[UnsupportedOSPlatform("maccatalyst")]
-        public IWebProxy? Proxy
-        {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
-        }
-
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
-        //[UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("maccatalyst")]
         public ICredentials? DefaultProxyCredentials
         {
             get => throw new PlatformNotSupportedException();
@@ -258,9 +245,9 @@ namespace System.Net.Http
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
-        //[UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("maccatalyst")]
         public int MaxConnectionsPerServer
         {
             get => throw new PlatformNotSupportedException();
@@ -302,9 +289,9 @@ namespace System.Net.Http
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
-        //[UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("maccatalyst")]
         public int MaxResponseHeadersLength
         {
             get => throw new PlatformNotSupportedException();
@@ -312,9 +299,9 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("android")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
-        //[UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("maccatalyst")]
         public ClientCertificateOption ClientCertificateOptions
         {
             get => throw new PlatformNotSupportedException();
@@ -323,9 +310,9 @@ namespace System.Net.Http
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
-        //[UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("maccatalyst")]
         public X509CertificateCollection ClientCertificates
         {
             get
@@ -336,9 +323,9 @@ namespace System.Net.Http
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
-        //[UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("maccatalyst")]
         public Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback
         {
             get => throw new PlatformNotSupportedException();
@@ -347,9 +334,9 @@ namespace System.Net.Http
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
-        //[UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("maccatalyst")]
         public bool CheckCertificateRevocationList
         {
             get => throw new PlatformNotSupportedException();
@@ -358,9 +345,9 @@ namespace System.Net.Http
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
-        //[UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("maccatalyst")]
         public SslProtocols SslProtocols
         {
             get => throw new PlatformNotSupportedException();
@@ -368,11 +355,15 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("android")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
-        //[UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("maccatalyst")]
         public IDictionary<string, object?> Properties => throw new PlatformNotSupportedException();
 
+        //
+        // Attributes are commented out due to https://github.com/dotnet/arcade/issues/7585
+        // API compat will fail until this is fixed
+        //
         //[UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         //[UnsupportedOSPlatform("ios")]
@@ -404,9 +395,9 @@ namespace System.Net.Http
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        //[UnsupportedOSPlatform("ios")]
-        //[UnsupportedOSPlatform("tvos")]
-        //[UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("maccatalyst")]
         public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
             throw new PlatformNotSupportedException();
 
@@ -418,8 +409,6 @@ namespace System.Net.Http
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Xamarin dependencies are not available during libraries build")]
         private object InvokeNativeHandlerMethod(string name, params object?[] parameters)
         {
             return _underlyingHandler!.GetType()!.GetMethod(name)!.Invoke(_underlyingHandler, parameters)!;
