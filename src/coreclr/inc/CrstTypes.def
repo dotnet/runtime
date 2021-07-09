@@ -202,7 +202,7 @@ Crst Exception
 End
 
 Crst ExecutableAllocatorLock
-    AcquiredAfter LoaderHeap
+    AcquiredAfter LoaderHeap LeafLock
 End
 
 Crst ExecuteManRangeLock

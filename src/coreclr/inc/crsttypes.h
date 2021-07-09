@@ -207,7 +207,7 @@ int g_rgCrstLevelMap[] =
     4,          // CrstJitPatchpoint
     -1,         // CrstJitPerf
     6,          // CrstJumpStubCache
-    0,          // CrstLeafLock
+    3,          // CrstLeafLock
     -1,         // CrstListLock
     15,         // CrstLoaderAllocator
     16,         // CrstLoaderAllocatorReferences
