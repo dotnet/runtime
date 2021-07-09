@@ -343,15 +343,18 @@ namespace Microsoft.Win32.SafeHandles
                 return true; // LOCK_SH is always OK when reading
             }
 
-            switch (Interop.Sys.GetFileSystemType(this))
+            if (!Interop.Sys.TryGetFileSystemType(this, out Interop.Sys.UnixFileSystemTypes unixFileSystemType))
             {
-                case 0x6969: // NFS_SUPER_MAGIC
-                case 0xFF534D42: // CIFS_MAGIC_NUMBER
-                case 0x517B: // SMB_SUPER_MAGIC
-                case 0xFE534D42: // SMB2_SUPER_MAGIC (#53182)
+                return false; // assume we should not acquire the lock if we don't know the File System
+            }
+
+            switch (unixFileSystemType)
+            {
+                case Interop.Sys.UnixFileSystemTypes.nfs:
+                case Interop.Sys.UnixFileSystemTypes.smb:
+                case Interop.Sys.UnixFileSystemTypes.cifs:
+                // case 0xFE534D42: // SMB2_SUPER_MAGIC (#53182)
                     return false; // LOCK_SH is not OK when writing to NFS, CIFS or SMB
-                case -1: // error
-                    return false; // assume we should not acquire the lock if we don't know the File System
                 default:
                     return true; // in all other situations it should be OK
             }
