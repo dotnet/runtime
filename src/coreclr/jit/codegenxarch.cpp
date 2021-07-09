@@ -3017,7 +3017,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         instruction simdMov = simdUnalignedMovIns();
 
-        // Get the largest SIMD register available if the size is larger than an xmm register
+        // Get the largest SIMD register available if the size is large enough
         unsigned regSize = size >= YMM_REGSIZE_BYTES ? compiler->getSIMDVectorRegisterByteLength() : XMM_REGSIZE_BYTES;
 
         for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
