@@ -1041,6 +1041,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 			continue;
 		}
 		case MONO_TABLE_METHODSEMANTICS: {
+			/* FIXME: this should get the current table size, not the base stable size */
 			if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
 				/* new rows are fine, as long as they point at existing methods */
 				guint32 sema_cols [MONO_METHOD_SEMA_SIZE];
@@ -1072,6 +1073,35 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 				unsupported_edits = TRUE;
 				continue;
 			}
+		}
+		case MONO_TABLE_CUSTOMATTRIBUTE: {
+			/* FIXME: this should get the current table size, not the base stable size */
+			if (token_index <= table_info_get_rows (&image_base->tables [token_table])) {
+				/* modifying existing rows is ok, as long as the parent and ctor are the same */
+				guint32 ca_upd_cols [MONO_CUSTOM_ATTR_SIZE];
+				guint32 ca_base_cols [MONO_CUSTOM_ATTR_SIZE];
+				int mapped_token = hot_reload_relative_delta_index (image_dmeta, mono_metadata_make_token (token_table, token_index));
+				g_assert (mapped_token != -1);
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x CUSTOM_ATTR update.  mapped index = 0x%08x\n", i, log_token, mapped_token);
+
+				mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_CUSTOMATTRIBUTE], mapped_token - 1, ca_upd_cols, MONO_CUSTOM_ATTR_SIZE);
+				mono_metadata_decode_row (&image_base->tables [MONO_TABLE_CUSTOMATTRIBUTE], token_index - 1, ca_base_cols, MONO_CUSTOM_ATTR_SIZE);
+
+				/* compare the ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] to ca_base_cols [MONO_CUSTOM_ATTR_PARENT]. */
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x CUSTOM_ATTR update. Old Parent 0x%08x New Parent 0x%08x\n", i, log_token, ca_base_cols [MONO_CUSTOM_ATTR_PARENT], ca_upd_cols [MONO_CUSTOM_ATTR_PARENT]);
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x CUSTOM_ATTR update. Old ctor 0x%08x New ctor 0x%08x\n", i, log_token, ca_base_cols [MONO_CUSTOM_ATTR_TYPE], ca_upd_cols [MONO_CUSTOM_ATTR_TYPE]);
+
+				if (ca_base_cols [MONO_CUSTOM_ATTR_PARENT] != ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] ||
+				    ca_base_cols [MONO_CUSTOM_ATTR_TYPE] != ca_upd_cols [MONO_CUSTOM_ATTR_TYPE]) {
+					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing CA table cols with a different Parent or Type. token=0x%08x", log_token);
+					unsupported_edits = TRUE;
+				}
+			} else  {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing table cols.", i, log_token);
+				mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing table cols. token=0x%08x", log_token);
+				unsupported_edits = TRUE;
+			}
+			continue;
 		}
 		default:
 			/* FIXME: this bounds check is wrong for cumulative updates - need to look at the DeltaInfo:count.prev_gen_rows */
@@ -1209,6 +1239,10 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			/* FIXME: use DeltaInfo:prev_gen_rows instead of image_base */
 			g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
 			/* assuming that property attributes and type haven't changed. */
+			break;
+		}
+		case MONO_TABLE_CUSTOMATTRIBUTE: {
+			/* ok, pass1 checked for disallowed modifications */
 			break;
 		}
 		default: {
