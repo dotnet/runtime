@@ -82,6 +82,9 @@ set_target_properties(System.Security.Cryptography.Native.OpenSsl-Static PROPERT
 
 if (GEN_SHARED_LIB)
     if (FEATURE_DISTRO_AGNOSTIC_SSL)
+        target_compile_options(System.Security.Cryptography.Native.OpenSsl PRIVATE -pthread)
+        target_link_options(System.Security.Cryptography.Native.OpenSsl PRIVATE -pthread)
+
         # on macOS the link step fails with undefined symbols, and the script doesn't run.
         # if the build succeeds, the script would succeed, except it uses a Linux-only command.
         #
