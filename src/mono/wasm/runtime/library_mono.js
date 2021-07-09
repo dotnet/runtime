@@ -264,6 +264,12 @@ var MonoSupportLib = {
 			/** @returns {ManagedPointer} */
 			get: function () {
 				var result = this.__buffer._unsafe_get (this.__index);
+				/*
+				if (typeof(result) !== "number")
+					throw new Error (`Reading root at address ${this.get_address()} failed`);
+				else
+					console.log(`get(${this.get_address()})==${result}`);
+				*/
 				return result;
 			},
 			set: function (value) {

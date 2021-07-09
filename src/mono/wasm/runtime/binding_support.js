@@ -405,7 +405,10 @@ var BindingSupportLib = {
 			return requiredObject;
 		},
 
-		_unbox_mono_obj_rooted_with_known_nonprimitive_type: function (mono_obj, type) {
+		_unbox_mono_obj_root_with_known_nonprimitive_type: function (root, type) {
+			if (root.value === undefined)
+				throw new Error(`Expected a root but got ${root}`);
+			
 			//See MARSHAL_TYPE_ defines in driver.c
 			switch (type) {
 				case 26: // int64
@@ -414,15 +417,15 @@ var BindingSupportLib = {
 					throw new Error ("int64 not available");
 				case 3: // string
 				case 29: // interned string
-					return this.conv_string (mono_obj);
+					return this.conv_string (root.value);
 				case 4: //vts
 					throw new Error ("no idea on how to unbox value types");
 				case 5: // delegate
-					return this._unbox_delegate_rooted (mono_obj);
+					return this._unbox_delegate_rooted (root.value);
 				case 6: // Task
-					return this._unbox_task_rooted (mono_obj);
+					return this._unbox_task_rooted (root.value);
 				case 7: // ref type
-					return this.extract_js_obj (mono_obj);
+					return this.extract_js_obj_root (root);
 				case 10: // arrays
 				case 11:
 				case 12:
@@ -434,29 +437,28 @@ var BindingSupportLib = {
 				case 18:
 					throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
 				case 20: // clr .NET DateTime
-					var dateValue = this.call_method(this.get_date_value, null, "m", [ mono_obj ]);
+					var dateValue = this.call_method(this.get_date_value, null, "m", [ root.value ]);
 					return new Date(dateValue);
 				case 21: // clr .NET DateTimeOffset
-					var dateoffsetValue = this._object_to_string (mono_obj);
+					var dateoffsetValue = this._object_to_string (root.value);
 					return dateoffsetValue;
 				case 22: // clr .NET Uri
-					var uriValue = this._object_to_string (mono_obj);
+					var uriValue = this._object_to_string (root.value);
 					return uriValue;
 				case 23: // clr .NET SafeHandle
-					return this._unbox_safehandle_rooted (mono_obj);
+					return this._unbox_safehandle_rooted (root.value);
 				case 30:
 					return undefined;
 				default:
-					throw new Error ("no idea on how to unbox object kind " + type + " at offset " + mono_obj);
+					throw new Error (`no idea on how to unbox object kind ${type} at offset ${root.value} (root address is ${root.get_address()})`);
 			}
 		},
 
 		_unbox_mono_obj_root: function (root) {
-			var mono_obj = root.value;
-			if (mono_obj === 0)
+			if (root.value === 0)
 				return undefined;
 
-			var type = this.mono_wasm_try_unbox_primitive_and_get_type (mono_obj, this._unbox_buffer);
+			var type = this.mono_wasm_try_unbox_primitive_and_get_type (root.value, this._unbox_buffer);
 			switch (type) {
 				case 1: // int
 					return Module.HEAP32[this._unbox_buffer / 4];
@@ -471,7 +473,7 @@ var BindingSupportLib = {
 				case 28: // char
 					return String.fromCharCode(Module.HEAP32[this._unbox_buffer / 4]);
 				default:
-					return this._unbox_mono_obj_rooted_with_known_nonprimitive_type (mono_obj, type);
+					return this._unbox_mono_obj_root_with_known_nonprimitive_type (root, type);
 			}
 		},
 
@@ -842,16 +844,27 @@ var BindingSupportLib = {
 		},
 
 		extract_js_obj: function (mono_obj) {
-			if (mono_obj == 0)
+			if (mono_obj === 0)
+				return null;
+			var root = MONO.mono_wasm_new_root (mono_obj);
+			try {
+				return this.extract_js_obj_root (root);
+			} finally {
+				root.release();
+			}
+		},
+
+		extract_js_obj_root: function (root) {
+			if (root.value === 0)
 				return null;
 
-			var js_id = this.wasm_get_js_id (mono_obj);
+			var js_id = this.wasm_get_js_id (root.value);
 			if (js_id > 0)
 				return this.mono_wasm_require_handle(js_id);
 
 			var gcHandle = this.mono_wasm_free_list.length ? this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
 			var js_obj = {
-				__mono_gchandle__: this.wasm_bind_existing(mono_obj, gcHandle + 1),
+				__mono_gchandle__: this.wasm_bind_existing(root.value, gcHandle + 1),
 				is_mono_bridged_obj: true
 			};
 
@@ -1409,15 +1422,15 @@ var BindingSupportLib = {
 				"resultRoot.value = binding_support.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());",
 				`binding_support._handle_exception_for_call (${converterKey}, buffer, resultRoot, exceptionRoot, argsRootBuffer);`,
 				"",
-				"var resultPtr = resultRoot.value, result = undefined;",
+				"var result = undefined;",
 				"if (!is_result_marshaled) ",
-				"    result = resultPtr;",
-				"else if (resultPtr !== 0) {",
+				"    result = resultRoot.value;",
+				"else if (resultRoot.value !== 0) {",
 				// For the common scenario where the return type is a primitive, we want to try and unbox it directly
 				//  into our existing heap allocation and then read it out of the heap. Doing this all in one operation
 				//  means that we only need to enter a gc safe region twice (instead of 3+ times with the normal,
 				//  slower check-type-and-then-unbox flow which has extra checks since unbox verifies the type).
-				"    var resultType = binding_support.mono_wasm_try_unbox_primitive_and_get_type (resultPtr, buffer);",
+				"    var resultType = binding_support.mono_wasm_try_unbox_primitive_and_get_type (resultRoot.value, buffer);",
 				"    switch (resultType) {",
 				"    case 1:", // int
 				"        result = Module.HEAP32[buffer / 4]; break;",
@@ -1432,7 +1445,7 @@ var BindingSupportLib = {
 				"    case 28:", // char
 				"        result = String.fromCharCode(Module.HEAP32[buffer / 4]); break;",
 				"    default:",
-				"        result = binding_support._unbox_mono_obj_rooted_with_known_nonprimitive_type (resultPtr, resultType); break;",
+				"        result = binding_support._unbox_mono_obj_root_with_known_nonprimitive_type (resultRoot, resultType); break;",
 				"    }",
 				"}",
 				"",
