@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -290,10 +291,7 @@ namespace System
                 where T : struct
             {
                 int size = Marshal.SizeOf(typeof(T));
-                if (buffer.Length < size)
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_BadBuffer);
-                }
+                Debug.Assert(buffer.Length >= size);
 
                 fs.Position = position;
                 int numBytesRead;
