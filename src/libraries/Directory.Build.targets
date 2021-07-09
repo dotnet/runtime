@@ -381,8 +381,10 @@
           Outputs="$(WorkloadStampFile)"
           Condition="'$(InstallWorkloadForTesting)' == 'true'">
 
-  <Exec Command="dotnet build -bl -v:diag -restore -t:Pack /p:TestingWorkloads=true /p:RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier) /p:Configuration=$(Configuration) /p:TargetCrossRid=$(RuntimeIdentifier) -p:TargetOS=Browser -p:TargetArchitecture=wasm Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
-    WorkingDirectory="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App" />
+  <Exec Command="dotnet build -bl -v:diag -restore -t:Pack /p:TestingWorkloads=true /p:RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier) /p:Configuration=$(Configuration) /p:TargetCrossRid=$(RuntimeIdentifier) -p:TargetOS=Browser -p:TargetArchitecture=wasm -p:ContinuousIntegrationBuild=$(ContinuousIntegrationBuild) Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
+    WorkingDirectory="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App"
+    Condition="'$(TryOption1)' == 'true'"
+    />
 
              <!--Properties="TestingWorkloads=true;RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier);Configuration=$(Configuration);TargetCrossRid=$(RuntimeIdentifier)"-->
     <!--<MSBuild Projects="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.MonoCrossAOT.sfxproj"-->
