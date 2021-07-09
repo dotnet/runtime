@@ -77,7 +77,7 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
             // Clear the range check flag and mark the index as non-faulting: we guarantee that all necessary range
             // checking has already been done by the time this array index expression is invoked.
             arr->gtFlags &= ~(GTF_INX_RNGCHK | GTF_EXCEPT);
-            arr->gtFlags |= GTF_INX_NONFAULTING;
+            arr->gtFlags |= GTF_INX_NOFAULT;
         }
         // If asked for arrlen invoke arr length operator.
         if (oper == ArrLen)

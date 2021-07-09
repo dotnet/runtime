@@ -105,14 +105,9 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
         curBuf = (curBuf + 1) % 4;
         return retbuf;
     }
-    else
-    {
-        // If we don't need any adjustments, just return it directly.
-        return insName;
-    }
-#else
+#endif // TARGET_XARCH
+
     return insName;
-#endif
 }
 
 /*****************************************************************************/

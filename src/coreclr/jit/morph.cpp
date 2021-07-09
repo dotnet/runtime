@@ -5577,8 +5577,8 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     GenTree* arrRef = asIndex->Arr();
     GenTree* index  = asIndex->Index();
 
-    bool chkd             = ((tree->gtFlags & GTF_INX_RNGCHK) != 0);      // if false, range checking will be disabled
-    bool indexNonFaulting = ((tree->gtFlags & GTF_INX_NONFAULTING) != 0); // if true, mark GTF_IND_NONFAULTING
+    bool chkd             = ((tree->gtFlags & GTF_INX_RNGCHK) != 0);    // if false, range checking will be disabled
+    bool indexNonFaulting = ((tree->gtFlags & GTF_INX_NOFAULT) != 0);   // if true, mark GTF_IND_NONFAULTING
     bool nCSE             = ((tree->gtFlags & GTF_DONT_CSE) != 0);
 
     GenTree* arrRefDefn = nullptr; // non-NULL if we need to allocate a temp for the arrRef expression
@@ -5739,9 +5739,9 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         this->compFloatingPointUsed = true;
     }
 
-    // We've now consumed the GTF_INX_RNGCHK and GTF_INX_NONFAULTING, and the node
+    // We've now consumed the GTF_INX_RNGCHK and GTF_INX_NOFAULT, and the node
     // is no longer a GT_INDEX node.
-    tree->gtFlags &= ~(GTF_INX_RNGCHK | GTF_INX_NONFAULTING);
+    tree->gtFlags &= ~(GTF_INX_RNGCHK | GTF_INX_NOFAULT);
 
     tree->AsOp()->gtOp1 = addr;
 
