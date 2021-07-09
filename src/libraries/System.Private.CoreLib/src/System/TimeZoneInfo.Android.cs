@@ -257,7 +257,7 @@ namespace System
             private unsafe void ReadHeader(string tzFilePath)
             {
                 int size = Math.Max(Marshal.SizeOf(typeof(AndroidTzDataHeader)), Marshal.SizeOf(typeof(AndroidTzDataEntry)));
-                var buffer = new byte[size];
+                Span<byte> buffer = stackalloc byte[size];
                 AndroidTzDataHeader header = ReadAt<AndroidTzDataHeader>(tzFilePath, 0, buffer);
 
                 header.indexOffset = NetworkToHostOrder(header.indexOffset);
@@ -282,7 +282,7 @@ namespace System
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2087:UnrecognizedReflectionPattern",
                 Justification = "Implementation detail of Android TimeZone")]
-            private unsafe T ReadAt<T>(string tzFilePath, long position, byte[] buffer)
+            private unsafe T ReadAt<T>(string tzFilePath, long position, Span<byte> buffer)
                 where T : struct
             {
                 int size = Marshal.SizeOf(typeof(T));
@@ -295,7 +295,7 @@ namespace System
                 {
                     fs.Position = position;
                     int numBytesRead;
-                    if ((numBytesRead = fs.Read(buffer, 0, size)) < size)
+                    if ((numBytesRead = fs.Read(buffer)) < size)
                     {
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ReadTZError, tzFilePath, position, size, numBytesRead, size));
                     }
@@ -328,7 +328,7 @@ namespace System
                 return len;
             }
 
-            private unsafe void ReadIndex(string tzFilePath, int indexOffset, int dataOffset, byte[] buffer)
+            private unsafe void ReadIndex(string tzFilePath, int indexOffset, int dataOffset, Span<byte> buffer)
             {
                 int indexSize = dataOffset - indexOffset;
                 int entrySize = Marshal.SizeOf(typeof(AndroidTzDataEntry));
@@ -376,7 +376,7 @@ namespace System
                 {
                     fs.Position = offset;
                     int numBytesRead;
-                    if ((numBytesRead = fs.Read(buffer, 0, buffer.Length)) < buffer.Length)
+                    if ((numBytesRead = fs.Read(buffer)) < buffer.Length)
                     {
                         throw new InvalidOperationException(string.Format(SR.InvalidOperation_ReadTZError, tzFilePath, offset, length, numBytesRead, buffer.Length));
                     }
