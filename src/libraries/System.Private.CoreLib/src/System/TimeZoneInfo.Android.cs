@@ -364,7 +364,7 @@ namespace System
                 int i = Array.BinarySearch(_ids!, id, StringComparer.Ordinal);
                 if (i < 0)
                 {
-                    throw new InvalidOperationException(SR.InvalidOperation_TimeZoneIDNotFound);
+                    throw new InvalidOperationException(SR.Format(SR.TimeZoneNotFound_MissingData, id));
                 }
 
                 int offset = _byteOffsets![i];

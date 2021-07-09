@@ -3799,7 +3799,4 @@
   <data name="InvalidOperation_BadIndexLength" xml:space="preserve">
     <value>Length in index file less than AndroidTzDataHeader</value>
   </data>
-  <data name="InvalidOperation_TimeZoneIDNotFound" xml:space="preserve">
-    <value>Error finding the timezone id</value>
-  </data>
 </root>
