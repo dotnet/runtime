@@ -72,6 +72,7 @@ namespace System.Reflection.Tests
         public static IEnumerable<object[]> PropertyTestData()
         {
             yield return new object[] { "PropertyNullable", NullabilityState.Nullable, NullabilityState.Nullable, typeof(TypeWithNotNullContext) };
+            yield return new object[] { "PropertyNullableReadOnly", NullabilityState.Nullable, NullabilityState.Unknown, typeof(TypeWithNotNullContext) };
             yield return new object[] { "PropertyUnknown", NullabilityState.Unknown, NullabilityState.Unknown, typeof(string) };
             yield return new object[] { "PropertyNonNullable", NullabilityState.NotNull, NullabilityState.NotNull, typeof(NullabilityInfoContextTests) };
             yield return new object[] { "PropertyValueTypeUnknown", NullabilityState.NotNull, NullabilityState.NotNull, typeof(short) };
@@ -100,7 +101,10 @@ namespace System.Reflection.Tests
             Assert.Equal(readState, nullability.ReadState);
             Assert.Equal(readState, nullabilityContext.Create(property.GetMethod.ReturnParameter).ReadState);
             Assert.Equal(writeState, nullability.WriteState);
-            Assert.Equal(writeState, nullabilityContext.Create(property.SetMethod.GetParameters()[0]).WriteState);
+            if (property.SetMethod != null)
+            {
+                Assert.Equal(writeState, nullabilityContext.Create(property.SetMethod.GetParameters()[0]).WriteState);
+            }
             Assert.Equal(type, nullability.Type);
             Assert.Empty(nullability.GenericTypeArguments);
             Assert.Null(nullability.ElementType);
@@ -116,7 +120,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [SkipOnMono("Temporarily disable on Mono")]
+        [SkipOnMono("Disabling NullablePublicOnly feature not work for Mono tests")]
         [MemberData(nameof(ArrayPropertyTestData))]
         public void ArrayPropertyTest(string propertyName, NullabilityState elementState, NullabilityState propertyState)
         {
@@ -138,7 +142,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [SkipOnMono("Temporarily disable on Mono")]
+        [SkipOnMono("Disabling NullablePublicOnly feature not work for Mono tests")]
         [MemberData(nameof(GenericArrayPropertyTestData))]
         public void GenericArrayPropertyTest(string propertyName, NullabilityState elementState, NullabilityState propertyState)
         {
@@ -162,7 +166,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [SkipOnMono("Temporarily disable on Mono")]
+        [SkipOnMono("Disabling NullablePublicOnly feature not work for Mono tests")]
         [MemberData(nameof(JaggedArrayPropertyTestData))]
         public void JaggedArrayPropertyTest(string propertyName, NullabilityState innermodtElementState, NullabilityState elementState, NullabilityState propertyState)
         {
@@ -187,7 +191,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [SkipOnMono("Temporarily disable on Mono")]
+        [SkipOnMono("Disabling NullablePublicOnly feature not work for Mono tests")]
         [MemberData(nameof(TuplePropertyTestData))]
         public void TuplePropertyTest(string propertyName, NullabilityState genericParam1, NullabilityState genericParam2, NullabilityState genericParam3, NullabilityState propertyState)
         {
@@ -212,7 +216,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [SkipOnMono("Temporarily disable on Mono")]
+        [SkipOnMono("Disabling NullablePublicOnly feature not work for Mono tests")]
         [MemberData(nameof(GenericTuplePropertyTestData))]
         public void GenericTuplePropertyTest(string propertyName, NullabilityState genericParam1, NullabilityState genericParam2, NullabilityState genericParam3, NullabilityState propertyState)
         {
@@ -238,7 +242,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [SkipOnMono("Temporarily disable on Mono")]
+        [SkipOnMono("Disabling NullablePublicOnly feature not work for Mono tests")]
         [MemberData(nameof(DictionaryPropertyTestData))]
         public void DictionaryPropertyTest(string propertyName, NullabilityState keyState, NullabilityState valueElement, NullabilityState valueState, NullabilityState propertyState)
         {
@@ -264,7 +268,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [SkipOnMono("Temporarily disable on Mono")]
+        [SkipOnMono("Disabling NullablePublicOnly feature not work for Mono tests")]
         [MemberData(nameof(GenericDictionaryPropertyTestData))]
         public void GenericDictionaryPropertyTest(string propertyName, NullabilityState keyState, NullabilityState valueElement, NullabilityState valueState, NullabilityState propertyState)
         {
@@ -428,6 +432,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
         public void GenericListTest()
         {
             Type listNullable = typeof(List<string?>);
@@ -450,6 +455,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
         public void GenericListAndDictionaryFieldTest()
         {
             Type typeNullable = typeof(GenericTest<string?>);
@@ -500,7 +506,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [SkipOnMono("Temporarily disable on Mono")]
+        [SkipOnMono("Disabling NullablePublicOnly feature not work for Mono tests")]
         [MemberData(nameof(MethodReturnParameterTestData))]
         public void MethodReturnParameterTest(string methodName, NullabilityState elementState, NullabilityState readState)
         {
@@ -525,7 +531,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [SkipOnMono("Temporarily disable on Mono")]
+        [SkipOnMono("Disabling NullablePublicOnly feature not work for Mono tests")]
         [MemberData(nameof(MethodGenericReturnParameterTestData))]
         public void MethodGenericReturnParameterTest(string methodName, NullabilityState readState, NullabilityState elementState)
         {
@@ -548,7 +554,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [SkipOnMono("Temporarily disable on Mono")]
+        [SkipOnMono("Disabling NullablePublicOnly feature not work for Mono tests")]
         [MemberData(nameof(MethodParametersTestData))]
         public void MethodParametersTest(string methodName, NullabilityState stringState, NullabilityState dictKey, NullabilityState dictValueElement, NullabilityState dictValue, NullabilityState dictionaryState)
         {
@@ -572,7 +578,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [SkipOnMono("Temporarily disable on Mono")]
+        [SkipOnMono("Disabling NullablePublicOnly feature not work for Mono tests")]
         [MemberData(nameof(MethodGenericParametersTestData))]
         public void MethodGenericParametersTest(string methodName, NullabilityState param1State, NullabilityState dictKey, NullabilityState dictValue, NullabilityState dictionaryState)
         {
@@ -594,7 +600,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [SkipOnMono("Temporarily disable on Mono")]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
         [MemberData(nameof(StringTypeTestData))]
         public void NullablePublicOnlyStringTypeTest(string methodName, NullabilityState param1State, NullabilityState param2State, NullabilityState param3State, Type[] types)
         {
@@ -612,6 +618,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
         public void NullablePublicOnlyOtherTypesTest()
         {
             Type type = typeof(Type);
@@ -628,7 +635,7 @@ namespace System.Reflection.Tests
             PropertyInfo publicNullableProperty = type.GetProperty("DeclaringType", flags)!;
             info = nullabilityContext.Create(publicNullableProperty);
             Assert.Equal(NullabilityState.Nullable, info.ReadState);
-            Assert.Equal(NullabilityState.Nullable, info.WriteState);
+            Assert.Equal(NullabilityState.Unknown, info.WriteState);
 
             PropertyInfo publicGetPrivateSetNullableProperty = typeof(FileSystemEntry).GetProperty("Directory", flags)!;
             info = nullabilityContext.Create(publicGetPrivateSetNullableProperty);
@@ -828,6 +835,7 @@ namespace System.Reflection.Tests
         public void MethodParametersUnknown(string s, IDictionary<Type, string[]> dict) { }
 #nullable enable 
         public TypeWithNotNullContext? PropertyNullable { get; set; }
+        public TypeWithNotNullContext? PropertyNullableReadOnly { get; }
         private NullabilityInfoContextTests PropertyNonNullable { get; set; } = null!;
         internal float PropertyValueType { get; set; }
         protected long? PropertyValueTypeNullable { get; set; }

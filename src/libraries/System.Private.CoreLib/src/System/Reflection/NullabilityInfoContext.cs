@@ -191,6 +191,10 @@ namespace System.Reflection
 
                 CheckNullabilityAttributes(nullability, getter.ReturnParameter.GetCustomAttributesData());
             }
+            else
+            {
+                nullability.ReadState = NullabilityState.Unknown;
+            }
 
             if (setter != null)
             {
@@ -200,6 +204,10 @@ namespace System.Reflection
                 }
 
                 CheckNullabilityAttributes(nullability, setter.GetParameters()[0].GetCustomAttributesData());
+            }
+            else
+            {
+                nullability.WriteState = NullabilityState.Unknown;
             }
 
             return nullability;
