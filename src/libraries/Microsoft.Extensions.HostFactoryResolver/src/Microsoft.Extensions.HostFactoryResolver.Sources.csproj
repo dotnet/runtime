@@ -10,7 +10,7 @@
     <!-- This is a source package which includes all .cs files by default. -->
     <IsSourcePackage>true</IsSourcePackage>
     <!-- This is non-shipping package. -->
-    <EnablePackageBaselineValidation>false</EnablePackageBaselineValidation>
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <PackageDescription>Internal package for sharing Microsoft.Extensions.Hosting.HostFactoryResolver type.</PackageDescription>
   </PropertyGroup>
 </Project>

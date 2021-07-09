@@ -318,6 +318,9 @@
   <data name="FormatDateTimeOffset" xml:space="preserve">
     <value>The JSON value is not in a supported DateTimeOffset format.</value>
   </data>
+  <data name="FormatTimeSpan" xml:space="preserve">
+    <value>The JSON value is not in a supported TimeSpan format.</value>
+  </data>
   <data name="FormatGuid" xml:space="preserve">
     <value>The JSON value is not in a supported Guid format.</value>
   </data>

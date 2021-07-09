@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WindowsRID>win</WindowsRID>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -66,6 +66,7 @@
     <Compile Include="System\Net\Http\ReadOnlyMemoryContent.cs" />
     <Compile Include="System\Net\Http\RequestRetryType.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpMessageHandlerStage.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\RuntimeSettingParser.cs" />
     <Compile Include="System\Net\Http\StreamContent.cs" />
     <Compile Include="System\Net\Http\StreamToStreamCopy.cs" />
     <Compile Include="System\Net\Http\StringContent.cs" />
@@ -164,6 +165,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ProtocolException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Stream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamWindowManager.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3Connection.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ConnectionException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ProtocolException.cs" />
@@ -498,6 +500,8 @@
   <!-- Common -->
   <ItemGroup>
     <Compile Include="System\Net\Http\DiagnosticsHandler.cs" />
+    <Compile Include="System\Net\Http\DiagnosticsHandlerLoggingStrings.cs" />
+    <Compile Include="System\Net\Http\GlobalHttpSettings.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpPlaintextStreamFilterContext.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
              Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />

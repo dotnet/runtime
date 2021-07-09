@@ -602,10 +602,7 @@ namespace System.Data
             }
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         bool IListSource.ContainsListCollection => true;
-#nullable enable
 
         /// <summary>
         /// Gets a custom view of the data contained by the <see cref='System.Data.DataSet'/> , one
@@ -949,19 +946,17 @@ namespace System.Data
             return _cultureUserSet;
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public override ISite Site
+        public override ISite? Site
         {
             get { return base.Site; }
             set
             {
-                ISite oldSite = Site;
+                ISite? oldSite = Site;
                 if (value == null && oldSite != null)
                 {
-                    IContainer cont = oldSite.Container;
+                    IContainer? cont = oldSite.Container;
 
                     if (cont != null)
                     {
@@ -977,7 +972,6 @@ namespace System.Data
                 base.Site = value;
             }
         }
-#nullable enable
 
         /// <summary>
         /// Get the collection of relations that link tables and
@@ -1411,10 +1405,7 @@ namespace System.Data
             }
         }
 
-        // TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         IList IListSource.GetList() => DefaultViewManager;
-#nullable enable
 
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal string GetRemotingDiffGram(DataTable table)
@@ -3509,6 +3500,7 @@ namespace System.Data
         }
 #pragma warning restore 8632
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(IDataReader reader, LoadOption loadOption, FillErrorEventHandler? errorHandler, params DataTable[] tables)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataSet.Load|API> reader, loadOption={0}", loadOption);
@@ -3543,9 +3535,11 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(IDataReader reader, LoadOption loadOption, params DataTable[] tables) =>
             Load(reader, loadOption, null, tables);
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(IDataReader reader, LoadOption loadOption, params string[] tables)
         {
             ADP.CheckArgumentNull(tables, nameof(tables));

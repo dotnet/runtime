@@ -61,6 +61,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeHandleMinusOneIsInvalid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.ThreadPoolValueTaskSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AccessViolationException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Action.cs" />
@@ -457,6 +459,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\FileStreamHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\FileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\Net5CompatFileStreamStrategy.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\OSFileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IObservable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IObserver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IProgress.cs" />
@@ -690,6 +693,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ConfiguredCancelableAsyncEnumerable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ConfiguredValueTaskAwaitable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ContractHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CreateNewOnMetadataUpdateAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CustomConstantAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\DateTimeConstantAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\DecimalConstantAttribute.cs" />
@@ -1517,6 +1521,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleFileName.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetModuleFileName.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetOverlappedResult.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcessMemoryInfo.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetProcessMemoryInfo.cs</Link>
     </Compile>
@@ -1772,7 +1779,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Win32\RegistryKey.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.ValueTaskSource.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.OverlappedValueTaskSource.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeRegistryHandle.Windows.cs" />
@@ -1808,7 +1815,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\Net5CompatFileStreamStrategy.CompletionSource.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\Net5CompatFileStreamStrategy.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\SyncWindowsFileStreamStrategy.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\WindowsFileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\PasteArguments.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\LibraryNameVariation.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.Windows.cs" />
@@ -2079,8 +2085,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Enumeration\FileSystemEnumerator.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\FileStreamHelpers.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\Net5CompatFileStreamStrategy.Unix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\Net5CompatFileStreamStrategy.Lock.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\Net5CompatFileStreamStrategy.Lock.Unix.cs" Condition="'$(IsOSXLike)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Strategies\UnixFileStreamStrategy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\PasteArguments.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\LibraryNameVariation.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.Unix.cs" />
@@ -2253,5 +2258,28 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Threading.cs">
       <Link>Interop\Windows\Kernel32\Interop.Threading.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureGenericMath)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\IAdditionOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IAdditiveIdentity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IBitwiseOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IComparisonOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IDecrementOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IDivisionOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IEqualityOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IFloatingPoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IIncrementOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IInteger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IMinMaxValue.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IModulusOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IMultiplicativeIdentity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IMultiplyOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\INumber.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IParseable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IShiftOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\ISpanParseable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\ISubtractionOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IUnaryNegationOperators.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IUnaryPlusOperators.cs" />
   </ItemGroup>
 </Project>

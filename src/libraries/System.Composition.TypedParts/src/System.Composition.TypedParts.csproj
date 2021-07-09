@@ -3,6 +3,13 @@
     <RootNamespace>System.Composition</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <SetIsTrimmable>false</SetIsTrimmable>
+    <IsPackable>true</IsPackable>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <PackageDescription>Provides some extension methods for the Managed Extensibility Framework.
+
+Commonly Used Types:
+System.Composition.CompositionContextExtensions
+System.Composition.Hosting.ContainerConfiguration</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
@@ -42,5 +49,9 @@
     <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.Runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 </Project>

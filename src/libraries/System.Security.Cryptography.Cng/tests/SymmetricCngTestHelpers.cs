@@ -111,6 +111,12 @@ namespace System.Security.Cryptography.Cng.Tests
                     oneShotEphemeralEncrypted = ephemeral.EncryptEcb(plainBytes, paddingMode);
                     oneShotPersistedDecrypted = persisted.DecryptEcb(oneShotEphemeralEncrypted, paddingMode);
                 }
+                else if (cipherMode == CipherMode.CBC)
+                {
+                    oneShotPersistedEncrypted = persisted.EncryptCbc(plainBytes, persisted.IV, paddingMode);
+                    oneShotEphemeralEncrypted = ephemeral.EncryptCbc(plainBytes, ephemeral.IV, paddingMode);
+                    oneShotPersistedDecrypted = persisted.DecryptCbc(oneShotEphemeralEncrypted, persisted.IV, paddingMode);
+                }
 
                 if (oneShotPersistedEncrypted is not null)
                 {
