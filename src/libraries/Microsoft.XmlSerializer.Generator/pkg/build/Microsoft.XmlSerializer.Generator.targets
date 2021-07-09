@@ -4,7 +4,7 @@
     <_SerializerDllIntermediateFolder>$(IntermediateOutputPath)$(_SerializationAssemblyName).dll</_SerializerDllIntermediateFolder>
     <_SerializerPdbIntermediateFolder>$(IntermediateOutputPath)$(_SerializationAssemblyName).pdb</_SerializerPdbIntermediateFolder>
     <_SerializerCsIntermediateFolder>$(IntermediateOutputPath)$(_SerializationAssemblyName).cs</_SerializerCsIntermediateFolder>
-    <_SerializerCsAssemblyInfoIntermediateFolder>$(IntermediateOutputPath)AssemblyInfo.cs</_SerializerCsAssemblyInfoIntermediateFolder>
+    <_SerializerCsAssemblyInfoIntermediateFolder>$(IntermediateOutputPath)SgenAssemblyInfo.cs</_SerializerCsAssemblyInfoIntermediateFolder>
     <_SGenWarningText>SGEN: Failed to generate the serializer for $(AssemblyName)$(TargetExt). Please follow the instructions at https://go.microsoft.com/fwlink/?linkid=858594 and try again.</_SGenWarningText>
     <_SGenRspWarningText>Failed to generate response file for Microsoft.XmlSerializer.Generator, serializer is generating with default settings.</_SGenRspWarningText>
     <_SerializationAssemblyDisabledWarnings>$(NoWarn);219;162;$(SerializationAssemblyDisabledWarnings)</_SerializationAssemblyDisabledWarnings>
