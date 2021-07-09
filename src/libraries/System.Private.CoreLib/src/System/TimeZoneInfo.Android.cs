@@ -251,17 +251,21 @@ namespace System
 
             public AndroidTzData()
             {
-                ReadHeader(GetTimeZoneDirectory() + TimeZoneFileName);
+                string tzFilePath = GetTimeZoneDirectory() + TimeZoneFileName;
+                using (FileStream fs = File.OpenRead(tzFilePath))
+                {
+                    ReadHeader(tzFilePath, fs);
+                }
             }
 
             [MemberNotNull(nameof(_ids))]
             [MemberNotNull(nameof(_byteOffsets))]
             [MemberNotNull(nameof(_lengths))]
-            private unsafe void ReadHeader(string tzFilePath)
+            private unsafe void ReadHeader(string tzFilePath, Stream fs)
             {
                 int size = Math.Max(Marshal.SizeOf(typeof(AndroidTzDataHeader)), Marshal.SizeOf(typeof(AndroidTzDataEntry)));
                 Span<byte> buffer = stackalloc byte[size];
-                AndroidTzDataHeader header = ReadAt<AndroidTzDataHeader>(tzFilePath, 0, buffer);
+                AndroidTzDataHeader header = ReadAt<AndroidTzDataHeader>(tzFilePath, fs, 0, buffer);
 
                 header.indexOffset = NetworkToHostOrder(header.indexOffset);
                 header.dataOffset = NetworkToHostOrder(header.dataOffset);
@@ -280,12 +284,12 @@ namespace System
                     throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadTZHeader, tzFilePath, b.ToString()));
                 }
 
-                ReadIndex(tzFilePath, header.indexOffset, header.dataOffset, buffer);
+                ReadIndex(tzFilePath, fs, header.indexOffset, header.dataOffset, buffer);
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2087:UnrecognizedReflectionPattern",
                 Justification = "Implementation detail of Android TimeZone")]
-            private unsafe T ReadAt<T>(string tzFilePath, long position, Span<byte> buffer)
+            private unsafe T ReadAt<T>(string tzFilePath, Stream fs, long position, Span<byte> buffer)
                 where T : struct
             {
                 int size = Marshal.SizeOf(typeof(T));
@@ -294,19 +298,16 @@ namespace System
                     throw new InvalidOperationException(SR.InvalidOperation_BadBuffer);
                 }
 
-                using (FileStream fs = File.OpenRead(tzFilePath))
+                fs.Position = position;
+                int numBytesRead;
+                if ((numBytesRead = fs.Read(buffer)) < size)
                 {
-                    fs.Position = position;
-                    int numBytesRead;
-                    if ((numBytesRead = fs.Read(buffer)) < size)
-                    {
-                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ReadTZError, tzFilePath, position, size, numBytesRead, size));
-                    }
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ReadTZError, tzFilePath, position, size, numBytesRead, size));
+                }
 
-                    fixed (byte* b = buffer)
-                    {
-                        return (T)Marshal.PtrToStructure((IntPtr)b, typeof(T))!; // Is ! the right way to handle Unboxing a possibly null value. Should there be some check instead?
-                    }
+                fixed (byte* b = buffer)
+                {
+                    return (T)Marshal.PtrToStructure((IntPtr)b, typeof(T))!; // Is ! the right way to handle Unboxing a possibly null value. Should there be some check instead?
                 }
             }
 
@@ -334,7 +335,7 @@ namespace System
             [MemberNotNull(nameof(_ids))]
             [MemberNotNull(nameof(_byteOffsets))]
             [MemberNotNull(nameof(_lengths))]
-            private unsafe void ReadIndex(string tzFilePath, int indexOffset, int dataOffset, Span<byte> buffer)
+            private unsafe void ReadIndex(string tzFilePath, Stream fs, int indexOffset, int dataOffset, Span<byte> buffer)
             {
                 int indexSize = dataOffset - indexOffset;
                 int entrySize = Marshal.SizeOf(typeof(AndroidTzDataEntry));
@@ -346,7 +347,7 @@ namespace System
 
                 for (int i = 0; i < entryCount; ++i)
                 {
-                    AndroidTzDataEntry entry = ReadAt<AndroidTzDataEntry>(tzFilePath, indexOffset + (entrySize*i), buffer);
+                    AndroidTzDataEntry entry = ReadAt<AndroidTzDataEntry>(tzFilePath, fs, indexOffset + (entrySize*i), buffer);
                     var p = (sbyte*)entry.id;
 
                     _byteOffsets![i] = NetworkToHostOrder(entry.byteOffset) + dataOffset;
