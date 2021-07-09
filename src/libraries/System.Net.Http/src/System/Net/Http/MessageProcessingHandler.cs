@@ -106,12 +106,6 @@ namespace System.Net.Http
                     // if the operation was canceled: We'll set the Task returned to the user to canceled. Passing the
                     // cancellation token here would result in the continuation task to not be called at all. I.e. we
                     // would never complete the task returned to the caller of SendAsync().
-                    //
-                    // Always specify TaskScheduler.Default to prevent us from using a user defined TaskScheduler.Current.
-                    //
-                    // Since we're not doing any CPU and/or I/O intensive operations, continue on the same thread.
-                    // This results in better performance since the continuation task doesn't get scheduled by the
-                    // scheduler and there are no context switches required.
                 }, tcs, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
             catch (OperationCanceledException e)

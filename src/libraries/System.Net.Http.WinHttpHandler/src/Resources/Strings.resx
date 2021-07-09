@@ -130,6 +130,6 @@
     <value>The '{0}' scheme is not supported.</value>
   </data>
   <data name="net_http_client_invalid_requesturi" xml:space="preserve">
-    <value>An invalid request URI was provided. The request URI must either be an absolute URI or BaseAddress must be set.</value>
+    <value>An invalid request URI was provided. Either the request URI must be an absolute URI or BaseAddress must be set.</value>
   </data>
 </root>
