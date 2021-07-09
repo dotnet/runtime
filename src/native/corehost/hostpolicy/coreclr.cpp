@@ -149,8 +149,7 @@ namespace
         _X("RUNTIME_IDENTIFIER"),
         _X("BUNDLE_PROBE"),
         _X("HOSTPOLICY_EMBEDDED"),
-        _X("PINVOKE_OVERRIDE"),
-        _X("HOSTFXR_PATH")
+        _X("PINVOKE_OVERRIDE")
     };
 
     static_assert((sizeof(PropertyNameMapping) / sizeof(*PropertyNameMapping)) == static_cast<size_t>(common_property::Last), "Invalid property count");

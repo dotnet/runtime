@@ -370,6 +370,7 @@ namespace
         const pal::string_t &app_candidate,
         const opt_map_t &opts,
         host_mode_t mode,
+        const bool is_sdk_command,
         /*out*/ pal::string_t &hostpolicy_dir,
         /*out*/ std::unique_ptr<corehost_init_t> &init)
     {
@@ -473,6 +474,17 @@ namespace
             }
         }
 
+        std::vector<std::pair<pal::string_t, pal::string_t>> additional_properties;
+        if (is_sdk_command)
+        {
+            pal::dll_t fxr;
+            pal::string_t fxr_path;
+            pal::get_loaded_library(LIBFXR_NAME, "hostfxr_main", &fxr, &fxr_path);
+
+            // We pass the loaded hostfxr path to the SDK can load it without relying on dlopen/LoadLibrary to find it.
+            additional_properties.push_back(std::make_pair(_X("HOSTFXR_PATH"), fxr_path));
+        }
+
         const known_options opts_probe_path = known_options::additional_probing_path;
         std::vector<pal::string_t> spec_probe_paths = opts.count(opts_probe_path) ? opts.find(opts_probe_path)->second : std::vector<pal::string_t>();
         std::vector<pal::string_t> probe_realpaths = get_probe_realpaths(fx_definitions, spec_probe_paths);
@@ -485,7 +497,7 @@ namespace
             return StatusCode::CoreHostLibMissingFailure;
         }
 
-        init.reset(new corehost_init_t(host_command, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions));
+        init.reset(new corehost_init_t(host_command, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions, additional_properties));
 
         return StatusCode::Success;
     }
@@ -498,6 +510,7 @@ namespace
         int new_argc,
         const pal::char_t** new_argv,
         host_mode_t mode,
+        const bool is_sdk_command,
         pal::char_t out_buffer[],
         int32_t buffer_size,
         int32_t* required_buffer_size)
@@ -510,6 +523,7 @@ namespace
             app_candidate,
             opts,
             mode,
+            is_sdk_command,
             hostpolicy_dir,
             init);
         if (rc != StatusCode::Success)
@@ -572,6 +586,7 @@ int fx_muxer_t::execute(
             argv,
             new_argoff,
             mode,
+            false,
             result_buffer,
             buffer_size,
             required_buffer_size);
@@ -621,7 +636,8 @@ namespace
         }
 
         const pal::string_t additional_deps_serialized;
-        init.reset(new corehost_init_t(pal::string_t{}, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions));
+        const std::vector<std::pair<pal::string_t, pal::string_t>> additional_properties;
+        init.reset(new corehost_init_t(pal::string_t{}, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions, additional_properties));
 
         return StatusCode::Success;
     }
@@ -725,6 +741,7 @@ int fx_muxer_t::initialize_for_app(
         host_info.app_path,
         opts,
         mode,
+        false,
         hostpolicy_dir,
         init);
     if (rc != StatusCode::Success)
@@ -978,6 +995,7 @@ int fx_muxer_t::handle_exec_host_command(
     const pal::char_t* argv[],
     int argoff,
     host_mode_t mode,
+    const bool is_sdk_command,
     pal::char_t result_buffer[],
     int32_t buffer_size,
     int32_t* required_buffer_size)
@@ -1006,6 +1024,7 @@ int fx_muxer_t::handle_exec_host_command(
         new_argc,
         new_argv,
         mode,
+        is_sdk_command,
         result_buffer,
         buffer_size,
         required_buffer_size);
@@ -1096,6 +1115,7 @@ int fx_muxer_t::handle_cli(
             new_argv.data(),
             new_argoff,
             host_mode_t::muxer,
+            true,
             nullptr /*result_buffer*/,
             0 /*buffer_size*/,
             nullptr/*required_buffer_size*/);

@@ -21,7 +21,7 @@ namespace RuntimeProperties
                     continue;
                 }
 
-                Console.WriteLine($"AppContext.GetData({propertyName}) = {System.AppContext.GetData(propertyName)}");
+                Console.WriteLine($"AppContext.GetData({propertyName}) = {propertyValue}");
             }
         }
     }
