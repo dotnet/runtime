@@ -17,6 +17,7 @@ namespace Microsoft.Win32.SafeHandles
         // not using bool? as it's not thread safe
         private volatile NullableBool _canSeek = NullableBool.Undefined;
         private bool _deleteOnClose;
+        private bool _isLocked;
 
         public SafeFileHandle() : this(ownsHandle: true)
         {
@@ -124,11 +125,11 @@ namespace Microsoft.Win32.SafeHandles
             // an advisory lock.  This lock should be removed via closing the file descriptor, but close can be
             // interrupted, and we don't retry closes.  As such, we could end up leaving the file locked,
             // which could prevent subsequent usage of the file until this process dies.  To avoid that, we proactively
-            // try to release the lock before we close the handle. (If it's not locked, there's no behavioral
-            // problem trying to unlock it.)
-            if (!DisableFileLocking)
+            // try to release the lock before we close the handle.
+            if (_isLocked)
             {
                 Interop.Sys.FLock(handle, Interop.Sys.LockOperations.LOCK_UN); // ignore any errors
+                _isLocked = false;
             }
 
             // If DeleteOnClose was requested when constructed, delete the file now.
@@ -265,7 +266,7 @@ namespace Microsoft.Win32.SafeHandles
             // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
             // and not atomic with file opening, it's better than nothing.
             Interop.Sys.LockOperations lockOperation = (share == FileShare.None) ? Interop.Sys.LockOperations.LOCK_EX : Interop.Sys.LockOperations.LOCK_SH;
-            if (CanLockTheFile(lockOperation, access) && Interop.Sys.FLock(this, lockOperation | Interop.Sys.LockOperations.LOCK_NB) < 0)
+            if (CanLockTheFile(lockOperation, access) && !(_isLocked = Interop.Sys.FLock(this, lockOperation | Interop.Sys.LockOperations.LOCK_NB) >= 0))
             {
                 // The only error we care about is EWOULDBLOCK, which indicates that the file is currently locked by someone
                 // else and we would block trying to access it.  Other errors, such as ENOTSUP (locking isn't supported) or
@@ -350,9 +351,9 @@ namespace Microsoft.Win32.SafeHandles
 
             switch (unixFileSystemType)
             {
-                case Interop.Sys.UnixFileSystemTypes.nfs:
+                case Interop.Sys.UnixFileSystemTypes.nfs: // #44546
                 case Interop.Sys.UnixFileSystemTypes.smb:
-                case Interop.Sys.UnixFileSystemTypes.smb2: // (#53182)
+                case Interop.Sys.UnixFileSystemTypes.smb2: // #53182
                 case Interop.Sys.UnixFileSystemTypes.cifs:
                     return false; // LOCK_SH is not OK when writing to NFS, CIFS or SMB
                 default:
