@@ -197,6 +197,17 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
+        public static void ConvertJsonArrayToIListOfJsonNode()
+        {
+            dynamic obj = JsonSerializer.Deserialize<JsonArray>("[42]");
+            Assert.Equal(42, (int)obj[0]);
+
+            IList<JsonNode> ilist = obj;
+            Assert.NotNull(ilist);
+            Assert.Equal(42, (int)ilist[0]);
+        }
+
+        [Fact]
         public static void ReAddSameNode_Throws()
         {
             var jValue = JsonValue.Create(1);
