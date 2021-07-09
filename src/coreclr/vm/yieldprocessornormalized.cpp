@@ -259,6 +259,11 @@ void YieldProcessorNormalization::FireMeasurementEvents()
     }
     CONTRACTL_END;
 
+    if (!EventEnabledYieldProcessorMeasurement())
+    {
+        return;
+    }
+
     // This function may be called at any time to fire events about recorded measurements. There is no synchronization for the
     // recorded information, so try to enumerate the array with some care.
     double establishedNsPerYield = AtomicLoad(&s_establishedNsPerYield);
