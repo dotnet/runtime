@@ -163,8 +163,12 @@ namespace Wasm.Build.Tests
             (string testCommand, string extraXHarnessArgs) = host switch
             {
                 RunHost.V8 => ("wasm test", "--js-file=runtime.js --engine=V8 -v trace"),
+                RunHost.NodeJS => ("wasm test", "--js-file=runtime.js --engine=NodeJS -v trace"),
                 _          => ("wasm test-browser", $"-v trace -b {host}")
             };
+
+            AssertFilesExist(bundleDir, new [] { "run-v8.sh" }, expectToExist: host == RunHost.V8);
+            AssertFilesExist(bundleDir, new [] { "run-node.sh" }, expectToExist: host == RunHost.NodeJS);
 
             string testLogPath = Path.Combine(_logPath, host.ToString());
             string output = RunWithXHarness(
@@ -371,8 +375,7 @@ namespace Wasm.Build.Tests
                 "dotnet.wasm",
                 "mono-config.json",
                 "dotnet.js",
-                "run-v8.sh"
-            });
+            }); // we check for the run script later since we don't have the host here
 
             AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: hasIcudt);
 
