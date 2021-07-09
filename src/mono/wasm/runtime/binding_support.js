@@ -362,8 +362,8 @@ var BindingSupportLib = {
 			}
 		},
 
-		_unbox_delegate_rooted: function (mono_obj) {
-			var obj = this.extract_js_obj (mono_obj);
+		_unbox_delegate_root: function (root) {
+			var obj = this.extract_js_obj_root (root);
 			obj.__mono_delegate_alive__ = true;
 			// FIXME: Should we root the object as long as this function has not been GCd?
 			return function () {
@@ -372,11 +372,11 @@ var BindingSupportLib = {
 			};
 		},
 
-		_unbox_task_rooted: function (mono_obj) {
+		_unbox_task_root: function (root) {
 			if (!this._are_promises_supported)
 				throw new Error ("Promises are not supported thus 'System.Threading.Tasks.Task' can not work in this context.");
 
-			var obj = this.extract_js_obj (mono_obj);
+			var obj = this.extract_js_obj_root (root);
 			var cont_obj = null;
 			var promise = new Promise (function (resolve, reject) {
 				cont_obj = {
@@ -385,15 +385,16 @@ var BindingSupportLib = {
 				};
 			});
 
-			this.call_method (this.setup_js_cont, null, "mo", [ mono_obj, cont_obj ]);
+			// FIXME: Lifetime management/pinning?
+			this.call_method (this.setup_js_cont, null, "mo", [ root.value, cont_obj ]);
 			obj.__mono_js_cont__ = cont_obj.__mono_gchandle__;
 			cont_obj.__mono_js_task__ = obj.__mono_gchandle__;
 			return promise;
 		},
 
-		_unbox_safehandle_rooted: function (mono_obj) {
+		_unbox_safehandle_root: function (root) {
 			var addRef = true;
-			var js_handle = this.call_method(this.safehandle_get_handle, null, "mi", [ mono_obj, addRef ]);
+			var js_handle = this.call_method(this.safehandle_get_handle, null, "mi", [ root.value, addRef ]);
 			var requiredObject = BINDING.mono_wasm_require_handle (js_handle);
 			if (addRef)
 			{
@@ -421,9 +422,9 @@ var BindingSupportLib = {
 				case 4: //vts
 					throw new Error ("no idea on how to unbox value types");
 				case 5: // delegate
-					return this._unbox_delegate_rooted (root.value);
+					return this._unbox_delegate_root (root);
 				case 6: // Task
-					return this._unbox_task_rooted (root.value);
+					return this._unbox_task_root (root);
 				case 7: // ref type
 					return this.extract_js_obj_root (root);
 				case 10: // arrays
@@ -446,7 +447,7 @@ var BindingSupportLib = {
 					var uriValue = this._object_to_string (root.value);
 					return uriValue;
 				case 23: // clr .NET SafeHandle
-					return this._unbox_safehandle_rooted (root.value);
+					return this._unbox_safehandle_root (root);
 				case 30:
 					return undefined;
 				default:
@@ -1409,7 +1410,7 @@ var BindingSupportLib = {
 			}
 
 			// We inline a bunch of the invoke and marshaling logic here in order to eliminate the GC pressure normally
-			//  created by the unboxing part of the call process. Because unbox_mono_obj(_rooted) can return non-numeric
+			//  created by the unboxing part of the call process. Because unbox_mono_obj(_root) can return non-numeric
 			//  types, v8 and spidermonkey allocate and store its result on the heap (in the nursery, to be fair).
 			// For a bound method however, we know the result will always be the same type because C# methods have known
 			//  return types. Inlining the invoke and marshaling logic means that even though the bound method has logic
