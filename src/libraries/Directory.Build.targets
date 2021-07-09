@@ -381,9 +381,13 @@
           Outputs="$(WorkloadStampFile)"
           Condition="'$(InstallWorkloadForTesting)' == 'true'">
 
-    <MSBuild Projects="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
-             Properties="TestingWorkloads=true;RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier);Configuration=$(Configuration);TargetCrossRid=$(RuntimeIdentifier)"
-             Targets="Restore;Pack" />
+  <Exec Command="dotnet build -bl -v:diag -restore -t:Pack /p:TestingWorkloads=true /p:RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier) /p:Configuration=$(Configuration) /p:TargetCrossRid=$(RuntimeIdentifier) -p:TargetOS=Browser -p:TargetArchitecture=wasm Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
+    WorkingDirectory="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App" />
+
+             <!--Properties="TestingWorkloads=true;RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier);Configuration=$(Configuration);TargetCrossRid=$(RuntimeIdentifier)"-->
+    <!--<MSBuild Projects="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.MonoCrossAOT.sfxproj"-->
+             <!--Properties="TestingWorkloads=true;RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier);Configuration=$(Configuration);TargetCrossRid=$(RuntimeIdentifier)"-->
+             <!--Targets="Restore;Pack" />-->
 
     <ItemGroup>
       <_NuGetSourceForWorkloads Include="dotnet6" Value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6/nuget/v3/index.json" />
