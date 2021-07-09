@@ -56,6 +56,6 @@
 
   <Target Name="ValidateProperties" BeforeTargets="GetFilesToPackage">
     <Error Condition="'$(TargetCrossRid)' == ''" Text="TargetCrossRid not set" />
-    <Error Condition="!Exists('$(AotCompilerPath)$(AotCompilerFileName)')" Text="Cross compiler not found in $(AotCompilerPath)" />
+    <Error Condition="!Exists('$(AotCompilerPath)$(AotCompilerFileName)')" Text="Cross compiler not found in $(AotCompilerPath). MonoAotCrossDir=$(MonoAotCrossDir)" />
   </Target>
 </Project>
