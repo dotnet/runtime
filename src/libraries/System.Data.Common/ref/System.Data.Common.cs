@@ -1003,7 +1003,7 @@ namespace System.Data
         bool System.ComponentModel.IBindingList.SupportsChangeNotification { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsSearching { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsSorting { get { throw null; } }
-        string? System.ComponentModel.IBindingListView.Filter { get { throw null; } set { } }
+        string? System.ComponentModel.IBindingListView.Filter { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members of types used in the filter expression might be trimmed.")] set { } }
         System.ComponentModel.ListSortDescriptionCollection System.ComponentModel.IBindingListView.SortDescriptions { get { throw null; } }
         bool System.ComponentModel.IBindingListView.SupportsAdvancedSorting { get { throw null; } }
         bool System.ComponentModel.IBindingListView.SupportsFiltering { get { throw null; } }

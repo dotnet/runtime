@@ -538,7 +538,7 @@ namespace System.ComponentModel
     }
     public partial interface IBindingListView : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.ComponentModel.IBindingList
     {
-        string? Filter { get; set; }
+        string? Filter { get; [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members of types used in the filter expression might be trimmed.")] set; }
         System.ComponentModel.ListSortDescriptionCollection SortDescriptions { get; }
         bool SupportsAdvancedSorting { get; }
         bool SupportsFiltering { get; }
