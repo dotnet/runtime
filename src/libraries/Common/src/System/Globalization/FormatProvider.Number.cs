@@ -517,14 +517,6 @@ namespace System.Globalization
                             {
                                 exp = exp * 10 + (ch - '0');
                                 ch = ++p < strEnd ? *p : '\0';
-                                if (exp > 1000)
-                                {
-                                    exp = 9999;
-                                    while (char.IsAsciiDigit(ch))
-                                    {
-                                        ch = ++p < strEnd ? *p : '\0';
-                                    }
-                                }
                             } while (char.IsAsciiDigit(ch));
                             if (negExp)
                             {
