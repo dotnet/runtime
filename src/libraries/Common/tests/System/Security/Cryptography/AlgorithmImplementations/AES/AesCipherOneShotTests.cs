@@ -85,6 +85,26 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         public void EncryptOneShot_Array(byte[] plaintext, byte[] ciphertext, PaddingMode padding, CipherMode mode, int feedbackSize = 0) =>
             EncryptOneShot_ArrayTest(plaintext, ciphertext, padding, mode, feedbackSize);
 
+        [Fact]
+        public void EncryptOneShot_CfbFeedbackSizeNotSupported()
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                Assert.ThrowsAny<CryptographicException>(() =>
+                    alg.TryEncryptCfb(ReadOnlySpan<byte>.Empty, IV, Span<byte>.Empty, out _, feedbackSizeInBits: 120));
+            }
+        }
+
+        [Fact]
+        public void DecryptOneShot_CfbFeedbackSizeNotSupported()
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                Assert.ThrowsAny<CryptographicException>(() =>
+                    alg.TryDecryptCfb(ReadOnlySpan<byte>.Empty, IV, Span<byte>.Empty, out _, feedbackSizeInBits: 120));
+            }
+        }
+
         public static IEnumerable<object[]> TestCases
         {
             get
