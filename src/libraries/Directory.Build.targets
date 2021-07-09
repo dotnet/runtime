@@ -353,7 +353,7 @@
           Command="chmod +x $(_DotNetInstallScriptPath); $(_DotNetInstallScriptPath) -i $(SdkPathForWorkloadTesting) -v $(SdkVersionForWorkloadTesting)" />
 
     <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
-          Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallScriptPath) -i $(SdkPathForWorkloadTesting) -v $(SdkVersionForWorkloadTesting)"' />
+          Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallScriptPath) -InstallDir $(SdkPathForWorkloadTesting) -Version $(SdkVersionForWorkloadTesting)"' />
 
     <WriteLinesToFile File="$(SdkForWorkloadTestingStampPath)" Lines="" Overwrite="true" />
   </Target>
