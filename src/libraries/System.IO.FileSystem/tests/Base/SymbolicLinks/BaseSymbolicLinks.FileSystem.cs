@@ -265,10 +265,10 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(1, false)]
         [InlineData(10, false)]
-        [InlineData(30, false)]
+        [InlineData(20, false)]
         [InlineData(1, true)]
         [InlineData(10, true)]
-        [InlineData(30, true)]
+        [InlineData(20, true)]
         public void ResolveLinkTarget_ReturnFinalTarget_ChainOfLinks_Succeeds(int length, bool relative)
         {
             string target = GetRandomFilePath();
