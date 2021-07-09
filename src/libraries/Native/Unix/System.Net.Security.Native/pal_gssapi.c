@@ -93,7 +93,6 @@ FOR_ALL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
 static void* volatile s_gssLib = NULL;
-static volatile bool s_gss_shim_initialized = false;
 
 // remap gss function use to use indirection pointers
 #define gss_accept_sec_context(...)         gss_accept_sec_context_ptr(__VA_ARGS__)
@@ -127,11 +126,6 @@ static volatile bool s_gss_shim_initialized = false;
 
 static int32_t ensure_gss_shim_initialized()
 {
-    if (__atomic_load_n(&s_gss_shim_initialized, __ATOMIC_ACQUIRE))
-    {
-        return 0;
-    }
-
     void* lib = dlopen(gss_lib_name, RTLD_LAZY);
     if (lib == NULL) { fprintf(stderr, "Cannot load library %s \nError: %s\n", gss_lib_name, dlerror()); return -1; }
 
@@ -150,9 +144,6 @@ static int32_t ensure_gss_shim_initialized()
 
     FOR_ALL_GSS_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
-
-    // set the completion flag after setting up all indirections
-    __atomic_store_n(&s_gss_shim_initialized, true, __ATOMIC_RELEASE);
 
     return 0;
 }
