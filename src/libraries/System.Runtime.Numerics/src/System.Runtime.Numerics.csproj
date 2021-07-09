@@ -6,6 +6,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Enums\NumberStates.cs" />
+    <Compile Include="System\Globalization\FormattingSpecification.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.BitsBuffer.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.DivRem.cs" />
@@ -18,13 +20,10 @@
     <Compile Include="System\Numerics\NumericsHelpers.cs" />
     <Compile Include="System\Numerics\Complex.cs" />
     <Compile Include="System\Globalization\FormatProvider.BigInteger.cs" />
-    <Compile Include="System\Globalization\FormatProvider.NumberBuffer.cs" />
-    <Compile Include="$(CommonPath)System\Globalization\FormatProvider.Number.cs"
-             Link="System\Globalization\FormatProvider.Number.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
-             Link="CoreLib\System\Text\ValueStringBuilder.cs" />
-    <Compile Include="$(CommonPath)System\HexConverter.cs"
-             Link="Common\System\HexConverter.cs" />
+    <Compile Include="System\Globalization\Buffers\NumberBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Globalization\FormatProvider.Number.cs" Link="System\Globalization\FormatProvider.Number.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="CoreLib\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />
