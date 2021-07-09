@@ -45,7 +45,7 @@ namespace System.IO.Tests
         [Fact]
         public void LinkTarget_ReturnsNull_NotALink()
         {
-            string path = GetTestFilePath();
+            string path = GetRandomFilePath();
             CreateFileOrDirectory(path);
             FileSystemInfo info = GetFileSystemInfo(path);
 
@@ -67,7 +67,7 @@ namespace System.IO.Tests
         public void LinkTarget_RefreshesCorrectly()
         {
             string path = GetRandomLinkPath();
-            string pathToTarget = GetTestFilePath();
+            string pathToTarget = GetRandomFilePath();
             CreateFileOrDirectory(pathToTarget);
             FileSystemInfo linkInfo = CreateSymbolicLink(path, pathToTarget);
             Assert.Equal(pathToTarget, linkInfo.LinkTarget);
@@ -78,7 +78,7 @@ namespace System.IO.Tests
             linkInfo.Refresh();
             Assert.Null(linkInfo.LinkTarget);
 
-            string newPathToTarget = GetTestFilePath();
+            string newPathToTarget = GetRandomFilePath();
             CreateFileOrDirectory(newPathToTarget);
             FileSystemInfo newLinkInfo = CreateSymbolicLink(path, newPathToTarget);
 

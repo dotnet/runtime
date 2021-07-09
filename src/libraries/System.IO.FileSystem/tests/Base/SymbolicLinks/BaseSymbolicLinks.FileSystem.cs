@@ -150,7 +150,7 @@ namespace System.IO.Tests
         [InlineData(true)]
         public void ResolveLinkTarget_ReturnsNull_NotALink(bool returnFinalTarget)
         {
-            string path = GetTestFilePath();
+            string path = GetRandomFilePath();
             CreateFileOrDirectory(path);
             Assert.Null(ResolveLinkTarget(path, returnFinalTarget));
         }
@@ -265,13 +265,13 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(1, false)]
         [InlineData(10, false)]
-        [InlineData(20, false)]
+        [InlineData(30, false)]
         [InlineData(1, true)]
         [InlineData(10, true)]
-        [InlineData(20, true)]
+        [InlineData(30, true)]
         public void ResolveLinkTarget_ReturnFinalTarget_ChainOfLinks_Succeeds(int length, bool relative)
         {
-            string target = GetTestFilePath();
+            string target = GetRandomFilePath();
             CreateFileOrDirectory(target);
 
             string tail = CreateChainOfLinks(target, length, relative);
@@ -286,7 +286,7 @@ namespace System.IO.Tests
         [InlineData(100, true)]
         public void ResolveLinkTarget_ReturnFinalTarget_ChainOfLinks_ExceedsLimit_Throws(int length, bool relative)
         {
-            string target = GetTestFilePath();
+            string target = GetRandomFilePath();
             CreateFileOrDirectory(target);
 
             string tail = CreateChainOfLinks(target, length, relative);
@@ -299,7 +299,7 @@ namespace System.IO.Tests
 
             for (int i = 0; i < length; i++)
             {
-                string currentLinkPath = GetTestFilePath();
+                string currentLinkPath = GetRandomLinkPath();
                 CreateSymbolicLink(currentLinkPath, relative ? Path.GetFileName(previousPath) : previousPath);
                 previousPath = currentLinkPath;
             }
