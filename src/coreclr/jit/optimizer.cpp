@@ -7700,7 +7700,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     // Check if m_b1 and m_b2 jump to the same target and get back pointers to m_testInfo1 and t2 tree nodes
 
-    m_t3         = nullptr;
+    m_t3 = nullptr;
 
     // Check if m_b1 and m_b2 have the same bbJumpDest
 
