@@ -414,16 +414,10 @@ namespace System.Net.Http
             return _underlyingHandler!.GetType()!.GetMethod(name)!.Invoke(_underlyingHandler, parameters)!;
         }
 
-        private static bool IsSocketHandler => IsSocketHandlerEnabled();
+        private static bool IsSocketHandler => !IsNativeHandlerEnabled();
 
-        private static bool IsSocketHandlerEnabled()
-        {
-            if (!AppContext.TryGetSwitch("System.Net.Http.UseNativeHttpHandler", out bool isNativeHandlerEnabled))
-            {
-                return true;
-            }
-
-            return !isNativeHandlerEnabled;
-        }
+        private static bool IsNativeHandlerEnabled() => RuntimeSettingParser.QueryRuntimeSettingSwitch(
+                "System.Net.Http.UseNativeHttpHandler",
+                false);
     }
 }
