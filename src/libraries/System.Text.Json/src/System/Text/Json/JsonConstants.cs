@@ -51,7 +51,8 @@ namespace System.Text.Json
         public const int MaxWriterDepth = 1_000;
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
 
-        public const int StackallocThreshold = 256;
+        public const int StackallocByteThreshold = 256;
+        public const int StackallocCharThreshold = StackallocByteThreshold / 2;
 
         // In the worst case, an ASCII character represented as a single utf-8 byte could expand 6x when escaped.
         // For example: '+' becomes '\u0043'
