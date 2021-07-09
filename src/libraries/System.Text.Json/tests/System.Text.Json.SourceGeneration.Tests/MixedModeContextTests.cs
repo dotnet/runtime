@@ -16,6 +16,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(HighLowTemps), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(MyType), GenerationMode = JsonSourceGenerationMode.Default)]
     [JsonSerializable(typeof(MyType2), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(MyTypeWithCallbacks), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(MyIntermediateType), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(HighLowTempsImmutable), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -43,6 +44,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MixedModeContext.Default.HighLowTemps.Serialize);
             Assert.NotNull(MixedModeContext.Default.MyType.Serialize);
             Assert.NotNull(MixedModeContext.Default.MyType2.Serialize);
+            Assert.NotNull(MixedModeContext.Default.MyTypeWithCallbacks.Serialize);
             Assert.NotNull(MixedModeContext.Default.MyIntermediateType.Serialize);
             Assert.Null(MixedModeContext.Default.HighLowTempsImmutable.Serialize);
             Assert.NotNull(MixedModeContext.Default.MyNestedClass.Serialize);
@@ -164,6 +166,25 @@ namespace System.Text.Json.SourceGeneration.Tests
             ITestContext metadataContext = new MetadataContext(new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
             VerifyIndexViewModel(index, JsonSerializer.Deserialize(indexAsJsonElement.GetRawText(), metadataContext.IndexViewModel));
             VerifyCampaignSummaryViewModel(campaignSummary, JsonSerializer.Deserialize(campaignSummeryAsJsonElement.GetRawText(), metadataContext.CampaignSummaryViewModel));
+        }
+
+        [Fact]
+        public void OnSerializeCallbacks_WithCustomOptions()
+        {
+            MyTypeWithCallbacks obj = new();
+            Assert.Null(obj.MyProperty);
+
+            ITestContext context = SerializationContextWithCamelCase.Default;
+            Assert.Same(JsonNamingPolicy.CamelCase, ((JsonSerializerContext)context).Options.PropertyNamingPolicy);
+
+            string json = JsonSerializer.Serialize(obj, context.MyTypeWithCallbacks);
+            Assert.Equal("{\"myProperty\":\"Before\"}", json);
+            Assert.Equal("After", obj.MyProperty);
+
+            context = new MetadataContext(new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            json = JsonSerializer.Serialize(obj, context.MyTypeWithCallbacks);
+            Assert.Equal("{\"myProperty\":\"Before\"}", json);
+            Assert.Equal("After", obj.MyProperty);
         }
     }
 }

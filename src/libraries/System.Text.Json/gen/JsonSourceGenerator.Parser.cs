@@ -494,6 +494,9 @@ namespace System.Text.Json.SourceGeneration
                 bool foundDesignTimeCustomConverter = false;
                 string? converterInstatiationLogic = null;
 
+                bool implementsIJsonOnSerialized = false;
+                bool implementsIJsonOnSerializing = false;
+
                 IList<CustomAttributeData> attributeDataList = CustomAttributeData.GetCustomAttributes(type);
                 foreach (CustomAttributeData attributeData in attributeDataList)
                 {
@@ -577,6 +580,11 @@ namespace System.Text.Json.SourceGeneration
                         constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
                     }
 
+                    // GetInterface() is currently not implemented, so we use GetInterfaces().
+                    IEnumerable<string> interfaces = type.GetInterfaces().Select(interfaceType => interfaceType.FullName);
+                    implementsIJsonOnSerialized = interfaces.FirstOrDefault(interfaceName => interfaceName == IJsonOnSerializedFullName) != null;
+                    implementsIJsonOnSerializing = interfaces.FirstOrDefault(interfaceName => interfaceName == IJsonOnSerializingFullName) != null;
+
                     for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                     {
                         const BindingFlags bindingFlags =
@@ -627,7 +635,9 @@ namespace System.Text.Json.SourceGeneration
                     collectionValueTypeMetadata: collectionValueType != null ? GetOrAddTypeGenerationSpec(collectionValueType, generationMode) : null,
                     constructionStrategy,
                     nullableUnderlyingTypeMetadata: nullableUnderlyingType != null ? GetOrAddTypeGenerationSpec(nullableUnderlyingType, generationMode) : null,
-                    converterInstatiationLogic);
+                    converterInstatiationLogic,
+                    implementsIJsonOnSerialized,
+                    implementsIJsonOnSerializing);
 
                 return typeMetadata;
             }
