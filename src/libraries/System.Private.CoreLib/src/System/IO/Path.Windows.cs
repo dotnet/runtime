@@ -49,7 +49,7 @@ namespace System.IO
             // unpredictable results.
             if (path.Contains('\0'))
                 throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
-            
+
             return GetFullQualifiedPath(path);
         }
 
@@ -122,8 +122,8 @@ namespace System.IO
                 ? PathInternal.RemoveRelativeSegments(combinedPath, PathInternal.GetRootLength(combinedPath.AsSpan()))
                 : GetFullQualifiedPath(combinedPath);
         }
-        
-        private static string GetFullQualifiedPath(string path)
+
+        internal static string GetFullQualifiedPath(string path)
         {
             if (PathInternal.IsExtended(path.AsSpan()))
             {
