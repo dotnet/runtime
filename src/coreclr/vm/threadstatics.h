@@ -450,13 +450,13 @@ public:
         return GetPrecomputedStaticsClassData()[classID] & ClassInitFlags::INITIALIZED_FLAG;
     }
 
-    void* operator new(SIZE_T) = delete;
+    void* operator new(size_t) = delete;
 
     struct ParentModule { PTR_Module pModule; };
 
-    void* operator new(SIZE_T baseSize, ParentModule parentModule)
+    void* operator new(size_t baseSize, ParentModule parentModule)
     {
-        SIZE_T size = parentModule.pModule->GetThreadLocalModuleSize();
+        size_t size = parentModule.pModule->GetThreadLocalModuleSize();
 
         _ASSERTE(size >= baseSize);
         _ASSERTE(size >= ThreadLocalModule::OffsetOfDataBlob());
