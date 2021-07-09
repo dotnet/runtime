@@ -16,6 +16,12 @@ namespace System.Globalization.Buffers
 
         public bool IsNegativeSignExists { get; set; }
 
+        public NumberBuffer()
+        {
+            Digits = null;
+            ResetSettings();
+        }
+
         public void ResetSettings()
         {
             Precision = default(int);

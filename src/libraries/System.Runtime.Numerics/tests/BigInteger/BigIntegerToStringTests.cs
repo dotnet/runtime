@@ -442,9 +442,7 @@ namespace System.Numerics.Tests
         public static IEnumerable<object[]> RunFormatScientificNotationToBigIntegerAndViceVersaData()
         {
             yield return new object[] { "1E+1000", "1E+1000" };
-#if false
             yield return new object[] { "1E+1001", "1E+1001" };
-#endif
         }
 
         [Theory]
