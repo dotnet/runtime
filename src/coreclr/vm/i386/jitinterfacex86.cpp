@@ -490,6 +490,12 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
 
     // Do call to CopyValueClassUnchecked(object, data, pMT)
 
+#ifdef UNIX_X86_ABI
+#define STACK_ALIGN_PADDING 12
+    // Make pad to align esp
+    sl.X86EmitSubEsp(STACK_ALIGN_PADDING);
+#endif // UNIX_X86_ABI
+
     // Pass pMT (still in ECX)
     sl.X86EmitPushReg(kECX);
 
@@ -507,6 +513,11 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
 
     // call CopyValueClass
     sl.X86EmitCall(sl.NewExternalCodeLabel((LPVOID) CopyValueClassUnchecked), 12);
+#ifdef UNIX_X86_ABI
+    // Make pad to align esp
+    sl.X86EmitAddEsp(STACK_ALIGN_PADDING);
+#undef STACK_ALIGN_PADDING
+#endif // UNIX_X86_ABI
 
     // Restore the address of the newly allocated object and return it.
     // mov eax,ebx
