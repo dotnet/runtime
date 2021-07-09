@@ -130,12 +130,13 @@ enum CrstType
     CrstTypeEquivalenceMap = 112,
     CrstTypeIDMap = 113,
     CrstUMEntryThunkCache = 114,
-    CrstUniqueStack = 115,
-    CrstUnresolvedClassLock = 116,
-    CrstUnwindInfoTableLock = 117,
-    CrstVSDIndirectionCellLock = 118,
-    CrstWrapperTemplate = 119,
-    kNumberOfCrstTypes = 120
+    CrstUMEntryThunkFreeListLock = 115,
+    CrstUniqueStack = 116,
+    CrstUnresolvedClassLock = 117,
+    CrstUnwindInfoTableLock = 118,
+    CrstVSDIndirectionCellLock = 119,
+    CrstWrapperTemplate = 120,
+    kNumberOfCrstTypes = 121
 };
 
 #endif // __CRST_TYPES_INCLUDED
@@ -148,7 +149,7 @@ int g_rgCrstLevelMap[] =
 {
     10,         // CrstAppDomainCache
     14,         // CrstAppDomainHandleTable
-    0,          // CrstArgBasedStubCache
+    3,          // CrstArgBasedStubCache
     0,          // CrstAssemblyList
     12,         // CrstAssemblyLoader
     4,          // CrstAvailableClass
@@ -207,7 +208,7 @@ int g_rgCrstLevelMap[] =
     4,          // CrstJitPatchpoint
     -1,         // CrstJitPerf
     6,          // CrstJumpStubCache
-    3,          // CrstLeafLock
+    0,          // CrstLeafLock
     -1,         // CrstListLock
     15,         // CrstLoaderAllocator
     16,         // CrstLoaderAllocatorReferences
@@ -261,6 +262,7 @@ int g_rgCrstLevelMap[] =
     4,          // CrstTypeEquivalenceMap
     10,         // CrstTypeIDMap
     4,          // CrstUMEntryThunkCache
+    3,          // CrstUMEntryThunkFreeListLock
     4,          // CrstUniqueStack
     7,          // CrstUnresolvedClassLock
     3,          // CrstUnwindInfoTableLock
@@ -386,6 +388,7 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstTypeEquivalenceMap",
     "CrstTypeIDMap",
     "CrstUMEntryThunkCache",
+    "CrstUMEntryThunkFreeListLock",
     "CrstUniqueStack",
     "CrstUnresolvedClassLock",
     "CrstUnwindInfoTableLock",

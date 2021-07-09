@@ -202,7 +202,7 @@ Crst Exception
 End
 
 Crst ExecutableAllocatorLock
-    AcquiredAfter LoaderHeap LeafLock
+    AcquiredAfter LoaderHeap ArgBasedStubCache UMEntryThunkFreeListLock
 End
 
 Crst ExecuteManRangeLock
@@ -507,6 +507,9 @@ End
 
 Crst TypeEquivalenceMap
     AcquiredBefore LoaderHeap
+End
+
+Crst UMEntryThunkFreeListLock
 End
 
 Crst UniqueStack
