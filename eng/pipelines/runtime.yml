@@ -1203,4 +1203,4 @@ jobs:
           #or(
           #eq(variables['librariesContainsChange'], true),
           #eq(variables['monoContainsChange'], true),
-          eq(variables['isFullMatrix'], true))
+          #eq(variables['isFullMatrix'], true))
