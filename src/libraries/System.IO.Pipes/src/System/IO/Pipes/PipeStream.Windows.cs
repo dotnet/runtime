@@ -15,6 +15,8 @@ namespace System.IO.Pipes
     {
         internal const bool CheckOperationsRequiresSetHandle = true;
         internal ThreadPoolBoundHandle? _threadPoolBinding;
+        private ReadWriteValueTaskSource? _reusableReadValueTaskSource; // reusable ReadWriteValueTaskSource for read operations, that is currently NOT being used
+        private ReadWriteValueTaskSource? _reusableWriteValueTaskSource; // reusable ReadWriteValueTaskSource for write operations, that is currently NOT being used
 
         public override int Read(byte[] buffer, int offset, int count)
         {
@@ -182,7 +184,7 @@ namespace System.IO.Pipes
                 return Task.CompletedTask;
             }
 
-            return WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
+            return WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
@@ -209,7 +211,7 @@ namespace System.IO.Pipes
                 return default;
             }
 
-            return new ValueTask(WriteAsyncCore(buffer, cancellationToken));
+            return WriteAsyncCore(buffer, cancellationToken);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
@@ -258,11 +260,30 @@ namespace System.IO.Pipes
             _threadPoolBinding = ThreadPoolBoundHandle.BindHandle(handle);
         }
 
+        internal virtual void TryToReuse<TResult>(PipeValueTaskSource<TResult> source)
+        {
+            source._source.Reset();
+
+            if (source is ReadWriteValueTaskSource readWriteSource)
+            {
+                ReadWriteValueTaskSource? vts = readWriteSource.IsWrite
+                    ? Interlocked.CompareExchange(ref _reusableWriteValueTaskSource, readWriteSource, null)
+                    : Interlocked.CompareExchange(ref _reusableReadValueTaskSource, readWriteSource, null);
+
+                if (vts is not null)
+                {
+                    source._preallocatedOverlapped.Dispose();
+                }
+            }
+        }
+
         private void DisposeCore(bool disposing)
         {
             if (disposing)
             {
                 _threadPoolBinding?.Dispose();
+                Interlocked.Exchange(ref _reusableReadValueTaskSource, null)?.Dispose();
+                Interlocked.Exchange(ref _reusableWriteValueTaskSource, null)?.Dispose();
             }
         }
 
@@ -294,56 +315,68 @@ namespace System.IO.Pipes
 
         private ValueTask<int> ReadAsyncCore(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            var completionSource = new ReadWriteCompletionSource(this, buffer, isWrite: false);
-
-            // Queue an async ReadFile operation and pass in a packed overlapped
-            int errorCode = 0;
-            int r;
-            unsafe
+            var valueTaskSource = Interlocked.Exchange(ref _reusableReadValueTaskSource, null) ?? new ReadWriteValueTaskSource(this, isWrite: false);
+            try
             {
-                r = ReadFileNative(_handle!, buffer.Span, completionSource.Overlapped, out errorCode);
-            }
-
-            // ReadFile, the OS version, will return 0 on failure, but this ReadFileNative wrapper
-            // returns -1. This will return the following:
-            // - On error, r==-1.
-            // - On async requests that are still pending, r==-1 w/ hr==ERROR_IO_PENDING
-            // - On async requests that completed sequentially, r==0
-            //
-            // You will NEVER RELIABLY be able to get the number of buffer read back from this call
-            // when using overlapped structures!  You must not pass in a non-null lpNumBytesRead to
-            // ReadFile when using overlapped structures!  This is by design NT behavior.
-            if (r == -1)
-            {
-                switch (errorCode)
+                valueTaskSource.PrepareForOperation(buffer);
+                // Queue an async ReadFile operation and pass in a packed overlapped
+                int errorCode = 0;
+                int r;
+                unsafe
                 {
-                    // One side has closed its handle or server disconnected.
-                    // Set the state to Broken and do some cleanup work
-                    case Interop.Errors.ERROR_BROKEN_PIPE:
-                    case Interop.Errors.ERROR_PIPE_NOT_CONNECTED:
-                        State = PipeState.Broken;
+                    r = ReadFileNative(_handle!, buffer.Span, valueTaskSource.Overlapped, out errorCode);
+                }
 
-                        unsafe
-                        {
-                            // Clear the overlapped status bit for this special case. Failure to do so looks
-                            // like we are freeing a pending overlapped.
-                            completionSource.Overlapped->InternalLow = IntPtr.Zero;
-                        }
+                // ReadFile, the OS version, will return 0 on failure, but this ReadFileNative wrapper
+                // returns -1. This will return the following:
+                // - On error, r==-1.
+                // - On async requests that are still pending, r==-1 w/ hr==ERROR_IO_PENDING
+                // - On async requests that completed sequentially, r==0
+                //
+                // You will NEVER RELIABLY be able to get the number of buffer read back from this call
+                // when using overlapped structures!  You must not pass in a non-null lpNumBytesRead to
+                // ReadFile when using overlapped structures!  This is by design NT behavior.
+                if (r == -1)
+                {
+                    switch (errorCode)
+                    {
+                        case Interop.Errors.ERROR_IO_PENDING:
+                            // Common case: IO was initiated, completion will be handled by callback.
+                            // Register for cancellation now that the operation has been initiated.
+                            valueTaskSource.RegisterForCancellation(cancellationToken);
+                            break;
 
-                        completionSource.ReleaseResources();
-                        UpdateMessageCompletion(true);
-                        return new ValueTask<int>(0);
+                        // One side has closed its handle or server disconnected.
+                        // Set the state to Broken and do some cleanup work
+                        case Interop.Errors.ERROR_BROKEN_PIPE:
+                        case Interop.Errors.ERROR_PIPE_NOT_CONNECTED:
+                            State = PipeState.Broken;
 
-                    case Interop.Errors.ERROR_IO_PENDING:
-                        break;
+                            unsafe
+                            {
+                                // Clear the overlapped status bit for this special case. Failure to do so looks
+                                // like we are freeing a pending overlapped.
+                                valueTaskSource.Overlapped->InternalLow = IntPtr.Zero;
+                            }
 
-                    default:
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                            valueTaskSource.Dispose();
+                            UpdateMessageCompletion(true);
+                            return new ValueTask<int>(0);
+
+                        default:
+                            // Error. Callback will not be called.
+                            valueTaskSource.Dispose();
+                            return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode));
+                    }
                 }
             }
+            catch
+            {
+                valueTaskSource.Dispose();
+                throw;
+            }
 
-            completionSource.RegisterForCancellation(cancellationToken);
-            return new ValueTask<int>(completionSource.Task);
+            return new ValueTask<int>(valueTaskSource, valueTaskSource.Version);
         }
 
         private unsafe void WriteCore(ReadOnlySpan<byte> buffer)
@@ -358,36 +391,47 @@ namespace System.IO.Pipes
             Debug.Assert(r >= 0, "PipeStream's WriteCore is likely broken.");
         }
 
-        private Task WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        private ValueTask WriteAsyncCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
-            var completionSource = new ReadWriteCompletionSource(this, buffer, isWrite: true);
-            int errorCode = 0;
+            var valueTaskSource = Interlocked.Exchange(ref _reusableWriteValueTaskSource, null) ?? new ReadWriteValueTaskSource(this, isWrite: true);
 
-            // Queue an async WriteFile operation and pass in a packed overlapped
-            int r;
-            unsafe
+            try
             {
-                r = WriteFileNative(_handle!, buffer.Span, completionSource.Overlapped, out errorCode);
+                valueTaskSource.PrepareForOperation(buffer);
+                int errorCode = 0;
+
+                // Queue an async WriteFile operation and pass in a packed overlapped
+                int r;
+                unsafe
+                {
+                    r = WriteFileNative(_handle!, buffer.Span, valueTaskSource.Overlapped, out errorCode);
+                }
+
+                // WriteFile, the OS version, will return 0 on failure, but this WriteFileNative
+                // wrapper returns -1. This will return the following:
+                // - On error, r==-1.
+                // - On async requests that are still pending, r==-1 w/ hr==ERROR_IO_PENDING
+                // - On async requests that completed sequentially, r==0
+                //
+                // You will NEVER RELIABLY be able to get the number of buffer written back from this
+                // call when using overlapped structures!  You must not pass in a non-null
+                // lpNumBytesWritten to WriteFile when using overlapped structures!  This is by design
+                // NT behavior.
+                if (r == -1 && errorCode != Interop.Errors.ERROR_IO_PENDING)
+                {
+                    valueTaskSource.Dispose();
+                    return ValueTask.FromException(WinIOError(errorCode));
+                }
+
+                valueTaskSource.RegisterForCancellation(cancellationToken);
+            }
+            catch
+            {
+                valueTaskSource.Dispose();
+                throw;
             }
 
-            // WriteFile, the OS version, will return 0 on failure, but this WriteFileNative
-            // wrapper returns -1. This will return the following:
-            // - On error, r==-1.
-            // - On async requests that are still pending, r==-1 w/ hr==ERROR_IO_PENDING
-            // - On async requests that completed sequentially, r==0
-            //
-            // You will NEVER RELIABLY be able to get the number of buffer written back from this
-            // call when using overlapped structures!  You must not pass in a non-null
-            // lpNumBytesWritten to WriteFile when using overlapped structures!  This is by design
-            // NT behavior.
-            if (r == -1 && errorCode != Interop.Errors.ERROR_IO_PENDING)
-            {
-                completionSource.ReleaseResources();
-                throw WinIOError(errorCode);
-            }
-
-            completionSource.RegisterForCancellation(cancellationToken);
-            return completionSource.Task;
+            return new ValueTask(valueTaskSource, valueTaskSource.Version);
         }
 
         // Blocks until the other end of the pipe has read in all written buffer.
