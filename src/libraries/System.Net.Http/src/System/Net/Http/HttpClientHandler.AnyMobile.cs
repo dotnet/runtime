@@ -39,7 +39,7 @@ namespace System.Net.Http
                 handler = _underlyingHandler;
             }
 
-            if (DiagnosticsHandler.IsGloballyEnabled)
+            if (DiagnosticsHandler.IsGloballyEnabled())
             {
                 _diagnosticsHandler = new DiagnosticsHandler(handler);
             }
@@ -378,7 +378,7 @@ namespace System.Net.Http
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (DiagnosticsHandler.IsGloballyEnabled && _diagnosticsHandler != null)
+            if (DiagnosticsHandler.IsGloballyEnabled() && _diagnosticsHandler != null)
             {
                 return _diagnosticsHandler!.SendAsync(request, cancellationToken);
             }
