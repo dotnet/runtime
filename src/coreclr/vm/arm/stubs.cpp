@@ -329,6 +329,10 @@ void ComputeWriteBarrierRange(BYTE ** ppbStart, DWORD * pcbLength)
 {
     DWORD size = (PBYTE)JIT_PatchedWriteBarrierLast - (PBYTE)JIT_PatchedWriteBarrierStart;
     *ppbStart = (PBYTE)JIT_PatchedWriteBarrierStart;
+    if (IsWriteBarrierCopyEnabled())
+    {
+        *ppbStart = GetWriteBarrierCodeLocation(*ppbStart);
+    }
     *pcbLength = size;
 }
 
