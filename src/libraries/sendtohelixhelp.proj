@@ -105,7 +105,7 @@
     <NeedsDotNetSdk Condition="'$(NeedsWorkload)' != 'true'">true</NeedsDotNetSdk>
   </PropertyGroup>
 
-  <ItemGroup Condition="('$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps') and ('$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'true')">
+  <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser' and '$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'true'">
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
   </ItemGroup>
@@ -157,15 +157,19 @@
 
   <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
     <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="PATH=$HELIX_CORRELATION_PAYLOAD/dotnet-workload:$PATH" />
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="PATH=%HELIX_CORRELATION_PAYLOAD%\dotnet-workload;%PATH%" />
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="PATH=%HELIX_CORRELATION_PAYLOAD%\dotnet-workload%3B%PATH%" />
 
-    <HelixCommandPrefixItem Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
-    <HelixCommandPrefixItem Include="DOTNET_CLI_HOME=$HELIX_CORRELATION_PAYLOAD/dotnet-workload" />
-    <HelixCommandPrefixItem Include="DOTNET_ROOT=$HELIX_CORRELATION_PAYLOAD/dotnet-workload" />
-    <HelixCommandPrefixItem Include="TEST_USING_WORKLOADS=true" />
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_CLI_HOME=$HELIX_CORRELATION_PAYLOAD/dotnet-workload" />
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_CLI_HOME=%HELIX_CORRELATION_PAYLOAD%\dotnet-workload" />
+
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_ROOT=$HELIX_CORRELATION_PAYLOAD/dotnet-workload" />
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_ROOT=%HELIX_CORRELATION_PAYLOAD%\dotnet-workload" />
 
     <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%24{HELIX_CORRELATION_PAYLOAD}/dotnet-workload" />
     <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%HELIX_CORRELATION_PAYLOAD%\dotnet-workload" />
+
+    <HelixCommandPrefixItem Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
+    <HelixCommandPrefixItem Include="TEST_USING_WORKLOADS=true" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(NeedsDotNetSdk)' == 'true'">
@@ -231,7 +235,7 @@
 
     <PropertyGroup>
       <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
-      <HelixCommandPrefix Condition="'$(WindowsShell)' == 'true' and @(HelixCommandPrefixItem->Count()) > 0" >$(HelixCommandPrefix) @(HelixCommandPrefixItem -> 'set %(Identity)', ' &amp; ')</HelixCommandPrefix>
+      <HelixCommandPrefix Condition="'$(WindowsShell)' == 'true' and @(HelixCommandPrefixItem->Count()) > 0" >$(HelixCommandPrefix) @(HelixCommandPrefixItem -> 'set &quot;%(Identity)&quot;', ' &amp; ')</HelixCommandPrefix>
       <HelixCommandPrefix Condition="'$(WindowsShell)' != 'true' and @(HelixCommandPrefixItem->Count()) > 0 ">$(HelixCommandPrefix) @(HelixCommandPrefixItem, ' ')</HelixCommandPrefix>
       <IncludeHelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' != '' and '$(TargetOS)' != 'Browser'">true</IncludeHelixCorrelationPayload>
     </PropertyGroup>
@@ -362,8 +366,8 @@
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'"
                                AsArchive="$(HelixCorrelationPayload.EndsWith('.zip'))" />
-      <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
-      <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
+      <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'" />
+      <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Console.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'" />

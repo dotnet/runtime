@@ -20,14 +20,6 @@ if [%XHARNESS_CLI_PATH%] NEQ [] (
     set HARNESS_RUNNER=dotnet.exe xharness
 )
 
-if [%SCENARIO%]==[WasmTestOnBrowser] (
-    set XHARNESS_COMMAND=test-browser
-) else (
-    if [%XHARNESS_COMMAND%] == [] (
-    set XHARNESS_COMMAND=test
-    )
-)
-
 set TEST_LOG_PATH=%XHARNESS_OUT%\logs
 
 :: ========================= BEGIN Test Execution ============================= 
