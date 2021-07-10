@@ -95,7 +95,20 @@ namespace System.Reflection.Metadata
                 ApplyUpdateUtil.ApplyUpdate(assm);
                 ApplyUpdateUtil.ClearAllReflectionCaches();
 
-		Assert.True(true); // just check that the update loaded
+                // Just check the updated value on one method
+
+                Type attrType = typeof(System.Reflection.Metadata.ApplyUpdate.Test.MyAttribute);
+                Type ty = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeUpdates");
+                Assert.NotNull(ty);
+                MethodInfo mi = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeUpdates.Method1), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi);
+                var cattrs = Attribute.GetCustomAttributes(mi, attrType);
+                Assert.NotNull(cattrs);
+                Assert.Equal(1, cattrs.Length);
+                Assert.NotNull(cattrs[0]);
+                Assert.Equal(attrType, cattrs[0].GetType());
+                string p = (cattrs[0] as System.Reflection.Metadata.ApplyUpdate.Test.MyAttribute).StringValue;
+                Assert.Equal("rstuv", p);
             });
         }
 
