@@ -315,8 +315,8 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"-------- Building ---------");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             Console.WriteLine($"Binlog path: {logFilePath}");
-            sb.Append($" /bl:\"{logFilePath}\" /v:minimal /nologo");
-            sb.Append($" /v:diag /fl /flp:\"v:diag,LogFile={logFilePath}.log\"");
+            sb.Append($" /bl:\"{logFilePath}\" /nologo");
+            sb.Append($" /v:diag /fl /flp:\"v:diag,LogFile={logFilePath}.log\" /v:minimal");
             if (buildArgs.ExtraBuildArgs != null)
                 sb.Append($" {buildArgs.ExtraBuildArgs} ");
 

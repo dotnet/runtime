@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Wasm.Build.Tests
 {
@@ -109,6 +110,8 @@ namespace Wasm.Build.Tests
             }
 
             RuntimeNativeDir = Path.Combine(RuntimePackDir, "runtimes", "browser-wasm", "native");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                DotNet += ".exe";
 
             string? logPathEnvVar = Environment.GetEnvironmentVariable(s_testLogPathEnvVar);
             if (!string.IsNullOrEmpty(logPathEnvVar))
