@@ -426,6 +426,28 @@ table_info_get_base_image (const MonoTableInfo *t)
 	return image;
 }
 
+/* Given a table, find the base image that it came from and its table index */
+static gboolean
+table_info_find_in_base (const MonoTableInfo *table, MonoImage **base_out, int *tbl_index)
+{
+	g_assert (base_out);
+	*base_out = NULL;
+	MonoImage *base = table_info_get_base_image (table);
+	if (!base)
+		return FALSE;
+
+	*base_out = base;
+
+	/* Invariant: `table` must be a `MonoTableInfo` of the base image. */
+	g_assert (base->tables < table && table < &base->tables [MONO_TABLE_LAST]);
+
+	if (tbl_index) {
+		size_t s = ALIGN_TO (sizeof (MonoTableInfo), sizeof (gpointer));
+		*tbl_index = ((intptr_t) table - (intptr_t) base->tables) / s;
+	}
+	return TRUE;
+}
+
 static MonoImage*
 image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gconstpointer dmeta_bytes, uint32_t dmeta_length);
 
@@ -735,50 +757,23 @@ hot_reload_effective_table_slow (const MonoTableInfo **t, int *idx)
 	 * with a generation past update_published
 	 */
 
-	MonoImage *base = table_info_get_base_image (*t);
-	if (!base)
+	MonoImage *base;
+	int tbl_index;
+	if (!table_info_find_in_base (*t, &base, &tbl_index))
 		return;
 	BaselineInfo *info = baseline_info_lookup (base);
 	if (!info)
 		return;
 
-	/* Invariant: `*t` must be a `MonoTableInfo` of the base image. */
-	g_assert (base->tables < *t && *t < &base->tables [MONO_TABLE_LAST]);
-
-	size_t s = ALIGN_TO (sizeof (MonoTableInfo), sizeof (gpointer));
-	int tbl_index = ((intptr_t) *t - (intptr_t) base->tables) / s;
-
-	if (G_LIKELY (*idx < table_info_get_rows (*t) && !info->any_modified_rows[tbl_index]))
-		return;
-
 	gboolean any_modified = info->any_modified_rows[tbl_index];
+
+	if (G_LIKELY (*idx < table_info_get_rows (*t) && !any_modified))
+		return;
 
 	GList *list = info->delta_image;
 	MonoImage *dmeta;
 	int ridx;
 	MonoTableInfo *table;
-
-	/* FIXME: I don't understand how ReplaceMethodOften works - it always has a 
-	 * EnCMap  entry 2: 0x06000002 (MethodDef) for every revision.	Shouldn't the number of methodDef rows be going up?
-
-	 * Apparently not - because conceptually the EnC log is saying to overwrite the existing rows.
-	 */
-
-	/* FIXME: so if the tables are conceptually mutated by each delta, we can't just stop at the
-	 * first lookup that gets a relative index in the right range, can we? that will always be
-	 * the oldest delta.
-	 */
-
-	/* FIXME: the other problem is that the EnClog is a sequence of actions to MUTATE rows.	 So when looking up an existing row we have to be able to make it so that naive callers decoding that row see the updated data.
-	 *
-	 * That's the main thing that PAss1 should eb doing for us.
-	 *
-	 * I think we can't get away from mutating.  The format is just too geared toward it.
-	 *
-	 * We should make the mutations atomic, though.	 (And I guess the heap extension is probably unavoidable)
-	 *
-	 * 1. Keep a table of inv
-	 */
 	int g = 0;
 
 	/* Candidate: the last delta that had updates for the requested row */
@@ -1560,19 +1555,13 @@ hot_reload_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_
 static gboolean
 hot_reload_has_modified_rows (const MonoTableInfo *table)
 {
-	MonoImage *base = table_info_get_base_image (table);
-	if (!base)
-		return FALSE;
+	MonoImage *base;
+	int tbl_index;
+	if (!table_info_find_in_base (table, &base, &tbl_index))
+	    return FALSE;
 	BaselineInfo *info = baseline_info_lookup (base);
 	if (!info)
 		return FALSE;
-
-	/* Invariant: `*t` must be a `MonoTableInfo` of the base image. */
-	g_assert (base->tables < table && table < &base->tables [MONO_TABLE_LAST]);
-
-	size_t s = ALIGN_TO (sizeof (MonoTableInfo), sizeof (gpointer));
-	int tbl_index = ((intptr_t) table - (intptr_t) base->tables) / s;
-
 	return info->any_modified_rows[tbl_index];
 }
 
