@@ -198,21 +198,21 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>286d98094b830b8dad769542b2669cb1b75f7097</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.21357.3">
+    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.21359.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>a89f052e97fec59a2d0148c08d3b4801567ec200</Sha>
+      <Sha>2c6f490003a017bdc0e492795f7d293f3005d0c6</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.21357.3">
+    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.21359.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>a89f052e97fec59a2d0148c08d3b4801567ec200</Sha>
+      <Sha>2c6f490003a017bdc0e492795f7d293f3005d0c6</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.21357.3">
+    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.21359.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>a89f052e97fec59a2d0148c08d3b4801567ec200</Sha>
+      <Sha>2c6f490003a017bdc0e492795f7d293f3005d0c6</Sha>
     </Dependency>
-    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.21357.3">
+    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.21359.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>a89f052e97fec59a2d0148c08d3b4801567ec200</Sha>
+      <Sha>2c6f490003a017bdc0e492795f7d293f3005d0c6</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.1-alpha.0.21355.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
