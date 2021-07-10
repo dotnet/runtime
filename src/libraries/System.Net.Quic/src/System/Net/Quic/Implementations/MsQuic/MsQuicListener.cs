@@ -28,6 +28,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             // set immediately in ctor, but we need a GCHandle to State in order to create the handle.
             public SafeMsQuicListenerHandle Handle = null!;
+            public string LogId = null!; // set in ctor.
 
             public readonly SafeMsQuicConfigurationHandle ConnectionConfiguration;
             public readonly Channel<MsQuicConnection> AcceptConnectionQueue;
@@ -64,7 +65,18 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
+            _state.LogId = MsQuicLogHelper.GetLogId(_state.Handle);
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(_state, $"{_state.LogId} Listener created");
+            }
+
             _listenEndPoint = Start(options);
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(_state, $"{_state.LogId} Listener started");
+            }
         }
 
         internal override IPEndPoint ListenEndPoint
