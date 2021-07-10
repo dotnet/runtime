@@ -7,6 +7,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        private volatile NullableBool _isAppend = NullableBool.Undefined;
         private string? _path;
 
         public SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle)
@@ -15,5 +16,14 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         internal string? Path => _path;
+
+        internal bool IsAppend => GetIsAppend();
+
+        private enum NullableBool
+        {
+            Undefined = 0,
+            False = -1,
+            True = 1
+        }
     }
 }

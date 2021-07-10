@@ -16,6 +16,7 @@ internal static partial class Interop
             uint Length,
             uint FileInformationClass);
 
+        internal const uint FileAccessInformation = 8;
         internal const uint FileModeInformation = 16;
 
         internal const int STATUS_INVALID_HANDLE = unchecked((int)0xC0000008);

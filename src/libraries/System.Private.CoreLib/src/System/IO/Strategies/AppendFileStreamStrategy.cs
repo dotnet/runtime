@@ -12,9 +12,9 @@ namespace System.IO.Strategies
     internal sealed class AppendFileStreamStrategy : FileStreamStrategy
     {
         // To write to the end of file:
-        // On Windows, we need to pass 0x7fffffffffffffffL as offset to writefile() or open the file with FILE_APPEND_DATA.
+        // On Windows, we need to pass 0xFFFFFFFFFFFFFFFF as offset to writefile() to append to EOF.
         // On Unix, if the file is opened with O_APPEND the offset is ignored and we use write anyway.
-        private const long WriteOffset = long.MaxValue;
+        private const long WriteOffset = unchecked((long)ulong.MaxValue);
         private readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
 
         internal AppendFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)

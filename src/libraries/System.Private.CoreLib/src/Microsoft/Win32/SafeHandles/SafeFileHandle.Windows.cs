@@ -69,10 +69,19 @@ namespace Microsoft.Win32.SafeHandles
             // the security attributes class.  Don't leave this bit set.
             share &= ~FileShare.Inheritable;
 
-            // Must use a valid Win32 constant here...
-            if (mode == FileMode.Append)
+            if (!FileStreamHelpers.UseNet5CompatStrategy)
             {
-                mode = FileMode.OpenOrCreate;
+                if (mode == FileMode.Append)
+                {
+                    fAccess |= (int)Interop.NtDll.DesiredAccess.FILE_APPEND_DATA;
+                }
+                else
+                {
+                    // FILE_GENERIC_WRITE consists of FILE_APPEND_DATA amongst many other flags
+                    // we don't want to recognize all FILE_GENERIC_WRITE handles as opened for APPEND
+                    // otherwise we would not be able to recognize them in GetIsAppend
+                    fAccess &= ~(int)Interop.NtDll.DesiredAccess.FILE_APPEND_DATA;
+                }
             }
 
             int flagsAndAttributes = (int)options;
@@ -83,7 +92,8 @@ namespace Microsoft.Win32.SafeHandles
             // (note that this is the effective default on CreateFile2)
             flagsAndAttributes |= (Interop.Kernel32.SecurityOptions.SECURITY_SQOS_PRESENT | Interop.Kernel32.SecurityOptions.SECURITY_ANONYMOUS);
 
-            SafeFileHandle fileHandle = Interop.Kernel32.CreateFile(fullPath, fAccess, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
+            FileMode windowsMode = mode == FileMode.Append ? FileMode.OpenOrCreate : mode; // Must use a valid Win32 constant here..
+            SafeFileHandle fileHandle = Interop.Kernel32.CreateFile(fullPath, fAccess, share, &secAttrs, windowsMode, flagsAndAttributes, IntPtr.Zero);
             if (fileHandle.IsInvalid)
             {
                 // Return a meaningful exception with the full path.
@@ -103,6 +113,7 @@ namespace Microsoft.Win32.SafeHandles
 
             fileHandle._path = fullPath;
             fileHandle._fileOptions = options;
+            fileHandle._isAppend = mode == FileMode.Append ? NullableBool.True : NullableBool.False;
             return fileHandle;
         }
 
@@ -251,6 +262,34 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return fileType;
+        }
+
+        private unsafe bool GetIsAppend()
+        {
+            NullableBool isAppend = _isAppend;
+            if (isAppend == NullableBool.Undefined)
+            {
+                Interop.NtDll.DesiredAccess access;
+                int ntStatus = Interop.NtDll.NtQueryInformationFile(
+                    FileHandle: this,
+                    IoStatusBlock: out _,
+                    FileInformation: &access,
+                    Length: sizeof(Interop.NtDll.DesiredAccess),
+                    FileInformationClass: Interop.NtDll.FileModeInformation);
+
+                if (ntStatus != Interop.StatusOptions.STATUS_SUCCESS) // we have failed, so we assume it's false
+                {
+                    _isAppend = isAppend = NullableBool.False;
+                }
+                else
+                {
+                    // FILE_GENERIC_WRITE consists of FILE_APPEND_DATA amongst many other flags
+                    // we don't want to recognize all FILE_GENERIC_WRITE handles as opened for APPEND
+                    _isAppend = isAppend = (access & Interop.NtDll.DesiredAccess.FILE_APPEND_DATA) != 0 && (access & Interop.NtDll.DesiredAccess.FILE_GENERIC_WRITE) == 0 ? NullableBool.True : NullableBool.False;
+                }
+            }
+
+            return isAppend == NullableBool.True;
         }
     }
 }

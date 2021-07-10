@@ -16,7 +16,6 @@ namespace Microsoft.Win32.SafeHandles
 
         // not using bool? as it's not thread safe
         private volatile NullableBool _canSeek = NullableBool.Undefined;
-        private volatile NullableBool _isAppend = NullableBool.Undefined;
         private bool _deleteOnClose;
         private bool _isLocked;
 
@@ -33,8 +32,6 @@ namespace Microsoft.Win32.SafeHandles
         public bool IsAsync { get; private set; }
 
         internal bool CanSeek => !IsClosed && GetCanSeek();
-
-        internal bool IsAppend => GetIsAppend();
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding => null;
 
@@ -412,13 +409,6 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return isAppend == NullableBool.True;
-        }
-
-        private enum NullableBool
-        {
-            Undefined = 0,
-            False = -1,
-            True = 1
         }
     }
 }
