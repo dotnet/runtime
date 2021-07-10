@@ -21,14 +21,18 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
-
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55271", TestPlatforms.Linux)]
         public async Task Dns_GetHostEntry_HostString_Ok(string hostName)
         {
+            if (PlatformDetection.IsSLES)
+            {
+                // See https://github.com/dotnet/runtime/issues/55271
+                throw new SkipTestException("SLES Tests environment is not configured for this test to work.");
+            }
+
             try
             {
                 await TestGetHostEntryAsync(() => Task.FromResult(Dns.GetHostEntry(hostName)));
@@ -73,13 +77,20 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55271", TestPlatforms.Linux)]
-        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName) =>
+        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName)
+        {
+            if (PlatformDetection.IsSLES)
+            {
+                // See https://github.com/dotnet/runtime/issues/55271
+                throw new SkipTestException("SLES Tests environment is not configured for this test to work.");
+            }
+
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(hostName));
+        }
 
         [Fact]
         public async Task Dns_GetHostEntryAsync_IPString_Ok() =>
