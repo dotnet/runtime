@@ -477,9 +477,8 @@ namespace
         std::vector<std::pair<pal::string_t, pal::string_t>> additional_properties;
         if (is_sdk_command)
         {
-            pal::dll_t fxr;
             pal::string_t fxr_path;
-            pal::get_loaded_library(LIBFXR_NAME, "hostfxr_main", &fxr, &fxr_path);
+            pal::get_own_module_path(&fxr_path);
 
             // We pass the loaded hostfxr path to the SDK can load it without relying on dlopen/LoadLibrary to find it.
             additional_properties.push_back(std::make_pair(_X("HOSTFXR_PATH"), fxr_path));
