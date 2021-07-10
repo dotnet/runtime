@@ -2,59 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Specialized;
+using System.Configuration;
 using System.IO;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Xml;
 using System.Xml;
 
 namespace System.Configuration
 {
-    // Need the System.Security.Cryptography.Xml package published before this can be enabled,
-    // for now, make it throw PlatformNotSupported.
-    //
-    // https://github.com/dotnet/runtime/issues/19838
-
-    public sealed class RsaProtectedConfigurationProvider : ProtectedConfigurationProvider
-    {
-        public override XmlNode Decrypt(XmlNode encryptedNode)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public override XmlNode Encrypt(XmlNode node)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public void AddKey(int keySize, bool exportable)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public void DeleteKey()
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public void ImportKey(string xmlFileName, bool exportable)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public void ExportKey(string xmlFileName, bool includePrivateParameters)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        public string KeyContainerName { get { throw new PlatformNotSupportedException(); } }
-        public string CspProviderName { get { throw new PlatformNotSupportedException(); } }
-        public bool UseMachineContainer { get { throw new PlatformNotSupportedException(); } }
-        public bool UseOAEP { get { throw new PlatformNotSupportedException(); } }
-        public bool UseFIPS { get { throw new PlatformNotSupportedException(); } }
-        public RSAParameters RsaPublicKey { get { throw new PlatformNotSupportedException(); } }
-    }
-
-
-#if FALSE
     public sealed class RsaProtectedConfigurationProvider : ProtectedConfigurationProvider
     {
         // Note: this name has to match the name used in RegiisUtility
@@ -275,5 +230,4 @@ namespace System.Configuration
                              new EncryptionMethod(EncryptedXml.XmlEncTripleDESUrl);
         }
     }
-#endif
 }
