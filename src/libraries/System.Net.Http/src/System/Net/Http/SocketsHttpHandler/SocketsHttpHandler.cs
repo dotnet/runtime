@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Net.Quic;
-using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -606,6 +603,17 @@ namespace System.Net.Http
                 {
                     request.Headers.ExpectContinue = false;
                 }
+            }
+
+            Uri? requestUri = request.RequestUri;
+            if (requestUri is null || !requestUri.IsAbsoluteUri)
+            {
+                return new InvalidOperationException(SR.net_http_client_invalid_requesturi);
+            }
+
+            if (!HttpUtilities.IsSupportedScheme(requestUri.Scheme))
+            {
+                return new NotSupportedException(SR.Format(SR.net_http_unsupported_requesturi_scheme, requestUri.Scheme));
             }
 
             return null;
