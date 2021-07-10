@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <Target Name="PrintRuntimePackPath" BeforeTargets="Publish">
-    <Message Text="** MicrosoftNetCoreAppRuntimePackDir : $(MicrosoftNetCoreAppRuntimePackDir)" Importance="High" />
+    <Message Text="** MicrosoftNetCoreAppRuntimePackDir : %(ResolvedRuntimePack.PackageDirectory)" Importance="High" />
   </Target>
 
   <!-- SDK tries to download runtime packs when RuntimeIdentifier is set, remove them from PackageDownload item. -->

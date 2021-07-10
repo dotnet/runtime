@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Xunit;
@@ -17,7 +17,7 @@ using Xunit.Sdk;
 
 #nullable enable
 
-[assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
+// [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
 
 namespace Wasm.Build.Tests
 {
@@ -33,7 +33,7 @@ namespace Wasm.Build.Tests
         protected SharedBuildPerTestClassFixture _buildContext;
 
         // FIXME: use an envvar to override this
-        protected static int s_defaultPerTestTimeoutMs = 15*60*1000; // 15mins
+        protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30*60*1000 : 15*60*1000;
         protected static BuildEnvironment s_buildEnv;
         private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : ([^ ]*)";
         private static Regex s_runtimePackPathRegex;
@@ -261,7 +261,11 @@ namespace Wasm.Build.Tests
         protected static BuildArgs ExpandBuildArgs(BuildArgs buildArgs, string extraProperties="", string extraItems="", string insertAtEnd="", string projectTemplate=SimpleProjectTemplate)
         {
             if (buildArgs.AOT)
-                extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>\n<EmccVerbose>false</EmccVerbose>\n";
+            {
+                extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    extraProperties += $"\n<EmccVerbose>false</EmccVerbose>\n";
+            }
 
             string projectContents = projectTemplate
                                         .Replace("##EXTRA_PROPERTIES##", extraProperties)
@@ -327,7 +331,7 @@ namespace Wasm.Build.Tests
             {
                 result = AssertBuild(sb.ToString(), id, expectSuccess: expectSuccess, envVars: s_buildEnv.EnvVars);
 
-                //AssertRuntimePackPath(result.buildOutput);
+                // AssertRuntimePackPath(Path.GetFullPath(result.buildOutput));
 
                 // check that we are using the correct runtime pack!
 

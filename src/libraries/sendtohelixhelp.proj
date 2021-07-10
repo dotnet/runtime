@@ -58,6 +58,7 @@
 
     <NeedsWorkload Condition="'$(TestUsingWorkloads)' == 'true'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' and '$(NeedsWorkload)' != 'true'">true</NeedsEMSDK>
+    <NeedsToRunOnBrowser Condition="'$(TargetOS)' == 'Browser' and ('$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps')">true</NeedsToRunOnBrowser>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">
@@ -105,7 +106,7 @@
     <NeedsDotNetSdk Condition="'$(NeedsWorkload)' != 'true'">true</NeedsDotNetSdk>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser' and '$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'true'">
+  <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'true'">
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
   </ItemGroup>
@@ -311,7 +312,7 @@
       <!-- 84.0.4147.105 is 768962 for example -->
       <ChromiumRevision>768968</ChromiumRevision>
       <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chrome-linux.zip</ChromiumUrl>
-      <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</SeleniumUrl>
+      <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</ChromeDriverUrl>
       <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
       <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
       <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(NetCoreAppCurrent)-$(Configuration)'))</TestEchoMiddleware>
@@ -366,8 +367,8 @@
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'"
                                AsArchive="$(HelixCorrelationPayload.EndsWith('.zip'))" />
-      <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'" />
-      <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'" />
+      <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)"         Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(BrowserHost)' != 'windows'" />
+      <HelixCorrelationPayload Include="chromedriver" Uri="$(ChromeDriverUrl)" Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(BrowserHost)' != 'windows'" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Console.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'" />

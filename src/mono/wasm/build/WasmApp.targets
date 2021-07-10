@@ -93,6 +93,7 @@
   <Target Name="_BeforeWasmBuildApp" DependsOnTargets="$(_BeforeWasmBuildAppDependsOn)">
     <Error Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == '' and ('%(ResolvedRuntimePack.PackageDirectory)' == '' or !Exists(%(ResolvedRuntimePack.PackageDirectory)))"
            Text="Could not find %25(ResolvedRuntimePack.PackageDirectory)=%(ResolvedRuntimePack.PackageDirectory)" />
+
     <PropertyGroup>
       <MicrosoftNetCoreAppRuntimePackDir Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</MicrosoftNetCoreAppRuntimePackDir>
       <MicrosoftNetCoreAppRuntimePackRidDir Condition="'$(MicrosoftNetCoreAppRuntimePackRidDir)' == ''">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackDir), 'runtimes', 'browser-wasm'))</MicrosoftNetCoreAppRuntimePackRidDir>

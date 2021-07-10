@@ -12,7 +12,7 @@
   </Target>
 
   <Target Name="PrintRuntimePackPath" BeforeTargets="Publish">
-    <Message Text="** MicrosoftNetCoreAppRuntimePackDir : $(MicrosoftNetCoreAppRuntimePackDir)" Importance="High" />
+    <Message Text="** MicrosoftNetCoreAppRuntimePackDir : %(ResolvedRuntimePack.PackageDirectory)" Importance="High" />
   </Target>
 
   <!-- Add the resolved targeting pack to the assembly search path. -->
