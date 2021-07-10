@@ -145,12 +145,12 @@ namespace System.IO.Strategies
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(ReadAsyncInternal(new Memory<byte>(buffer, offset, count)).AsTask(), callback, state);
-
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count)).AsTask(), callback, state);
+            TaskToApm.Begin(ReadAsync(buffer, offset, count), callback, state);
 
         public override int EndRead(IAsyncResult asyncResult) => TaskToApm.End<int>(asyncResult);
+
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+            TaskToApm.Begin(WriteAsync(buffer, offset, count), callback, state);
 
         public override void EndWrite(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
     }
