@@ -4,7 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <DeltaScript>deltascript.json</DeltaScript>
-    <Nullable>disable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CustomAttributeUpdate.cs" />
