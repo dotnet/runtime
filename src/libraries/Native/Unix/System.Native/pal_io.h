@@ -154,6 +154,7 @@ enum
     PAL_O_EXCL = 0x0040,    // When combined with CREAT, fails if file already exists
     PAL_O_TRUNC = 0x0080,   // Truncate file to length 0 if it already exists
     PAL_O_SYNC = 0x0100,    // Block writes call will block until physically written
+    PAL_O_APPEND = 0x0200,  // atomic append to the end of file
 };
 
 /**
@@ -467,6 +468,11 @@ PALEXPORT int32_t SystemNative_FcntlSetIsNonBlocking(intptr_t fd, int32_t isNonB
  * Returns 0 for success, -1 for failure. Sets errno for failure.
  */
 PALEXPORT int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking);
+
+/**
+ * Gets whether or not a file was opened with 0_APPEND. Returns false on failure.
+*/
+PALEXPORT int32_t SystemNative_GetIsAppend(intptr_t fd);
 
 /**
  * Create a directory. Implemented as a shim to mkdir(2).

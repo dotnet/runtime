@@ -245,7 +245,7 @@ static int32_t ConvertOpenFlags(int32_t flags)
             return -1;
     }
 
-    if (flags & ~(PAL_O_ACCESS_MODE_MASK | PAL_O_CLOEXEC | PAL_O_CREAT | PAL_O_EXCL | PAL_O_TRUNC | PAL_O_SYNC))
+    if (flags & ~(PAL_O_ACCESS_MODE_MASK | PAL_O_CLOEXEC | PAL_O_CREAT | PAL_O_EXCL | PAL_O_TRUNC | PAL_O_SYNC | PAL_O_APPEND))
     {
         assert_msg(false, "Unknown Open flag", (int)flags);
         return -1;
@@ -263,6 +263,8 @@ static int32_t ConvertOpenFlags(int32_t flags)
         ret |= O_TRUNC;
     if (flags & PAL_O_SYNC)
         ret |= O_SYNC;
+    if (flags & PAL_O_APPEND)
+        ret |= O_APPEND;
 
     assert(ret != -1);
     return ret;
@@ -640,6 +642,11 @@ int32_t SystemNative_FcntlGetIsNonBlocking(intptr_t fd, int32_t* isNonBlocking)
 
     *isNonBlocking = ((flags & O_NONBLOCK) == O_NONBLOCK) ? 1 : 0;
     return 0;
+}
+
+int32_t SystemNative_GetIsAppend(intptr_t fd)
+{
+    return fcntl(ToFileDescriptor(fd), F_GETFL) & O_APPEND;
 }
 
 int32_t SystemNative_MkDir(const char* path, int32_t mode)

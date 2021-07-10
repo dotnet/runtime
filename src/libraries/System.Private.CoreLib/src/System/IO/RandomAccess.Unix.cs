@@ -86,7 +86,10 @@ namespace System.IO
                 // The Windows implementation uses WriteFile, which ignores the offset if the handle
                 // isn't seekable.  We do the same manually with PWrite vs Write, in order to enable
                 // the function to be used by FileStream for all the same situations.
-                int result = handle.CanSeek ?
+
+                // POSIX requires that pwrite should respect provided offset even for handles opened with O_APPEND.
+                // But Linux and BSD don't do that, moreover their behaviour is different. So we always use write for O_APPEND.
+                int result = handle.CanSeek && !handle.IsAppend ?
                     Interop.Sys.PWrite(handle, bufPtr, buffer.Length, fileOffset) :
                     Interop.Sys.Write(handle, bufPtr, buffer.Length);
                 FileStreamHelpers.CheckFileCall(result, handle.Path);

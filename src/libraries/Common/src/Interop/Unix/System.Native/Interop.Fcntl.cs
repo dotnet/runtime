@@ -27,6 +27,9 @@ internal static partial class Interop
 
             [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlGetFD", SetLastError=true)]
             internal static extern int GetFD(IntPtr fd);
+
+            [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIsAppend")]
+            internal static extern bool GetIsAppend(SafeHandle fd);
         }
     }
 }

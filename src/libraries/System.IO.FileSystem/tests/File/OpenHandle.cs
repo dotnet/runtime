@@ -30,13 +30,6 @@ namespace System.IO.Tests
                 () => File.OpenHandle("validPath", FileMode.CreateNew, FileAccess.Write, FileShare.None, FileOptions.None, preallocationSize: -1));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53432")]
-        [Theory, MemberData(nameof(StreamSpecifiers))]
-        public override void FileModeAppendExisting(string streamSpecifier)
-        {
-            _ = streamSpecifier; // to keep the xUnit analyser happy
-        }
-
         [Theory]
         [InlineData(FileOptions.None)]
         [InlineData(FileOptions.Asynchronous)]

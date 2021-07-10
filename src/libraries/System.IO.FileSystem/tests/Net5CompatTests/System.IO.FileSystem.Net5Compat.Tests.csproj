@@ -8,6 +8,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\**\*.cs" />
+    <!-- .NET 5 did not properly support FileStreams created out of handle opened with APPEND -->
+    <Compile Remove="..\File\OpenHandle.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Remove="..\**\*.Windows.cs" />

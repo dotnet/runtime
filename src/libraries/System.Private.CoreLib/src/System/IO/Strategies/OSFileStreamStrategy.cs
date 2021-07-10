@@ -16,7 +16,6 @@ namespace System.IO.Strategies
         private readonly FileShare _share;
 
         protected long _filePosition;
-        private long _appendStart; // When appending, prevent overwriting file.
         private long _length = -1; // When the file is locked for writes on Windows (_share <= FileShare.Read) cache file length in-memory, negative means that hasn't been fetched.
         private bool _exposedHandle; // created from handle, or SafeFileHandle was used and the handle got exposed
 
@@ -50,26 +49,6 @@ namespace System.IO.Strategies
             _share = share;
 
             _fileHandle = SafeFileHandle.Open(fullPath, mode, access, share, options, preallocationSize);
-
-            try
-            {
-                if (mode == FileMode.Append && CanSeek)
-                {
-                    _appendStart = _filePosition = Length;
-                }
-                else
-                {
-                    _appendStart = -1;
-                }
-            }
-            catch
-            {
-                // If anything goes wrong while setting up the stream, make sure we deterministically dispose
-                // of the opened handle.
-                _fileHandle.Dispose();
-                _fileHandle = null!;
-                throw;
-            }
         }
 
         public sealed override bool CanSeek => _fileHandle.CanSeek;
@@ -78,7 +57,7 @@ namespace System.IO.Strategies
 
         public sealed override bool CanWrite => !_fileHandle.IsClosed && (_access & FileAccess.Write) != 0;
 
-        public unsafe sealed override long Length
+        public sealed override long Length
         {
             get
             {
@@ -208,13 +187,6 @@ namespace System.IO.Strategies
                 FileStreamHelpers.ThrowInvalidArgument(_fileHandle);
             }
 
-            // Prevent users from overwriting data in a file that was opened in append mode.
-            if (_appendStart != -1 && pos < _appendStart)
-            {
-                _filePosition = oldPos;
-                throw new IOException(SR.IO_SeekAppendOverwrite);
-            }
-
             return pos;
         }
 
@@ -224,13 +196,10 @@ namespace System.IO.Strategies
 
         public sealed override void SetLength(long value)
         {
-            if (_appendStart != -1 && value < _appendStart)
-                throw new IOException(SR.IO_SetLengthAppendTruncate);
-
             SetLengthCore(value);
         }
 
-        protected unsafe void SetLengthCore(long value)
+        protected void SetLengthCore(long value)
         {
             Debug.Assert(value >= 0, "value >= 0");
 

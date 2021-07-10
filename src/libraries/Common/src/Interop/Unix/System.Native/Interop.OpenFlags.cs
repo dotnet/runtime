@@ -21,6 +21,7 @@ internal static partial class Interop
             O_EXCL    = 0x0040,
             O_TRUNC   = 0x0080,
             O_SYNC    = 0x0100,
+            O_APPEND  = 0x0200,
         }
     }
 }

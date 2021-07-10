@@ -18,18 +18,20 @@ namespace System.IO.Strategies
             // The .NET 5 Compat strategy does not support bufferSize == 0.
             // To minimize the risk of introducing bugs to it, we just pass 1 to disable the buffering.
 
-            FileStreamStrategy strategy = UseNet5CompatStrategy ?
-                new Net5CompatFileStreamStrategy(handle, access, bufferSize == 0 ? 1 : bufferSize, isAsync) :
-                EnableBufferingIfNeeded(ChooseStrategyCore(handle, access, share, isAsync), bufferSize);
+            FileStreamStrategy strategy = UseNet5CompatStrategy
+                ? new Net5CompatFileStreamStrategy(handle, access, bufferSize == 0 ? 1 : bufferSize, isAsync)
+                : EnableBufferingIfNeeded(handle.IsAppend ? new AppendFileStreamStrategy(handle, access, share) : ChooseStrategyCore(handle, access, share, isAsync), bufferSize);
 
             return WrapIfDerivedType(fileStream, strategy);
         }
 
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {
-            FileStreamStrategy strategy = UseNet5CompatStrategy ?
-                new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize == 0 ? 1 : bufferSize, options, preallocationSize) :
-                EnableBufferingIfNeeded(ChooseStrategyCore(path, mode, access, share, options, preallocationSize), bufferSize);
+            FileStreamStrategy strategy = UseNet5CompatStrategy
+                ? new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize == 0 ? 1 : bufferSize, options, preallocationSize)
+                : EnableBufferingIfNeeded(mode == FileMode.Append
+                    ? new AppendFileStreamStrategy(path, mode, access, share, options, preallocationSize)
+                    : ChooseStrategyCore(path, mode, access, share, options, preallocationSize), bufferSize);
 
             return WrapIfDerivedType(fileStream, strategy);
         }

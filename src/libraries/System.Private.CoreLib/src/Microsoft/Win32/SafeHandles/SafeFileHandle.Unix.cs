@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+ // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -16,6 +16,7 @@ namespace Microsoft.Win32.SafeHandles
 
         // not using bool? as it's not thread safe
         private volatile NullableBool _canSeek = NullableBool.Undefined;
+        private volatile NullableBool _isAppend = NullableBool.Undefined;
         private bool _deleteOnClose;
         private bool _isLocked;
 
@@ -33,6 +34,8 @@ namespace Microsoft.Win32.SafeHandles
 
         internal bool CanSeek => !IsClosed && GetCanSeek();
 
+        internal bool IsAppend => GetIsAppend();
+
         internal ThreadPoolBoundHandle? ThreadPoolBinding => null;
 
         internal void EnsureThreadPoolBindingInitialized() { /* nop */ }
@@ -47,6 +50,7 @@ namespace Microsoft.Win32.SafeHandles
             Debug.Assert(path != null);
             SafeFileHandle handle = Interop.Sys.Open(path, flags, mode);
             handle._path = path;
+            handle._isAppend = (flags & Interop.Sys.OpenFlags.O_APPEND) != 0 ? NullableBool.True : NullableBool.False;
 
             if (handle.IsInvalid)
             {
@@ -209,7 +213,6 @@ namespace Microsoft.Win32.SafeHandles
                 case FileMode.Truncate: // We truncate the file after getting the lock
                     break;
 
-                case FileMode.Append: // Append is the same as OpenOrCreate, except that we'll also separately jump to the end later
                 case FileMode.OpenOrCreate:
                 case FileMode.Create: // We truncate the file after getting the lock
                     flags |= Interop.Sys.OpenFlags.O_CREAT;
@@ -217,6 +220,14 @@ namespace Microsoft.Win32.SafeHandles
 
                 case FileMode.CreateNew:
                     flags |= (Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL);
+                    break;
+
+                case FileMode.Append:
+                    flags |= Interop.Sys.OpenFlags.O_CREAT;
+                    if (!FileStreamHelpers.UseNet5CompatStrategy) // we used to seek to the end of file in .NET 5
+                    {
+                        flags |= Interop.Sys.OpenFlags.O_APPEND;
+                    }
                     break;
             }
 
@@ -373,6 +384,20 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return canSeek == NullableBool.True;
+        }
+
+        private bool GetIsAppend()
+        {
+            Debug.Assert(!IsClosed);
+            Debug.Assert(!IsInvalid);
+
+            NullableBool isAppend = _isAppend;
+            if (isAppend == NullableBool.Undefined)
+            {
+                _isAppend = isAppend = Interop.Sys.Fcntl.GetIsAppend(this) ? NullableBool.True : NullableBool.False;
+            }
+
+            return isAppend == NullableBool.True;
         }
 
         private enum NullableBool
