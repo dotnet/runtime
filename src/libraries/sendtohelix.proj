@@ -79,14 +79,14 @@
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
       <_TestValues Include="true;false" />
 
-      <_OtherProjectsToBuild Include="$(PerScenarioProjectFile)">
+      <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestValues.Identity)</AdditionalProperties>
-        <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_OtherProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
-      </_OtherProjectsToBuild>
+        <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
+      </_BuildWasmAppsProjectsToBuild>
     </ItemGroup>
 
     <ItemGroup>
-      <_ProjectsToBuild Include="@(_BaseProjectsToBuild);@(_OtherProjectsToBuild)" />
+      <_ProjectsToBuild Include="@(_BuildWasmAppsProjectsToBuild);@(_BaseProjectsToBuild)" />
     </ItemGroup>
 
     <PropertyGroup>
