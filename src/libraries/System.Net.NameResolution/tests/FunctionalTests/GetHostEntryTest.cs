@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.NameResolution.Tests
