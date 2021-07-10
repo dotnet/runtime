@@ -303,7 +303,7 @@ namespace System.ComponentModel
         public virtual System.ComponentModel.PropertyDescriptorCollection GetProperties() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public virtual System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Attribute[]? attributes) { throw null; }
-        public virtual object? GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
+        public virtual object? GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class)]
     public sealed partial class DataObjectAttribute : System.Attribute
@@ -585,7 +585,7 @@ namespace System.ComponentModel
         System.ComponentModel.PropertyDescriptorCollection GetProperties();
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.PropertyDescriptorCollection GetProperties(System.Attribute[]? attributes);
-        object? GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd);
+        object? GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd);
     }
     public partial interface IDataErrorInfo
     {
