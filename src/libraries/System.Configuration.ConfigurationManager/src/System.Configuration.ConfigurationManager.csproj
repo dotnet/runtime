@@ -275,6 +275,7 @@
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Security.Cryptography.Xml" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
