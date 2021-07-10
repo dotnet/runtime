@@ -582,10 +582,10 @@ namespace System.Net
             }
             set
             {
-                m_port_implicit = false;
                 if (string.IsNullOrEmpty(value))
                 {
                     // "Port" is present but has no value.
+                    m_port_implicit = true;
                     m_port = string.Empty;
                 }
                 else
@@ -619,6 +619,7 @@ namespace System.Net
                             portList.Add(port);
                         }
                     }
+                    m_port_implicit = false;
                     m_port_list = portList.ToArray();
                     m_port = value;
                     m_version = MaxSupportedVersion;
