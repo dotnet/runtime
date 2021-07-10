@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -98,9 +99,16 @@ namespace Microsoft.Workload.Build.Tasks
         private bool InstallWorkloadManifest(string name, string version, string nugetConfigContents, bool stopOnMissing)
         {
             Log.LogMessage(MessageImportance.High, $"Installing workload manifest for {name}/{version}");
+
+            // Find any existing directory with the manifest name, ignoring the case
+            // Multiple directories for a manifest, differing only in case causes
+            // workload install to fail due to duplicate manifests!
+            // This is applicable only on case-sensitive filesystems
+            string outputDir = FindSubDirIgnoringCase(Path.Combine(SdkDir, "sdk-manifests", VersionBand), name);
+
             PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBand}",
                                           Version: version,
-                                          OutputDir: Path.Combine(SdkDir, "sdk-manifests", VersionBand, name),
+                                          OutputDir: outputDir,
                                           relativeSourceDir: "data");
 
             if (!PackageInstaller.Install(new[]{ pkgRef }, nugetConfigContents, Log, stopOnMissing))
@@ -159,6 +167,22 @@ namespace Microsoft.Workload.Build.Tasks
 
             Log.LogError($"{itemName} item ({item.ItemSpec}) is missing Name metadata");
             return false;
+        }
+
+        private string FindSubDirIgnoringCase(string parentDir, string dirName)
+        {
+            IEnumerable<string> matchingDirs = Directory.EnumerateDirectories(parentDir,
+                                                            dirName,
+                                                            new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive });
+
+            string? first = matchingDirs.FirstOrDefault();
+            if (matchingDirs.Count() > 1)
+            {
+                Log.LogWarning($"Found multiple directories with names that differ only in case. {string.Join(", ", matchingDirs.ToArray())}"
+                                + $"{Environment.NewLine}Using the first one: {first}");
+            }
+
+            return first ?? Path.Combine(parentDir, dirName);
         }
 
         private record ManifestInformation(
