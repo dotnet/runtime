@@ -3,16 +3,17 @@
 
 using System.Net;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace System.Diagnostics
 {
-    internal class LegacyPropagator : TextMapPropagator
+    internal sealed class LegacyPropagator : TextMapPropagator
     {
         internal static TextMapPropagator Instance { get; } = new LegacyPropagator();
 
-        public override IReadOnlyCollection<string> Fields { get; } = new HashSet<string>() { TraceParent, RequestId, TraceState, Baggage, CorrelationContext };
+        public override IReadOnlyCollection<string> Fields { get; } = new ReadOnlyCollection<string>(new[] { TraceParent, RequestId, TraceState, Baggage, CorrelationContext });
 
-        public override void Inject(Activity activity, object carrier, PropagatorSetterCallback setter)
+        public override void Inject(Activity? activity, object? carrier, PropagatorSetterCallback? setter)
         {
             if (activity is null || setter is null)
             {
@@ -28,7 +29,7 @@ namespace System.Diagnostics
             if (activity.IdFormat == ActivityIdFormat.W3C)
             {
                 setter(carrier, TraceParent, id);
-                if (activity.TraceStateString is not null)
+                if (!string.IsNullOrEmpty(activity.TraceStateString))
                 {
                     setter(carrier, TraceState, activity.TraceStateString);
                 }
@@ -41,7 +42,7 @@ namespace System.Diagnostics
             InjectBaggage(carrier, activity.Baggage, setter);
         }
 
-        public override void ExtractTraceIdAndState(object carrier, PropagatorGetterCallback getter, out string? traceId, out string? traceState)
+        public override void ExtractTraceIdAndState(object? carrier, PropagatorGetterCallback? getter, out string? traceId, out string? traceState)
         {
             if (getter is null)
             {
@@ -59,15 +60,16 @@ namespace System.Diagnostics
             getter(carrier, TraceState, out traceState, out _);
         }
 
-        public override IEnumerable<KeyValuePair<string, string?>>? ExtractBaggage(object carrier, PropagatorGetterCallback getter)
+        public override IEnumerable<KeyValuePair<string, string?>>? ExtractBaggage(object? carrier, PropagatorGetterCallback? getter)
         {
-            IEnumerable<KeyValuePair<string, string?>>? baggage = null;
             if (getter is null)
             {
                 return null;
             }
 
             getter(carrier, Baggage, out string? theBaggage, out _);
+
+            IEnumerable<KeyValuePair<string, string?>>? baggage = null;
             if (theBaggage is null || !TryExtractBaggage(theBaggage, out baggage))
             {
                 getter(carrier, CorrelationContext, out theBaggage, out _);
@@ -80,12 +82,12 @@ namespace System.Diagnostics
             return baggage;
         }
 
-        internal static bool TryExtractBaggage(string baggagestring, out IEnumerable<KeyValuePair<string, string?>>? baggage)
+        internal static bool TryExtractBaggage(string baggageString, out IEnumerable<KeyValuePair<string, string?>>? baggage)
         {
             baggage = null;
             List<KeyValuePair<string, string?>>? baggageList = null;
 
-            if (string.IsNullOrEmpty(baggagestring))
+            if (string.IsNullOrEmpty(baggageString))
             {
                 return true;
             }
@@ -95,12 +97,12 @@ namespace System.Diagnostics
             do
             {
                 // Skip spaces
-                while (currentIndex < baggagestring.Length && (baggagestring[currentIndex] == Space || baggagestring[currentIndex] == Tab))
+                while (currentIndex < baggageString.Length && (baggageString[currentIndex] == Space || baggageString[currentIndex] == Tab))
                 {
                     currentIndex++;
                 }
 
-                if (currentIndex >= baggagestring.Length)
+                if (currentIndex >= baggageString.Length)
                 {
                     break; // No Key exist
                 }
@@ -108,32 +110,32 @@ namespace System.Diagnostics
                 int keyStart = currentIndex;
 
                 // Search end of the key
-                while (currentIndex < baggagestring.Length && baggagestring[currentIndex] != Space && baggagestring[currentIndex] != Tab && baggagestring[currentIndex] != '=')
+                while (currentIndex < baggageString.Length && baggageString[currentIndex] != Space && baggageString[currentIndex] != Tab && baggageString[currentIndex] != '=')
                 {
                     currentIndex++;
                 }
 
-                if (currentIndex >= baggagestring.Length)
+                if (currentIndex >= baggageString.Length)
                 {
                     break;
                 }
 
                 int keyEnd = currentIndex;
 
-                if (baggagestring[currentIndex] != '=')
+                if (baggageString[currentIndex] != '=')
                 {
                     // Skip Spaces
-                    while (currentIndex < baggagestring.Length && (baggagestring[currentIndex] == Space || baggagestring[currentIndex] == Tab))
+                    while (currentIndex < baggageString.Length && (baggageString[currentIndex] == Space || baggageString[currentIndex] == Tab))
                     {
                         currentIndex++;
                     }
 
-                    if (currentIndex >= baggagestring.Length)
+                    if (currentIndex >= baggageString.Length)
                     {
                         break; // Wrong key format
                     }
 
-                    if (baggagestring[currentIndex] != '=')
+                    if (baggageString[currentIndex] != '=')
                     {
                         break; // wrong key format.
                     }
@@ -142,12 +144,12 @@ namespace System.Diagnostics
                 currentIndex++;
 
                 // Skip spaces
-                while (currentIndex < baggagestring.Length && (baggagestring[currentIndex] == Space || baggagestring[currentIndex] == Tab))
+                while (currentIndex < baggageString.Length && (baggageString[currentIndex] == Space || baggageString[currentIndex] == Tab))
                 {
                     currentIndex++;
                 }
 
-                if (currentIndex >= baggagestring.Length)
+                if (currentIndex >= baggageString.Length)
                 {
                     break; // Wrong value format
                 }
@@ -155,33 +157,30 @@ namespace System.Diagnostics
                 int valueStart = currentIndex;
 
                 // Search end of the value
-                while (currentIndex < baggagestring.Length && baggagestring[currentIndex] != Space && baggagestring[currentIndex] != Tab &&
-                       baggagestring[currentIndex] != Comma && baggagestring[currentIndex] != Semicolon)
+                while (currentIndex < baggageString.Length && baggageString[currentIndex] != Space && baggageString[currentIndex] != Tab &&
+                       baggageString[currentIndex] != Comma && baggageString[currentIndex] != Semicolon)
                 {
                     currentIndex++;
                 }
 
                 if (keyStart < keyEnd && valueStart < currentIndex)
                 {
-                    if (baggageList is null)
-                    {
-                        baggageList = new();
-                    }
+                    baggageList ??= new();
 
                     // Insert in reverse order for asp.net compatability.
                     baggageList.Insert(0, new KeyValuePair<string, string?>(
-                                                WebUtility.UrlDecode(baggagestring.Substring(keyStart, keyEnd - keyStart)).Trim(s_trimmingSpaceCharacters),
-                                                WebUtility.UrlDecode(baggagestring.Substring(valueStart, currentIndex - valueStart)).Trim(s_trimmingSpaceCharacters)));
+                                                WebUtility.UrlDecode(baggageString.Substring(keyStart, keyEnd - keyStart)).Trim(s_trimmingSpaceCharacters),
+                                                WebUtility.UrlDecode(baggageString.Substring(valueStart, currentIndex - valueStart)).Trim(s_trimmingSpaceCharacters)));
                 }
 
                 // Skip to end of values
-                while (currentIndex < baggagestring.Length && baggagestring[currentIndex] != Comma)
+                while (currentIndex < baggageString.Length && baggageString[currentIndex] != Comma)
                 {
                     currentIndex++;
                 }
 
                 currentIndex++; // Move to next key-value entry
-            } while (currentIndex < baggagestring.Length);
+            } while (currentIndex < baggageString.Length);
 
             baggage = baggageList;
             return baggageList != null;

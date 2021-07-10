@@ -23,7 +23,7 @@ namespace System.Diagnostics
         /// <param name="fieldName">The propagation field name.</param>
         /// <param name="fieldValue">An output string to receive the value corresponds to the input fieldName. This should return non null value if there is only one value for the input field name.</param>
         /// <param name="fieldValues">An output collection of strings to receive the values corresponds to the input fieldName. This should return non null value if there are more than one value for the input field name.</param>
-        public delegate void PropagatorGetterCallback(object carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues);
+        public delegate void PropagatorGetterCallback(object? carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues);
 
         /// <summary>
         /// Define the callback that can be used with the propagators inject methods. This callback will be invoked to set a propagation key/value pair.
@@ -32,7 +32,7 @@ namespace System.Diagnostics
         /// <param name="carrier">Carrier is the medium used by Propagators to write values to.</param>
         /// <param name="fieldName">The propagation field name.</param>
         /// <param name="fieldValue">The value corresponds to the input fieldName. </param>
-        public delegate void PropagatorSetterCallback(object carrier, string fieldName, string fieldValue);
+        public delegate void PropagatorSetterCallback(object? carrier, string fieldName, string fieldValue);
 
         /// <summary>
         /// The predefined propagation fields
@@ -46,7 +46,7 @@ namespace System.Diagnostics
         /// <param name="activity">The Activity object has the trace context to inject to the carrier.</param>
         /// <param name="carrier">Carrier is the medium used by the propagators to write values to.</param>
         /// <param name="setter">The callback will be invoked to set a propagation key/value pair to the carrier.</param>
-        public abstract void Inject(Activity activity, object carrier, PropagatorSetterCallback setter);
+        public abstract void Inject(Activity? activity, object? carrier, PropagatorSetterCallback? setter);
 
         /// <summary>
         /// Extracts the value from an incoming request represented by the carrier. For example, from the headers of an HTTP request.
@@ -55,7 +55,7 @@ namespace System.Diagnostics
         /// <param name="getter">The callback will be invoked to get the propagation trace Id and trace state from carrier.</param>
         /// <param name="traceId">The extracted trace Id from the carrier.</param>
         /// <param name="traceState">The extracted trace state from the carrier.</param>
-        public abstract void ExtractTraceIdAndState(object carrier, PropagatorGetterCallback getter, out string? traceId, out string? traceState);
+        public abstract void ExtractTraceIdAndState(object? carrier, PropagatorGetterCallback? getter, out string? traceId, out string? traceState);
 
         /// <summary>
         /// Extracts the baggage key-value pairs list from an incoming request represented by the carrier. For example, from the headers of an HTTP request.
@@ -63,7 +63,7 @@ namespace System.Diagnostics
         /// <param name="carrier">Carrier is the medium used by the propagators to read values from.</param>
         /// <param name="getter">The callback will be invoked to get the propagation baggage list from carrier.</param>
         /// <returns>Returns the extracted key-value pair list from teh carrier.</returns>
-        public abstract IEnumerable<KeyValuePair<string, string?>>? ExtractBaggage(object carrier, PropagatorGetterCallback getter);
+        public abstract IEnumerable<KeyValuePair<string, string?>>? ExtractBaggage(object? carrier, PropagatorGetterCallback? getter);
 
         /// <summary>
         /// Get or set the process wide propagator object which used as the current selected propagator.
@@ -78,10 +78,7 @@ namespace System.Diagnostics
 
             set
             {
-                if (value is not null)
-                {
-                    s_current = value;
-                }
+                s_current = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 
@@ -102,7 +99,7 @@ namespace System.Diagnostics
 
         // internal stuff
 
-        internal static void InjectBaggage(object carrier, IEnumerable<KeyValuePair<string, string?>> baggage, PropagatorSetterCallback setter, bool injectAsW3C = false)
+        internal static void InjectBaggage(object? carrier, IEnumerable<KeyValuePair<string, string?>> baggage, PropagatorSetterCallback setter)
         {
             using (IEnumerator<KeyValuePair<string, string?>> e = baggage.GetEnumerator())
             {
@@ -110,16 +107,13 @@ namespace System.Diagnostics
                 {
                     StringBuilder baggageList = new StringBuilder();
 
-                    KeyValuePair<string, string?> item = e.Current;
-                    baggageList.Append(WebUtility.UrlEncode(item.Key)).Append('=').Append(WebUtility.UrlEncode(item.Value));
-
-                    while (e.MoveNext())
+                    do
                     {
-                        item = e.Current;
-                        baggageList.Append(Comma).Append(WebUtility.UrlEncode(item.Key)).Append('=').Append(WebUtility.UrlEncode(item.Value));
-                    }
+                        KeyValuePair<string, string?> item = e.Current;
+                        baggageList.Append(WebUtility.UrlEncode(item.Key)).Append('=').Append(WebUtility.UrlEncode(item.Value)).Append(CommaWithSpace);
+                    } while (e.MoveNext());
 
-                    setter(carrier, injectAsW3C ? Baggage : CorrelationContext, baggageList.ToString());
+                    setter(carrier, CorrelationContext, baggageList.ToString(0, baggageList.Length - 2));
                 }
             }
         }
@@ -133,6 +127,7 @@ namespace System.Diagnostics
         internal const char   Tab                = (char)9;
         internal const char   Comma              = ',';
         internal const char   Semicolon          = ';';
+        internal const string CommaWithSpace     = ", ";
 
         internal static readonly char [] s_trimmingSpaceCharacters = new char[] { Space, Tab };
     }

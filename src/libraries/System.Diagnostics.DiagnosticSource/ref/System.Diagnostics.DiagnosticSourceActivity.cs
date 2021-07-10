@@ -256,12 +256,12 @@ namespace System.Diagnostics
     }
     public abstract class TextMapPropagator
     {
-      public delegate void PropagatorGetterCallback(object carrier, string fieldName, out string? fieldValue, out System.Collections.Generic.IEnumerable<string>? fieldValues);
-      public delegate void PropagatorSetterCallback(object carrier, string fieldName, string fieldValue);
+      public delegate void PropagatorGetterCallback(object? carrier, string fieldName, out string? fieldValue, out System.Collections.Generic.IEnumerable<string>? fieldValues);
+      public delegate void PropagatorSetterCallback(object? carrier, string fieldName, string fieldValue);
       public abstract System.Collections.Generic.IReadOnlyCollection<string> Fields { get; }
-      public abstract void Inject(Activity activity, object carrier, PropagatorSetterCallback setter);
-      public abstract void ExtractTraceIdAndState(object carrier, PropagatorGetterCallback getter, out string? traceId, out string? traceState);
-      public abstract System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>? ExtractBaggage(object carrier, PropagatorGetterCallback getter);
+      public abstract void Inject(Activity? activity, object? carrier, PropagatorSetterCallback? setter);
+      public abstract void ExtractTraceIdAndState(object? carrier, PropagatorGetterCallback? getter, out string? traceId, out string? traceState);
+      public abstract System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>? ExtractBaggage(object? carrier, PropagatorGetterCallback? getter);
       public static TextMapPropagator Current { get; set; }
       public static TextMapPropagator CreateDefaultPropagator() { throw null; }
       public static TextMapPropagator CreatePassThroughPropagator() { throw null; }
