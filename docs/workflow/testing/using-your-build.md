@@ -16,9 +16,9 @@ assume use of a dogfood build of the .NET SDK.
 
 ## Acquire the latest nightly .NET SDK
 
-- [Win 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-win-x64.zip)
-- [macOS 64-bit Latest](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-sdk-latest-osx-x64.tar.gz)
-- [Others](https://github.com/dotnet/cli/blob/master/README.md#installers-and-binaries)
+- [Win 64-bit Latest](https://aka.ms/dotnet/6.0/daily/dotnet-sdk-win-x64.zip)
+- [macOS 64-bit Latest](https://aka.ms/dotnet/6.0/daily/dotnet-sdk-osx-x64.tar.gz)
+- [Others](https://github.com/dotnet/installer#installers-and-binaries)
 
 To setup the SDK download the zip and extract it somewhere and add the root folder to your [path](../requirements/windows-requirements.md#adding-to-the-default-path-variable)
 or always fully qualify the path to dotnet in the root of this folder for all the instructions in this document.
