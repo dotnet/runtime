@@ -77,6 +77,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the object that directly depends on this value being edited.
         /// </summary>
-        object? GetPropertyOwner(PropertyDescriptor pd);
+        object? GetPropertyOwner(PropertyDescriptor? pd);
     }
 }

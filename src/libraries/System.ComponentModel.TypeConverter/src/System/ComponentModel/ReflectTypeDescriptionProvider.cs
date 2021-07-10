@@ -791,7 +791,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the owner for a property.
         /// </summary>
-        internal object GetExtendedPropertyOwner(object instance, PropertyDescriptor pd)
+        internal object GetExtendedPropertyOwner(object instance, PropertyDescriptor? pd)
         {
             return GetPropertyOwner(instance.GetType(), instance, pd);
         }
@@ -873,7 +873,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the owner for a property.
         /// </summary>
-        internal object GetPropertyOwner(Type type, object instance, PropertyDescriptor pd)
+        internal object GetPropertyOwner(Type type, object instance, PropertyDescriptor? pd)
         {
             return TypeDescriptor.GetAssociation(type, instance);
         }
