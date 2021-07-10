@@ -8,24 +8,23 @@
     <WasmXHarnessMonoArgs>--working-dir=/test-dir</WasmXHarnessMonoArgs>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\**\*.cs" />
-    <Compile Remove="..\Net5CompatTests\Net5CompatSwitchTests.cs" />
+    <Compile Include="DisabledFileLockingSwitchTests.cs" />
+    <Compile Include="..\FSAssert.cs" />
+    <Compile Include="..\TestData.cs" />
+    <Compile Include="..\FileSystemTest.cs" />
+    <Compile Include="..\FileSystemTest.Unix.cs" />
+    <Compile Include="..\UnseekableFileStream.cs" />
+    <Compile Include="..\FileStream\**\*.cs" />
+    <Compile Include="..\PortedCommon\DllImports.cs" />
+    <Compile Include="..\PortedCommon\IOInputs.cs" />
+    <Compile Include="..\PortedCommon\IOServices.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Remove="..\**\*.Windows.cs" />
     <Compile Remove="..\**\*.Browser.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Interop\Unix\System.Native\Interop.Stat.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- Helpers -->
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Interop\Windows\Interop.GenericOperations.cs" />
-    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
-    <Content Include="..\DirectoryInfo\test-dir\dummy.txt" Link="test-dir\dummy.txt" />
-    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
-             Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
