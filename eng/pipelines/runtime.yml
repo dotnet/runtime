@@ -1103,69 +1103,14 @@ jobs:
 #- template: /eng/pipelines/common/platform-matrix.yml
   #parameters:
     #jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-    #buildConfig: Release
-    #platforms:
-    ## - windows_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
-    #- Linux_arm
-    #- Linux_musl_arm
-    #- Linux_musl_arm64
-    #- windows_x86
-    #helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    #helixQueueGroup: libraries
-    #jobParameters:
-      #testScope: innerloop
-      #liveRuntimeBuildConfig: checked
       #dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
       #dependsOnTestArchitecture: x64
       #condition: >-
         #or(
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           #eq(variables['isFullMatrix'], true))
 
 ##
 ## Libraries Test Execution against a checked runtime
-## Only if CoreCLR or Libraries is changed
-##
-#- template: /eng/pipelines/common/platform-matrix.yml
-  #parameters:
-    #jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-    #buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-    #platforms:
-    #- windows_x64
-    #- Linux_x64
-    #- Linux_musl_x64
-    #helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    #helixQueueGroup: libraries
-    #jobParameters:
-      #testScope: innerloop
-      #liveRuntimeBuildConfig: checked
-      #dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-      #dependsOnTestArchitecture: x64
-      #condition: >-
-        #or(
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          #eq(variables['isFullMatrix'], true))
-
-#- template: /eng/pipelines/common/platform-matrix.yml
-  #parameters:
-    #jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-    #buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-    #platforms:
-    #- OSX_x64
-    #helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    #helixQueueGroup: libraries
-    #jobParameters:
-      #testScope: innerloop
-      #liveRuntimeBuildConfig: checked
-      #dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-      #dependsOnTestArchitecture: x64
-      #condition: >-
-        #or(
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          #eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          #eq(variables['isFullMatrix'], true))
-
-# Build EAT/AOT
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml

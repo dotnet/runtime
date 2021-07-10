@@ -15,12 +15,14 @@
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
     <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
 
-    <!-- not supported on windows yet -->
-    <TestUsingWorkloads Condition="'$(OS)' == 'Windows_NT'">false</TestUsingWorkloads>
-
     <!-- don't run any wasm build steps -->
     <WasmBuildAppAfterThisTarget />
-    <RunScriptInputName>RunScriptTemplate.sh</RunScriptInputName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RunScriptInputName Condition="'$(OS)' == 'Windows_NT'">RunScriptTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="'$(OS)' != 'Windows_NT'">RunScriptTemplate.sh</RunScriptInputName>
+
     <RunScriptInputPath>$(MSBuildThisFileDirectory)data\$(RunScriptInputName)</RunScriptInputPath>
   </PropertyGroup>
 
@@ -40,6 +42,9 @@
       <!-- TEST_USING_WORKLOADS - this is set per helix job, in sendtohelixhelp.proj -->
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=%24{HELIX_CORRELATION_PAYLOAD}" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=%HELIX_CORRELATION_PAYLOAD%" />
+
+      <!--<RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export FROZEN_CACHE=true" />-->
+      <!--<RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set FROZEN_CACHE=true" />-->
     </ItemGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
@@ -52,6 +57,7 @@
 
     <ItemGroup>
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="set_env_vars" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="CALL :SetEnvVars" />
     </ItemGroup>
 
     <PropertyGroup>

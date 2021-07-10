@@ -343,7 +343,7 @@
 
     <PropertyGroup>
       <_DotNetInstallScriptPath Condition="!$([MSBuild]::IsOSPlatform('windows'))">$(DOTNET_INSTALL_DIR)/dotnet-install.sh</_DotNetInstallScriptPath>
-      <_DotNetInstallScriptPath Condition=" $([MSBuild]::IsOSPlatform('windows'))">$(DOTNET_INSTALL_DIR)/dotnet-install.ps1</_DotNetInstallScriptPath>
+      <_DotNetInstallScriptPath Condition=" $([MSBuild]::IsOSPlatform('windows'))">$(RepoRoot).dotnet\dotnet-install.ps1</_DotNetInstallScriptPath>
     </PropertyGroup>
     <RemoveDir Directories="$(SdkPathForWorkloadTesting)" />
     <MakeDir Directories="$(SdkPathForWorkloadTesting)" />

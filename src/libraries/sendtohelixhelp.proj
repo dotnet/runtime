@@ -54,6 +54,7 @@
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
     <NeedsToBuildWasmAppsOnHelix Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == '' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsToBuildWasmAppsOnHelix>
+    <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
 
     <NeedsWorkload Condition="'$(TestUsingWorkloads)' == 'true'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' and '$(NeedsWorkload)' != 'true'">true</NeedsEMSDK>
@@ -104,7 +105,7 @@
     <NeedsDotNetSdk Condition="'$(NeedsWorkload)' != 'true'">true</NeedsDotNetSdk>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">
+  <ItemGroup Condition="('$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps') and ('$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'true')">
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
   </ItemGroup>

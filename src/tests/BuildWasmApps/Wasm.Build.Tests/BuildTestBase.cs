@@ -17,6 +17,8 @@ using Xunit.Sdk;
 
 #nullable enable
 
+[assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
+
 namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
@@ -32,6 +34,8 @@ namespace Wasm.Build.Tests
         protected bool _enablePerTestCleanup = false;
         protected SharedBuildPerTestClassFixture _buildContext;
 
+        // FIXME: use an envvar to override this
+        protected static int s_defaultPerTestTimeoutMs = 15*60*1000; // 15mins
         protected static BuildEnvironment s_buildEnv;
         private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : ([^ ]*)";
         private static Regex s_runtimePackPathRegex;
@@ -205,7 +209,8 @@ namespace Wasm.Build.Tests
                                         args: args.ToString(),
                                         workingDir: bundleDir,
                                         envVars: envVars,
-                                        label: testCommand);
+                                        label: testCommand,
+                                        timeoutMs: s_defaultPerTestTimeoutMs);
 
             File.WriteAllText(Path.Combine(testLogPath, $"xharness.log"), output);
 
@@ -310,7 +315,8 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"-------- Building ---------");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             Console.WriteLine($"Binlog path: {logFilePath}");
-            sb.Append($" /bl:\"{logFilePath}\" /v:minimal /nologo");
+            sb.Append($" /bl:\"{logFilePath}\" /nologo");
+            sb.Append($" /v:diag /fl /flp:\"v:diag,LogFile={logFilePath}.log\" /v:minimal");
             if (buildArgs.ExtraBuildArgs != null)
                 sb.Append($" {buildArgs.ExtraBuildArgs} ");
 
@@ -451,9 +457,9 @@ namespace Wasm.Build.Tests
                 Assert.True(finfo0.Length != finfo1.Length, $"{label}: File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
         }
 
-        protected (int exitCode, string buildOutput) AssertBuild(string args, string label="build", bool expectSuccess=true, IDictionary<string, string>? envVars=null)
+        protected (int exitCode, string buildOutput) AssertBuild(string args, string label="build", bool expectSuccess=true, IDictionary<string, string>? envVars=null, int? timeoutMs=null)
         {
-            var result = RunProcess(s_buildEnv.DotNet, _testOutput, args, workingDir: _projectDir, label: label, envVars: envVars);
+            var result = RunProcess(s_buildEnv.DotNet, _testOutput, args, workingDir: _projectDir, label: label, envVars: envVars, timeoutMs: timeoutMs ?? s_defaultPerTestTimeoutMs);
             if (expectSuccess)
                 Assert.True(0 == result.exitCode, $"Build process exited with non-zero exit code: {result.exitCode}");
             else
@@ -475,7 +481,8 @@ namespace Wasm.Build.Tests
                                          IDictionary<string, string>? envVars = null,
                                          string? workingDir = null,
                                          string? label = null,
-                                         bool logToXUnit = true)
+                                         bool logToXUnit = true,
+                                         int? timeoutMs = null)
         {
             _testOutput.WriteLine($"Running {path} {args}");
             Console.WriteLine($"Running: {path}: {args}");
@@ -529,7 +536,14 @@ namespace Wasm.Build.Tests
 
                 // process.WaitForExit doesn't work if the process exits too quickly?
                 // resetEvent.WaitOne();
-                process.WaitForExit();
+                if (!process.WaitForExit(timeoutMs ?? s_defaultPerTestTimeoutMs))
+                {
+                    // process didn't exit
+                    process.Kill(entireProcessTree: true);
+                    var lastLines = outputBuilder.ToString().Split('\r', '\n').TakeLast(20);
+                    throw new XunitException($"Process timed out, output: {string.Join(Environment.NewLine, lastLines)}");
+
+                }
                 return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
             }
             catch (Exception ex)

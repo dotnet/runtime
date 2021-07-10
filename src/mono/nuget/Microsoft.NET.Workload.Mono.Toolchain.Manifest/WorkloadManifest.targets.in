@@ -66,6 +66,7 @@
     <ItemGroup Condition="'$(_MonoWorkloadTargetsMobile)' == 'true'">
       <MonoRuntimePackRids Include="linux-x64" />
       <MonoRuntimePackRids Include="osx-x64" />
+      <MonoRuntimePackRids Include="win-x64" />
       <MonoRuntimePackRids Include="browser-wasm" />
 
       <KnownRuntimePack Remove="Microsoft.NETCore.App" />
