@@ -23,8 +23,6 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        protected const string SkipProjectCleanupEnvVar = "SKIP_PROJECT_CLEANUP";
-        protected const string XHarnessRunnerCommandEnvVar = "XHARNESS_CLI_PATH";
         protected const string s_targetFramework = "net6.0";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
@@ -48,10 +46,12 @@ namespace Wasm.Build.Tests
             s_buildEnv = new BuildEnvironment();
             s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
 
-            string? cleanupVar = Environment.GetEnvironmentVariable(SkipProjectCleanupEnvVar);
-            s_skipProjectCleanup = !string.IsNullOrEmpty(cleanupVar) && cleanupVar == "1";
+            s_skipProjectCleanup = !string.IsNullOrEmpty(EnvironmentVariables.SkipProjectCleanup) && EnvironmentVariables.SkipProjectCleanup == "1";
 
-            s_xharnessRunnerCommand = GetEnvironmentVariableOrDefault(XHarnessRunnerCommandEnvVar, "xharness");
+            if (string.IsNullOrEmpty(EnvironmentVariables.XHarnessCliPath))
+                s_xharnessRunnerCommand = "xharness";
+            else
+                s_xharnessRunnerCommand = EnvironmentVariables.XHarnessCliPath;
 
             string? nugetPackagesPath = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
             if (!string.IsNullOrEmpty(nugetPackagesPath))

@@ -25,7 +25,6 @@ namespace Wasm.Build.Tests
         public static readonly string           TestDataPath = Path.Combine(AppContext.BaseDirectory, "data");
 
         private static string s_runtimeConfig = "Release";
-        private const string s_testLogPathEnvVar = "TEST_LOG_PATH";
 
         public BuildEnvironment()
         {
@@ -40,11 +39,11 @@ namespace Wasm.Build.Tests
                 solutionRoot = solutionRoot.Parent;
             }
 
-            string? sdkForWorkloadPath = Environment.GetEnvironmentVariable("SDK_FOR_WORKLOAD_TESTING_PATH");
+            string? sdkForWorkloadPath = EnvironmentVariables.SdkForWorkloadTestingPath;
             if (!string.IsNullOrEmpty(sdkForWorkloadPath))
             {
                 DotNet = Path.Combine(sdkForWorkloadPath, "dotnet");
-                var workloadPacksVersion = Environment.GetEnvironmentVariable("WORKLOAD_PACKS_VER");
+                var workloadPacksVersion = EnvironmentVariables.WorkloadPacksVersion;
                 if (string.IsNullOrEmpty(workloadPacksVersion))
                     throw new Exception($"Cannot test with workloads without WORKLOAD_PACKS_VER environment variable being set");
 
@@ -63,7 +62,7 @@ namespace Wasm.Build.Tests
                     ["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}"
                 };
 
-                var appRefDir = Environment.GetEnvironmentVariable("AppRefDir");
+                var appRefDir = EnvironmentVariables.AppRefDir;
                 if (string.IsNullOrEmpty(appRefDir))
                     throw new Exception($"Cannot test with workloads without AppRefDir environment variable being set");
 
@@ -75,8 +74,7 @@ namespace Wasm.Build.Tests
                 string emsdkPath;
                 if (solutionRoot == null)
                 {
-                    string? buildDir = Environment.GetEnvironmentVariable("WasmBuildSupportDir");
-
+                    string? buildDir = EnvironmentVariables.WasmBuildSupportDir;
                     if (buildDir == null || !Directory.Exists(buildDir))
                         throw new Exception($"Could not find the solution root, or a build dir: {buildDir}");
 
@@ -89,11 +87,10 @@ namespace Wasm.Build.Tests
                     string artifactsBinDir = Path.Combine(solutionRoot.FullName, "artifacts", "bin");
                     RuntimePackDir = Path.Combine(artifactsBinDir, "microsoft.netcore.app.runtime.browser-wasm", s_runtimeConfig);
 
-                    string? emsdkEnvValue = Environment.GetEnvironmentVariable("EMSDK_PATH");
-                    if (string.IsNullOrEmpty(emsdkEnvValue))
+                    if (string.IsNullOrEmpty(EnvironmentVariables.EMSDK_PATH))
                         emsdkPath = Path.Combine(solutionRoot.FullName, "src", "mono", "wasm", "emsdk");
                     else
-                        emsdkPath = emsdkEnvValue;
+                        emsdkPath = EnvironmentVariables.EMSDK_PATH;
 
                     DefaultBuildArgs = $" /p:RuntimeSrcDir={solutionRoot.FullName} /p:RuntimeConfig={s_runtimeConfig} /p:EMSDK_PATH={emsdkPath} ";
                 }
@@ -113,10 +110,9 @@ namespace Wasm.Build.Tests
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 DotNet += ".exe";
 
-            string? logPathEnvVar = Environment.GetEnvironmentVariable(s_testLogPathEnvVar);
-            if (!string.IsNullOrEmpty(logPathEnvVar))
+            if (!string.IsNullOrEmpty(EnvironmentVariables.TestLogPath))
             {
-                LogRootPath = logPathEnvVar;
+                LogRootPath = EnvironmentVariables.TestLogPath;
                 if (!Directory.Exists(LogRootPath))
                 {
                     Directory.CreateDirectory(LogRootPath);
