@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 
 namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
+        internal const FileOptions NoBuffering = (FileOptions)0x20000000;
         private string? _path;
 
         public SafeFileHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle)

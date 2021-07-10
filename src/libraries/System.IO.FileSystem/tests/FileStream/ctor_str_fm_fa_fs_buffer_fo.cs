@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -33,13 +34,11 @@ namespace System.IO.Tests
         [InlineData(FileOptions.RandomAccess)]
         [InlineData(FileOptions.SequentialScan)]
         [InlineData(FileOptions.WriteThrough)]
-        [InlineData((FileOptions)0x20000000)] // FILE_FLAG_NO_BUFFERING on Windows
         [InlineData(FileOptions.Asynchronous)]
         [InlineData(FileOptions.Asynchronous | FileOptions.DeleteOnClose)]
         [InlineData(FileOptions.Asynchronous | FileOptions.RandomAccess)]
         [InlineData(FileOptions.Asynchronous | FileOptions.SequentialScan)]
         [InlineData(FileOptions.Asynchronous | FileOptions.WriteThrough)]
-        [InlineData(FileOptions.Asynchronous | (FileOptions)0x20000000)]
         [InlineData(FileOptions.Asynchronous | FileOptions.DeleteOnClose | FileOptions.RandomAccess | FileOptions.SequentialScan | FileOptions.WriteThrough)]
         public void ValidFileOptions(FileOptions option)
         {
@@ -64,6 +63,47 @@ namespace System.IO.Tests
                         break;
                     totalRead += numRead;
                 }
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData((FileOptions)0x20000000)] // FILE_FLAG_NO_BUFFERING on Windows
+        [InlineData(FileOptions.Asynchronous | (FileOptions)0x20000000)]
+        public unsafe void NoBufferingOptions(FileOptions option)
+        {
+            void* pWrite = NativeMemory.AlignedAlloc(c_DefaultBufferSize, c_DefaultBufferSize);
+            void* pRead = NativeMemory.AlignedAlloc(c_DefaultBufferSize, c_DefaultBufferSize);
+
+            try
+            {
+                Span<byte> data = new Span<byte>(pWrite, c_DefaultBufferSize);
+                new Random(1).NextBytes(data);
+
+                using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 0, option))
+                {
+                    Assert.Equal((option & FileOptions.Asynchronous) != 0, fs.IsAsync);
+
+                    // make sure we can write, seek, and read data with this option set
+                    fs.Write(data);
+                    fs.Position = 0;
+
+                    Span<byte> tmp = new Span<byte>(pRead, c_DefaultBufferSize);
+                    int totalRead = 0;
+                    while (true)
+                    {
+                        int numRead = fs.Read(tmp);
+                        Assert.InRange(numRead, 0, tmp.Length);
+                        if (numRead == 0)
+                            break;
+                        totalRead += numRead;
+                        tmp = tmp.Slice(numRead);
+                    }
+                }
+            }
+            finally
+            {
+                NativeMemory.AlignedFree(pWrite);
+                NativeMemory.AlignedFree(pRead);
             }
         }
 

@@ -254,6 +254,11 @@ namespace Microsoft.Win32.SafeHandles
                 flags |= Interop.Sys.OpenFlags.O_SYNC;
             }
 
+            if ((options & NoBuffering) != 0 && !FileStreamHelpers.UseNet5CompatStrategy)
+            {
+                flags |= Interop.Sys.OpenFlags.O_DIRECT;
+            }
+
             return flags;
         }
 
