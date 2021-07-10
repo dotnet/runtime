@@ -121,7 +121,7 @@
       <WasmCachePath>$(_WasmIntermediateOutputPath)\cache</WasmCachePath>
       <!-- And it treats single backslash as escape sequence -->
       <WasmCachePath>$(WasmCachePath.Replace('\', '\\'))</WasmCachePath>
-   </PropertyGroup>
+    </PropertyGroup>
 
     <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
     <ItemGroup>
