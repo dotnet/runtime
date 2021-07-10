@@ -247,6 +247,11 @@ struct insGroup
     double               igPerfScore; // The PerfScore for this insGroup
 #endif
 
+#ifdef DEBUG
+    BasicBlock*               lastGeneratedBlock; // The last block that generated code into this insGroup.
+    jitstd::list<BasicBlock*> igBlocks;           // All the blocks that generated code into this insGroup.
+#endif
+
     UNATIVE_OFFSET igNum;     // for ordering (and display) purposes
     UNATIVE_OFFSET igOffs;    // offset of this group within method
     unsigned int   igFuncIdx; // Which function/funclet does this belong to? (Index into Compiler::compFuncInfos array.)
@@ -1229,6 +1234,8 @@ protected:
 
 #define PERFSCORE_THROUGHPUT_ILLEGAL -1024.0f
 
+#define PERFSCORE_THROUGHPUT_ZERO 0.0f // Only used for pseudo-instructions that don't generate code
+
 #define PERFSCORE_THROUGHPUT_6X (1.0f / 6.0f) // Hextuple issue
 #define PERFSCORE_THROUGHPUT_5X 0.20f         // Pentuple issue
 #define PERFSCORE_THROUGHPUT_4X 0.25f         // Quad issue
@@ -1902,12 +1909,17 @@ private:
     void* emitAddLabel(VARSET_VALARG_TP GCvars,
                        regMaskTP        gcrefRegs,
                        regMaskTP        byrefRegs,
-                       bool isFinallyTarget = false DEBUG_ARG(unsigned bbNum = 0));
+                       bool             isFinallyTarget = false DEBUG_ARG(BasicBlock* block = nullptr));
 
     // Same as above, except the label is added and is conceptually "inline" in
     // the current block. Thus it extends the previous block and the emitter
     // continues to track GC info as if there was no label.
     void* emitAddInlineLabel();
+
+#ifdef DEBUG
+    void emitPrintLabel(insGroup* ig);
+    const char* emitLabelString(insGroup* ig);
+#endif
 
 #ifdef TARGET_ARMARCH
 
