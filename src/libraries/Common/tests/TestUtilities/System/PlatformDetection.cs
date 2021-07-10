@@ -290,9 +290,9 @@ namespace System
 
         public static bool IsNet5CompatFileStreamEnabled => _net5CompatFileStream.Value;
 
-        private static readonly Lazy<bool> _fileLockingDisabled = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("Microsoft.Win32.SafeHandles.SafeFileHandle", "DisableFileLocking"));
+        private static readonly Lazy<bool> s_fileLockingDisabled = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("Microsoft.Win32.SafeHandles.SafeFileHandle", "DisableFileLocking"));
 
-        public static bool IsFileLockingEnabled => IsWindows || !_fileLockingDisabled.Value;
+        public static bool IsFileLockingEnabled => IsWindows || !s_fileLockingDisabled.Value;
 
         private static bool GetIsInContainer()
         {
