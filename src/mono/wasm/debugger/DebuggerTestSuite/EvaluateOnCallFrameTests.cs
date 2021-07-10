@@ -531,7 +531,9 @@ namespace DebuggerTests
                     ("this.CallMethodWithParmBool(true)", TString("TRUE")),
                     ("this.CallMethodWithParmBool(false)", TString("FALSE")),
                     ("this.CallMethodWithParmString(\"concat\")", TString("str_const_concat")),
-                    ("this.CallMethodWithParm(10) + this.a", TNumber(12)));
+                    ("this.CallMethodWithParm(10) + this.a", TNumber(12)),
+                    ("this.CallMethodWithObj(null)", TNumber(-1)),
+                    ("this.CallMethodWithChar('a')", TString("str_const_a")));
            });
 
         [Fact]
@@ -548,7 +550,8 @@ namespace DebuggerTests
                     ("this.CallMethodWithParmString(this.str)", TString("str_const_str_const_")),
                     ("this.CallMethodWithParmBool(this.t)", TString("TRUE")),
                     ("this.CallMethodWithParmBool(this.f)", TString("FALSE")),
-                    ("this.CallMethodWithParm(this.a) + this.a", TNumber(3)));
+                    ("this.CallMethodWithParm(this.a) + this.a", TNumber(3)),
+                    ("this.CallMethodWithObj(this.objToTest)", TNumber(10)));
            });
     }
 

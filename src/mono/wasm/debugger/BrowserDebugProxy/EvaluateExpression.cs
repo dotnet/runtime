@@ -191,9 +191,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "boolean":
                         return value?.Value<bool>();
                     case "object":
-                        if (subType == "null")
-                            return null;
-                        break;
+                        return null;
                 }
                 throw new Exception($"Evaluate of this datatype {type} not implemented yet");//, "Unsupported");
             }
@@ -210,7 +208,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             if (subType == "null")
                                 return variable["className"].Value<string>();
-                            break;
+                            else
+                                return "object";
                         }
                     default:
                         return value.GetType().FullName;

@@ -311,6 +311,16 @@ namespace DebuggerTests
     }
     public class EvaluateMethodTestsClass
     {
+        public class ParmToTest
+        {
+            public int a;
+            public int b;
+            public ParmToTest()
+            {
+                a = 10;
+                b = 10;
+            }
+        }
         public class TestEvaluate
         {
             public int a;
@@ -319,15 +329,14 @@ namespace DebuggerTests
             public string str = "str_const_";
             public bool t = true;
             public bool f = false;
-            public DateTime dt = new DateTime(2000, 5, 4, 3, 2, 1);
-            public TestEvaluate NullIfAIsNotZero => a != 0 ? null : this;
+            public ParmToTest objToTest;
             public void run(int g, int h, string a, string valString, int this_a)
             {
+                objToTest = new ParmToTest();
                 int d = g + 1;
                 int e = g + 2;
                 int f = g + 3;
                 int i = d + e + f;
-                var local_dt = new DateTime(2010, 9, 8, 7, 6, 5);
                 this.a = 1;
                 b = 2;
                 c = 3;
@@ -361,6 +370,19 @@ namespace DebuggerTests
                 if (parm)
                     return "TRUE";
                 return "FALSE";
+            }
+
+            public int CallMethodWithObj(ParmToTest parm)
+            {
+                if (parm == null)
+                    return -1;
+                return parm.a;
+            }
+
+
+            public string CallMethodWithChar(char parm)
+            {
+                return str + parm;
             }
         }
 

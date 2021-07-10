@@ -503,6 +503,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                     Write((int)0);
                     return true;
                 }
+                case SyntaxKind.NullLiteralExpression:
+                {
+                    Write((byte)ValueTypeId.Null);
+                    Write((byte)0); //not used
+                    Write((int)0);  //not used
+                    return true;
+                }
+                case SyntaxKind.CharacterLiteralExpression:
+                {
+                    Write((byte)ElementType.Char);
+                    Write((int)(char)constValue.Token.Value);
+                    return true;
+                }
             }
             return false;
         }
@@ -531,6 +544,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         Write((int)1);
                     else
                         Write((int)0);
+                    return true;
+                }
+                case "object":
+                {
+                    Console.WriteLine(objValue);
+                    DotnetObjectId.TryParse(objValue["objectId"]?.Value<string>(), out DotnetObjectId objectId);
+                    WriteObj(objectId, sdbHelper);
                     return true;
                 }
             }
