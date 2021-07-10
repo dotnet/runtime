@@ -10,7 +10,7 @@ namespace System.IO.Tests
         [Fact]
         public static void ConfigSwitchIsHonored()
         {
-            Assert.False(PlatformDetection.IsFileLockingEnabled);
+            Assert.Equal(OperatingSystem.IsWindows(), PlatformDetection.IsFileLockingEnabled);
         }
     }
 }
