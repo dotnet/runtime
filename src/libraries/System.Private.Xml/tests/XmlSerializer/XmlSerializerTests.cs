@@ -717,20 +717,21 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     public static void Xml_TypeWithDateTimeOffsetProperty()
     {
         var now = new DateTimeOffset(DateTime.Now);
+        var defDTO = default(DateTimeOffset);
         var obj = new TypeWithDateTimeOffsetProperties { DTO = now };
         var deserializedObj = SerializeAndDeserialize(obj,
 @"<?xml version=""1.0""?>
 <TypeWithDateTimeOffsetProperties xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
-  <DTO>" + now.ToString("o") + @"</DTO>
-  <DTO2>0001-01-01T00:00:00Z</DTO2>
+  <DTO>" + XmlConvert.ToString(now) + @"</DTO>
+  <DTO2>" + XmlConvert.ToString(defDTO) + @"</DTO2>
   <NullableDTO xsi:nil=""true"" />
   <NullableDefaultDTO xsi:nil=""true"" />
 </TypeWithDateTimeOffsetProperties>");
         Assert.StrictEqual(obj.DTO, deserializedObj.DTO);
         Assert.StrictEqual(obj.DTO2, deserializedObj.DTO2);
-        Assert.StrictEqual(default(DateTimeOffset), deserializedObj.DTO2);
+        Assert.StrictEqual(defDTO, deserializedObj.DTO2);
         Assert.StrictEqual(obj.DTOWithDefault, deserializedObj.DTOWithDefault);
-        Assert.StrictEqual(default(DateTimeOffset), deserializedObj.DTOWithDefault);
+        Assert.StrictEqual(defDTO, deserializedObj.DTOWithDefault);
         Assert.StrictEqual(obj.NullableDTO, deserializedObj.NullableDTO);
         Assert.True(deserializedObj.NullableDTO == null);
         Assert.StrictEqual(obj.NullableDTOWithDefault, deserializedObj.NullableDTOWithDefault);
@@ -740,7 +741,8 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     [Fact]
     public static void Xml_DeserializeTypeWithEmptyDateTimeOffsetProperties()
     {
-        var def = DateTimeOffset.Parse("3/17/1977 5:00:01 PM -05:00");  //  "1977-03-17T17:00:01-05:00"
+        //var def = DateTimeOffset.Parse("3/17/1977 5:00:01 PM -05:00");  //  "1977-03-17T17:00:01-05:00"
+        var defDTO = default(DateTimeOffset);
         string xml = @"<?xml version=""1.0""?>
             <TypeWithDateTimeOffsetProperties xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
               <DTO />
@@ -754,11 +756,11 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         {
             TypeWithDateTimeOffsetProperties deserializedObj = (TypeWithDateTimeOffsetProperties)serializer.Deserialize(reader);
             Assert.NotNull(deserializedObj);
-            Assert.Equal(default(DateTimeOffset), deserializedObj.DTO);
-            Assert.Equal(default(DateTimeOffset), deserializedObj.DTO2);
-            //Assert.Equal(def, deserializedObj.DTOWithDefault);
+            Assert.Equal(defDTO, deserializedObj.DTO);
+            Assert.Equal(defDTO, deserializedObj.DTO2);
+            Assert.Equal(defDTO, deserializedObj.DTOWithDefault);
             Assert.True(deserializedObj.NullableDTO == null);
-            //Assert.Equal(def, deserializedObj.NullableDTOWithDefault);
+            Assert.Equal(defDTO, deserializedObj.NullableDTOWithDefault);
         }
     }
 

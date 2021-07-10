@@ -34,8 +34,8 @@
   <Target Name="GenerateSerializationAssembly" DependsOnTargets="CopyFilesToOutputDirectory" AfterTargets="PrepareForRun" Condition=" '$(SkipTestsOnPlatform)' != 'true' ">
     <PropertyGroup>
       <SerializerName>SerializableAssembly.XmlSerializers</SerializerName>
-      <GeneratorCommand>"$(NetCoreAppCurrentTestHostPath)dotnet.exe"</GeneratorCommand>
-      <GeneratorCommand Condition="'$(OS)' == 'Windows_NT'">set COREHOST_TRACE=1 &amp; set DOTNET_MULTILEVEL_LOOKUP=0 &amp; $(GeneratorCommand)</GeneratorCommand>
+      <GeneratorCommand>"$(NetCoreAppCurrentTestHostPath)dotnet"</GeneratorCommand>
+      <GeneratorCommand Condition="'$(OS)' == 'Windows_NT'">set COREHOST_TRACE=1 &amp; set DOTNET_MULTILEVEL_LOOKUP=0 &amp; $(GeneratorCommand).exe</GeneratorCommand>
       <GeneratorCommand Condition="'$(OS)' != 'Windows_NT'">export COREHOST_TRACE=1 &amp;&amp; export DOTNET_MULTILEVEL_LOOKUP=0 &amp;&amp; $(GeneratorCommand)</GeneratorCommand>
     </PropertyGroup>
     <Message Text="Running Serialization Tool" Importance="normal" />
