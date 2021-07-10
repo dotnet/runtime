@@ -1065,7 +1065,6 @@ jobs:
         #or(
           #eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           #eq(variables['isFullMatrix'], true))
-<<<<<<< HEAD
 
 ##
 ## Libraries Debug Test Execution against a release coreclr runtime
@@ -1149,5 +1148,4 @@ jobs:
           #or(
           #eq(variables['librariesContainsChange'], true),
           #eq(variables['monoContainsChange'], true),
->>>>>>> wasm-workloads-staging
           #eq(variables['isFullMatrix'], true))
