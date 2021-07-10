@@ -1950,5 +1950,23 @@ namespace System.Net.Http.Functional.Tests
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(invalidUri));
             }
         }
+
+        // HttpRequestMessage ctor guards against such Uris before .NET 6. We allow passing relative/unknown Uris to BrowserHttpHandler.
+        public static bool InvalidRequestUriTest_IsSupported => PlatformDetection.IsNotNetFramework && PlatformDetection.IsNotBrowser;
+
+        [ConditionalFact(nameof(InvalidRequestUriTest_IsSupported))]
+        public async Task SendAsync_InvalidRequestUri_Throws()
+        {
+            using var invoker = new HttpMessageInvoker(CreateHttpClientHandler());
+
+            var request = new HttpRequestMessage(HttpMethod.Get, (Uri)null);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => invoker.SendAsync(request, CancellationToken.None));
+
+            request = new HttpRequestMessage(HttpMethod.Get, new Uri("/relative", UriKind.Relative));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => invoker.SendAsync(request, CancellationToken.None));
+
+            request = new HttpRequestMessage(HttpMethod.Get, new Uri("foo://foo.bar"));
+            await Assert.ThrowsAsync<NotSupportedException>(() => invoker.SendAsync(request, CancellationToken.None));
+        }
     }
 }

@@ -561,7 +561,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="paddingMode" /> is not a valid padding mode.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <see cref="TryEncryptEcbCore" /> could not encrypt the plaintext.
+        ///   The plaintext could not be encrypted successfully.
         /// </exception>
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptEcbCore" />.
@@ -842,7 +842,7 @@ namespace System.Security.Cryptography
         ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <see cref="TryEncryptEcbCore" /> could not encrypt the plaintext.
+        ///   The plaintext could not be encrypted successfully.
         /// </exception>
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptCbcCore" />.
@@ -872,7 +872,7 @@ namespace System.Security.Cryptography
         ///   that is exactly <see cref="BlockSize" /> in length, converted to bytes (<c>BlockSize / 8</c>).
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <see cref="TryEncryptEcbCore" /> could not encrypt the plaintext.
+        ///   The plaintext could not be encrypted successfully.
         /// </exception>
         /// <remarks>
         ///   This method's behavior is defined by <see cref="TryEncryptCbcCore" />.
