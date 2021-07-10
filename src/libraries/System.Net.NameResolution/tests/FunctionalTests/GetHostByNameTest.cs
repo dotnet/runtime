@@ -104,6 +104,7 @@ namespace System.Net.NameResolution.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55271", TestPlatforms.Linux)]
         public void DnsObsoleteGetHostByName_EmptyString_ReturnsHostName()
         {
             IPHostEntry entry = Dns.GetHostByName("");
@@ -112,8 +113,9 @@ namespace System.Net.NameResolution.Tests
             Assert.Contains(Dns.GetHostName(), entry.HostName, StringComparison.OrdinalIgnoreCase);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.IsThreadingSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55271", TestPlatforms.Linux)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DnsObsoleteBeginEndGetHostByName_EmptyString_ReturnsHostName()
         {
