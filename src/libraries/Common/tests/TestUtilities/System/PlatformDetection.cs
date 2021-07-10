@@ -242,14 +242,9 @@ namespace System
 
         private static bool GetStaticNonPublicBooleanPropertyValue(string typeName, string propertyName)
         {
-            Type globalizationMode = Type.GetType(typeName);
-            if (globalizationMode != null)
+            if (Type.GetType(typeName)?.GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod is MethodInfo mi)
             {
-                MethodInfo methodInfo = globalizationMode.GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
-                if (methodInfo != null)
-                {
-                    return (bool)methodInfo.Invoke(null, null);
-                }
+                return (bool)mi.Invoke(null, null);
             }
 
             return false;
