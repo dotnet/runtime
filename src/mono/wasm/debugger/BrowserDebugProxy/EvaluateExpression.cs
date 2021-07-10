@@ -27,9 +27,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             public List<InvocationExpressionSyntax> methodCall = new List<InvocationExpressionSyntax>();
             public List<MemberAccessExpressionSyntax> memberAccesses = new List<MemberAccessExpressionSyntax>();
             public List<object> argValues = new List<object>();
-            public Dictionary<string, string> memberAccessToParamName = new Dictionary<string, string>();
             public Dictionary<string, JObject> memberAccessValues = new Dictionary<string, JObject>();
-            public Dictionary<string, string> methodCallToParamName = new Dictionary<string, string>();
             private int visitCount;
 
             public void VisitInternal(SyntaxNode node)
@@ -73,6 +71,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             public SyntaxTree ReplaceVars(SyntaxTree syntaxTree, IEnumerable<JObject> ma_values, IEnumerable<JObject> id_values, IEnumerable<JObject> method_values)
             {
+                var memberAccessToParamName = new Dictionary<string, string>();
+                var methodCallToParamName = new Dictionary<string, string>();
+
                 CompilationUnitSyntax root = syntaxTree.GetCompilationUnitRoot();
 
                 // 1. Replace all this.a occurrences with this_a_ABDE
