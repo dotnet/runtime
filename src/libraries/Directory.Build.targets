@@ -416,6 +416,27 @@
                      ExtraNuGetSources="@(_NuGetSourceForWorkloads)"
                      SdkDir="$(SdkPathForWorkloadTesting)" />
 
+    <ItemGroup>
+      <_EmscriptenConfigFilePath Include="$(SdkPathForWorkloadTesting)\packs\**\.emscripten" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_EmscriptenConfigFileContents>
+<![CDATA[
+import os
+
+LLVM_ROOT = os.path.expanduser(os.getenv('DOTNET_EMSCRIPTEN_LLVM_ROOT', ''))
+NODE_JS = os.path.expanduser(os.getenv('DOTNET_EMSCRIPTEN_NODE_JS', ''))
+BINARYEN_ROOT = os.path.expanduser(os.getenv('DOTNET_EMSCRIPTEN_BINARYEN_ROOT', ''))
+
+FROZEN_CACHE = os.path.expanduser(os.getenv('FROZEN_CACHE', 'false'))
+
+COMPILER_ENGINE = NODE_JS
+JS_ENGINES = [NODE_JS]
+]]>
+      </_EmscriptenConfigFileContents>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="%(_EmscriptenConfigFilePath.Identity)" Lines="$(_EmscriptenConfigFileContents)" Overwrite="true" />
     <WriteLinesToFile File="$(WorkloadStampFile)" Lines="" Overwrite="true" />
   </Target>
 </Project>
