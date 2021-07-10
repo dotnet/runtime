@@ -19080,7 +19080,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         assert(callSiteWeight >= 0);
         assert(entryWeight >= 0);
 
-        BasicBlock::weight_t sufficientSamples = 1000.0f;
+        BasicBlock::weight_t sufficientSamples = 5000.0f;
 
         if (!rootCompiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) ||
             ((callSiteWeight + entryWeight) > sufficientSamples))

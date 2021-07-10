@@ -1373,7 +1373,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                     // in prejit-root mode.
                     bbLimit += 5 + m_Switch * 10;
                 }
-                bbLimit += m_FoldableBranch  * 2 + m_ThrowBlock * 2 + m_FoldableSwitch * 10;
+                bbLimit += m_FoldableBranch * 2 + m_FoldableSwitch * 10;
                 if ((unsigned)value > bbLimit)
                 {
                     SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
@@ -1426,13 +1426,13 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_ReturnsStructByValue)
     {
         // For structs-passed-by-value we might avoid expensive copy operations if we inline.
-        multiplier += 1.5;
+        multiplier += 2.0;
         JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
     }
     else if (m_ArgIsStructByValue > 0)
     {
         // Same here
-        multiplier += 1.5;
+        multiplier += 2.0;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
                 multiplier);
     }
@@ -1464,7 +1464,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_NonGenericCallsGeneric)
     {
-        multiplier += 2.0;
+        multiplier += 1.5;
         JITDUMP("\nInline candidate is generic and caller is not.  Multiplier increased to %g.", multiplier);
     }
 
@@ -1688,11 +1688,14 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
     }
 
-    if (m_RootCompiler->lvaTableCnt > ((unsigned)(JitConfig.JitMaxLocalsToTrack() / 4)))
+    if (JitConfig.JitExtDefaultPolicyMaxLclStep() > 0)
     {
-        // Slow down inlining if we already have to many locals in the rootCompiler.
-        multiplier /= ((double)m_RootCompiler->lvaTableCnt / ((double)JitConfig.JitMaxLocalsToTrack() / 4.0));
-        JITDUMP("\nCaller %d locals.  Multiplier decreased to %g.", m_RootCompiler->lvaTableCnt, multiplier);
+        const double lclLimitStep = JitConfig.JitMaxLocalsToTrack() / (double)JitConfig.JitExtDefaultPolicyMaxLclStep();
+        if (m_RootCompiler->lvaTableCnt > lclLimitStep)
+        {
+            multiplier /= (m_RootCompiler->lvaTableCnt / lclLimitStep);
+            JITDUMP("\nCaller has %d locals.  Multiplier decreased to %g.", m_RootCompiler->lvaTableCnt, multiplier);
+        }
     }
 
     if (m_BackwardJump)
