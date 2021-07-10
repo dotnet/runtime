@@ -1347,12 +1347,18 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         handled = true;
                         compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_EXPR);
                     }
-                    if ((FgStack::IsConstant(arg0) && FgStack::IsConstant(arg1)) ||
-                        (FgStack::IsConstant(arg1) && FgStack::IsConstant(arg0)))
+                    else if ((FgStack::IsConstant(arg0) && FgStack::IsConstant(arg1)) ||
+                             (FgStack::IsConstant(arg1) && FgStack::IsConstant(arg0)))
                     {
                         // both are constants, but we're mostly interested in cases where a const arg leads to
                         // a foldable expression.
                         handled = true;
+                    }
+                    else if ((FgStack::IsArgument(arg0) == FgStack::IsArgument(arg1)) && (arg0 == arg1))
+                    {
+                        // Both args are the same
+                        handled = true;
+                        compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_EXPR);
                     }
                     else if (FgStack::IsArgument(arg0) && FgStack::IsConstantOrConstArg(arg1, impInlineInfo))
                     {
@@ -1583,6 +1589,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 if (makeInlineObservations)
                 {
                     compInlineResult->Note(InlineObservation::CALLEE_HAS_SWITCH);
+                    if (FgStack::IsConstantOrConstArg(pushedStack.Top(), impInlineInfo))
+                    {
+                        compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_SWITCH);
+                    }
 
                     // Fail fast, if we're inlining and can't handle this.
                     if (isInlining && compInlineResult->IsFailure())

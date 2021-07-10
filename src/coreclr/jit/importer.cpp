@@ -13258,8 +13258,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto COND_JUMP;
 
             case CEE_SWITCH:
-                assert(!compIsForInlining());
-
                 if (tiVerificationNeeded)
                 {
                     Verify(impStackTop().seTypeInfo.IsType(TI_INT), "Bad switch val");

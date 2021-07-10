@@ -326,7 +326,6 @@ void DefaultPolicy::NoteBool(InlineObservation obs, bool value)
                 m_ArgFeedsRangeCheck++;
                 break;
 
-            case InlineObservation::CALLEE_HAS_SWITCH:
             case InlineObservation::CALLEE_UNSUPPORTED_OPCODE:
                 propagate = true;
                 break;
@@ -1294,6 +1293,14 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
             m_FoldableBranch++;
             break;
 
+        case InlineObservation::CALLSITE_FOLDABLE_SWITCH:
+            m_FoldableSwitch++;
+            break;
+
+        case InlineObservation::CALLEE_HAS_SWITCH:
+            m_Switch++;
+            break;
+
         case InlineObservation::CALLSITE_DIV_BY_CNS:
             m_DivByCns++;
             break;
@@ -1364,9 +1371,9 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                 {
                     // We're not able to recognize arg-specific foldable branches
                     // in prejit-root mode.
-                    bbLimit += 3;
+                    bbLimit += 5 + m_Switch * 10;
                 }
-                bbLimit += m_FoldableBranch;
+                bbLimit += m_FoldableBranch  * 2 + m_ThrowBlock * 2 + m_FoldableSwitch * 10;
                 if ((unsigned)value > bbLimit)
                 {
                     SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
@@ -1457,7 +1464,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_NonGenericCallsGeneric)
     {
-        multiplier += 1.5;
+        multiplier += 2.0;
         JITDUMP("\nInline candidate is generic and caller is not.  Multiplier increased to %g.", multiplier);
     }
 
@@ -1507,7 +1514,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_Intrinsic > 0)
     {
         // In most cases such intrinsics are lowered as single CPU instructions
-        multiplier += 1.5;
+        multiplier += 1.0 + m_Intrinsic * 0.2;
         JITDUMP("\nInline has %d intrinsics.  Multiplier increased to %g.", m_Intrinsic, multiplier);
     }
 
@@ -1636,6 +1643,27 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
             break;
     }
 
+    if (m_FoldableSwitch > 0)
+    {
+        multiplier += m_FoldableSwitch * 5.0;
+        JITDUMP("\nInline candidate has %d foldable switches.  Multiplier increased to %g.", m_FoldableSwitch, multiplier);
+    }
+    else if (m_Switch > 0)
+    {
+        if (m_IsPrejitRoot)
+        {
+            // Assume the switches can be foldable in PrejitRoot mode.
+            multiplier += m_Switch * 5.0;
+            JITDUMP("\nPrejit root candidate has %d switches.  Multiplier increased to %g.", m_Switch, multiplier);
+        }
+        else
+        {
+            // TODO: Investigate cases where it makes sense to inline non-foldable switches
+            multiplier = 0;
+            JITDUMP("\nInline candidate has %d switches.  Multiplier limited to %g.", m_Switch, multiplier);
+        }
+    }
+
     if (m_HasProfile)
     {
         // There are cases when Profile Data can be misleading or polluted:
@@ -1738,6 +1766,8 @@ void ExtendedDefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_I4(m_FoldableExpr)
     XATTR_I4(m_FoldableExprUn)
     XATTR_I4(m_FoldableBranch)
+    XATTR_I4(m_FoldableSwitch)
+    XATTR_I4(m_Switch)
     XATTR_I4(m_DivByCns)
     XATTR_B(m_ReturnsStructByValue)
     XATTR_B(m_IsFromValueClass)

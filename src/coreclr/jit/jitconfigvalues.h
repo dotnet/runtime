@@ -460,7 +460,7 @@ CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))
 // Extended version of DefaultPolicy that includes a more precise IL scan,
 // relies on PGO if it exists and generally is more aggressive.
 CONFIG_INTEGER(JitExtDefaultPolicy, W("JitExtDefaultPolicy"), 1)
-CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, W("JitExtDefaultPolicyMaxIL"), 0x64)
+CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, W("JitExtDefaultPolicyMaxIL"), 0x400)
 CONFIG_INTEGER(JitExtDefaultPolicyMaxBB, W("JitExtDefaultPolicyMaxBB"), 7)
 
 // Inliner uses the following formula for PGO-driven decisions:
