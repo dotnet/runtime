@@ -73,8 +73,7 @@ dotnet publish
     <!--To inherit the global NuGet package sources remove the <clear/> line below -->
     <clear />
     <add key="nuget" value="https://api.nuget.org/v3/index.json" />
-    <add key="dotnetcore-feed" value="https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
-    <add key="aspnetcore" value="https://dotnetfeed.blob.core.windows.net/aspnet-aspnetcore/index.json" />
+    <add key="dotnet6" value="https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet6/nuget/v3/index.json" />
  </packageSources>
 </configuration>
 ```
