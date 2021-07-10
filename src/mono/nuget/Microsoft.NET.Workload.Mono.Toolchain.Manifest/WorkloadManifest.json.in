@@ -4,8 +4,8 @@
     "Microsoft.NET.Workload.Emscripten": "${EmscriptenVersion}"
   },
   "workloads": {
-    "microsoft-net-sdk-blazorwebassembly-aot": {
-      "description": "Browser Runtime native performance tools",
+    "wasm-tools": {
+      "description": ".NET WebAssembly build tools",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Sdk",
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",

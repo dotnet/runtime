@@ -481,7 +481,7 @@ namespace System.Data
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[]? attributes) { throw null; }
-        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
+        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd) { throw null; }
     }
     [System.ComponentModel.DefaultPropertyAttribute("DataSetName")]
     [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.DataSetDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
@@ -1003,7 +1003,7 @@ namespace System.Data
         bool System.ComponentModel.IBindingList.SupportsChangeNotification { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsSearching { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsSorting { get { throw null; } }
-        string? System.ComponentModel.IBindingListView.Filter { get { throw null; } set { } }
+        string? System.ComponentModel.IBindingListView.Filter { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members of types used in the filter expression might be trimmed.")] set { } }
         System.ComponentModel.ListSortDescriptionCollection System.ComponentModel.IBindingListView.SortDescriptions { get { throw null; } }
         bool System.ComponentModel.IBindingListView.SupportsAdvancedSorting { get { throw null; } }
         bool System.ComponentModel.IBindingListView.SupportsFiltering { get { throw null; } }
@@ -2207,7 +2207,7 @@ namespace System.Data.Common
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[]? attributes) { throw null; }
-        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
+        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd) { throw null; }
         public override string ToString() { throw null; }
         public virtual bool TryGetValue(string keyword, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? value) { throw null; }
     }
@@ -2398,7 +2398,7 @@ namespace System.Data.Common
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[]? attributes) { throw null; }
-        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
+        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd) { throw null; }
     }
     public abstract partial class DbDataSourceEnumerator
     {

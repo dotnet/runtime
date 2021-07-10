@@ -74,6 +74,9 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
     call->gtCallMoreFlags       = GTF_CALL_M_EMPTY;
     call->gtInlineCandidateInfo = nullptr;
     call->gtControlExpr         = nullptr;
+#ifdef UNIX_X86_ABI
+    call->gtFlags |= GTF_CALL_POP_ARGS;
+#endif // UNIX_X86_ABI
 
 #if DEBUG
     // Helper calls are never candidates.
@@ -2894,9 +2897,10 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     }
 
 #ifdef TARGET_X86
-    // Compute the maximum number of arguments that can be passed in registers.
-    // For X86 we handle the varargs and unmanaged calling conventions
+// Compute the maximum number of arguments that can be passed in registers.
+// For X86 we handle the varargs and unmanaged calling conventions
 
+#ifndef UNIX_X86_ABI
     if (call->gtFlags & GTF_CALL_POP_ARGS)
     {
         noway_assert(intArgRegNum < MAX_REG_ARG);
@@ -2907,6 +2911,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         if (callHasRetBuffArg)
             maxRegArgs++;
     }
+#endif // UNIX_X86_ABI
 
     if (call->IsUnmanaged())
     {
@@ -17436,14 +17441,18 @@ void Compiler::fgRetypeImplicitByRefArgs()
 #endif // DEBUG
 
                 // Propagate address-taken-ness and do-not-enregister-ness.
-                newVarDsc->lvAddrExposed     = varDsc->lvAddrExposed;
-                newVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
+                newVarDsc->lvAddrExposed           = varDsc->lvAddrExposed;
+                newVarDsc->lvDoNotEnregister       = varDsc->lvDoNotEnregister;
+                newVarDsc->lvLiveInOutOfHndlr      = varDsc->lvLiveInOutOfHndlr;
+                newVarDsc->lvSingleDef             = varDsc->lvSingleDef;
+                newVarDsc->lvSingleDefRegCandidate = varDsc->lvSingleDefRegCandidate;
+                newVarDsc->lvSpillAtSingleDef      = varDsc->lvSpillAtSingleDef;
 #ifdef DEBUG
-                newVarDsc->lvLclBlockOpAddr   = varDsc->lvLclBlockOpAddr;
-                newVarDsc->lvLclFieldExpr     = varDsc->lvLclFieldExpr;
-                newVarDsc->lvVMNeedsStackAddr = varDsc->lvVMNeedsStackAddr;
-                newVarDsc->lvLiveInOutOfHndlr = varDsc->lvLiveInOutOfHndlr;
-                newVarDsc->lvLiveAcrossUCall  = varDsc->lvLiveAcrossUCall;
+                newVarDsc->lvLclBlockOpAddr            = varDsc->lvLclBlockOpAddr;
+                newVarDsc->lvLclFieldExpr              = varDsc->lvLclFieldExpr;
+                newVarDsc->lvVMNeedsStackAddr          = varDsc->lvVMNeedsStackAddr;
+                newVarDsc->lvSingleDefDisqualifyReason = varDsc->lvSingleDefDisqualifyReason;
+                newVarDsc->lvLiveAcrossUCall           = varDsc->lvLiveAcrossUCall;
 #endif // DEBUG
 
                 // If the promotion is dependent, the promoted temp would just be committed

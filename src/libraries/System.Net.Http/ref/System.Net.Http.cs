@@ -37,7 +37,12 @@ namespace System.Net.Http
     }
     public partial class FormUrlEncodedContent : System.Net.Http.ByteArrayContent
     {
-        public FormUrlEncodedContent(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string?, string?>> nameValueCollection) : base (default(byte[])) { }
+        public FormUrlEncodedContent(
+            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<
+                #nullable disable
+                string, string
+                #nullable restore
+            >> nameValueCollection) : base (default(byte[])) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public delegate System.Text.Encoding? HeaderEncodingSelector<TContext>(string headerName, TContext context);
