@@ -184,7 +184,6 @@ jobs:
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
         extraHelixArguments: /p:BrowserHost=windows
         scenarios:
-        - buildwasmapps
         - normal
         condition: >-
           or(
