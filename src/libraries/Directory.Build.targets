@@ -428,7 +428,7 @@ LLVM_ROOT = os.path.expanduser(os.getenv('DOTNET_EMSCRIPTEN_LLVM_ROOT', ''))
 NODE_JS = os.path.expanduser(os.getenv('DOTNET_EMSCRIPTEN_NODE_JS', ''))
 BINARYEN_ROOT = os.path.expanduser(os.getenv('DOTNET_EMSCRIPTEN_BINARYEN_ROOT', ''))
 
-FROZEN_CACHE = os.path.expanduser(os.getenv('FROZEN_CACHE', 'false'))
+FROZEN_CACHE = os.path.expanduser(os.getenv('FROZEN_CACHE', ''))
 
 COMPILER_ENGINE = NODE_JS
 JS_ENGINES = [NODE_JS]
