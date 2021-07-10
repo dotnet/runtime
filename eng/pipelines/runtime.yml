@@ -338,6 +338,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:ForNode=true /p:JSEngine=NodeJS
         scenarios:
         - buildwasmapps
         - normal
@@ -423,7 +424,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true
+        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true /p:ForNode=true /p:JSEngine=NodeJS
         scenarios:
         - normal
         condition: >-
@@ -507,7 +508,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true
+        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true /p:ForNode=true /p:JSEngine=NodeJS
         scenarios:
         - normal
         condition: >-
@@ -601,7 +602,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests_NodeJS
-      buildArgs: -s mono+libs -c $(_BuildConfig) /p:ForNode=true
+      buildArgs: -s mono+libs -c $(_BuildConfig) /p:ForNode=true /p:JSEngine=NodeJS
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -613,6 +614,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:ForNode=true /p:JSEngine=NodeJS
 
 #
 # Build the whole product using Mono for Android and run runtime tests with Android emulator
