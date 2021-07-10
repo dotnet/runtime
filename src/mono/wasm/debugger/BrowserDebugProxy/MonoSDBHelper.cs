@@ -14,6 +14,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -472,6 +474,68 @@ namespace Microsoft.WebAssembly.Diagnostics
                 Write(sdbHelper.valueTypes[int.Parse(objectId.Value)].valueTypeBuffer);
             }
         }
+        public async Task<bool> WriteConst(SessionId sessionId, LiteralExpressionSyntax constValue, MonoSDBHelper sdbHelper, CancellationToken token)
+        {
+            switch (constValue.Kind())
+            {
+                case SyntaxKind.NumericLiteralExpression:
+                {
+                    Write((byte)ElementType.I4);
+                    Write((int)constValue.Token.Value);
+                    return true;
+                }
+                case SyntaxKind.StringLiteralExpression:
+                {
+                    int stringId = await sdbHelper.CreateString(sessionId, (string)constValue.Token.Value, token);
+                    Write((byte)ElementType.String);
+                    Write((int)stringId);
+                    return true;
+                }
+                case SyntaxKind.TrueLiteralExpression:
+                {
+                    Write((byte)ElementType.Boolean);
+                    Write((int)1);
+                    return true;
+                }
+                case SyntaxKind.FalseLiteralExpression:
+                {
+                    Write((byte)ElementType.Boolean);
+                    Write((int)0);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public async Task<bool> WriteJsonValue(SessionId sessionId, JObject objValue, MonoSDBHelper sdbHelper, CancellationToken token)
+        {
+            switch (objValue["type"].Value<string>())
+            {
+                case "number":
+                {
+                    Write((byte)ElementType.I4);
+                    Write(objValue["value"].Value<int>());
+                    return true;
+                }
+                case "string":
+                {
+                    int stringId = await sdbHelper.CreateString(sessionId, objValue["value"].Value<string>(), token);
+                    Write((byte)ElementType.String);
+                    Write((int)stringId);
+                    return true;
+                }
+                case "boolean":
+                {
+                    Write((byte)ElementType.Boolean);
+                    if (objValue["value"].Value<bool>())
+                        Write((int)1);
+                    else
+                        Write((int)0);
+                    return true;
+                }
+            }
+            return false;
+        }
     }
     internal class FieldTypeClass
     {
@@ -610,6 +674,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             var ret_debugger_cmd = new MemoryStream(newBytes);
             var ret_debugger_cmd_reader = new MonoBinaryReader(ret_debugger_cmd);
             return ret_debugger_cmd_reader;
+        }
+
+        public async Task<int> CreateString(SessionId sessionId, string value, CancellationToken token)
+        {
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand<CmdAppDomain>(sessionId, CmdAppDomain.GetRootDomain, command_params, token);
+            var root_domain = ret_debugger_cmd_reader.ReadInt32();
+            command_params_writer.Write(root_domain);
+            command_params_writer.WriteString(value);
+            ret_debugger_cmd_reader = await SendDebuggerAgentCommand<CmdAppDomain>(sessionId, CmdAppDomain.CreateString, command_params, token);
+            return ret_debugger_cmd_reader.ReadInt32();
         }
 
         public async Task<int> GetMethodToken(SessionId sessionId, int method_id, CancellationToken token)

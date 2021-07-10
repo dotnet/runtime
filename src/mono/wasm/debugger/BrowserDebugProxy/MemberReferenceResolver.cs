@@ -9,6 +9,8 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Collections.Generic;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -124,6 +126,51 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             scopeCache.MemberReferences[var_name] = rootObject;
             return rootObject;
+        }
+
+        public async Task<JObject> Resolve(InvocationExpressionSyntax method, Dictionary<string, JObject> memberAccessValues, CancellationToken token)
+        {
+            JObject rootObject = null;
+
+            var expr = method.Expression;
+            var methodName = "";
+            if (expr is MemberAccessExpressionSyntax)
+            {
+                MemberAccessExpressionSyntax memberAccessExpressionSyntax = expr as MemberAccessExpressionSyntax;
+                rootObject = await Resolve(memberAccessExpressionSyntax.Expression.ToString(), token);
+                methodName = memberAccessExpressionSyntax.Name.ToString();
+            }
+            if (rootObject != null)
+            {
+                DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
+                var typeId = await proxy.sdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
+                int method_id = await proxy.sdbHelper.GetMethodIdByName(sessionId, typeId[0], methodName, token);
+                var command_params_obj = new MemoryStream();
+                var command_params_obj_writer = new MonoBinaryWriter(command_params_obj);
+                command_params_obj_writer.WriteObj(objectId, proxy.sdbHelper);
+                if (method.ArgumentList != null)
+                {
+                    command_params_obj_writer.Write((int)method.ArgumentList.Arguments.Count);
+                    foreach (var arg in method.ArgumentList.Arguments)
+                    {
+                        if (arg.Expression is LiteralExpressionSyntax)
+                        {
+                            if (!await command_params_obj_writer.WriteConst(sessionId, arg.Expression as LiteralExpressionSyntax, proxy.sdbHelper, token))
+                                return null;
+                        }
+                        if (arg.Expression is IdentifierNameSyntax)
+                        {
+                            var argParm = arg.Expression as IdentifierNameSyntax;
+                            if (!await command_params_obj_writer.WriteJsonValue(sessionId, memberAccessValues[argParm.Identifier.Text], proxy.sdbHelper, token))
+                                return null;
+                        }
+                    }
+                }
+
+                var retMethod = await proxy.sdbHelper.InvokeMethod(sessionId, command_params_obj.ToArray(), method_id, "methodRet", token);
+                return await GetValueFromObject(retMethod, token);
+            }
+            return null;
         }
 
     }

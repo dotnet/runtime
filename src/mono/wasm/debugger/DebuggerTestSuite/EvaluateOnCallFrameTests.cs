@@ -502,6 +502,54 @@ namespace DebuggerTests
                     AssertEqual(arg.class_name, res.Error["result"]?["className"]?.Value<string>(), $"Error className did not match for expression '{arg.expression}'");
             }
         }
+
+        [Fact]
+        public async Task EvaluateSimpleMethodCallsWithoutParms() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("this.CallMethod()", TNumber(1)),
+                   ("this.CallMethod() + this.a", TNumber(2)));
+           });
+
+
+        [Fact]
+        public async Task EvaluateSimpleMethodCallsWithConstParms() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                    ("this.CallMethodWithParm(10)", TNumber(11)),
+                    ("this.CallMethodWithMultipleParms(10, 10)", TNumber(21)),
+                    ("this.CallMethodWithParmBool(true)", TString("TRUE")),
+                    ("this.CallMethodWithParmBool(false)", TString("FALSE")),
+                    ("this.CallMethodWithParmString(\"concat\")", TString("str_const_concat")),
+                    ("this.CallMethodWithParm(10) + this.a", TNumber(12)));
+           });
+
+        [Fact]
+        public async Task EvaluateSimpleMethodCallsWithVariableParms() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                    ("this.CallMethodWithParm(this.a)", TNumber(2)),
+                    ("this.CallMethodWithMultipleParms(this.a, 10)", TNumber(12)),
+                    ("this.CallMethodWithParmString(this.str)", TString("str_const_str_const_")),
+                    ("this.CallMethodWithParmBool(this.t)", TString("TRUE")),
+                    ("this.CallMethodWithParmBool(this.f)", TString("FALSE")),
+                    ("this.CallMethodWithParm(this.a) + this.a", TNumber(3)));
+           });
     }
 
 }

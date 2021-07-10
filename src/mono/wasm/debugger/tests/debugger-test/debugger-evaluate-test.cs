@@ -309,4 +309,67 @@ namespace DebuggerTests
             return await Task.FromResult(default(T));
         }
     }
+    public class EvaluateMethodTestsClass
+    {
+        public class TestEvaluate
+        {
+            public int a;
+            public int b;
+            public int c;
+            public string str = "str_const_";
+            public bool t = true;
+            public bool f = false;
+            public DateTime dt = new DateTime(2000, 5, 4, 3, 2, 1);
+            public TestEvaluate NullIfAIsNotZero => a != 0 ? null : this;
+            public void run(int g, int h, string a, string valString, int this_a)
+            {
+                int d = g + 1;
+                int e = g + 2;
+                int f = g + 3;
+                int i = d + e + f;
+                var local_dt = new DateTime(2010, 9, 8, 7, 6, 5);
+                this.a = 1;
+                b = 2;
+                c = 3;
+                this.a = this.a + 1;
+                b = b + 1;
+                c = c + 1;
+            }
+
+            public int CallMethod()
+            {
+                return a;
+            }
+
+            public int CallMethodWithParm(int parm)
+            {
+                return a + parm;
+            }
+
+            public int CallMethodWithMultipleParms(int parm, int parm2)
+            {
+                return a + parm + parm2;
+            }
+
+            public string CallMethodWithParmString(string parm)
+            {
+                return str + parm;
+            }
+
+            public string CallMethodWithParmBool(bool parm)
+            {
+                if (parm)
+                    return "TRUE";
+                return "FALSE";
+            }
+        }
+
+        public static void EvaluateMethods()
+        {
+            TestEvaluate f = new TestEvaluate();
+            f.run(100, 200, "9000", "test", 45);
+        }
+
+    }
+
 }
