@@ -188,7 +188,7 @@ void YieldProcessorNormalization::PerformMeasurement()
     FireEtwYieldProcessorMeasurement(GetClrInstanceId(), latestNsPerYield, s_establishedNsPerYield);
 
     // Calculate the number of yields required to span the duration of a normalized yield
-    int yieldsPerNormalizedYield = Max(1, (int)(TargetNsPerNormalizedYield / establishedNsPerYield + 0.5));
+    unsigned int yieldsPerNormalizedYield = Max(1u, (unsigned int)(TargetNsPerNormalizedYield / establishedNsPerYield + 0.5));
     _ASSERTE(yieldsPerNormalizedYield <= MaxYieldsPerNormalizedYield);
     s_yieldsPerNormalizedYield = yieldsPerNormalizedYield;
 
@@ -196,7 +196,7 @@ void YieldProcessorNormalization::PerformMeasurement()
     // spend excessive amounts of time (thousands of cycles) doing only YieldProcessor, as SwitchToThread/Sleep would do a
     // better job of allowing other work to run.
     s_optimalMaxNormalizedYieldsPerSpinIteration =
-        Max(1, (int)(TargetMaxNsPerSpinIteration / (yieldsPerNormalizedYield * establishedNsPerYield) + 0.5));
+        Max(1u, (unsigned int)(TargetMaxNsPerSpinIteration / (yieldsPerNormalizedYield * establishedNsPerYield) + 0.5));
     _ASSERTE(s_optimalMaxNormalizedYieldsPerSpinIteration <= MaxOptimalMaxNormalizedYieldsPerSpinIteration);
 
     GCHeapUtilities::GetGCHeap()->SetYieldProcessorScalingFactor((float)yieldsPerNormalizedYield);
