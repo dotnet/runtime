@@ -1363,7 +1363,7 @@ namespace System.Xml.Serialization
                     ilg.EndIf();
                 }
 
-                ilg.ExitScope();    // In a try/catch? But EndIf() above isn't.
+                ilg.ExitScope();
             }
             else
             {
