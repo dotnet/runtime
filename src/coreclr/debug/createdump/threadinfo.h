@@ -114,16 +114,19 @@ public:
 #elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
     inline const user_vfpregs_struct* VFPRegisters() const { return &m_vfpRegisters; }
 #endif
-    inline const uint64_t GetStackPointer() const
-    {
 #if defined(__x86_64__)
-        return m_gpRegisters.rsp;
+    inline const uint64_t GetInstructionPointer() const { return m_gpRegisters.rip; }
+    inline const uint64_t GetStackPointer() const { return m_gpRegisters.rsp; }
+    inline const uint64_t GetFramePointer() const { return m_gpRegisters.rbp; }
 #elif defined(__aarch64__)
-        return MCREG_Sp(m_gpRegisters);
+    inline const uint64_t GetInstructionPointer() const { return MCREG_Pc(m_gpRegisters); }
+    inline const uint64_t GetStackPointer() const { return MCREG_Sp(m_gpRegisters); }
+    inline const uint64_t GetFramePointer() const { return MCREG_Fp(m_gpRegisters); }
 #elif defined(__arm__)
-        return m_gpRegisters.ARM_sp;
+    inline const uint64_t GetInstructionPointer() const { return m_gpRegisters.ARM_pc; }
+    inline const uint64_t GetStackPointer() const { return m_gpRegisters.ARM_sp; }
+    inline const uint64_t GetFramePointer() const { return m_gpRegisters.ARM_fp; }
 #endif
-    }
 #endif // __APPLE__
 
 private:

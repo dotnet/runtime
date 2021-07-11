@@ -51,20 +51,19 @@ CrashReportWriter::WriteCrashReport(const std::string& dumpFileName)
     }
 }
 
-#ifdef __APPLE__
-
 void
 CrashReportWriter::WriteCrashReport()
 {
-    const char* exceptionType = nullptr;
     OpenObject("payload");
-    WriteValue("protocol_version", "0.0.7");
+    WriteValue("protocol_version", "1.0.0");
 
     OpenObject("configuration");
 #if defined(__x86_64__)
     WriteValue("architecture", "amd64");
 #elif defined(__aarch64__)
     WriteValue("architecture", "arm64");
+#elif defined(__arm__)
+    WriteValue("architecture", "arm");
 #endif
     std::string version;
     assert(strncmp(sccsid, "@(#)Version ", 12) == 0);
@@ -73,6 +72,13 @@ CrashReportWriter::WriteCrashReport()
     WriteValue("version", version.c_str());
     CloseObject();                  // configuration
 
+    // The main module was saved away in the crash info 
+    if (m_crashInfo.MainModule()->BaseAddress() != 0)
+    {
+        WriteValue("process_name", GetFileName(m_crashInfo.MainModule()->ModuleName()).c_str());
+    }
+
+    const char* exceptionType = nullptr;
     OpenArray("threads");
     for (const ThreadInfo* thread : m_crashInfo.Threads())
     {
@@ -131,6 +137,10 @@ CrashReportWriter::WriteCrashReport()
         {
             WriteValue("managed_exception_type", thread->ManagedExceptionType().c_str());
         }
+        if (thread->ManagedExceptionHResult() != 0)
+        {
+            WriteValue32("managed_exception_hresult", thread->ManagedExceptionHResult());
+        }
         WriteValue64("native_thread_id", thread->Tid());
         OpenObject("ctx");
         WriteValue64("IP", thread->GetInstructionPointer());
@@ -148,7 +158,7 @@ CrashReportWriter::WriteCrashReport()
     }
     CloseArray();               // threads
     CloseObject();              // payload
-
+#ifdef __APPLE__
     OpenObject("parameters");
     if (exceptionType != nullptr)
     {
@@ -158,7 +168,10 @@ CrashReportWriter::WriteCrashReport()
     WriteSysctl("hw.model", "SystemModel");
     WriteValue("SystemManufacturer", "apple");
     CloseObject();              // parameters
+#endif // __APPLE__
 }
+
+#ifdef __APPLE__
 
 void
 CrashReportWriter::WriteSysctl(const char* sysctlname, const char* valueName)
@@ -180,58 +193,6 @@ CrashReportWriter::WriteSysctl(const char* sysctlname, const char* valueName)
     {
         TRACE("sysctlbyname(%s) 2 FAILED %s\n", sysctlname, strerror(errno));
     }
-}
-
-#else // __APPLE__
-
-void
-CrashReportWriter::WriteCrashReport()
-{
-    OpenObject("payload");
-    WriteValue("protocol_version", "1.0.0");
-#if defined(__x86_64__)
-    WriteValue("architecture", "amd64");
-#elif defined(__aarch64__)
-    WriteValue("architecture", "arm64");
-#elif defined(__arm__)
-    WriteValue("architecture", "arm");
-#endif
-    std::string version;
-    assert(strncmp(sccsid, "@(#)Version ", 12) == 0);
-    version.append(sccsid + 12);    // skip "@(#)Version "
-    version.append(" ");            // the analyzer requires a space after the version
-    WriteValue("dotnet_version", version.c_str());
-
-    // The main module was saved away in the crash info 
-    if (m_crashInfo.MainModule()->BaseAddress() != 0)
-    {
-        WriteValue("faulting_process_name", GetFileName(m_crashInfo.MainModule()->ModuleName()).c_str());
-    }
-
-    // Find the first thread with a managed exception
-    for (const ThreadInfo* thread : m_crashInfo.Threads())
-    {
-        if (thread->ManagedExceptionObject() != 0)
-        {
-            WriteValue64("exception_object", thread->ManagedExceptionObject());
-            if (!thread->ManagedExceptionType().empty())
-            {
-                WriteValue("exception_type", thread->ManagedExceptionType().c_str());
-            }
-            if (thread->ManagedExceptionHResult() != 0)
-            {
-                WriteValue32("error_code", thread->ManagedExceptionHResult());
-            }
-            OpenArray("faulting_stack_frames");
-            for (const StackFrame& frame : thread->StackFrames())
-            {
-                WriteStackFrame(frame);
-            }
-            CloseArray();           // faulting_stack_frames
-            break;
-        }
-    }
-    CloseObject();                  // payload
 }
 
 #endif // __APPLE__
