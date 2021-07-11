@@ -35,6 +35,15 @@ CrashInfo::~CrashInfo()
         delete thread;
     }
     m_threads.clear();
+
+    // Clean up the modules
+    for (ModuleInfo* module : m_moduleInfos)
+    {
+        delete module;
+    }
+    m_moduleInfos.clear();
+
+    // Unload DAC module
     if (m_hdac != nullptr)
     {
         FreeLibrary(m_hdac);
