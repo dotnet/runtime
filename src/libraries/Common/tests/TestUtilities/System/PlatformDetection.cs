@@ -70,8 +70,8 @@ namespace System
         public static bool IsLinqExpressionsBuiltWithIsInterpretingOnly => s_LinqExpressionsBuiltWithIsInterpretingOnly.Value;
         public static bool IsNotLinqExpressionsBuiltWithIsInterpretingOnly => !IsLinqExpressionsBuiltWithIsInterpretingOnly;
         private static readonly Lazy<bool> s_LinqExpressionsBuiltWithIsInterpretingOnly = new Lazy<bool>(GetLinqExpressionsBuiltWithIsInterpretingOnly);
-        private static bool GetLinqExpressionsBuiltWithIsInterpretingOnly() 
-        {            
+        private static bool GetLinqExpressionsBuiltWithIsInterpretingOnly()
+        {
             Type type = typeof(LambdaExpression);
             if (type != null)
             {
@@ -242,14 +242,9 @@ namespace System
 
         private static bool GetStaticNonPublicBooleanPropertyValue(string typeName, string propertyName)
         {
-            Type globalizationMode = Type.GetType(typeName);
-            if (globalizationMode != null)
+            if (Type.GetType(typeName)?.GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod is MethodInfo mi)
             {
-                MethodInfo methodInfo = globalizationMode.GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
-                if (methodInfo != null)
-                {
-                    return (bool)methodInfo.Invoke(null, null);
-                }
+                return (bool)mi.Invoke(null, null);
             }
 
             return false;
@@ -289,6 +284,10 @@ namespace System
         private static readonly Lazy<bool> _net5CompatFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.FileStreamHelpers", "UseNet5CompatStrategy"));
 
         public static bool IsNet5CompatFileStreamEnabled => _net5CompatFileStream.Value;
+
+        private static readonly Lazy<bool> s_fileLockingDisabled = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("Microsoft.Win32.SafeHandles.SafeFileHandle", "DisableFileLocking"));
+
+        public static bool IsFileLockingEnabled => IsWindows || !s_fileLockingDisabled.Value;
 
         private static bool GetIsInContainer()
         {

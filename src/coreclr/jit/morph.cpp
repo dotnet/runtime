@@ -5581,8 +5581,9 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     GenTree* arrRef = asIndex->Arr();
     GenTree* index  = asIndex->Index();
 
-    bool chkd = ((tree->gtFlags & GTF_INX_RNGCHK) != 0); // if false, range checking will be disabled
-    bool nCSE = ((tree->gtFlags & GTF_DONT_CSE) != 0);
+    bool chkd             = ((tree->gtFlags & GTF_INX_RNGCHK) != 0);  // if false, range checking will be disabled
+    bool indexNonFaulting = ((tree->gtFlags & GTF_INX_NOFAULT) != 0); // if true, mark GTF_IND_NONFAULTING
+    bool nCSE             = ((tree->gtFlags & GTF_DONT_CSE) != 0);
 
     GenTree* arrRefDefn = nullptr; // non-NULL if we need to allocate a temp for the arrRef expression
     GenTree* indexDefn  = nullptr; // non-NULL if we need to allocate a temp for the index expression
@@ -5742,9 +5743,9 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         this->compFloatingPointUsed = true;
     }
 
-    // We've now consumed the GTF_INX_RNGCHK, and the node
+    // We've now consumed the GTF_INX_RNGCHK and GTF_INX_NOFAULT, and the node
     // is no longer a GT_INDEX node.
-    tree->gtFlags &= ~GTF_INX_RNGCHK;
+    tree->gtFlags &= ~(GTF_INX_RNGCHK | GTF_INX_NOFAULT);
 
     tree->AsOp()->gtOp1 = addr;
 
@@ -5752,7 +5753,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     tree->gtFlags |= GTF_IND_ARR_INDEX;
 
     // If there's a bounds check, the indir won't fault.
-    if (bndsChk)
+    if (bndsChk || indexNonFaulting)
     {
         tree->gtFlags |= GTF_IND_NONFAULTING;
     }
@@ -17441,14 +17442,18 @@ void Compiler::fgRetypeImplicitByRefArgs()
 #endif // DEBUG
 
                 // Propagate address-taken-ness and do-not-enregister-ness.
-                newVarDsc->lvAddrExposed     = varDsc->lvAddrExposed;
-                newVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
+                newVarDsc->lvAddrExposed           = varDsc->lvAddrExposed;
+                newVarDsc->lvDoNotEnregister       = varDsc->lvDoNotEnregister;
+                newVarDsc->lvLiveInOutOfHndlr      = varDsc->lvLiveInOutOfHndlr;
+                newVarDsc->lvSingleDef             = varDsc->lvSingleDef;
+                newVarDsc->lvSingleDefRegCandidate = varDsc->lvSingleDefRegCandidate;
+                newVarDsc->lvSpillAtSingleDef      = varDsc->lvSpillAtSingleDef;
 #ifdef DEBUG
-                newVarDsc->lvLclBlockOpAddr   = varDsc->lvLclBlockOpAddr;
-                newVarDsc->lvLclFieldExpr     = varDsc->lvLclFieldExpr;
-                newVarDsc->lvVMNeedsStackAddr = varDsc->lvVMNeedsStackAddr;
-                newVarDsc->lvLiveInOutOfHndlr = varDsc->lvLiveInOutOfHndlr;
-                newVarDsc->lvLiveAcrossUCall  = varDsc->lvLiveAcrossUCall;
+                newVarDsc->lvLclBlockOpAddr            = varDsc->lvLclBlockOpAddr;
+                newVarDsc->lvLclFieldExpr              = varDsc->lvLclFieldExpr;
+                newVarDsc->lvVMNeedsStackAddr          = varDsc->lvVMNeedsStackAddr;
+                newVarDsc->lvSingleDefDisqualifyReason = varDsc->lvSingleDefDisqualifyReason;
+                newVarDsc->lvLiveAcrossUCall           = varDsc->lvLiveAcrossUCall;
 #endif // DEBUG
 
                 // If the promotion is dependent, the promoted temp would just be committed

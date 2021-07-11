@@ -24,37 +24,37 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "codegen.h"
 
-bool IsSSEInstruction(instruction ins)
+bool emitter::IsSSEInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_SSE_INSTRUCTION);
 }
 
-bool IsSSEOrAVXInstruction(instruction ins)
+bool emitter::IsSSEOrAVXInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
 }
 
-bool IsAVXOnlyInstruction(instruction ins)
+bool emitter::IsAVXOnlyInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_AVX_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
 }
 
-bool IsFMAInstruction(instruction ins)
+bool emitter::IsFMAInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_FMA_INSTRUCTION) && (ins <= INS_LAST_FMA_INSTRUCTION);
 }
 
-bool IsAVXVNNIInstruction(instruction ins)
+bool emitter::IsAVXVNNIInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_AVXVNNI_INSTRUCTION) && (ins <= INS_LAST_AVXVNNI_INSTRUCTION);
 }
 
-bool IsBMIInstruction(instruction ins)
+bool emitter::IsBMIInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_BMI_INSTRUCTION) && (ins <= INS_LAST_BMI_INSTRUCTION);
 }
 
-regNumber getBmiRegNumber(instruction ins)
+regNumber emitter::getBmiRegNumber(instruction ins)
 {
     switch (ins)
     {
@@ -81,7 +81,7 @@ regNumber getBmiRegNumber(instruction ins)
     }
 }
 
-regNumber getSseShiftRegNumber(instruction ins)
+regNumber emitter::getSseShiftRegNumber(instruction ins)
 {
     switch (ins)
     {
@@ -123,7 +123,7 @@ regNumber getSseShiftRegNumber(instruction ins)
     }
 }
 
-bool emitter::IsAVXInstruction(instruction ins)
+bool emitter::IsAVXInstruction(instruction ins) const
 {
     return UseVEXEncoding() && IsSSEOrAVXInstruction(ins);
 }
@@ -296,6 +296,13 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                 return false;
             }
 
+#ifdef TARGET_AMD64
+            if (id->idIns() == INS_movsxd)
+            {
+                return false;
+            }
+#endif
+
             // movzx always zeroes the upper 32 bits.
             if (id->idIns() == INS_movzx)
             {
@@ -438,7 +445,7 @@ bool emitter::Is4ByteSSEInstruction(instruction ins)
 
 // Returns true if this instruction requires a VEX prefix
 // All AVX instructions require a VEX prefix
-bool emitter::TakesVexPrefix(instruction ins)
+bool emitter::TakesVexPrefix(instruction ins) const
 {
     // special case vzeroupper as it requires 2-byte VEX prefix
     // special case the fencing, movnti and the prefetch instructions as they never take a VEX prefix
@@ -514,7 +521,7 @@ emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr att
 }
 
 // Returns true if this instruction, for the given EA_SIZE(attr), will require a REX.W prefix
-bool TakesRexWPrefix(instruction ins, emitAttr attr)
+bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
 {
     // Because the current implementation of AVX does not have a way to distinguish between the register
     // size specification (128 vs. 256 bits) and the operand size specification (32 vs. 64 bits), where both are
@@ -4290,6 +4297,38 @@ bool emitter::IsMovInstruction(instruction ins)
             return false;
         }
     }
+}
+
+//------------------------------------------------------------------------
+// IsJccInstruction: Determine if an instruction is a conditional jump instruction.
+//
+// Arguments:
+//    ins       -- The instruction being checked
+//
+// Return Value:
+//    true if the instruction qualifies; otherwise, false
+//
+bool emitter::IsJccInstruction(instruction ins)
+{
+    return ((ins >= INS_jo) && (ins <= INS_jg)) || ((ins >= INS_l_jo) && (ins <= INS_l_jg));
+}
+
+//------------------------------------------------------------------------
+// IsJmpInstruction: Determine if an instruction is a jump instruction but NOT a conditional jump instruction.
+//
+// Arguments:
+//    ins       -- The instruction being checked
+//
+// Return Value:
+//    true if the instruction qualifies; otherwise, false
+//
+bool emitter::IsJmpInstruction(instruction ins)
+{
+    return
+#ifdef TARGET_AMD64
+        (ins == INS_rex_jmp) ||
+#endif
+        (ins == INS_i_jmp) || (ins == INS_jmp) || (ins == INS_l_jmp);
 }
 
 //----------------------------------------------------------------------------------------
@@ -8452,7 +8491,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             lab = (insGroup*)emitCodeGetCookie(*bbp++);
             assert(lab);
 
-            printf("\n            D" SIZE_LETTER "      G_M%03u_IG%02u", emitComp->compMethodID, lab->igNum);
+            printf("\n            D" SIZE_LETTER "      %s", emitLabelString(lab));
         } while (--cnt);
     }
 }
@@ -8684,22 +8723,16 @@ void emitter::emitDispIns(
 
     /* Display the instruction name */
 
-    sstr = codeGen->genInsName(ins);
+    sstr = codeGen->genInsDisplayName(id);
+    printf(" %-9s", sstr);
 
-    if (IsAVXInstruction(ins) && !IsBMIInstruction(ins))
-    {
-        printf(" v%-8s", sstr);
-    }
-    else
-    {
-        printf(" %-9s", sstr);
-    }
 #ifndef HOST_UNIX
-    if (strnlen_s(sstr, 10) >= 8)
+    if (strnlen_s(sstr, 10) >= 9)
 #else  // HOST_UNIX
-    if (strnlen(sstr, 10) >= 8)
+    if (strnlen(sstr, 10) >= 9)
 #endif // HOST_UNIX
     {
+        // Make sure there's at least one space after the instruction name, for very long instruction names.
         printf(" ");
     }
 
@@ -9649,7 +9682,7 @@ void emitter::emitDispIns(
                 }
                 else
                 {
-                    printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                    emitPrintLabel(id->idAddr()->iiaIGlabel);
                 }
             }
             else
@@ -14669,6 +14702,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     switch (ins)
     {
         case INS_align:
+#if FEATURE_LOOP_ALIGN
+            if (id->idCodeSize() == 0)
+            {
+                // We're not going to generate any instruction, so it doesn't count for PerfScore.
+                result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+                break;
+            }
+#endif
+            FALLTHROUGH;
+
         case INS_nop:
         case INS_int3:
             assert(memFmt == IF_NONE);
