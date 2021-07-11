@@ -848,7 +848,15 @@ namespace System.IO
                 await fs.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
 #else
                 using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous | FileOptions.SequentialScan);
-                await RandomAccess.WriteAtOffsetAsync(sfh, bytes, 0, cancellationToken).ConfigureAwait(false);
+
+                long offset = 0;
+                Memory<byte> buffer = bytes;
+                do
+                {
+                    int bytesWritten = await RandomAccess.WriteAtOffsetAsync(sfh, buffer, offset, cancellationToken).ConfigureAwait(false);
+                    offset += bytesWritten;
+                    buffer = buffer.Slice(bytesWritten);
+                } while (!buffer.IsEmpty);
 #endif
             }
         }

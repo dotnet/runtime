@@ -64,27 +64,22 @@ namespace System.IO.Strategies
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => WriteAsyncInternal(buffer, cancellationToken);
 
-        private unsafe ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        private async ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             if (!CanWrite)
             {
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
-            long positionBefore = _filePosition;
-            if (CanSeek)
+            do
             {
-                // When using overlapped IO, the OS is not supposed to
-                // touch the file pointer location at all.  We will adjust it
-                // ourselves, but only in memory.  This isn't threadsafe.
-                _filePosition += source.Length;
-                UpdateLengthOnChangePosition();
-            }
+                int bytesWritten = await RandomAccess.WriteAtOffsetAsync(_fileHandle, source, _filePosition, cancellationToken).ConfigureAwait(false);
+                _filePosition += bytesWritten;
+                source = source.Slice(bytesWritten);
 
-            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncWriteFile(_fileHandle, source, positionBefore, cancellationToken);
-            return vts != null
-                ? new ValueTask(vts, vts.Version)
-                : (errorCode == 0) ? ValueTask.CompletedTask : ValueTask.FromException(HandleIOError(positionBefore, errorCode));
+                // we update it now, because if the write was incomplete, the next try might fail with an exception
+                UpdateLengthOnChangePosition();
+            } while (!source.IsEmpty);
         }
 
         private Exception HandleIOError(long positionBefore, int errorCode)

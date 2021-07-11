@@ -58,28 +58,21 @@ namespace System.IO.Strategies
             TaskToApm.End(asyncResult);
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-            WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken) =>
-#pragma warning disable CA2012 // The analyzer doesn't know the internal AsValueTask is safe.
-            WriteAsyncCore(source, cancellationToken).AsValueTask();
-#pragma warning restore CA2012
-
-        private ValueTask<int> WriteAsyncCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             if (!CanWrite)
             {
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
-            long filePositionBefore = -1;
-            if (CanSeek)
+            do
             {
-                filePositionBefore = _filePosition;
-                _filePosition += source.Length;
-            }
-
-            return RandomAccess.WriteAtOffsetAsync(_fileHandle, source, filePositionBefore, cancellationToken);
+                int bytesWritten = await RandomAccess.WriteAtOffsetAsync(_fileHandle, source, _filePosition, cancellationToken).ConfigureAwait(false);
+                _filePosition += bytesWritten;
+                source = source.Slice(bytesWritten);
+            } while (!source.IsEmpty);
         }
 
         /// <summary>Provides a reusable ValueTask-backing object for implementing ReadAsync.</summary>
