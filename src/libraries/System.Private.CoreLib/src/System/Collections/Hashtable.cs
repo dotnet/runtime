@@ -262,7 +262,7 @@ namespace System.Collections
         public Hashtable(int capacity, float loadFactor)
         {
             if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             if (!(loadFactor >= 0.1f && loadFactor <= 1.0f))
                 throw new ArgumentOutOfRangeException(nameof(loadFactor), SR.Format(SR.ArgumentOutOfRange_HashtableLoadFactor, .1, 1.0));
 
@@ -271,7 +271,7 @@ namespace System.Collections
 
             double rawsize = capacity / _loadFactor;
             if (rawsize > int.MaxValue)
-                throw new ArgumentException(SR.Arg_HTCapacityOverflow, nameof(capacity));
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_HTCapacityOverflow, ExceptionArgument.capacity);
 
             // Avoid awfully small sizes
             int hashsize = (rawsize > InitialSize) ? HashHelpers.GetPrime((int)rawsize) : InitialSize;
@@ -353,7 +353,7 @@ namespace System.Collections
             : this(d != null ? d.Count : 0, loadFactor, hcp, comparer)
         {
             if (d == null)
-                throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.d, ExceptionResource.ArgumentNull_Dictionary);
 
             IDictionaryEnumerator e = d.GetEnumerator();
             while (e.MoveNext())
@@ -364,7 +364,7 @@ namespace System.Collections
             : this(d != null ? d.Count : 0, loadFactor, equalityComparer)
         {
             if (d == null)
-                throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.d, ExceptionResource.ArgumentNull_Dictionary);
 
             IDictionaryEnumerator e = d.GetEnumerator();
             while (e.MoveNext())
@@ -487,7 +487,7 @@ namespace System.Collections
         {
             if (key == null)
             {
-                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key, ExceptionResource.ArgumentNull_Key);
             }
 
             // Take a snapshot of buckets, in case another thread resizes table
@@ -592,13 +592,13 @@ namespace System.Collections
         public virtual void CopyTo(Array array, int arrayIndex)
         {
             if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Array);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array, ExceptionResource.ArgumentNull_Array);
             if (array.Rank != 1)
-                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported, ExceptionArgument.array);
             if (arrayIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.arrayIndex, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - arrayIndex < Count)
-                throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
 
             CopyEntries(array, arrayIndex);
         }
@@ -652,7 +652,7 @@ namespace System.Collections
             {
                 if (key == null)
                 {
-                    throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key, ExceptionResource.ArgumentNull_Key);
                 }
 
 
@@ -871,7 +871,7 @@ namespace System.Collections
         {
             if (key == null)
             {
-                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key, ExceptionResource.ArgumentNull_Key);
             }
 
             if (_count >= _loadsize)
@@ -984,7 +984,7 @@ namespace System.Collections
             // Then verify that our double hash function (h2, described at top of file)
             // meets the requirements described above. You should never see this assert.
             Debug.Fail("hash table insert failed!  Load factor too high, or our double hashing function is incorrect.");
-            throw new InvalidOperationException(SR.InvalidOperation_HashInsertFailed);
+            ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_HashInsertFailed);
         }
 
         private void putEntry(bucket[] newBuckets, object key, object? nvalue, int hashcode)
@@ -1030,7 +1030,7 @@ namespace System.Collections
         {
             if (key == null)
             {
-                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key, ExceptionResource.ArgumentNull_Key);
             }
 
             Debug.Assert(!_isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
@@ -1088,7 +1088,10 @@ namespace System.Collections
         public static Hashtable Synchronized(Hashtable table)
         {
             if (table == null)
-                throw new ArgumentNullException(nameof(table));
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.table);
+            }
+
             return new SyncHashtable(table);
         }
 
@@ -1096,7 +1099,7 @@ namespace System.Collections
         {
             if (info == null)
             {
-                throw new ArgumentNullException(nameof(info));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
             }
 
             // This is imperfect - it only works well if all other writes are
@@ -1147,7 +1150,7 @@ namespace System.Collections
                 // were serializing it.  That's a race in their code.
                 if (_version != oldVersion)
                 {
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
             }
         }
@@ -1167,7 +1170,7 @@ namespace System.Collections
 
             if (siInfo == null)
             {
-                throw new SerializationException(SR.Serialization_InvalidOnDeser);
+                ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_InvalidOnDeser);
             }
 
             int hashsize = 0;
@@ -1224,21 +1227,21 @@ namespace System.Collections
 
             if (serKeys == null)
             {
-                throw new SerializationException(SR.Serialization_MissingKeys);
+                ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
             }
             if (serValues == null)
             {
-                throw new SerializationException(SR.Serialization_MissingValues);
+                ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingValues);
             }
             if (serKeys.Length != serValues.Length)
             {
-                throw new SerializationException(SR.Serialization_KeyValueDifferentSizes);
+                ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_KeyValueDifferentSizes);
             }
             for (int i = 0; i < serKeys.Length; i++)
             {
                 if (serKeys[i] == null)
                 {
-                    throw new SerializationException(SR.Serialization_NullKey);
+                    ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey); ;
                 }
                 Insert(serKeys[i], serValues[i], true);
             }
@@ -1262,13 +1265,13 @@ namespace System.Collections
             public void CopyTo(Array array, int arrayIndex)
             {
                 if (array == null)
-                    throw new ArgumentNullException(nameof(array));
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
                 if (array.Rank != 1)
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported, ExceptionArgument.array);
                 if (arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.arrayIndex, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
                 if (array.Length - arrayIndex < _hashtable._count)
-                    throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
                 _hashtable.CopyKeys(array, arrayIndex);
             }
 
@@ -1298,13 +1301,13 @@ namespace System.Collections
             public void CopyTo(Array array, int arrayIndex)
             {
                 if (array == null)
-                    throw new ArgumentNullException(nameof(array));
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
                 if (array.Rank != 1)
-                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported, ExceptionArgument.array);
                 if (arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.arrayIndex, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
                 if (array.Length - arrayIndex < _hashtable._count)
-                    throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
                 _hashtable.CopyValues(array, arrayIndex);
             }
 
@@ -1387,7 +1390,7 @@ namespace System.Collections
             {
                 if (key == null)
                 {
-                    throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key, ExceptionResource.ArgumentNull_Key);
                 }
                 return _table.ContainsKey(key);
             }
@@ -1502,7 +1505,7 @@ namespace System.Collections
                 get
                 {
                     if (!_current)
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
                     return _currentKey!;
                 }
             }
@@ -1510,7 +1513,7 @@ namespace System.Collections
             public bool MoveNext()
             {
                 if (_version != _hashtable._version)
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 while (_bucket > 0)
                 {
                     _bucket--;
@@ -1532,7 +1535,7 @@ namespace System.Collections
                 get
                 {
                     if (!_current)
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                     return new DictionaryEntry(_currentKey!, _currentValue);
                 }
             }
@@ -1542,7 +1545,7 @@ namespace System.Collections
                 get
                 {
                     if (!_current)
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
 
                     if (_getObjectRetType == Keys)
                         return _currentKey;
@@ -1558,7 +1561,7 @@ namespace System.Collections
                 get
                 {
                     if (!_current)
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                     return _currentValue;
                 }
             }
@@ -1566,7 +1569,8 @@ namespace System.Collections
             public void Reset()
             {
                 if (_version != _hashtable._version)
-                    throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+
                 _current = false;
                 _bucket = _hashtable._buckets.Length;
                 _currentKey = null;
@@ -1583,7 +1587,7 @@ namespace System.Collections
             {
                 if (hashtable == null)
                 {
-                    throw new ArgumentNullException(nameof(hashtable));
+                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.hashtable);
                 }
 
                 _hashtable = hashtable;

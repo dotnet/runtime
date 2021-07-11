@@ -629,6 +629,8 @@ namespace System
                     return "charIndex";
                 case ExceptionArgument.charCount:
                     return "charCount";
+                case ExceptionArgument.d:
+                    return "d";
                 case ExceptionArgument.s:
                     return "s";
                 case ExceptionArgument.input:
@@ -637,6 +639,10 @@ namespace System
                     return "ownedMemory";
                 case ExceptionArgument.list:
                     return "list";
+                case ExceptionArgument.table:
+                    return "table";
+                case ExceptionArgument.hashtable:
+                    return "hashtable";
                 case ExceptionArgument.index:
                     return "index";
                 case ExceptionArgument.capacity:
@@ -837,9 +843,17 @@ namespace System
                     return SR.Argument_CannotExtractScalar;
                 case ExceptionResource.ArgumentOutOfRange_BiggerThanCollection:
                     return SR.ArgumentOutOfRange_BiggerThanCollection;
+                case ExceptionResource.Serialization_InvalidOnDeser:
+                    return SR.Serialization_InvalidOnDeser;
+                case ExceptionResource.Serialization_KeyValueDifferentSizes:
+                    return SR.Serialization_KeyValueDifferentSizes;
                 case ExceptionResource.Serialization_MissingKeys:
                     return SR.Serialization_MissingKeys;
+                case ExceptionResource.Serialization_MissingValues:
+                    return SR.Serialization_MissingKeys;
                 case ExceptionResource.Serialization_NullKey:
+                    return SR.Serialization_NullKey;
+                case ExceptionResource.Serialization_NullValues:
                     return SR.Serialization_NullKey;
                 case ExceptionResource.NotSupported_KeyCollectionSet:
                     return SR.NotSupported_KeyCollectionSet;
@@ -899,6 +913,10 @@ namespace System
                     return SR.ArgumentException_OtherNotArrayOfCorrectLength;
                 case ExceptionResource.ArgumentNull_Array:
                     return SR.ArgumentNull_Array;
+                case ExceptionResource.ArgumentNull_Dictionary:
+                    return SR.ArgumentNull_Dictionary;
+                case ExceptionResource.ArgumentNull_Key:
+                    return SR.ArgumentNull_Key;
                 case ExceptionResource.ArgumentNull_SafeHandle:
                     return SR.ArgumentNull_SafeHandle;
                 case ExceptionResource.ArgumentOutOfRange_EndIndexStartIndex:
@@ -911,6 +929,8 @@ namespace System
                     return SR.Argument_AddingDuplicate;
                 case ExceptionResource.Argument_InvalidArgumentForComparison:
                     return SR.Argument_InvalidArgumentForComparison;
+                case ExceptionResource.Arg_HTCapacityOverflow:
+                    return SR.Arg_HTCapacityOverflow;
                 case ExceptionResource.Arg_LowerBoundsMustMatch:
                     return SR.Arg_LowerBoundsMustMatch;
                 case ExceptionResource.Arg_MustBeType:
@@ -929,6 +949,8 @@ namespace System
                     return SR.Arg_RanksAndBounds;
                 case ExceptionResource.InvalidOperation_IComparerFailed:
                     return SR.InvalidOperation_IComparerFailed;
+                case ExceptionResource.InvalidOperation_HashInsertFailed:
+                    return SR.InvalidOperation_HashInsertFailed;
                 case ExceptionResource.NotSupported_FixedSizeCollection:
                     return SR.NotSupported_FixedSizeCollection;
                 case ExceptionResource.Rank_MultiDimNotSupported:
@@ -970,10 +992,13 @@ namespace System
         chars,
         charIndex,
         charCount,
+        d,
         s,
         input,
         ownedMemory,
         list,
+        table,
+        hashtable,
         index,
         capacity,
         collection,
@@ -1070,8 +1095,12 @@ namespace System
         Argument_InvalidOffLen,
         Argument_CannotExtractScalar,
         ArgumentOutOfRange_BiggerThanCollection,
+        Serialization_InvalidOnDeser,
+        Serialization_KeyValueDifferentSizes,
         Serialization_MissingKeys,
+        Serialization_MissingValues,
         Serialization_NullKey,
+        Serialization_NullValues,
         NotSupported_KeyCollectionSet,
         NotSupported_ValueCollectionSet,
         InvalidOperation_NullArray,
@@ -1079,6 +1108,7 @@ namespace System
         TaskCompletionSourceT_TrySetException_NullException,
         TaskCompletionSourceT_TrySetException_NoExceptions,
         NotSupported_StringComparison,
+        Arg_HTCapacityOverflow,
         ConcurrentCollection_SyncRoot_NotSupported,
         Task_MultiTaskContinuation_NullTask,
         InvalidOperation_WrongAsyncResultOrEndCalledMultiple,
@@ -1101,6 +1131,8 @@ namespace System
         Task_WaitMulti_NullTask,
         ArgumentException_OtherNotArrayOfCorrectLength,
         ArgumentNull_Array,
+        ArgumentNull_Dictionary,
+        ArgumentNull_Key,
         ArgumentNull_SafeHandle,
         ArgumentOutOfRange_EndIndexStartIndex,
         ArgumentOutOfRange_Enum,
@@ -1116,6 +1148,7 @@ namespace System
         Arg_RankIndices,
         Arg_RanksAndBounds,
         InvalidOperation_IComparerFailed,
+        InvalidOperation_HashInsertFailed,
         NotSupported_FixedSizeCollection,
         Rank_MultiDimNotSupported,
         Arg_TypeNotSupported,
