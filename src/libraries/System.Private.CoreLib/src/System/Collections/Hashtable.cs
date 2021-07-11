@@ -1071,7 +1071,7 @@ namespace System.Collections
 #if TARGET_64BIT
                 bucketNumber = (int)HashHelpers.FastMod((uint)((long)bucketNumber + incr), (uint)_buckets.Length, _fastModMultiplier);
 #else
-                bucketNumber = (int)(((long)bn + incr) % (uint)_buckets.Length);
+                bucketNumber = (int)(((long)bucketNumber + incr) % (uint)_buckets.Length);
 #endif
             } while (b.hash_coll < 0 && ++ntry < _buckets.Length);
         }
