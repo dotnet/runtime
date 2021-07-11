@@ -109,23 +109,35 @@ namespace System.Net.Quic.Tests
             }
         }
 
-        internal Task RunStreamClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, bool bidi, int iterations, int millisecondsTimeout)
+        internal async Task RunStreamClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, bool bidi, int iterations, int millisecondsTimeout)
         {
-            return RunClientServer(
+            byte[] buffer = new byte[1] { 42 };
+
+            await RunClientServer(
                 clientFunction: async connection =>
                 {
                     await using QuicStream stream = bidi ? connection.OpenBidirectionalStream() : connection.OpenUnidirectionalStream();
+                    // Open(Bi|Uni)directionalStream only allocates ID. We will force stream opening
+                    // by Writing there and receiving data on the other side.
+                    await stream.WriteAsync(buffer);
+
                     await clientFunction(stream);
+
                     stream.Shutdown();
                     await stream.ShutdownCompleted();
                 },
                 serverFunction: async connection =>
                 {
                     await using QuicStream stream = await connection.AcceptStreamAsync();
+                    Assert.Equal(1, await stream.ReadAsync(buffer));
+
                     await serverFunction(stream);
+
                     stream.Shutdown();
                     await stream.ShutdownCompleted();
-                }
+                },
+                iterations,
+                millisecondsTimeout
             );
         }
 

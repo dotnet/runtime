@@ -343,19 +343,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new InvalidOperationException(SR.net_quic_reading_notallowed);
             }
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                lock (_state)
-                {
-                    if (_state.ReadState == ReadState.None)
-                    {
-                        _state.ReadState = ReadState.Aborted;
-                    }
-                }
-
-                throw new System.OperationCanceledException(cancellationToken);
-            }
-
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(_state, $"[Stream#{_state.GetHashCode()}] reading into Memory of '{destination.Length}' bytes.");
@@ -395,6 +382,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                             {
                                 completePendingRead = state.ReadState == ReadState.PendingRead;
                                 state.RootedReceiveStream = null;
+                                state.ReceiveUserBuffer = null;
                                 state.ReadState = ReadState.Aborted;
                             }
 
@@ -477,15 +465,29 @@ namespace System.Net.Quic.Implementations.MsQuic
             return originalDestinationLength - destinationBuffer.Length;
         }
 
-        // TODO do we want this to be a synchronization mechanism to cancel a pending read
-        // If so, we need to complete the read here as well.
         internal override void AbortRead(long errorCode)
         {
             ThrowIfDisposed();
 
+            bool shouldComplete = false;
             lock (_state)
             {
-                _state.ReadState = ReadState.Aborted;
+                if (_state.ReadState == ReadState.PendingRead)
+                {
+                    shouldComplete = true;
+                    _state.RootedReceiveStream = null;
+                    _state.ReceiveUserBuffer = null;
+                }
+                if (_state.ReadState < ReadState.ReadsCompleted)
+                {
+                    _state.ReadState = ReadState.Aborted;
+                }
+            }
+
+            if (shouldComplete)
+            {
+                _state.ReceiveResettableCompletionSource.CompleteException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException("Read was aborted")));
             }
 
             StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, errorCode);
@@ -824,6 +826,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             int readLength;
 
+            bool shouldComplete = false;
             lock (state)
             {
                 switch (state.ReadState)
@@ -855,10 +858,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                         // There is a pending ReadAsync().
 
                         state.ReceiveCancellationRegistration.Unregister();
+                        shouldComplete = true;
                         state.RootedReceiveStream = null;
                         state.ReadState = ReadState.None;
 
                         readLength = CopyMsQuicBuffersToUserBuffer(new ReadOnlySpan<QuicBuffer>(receiveEvent.Buffers, (int)receiveEvent.BufferCount), state.ReceiveUserBuffer.Span);
+                        state.ReceiveUserBuffer = null;
                         break;
                     default:
                         Debug.Assert(state.ReadState is ReadState.Aborted or ReadState.ConnectionClosed, $"Unexpected {nameof(ReadState)} '{state.ReadState}' in {nameof(HandleEventRecv)}.");
@@ -870,8 +875,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             // We're completing a pending read.
-            // TODO: only if ReadState.PendingRead??
-            state.ReceiveResettableCompletionSource.Complete(readLength);
+            if (shouldComplete)
+            {
+                state.ReceiveResettableCompletionSource.Complete(readLength);
+            }
 
             // Returning Success when the entire buffer hasn't been consumed will cause MsQuic to disable further receive events until EnableReceive() is called.
             // Returning Continue will cause a second receive event to fire immediately after this returns, but allows MsQuic to clean up its buffers.
@@ -964,12 +971,13 @@ namespace System.Net.Quic.Implementations.MsQuic
                 // This event won't occur within the middle of a receive.
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"[Stream#{state.GetHashCode()}] completing resettable event source.");
 
-                if (state.ReadState == ReadState.None)
+                if (state.ReadState == ReadState.PendingRead)
                 {
                     shouldReadComplete = true;
+                    state.RootedReceiveStream = null;
+                    state.ReceiveUserBuffer = null;
                 }
-
-                if (state.ReadState != ReadState.ConnectionClosed && state.ReadState != ReadState.Aborted)
+                if (state.ReadState < ReadState.ReadsCompleted)
                 {
                     state.ReadState = ReadState.ReadsCompleted;
                 }
@@ -1017,9 +1025,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             bool shouldComplete = false;
             lock (state)
             {
-                if (state.ReadState == ReadState.None)
+                if (state.ReadState == ReadState.PendingRead)
                 {
                     shouldComplete = true;
+                    state.RootedReceiveStream = null;
+                    state.ReceiveUserBuffer = null;
                 }
                 state.ReadState = ReadState.Aborted;
                 state.ReadErrorCode = (long)evt.Data.PeerSendAborted.ErrorCode;
@@ -1047,9 +1057,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     shouldComplete = true;
                     state.RootedReceiveStream = null;
-                    state.ReadState = ReadState.ReadsCompleted;
+                    state.ReceiveUserBuffer = null;
                 }
-                else if (state.ReadState == ReadState.None)
+                if (state.ReadState < ReadState.ReadsCompleted)
                 {
                     state.ReadState = ReadState.ReadsCompleted;
                 }
