@@ -27,19 +27,19 @@ namespace System.Numerics
             {
                 Debug.Assert(modulus != null);
 
-                // Let r = 4^k, with 2^k > m
+                // Let r = (2^32)^(2k), with (2^32)^k > m
                 uint[] r = new uint[modulus.Length * 2 + 1];
                 r[r.Length - 1] = 1;
 
-                // Let mu = 4^k / m
+                // Let mu = r / m
                 _mu = Divide(r, modulus);
                 _modulus = modulus;
 
-                // Allocate memory for quotients once
-                _q1 = new uint[modulus.Length * 2 + 2];
-                _q2 = new uint[modulus.Length * 2 + 1];
-
                 _muLength = ActualLength(_mu);
+
+                // Allocate memory for quotients once
+                _q1 = new uint[_muLength + modulus.Length + 1];
+                _q2 = new uint[_muLength + modulus.Length];
             }
 
             public int Reduce(uint[] value, int length)
@@ -52,17 +52,18 @@ namespace System.Numerics
                 if (length < _modulus.Length)
                     return length;
 
-                // Let q1 = v/2^(k-1) * mu
+                // Let q1 = v/(2^32)^(k-1) * mu
                 int l1 = DivMul(value, length, _mu, _muLength,
                                 _q1, _modulus.Length - 1);
 
-                // Let q2 = q1/2^(k+1) * m
+                // Let q2 = q1/(2^32)^(k+1) * m
                 int l2 = DivMul(_q1, l1, _modulus, _modulus.Length,
                                 _q2, _modulus.Length + 1);
 
-                // Let v = (v - q2) % 2^(k+1) - i*m
+                // Let v = (v - q2) % (2^32)^k
+                // while m <= v: Let v = v - m
                 return SubMod(value, length, _q2, l2,
-                              _modulus, _modulus.Length + 1);
+                              _modulus, _modulus.Length);
             }
 
             private static unsafe int DivMul(uint[] left, int leftLength,
@@ -130,7 +131,7 @@ namespace System.Numerics
 
                 fixed (uint* l = left, r = right, m = modulus)
                 {
-                    SubtractSelf(l, leftLength, r, rightLength);
+                    OverFlowableSubtractSelf(l, leftLength, r, rightLength);
                     leftLength = ActualLength(left, leftLength);
 
                     while (Compare(l, leftLength, m, modulus.Length) >= 0)
@@ -143,6 +144,34 @@ namespace System.Numerics
                 Array.Clear(left, leftLength, left.Length - leftLength);
 
                 return leftLength;
+            }
+
+            private static unsafe void OverFlowableSubtractSelf(uint* left, int leftLength,
+                                                                uint* right, int rightLength)
+            {
+                Debug.Assert(leftLength >= 0);
+                Debug.Assert(rightLength >= 0);
+                Debug.Assert(leftLength >= rightLength);
+
+                // Executes the "grammar-school" algorithm for computing z = a - b.
+                // Same as above, but we're writing the result directly to a and
+                // stop execution, if we're out of b and c is already 0.
+
+                int i = 0;
+                long carry = 0L;
+
+                for (; i < rightLength; i++)
+                {
+                    long digit = (left[i] + carry) - right[i];
+                    left[i] = unchecked((uint)digit);
+                    carry = digit >> 32;
+                }
+                for (; carry != 0 && i < leftLength; i++)
+                {
+                    long digit = left[i] + carry;
+                    left[i] = (uint)digit;
+                    carry = digit >> 32;
+                }
             }
         }
     }
