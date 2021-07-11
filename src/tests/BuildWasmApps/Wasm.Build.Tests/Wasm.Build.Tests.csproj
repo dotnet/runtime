@@ -32,13 +32,6 @@
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Include="*.cs" Exclude="*Tests.cs" />
-
-    <Compile Include="BlazorWasmTests.cs" />
-    <Compile Include="WorkloadTests.cs" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
     <Compile Include="*.cs" Exclude="*Tests.cs" />
 
