@@ -32,21 +32,8 @@
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <!--<ItemGroup Condition="'$(OS)' == 'Windows_NT'">-->
-    <!--<Compile Include="*.cs" Exclude="*Tests.cs" />-->
-
-    <!--<Compile Include="NativeBuildTests.cs" />-->
-    <!--<Compile Include="BlazorWasmTests.cs" Condition="'$(TestUsingWorkloads)' == 'true'" />-->
-    <!--[> <Compile Include="WorkloadTests.cs" Condition="'$(TestUsingWorkloads)' == 'true'" /> <]-->
-    <!--[> add nativebuidltests also, and invariant globalization <]-->
-  <!--</ItemGroup>-->
-
-  <!--<ItemGroup Condition="'$(OS)' != 'Windows_NT'">-->
-    <!--<Compile Include="*.cs" />-->
-  <!--</ItemGroup>-->
-
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
-    <ItemGroup>
+    <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(Version)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(Version)" />
     </ItemGroup>
@@ -74,7 +61,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-     <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
       <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe exec xunit.console.dll $(AssemblyName).dll -xml %XHARNESS_OUT%\testResults.xml</RunScriptCommand>
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>

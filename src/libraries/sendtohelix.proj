@@ -79,7 +79,8 @@
     </ItemGroup>
 
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
-      <_TestValues Include="true;false" />
+      <!--<_TestValues Include="true;false" />-->
+      <_TestValues Include="true" />
 
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestValues.Identity)</AdditionalProperties>

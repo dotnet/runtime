@@ -173,8 +173,6 @@
 
     <HelixCommandPrefixItem Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <HelixCommandPrefixItem Include="TEST_USING_WORKLOADS=true" />
-    <HelixCommandPrefixItem Include="XUnitClassName=$(XUnitClassName)" Condition="'$(XUnitClassName)' != ''" />
-    <HelixCommandPrefixItem Include="XUnitMethodName=$(XUnitMethodName)" Condition="'$(XUnitMethodName)' != ''" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(NeedsDotNetSdk)' == 'true'">
