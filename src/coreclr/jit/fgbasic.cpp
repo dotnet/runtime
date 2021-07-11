@@ -818,8 +818,24 @@ public:
             return false;
         }
         const unsigned argNum = value - SLOT_ARGUMENT;
-        assert(argNum < info->argCnt);
-        return info->inlArgInfo[argNum].argIsInvariant;
+        if (argNum < info->argCnt)
+        {
+            return info->inlArgInfo[argNum].argIsInvariant;
+        }
+        return false;
+    }
+    static bool IsExactArgument(FgSlot value, InlineInfo* info)
+    {
+        if ((info == nullptr) || !IsArgument(value))
+        {
+            return false;
+        }
+        const unsigned argNum = value - SLOT_ARGUMENT;
+        if (argNum < info->argCnt)
+        {
+            return info->inlArgInfo[argNum].argIsExact;
+        }
+        return false;
     }
     static unsigned SlotTypeToArgNum(FgSlot value)
     {
@@ -867,16 +883,15 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     const bool  isForceInline          = (info.compFlags & CORINFO_FLG_FORCEINLINE) != 0;
     const bool  makeInlineObservations = (compInlineResult != nullptr);
     const bool  isInlining             = compIsForInlining();
-    const bool  isPreJit               = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-    const bool  isTier1                = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
     unsigned    retBlocks              = 0;
     int         prefixFlags            = 0;
     bool        preciseScan            = makeInlineObservations && compInlineResult->GetPolicy()->RequiresPreciseScan();
-    const bool  resolveTokens          = preciseScan && (isPreJit || isTier1);
+    const bool  resolveTokens          = preciseScan;
 
     if (makeInlineObservations)
     {
         // Observe force inline state and code size.
+        compInlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, fgHaveProfileData());
         compInlineResult->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
         compInlineResult->NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, codeSize);
 
@@ -1031,7 +1046,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 if (makeInlineObservations)
                 {
                     FgStack::FgSlot slot = pushedStack.Top();
-                    if (FgStack::IsConstantOrConstArg(slot, impInlineInfo))
+                    if (FgStack::IsConstantOrConstArg(slot, impInlineInfo) ||
+                        FgStack::IsExactArgument(slot, impInlineInfo))
                     {
                         compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_EXPR_UN);
                         handled = true; // and keep argument in the pushedStack
@@ -1338,34 +1354,42 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     FgStack::FgSlot arg0 = pushedStack.Top(1);
                     FgStack::FgSlot arg1 = pushedStack.Top(0);
 
-                    if ((FgStack::IsConstant(arg0) && FgStack::IsConstArgument(arg1, impInlineInfo)) ||
-                        (FgStack::IsConstant(arg1) && FgStack::IsConstArgument(arg0, impInlineInfo)) ||
-                        (FgStack::IsConstArgument(arg0, impInlineInfo) &&
-                         FgStack::IsConstArgument(arg1, impInlineInfo)))
+                    // Const op ConstArg -> ConstArg
+                    if (FgStack::IsConstant(arg0) && FgStack::IsConstArgument(arg1, impInlineInfo))
                     {
                         // keep stack unchanged
                         handled = true;
                         compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_EXPR);
                     }
-                    else if ((FgStack::IsConstant(arg0) && FgStack::IsConstant(arg1)) ||
-                             (FgStack::IsConstant(arg1) && FgStack::IsConstant(arg0)))
+                    // ConstArg op Const    -> ConstArg
+                    // ConstArg op ConstArg -> ConstArg
+                    else if (FgStack::IsConstArgument(arg0, impInlineInfo) &&
+                             FgStack::IsConstantOrConstArg(arg1, impInlineInfo))
+                    {
+                        if (FgStack::IsConstant(arg1))
+                        {
+                            pushedStack.Push(arg0);
+                        }
+                        handled = true;
+                        compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_EXPR);
+                    }
+                    // Const op Const -> Const
+                    else if (FgStack::IsConstant(arg0) && FgStack::IsConstant(arg1))
                     {
                         // both are constants, but we're mostly interested in cases where a const arg leads to
                         // a foldable expression.
                         handled = true;
                     }
-                    else if ((FgStack::IsArgument(arg0) == FgStack::IsArgument(arg1)) && (arg0 == arg1))
-                    {
-                        // Both args are the same
-                        handled = true;
-                        compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_EXPR);
-                    }
+                    // Arg op ConstArg
+                    // Arg op Const
                     else if (FgStack::IsArgument(arg0) && FgStack::IsConstantOrConstArg(arg1, impInlineInfo))
                     {
                         // "Arg op CNS" --> keep arg0 in the stack for the next ops
                         handled = true;
                         compInlineResult->Note(InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS);
                     }
+                    // ConstArg op Arg
+                    // Const    op Arg
                     else if (FgStack::IsArgument(arg1) && FgStack::IsConstantOrConstArg(arg0, impInlineInfo))
                     {
                         // "CNS op ARG" --> keep arg1 in the stack for the next ops
@@ -1373,10 +1397,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         handled = true;
                         compInlineResult->Note(InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS);
                     }
-
+                    // X / ConstArg
+                    // X % ConstArg
                     if (FgStack::IsConstArgument(arg1, impInlineInfo))
                     {
-                        // Special case: "X / ConstArg" or "X % ConstArg"
                         if ((opcode == CEE_DIV) || (opcode == CEE_DIV_UN) || (opcode == CEE_REM) ||
                             (opcode == CEE_REM_UN))
                         {

@@ -19073,16 +19073,16 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     //
     if ((pInlineInfo != nullptr) && rootCompiler->fgHaveProfileData() && pInlineInfo->iciBlock->hasProfileWeight())
     {
-        BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
-        BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
-        BasicBlock::weight_t profileFreq    = entryWeight == 0.0f ? 0.0f : callSiteWeight / entryWeight;
+        const BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
+        const BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
+        const BasicBlock::weight_t profileFreq    = entryWeight == 0.0f ? 0.0f : callSiteWeight / entryWeight;
 
         assert(callSiteWeight >= 0);
         assert(entryWeight >= 0);
 
-        BasicBlock::weight_t sufficientSamples = 5000.0f;
+        const BasicBlock::weight_t sufficientSamples = 1000.0f;
 
-        if (!rootCompiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) ||
+        if ((rootCompiler->fgPgoSource != ICorJitInfo::PgoSource::Static) ||
             ((callSiteWeight + entryWeight) > sufficientSamples))
         {
             // Let's not report profiles for methods with insufficient samples during prejitting.
@@ -19240,6 +19240,9 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 pParam->result->NoteFatal(InlineObservation::CALLEE_NO_METHOD_INFO);
                 goto _exit;
             }
+
+            // Profile data allows us to avoid early "too many IL bytes" outs.
+            pParam->result->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, pParam->pThis->fgHaveProfileData());
 
             bool forceInline;
             forceInline = !!(pParam->methAttr & CORINFO_FLG_FORCEINLINE);
@@ -19462,6 +19465,10 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
             return;
         }
     }
+
+    bool isExact              = false;
+    bool isNonNull            = false;
+    inlCurArgInfo->argIsExact = (gtGetClassHandle(curArgVal, &isExact, &isNonNull) != NO_CLASS_HANDLE) && isExact;
 
     // If the arg is a local that is address-taken, we can't safely
     // directly substitute it into the inlinee.

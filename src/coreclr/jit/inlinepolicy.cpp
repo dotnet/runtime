@@ -1334,7 +1334,13 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
         {
             assert(m_IsForceInlineKnown);
             assert(value != 0);
-            m_CodeSize = static_cast<unsigned>(value);
+            m_CodeSize           = static_cast<unsigned>(value);
+            unsigned maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxIL());
+
+            if (m_HasProfile)
+            {
+                maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILProf());
+            }
 
             if (m_IsForceInline)
             {
@@ -1346,7 +1352,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                 // Candidate based on small size
                 SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
             }
-            else if (m_CodeSize <= (unsigned)JitConfig.JitExtDefaultPolicyMaxIL())
+            else if (m_CodeSize <= maxCodeSize)
             {
                 // Candidate, pending profitability evaluation
                 SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
@@ -1363,21 +1369,6 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             if (!m_IsForceInline && m_IsNoReturn && (value == 1))
             {
                 SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
-            }
-            else if (!m_IsForceInline)
-            {
-                unsigned bbLimit = (unsigned)JitConfig.JitExtDefaultPolicyMaxBB();
-                if (m_IsPrejitRoot)
-                {
-                    // We're not able to recognize arg-specific foldable branches
-                    // in prejit-root mode.
-                    bbLimit += 5 + m_Switch * 10;
-                }
-                bbLimit += m_FoldableBranch * 2 + m_FoldableSwitch * 10;
-                if ((unsigned)value > bbLimit)
-                {
-                    SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
-                }
             }
             break;
         }
@@ -1426,13 +1417,13 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_ReturnsStructByValue)
     {
         // For structs-passed-by-value we might avoid expensive copy operations if we inline.
-        multiplier += 2.0;
+        multiplier += 1.5;
         JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
     }
     else if (m_ArgIsStructByValue > 0)
     {
         // Same here
-        multiplier += 2.0;
+        multiplier += 1.5;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
                 multiplier);
     }
@@ -1514,7 +1505,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_Intrinsic > 0)
     {
         // In most cases such intrinsics are lowered as single CPU instructions
-        multiplier += 1.0 + m_Intrinsic * 0.2;
+        multiplier += 1.0 + m_Intrinsic * 0.3;
         JITDUMP("\nInline has %d intrinsics.  Multiplier increased to %g.", m_Intrinsic, multiplier);
     }
 
@@ -1541,7 +1532,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //
         //  int Caller(string s) => Callee(s); // String is 'exact' (sealed)
         //
-        multiplier += 2.5;
+        multiplier += 2.0;
         JITDUMP("\nCallsite passes %d arguments of exact classes while callee accepts non-exact ones.  Multiplier "
                 "increased to %g.",
                 m_ArgIsExactClsSigIsNot, multiplier);
@@ -1561,7 +1552,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_FoldableExpr > 0)
     {
         // E.g. add/mul/ceq, etc. over constant/constant arguments
-        multiplier += 1.0 + m_FoldableExpr;
+        multiplier += m_FoldableExpr;
         JITDUMP("\nInline has %d foldable binary expressions.  Multiplier increased to %g.", m_FoldableExpr,
                 multiplier);
     }
@@ -1569,7 +1560,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_FoldableExprUn > 0)
     {
         // E.g. casts, negations, etc. over constants/constant arguments
-        multiplier += m_FoldableExprUn;
+        multiplier += m_FoldableExprUn * 0.5;
         JITDUMP("\nInline has %d foldable unary expressions.  Multiplier increased to %g.", m_FoldableExprUn,
                 multiplier);
     }
@@ -1645,21 +1636,22 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_FoldableSwitch > 0)
     {
-        multiplier += m_FoldableSwitch * 5.0;
-        JITDUMP("\nInline candidate has %d foldable switches.  Multiplier increased to %g.", m_FoldableSwitch, multiplier);
+        multiplier += 6.0;
+        JITDUMP("\nInline candidate has %d foldable switches.  Multiplier increased to %g.", m_FoldableSwitch,
+                multiplier);
     }
     else if (m_Switch > 0)
     {
         if (m_IsPrejitRoot)
         {
             // Assume the switches can be foldable in PrejitRoot mode.
-            multiplier += m_Switch * 5.0;
+            multiplier += 6.0;
             JITDUMP("\nPrejit root candidate has %d switches.  Multiplier increased to %g.", m_Switch, multiplier);
         }
         else
         {
             // TODO: Investigate cases where it makes sense to inline non-foldable switches
-            multiplier = 0;
+            multiplier = 0.0;
             JITDUMP("\nInline candidate has %d switches.  Multiplier limited to %g.", m_Switch, multiplier);
         }
     }
@@ -1685,17 +1677,16 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         {
             multiplier *= min(m_ProfileFrequency, 1.0) * profileScale;
         }
-        JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
+        JITDUMP("\nCallsite has profile data: %g.  Multiplier limited to %g.", m_ProfileFrequency, multiplier);
     }
 
-    if (JitConfig.JitExtDefaultPolicyMaxLclStep() > 0)
+    // Slow down if there are already too many locals
+    if (m_RootCompiler->lvaTableCnt > 50)
     {
-        const double lclLimitStep = JitConfig.JitMaxLocalsToTrack() / (double)JitConfig.JitExtDefaultPolicyMaxLclStep();
-        if (m_RootCompiler->lvaTableCnt > lclLimitStep)
-        {
-            multiplier /= (m_RootCompiler->lvaTableCnt / lclLimitStep);
-            JITDUMP("\nCaller has %d locals.  Multiplier decreased to %g.", m_RootCompiler->lvaTableCnt, multiplier);
-        }
+        // E.g. MaxLocalsToTrack = 1024 and lvaTableCnt = 512 -> multiplier *= 0.5;
+        const double lclFullness = min(1.0, (double)m_RootCompiler->lvaTableCnt / JitConfig.JitMaxLocalsToTrack());
+        multiplier *= (1.0 - lclFullness);
+        JITDUMP("\nCaller has %d locals.  Multiplier decreased to %g.", m_RootCompiler->lvaTableCnt, multiplier);
     }
 
     if (m_BackwardJump)
