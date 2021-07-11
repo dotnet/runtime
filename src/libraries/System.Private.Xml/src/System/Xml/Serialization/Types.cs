@@ -1430,7 +1430,7 @@ namespace System.Xml.Serialization
             {
                 if (parent.Namespaces != null)
                 {
-                    if (parent.Namespaces.Namespaces.TryGetValue(ns, out string? wsdlNs) && wsdlNs != null)
+                    if (parent.Namespaces.TryLookupNamespace(ns, out string? wsdlNs) && wsdlNs != null)
                     {
                         ns = wsdlNs;
                         break;
