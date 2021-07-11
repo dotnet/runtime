@@ -554,6 +554,7 @@
     </PropertyGroup>
     <ItemGroup Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsOSX)' == 'true'">
       <MonoAOTCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
+      <MonoAOTCMakeArgs Include="-DREAL_TARGET_OS=$(RealTargetOS.ToLowerInvariant())" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(TargetOS)' == 'Linux' and '$(Platform)' == 'arm64'">

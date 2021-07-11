@@ -15,7 +15,7 @@
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+tvos+'))">$(MonoAotTargets);tvOSSimulator-x64;tvOSSimulator-arm64;tvOS-arm64</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);iOSSimulator-x64;iOSSimulator-arm64;iOSSimulator-x86;iOS-arm64;iOS-arm</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+maccatalyst+'))">$(MonoAotTargets);MacCatalyst-x64;MacCatalyst-arm64</MonoAotTargets>
-    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+osx+'))">$(MonoAotTargets);osx-arm64</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+osx+'))">$(MonoAotTargets);osx-x64;osx-arm64</MonoAotTargets>
   </PropertyGroup>
 
   <ItemGroup>
