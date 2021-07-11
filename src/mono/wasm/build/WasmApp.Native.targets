@@ -105,6 +105,9 @@
 
       <!--<EmscriptenEnvVars Include="PYTHONPATH=$(_EmscriptenPython)$(_PathSeparator)$([MSBuild]::Escape($(PYTHONPATH)))" />-->
     </ItemGroup>
+
+    <Exec Command="python3 --version; which python3; python --version; which python" IgnoreExitCode="true" />
+    <Exec Command="python3 --version; where python3; python --version; where python" IgnoreExitCode="true" />
   </Target>
 
   <Target Name="_SetWasmBuildNativeDefaults">

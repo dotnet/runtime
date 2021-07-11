@@ -327,7 +327,7 @@
       <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
     </ItemGroup>
 
-    <Message Condition="'$(TargetOS)' == 'Browser'" Importance="High" Text="Using emsdk: $(EmSdkDir)" />
+    <Message Condition="'$(NeedsEMSDK)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDir)" />
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(BUILD_BUILDID)' != ''">
       <HelixPostCommands Condition="'$(TargetsWindows)' == 'true'">
@@ -440,7 +440,8 @@
 
   <Target Name="PrintHelixQueues">
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
-    <Message Importance="High" Text="TestUsingWorkloads: $(TestUsingWorkloads)" />
+    <Message Condition="'$(Scenario)' == 'BuildWasmApps'" Importance="High"
+             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads)" />
   </Target>
 
   <Target Name="PrintBuildTargetFramework">
