@@ -36,6 +36,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55242", TestPlatforms.Linux)]
         public async Task AcceptStream_ConnectionAborted_ByClient_Throws()
         {
             const int ExpectedErrorCode = 1234;
