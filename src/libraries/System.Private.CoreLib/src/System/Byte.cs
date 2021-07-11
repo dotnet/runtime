@@ -313,11 +313,11 @@ namespace System
             => (byte)BitOperations.PopCount(value);
 
         [RequiresPreviewFeatures]
-        static byte IBinaryInteger<byte>.RotateLeft(byte value, byte rotateAmount)
+        static byte IBinaryInteger<byte>.RotateLeft(byte value, int rotateAmount)
             => (byte)((value << (rotateAmount & 7)) | (value >> ((8 - rotateAmount) & 7)));
 
         [RequiresPreviewFeatures]
-        static byte IBinaryInteger<byte>.RotateRight(byte value, byte rotateAmount)
+        static byte IBinaryInteger<byte>.RotateRight(byte value, int rotateAmount)
             => (byte)((value >> (rotateAmount & 7)) | (value << ((8 - rotateAmount) & 7)));
 
         [RequiresPreviewFeatures]
@@ -382,11 +382,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static byte IDecrementOperators<byte>.operator --(byte value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked byte IDecrementOperators<byte>.operator --(byte value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -418,11 +418,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static byte IIncrementOperators<byte>.operator ++(byte value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked byte IIncrementOperators<byte>.operator ++(byte value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue
