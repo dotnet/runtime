@@ -82,7 +82,7 @@
       <_TestValues Include="true;false" />
 
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(TestValues.Identity)</AdditionalProperties>
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestValues.Identity)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BuildWasmAppsProjectsToBuild>
     </ItemGroup>
