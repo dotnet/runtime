@@ -52,6 +52,7 @@ namespace System.Net.Quic
     }
     public sealed partial class QuicListener : System.IDisposable
     {
+        public delegate System.Threading.Tasks.ValueTask<System.Net.Security.SslServerAuthenticationOptions> ServerOptionsSelectionCallback(object sender, System.Net.Security.SslClientHelloInfo clientHelloInfo, object? state, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
         public QuicListener(System.Net.IPEndPoint listenEndPoint, System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions) { }
         public QuicListener(System.Net.Quic.Implementations.QuicImplementationProvider implementationProvider, System.Net.IPEndPoint listenEndPoint, System.Net.Security.SslServerAuthenticationOptions sslServerAuthenticationOptions) { }
         public QuicListener(System.Net.Quic.Implementations.QuicImplementationProvider implementationProvider, System.Net.Quic.QuicListenerOptions options) { }
@@ -66,6 +67,8 @@ namespace System.Net.Quic
         public int ListenBacklog { get { throw null; } set { } }
         public System.Net.IPEndPoint? ListenEndPoint { get { throw null; } set { } }
         public System.Net.Security.SslServerAuthenticationOptions? ServerAuthenticationOptions { get { throw null; } set { } }
+        public System.Net.Quic.QuicListener.ServerOptionsSelectionCallback? ServerOptionsSelectionCallback { get { throw null; } set { } }
+        public object? ServerOptionsSelectionCallbackState { get { throw null; } set { } }
     }
     public partial class QuicOperationAbortedException : System.Net.Quic.QuicException
     {

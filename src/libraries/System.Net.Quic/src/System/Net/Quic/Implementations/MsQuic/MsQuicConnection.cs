@@ -39,6 +39,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private bool _remoteCertificateRequired;
         private X509RevocationMode _revocationMode = X509RevocationMode.Offline;
         private RemoteCertificateValidationCallback? _remoteCertificateValidationCallback;
+        private string? _targetHost;
 
         internal sealed class State
         {
@@ -126,7 +127,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // constructor for inbound connections
-        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle, bool remoteCertificateRequired = false, X509RevocationMode revocationMode = X509RevocationMode.Offline, RemoteCertificateValidationCallback? remoteCertificateValidationCallback = null)
+        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle, bool remoteCertificateRequired = false, X509RevocationMode revocationMode = X509RevocationMode.Offline, RemoteCertificateValidationCallback? remoteCertificateValidationCallback = null, ServerCertificateSelectionCallback? serverCertificateSelectionCallback = null)
         {
             _state.Handle = handle;
             _state.StateGCHandle = GCHandle.Alloc(_state);
@@ -177,6 +178,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 _revocationMode = options.ClientAuthenticationOptions.CertificateRevocationCheckMode;
                 _remoteCertificateValidationCallback = options.ClientAuthenticationOptions.RemoteCertificateValidationCallback;
+                _targetHost = options.ClientAuthenticationOptions.TargetHost;
             }
 
             _state.StateGCHandle = GCHandle.Alloc(_state);
@@ -536,10 +538,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new Exception($"{nameof(ConnectAsync)} must not be called on a connection obtained from a listener.");
             }
 
-            (string address, int port) = _remoteEndPoint switch
+            string? targetHost = _targetHost;
+            int port = _remoteEndPoint switch
             {
-                DnsEndPoint dnsEp => (dnsEp.Host, dnsEp.Port),
-                IPEndPoint ipEp => (ipEp.Address.ToString(), ipEp.Port),
+                DnsEndPoint dnsEp => dnsEp.Port,
+                IPEndPoint ipEp => ipEp.Port,
                 _ => throw new Exception($"Unsupported remote endpoint type '{_remoteEndPoint.GetType()}'.")
             };
 
@@ -554,13 +557,34 @@ namespace System.Net.Quic.Implementations.MsQuic
             Debug.Assert(_state.StateGCHandle.IsAllocated);
 
             _state.Connection = this;
+            uint status;
+            if (_remoteEndPoint is IPEndPoint)
+            {
+                SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet((IPEndPoint)_remoteEndPoint);
+                unsafe
+                {
+                    status = MsQuicApi.Api.SetParamDelegate(_state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, (uint)sizeof(SOCKADDR_INET), (byte*)&address);
+                    QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");
+                }
+
+                if (targetHost == null)
+                {
+                    targetHost = ((IPEndPoint)_remoteEndPoint).Address.ToString();
+                }
+            }
+            else if (targetHost == null)
+            {
+                targetHost = ((DnsEndPoint)_remoteEndPoint).Host;
+            }
+
+
             try
             {
-                uint status = MsQuicApi.Api.ConnectionStartDelegate(
+                status = MsQuicApi.Api.ConnectionStartDelegate(
                     _state.Handle,
                     _configuration,
                     af,
-                    address,
+                    targetHost,
                     (ushort)port);
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");

@@ -27,6 +27,9 @@ namespace System.Net.Quic.Tests
         public X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
         public X509Certificate2 ClientCertificate = System.Net.Test.Common.Configuration.Certificates.GetClientCertificate();
 
+        public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
+        public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
+
         public bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
         {
             Assert.Equal(ServerCertificate.GetCertHash(), certificate?.GetCertHash());
@@ -47,7 +50,8 @@ namespace System.Net.Quic.Tests
             return new SslClientAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                RemoteCertificateValidationCallback = RemoteCertificateValidationCallback
+                RemoteCertificateValidationCallback = RemoteCertificateValidationCallback,
+                TargetHost = "localhost"
             };
         }
 

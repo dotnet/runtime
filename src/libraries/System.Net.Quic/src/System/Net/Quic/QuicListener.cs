@@ -12,6 +12,8 @@ namespace System.Net.Quic
     {
         private readonly QuicListenerProvider _provider;
 
+        public delegate ValueTask<SslServerAuthenticationOptions> ServerOptionsSelectionCallback(object sender, SslClientHelloInfo clientHelloInfo, object? state, CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Create a QUIC listener.
         /// </summary>
