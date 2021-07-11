@@ -19069,13 +19069,16 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     inlineResult->NoteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
     inlineResult->NoteInt(InlineObservation::CALLSITE_WEIGHT, (int)(weight));
 
+    bool   hasProfile  = false;
+    double profileFreq = 0.0;
+
     // If the call site has profile data, report the relative frequency of the site.
     //
     if ((pInlineInfo != nullptr) && rootCompiler->fgHaveProfileData() && pInlineInfo->iciBlock->hasProfileWeight())
     {
         const BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
         const BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
-        const BasicBlock::weight_t profileFreq    = entryWeight == 0.0f ? 0.0f : callSiteWeight / entryWeight;
+        profileFreq                               = entryWeight == 0.0f ? 0.0 : callSiteWeight / entryWeight;
 
         assert(callSiteWeight >= 0);
         assert(entryWeight >= 0);
@@ -19086,16 +19089,19 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
             ((callSiteWeight + entryWeight) > sufficientSamples))
         {
             // Let's not report profiles for methods with insufficient samples during prejitting.
-            inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
+            hasProfile = true;
             inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, profileFreq);
         }
     }
     else if ((pInlineInfo == nullptr) && rootCompiler->fgHaveProfileData())
     {
         // Simulate a hot callsite for PrejitRoot mode.
-        inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
-        inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, 1.0);
+        hasProfile  = true;
+        profileFreq = 1.0;
     }
+
+    inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, hasProfile);
+    inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, profileFreq);
 }
 
 /*****************************************************************************
