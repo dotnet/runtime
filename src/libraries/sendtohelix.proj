@@ -68,12 +68,7 @@
 
     <ItemGroup>
       <_Scenarios Include="$(_Scenarios.Split(','))" />
-      <_Scenarios AdditionalPropertiesFile="$(RepositoryEngineeringDir)\testing\scenarios\%(Identity).targets" />
     </ItemGroup>
-
-    <ReadLinesFromFile File="%(_Scenarios.AdditionalPropertiesFile)" Condition="Exists(%(_Scenarios.AdditionalPropertiesFile))">
-      <Output TaskParameter="Lines" ItemName="%(_Scenarios.Identity)_AdditionalProperties" />
-    </ReadLinesFromFile>
 
     <ItemGroup>
       <!-- MSBuild creates a new instance of the project for each %(_Scenarios.Identity) and can build them in parallel. -->
@@ -88,7 +83,6 @@
 
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=true</AdditionalProperties>
-        <AdditionalProperties>%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);%(buildwasmapps_AdditionalProperties.Identity)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BuildWasmAppsProjectsToBuild>
     </ItemGroup>

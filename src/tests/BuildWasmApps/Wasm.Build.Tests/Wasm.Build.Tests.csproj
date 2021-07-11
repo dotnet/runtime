@@ -8,7 +8,7 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <TestFramework>xunit</TestFramework>
     <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
-    <EnableDefaultItems>false</EnableDefaultItems>
+    <EnableDefaultItems>true</EnableDefaultItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">TEST_DEBUG_CONFIG_ALSO</DefineConstants>
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
@@ -32,18 +32,18 @@
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-    <Compile Include="*.cs" Exclude="*Tests.cs" />
+  <!--<ItemGroup Condition="'$(OS)' == 'Windows_NT'">-->
+    <!--<Compile Include="*.cs" Exclude="*Tests.cs" />-->
 
-    <Compile Include="NativeBuildTests.cs" />
-    <Compile Include="BlazorWasmTests.cs" Condition="'$(TestUsingWorkloads)' == 'true'" />
-    <!-- <Compile Include="WorkloadTests.cs" Condition="'$(TestUsingWorkloads)' == 'true'" /> -->
-    <!-- add nativebuidltests also, and invariant globalization -->
-  </ItemGroup>
+    <!--<Compile Include="NativeBuildTests.cs" />-->
+    <!--<Compile Include="BlazorWasmTests.cs" Condition="'$(TestUsingWorkloads)' == 'true'" />-->
+    <!--[> <Compile Include="WorkloadTests.cs" Condition="'$(TestUsingWorkloads)' == 'true'" /> <]-->
+    <!--[> add nativebuidltests also, and invariant globalization <]-->
+  <!--</ItemGroup>-->
 
-  <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-    <Compile Include="*.cs" />
-  </ItemGroup>
+  <!--<ItemGroup Condition="'$(OS)' != 'Windows_NT'">-->
+    <!--<Compile Include="*.cs" />-->
+  <!--</ItemGroup>-->
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
     <ItemGroup>
@@ -74,10 +74,13 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
+     <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
       <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe exec xunit.console.dll $(AssemblyName).dll -xml %XHARNESS_OUT%\testResults.xml</RunScriptCommand>
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
+
+      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24HELIX_XUNIT_ARGS</RunScriptCommand>
+      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">$(RunScriptCommand) %HELIX_XUNIT_ARGS%</RunScriptCommand>
 
       <RunScriptCommand Condition="'$(XUnitMethodName)' != ''">$(RunScriptCommand) -method $(XUnitMethodName)</RunScriptCommand>
       <RunScriptCommand Condition="'$(XUnitClassName)' != ''">$(RunScriptCommand) -class $(XUnitClassName)</RunScriptCommand>

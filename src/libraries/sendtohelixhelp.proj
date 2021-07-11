@@ -52,6 +52,8 @@
     <TestRunNamePrefix Condition="'$(TestRunNamePrefixSuffix)' != ''">$(TestRunNamePrefix)$(TestRunNamePrefixSuffix)-</TestRunNamePrefix>
     <TestRunNamePrefix Condition="'$(Scenario)' != ''">$(TestRunNamePrefix)$(Scenario)-</TestRunNamePrefix>
 
+    <HelixAdditionalPropertiesFile>$(RepositoryEngineeringDir)\testing\scenarios\$(Scenario).targets</HelixAdditionalPropertiesFile>
+
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
     <NeedsToBuildWasmAppsOnHelix Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == '' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsToBuildWasmAppsOnHelix>
     <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
@@ -365,6 +367,10 @@
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" />
     </ItemGroup>
 
+    <ReadLinesFromFile File="$(HelixAdditionalPropertiesFile)" Condition="Exists($(HelixAdditionalPropertiesFile))">
+      <Output TaskParameter="Lines" ItemName="BuildWasmApps_PerJobList" />
+    </ReadLinesFromFile>
+
     <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'"
@@ -377,8 +383,22 @@
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Browser.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
       <_WorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
 
-      <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
+      <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')" Condition="'$(Scenario)' != 'BuildWasmApps'">
         <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_BuildWasmAppsPayloadArchive>@(_WorkItem)</_BuildWasmAppsPayloadArchive>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList)">
+        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <PreCommand Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class Wasm.Build.Tests.%(Identity)&quot;</PreCommand>
+        <PreCommand Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class Wasm.Build.Tests.%(Identity)&quot;</PreCommand>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
