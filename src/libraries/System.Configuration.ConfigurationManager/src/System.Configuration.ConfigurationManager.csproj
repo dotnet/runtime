@@ -98,6 +98,7 @@
     <Compile Include="System\Configuration\ExeContext.cs" />
     <Compile Include="System\Configuration\FactoryId.cs" />
     <Compile Include="System\Configuration\FactoryRecord.cs" />
+    <Compile Include="System\Configuration\FipsAwareEncryptedXml.cs" />
     <Compile Include="System\Configuration\GenericEnumConverter.cs" />
     <Compile Include="System\Configuration\HandlerBase.cs" />
     <Compile Include="System\Configuration\IApplicationSettingsProvider.cs" />
@@ -286,6 +287,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.ProtectedData\src\System.Security.Cryptography.ProtectedData.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Xml\src\System.Security.Cryptography.Xml.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
