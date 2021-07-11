@@ -20,45 +20,45 @@ namespace Wasm.Build.Tests
                 .WithRunHosts(host)
                 .UnwrapItemsAsArrays();
 
-        [Theory]
-        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        public void TopLevelMain(BuildArgs buildArgs, RunHost host, string id)
-            => TestMain("top_level",
-                    @"System.Console.WriteLine(""Hello, World!""); return await System.Threading.Tasks.Task.FromResult(42);",
-                    buildArgs, host, id);
+        // [Theory]
+        // [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
+        // [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
+        // public void TopLevelMain(BuildArgs buildArgs, RunHost host, string id)
+        //     => TestMain("top_level",
+        //             @"System.Console.WriteLine(""Hello, World!""); return await System.Threading.Tasks.Task.FromResult(42);",
+        //             buildArgs, host, id);
 
-        [Theory]
-        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        public void AsyncMain(BuildArgs buildArgs, RunHost host, string id)
-            => TestMain("async_main", @"
-            using System;
-            using System.Threading.Tasks;
+        // [Theory]
+        // [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
+        // [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
+        // public void AsyncMain(BuildArgs buildArgs, RunHost host, string id)
+        //     => TestMain("async_main", @"
+        //     using System;
+        //     using System.Threading.Tasks;
 
-            public class TestClass {
-                public static async Task<int> Main()
-                {
-                    Console.WriteLine(""Hello, World!"");
-                    return await Task.FromResult(42);
-                }
-            }", buildArgs, host, id);
+        //     public class TestClass {
+        //         public static async Task<int> Main()
+        //         {
+        //             Console.WriteLine(""Hello, World!"");
+        //             return await Task.FromResult(42);
+        //         }
+        //     }", buildArgs, host, id);
 
-        [Theory]
-        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
-        [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
-        public void NonAsyncMain(BuildArgs buildArgs, RunHost host, string id)
-            => TestMain("non_async_main", @"
-                using System;
-                using System.Threading.Tasks;
+        // [Theory]
+        // [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true, RunHost.All })]
+        // [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false, RunHost.All })]
+        // public void NonAsyncMain(BuildArgs buildArgs, RunHost host, string id)
+        //     => TestMain("non_async_main", @"
+        //         using System;
+        //         using System.Threading.Tasks;
 
-                public class TestClass {
-                    public static int Main()
-                    {
-                        Console.WriteLine(""Hello, World!"");
-                        return 42;
-                    }
-                }", buildArgs, host, id);
+        //         public class TestClass {
+        //             public static int Main()
+        //             {
+        //                 Console.WriteLine(""Hello, World!"");
+        //                 return 42;
+        //             }
+        //         }", buildArgs, host, id);
 
         private static string s_bug49588_ProgramCS = @"
             using System;
