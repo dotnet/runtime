@@ -108,7 +108,7 @@
     <NeedsDotNetSdk Condition="'$(NeedsWorkload)' != 'true'">true</NeedsDotNetSdk>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'true'">
+  <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(WindowsShell)' != 'true'">
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
   </ItemGroup>
@@ -397,8 +397,8 @@
     <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
       <HelixWorkItem Include="@(BuildWasmApps_PerJobList)">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
-        <PreCommand Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class Wasm.Build.Tests.%(Identity)&quot;</PreCommand>
-        <PreCommand Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class Wasm.Build.Tests.%(Identity)&quot;</PreCommand>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class Wasm.Build.Tests.%(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class Wasm.Build.Tests.%(Identity)&quot;</PreCommands>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
