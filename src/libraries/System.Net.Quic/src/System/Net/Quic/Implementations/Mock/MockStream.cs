@@ -171,7 +171,16 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal override void AbortRead(long errorCode)
         {
-            throw new NotImplementedException();
+            if (_isInitiator)
+            {
+                _streamState._outboundErrorCode = errorCode;
+            }
+            else
+            {
+                _streamState._inboundErrorCode = errorCode;
+            }
+
+            ReadStreamBuffer?.AbortRead();
         }
 
         internal override void AbortWrite(long errorCode)

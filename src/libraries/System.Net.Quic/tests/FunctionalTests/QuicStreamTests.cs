@@ -408,32 +408,116 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        public async Task Read_StreamAborted_Throws()
+        public async Task Read_WriteAborted_Throws()
         {
             const int ExpectedErrorCode = 0xfffffff;
 
-            await Task.Run(async () =>
-            {
-                using QuicListener listener = CreateQuicListener();
-                ValueTask<QuicConnection> serverConnectionTask = listener.AcceptConnectionAsync();
+            using SemaphoreSlim sem = new SemaphoreSlim(0);
 
-                using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
-                await clientConnection.ConnectAsync();
+            await RunBidirectionalClientServer(
+                async clientStream =>
+                {
+                    await clientStream.WriteAsync(new byte[1]);
 
-                using QuicConnection serverConnection = await serverConnectionTask;
+                    await sem.WaitAsync();
+                    clientStream.AbortWrite(ExpectedErrorCode);
+                },
+                async serverStream =>
+                {
+                    int received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(1, received);
 
-                await using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
-                await clientStream.WriteAsync(new byte[1]);
+                    sem.Release();
 
-                await using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
-                await serverStream.ReadAsync(new byte[1]);
+                    byte[] buffer = new byte[100];
+                    QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
+                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+                });
+        }
 
-                clientStream.AbortWrite(ExpectedErrorCode);
+        [Fact]
+        public async Task Read_SynchronousCompletion_Success()
+        {
+            using SemaphoreSlim sem = new SemaphoreSlim(0);
 
-                byte[] buffer = new byte[100];
-                QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
-                Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-            }).WaitAsync(TimeSpan.FromSeconds(15));
+            await RunBidirectionalClientServer(
+                async clientStream =>
+                {
+                    await clientStream.WriteAsync(new byte[1]);
+                    sem.Release();
+                    clientStream.Shutdown();
+                    sem.Release();
+                },
+                async serverStream =>
+                {
+                    await sem.WaitAsync();
+                    await Task.Delay(1000);
+
+                    ValueTask<int> task = serverStream.ReadAsync(new byte[1]);
+                    Assert.True(task.IsCompleted);
+
+                    int received = await task;
+                    Assert.Equal(1, received);
+
+                    await sem.WaitAsync();
+                    await Task.Delay(1000);
+
+                    task = serverStream.ReadAsync(new byte[1]);
+                    Assert.True(task.IsCompleted);
+
+                    received = await task;
+                    Assert.Equal(0, received);
+                });
+        }
+
+        [Fact]
+        public async Task ReadOutstanding_ReadAborted_Throws()
+        {
+            const int ExpectedErrorCode = 0xfffffff;
+
+            using SemaphoreSlim sem = new SemaphoreSlim(0);
+
+            await RunBidirectionalClientServer(
+                async clientStream =>
+                {
+                    await sem.WaitAsync();
+                },
+                async serverStream =>
+                {
+                    Task exTask = Assert.ThrowsAsync<QuicOperationAbortedException>(() => serverStream.ReadAsync(new byte[1]).AsTask());
+
+                    Assert.False(exTask.IsCompleted);
+
+                    serverStream.AbortRead(ExpectedErrorCode);
+
+                    await exTask;
+
+                    sem.Release();
+                });
+        }
+
+        [Fact]
+        public async Task Read_ConcurrentReads_Throws()
+        {
+            using SemaphoreSlim sem = new SemaphoreSlim(0);
+
+            await RunBidirectionalClientServer(
+                async clientStream =>
+                {
+                    await sem.WaitAsync();
+                },
+                async serverStream =>
+                {
+                    ValueTask<int> readTask = serverStream.ReadAsync(new byte[1]);
+                    Assert.False(readTask.IsCompleted);
+
+                    await Assert.ThrowsAsync<InvalidOperationException>(async () => await serverStream.ReadAsync(new byte[1]));
+
+                    sem.Release();
+
+                    int res = await readTask;
+                    Assert.Equal(0, res);
+                });
         }
 
         [Fact]

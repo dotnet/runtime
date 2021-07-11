@@ -81,22 +81,19 @@ namespace System.Net.Quic.Tests
         {
             using QuicListener listener = CreateQuicListener();
 
-            var serverFinished = new ManualResetEventSlim();
-            var clientFinished = new ManualResetEventSlim();
+            using var serverFinished = new SemaphoreSlim(0);
+            using var clientFinished = new SemaphoreSlim(0);
 
             for (int i = 0; i < iterations; ++i)
             {
-                serverFinished.Reset();
-                clientFinished.Reset();
-
                 await new[]
                 {
                     Task.Run(async () =>
                     {
                         using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
                         await serverFunction(serverConnection);
-                        serverFinished.Set();
-                        clientFinished.Wait();
+                        serverFinished.Release();
+                        await clientFinished.WaitAsync();
                         await serverConnection.CloseAsync(0);
                     }),
                     Task.Run(async () =>
@@ -104,13 +101,39 @@ namespace System.Net.Quic.Tests
                         using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
                         await clientConnection.ConnectAsync();
                         await clientFunction(clientConnection);
-                        clientFinished.Set();
-                        serverFinished.Wait();
+                        clientFinished.Release();
+                        await serverFinished.WaitAsync();
                         await clientConnection.CloseAsync(0);
                     })
                 }.WhenAllOrAnyFailed(millisecondsTimeout);
             }
         }
+
+        internal Task RunStreamClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, bool bidi, int iterations, int millisecondsTimeout)
+        {
+            return RunClientServer(
+                clientFunction: async connection =>
+                {
+                    await using QuicStream stream = bidi ? connection.OpenBidirectionalStream() : connection.OpenUnidirectionalStream();
+                    await clientFunction(stream);
+                    stream.Shutdown();
+                    await stream.ShutdownCompleted();
+                },
+                serverFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await serverFunction(stream);
+                    stream.Shutdown();
+                    await stream.ShutdownCompleted();
+                }
+            );
+        }
+
+        internal Task RunBidirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
+            => RunStreamClientServer(clientFunction, serverFunction, bidi: true, iterations, millisecondsTimeout);
+
+        internal Task RunUnirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
+            => RunStreamClientServer(clientFunction, serverFunction, bidi: false, iterations, millisecondsTimeout);
 
         internal static async Task<int> ReadAll(QuicStream stream, byte[] buffer)
         {
