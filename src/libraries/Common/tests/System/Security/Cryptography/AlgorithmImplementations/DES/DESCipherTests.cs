@@ -541,20 +541,23 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
                 liveEncryptBytes = DESEncryptDirectKey(des, key, iv, plainBytes);
                 liveDecryptBytes = DESDecryptDirectKey(des, key, iv, cipherBytes);
 
-                if (cipherMode == CipherMode.ECB)
+                if (DESFactory.OneShotSupported)
                 {
-                    liveOneShotDecryptBytes = des.DecryptEcb(cipherBytes, paddingMode);
-                    liveOneShotEncryptBytes = des.EncryptEcb(plainBytes, paddingMode);
-                }
-                else if (cipherMode == CipherMode.CBC)
-                {
-                    liveOneShotDecryptBytes = des.DecryptCbc(cipherBytes, iv, paddingMode);
-                    liveOneShotEncryptBytes = des.EncryptCbc(plainBytes, iv, paddingMode);
-                }
-                else if (cipherMode == CipherMode.CFB)
-                {
-                    liveOneShotDecryptBytes = des.DecryptCfb(cipherBytes, iv, paddingMode, feedbackSizeInBits: feedbackSize.Value);
-                    liveOneShotEncryptBytes = des.EncryptCfb(plainBytes, iv, paddingMode, feedbackSizeInBits: feedbackSize.Value);
+                    if (cipherMode == CipherMode.ECB)
+                    {
+                        liveOneShotDecryptBytes = des.DecryptEcb(cipherBytes, paddingMode);
+                        liveOneShotEncryptBytes = des.EncryptEcb(plainBytes, paddingMode);
+                    }
+                    else if (cipherMode == CipherMode.CBC)
+                    {
+                        liveOneShotDecryptBytes = des.DecryptCbc(cipherBytes, iv, paddingMode);
+                        liveOneShotEncryptBytes = des.EncryptCbc(plainBytes, iv, paddingMode);
+                    }
+                    else if (cipherMode == CipherMode.CFB)
+                    {
+                        liveOneShotDecryptBytes = des.DecryptCfb(cipherBytes, iv, paddingMode, feedbackSizeInBits: feedbackSize.Value);
+                        liveOneShotEncryptBytes = des.EncryptCfb(plainBytes, iv, paddingMode, feedbackSizeInBits: feedbackSize.Value);
+                    }
                 }
             }
 
