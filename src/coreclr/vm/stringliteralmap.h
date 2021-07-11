@@ -22,7 +22,7 @@ class StringLiteralEntry;
 // Allocate 16 entries (approx size sizeof(StringLiteralEntry)*16)
 #define MAX_ENTRIES_PER_CHUNK 16
 
-STRINGREF AllocateStringObject(EEStringData *pStringData);
+STRINGREF AllocateStringObject(EEStringData *pStringData, bool preferFrozenObjHeap);
 
 // Loader allocator specific string literal map.
 class StringLiteralMap
@@ -92,7 +92,7 @@ public:
 
 private:
     // Helper method to add a string to the global string literal map.
-    StringLiteralEntry *AddStringLiteral(EEStringData *pStringData);
+    StringLiteralEntry *AddStringLiteral(EEStringData *pStringData, bool preferFrozenObjHeap);
 
     // Helper method to add an interned string.
     StringLiteralEntry *AddInternedString(STRINGREF *pString);

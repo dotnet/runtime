@@ -41,6 +41,7 @@ class AppDomain;
 class CompilationDomain;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
+class FrozenObjectHeap;
 class MngStdInterfacesInfo;
 class DomainAssembly;
 class LoadLevelLimiter;
@@ -2528,6 +2529,7 @@ public:
     void Init();
     void Stop();
     static void LazyInitGlobalStringLiteralMap();
+    static void LazyInitFrozenObjectsHeap();
 
     //****************************************************************************************
     //
@@ -2592,6 +2594,18 @@ public:
         }
         _ASSERTE(m_pGlobalStringLiteralMap);
         return m_pGlobalStringLiteralMap;
+    }
+    static FrozenObjectHeap* GetSegmentWithFrozenObjects()
+    {
+        WRAPPER_NO_CONTRACT;
+
+#ifdef FEATURE_BASICFREEZE
+        if (m_FrozenObjects == NULL)
+        {
+            SystemDomain::LazyInitFrozenObjectsHeap();
+        }
+#endif
+        return m_FrozenObjects;
     }
     static GlobalStringLiteralMap *GetGlobalStringLiteralMapNoCreate()
     {
@@ -2780,6 +2794,7 @@ private:
     static CrstStatic       m_SystemDomainCrst;
 
     static GlobalStringLiteralMap *m_pGlobalStringLiteralMap;
+    static FrozenObjectHeap       *m_FrozenObjects;
 
     static ULONG       s_dNumAppDomains;  // Maintain a count of children app domains.
 

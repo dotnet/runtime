@@ -336,6 +336,7 @@ set(VM_SOURCES_WKS
     fcall.cpp
     fieldmarshaler.cpp
     finalizerthread.cpp
+    frozenobjectheap.cpp
     gccover.cpp
     gcenv.ee.static.cpp
     gcenv.ee.common.cpp
@@ -446,6 +447,7 @@ set(VM_HEADERS_WKS
     fcall.h
     fieldmarshaler.h
     finalizerthread.h
+    frozenobjectheap.h
     gcenv.h
     gcenv.ee.h
     gcenv.os.h

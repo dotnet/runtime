@@ -28,6 +28,7 @@
 
 #include "gchelpers.inl"
 #include "eeprofinterfaces.inl"
+#include "frozenobjectheap.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -826,7 +827,7 @@ OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle elementType, BOOL bAll
     return AllocateSzArray(arrayType, (INT32) cElements, flags);
 }
 
-STRINGREF AllocateString( DWORD cchStringLength )
+STRINGREF AllocateString(DWORD cchStringLength)
 {
     CONTRACTL {
         THROWS;
@@ -852,9 +853,10 @@ STRINGREF AllocateString( DWORD cchStringLength )
     SIZE_T totalSize = PtrAlign(StringObject::GetSize(cchStringLength));
     _ASSERTE(totalSize > cchStringLength);
 
+    GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
+
     SetTypeHandleOnThreadForAlloc(TypeHandle(g_pStringClass));
 
-    GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
     if (totalSize >= g_pConfig->GetGCLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
@@ -866,6 +868,51 @@ STRINGREF AllocateString( DWORD cchStringLength )
 
     PublishObjectAndNotify(orString, flags);
     return ObjectToSTRINGREF(orString);
+
+}
+
+STRINGREF AllocateString(DWORD cchStringLength, bool preferFrozenHeap)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    STRINGREF orStringRef;
+    StringObject* orString = nullptr;
+
+    // Limit the maximum string size to <2GB to mitigate risk of security issues caused by 32-bit integer
+    // overflows in buffer size calculations.
+    //
+    // If the value below is changed, also change AllocateUtf8String.
+    if (cchStringLength > 0x3FFFFFDF)
+        ThrowOutOfMemory();
+
+    const SIZE_T totalSize = PtrAlign(StringObject::GetSize(cchStringLength));
+    _ASSERTE(totalSize > cchStringLength);
+
+    if (preferFrozenHeap)
+    {
+        FrozenObjectHeap* foh = SystemDomain::GetSegmentWithFrozenObjects();
+        if (foh != nullptr)
+        {
+            orString = (StringObject*)foh->AllocateObject(totalSize);
+            if (orString != nullptr)
+            {
+                orString->SetMethodTable(g_pStringClass);
+                orString->SetStringLength(cchStringLength);
+
+                // PublishObjectAndNotify(orString, GC_ALLOC_NO_FLAGS);
+                orStringRef = ObjectToSTRINGREF(orString);
+            }
+        }
+    }
+    if (orString == nullptr)
+    {
+        orStringRef = AllocateString(cchStringLength);
+    }
+    return orStringRef;
 }
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
