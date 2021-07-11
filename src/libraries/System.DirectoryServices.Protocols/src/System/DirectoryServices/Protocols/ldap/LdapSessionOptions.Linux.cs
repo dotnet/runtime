@@ -55,6 +55,7 @@ namespace System.DirectoryServices.Protocols
         public void StartTransportLayerSecurity(DirectoryControlCollection controls)
         {
             _connection._startTls = true;
+            _connection._startTlsControls = controls;
         }
 
         private bool GetBoolValueHelper(LdapOption option)
