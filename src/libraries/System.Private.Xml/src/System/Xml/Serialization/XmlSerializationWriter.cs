@@ -466,21 +466,16 @@ namespace System.Xml.Serialization
             bool needEmptyDefaultNamespace = false;
             if (_namespaces != null)
             {
-                foreach (XmlQualifiedName qname in _namespaces.Namespaces)
-                {
-                    string? alias = qname.Name;
-                    string? aliasNs = qname.Namespace;
+                _namespaces.TryLookupPrefix(ns, out prefix);
 
-                    if (alias.Length > 0 && aliasNs == ns)
-                        prefix = alias;
-                    if (alias.Length == 0)
-                    {
-                        if (aliasNs == null || aliasNs.Length == 0)
-                            needEmptyDefaultNamespace = true;
-                        if (ns != aliasNs)
-                            writePrefixed = true;
-                    }
+                if (_namespaces.TryLookupNamespace("", out string? defaultNS))
+                {
+                    if (string.IsNullOrEmpty(defaultNS))
+                        needEmptyDefaultNamespace = true;
+                    if (ns != defaultNS)
+                        writePrefixed = true;
                 }
+
                 _usedPrefixes = ListUsedPrefixes(_namespaces, _aliasBase);
             }
             if (writePrefixed && prefix == null && ns != null && ns.Length > 0)

@@ -33,11 +33,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public XmlSerializerNamespaces(XmlSerializerNamespaces namespaces)
         {
-            _namespaces = new Dictionary<string, XmlQualifiedName>(namespaces.NamespacesInternal.Count);
-
-            // XmlQualifiedName is publicly, but not absolutely immutable. Copy them.
-            foreach (XmlQualifiedName qname in namespaces.Namespaces)
-                Add(qname.Name, qname.Namespace);
+            _namespaces = new Dictionary<string, XmlQualifiedName>(namespaces.NamespacesInternal);
         }
 
         /// <devdoc>
@@ -47,9 +43,8 @@ namespace System.Xml.Serialization
         {
             _namespaces = new Dictionary<string, XmlQualifiedName>(namespaces.Length);
 
-            // XmlQualifiedName is publicly, but not absolutely immutable. Copy them.
             foreach (var qname in namespaces)
-                Add(qname.Name, qname.Namespace);
+                _namespaces.Add(qname.Name, qname);
         }
 
         /// <devdoc>
@@ -111,13 +106,7 @@ namespace System.Xml.Serialization
                 if (_namespaces == null || _namespaces.Count == 0)
                     return null;
 
-                // XmlQualifiedName is publicly, but not absolutely immutable. Copy them.
-                ArrayList namespaceList = new ArrayList();
-                foreach (string key in _namespaces.Keys)
-                {
-                    namespaceList.Add(new XmlQualifiedName(key, (string?)_namespaces[key].Namespace));
-                }
-                return namespaceList;
+                return new ArrayList(_namespaces.Values);
             }
         }
 
