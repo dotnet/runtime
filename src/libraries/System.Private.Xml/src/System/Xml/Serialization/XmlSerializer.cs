@@ -330,9 +330,6 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(Stream stream, object? o, XmlSerializerNamespaces? namespaces)
         {
-            //XmlTextWriter xmlWriter = new XmlTextWriter(stream, null);
-            //xmlWriter.Formatting = Formatting.Indented;
-            //xmlWriter.Indentation = 2;
             XmlWriter xmlWriter = XmlWriter.Create(stream, new XmlWriterSettings() { CheckCharacters = true, IndentChars = "  ", Indent = true });
             Serialize(xmlWriter, o, namespaces);
         }
