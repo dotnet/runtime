@@ -290,11 +290,18 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
-            int r = RandomAccess.WriteAtOffset(_fileHandle, buffer, _filePosition);
-            Debug.Assert(r >= 0, $"RandomAccess.WriteAtOffset returned {r}.");
-            _filePosition += r;
+            do
+            {
+                int bytesWritten = RandomAccess.WriteAtOffset(_fileHandle, buffer, _filePosition);
+                Debug.Assert(bytesWritten >= 0, $"RandomAccess.WriteAtOffset returned {bytesWritten}.");
 
-            UpdateLengthOnChangePosition();
+                _filePosition += bytesWritten;
+                buffer = buffer.Slice(bytesWritten);
+
+                // we update it now, because if the write was incomplete, the next try might fail with an exception
+                UpdateLengthOnChangePosition();
+            } while (!buffer.IsEmpty);
+
         }
     }
 }

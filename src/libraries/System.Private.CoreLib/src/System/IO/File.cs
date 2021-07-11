@@ -379,7 +379,15 @@ namespace System.IO
             fs.Write(bytes, 0, bytes.Length);
 #else
             using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read);
-            RandomAccess.WriteAtOffset(sfh, bytes, 0);
+
+            long offset = 0;
+            Span<byte> buffer = bytes;
+            do
+            {
+                int bytesWritten = RandomAccess.WriteAtOffset(sfh, buffer, offset);
+                offset += bytesWritten;
+                buffer = buffer.Slice(bytesWritten);
+            } while (!buffer.IsEmpty);
 #endif
         }
         public static string[] ReadAllLines(string path)
