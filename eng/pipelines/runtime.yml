@@ -209,6 +209,7 @@ jobs:
     - tvOS_arm64
     - iOS_arm64
     - MacCatalyst_x64
+    - OSX_x64
     jobParameters:
       condition: >-
         or(
@@ -643,12 +644,14 @@ jobs:
       - mono_tvos_offsets
       - mono_ios_offsets
       - mono_maccatalyst_offsets
+      - mono_osx_offsets
       monoCrossAOTTargetOS:
       - Android
       - Browser
       - tvOS
       - iOS
       - MacCatalyst
+      - OSX
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),

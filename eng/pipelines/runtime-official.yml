@@ -223,12 +223,14 @@ stages:
         - mono_tvos_offsets
         - mono_ios_offsets
         - mono_maccatalyst_offsets
+        - mono_osx_offsets
         monoCrossAOTTargetOS:
         - Android
         - Browser
         - tvOS
         - iOS
         - MacCatalyst
+        - OSX
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:
