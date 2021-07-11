@@ -140,6 +140,7 @@ namespace System.Net.Security
         public static SslCertificateTrust CreateForX509Collection(
                                                 System.Security.Cryptography.X509Certificates.X509Certificate2Collection trustList,
                                                 bool sendTrustInHandshake = false) { throw null; }
+        private SslCertificateTrust() { throw null; }
    }
 
     public sealed partial class SslStreamCertificateContext

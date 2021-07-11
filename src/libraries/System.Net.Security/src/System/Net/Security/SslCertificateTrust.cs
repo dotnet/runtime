@@ -58,5 +58,7 @@ namespace System.Net.Security
             trust._sendTrustInHandshake = sendTrustInHandshake;
             return trust;
         }
+
+        private SslCertificateTrust() { }
     }
 }
