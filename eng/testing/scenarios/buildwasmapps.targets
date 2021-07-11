@@ -1,0 +1,2 @@
+XUnitClassName=Wasm.Build.Tests.NativeBuildTests
+XUnitClassName=Wasm.Build.Tests.BlazorWasmTests
