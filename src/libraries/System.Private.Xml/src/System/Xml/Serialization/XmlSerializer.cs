@@ -317,9 +317,6 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(TextWriter textWriter, object? o, XmlSerializerNamespaces? namespaces)
         {
-            //XmlTextWriter xmlWriter = new XmlTextWriter(textWriter);
-            //xmlWriter.Formatting = Formatting.Indented;
-            //xmlWriter.Indentation = 2;
             XmlWriter xmlWriter = XmlWriter.Create(textWriter, new XmlWriterSettings() { CheckCharacters = true, IndentChars = "  ", Indent = true });
             Serialize(xmlWriter, o, namespaces);
         }
