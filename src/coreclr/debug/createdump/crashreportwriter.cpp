@@ -203,9 +203,9 @@ CrashReportWriter::WriteCrashReport()
     WriteValue("dotnet_version", version.c_str());
 
     // The main module was saved away in the crash info 
-    if (m_crashInfo.MainModule().BaseAddress() != 0)
+    if (m_crashInfo.MainModule()->BaseAddress() != 0)
     {
-        WriteValue("faulting_process_name", GetFileName(m_crashInfo.MainModule().ModuleName()).c_str());
+        WriteValue("faulting_process_name", GetFileName(m_crashInfo.MainModule()->ModuleName()).c_str());
     }
 
     // Find the first thread with a managed exception
@@ -262,7 +262,7 @@ CrashReportWriter::WriteStackFrame(const StackFrame& frame)
     }
     if (frame.ModuleAddress() != 0)
     {
-        ModuleInfo* moduleInfo = (ModuleInfo*)m_crashInfo.GetModuleInfoFromBaseAddress(frame.ModuleAddress());
+        ModuleInfo* moduleInfo = m_crashInfo.GetModuleInfoFromBaseAddress(frame.ModuleAddress());
         if (moduleInfo != nullptr)
         {
             std::string moduleName = GetFileName(moduleInfo->ModuleName());

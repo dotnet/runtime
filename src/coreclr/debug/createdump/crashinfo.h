@@ -69,8 +69,8 @@ private:
     std::set<MemoryRegion> m_otherMappings;         // other memory mappings
     std::set<MemoryRegion> m_memoryRegions;         // memory regions from DAC, etc.
     std::set<MemoryRegion> m_moduleAddresses;       // memory region to module base address
-    std::set<ModuleInfo> m_moduleInfos;             // module infos (base address and module name)
-    ModuleInfo m_mainModule;                        // the module containing "Main"
+    std::set<ModuleInfo*, bool (*)(const ModuleInfo* lhs, const ModuleInfo* rhs)> m_moduleInfos; // module infos (base address and module name)
+    ModuleInfo* m_mainModule;                       // the module containing "Main"
 
     // no public copy constructor
     CrashInfo(const CrashInfo&) = delete;
@@ -88,7 +88,7 @@ public:
     bool ReadProcessMemory(void* address, void* buffer, size_t size, size_t* read);     // read raw memory
     uint64_t GetBaseAddressFromAddress(uint64_t address);
     uint64_t GetBaseAddressFromName(const char* moduleName);
-    const ModuleInfo* GetModuleInfoFromBaseAddress(uint64_t baseAddress);
+    ModuleInfo* GetModuleInfoFromBaseAddress(uint64_t baseAddress);
     void AddModuleAddressRange(uint64_t startAddress, uint64_t endAddress, uint64_t baseAddress);
     void AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* pClrDataModule, const std::string& moduleName);
     void InsertMemoryRegion(uint64_t address, size_t size);
@@ -104,7 +104,7 @@ public:
     inline const pid_t CrashThread() const { return m_crashThread; }
     inline const uint32_t Signal() const { return m_signal; }
     inline const std::string& Name() const { return m_name; }
-    inline const ModuleInfo& MainModule() const { return m_mainModule; }
+    inline const ModuleInfo* MainModule() const { return m_mainModule; }
 
     inline const std::vector<ThreadInfo*> Threads() const { return m_threads; }
     inline const std::set<MemoryRegion> ModuleMappings() const { return m_moduleMappings; }

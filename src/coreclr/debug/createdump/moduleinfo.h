@@ -13,6 +13,10 @@ private:
     void* m_module;
     uint64_t m_localBaseAddress;
 
+    // no public copy constructor
+    ModuleInfo(const ModuleInfo&) = delete;
+    void operator=(const ModuleInfo&) = delete;
+
     void LoadModule();
 
 public:
@@ -42,19 +46,6 @@ public:
     {
     }
 
-    // copy constructor
-    ModuleInfo(const ModuleInfo& moduleInfo) :
-        m_baseAddress(moduleInfo.m_baseAddress),
-        m_timeStamp(moduleInfo.m_timeStamp),
-        m_imageSize(moduleInfo.m_imageSize),
-        m_mvid(moduleInfo.m_mvid),
-        m_moduleName(moduleInfo.m_moduleName),
-        m_isManaged(moduleInfo.m_isManaged),
-        m_module(nullptr),
-        m_localBaseAddress(0)
-    {
-    }
-
     ~ModuleInfo()
     {
         if (m_module != nullptr)
@@ -72,14 +63,4 @@ public:
     inline const std::string& ModuleName() const { return m_moduleName; }
 
     const char* GetSymbolName(uint64_t address);
-
-    bool operator<(const ModuleInfo& rhs) const
-    {
-        return m_baseAddress < rhs.m_baseAddress;
-    }
-
-    void Trace() const
-    {
-        TRACE("%" PRIA PRIx64 " %s\n", m_baseAddress, m_moduleName.c_str());
-    }
 };

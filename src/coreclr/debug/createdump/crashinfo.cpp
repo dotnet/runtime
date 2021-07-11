@@ -6,6 +6,8 @@
 // This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
 
+static bool ModuleInfoCompare(const ModuleInfo* lhs, const ModuleInfo* rhs) { return lhs->BaseAddress() < rhs->BaseAddress(); }
+
 CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t signal) :
     m_ref(1),
     m_pid(pid),
@@ -13,7 +15,8 @@ CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t s
     m_hdac(nullptr),
     m_gatherFrames(gatherFrames),
     m_crashThread(crashThread),
-    m_signal(signal)
+    m_signal(signal),
+    m_moduleInfos(&ModuleInfoCompare)
 {
     g_crashInfo = this;
 #ifdef __APPLE__
@@ -430,9 +433,9 @@ CrashInfo::GetBaseAddressFromAddress(uint64_t address)
 uint64_t
 CrashInfo::GetBaseAddressFromName(const char* moduleName)
 {
-    for (const ModuleInfo& moduleInfo : m_moduleInfos)
+    for (const ModuleInfo* moduleInfo : m_moduleInfos)
     {
-        std::string name = GetFileName(moduleInfo.ModuleName());
+        std::string name = GetFileName(moduleInfo->ModuleName());
 #ifdef __APPLE__
         // Module names are case insenstive on MacOS
         if (strcasecmp(name.c_str(), moduleName) == 0)
@@ -440,7 +443,7 @@ CrashInfo::GetBaseAddressFromName(const char* moduleName)
         if (name.compare(moduleName) == 0)
 #endif
         {
-            return moduleInfo.BaseAddress();
+            return moduleInfo->BaseAddress();
         }
     }
     return 0;
@@ -449,14 +452,14 @@ CrashInfo::GetBaseAddressFromName(const char* moduleName)
 //
 // Return the module info for the base address
 //
-const ModuleInfo*
+ModuleInfo*
 CrashInfo::GetModuleInfoFromBaseAddress(uint64_t baseAddress)
 {
     ModuleInfo search(baseAddress);
-    const auto& found = m_moduleInfos.find(search);
+    const auto& found = m_moduleInfos.find(&search);
     if (found != m_moduleInfos.end())
     {
-        return &*found;
+        return *found;
     }
     return nullptr;
 }
@@ -479,7 +482,7 @@ void
 CrashInfo::AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* pClrDataModule, const std::string& moduleName)
 {
     ModuleInfo moduleInfo(baseAddress);
-    const auto& found = m_moduleInfos.find(moduleInfo);
+    const auto& found = m_moduleInfos.find(&moduleInfo);
     if (found == m_moduleInfos.end())
     {
         uint32_t timeStamp = 0;
@@ -523,7 +526,7 @@ CrashInfo::AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* 
             }
             TRACE("MODULE: timestamp %08x size %08x %s %s%s\n", timeStamp, imageSize, FormatGuid(&mvid).c_str(), isMainModule ? "*" : "", moduleName.c_str());
         }
-        ModuleInfo moduleInfo(isManaged, baseAddress, timeStamp, imageSize, &mvid, moduleName);
+        ModuleInfo* moduleInfo = new ModuleInfo(isManaged, baseAddress, timeStamp, imageSize, &mvid, moduleName);
         if (isMainModule) {
             m_mainModule = moduleInfo;
         }
