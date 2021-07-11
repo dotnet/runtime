@@ -45,6 +45,7 @@
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsiOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetstvOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsMacCatalyst)' == 'true'">true</BuildMonoAOTCrossCompiler>
+    <BuildMonoAOTCrossCompiler Condition="'$(TargetsOSX)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsBrowser)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsAndroid)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <MonoObjCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'cross'))</MonoObjCrossDir>
@@ -524,7 +525,7 @@
   <Target Name="BuildMonoCross" Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'" DependsOnTargets="BuildMonoRuntime">
 
     <!-- iOS specific options -->
-    <PropertyGroup Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true'">
+    <PropertyGroup Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsOSX)' == 'true'">
       <!-- FIXME: Disable for simulator -->
       <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotCMakeSysroot Condition="'$(TargetsiOS)' == 'true' and '$(TargetsiOSSimulator)' != 'true'">$(XcodeDir)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(iOSVersion).sdk</MonoAotCMakeSysroot>
@@ -544,7 +545,14 @@
       <MonoAotAbi Condition="'$(Platform)' == 'arm64'">aarch64-apple-maccatalyst</MonoAotAbi>
       <MonoAotAbi Condition="'$(Platform)' == 'x64'">x86_64-apple-maccatalyst</MonoAotAbi>
     </PropertyGroup>
-    <ItemGroup Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsOSX)' == 'true'">
+      <MonoUseCrossTool>true</MonoUseCrossTool>
+      <MonoAotCMakeSysroot>$(XcodeDir)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk</MonoAotCMakeSysroot>
+      <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-$(Platform)-darwin.h</MonoAotOffsetsFile>
+      <MonoAotAbi Condition="'$(Platform)' == 'arm64'">aarch64-apple-darwin20</MonoAotAbi>
+      <MonoAotAbi Condition="'$(Platform)' == 'x64'">x86_64-apple-darwin10</MonoAotAbi>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsOSX)' == 'true'">
       <MonoAOTCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
     </ItemGroup>
 
