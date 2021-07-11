@@ -25,12 +25,23 @@ namespace System.Security.Cryptography.Cng.Tests
         [InlineData(256, BlockSizeBytes + BlockSizeBytes / 2, CipherMode.CBC, PaddingMode.Zeros)]
         // AES192-CBC-PKCS7 at 1.5 blocks
         [InlineData(192, BlockSizeBytes + BlockSizeBytes / 2, CipherMode.CBC, PaddingMode.PKCS7)]
+        // AES128-CFB8-NoPadding at 2 blocks
+        [InlineData(128, 2 * BlockSizeBytes, CipherMode.CFB, PaddingMode.None, 8)]
+        // AES128-CFB128-NoPadding at 2 blocks
+        [InlineData(128, 2 * BlockSizeBytes, CipherMode.CFB, PaddingMode.None, 128)]
         public static void VerifyPersistedKey(
             int keySize,
             int plainBytesCount,
             CipherMode cipherMode,
-            PaddingMode paddingMode)
+            PaddingMode paddingMode,
+            int feedbackSizeInBits = 0)
         {
+            // Windows 7 does not support CFB except in CFB8 mode.
+            if (cipherMode == CipherMode.CFB && feedbackSizeInBits != 8 && PlatformDetection.IsWindows7)
+            {
+                return;
+            }
+
             SymmetricCngTestHelpers.VerifyPersistedKey(
                 s_cngAlgorithm,
                 keySize,
@@ -38,7 +49,8 @@ namespace System.Security.Cryptography.Cng.Tests
                 keyName => new AesCng(keyName),
                 () => new AesCng(),
                 cipherMode,
-                paddingMode);
+                paddingMode,
+                feedbackSizeInBits);
 
         }
 

@@ -42,7 +42,8 @@ namespace System.Security.Cryptography.Cng.Tests
         public static void VerifyPersistedKey(
             int plainBytesCount,
             CipherMode cipherMode,
-            PaddingMode paddingMode)
+            PaddingMode paddingMode,
+            int feedbackSizeInBits = 0)
         {
             SymmetricCngTestHelpers.VerifyPersistedKey(
                 s_cngAlgorithm,
@@ -51,7 +52,8 @@ namespace System.Security.Cryptography.Cng.Tests
                 keyName => new TripleDESCng(keyName),
                 () => new TripleDESCng(),
                 cipherMode,
-                paddingMode);
+                paddingMode,
+                feedbackSizeInBits);
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
