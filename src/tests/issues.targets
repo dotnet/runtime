@@ -2938,8 +2938,8 @@
         </ExcludeList>
         
         <!-- NodeJS temporary exclude list -->
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/**" Condition="'$(ForNode)' == 'true'">
-            <Issue>needs testing infrastructure changes that are being delayed to work incrementally from a green build</Issue>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/**/*" Condition="'$(ForNode)' == 'true'">
+            <Issue>needs testing infrastructure changes that are being postponed to work incrementally from a green pipeline</Issue>
         </ExcludeList>
     </ItemGroup>
 

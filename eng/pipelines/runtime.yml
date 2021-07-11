@@ -342,7 +342,6 @@ jobs:
         scenarios:
         - buildwasmapps
         - normal
-        - wasmtestonbrowser
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),
