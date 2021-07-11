@@ -193,6 +193,8 @@ CrashReportWriter::WriteCrashReport()
     WriteValue("architecture", "amd64");
 #elif defined(__aarch64__)
     WriteValue("architecture", "arm64");
+#elif defined(__arm__)
+    WriteValue("architecture", "arm");
 #endif
     std::string version;
     assert(strncmp(sccsid, "@(#)Version ", 12) == 0);
@@ -241,7 +243,7 @@ CrashReportWriter::WriteStackFrame(const StackFrame& frame)
     WriteValueBool("is_managed", frame.IsManaged());
     WriteValue64("module_address", frame.ModuleAddress());
     WriteValue64("stack_pointer", frame.StackPointer());
-    WriteValue64("native_address", frame.ReturnAddress());
+    WriteValue64("native_address", frame.InstructionPointer());
     WriteValue64("native_offset", frame.NativeOffset());
     if (frame.IsManaged())
     {
@@ -273,7 +275,7 @@ CrashReportWriter::WriteStackFrame(const StackFrame& frame)
             }
             else
             {
-                const char* symbol = moduleInfo->GetSymbolName(frame.ReturnAddress());
+                const char* symbol = moduleInfo->GetSymbolName(frame.InstructionPointer());
                 if (symbol != nullptr)
                 {
                     WriteValue("unmanaged_name", symbol);

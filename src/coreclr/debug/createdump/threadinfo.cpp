@@ -278,7 +278,7 @@ ThreadInfo::AddStackFrame(const StackFrame& frame)
     {
         TRACE("Unwind: sp %p ip %p off %08x mod %p%c\n",
             (void*)frame.StackPointer(),
-            (void*)frame.ReturnAddress(),
+            (void*)frame.InstructionPointer(),
             frame.NativeOffset(),
             (void*)frame.ModuleAddress(),
             frame.IsManaged() ? '*' : ' ');

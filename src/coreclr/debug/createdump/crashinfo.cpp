@@ -484,7 +484,7 @@ CrashInfo::AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* 
     {
         uint32_t timeStamp = 0;
         uint32_t imageSize = 0;
-        bool mainModule = false;
+        bool isMainModule = false;
         GUID mvid;
         if (isManaged)
         {
@@ -518,13 +518,13 @@ CrashInfo::AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* 
             {
                 ULONG32 flags = 0;
                 pClrDataModule->GetFlags(&flags);
-                mainModule = (flags & CLRDATA_MODULE_IS_MAIN_MODULE) != 0;
+                isMainModule = (flags & CLRDATA_MODULE_IS_MAIN_MODULE) != 0;
                 pClrDataModule->GetVersionId(&mvid);
             }
-            TRACE("MODULE: timestamp %08x size %08x %s %s%s\n", timeStamp, imageSize, FormatGuid(&mvid).c_str(), mainModule ? "*" : "", moduleName.c_str());
+            TRACE("MODULE: timestamp %08x size %08x %s %s%s\n", timeStamp, imageSize, FormatGuid(&mvid).c_str(), isMainModule ? "*" : "", moduleName.c_str());
         }
         ModuleInfo moduleInfo(isManaged, baseAddress, timeStamp, imageSize, &mvid, moduleName);
-        if (mainModule) {
+        if (isMainModule) {
             m_mainModule = moduleInfo;
         }
         m_moduleInfos.insert(moduleInfo);

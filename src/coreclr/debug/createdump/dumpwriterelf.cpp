@@ -58,8 +58,9 @@ DumpWriter::WriteDump()
     }
     else {
         ehdr.e_phnum = PH_HDR_CANARY;
-        ehdr.e_shoff = sizeof(Ehdr);
         ehdr.e_phoff = sizeof(Ehdr) + sizeof(Shdr);
+        ehdr.e_shnum = 1;
+        ehdr.e_shoff = sizeof(Ehdr);
         ehdr.e_shentsize = sizeof(Shdr);
     }
 
