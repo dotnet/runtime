@@ -103,7 +103,8 @@ namespace System.Security.Cryptography
                 iv: null,
                 encrypting: false,
                 paddingMode,
-                CipherMode.ECB);
+                CipherMode.ECB,
+                feedbackSizeInBits: 0);
 
             using (transform)
             {
@@ -121,7 +122,8 @@ namespace System.Security.Cryptography
                 iv: null,
                 encrypting: true,
                 paddingMode,
-                CipherMode.ECB);
+                CipherMode.ECB,
+                feedbackSizeInBits: 0);
 
             using (transform)
             {
@@ -140,7 +142,8 @@ namespace System.Security.Cryptography
                 iv: iv.ToArray(),
                 encrypting: true,
                 paddingMode,
-                CipherMode.CBC);
+                CipherMode.CBC,
+                feedbackSizeInBits: 0);
 
             using (transform)
             {
@@ -159,7 +162,8 @@ namespace System.Security.Cryptography
                 iv: iv.ToArray(),
                 encrypting: false,
                 paddingMode,
-                CipherMode.CBC);
+                CipherMode.CBC,
+                feedbackSizeInBits: 0);
 
             using (transform)
             {
@@ -167,9 +171,64 @@ namespace System.Security.Cryptography
             }
         }
 
+        protected override bool TryDecryptCfbCore(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            int feedbackSizeInBits,
+            out int bytesWritten)
+        {
+            ValidateCFBFeedbackSize(feedbackSizeInBits);
+
+            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
+                iv: iv.ToArray(),
+                encrypting: false,
+                paddingMode,
+                CipherMode.CFB,
+                feedbackSizeInBits);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryEncryptCfbCore(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            int feedbackSizeInBits,
+            out int bytesWritten)
+        {
+            ValidateCFBFeedbackSize(feedbackSizeInBits);
+
+            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
+                iv: iv.ToArray(),
+                encrypting: true,
+                paddingMode,
+                CipherMode.CFB,
+                feedbackSizeInBits);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
+        }
+
+        private static void ValidateCFBFeedbackSize(int feedback)
+        {
+            // only 8bits/64bits feedback would be valid.
+            if (feedback != 8 && feedback != 64)
+            {
+                throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+            }
         }
 
         byte[] ICngSymmetricAlgorithm.BaseKey { get { return base.Key; } set { base.Key = value; } }
@@ -185,9 +244,9 @@ namespace System.Security.Cryptography
             return this.GetPaddingSize(mode, feedbackSizeBits);
         }
 
-        SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle(CipherMode mode)
+        SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle(CipherMode mode, int feedbackSizeInBits)
         {
-            return TripleDesBCryptModes.GetSharedHandle(mode, FeedbackSize / 8);
+            return TripleDesBCryptModes.GetSharedHandle(mode, feedbackSizeInBits / 8);
         }
 
         string ICngSymmetricAlgorithm.GetNCryptAlgorithmIdentifier()

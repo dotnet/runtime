@@ -102,7 +102,8 @@ namespace System.Security.Cryptography
                 iv: null,
                 encrypting: false,
                 paddingMode,
-                CipherMode.ECB);
+                CipherMode.ECB,
+                feedbackSizeInBits: 0);
 
             using (transform)
             {
@@ -120,7 +121,8 @@ namespace System.Security.Cryptography
                 iv: null,
                 encrypting: true,
                 paddingMode,
-                CipherMode.ECB);
+                CipherMode.ECB,
+                feedbackSizeInBits: 0);
 
             using (transform)
             {
@@ -139,7 +141,8 @@ namespace System.Security.Cryptography
                 iv: iv.ToArray(),
                 encrypting: true,
                 paddingMode,
-                CipherMode.CBC);
+                CipherMode.CBC,
+                feedbackSizeInBits: 0);
 
             using (transform)
             {
@@ -158,7 +161,8 @@ namespace System.Security.Cryptography
                 iv: iv.ToArray(),
                 encrypting: false,
                 paddingMode,
-                CipherMode.CBC);
+                CipherMode.CBC,
+                feedbackSizeInBits: 0);
 
             using (transform)
             {
@@ -174,11 +178,14 @@ namespace System.Security.Cryptography
             int feedbackSizeInBits,
             out int bytesWritten)
         {
+            ValidateCFBFeedbackSize(feedbackSizeInBits);
+
             UniversalCryptoTransform transform = _core.CreateCryptoTransform(
                 iv: iv.ToArray(),
                 encrypting: false,
                 paddingMode,
-                CipherMode.CFB);
+                CipherMode.CFB,
+                feedbackSizeInBits);
 
             using (transform)
             {
@@ -194,15 +201,27 @@ namespace System.Security.Cryptography
             int feedbackSizeInBits,
             out int bytesWritten)
         {
+            ValidateCFBFeedbackSize(feedbackSizeInBits);
+
             UniversalCryptoTransform transform = _core.CreateCryptoTransform(
                 iv: iv.ToArray(),
                 encrypting: true,
                 paddingMode,
-                CipherMode.CFB);
+                CipherMode.CFB,
+                feedbackSizeInBits);
 
             using (transform)
             {
                 return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
+        }
+
+        private static void ValidateCFBFeedbackSize(int feedback)
+        {
+            // only 8bits/128bits feedback would be valid.
+            if (feedback != 8 && feedback != 128)
+            {
+                throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
             }
         }
 
@@ -224,11 +243,11 @@ namespace System.Security.Cryptography
             return this.GetPaddingSize(mode, feedbackSizeBits);
         }
 
-        SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle(CipherMode mode)
+        SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle(CipherMode mode, int feedbackSizeInBits)
         {
             try
             {
-                return AesBCryptModes.GetSharedHandle(mode, FeedbackSize / 8);
+                return AesBCryptModes.GetSharedHandle(mode, feedbackSizeInBits / 8);
             }
             catch (NotSupportedException)
             {
