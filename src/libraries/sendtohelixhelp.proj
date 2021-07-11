@@ -52,7 +52,7 @@
     <TestRunNamePrefix Condition="'$(TestRunNamePrefixSuffix)' != ''">$(TestRunNamePrefix)$(TestRunNamePrefixSuffix)-</TestRunNamePrefix>
     <TestRunNamePrefix Condition="'$(Scenario)' != ''">$(TestRunNamePrefix)$(Scenario)-</TestRunNamePrefix>
 
-    <HelixAdditionalPropertiesFile>$(RepositoryEngineeringDir)\testing\scenarios\$(Scenario).targets</HelixAdditionalPropertiesFile>
+    <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)\testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
     <NeedsToBuildWasmAppsOnHelix Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == '' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsToBuildWasmAppsOnHelix>
@@ -365,7 +365,7 @@
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" />
     </ItemGroup>
 
-    <ReadLinesFromFile File="$(HelixAdditionalPropertiesFile)" Condition="Exists($(HelixAdditionalPropertiesFile))">
+    <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList))">
       <Output TaskParameter="Lines" ItemName="BuildWasmApps_PerJobList" />
     </ReadLinesFromFile>
 
