@@ -277,10 +277,10 @@ namespace System.Collections
             int hashsize = (rawsize > InitialSize) ? HashHelpers.GetPrime((int)rawsize) : InitialSize;
             _buckets = new bucket[hashsize];
 
+            _loadsize = (int)(_loadFactor * hashsize);
 #if TARGET_64BIT
             _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)hashsize);
 #endif
-            _loadsize = (int)(_loadFactor * hashsize);
             _isWriterInProgress = false;
             // Based on the current algorithm, loadsize must be less than hashsize.
             Debug.Assert(_loadsize < hashsize, "Invalid hashtable loadsize!");
@@ -757,9 +757,6 @@ namespace System.Collections
             //   2) Protect against an OutOfMemoryException while allocating this
             //      new bucket[].
             bucket[] newBuckets = new bucket[newsize];
-#if TARGET_64BIT
-            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newsize);
-#endif
 
             // rehash table into new buckets
             int nb;
@@ -777,6 +774,9 @@ namespace System.Collections
             _isWriterInProgress = true;
             _buckets = newBuckets;
             _loadsize = (int)(_loadFactor * newsize);
+#if TARGET_64BIT
+            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newsize);
+#endif
             UpdateVersion();
             _isWriterInProgress = false;
             // minimum size of hashtable is 3 now and maximum loadFactor is 0.72 now.
