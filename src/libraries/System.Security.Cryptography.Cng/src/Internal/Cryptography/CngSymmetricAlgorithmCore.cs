@@ -206,7 +206,7 @@ namespace Internal.Cryptography
             return CngKey.Open(_keyName!, _provider!, _optionOptions);
         }
 
-        private bool KeyInPlainText
+        public bool KeyInPlainText
         {
             get { return _keyName == null; }
         }

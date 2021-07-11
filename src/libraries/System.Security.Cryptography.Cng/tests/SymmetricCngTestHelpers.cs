@@ -304,6 +304,32 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
+        public static void VerifyOneShotCfbPersistedUnsupportedFeedbackSize(
+            CngAlgorithm algorithm,
+            Func<string, SymmetricAlgorithm> persistedFunc,
+            int notSupportedFeedbackSizeInBits)
+        {
+            string keyName = Guid.NewGuid().ToString();
+
+            // We try to delete the key later which will also dispose of it, so no need
+            // to put this in a using.
+            CngKey cngKey = CngKey.Create(algorithm, keyName);
+
+            try
+            {
+                using (SymmetricAlgorithm alg = persistedFunc(keyName))
+                {
+                    byte[] destination = new byte[alg.BlockSize / 8];
+                    Assert.ThrowsAny<CryptographicException>(() =>
+                        alg.EncryptCfb(Array.Empty<byte>(), destination, PaddingMode.None, notSupportedFeedbackSizeInBits));
+                }
+            }
+            finally
+            {
+                cngKey.Delete();
+            }
+        }
+
         private static bool? s_supportsPersistedSymmetricKeys;
         internal static bool SupportsPersistedSymmetricKeys
         {

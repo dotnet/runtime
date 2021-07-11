@@ -27,8 +27,6 @@ namespace System.Security.Cryptography.Cng.Tests
         [InlineData(192, BlockSizeBytes + BlockSizeBytes / 2, CipherMode.CBC, PaddingMode.PKCS7)]
         // AES128-CFB8-NoPadding at 2 blocks
         [InlineData(128, 2 * BlockSizeBytes, CipherMode.CFB, PaddingMode.None, 8)]
-        // AES128-CFB128-NoPadding at 2 blocks
-        [InlineData(128, 2 * BlockSizeBytes, CipherMode.CFB, PaddingMode.None, 128)]
         public static void VerifyPersistedKey(
             int keySize,
             int plainBytesCount,
@@ -98,6 +96,16 @@ namespace System.Security.Cryptography.Cng.Tests
                 8 * BlockSizeBytes,
                 keyName => new AesCng(keyName, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey),
                 () => new AesCng());
+        }
+
+        [OuterLoop("Creates/Deletes a persisted key, limit exposure to key leaking")]
+        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        public static void VerifyUnsupportedFeedbackSizeForPersistedCfb()
+        {
+            SymmetricCngTestHelpers.VerifyOneShotCfbPersistedUnsupportedFeedbackSize(
+                s_cngAlgorithm,
+                keyName => new AesCng(keyName),
+                notSupportedFeedbackSizeInBits: 128);
         }
 
         public static bool SupportsPersistedSymmetricKeys

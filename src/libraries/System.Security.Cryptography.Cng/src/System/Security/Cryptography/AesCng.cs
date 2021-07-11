@@ -216,12 +216,23 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void ValidateCFBFeedbackSize(int feedback)
+        private void ValidateCFBFeedbackSize(int feedback)
         {
-            // only 8bits/128bits feedback would be valid.
-            if (feedback != 8 && feedback != 128)
+            if (_core.KeyInPlainText)
             {
-                throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+                // CFB8 and CFB128 are valid for bcrypt keys.
+                if (feedback != 8 && feedback != 128)
+                {
+                    throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+                }
+            }
+            else
+            {
+                // CFB8 is only supported for ncrypt keys.
+                if (feedback != 8)
+                {
+                    throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+                }
             }
         }
 
