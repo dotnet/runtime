@@ -121,3 +121,8 @@ mono_metadata_update_delta_heap_lookup (MonoImage *base_image, MetadataHeapGette
 }
 
 
+gboolean
+mono_metadata_update_has_modified_rows (const MonoTableInfo *table)
+{
+	return mono_component_hot_reload ()->has_modified_rows (table);
+}

@@ -68,6 +68,7 @@
     <Rule Id="CA1416" Action="Warning" />       <!-- Validate platform compatibility -->
     <Rule Id="CA1417" Action="Warning" />       <!-- Do not use 'OutAttribute' on string parameters for P/Invokes -->
     <Rule Id="CA1418" Action="Warning" />       <!-- Use valid platform string -->
+    <Rule Id="CA1419" Action="Warning" />       <!-- Provide a public parameterless constructor for concrete types derived from 'System.Runtime.InteropServices.SafeHandle' -->
     <Rule Id="CA1501" Action="None" />          <!-- Avoid excessive inheritance -->
     <Rule Id="CA1502" Action="None" />          <!-- Avoid excessive complexity -->
     <Rule Id="CA1505" Action="None" />          <!-- Avoid unmaintainable code -->
