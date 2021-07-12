@@ -47,7 +47,7 @@ namespace System.Text.Json.Tests.Serialization
             properties[0] = JsonMetadataServices.CreatePropertyInfo<int>(
                 options,
                 isProperty: true,
-                isPublic: false,
+                isPublic: true,
                 isVirtual: false,
                 declaringType: typeof(HighLowTemps),
                 propertyTypeInfo: jsonContext.Int32,
@@ -63,7 +63,7 @@ namespace System.Text.Json.Tests.Serialization
             properties[1] = JsonMetadataServices.CreatePropertyInfo<int>(
                 options,
                 isProperty: true,
-                isPublic: false,
+                isPublic: true,
                 isVirtual: false,
                 declaringType: typeof(HighLowTemps),
                 propertyTypeInfo: jsonContext.Int32,

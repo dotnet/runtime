@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Tests
         public virtual async Task InitOnlyProperties(Type type)
         {
             // Init-only property included by default.
-            object obj = JsonSerializerWrapperForString.DeserializeWrapper(@"{""MyInt"":1}", type);
+            object obj = await JsonSerializerWrapperForString.DeserializeWrapper(@"{""MyInt"":1}", type);
             Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
 
             // Init-only properties can be serialized.
@@ -42,7 +42,7 @@ namespace System.Text.Json.Serialization.Tests
         public virtual async Task NonPublicInitOnlySetter_With_JsonInclude(Type type)
         {
             // Non-public init-only property setter included with [JsonInclude].
-            object obj = JsonSerializerWrapperForString.DeserializeWrapper(@"{""MyInt"":1}", type);
+            object obj = await JsonSerializerWrapperForString.DeserializeWrapper(@"{""MyInt"":1}", type);
             Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
 
             // Init-only properties can be serialized.

@@ -47,7 +47,7 @@ namespace System.Text.Json.Tests.Serialization
             properties[0] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
-                isPublic: false,
+                isPublic: true,
                 isVirtual: false,
                 declaringType: typeof(WeatherForecastWithPOCOs),
                 propertyTypeInfo: jsonContext.DateTimeOffset,
@@ -63,7 +63,7 @@ namespace System.Text.Json.Tests.Serialization
             properties[1] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
-                isPublic: false,
+                isPublic: true,
                 isVirtual: false,
                 declaringType: typeof(WeatherForecastWithPOCOs),
                 propertyTypeInfo: jsonContext.Int32,
@@ -79,7 +79,7 @@ namespace System.Text.Json.Tests.Serialization
             properties[2] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
-                isPublic: false,
+                isPublic: true,
                 isVirtual: false,
                 declaringType: typeof(WeatherForecastWithPOCOs),
                 propertyTypeInfo: jsonContext.String,
@@ -95,7 +95,7 @@ namespace System.Text.Json.Tests.Serialization
             properties[3] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
-                isPublic: false,
+                isPublic: true,
                 isVirtual: false,
                 declaringType: typeof(WeatherForecastWithPOCOs),
                 propertyTypeInfo: jsonContext.ListSystemDateTimeOffset,
@@ -111,7 +111,7 @@ namespace System.Text.Json.Tests.Serialization
             properties[4] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
-                isPublic: false,
+                isPublic: true,
                 isVirtual: false,
                 declaringType: typeof(WeatherForecastWithPOCOs),
                 propertyTypeInfo: jsonContext.Dictionary,
@@ -127,7 +127,7 @@ namespace System.Text.Json.Tests.Serialization
             properties[5] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
-                isPublic: false,
+                isPublic: true,
                 isVirtual: false,
                 declaringType: typeof(WeatherForecastWithPOCOs),
                 propertyTypeInfo: jsonContext.StringArray,
@@ -143,7 +143,7 @@ namespace System.Text.Json.Tests.Serialization
             properties[6] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: false,
-                isPublic: false,
+                isPublic: true,
                 isVirtual: false,
                 declaringType: typeof(WeatherForecastWithPOCOs),
                 propertyTypeInfo: jsonContext.String,

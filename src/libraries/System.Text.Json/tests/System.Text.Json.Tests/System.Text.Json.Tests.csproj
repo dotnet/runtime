@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -139,7 +139,7 @@
     <Compile Include="Serialization\InvalidTypeTests.cs" />
     <Compile Include="Serialization\JsonDocumentTests.cs" />
     <Compile Include="Serialization\JsonElementTests.cs" />
-    <Compile Include="Serialization\JsonSerializerDynamic.cs" />
+    <Compile Include="Serialization\JsonSerializerWrapperForString_Dynamic.cs" />
     <Compile Include="Serialization\JsonSerializerWrapperForString.cs" />
     <Compile Include="Serialization\JsonSerializationWrapperForStream.cs" />
     <Compile Include="Serialization\MetadataTests\JsonContext\DateTimeOffset.cs" />
