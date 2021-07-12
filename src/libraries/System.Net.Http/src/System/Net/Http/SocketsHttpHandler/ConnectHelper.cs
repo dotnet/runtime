@@ -104,8 +104,22 @@ namespace System.Net.Http
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
-        public static async ValueTask<QuicConnection> ConnectQuicAsync(QuicImplementationProvider quicImplementationProvider, DnsEndPoint endPoint, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
+        public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, QuicImplementationProvider quicImplementationProvider, DnsEndPoint endPoint, SslClientAuthenticationOptions? clientAuthenticationOptions, CancellationToken cancellationToken)
         {
+            // If there's a cert validation callback, and if it came from HttpClientHandler,
+            // wrap the original delegate in order to change the sender to be the request message (expected by HttpClientHandler's delegate).
+            RemoteCertificateValidationCallback? callback = clientAuthenticationOptions?.RemoteCertificateValidationCallback;
+            if (callback != null && callback.Target is CertificateCallbackMapper mapper)
+            {
+                clientAuthenticationOptions = clientAuthenticationOptions!.ShallowClone(); // Clone as we're about to mutate it and don't want to affect the cached copy
+                Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> localFromHttpClientHandler = mapper.FromHttpClientHandler;
+                clientAuthenticationOptions.RemoteCertificateValidationCallback = (object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors) =>
+                {
+                    bool result = localFromHttpClientHandler(request, certificate as X509Certificate2, chain, sslPolicyErrors);
+                    return result;
+                };
+            }
+
             QuicConnection con = new QuicConnection(quicImplementationProvider, endPoint, clientAuthenticationOptions);
             try
             {
@@ -116,6 +130,17 @@ namespace System.Net.Http
             {
                 con.Dispose();
                 throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
+            }
+            finally
+            {
+                if (clientAuthenticationOptions is not null && callback is not null)
+                {
+                    // We cannot unset the request closure variable after the first callaback invocation as we do with SslStream
+                    // since the callback will get triggered multiple times during connection establishment.
+                    // So to ensure the callback don't keep the first HttpRequestMessage alive indefinitely, we reset the callback back to user's provided one.
+                    clientAuthenticationOptions.RemoteCertificateValidationCallback = callback;
+                }
+
             }
         }
 

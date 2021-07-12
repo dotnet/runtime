@@ -395,5 +395,53 @@ namespace System.Net.Http.Functional.Tests
                 { "https://http3-test.litespeedtech.com:4433/" }, // LiteSpeed
                 { "https://quic.tech:8443/" } // Cloudflare
             };
+
+        [Fact]
+        public async Task ServerCertificateCustomValidationCallback_Succeeds()
+        {
+            HttpRequestMessage? callbackRequest = null;
+
+            var httpClientHandler = CreateHttpClientHandler();
+            httpClientHandler.ServerCertificateCustomValidationCallback = (request, _, _, _) =>
+            {
+                callbackRequest = request;
+                return true;
+            };
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            using HttpClient client = CreateHttpClient(httpClientHandler);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await stream.HandleRequestAsync();
+                using Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
+                await stream2.HandleRequestAsync();
+            });
+
+            var request = new HttpRequestMessage(HttpMethod.Get, server.Address);
+            request.Version = HttpVersion.Version30;
+            request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+            var response = await client.SendAsync(request);
+
+            response.EnsureSuccessStatusCode();
+            Assert.Equal(HttpVersion.Version30, response.Version);
+            Assert.Same(request, callbackRequest);
+
+            // Second request, the callback shouldn't be hit anymore.
+            callbackRequest = null;
+
+            request = new HttpRequestMessage(HttpMethod.Get, server.Address);
+            request.Version = HttpVersion.Version30;
+            request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+            response = await client.SendAsync(request);
+
+            response.EnsureSuccessStatusCode();
+            Assert.Equal(HttpVersion.Version30, response.Version);
+            Assert.Null(callbackRequest);
+        }
     }
 }
