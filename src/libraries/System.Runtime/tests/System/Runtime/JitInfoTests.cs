@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.XUnitExtensions;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading;
 using Xunit;
 
@@ -9,18 +11,41 @@ namespace System.Runtime.Tests
 {
     public class JitInfoTests
     {
-        private const TestPlatforms AotPlatforms = TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android;
+        private long MakeAndInvokeDynamicSquareMethod(int input)
+        {
+            // example ref emit dynamic method from https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/how-to-define-and-execute-dynamic-methods
+            Type[] methodArgs = {typeof(int)};
 
-        [Fact]
-        [SkipOnPlatform(AotPlatforms, "JitInfo metrics will be 0 in AOT scenarios.")]
+            DynamicMethod squareIt = new DynamicMethod(
+                "SquareIt",
+                typeof(long),
+                methodArgs,
+                typeof(JitInfoTests).Module);
+
+            ILGenerator il = squareIt.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Conv_I8);
+            il.Emit(OpCodes.Dup);
+            il.Emit(OpCodes.Mul);
+            il.Emit(OpCodes.Ret);
+
+            Func<int, long> invokeSquareIt =
+                (Func<int, long>)
+                squareIt.CreateDelegate(typeof(Func<int, long>));
+
+            return invokeSquareIt(input);
+
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // JitInfo metrics will be 0 in AOT scenarios
         public void JitInfoIsPopulated()
         {
             TimeSpan beforeCompilationTime = System.Runtime.JitInfo.GetCompilationTime();
             long beforeCompiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes();
             long beforeCompiledMethodCount = System.Runtime.JitInfo.GetCompiledMethodCount();
 
-            Func<string> theFunc = () => "JIT compile this!";
-            Assert.True(theFunc().Equals("JIT compile this!"));
+            long square = MakeAndInvokeDynamicSquareMethod(100);
+            Assert.True(square == 10000);
 
             TimeSpan afterCompilationTime = System.Runtime.JitInfo.GetCompilationTime();
             long afterCompiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes();
@@ -49,16 +74,16 @@ namespace System.Runtime.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(~AotPlatforms, "JitInfo metrics will be 0 in AOT scenarios.")]
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))] // JitInfo metrics will be 0 in AOT scenarios
         public void JitInfoIsNotPopulated()
         {
             TimeSpan beforeCompilationTime = System.Runtime.JitInfo.GetCompilationTime();
             long beforeCompiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes();
             long beforeCompiledMethodCount = System.Runtime.JitInfo.GetCompiledMethodCount();
 
-            Func<string> theFunc = () => "JIT compile this!";
-            Assert.True(theFunc().Equals("JIT compile this!"));
+            long square = MakeAndInvokeDynamicSquareMethod(100);
+            Assert.True(square == 10000);
 
             TimeSpan afterCompilationTime = System.Runtime.JitInfo.GetCompilationTime();
             long afterCompiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes();
@@ -93,8 +118,8 @@ namespace System.Runtime.Tests
                 t1_beforeCompilationTime = System.Runtime.JitInfo.GetCompilationTime(currentThread: true);
                 t1_beforeCompiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes(currentThread: true);
                 t1_beforeCompiledMethodCount = System.Runtime.JitInfo.GetCompiledMethodCount(currentThread: true);
-                Func<string> theFunc2 = () => "JIT compile this!";
-                Assert.True(theFunc2().Equals("JIT compile this!"));
+                long square = MakeAndInvokeDynamicSquareMethod(100);
+                Assert.True(square == 10000);
                 t1_afterCompilationTime = System.Runtime.JitInfo.GetCompilationTime(currentThread: true);
                 t1_afterCompiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes(currentThread: true);
                 t1_afterCompiledMethodCount = System.Runtime.JitInfo.GetCompiledMethodCount(currentThread: true);
@@ -103,8 +128,8 @@ namespace System.Runtime.Tests
             t1.Start();
             t1.Join();
 
-            Func<string> theFunc = () => "JIT compile this!";
-            Assert.True(theFunc().Equals("JIT compile this!"));
+            long square = MakeAndInvokeDynamicSquareMethod(100);
+            Assert.True(square == 10000);
 
             TimeSpan t2_afterCompilationTime = System.Runtime.JitInfo.GetCompilationTime(currentThread: true);
             long t2_afterCompiledILBytes = System.Runtime.JitInfo.GetCompiledILBytes(currentThread: true);
