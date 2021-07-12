@@ -1581,9 +1581,11 @@ namespace Internal.TypeSystem.Interop
 
     class AnsiStringMarshaller : Marshaller
     {
+#if READYTORUN
         const int MAX_LOCAL_BUFFER_LENGTH = 260 + 1; // MAX_PATH + 1 
 
-        private ILLocalVariable _localBuffer = default;
+        private ILLocalVariable? _localBuffer = null;
+#endif
 
         internal override bool CleanupRequired
         {
@@ -1621,7 +1623,7 @@ namespace Internal.TypeSystem.Interop
 
                 // LocalBuffer = 0
                 codeStream.Emit(ILOpcode.ldnull);
-                codeStream.EmitStLoc(_localBuffer);
+                codeStream.EmitStLoc((ILLocalVariable)_localBuffer);
 
                 var noOptimize = emitter.NewCodeLabel();
 
@@ -1656,7 +1658,7 @@ namespace Internal.TypeSystem.Interop
                 // LocalBuffer = localloc(BufSize);
                 codeStream.EmitLdLoc(bufSize);
                 codeStream.Emit(ILOpcode.localloc);
-                codeStream.EmitStLoc(_localBuffer);
+                codeStream.EmitStLoc((ILLocalVariable)_localBuffer);
 
                 // NoOptimize:
                 codeStream.EmitLabel(noOptimize);
@@ -1669,9 +1671,9 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLdc(flags);
             LoadManagedValue(codeStream);
 
-            if (_localBuffer != default)
+            if (_localBuffer.HasValue)
             {
-                codeStream.EmitLdLoc(_localBuffer);
+                codeStream.EmitLdLoc((ILLocalVariable)_localBuffer);
             }
             else
             {
@@ -1718,10 +1720,10 @@ namespace Internal.TypeSystem.Interop
                 Context.SystemModule.GetKnownType("System.StubHelpers", "CSTRMarshaler")
                 .GetKnownMethod("ClearNative", null);
 
-            if (_localBuffer != default)
+            if (_localBuffer.HasValue)
             {
                 // if (m_dwLocalBuffer) goto Optimize
-                codeStream.EmitLdLoc(_localBuffer);
+                codeStream.EmitLdLoc((ILLocalVariable)_localBuffer);
                 codeStream.Emit(ILOpcode.brtrue, optimize);
             }
 
