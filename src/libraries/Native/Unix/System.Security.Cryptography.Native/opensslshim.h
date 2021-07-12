@@ -318,7 +318,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_MD_CTX_copy_ex) \
     RENAMED_FUNCTION(EVP_MD_CTX_free, EVP_MD_CTX_destroy) \
     RENAMED_FUNCTION(EVP_MD_CTX_new, EVP_MD_CTX_create) \
-    REQUIRED_FUNCTION(EVP_MD_size) \
+    RENAMED_FUNCTION(EVP_MD_get_size, EVP_MD_size) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_ctrl) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_free) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_get0_pkey) \
@@ -329,7 +329,6 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_padding) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_pss_saltlen) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_signature_md) \
-    REQUIRED_FUNCTION(EVP_PKEY_base_id) \
     REQUIRED_FUNCTION(EVP_PKEY_decrypt) \
     REQUIRED_FUNCTION(EVP_PKEY_decrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_derive_set_peer) \
@@ -338,6 +337,8 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_PKEY_encrypt) \
     REQUIRED_FUNCTION(EVP_PKEY_encrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_free) \
+    RENAMED_FUNCTION(EVP_PKEY_get_base_id, EVP_PKEY_base_id) \
+    RENAMED_FUNCTION(EVP_PKEY_get_size, EVP_PKEY_size) \
     FALLBACK_FUNCTION(EVP_PKEY_get0_RSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_EC_KEY) \
@@ -350,7 +351,6 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_PKEY_set1_RSA) \
     REQUIRED_FUNCTION(EVP_PKEY_sign) \
     REQUIRED_FUNCTION(EVP_PKEY_sign_init) \
-    REQUIRED_FUNCTION(EVP_PKEY_size) \
     FALLBACK_FUNCTION(EVP_PKEY_up_ref) \
     REQUIRED_FUNCTION(EVP_PKEY_verify) \
     REQUIRED_FUNCTION(EVP_PKEY_verify_init) \
@@ -754,7 +754,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_MD_CTX_copy_ex EVP_MD_CTX_copy_ex_ptr
 #define EVP_MD_CTX_free EVP_MD_CTX_free_ptr
 #define EVP_MD_CTX_new EVP_MD_CTX_new_ptr
-#define EVP_MD_size EVP_MD_size_ptr
+#define EVP_MD_get_size EVP_MD_get_size_ptr
 #define EVP_PKEY_CTX_ctrl EVP_PKEY_CTX_ctrl_ptr
 #define EVP_PKEY_CTX_free EVP_PKEY_CTX_free_ptr
 #define EVP_PKEY_CTX_get0_pkey EVP_PKEY_CTX_get0_pkey_ptr
@@ -765,7 +765,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_CTX_set_rsa_padding EVP_PKEY_CTX_set_rsa_padding_ptr
 #define EVP_PKEY_CTX_set_rsa_pss_saltlen EVP_PKEY_CTX_set_rsa_pss_saltlen_ptr
 #define EVP_PKEY_CTX_set_signature_md EVP_PKEY_CTX_set_signature_md_ptr
-#define EVP_PKEY_base_id EVP_PKEY_base_id_ptr
 #define EVP_PKEY_decrypt_init EVP_PKEY_decrypt_init_ptr
 #define EVP_PKEY_decrypt EVP_PKEY_decrypt_ptr
 #define EVP_PKEY_derive_set_peer EVP_PKEY_derive_set_peer_ptr
@@ -774,6 +773,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_encrypt_init EVP_PKEY_encrypt_init_ptr
 #define EVP_PKEY_encrypt EVP_PKEY_encrypt_ptr
 #define EVP_PKEY_free EVP_PKEY_free_ptr
+#define EVP_PKEY_get_base_id EVP_PKEY_get_base_id_ptr
+#define EVP_PKEY_get_size EVP_PKEY_get_size_ptr
 #define EVP_PKEY_get0_RSA EVP_PKEY_get0_RSA_ptr
 #define EVP_PKEY_get1_DSA EVP_PKEY_get1_DSA_ptr
 #define EVP_PKEY_get1_EC_KEY EVP_PKEY_get1_EC_KEY_ptr
@@ -786,7 +787,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_set1_RSA EVP_PKEY_set1_RSA_ptr
 #define EVP_PKEY_sign_init EVP_PKEY_sign_init_ptr
 #define EVP_PKEY_sign EVP_PKEY_sign_ptr
-#define EVP_PKEY_size EVP_PKEY_size_ptr
 #define EVP_PKEY_up_ref EVP_PKEY_up_ref_ptr
 #define EVP_PKEY_verify_init EVP_PKEY_verify_init_ptr
 #define EVP_PKEY_verify EVP_PKEY_verify_ptr
@@ -1078,6 +1078,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_RTM
 
 // Undo renames for renamed-in-3.0
+#define EVP_MD_get_size EVP_MD_size
+#define EVP_PKEY_get_base_id EVP_PKEY_base_id
+#define EVP_PKEY_get_size EVP_PKEY_size
 #define SSL_get1_peer_certificate SSL_get_peer_certificate
 
 #endif
