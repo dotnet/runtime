@@ -320,6 +320,10 @@ namespace DebuggerTests
                 a = 10;
                 b = 10;
             }
+            public string MyMethod()
+            {
+                return "methodOK";
+            }
         }
         public class TestEvaluate
         {
@@ -330,6 +334,9 @@ namespace DebuggerTests
             public bool t = true;
             public bool f = false;
             public ParmToTest objToTest;
+            public ParmToTest ParmToTestObj => objToTest;
+            public ParmToTest ParmToTestObjNull => null;
+            public ParmToTest ParmToTestObjException => throw new Exception("error2");
             public void run(int g, int h, string a, string valString, int this_a)
             {
                 objToTest = new ParmToTest();

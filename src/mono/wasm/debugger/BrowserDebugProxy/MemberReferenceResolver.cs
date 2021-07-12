@@ -66,6 +66,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         // Checks Locals, followed by `this`
         public async Task<JObject> Resolve(string var_name, CancellationToken token)
         {
+            //has method calls
+            if (var_name.Contains('('))
+                return null;
+
             string[] parts = var_name.Split(".");
             JObject rootObject = null;
 
@@ -145,6 +149,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
                 var typeId = await proxy.sdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
                 int method_id = await proxy.sdbHelper.GetMethodIdByName(sessionId, typeId[0], methodName, token);
+                if (method_id == 0) {
+                    var typeName = await proxy.sdbHelper.GetTypeName(sessionId, typeId[0], token);
+                    throw new Exception($"Method '{methodName}' not found in type '{typeName}'");
+                }
                 var command_params_obj = new MemoryStream();
                 var command_params_obj_writer = new MonoBinaryWriter(command_params_obj);
                 command_params_obj_writer.WriteObj(objectId, proxy.sdbHelper);
@@ -166,9 +174,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                     }
                 }
-
-                var retMethod = await proxy.sdbHelper.InvokeMethod(sessionId, command_params_obj.ToArray(), method_id, "methodRet", token);
-                return await GetValueFromObject(retMethod, token);
+                try
+                {
+                    var retMethod = await proxy.sdbHelper.InvokeMethod(sessionId, command_params_obj.ToArray(), method_id, "methodRet", token);
+                    return await GetValueFromObject(retMethod, token);
+                }
+                catch (Exception)
+                {
+                    throw new Exception($"Unable to evaluate method '{methodName}'");
+                }
             }
             return null;
         }

@@ -29,6 +29,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             public List<object> argValues = new List<object>();
             public Dictionary<string, JObject> memberAccessValues = new Dictionary<string, JObject>();
             private int visitCount;
+            public bool hasMethodCalls;
 
             public void VisitInternal(SyntaxNode node)
             {
@@ -56,12 +57,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
 
-                if (visitCount == 1)
+                if (node is InvocationExpressionSyntax)
                 {
-                    if (node is InvocationExpressionSyntax)
-                    {
+                    if (visitCount == 1)
                         methodCall.Add(node as InvocationExpressionSyntax);
-                    }
+                    hasMethodCalls = true;
                 }
 
                 if (node is AssignmentExpressionSyntax)
@@ -323,13 +323,16 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, memberAccessValues, identifierValues, null);
 
-            expressionTree = GetExpressionFromSyntaxTree(syntaxTree);
+            if (findVarNMethodCall.hasMethodCalls)
+            {
+                expressionTree = GetExpressionFromSyntaxTree(syntaxTree);
 
-            findVarNMethodCall.VisitInternal(expressionTree);
+                findVarNMethodCall.VisitInternal(expressionTree);
 
-            IList<JObject> methodValues = await ResolveMethodCalls(findVarNMethodCall.methodCall, findVarNMethodCall.memberAccessValues, resolver, token);
+                IList<JObject> methodValues = await ResolveMethodCalls(findVarNMethodCall.methodCall, findVarNMethodCall.memberAccessValues, resolver, token);
 
-            syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, null, null, methodValues);
+                syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, null, null, methodValues);
+            }
 
             expressionTree = GetExpressionFromSyntaxTree(syntaxTree);
             if (expressionTree == null)
