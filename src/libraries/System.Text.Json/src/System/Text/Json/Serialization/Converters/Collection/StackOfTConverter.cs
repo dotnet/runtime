@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Converters
             ((TCollection)state.Current.ReturnValue!).Push(value);
         }
 
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(Stack<>))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(Stack<>))]
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             if (state.Current.JsonTypeInfo.CreateObject == null)
