@@ -584,8 +584,15 @@ namespace System.Net
             {
                 if (string.IsNullOrEmpty(value))
                 {
-                    // "Port" is present but has no value.
-                    m_port_implicit = true;
+                    if(value == null)
+                    {
+                        m_port_implicit = true;
+                    }
+                    else
+                    {
+                        // "Port" is present but has no value.
+                        m_port_implicit = false;
+                    }
                     m_port = string.Empty;
                 }
                 else
