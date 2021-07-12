@@ -50,6 +50,8 @@ namespace System.Net.Http.Functional.Tests
 #endif
             };
 
+        public const int DefaultInitialWindowSize = 65535;
+
         public static readonly bool[] BoolValues = new[] { true, false };
 
         // For use by remote server tests

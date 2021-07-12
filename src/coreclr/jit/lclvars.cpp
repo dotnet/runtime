@@ -1431,11 +1431,6 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     }
 #endif
 
-    if (!compEnregLocals())
-    {
-        lvaSetVarDoNotEnregister(varNum DEBUGARG(Compiler::DNER_NoRegVars));
-    }
-
 #ifdef DEBUG
     varDsc->SetStackOffset(BAD_STK_OFFS);
 #endif
@@ -1586,6 +1581,23 @@ bool Compiler::lvaVarDoNotEnregister(unsigned varNum)
     LclVarDsc* varDsc = &lvaTable[varNum];
 
     return varDsc->lvDoNotEnregister;
+}
+
+//------------------------------------------------------------------------
+// lvInitializeDoNotEnregFlag: a helper to initialize `lvDoNotEnregister` flag
+//    for locals that were created before the compiler decided its optimization level.
+//
+// Assumptions:
+//    compEnregLocals() value is finalized and is set to false.
+//
+void Compiler::lvSetMinOptsDoNotEnreg()
+{
+    JITDUMP("compEnregLocals() is false, setting doNotEnreg flag for all locals.");
+    assert(!compEnregLocals());
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
+    {
+        lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_NoRegVars));
+    }
 }
 
 /*****************************************************************************
@@ -2547,7 +2559,7 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
             noway_assert(lvaTable[i].lvIsStructField);
             lvaTable[i].lvLiveInOutOfHndlr = 1;
             // For now, only enregister an EH Var if it is a single def and whose refCnt > 1.
-            if (!lvaEnregEHVars || !lvaTable[i].lvEhWriteThruCandidate || lvaTable[i].lvRefCnt() <= 1)
+            if (!lvaEnregEHVars || !lvaTable[i].lvSingleDefRegCandidate || lvaTable[i].lvRefCnt() <= 1)
             {
                 lvaSetVarDoNotEnregister(i DEBUGARG(DNER_LiveInOutOfHandler));
             }
@@ -2555,7 +2567,7 @@ void Compiler::lvaSetVarLiveInOutOfHandler(unsigned varNum)
     }
 
     // For now, only enregister an EH Var if it is a single def and whose refCnt > 1.
-    if (!lvaEnregEHVars || !varDsc->lvEhWriteThruCandidate || varDsc->lvRefCnt() <= 1)
+    if (!lvaEnregEHVars || !varDsc->lvSingleDefRegCandidate || varDsc->lvRefCnt() <= 1)
     {
         lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LiveInOutOfHandler));
     }
@@ -2626,7 +2638,6 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             break;
         case DNER_NoRegVars:
             JITDUMP("opts.compFlags & CLFLG_REGVAR is not set\n");
-            assert((opts.compFlags & CLFLG_REGVAR) == 0);
             assert(!compEnregLocals());
             break;
         case DNER_MinOptsGC:
@@ -3482,7 +3493,7 @@ void Compiler::lvaSortByRefCount()
             {
                 varDsc->lvTracked = 0;
             }
-            else if ((varDsc->lvType == TYP_STRUCT) && !varDsc->lvRegStruct)
+            else if ((varDsc->lvType == TYP_STRUCT) && !varDsc->lvRegStruct && !compEnregStructLocals())
             {
                 lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
             }
@@ -3502,6 +3513,10 @@ void Compiler::lvaSortByRefCount()
         {
             varDsc->lvTracked = 0;
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_MinOptsGC));
+        }
+        if (!compEnregLocals())
+        {
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_NoRegVars));
         }
 #if defined(JIT32_GCENCODER) && defined(FEATURE_EH_FUNCLETS)
         if (lvaIsOriginalThisArg(lclNum) && (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)
@@ -4095,33 +4110,35 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             }
         }
 
-        if (!varDsc->lvDisqualifyForEhWriteThru) // If this EH var already disqualified, we can skip this
+        if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
         {
             if (tree->gtFlags & GTF_VAR_DEF) // Is this is a def of our variable
             {
-                bool bbInALoop             = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
-                bool bbIsReturn            = block->bbJumpKind == BBJ_RETURN;
+                bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+                bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+                // TODO: Zero-inits in LSRA are created with below condition. Try to use similar condition here as well.
+                // if (compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet()))
                 bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);
 
-                if (varDsc->lvEhWriteThruCandidate || needsExplicitZeroInit)
+                if (varDsc->lvSingleDefRegCandidate || needsExplicitZeroInit)
                 {
 #ifdef DEBUG
                     if (needsExplicitZeroInit)
                     {
-                        varDsc->lvDisqualifyEHVarReason = 'Z';
-                        JITDUMP("EH Var V%02u needs explicit zero init. Disqualified as a register candidate.\n",
+                        varDsc->lvSingleDefDisqualifyReason = 'Z';
+                        JITDUMP("V%02u needs explicit zero init. Disqualified as a single-def register candidate.\n",
                                 lclNum);
                     }
                     else
                     {
-                        varDsc->lvDisqualifyEHVarReason = 'M';
-                        JITDUMP("EH Var V%02u has multiple definitions. Disqualified as a register candidate.\n",
+                        varDsc->lvSingleDefDisqualifyReason = 'M';
+                        JITDUMP("V%02u has multiple definitions. Disqualified as a single-def register candidate.\n",
                                 lclNum);
                     }
 
 #endif // DEBUG
-                    varDsc->lvEhWriteThruCandidate     = false;
-                    varDsc->lvDisqualifyForEhWriteThru = true;
+                    varDsc->lvSingleDefRegCandidate           = false;
+                    varDsc->lvDisqualifySingleDefRegCandidate = true;
                 }
                 else
                 {
@@ -4131,7 +4148,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                     if (!varTypeNeedsPartialCalleeSave(varDsc->lvType))
 #endif
                     {
-                        varDsc->lvEhWriteThruCandidate = true;
+                        varDsc->lvSingleDefRegCandidate = true;
                         JITDUMP("Marking EH Var V%02u as a register candidate.\n", lclNum);
                     }
                 }
@@ -4506,8 +4523,8 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         // that was set by past phases.
         if (!isRecompute)
         {
-            varDsc->lvSingleDef            = varDsc->lvIsParam;
-            varDsc->lvEhWriteThruCandidate = varDsc->lvIsParam;
+            varDsc->lvSingleDef             = varDsc->lvIsParam;
+            varDsc->lvSingleDefRegCandidate = varDsc->lvIsParam;
         }
     }
 
@@ -7390,11 +7407,6 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         printf(" HFA(%s) ", varTypeName(varDsc->GetHfaType()));
     }
 
-    if (varDsc->lvLiveInOutOfHndlr)
-    {
-        printf(" EH");
-    }
-
     if (varDsc->lvDoNotEnregister)
     {
         printf(" do-not-enreg[");
@@ -7412,7 +7424,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         }
         if (lvaEnregEHVars && varDsc->lvLiveInOutOfHndlr)
         {
-            printf("%c", varDsc->lvDisqualifyEHVarReason);
+            printf("%c", varDsc->lvSingleDefDisqualifyReason);
         }
         if (varDsc->lvLclFieldExpr)
         {
@@ -7485,6 +7497,15 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" EH-live");
     }
+    if (varDsc->lvSpillAtSingleDef)
+    {
+        printf(" spill-single-def");
+    }
+    else if (varDsc->lvSingleDefRegCandidate)
+    {
+        printf(" single-def");
+    }
+
 #ifndef TARGET_64BIT
     if (varDsc->lvStructDoubleAlign)
         printf(" double-align");

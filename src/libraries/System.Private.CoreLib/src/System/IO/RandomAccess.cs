@@ -23,7 +23,7 @@ namespace System.IO
         {
             ValidateInput(handle, fileOffset: 0);
 
-            return GetFileLength(handle, path: null);
+            return GetFileLength(handle);
         }
 
         /// <summary>
@@ -264,42 +264,28 @@ namespace System.IO
             }
         }
 
-        private static ValueTask<int> ScheduleSyncReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        private static ValueTask<int> ScheduleSyncReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer,
+            long fileOffset, CancellationToken cancellationToken)
         {
-            return new ValueTask<int>(Task.Factory.StartNew(static state =>
-            {
-                var args = ((SafeFileHandle handle, Memory<byte> buffer, long fileOffset))state!;
-                return ReadAtOffset(args.handle, args.buffer.Span, args.fileOffset);
-            }, (handle, buffer, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+            return handle.GetThreadPoolValueTaskSource().QueueRead(buffer, fileOffset, cancellationToken);
         }
 
         private static ValueTask<long> ScheduleSyncReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
         {
-            return new ValueTask<long>(Task.Factory.StartNew(static state =>
-            {
-                var args = ((SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset))state!;
-                return ReadScatterAtOffset(args.handle, args.buffers, args.fileOffset);
-            }, (handle, buffers, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+            return handle.GetThreadPoolValueTaskSource().QueueReadScatter(buffers, fileOffset, cancellationToken);
         }
 
-        private static ValueTask<int> ScheduleSyncWriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        private static ValueTask<int> ScheduleSyncWriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer,
+            long fileOffset, CancellationToken cancellationToken)
         {
-            return new ValueTask<int>(Task.Factory.StartNew(static state =>
-            {
-                var args = ((SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset))state!;
-                return WriteAtOffset(args.handle, args.buffer.Span, args.fileOffset);
-            }, (handle, buffer, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+            return handle.GetThreadPoolValueTaskSource().QueueWrite(buffer, fileOffset, cancellationToken);
         }
 
         private static ValueTask<long> ScheduleSyncWriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
         {
-            return new ValueTask<long>(Task.Factory.StartNew(static state =>
-            {
-                var args = ((SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset))state!;
-                return WriteGatherAtOffset(args.handle, args.buffers, args.fileOffset);
-            }, (handle, buffers, fileOffset), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+            return handle.GetThreadPoolValueTaskSource().QueueWriteGather(buffers, fileOffset, cancellationToken);
         }
     }
 }

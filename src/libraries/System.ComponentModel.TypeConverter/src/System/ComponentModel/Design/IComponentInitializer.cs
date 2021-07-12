@@ -23,7 +23,7 @@ namespace System.ComponentModel.Design
         /// dictionary, because this is an existing component that may already have properties
         /// set on it.
         /// </summary>
-        void InitializeExistingComponent(IDictionary defaultValues);
+        void InitializeExistingComponent(IDictionary? defaultValues);
 
         /// <summary>
         /// This method is called when a component is first initialized, typically after being first added
@@ -32,6 +32,6 @@ namespace System.ComponentModel.Design
         /// are specified. You may perform any initialization of this component that you like, and you
         /// may even ignore the defaultValues dictionary altogether if you wish.
         /// </summary>
-        void InitializeNewComponent(IDictionary defaultValues);
+        void InitializeNewComponent(IDictionary? defaultValues);
     }
 }

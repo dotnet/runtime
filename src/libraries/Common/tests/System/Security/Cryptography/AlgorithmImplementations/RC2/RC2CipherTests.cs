@@ -161,6 +161,27 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
 
                 byte[] decrypted = alg.Decrypt(cipher);
                 Assert.Equal<byte>(expectedDecryptedBytes, decrypted);
+
+                if (RC2Factory.OneShotSupported)
+                {
+                    byte[] oneShotEncrypt = cipherMode switch
+                    {
+                        CipherMode.ECB => alg.EncryptEcb(textHex.HexToByteArray(), paddingMode),
+                        CipherMode.CBC => alg.EncryptCbc(textHex.HexToByteArray(), iv.HexToByteArray(), paddingMode),
+                        _ => throw new NotImplementedException(),
+                    };
+
+                    Assert.Equal(expectedEncryptedBytes, oneShotEncrypt);
+
+                    byte[] oneShotDecrypt = cipherMode switch
+                    {
+                        CipherMode.ECB => alg.DecryptEcb(cipher, paddingMode),
+                        CipherMode.CBC => alg.DecryptCbc(cipher, iv.HexToByteArray(), paddingMode),
+                        _ => throw new NotImplementedException(),
+                    };
+
+                    Assert.Equal(expectedDecryptedBytes, oneShotDecrypt);
+                }
             }
         }
 

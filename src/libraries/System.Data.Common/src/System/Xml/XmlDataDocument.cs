@@ -2203,7 +2203,7 @@ namespace System.Xml
             if (args.PropertyName == "Namespace")
                 throw new InvalidOperationException(SR.DataDom_TableNamespaceChange);
         }
-        private void OnTableColumnsChanging(object oColumnsCollection, CollectionChangeEventArgs args)
+        private void OnTableColumnsChanging(object? oColumnsCollection, CollectionChangeEventArgs args)
         {
             // args.Action is one of CollectionChangeAction.Add, CollectionChangeAction.Remove or CollectionChangeAction.Refresh
             // args.Element is one of either the column (for Add and Remove actions or null, if the entire colection of columns is changing)
@@ -2212,7 +2212,7 @@ namespace System.Xml
             throw new InvalidOperationException(SR.DataDom_TableColumnsChange);
         }
 
-        private void OnDataSetTablesChanging(object oTablesCollection, CollectionChangeEventArgs args)
+        private void OnDataSetTablesChanging(object? oTablesCollection, CollectionChangeEventArgs args)
         {
             // args.Action is one of CollectionChangeAction.Add, CollectionChangeAction.Remove or CollectionChangeAction.Refresh
             // args.Element is a table
@@ -2221,13 +2221,13 @@ namespace System.Xml
             throw new InvalidOperationException(SR.DataDom_DataSetTablesChange);
         }
 
-        private void OnDataSetRelationsChanging(object oRelationsCollection, CollectionChangeEventArgs args)
+        private void OnDataSetRelationsChanging(object? oRelationsCollection, CollectionChangeEventArgs args)
         {
             // args.Action is one of CollectionChangeAction.Add, CollectionChangeAction.Remove or CollectionChangeAction.Refresh
             // args.Element is a DataRelation
 
             // Disallow changing the tables collection if there is data loaded and there are nested relationship that are added/refreshed
-            DataRelation rel = (DataRelation)(args.Element);
+            DataRelation? rel = (DataRelation?)(args.Element);
             if (rel != null && rel.Nested)
                 throw new InvalidOperationException(SR.DataDom_DataSetNestedRelationsChange);
 
@@ -2235,7 +2235,7 @@ namespace System.Xml
             Debug.Assert(!(args.Action == CollectionChangeAction.Add || args.Action == CollectionChangeAction.Remove) || rel!.Nested == false);
             if (args.Action == CollectionChangeAction.Refresh)
             {
-                foreach (DataRelation relTemp in (DataRelationCollection)oRelationsCollection)
+                foreach (DataRelation relTemp in (DataRelationCollection)oRelationsCollection!)
                 {
                     if (relTemp.Nested)
                     {

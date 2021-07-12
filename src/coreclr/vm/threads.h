@@ -6271,17 +6271,22 @@ private:
 
 BOOL Debug_IsLockedViaThreadSuspension();
 
-#ifdef FEATURE_WRITEBARRIER_COPY
+inline BOOL IsWriteBarrierCopyEnabled()
+{
+#ifdef DACCESS_COMPILE
+    return FALSE;
+#else // DACCESS_COMPILE
+#ifdef HOST_OSX
+    return TRUE;
+#else
+    return ExecutableAllocator::IsWXORXEnabled();
+#endif
+#endif // DACCESS_COMPILE
+}
 
 BYTE* GetWriteBarrierCodeLocation(VOID* barrier);
 BOOL IsIPInWriteBarrierCodeCopy(PCODE controlPc);
 PCODE AdjustWriteBarrierIP(PCODE controlPc);
-
-#else // FEATURE_WRITEBARRIER_COPY
-
-#define GetWriteBarrierCodeLocation(barrier) ((BYTE*)(barrier))
-
-#endif // FEATURE_WRITEBARRIER_COPY
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 extern thread_local Thread* t_pStackWalkerWalkingThread;

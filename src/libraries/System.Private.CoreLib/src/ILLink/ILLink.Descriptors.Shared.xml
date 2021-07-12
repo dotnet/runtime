@@ -13,6 +13,7 @@
     <type fullname="System.Threading.Tasks.Task">
       <property name="ParentForDebugger" />
       <property name="StateFlagsForDebugger" />
+      <property name="StateFlags" />
       <method name="GetDelegateContinuationsForDebugger" />
       <method name="SetNotificationForWaitCompletion" />
     </type>

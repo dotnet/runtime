@@ -263,6 +263,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
     if (baseAddress == 0 || baseAddress == m_auxvValues[AT_SYSINFO_EHDR]) {
         return;
     }
+    AddModuleInfo(false, baseAddress, nullptr, moduleName);
     if (m_coreclrPath.empty())
     {
         size_t last = moduleName.rfind(DIRECTORY_SEPARATOR_STR_A MAKEDLLNAME_A("coreclr"));
@@ -302,8 +303,7 @@ CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phd
         break;
 
     case PT_LOAD:
-        MemoryRegion region(0, loadbias + phdr->p_vaddr, loadbias + phdr->p_vaddr + phdr->p_memsz, baseAddress);
-        m_moduleAddresses.insert(region);
+        AddModuleAddressRange(loadbias + phdr->p_vaddr, loadbias + phdr->p_vaddr + phdr->p_memsz, baseAddress);
         break;
     }
 }

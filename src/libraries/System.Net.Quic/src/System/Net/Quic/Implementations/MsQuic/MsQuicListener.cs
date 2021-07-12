@@ -3,8 +3,10 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -31,9 +33,19 @@ namespace System.Net.Quic.Implementations.MsQuic
             public readonly SafeMsQuicConfigurationHandle ConnectionConfiguration;
             public readonly Channel<MsQuicConnection> AcceptConnectionQueue;
 
+            public bool RemoteCertificateRequired;
+            public X509RevocationMode RevocationMode = X509RevocationMode.Offline;
+            public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback;
+
             public State(QuicListenerOptions options)
             {
                 ConnectionConfiguration = SafeMsQuicConfigurationHandle.Create(options);
+                if (options.ServerAuthenticationOptions != null)
+                {
+                    RemoteCertificateRequired = options.ServerAuthenticationOptions.ClientCertificateRequired;
+                    RevocationMode = options.ServerAuthenticationOptions.CertificateRevocationCheckMode;
+                    RemoteCertificateValidationCallback = options.ServerAuthenticationOptions.RemoteCertificateValidationCallback;
+                }
 
                 AcceptConnectionQueue = Channel.CreateBounded<MsQuicConnection>(new BoundedChannelOptions(options.ListenBacklog)
                 {
@@ -59,7 +71,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch
             {
-                _state.Handle?.Dispose();
                 _stateHandle.Free();
                 throw;
             }
@@ -109,7 +120,15 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             Stop();
             _state?.Handle?.Dispose();
+
+            // Note that it's safe to free the state GCHandle here, because:
+            // (1) We called ListenerStop above, which will block until all listener events are processed. So we will not receive any more listener events.
+            // (2) This class is finalizable, which means we will always get called even if the user doesn't explicitly Dispose us.
+            // If we ever change this class to not be finalizable, and instead rely on the SafeHandle finalization, then we will need to make
+            // the SafeHandle responsible for freeing this GCHandle, since it will have the only chance to do so when finalized.
+
             if (_stateHandle.IsAllocated) _stateHandle.Free();
+
             _state?.ConnectionConfiguration?.Dispose();
             _disposed = true;
         }
@@ -123,12 +142,19 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             uint status;
 
+            Debug.Assert(_stateHandle.IsAllocated);
+
             MemoryHandle[]? handles = null;
             QuicBuffer[]? buffers = null;
             try
             {
                 MsQuicAlpnHelper.Prepare(applicationProtocols, out handles, out buffers);
                 status = MsQuicApi.Api.ListenerStartDelegate(_state.Handle, (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0), (uint)applicationProtocols.Count, ref address);
+            }
+            catch
+            {
+                _stateHandle.Free();
+                throw;
             }
             finally
             {
@@ -167,7 +193,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return MsQuicStatusCodes.InternalError;
             }
 
-            State state = (State)GCHandle.FromIntPtr(context).Target!;
+            GCHandle gcHandle = GCHandle.FromIntPtr(context);
+            Debug.Assert(gcHandle.IsAllocated);
+            Debug.Assert(gcHandle.Target is not null);
+            var state = (State)gcHandle.Target;
+
             SafeMsQuicConnectionHandle? connectionHandle = null;
 
             try
@@ -182,7 +212,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 uint status = MsQuicApi.Api.ConnectionSetConfigurationDelegate(connectionHandle, state.ConnectionConfiguration);
                 QuicExceptionHelpers.ThrowIfFailed(status, "ConnectionSetConfiguration failed.");
 
-                var msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, connectionHandle);
+                var msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, connectionHandle, state.RemoteCertificateRequired, state.RevocationMode, state.RemoteCertificateValidationCallback);
                 msQuicConnection.SetNegotiatedAlpn(connectionInfo.NegotiatedAlpn, connectionInfo.NegotiatedAlpnLength);
 
                 if (!state.AcceptConnectionQueue.Writer.TryWrite(msQuicConnection))
@@ -197,6 +227,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch (Exception ex)
             {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Error(state, $"[Listener#{state.GetHashCode()}] Exception occurred during handling {(QUIC_LISTENER_EVENT)evt.Type} connection callback: {ex}");
+                }
+
+                Debug.Fail($"[Listener#{state.GetHashCode()}] Exception occurred during handling {(QUIC_LISTENER_EVENT)evt.Type} connection callback: {ex}");
+
                 // This handle will be cleaned up by MsQuic by returning InternalError.
                 connectionHandle?.SetHandleAsInvalid();
                 state.AcceptConnectionQueue.Writer.TryComplete(ex);
