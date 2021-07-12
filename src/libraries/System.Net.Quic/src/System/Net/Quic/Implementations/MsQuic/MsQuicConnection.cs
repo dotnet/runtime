@@ -83,6 +83,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (releaseHandles)
                 {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{TraceId()} releasing handle after last stream.");
                     Handle?.Dispose();
                 }
             }
@@ -123,7 +124,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                     _closing = true;
                 }
             }
+
+            internal string TraceId()
+            {
+                return $"[MsQuicConnection#{this.GetHashCode()}/{Handle?.DangerousGetHandle():x}]";
+            }
         }
+
+        internal string TraceId() => _state.TraceId();
 
         // constructor for inbound connections
         public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle, bool remoteCertificateRequired = false, X509RevocationMode revocationMode = X509RevocationMode.Offline, RemoteCertificateValidationCallback? remoteCertificateValidationCallback = null)
@@ -162,7 +170,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(_state, $"[Connection#{_state.GetHashCode()}] inbound connection created");
+                NetEventSource.Info(_state, $"{TraceId()} inbound connection created");
             }
         }
 
@@ -201,7 +209,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(_state, $"[Connection#{_state.GetHashCode()}] outbound connection created");
+                NetEventSource.Info(_state, $"{TraceId()} outbound connection created");
             }
         }
 
@@ -621,7 +629,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"[Connection#{state.GetHashCode()}] received event {connectionEvent.Type}");
+                NetEventSource.Info(state, $"{state.TraceId()} received event {connectionEvent.Type}");
             }
 
             try
@@ -697,6 +705,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} disposing {disposing}");
+
             bool releaseHandles = false;
             lock (_state)
             {
@@ -716,6 +726,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             _configuration?.Dispose();
             if (releaseHandles)
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} releasing handle");
+
                 // We may not be fully initialized if constructor fails.
                 _state.Handle?.Dispose();
             }
