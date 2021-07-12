@@ -722,12 +722,45 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 byte[] pfxBytes = builder.Encode();
 
                 // Windows seems to be applying both the implicit match and the LocalKeyId match,
-                // so it detects two hits against the same key and fails.
-                ReadUnreadablePfx(
-                    pfxBytes,
-                    pw,
-                    // NTE_BAD_DATA
-                    -2146893819);
+                // so it detects two hits against the same key and fails for ephemeral import.
+
+                if (s_importFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet))
+                {
+                    ReadUnreadablePfx(
+                        pfxBytes,
+                        pw,
+                        // NTE_BAD_DATA
+                        -2146893819);
+                }
+                else
+                {
+                    // This is somewhat circular logic, but it's hard to bind cert2 with the wrong
+                    // private key any other way.
+
+                    using (ImportedCollection coll = Cert.Import(pfxBytes, pw, s_perphemeralImportFlags))
+                    {
+                        X509Certificate2 cert2WithKey = coll.Collection[0];
+
+                        ReadMultiPfx(
+                            pfxBytes,
+                            pw,
+                            cert2WithKey,
+                            new[] { cert2WithKey, cert },
+                            x =>
+                            {
+                                if (x.Equals(cert))
+                                {
+                                    CheckMultiBoundKeyConsistency(x);
+                                }
+                                else
+                                {
+                                    CheckMultiBoundKeyConsistencyFails(x);
+                                }
+                            });
+
+                        AssertExtensions.SequenceEqual(cert2.RawData, cert2WithKey.RawData);
+                    }
+                }
             }
         }
 
@@ -766,14 +799,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 builder.SealWithMac(pw, s_digestAlgorithm, MacCount);
                 byte[] pfxBytes = builder.Encode();
 
-                if (addLocalKeyId)
+                // If we add the localKeyId values then everything works out, otherwise
+                // we end up doing SubjectPublicKeyInfo matching logic which says two certs
+                // mapped to one key.  This fails for ephemeral import, and succeeds otherwise.
+                if (addLocalKeyId || !s_importFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet))
                 {
                     ReadMultiPfx(
                         pfxBytes,
                         pw,
                         cert,
                         new[] { cert, cert },
-                        CheckKeyConsistency);
+                        addLocalKeyId ? CheckKeyConsistency : CheckMultiBoundKeyConsistency);
                 }
                 else
                 {
@@ -816,11 +852,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 builder.SealWithMac(pw, s_digestAlgorithm, MacCount);
                 byte[] pfxBytes = builder.Encode();
 
-                ReadUnreadablePfx(
-                    pfxBytes,
-                    pw,
-                    // NTE_BAD_DATA
-                    -2146893819);
+                if (s_importFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet))
+                {
+                    ReadUnreadablePfx(
+                        pfxBytes,
+                        pw,
+                        // NTE_BAD_DATA
+                        -2146893819);
+                }
+                else
+                {
+                    ReadMultiPfx(
+                        pfxBytes,
+                        pw,
+                        cert,
+                        new[] { cert, cert },
+                        CheckMultiBoundKeyConsistency);
+                }    
             }
         }
 
@@ -870,22 +918,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // The collection import is on a razors edge with the perphemeral import:
                 // once one of the certs gets disposed the other(s) can no longer open
                 // their private key.
-                Action<X509Certificate2> followup = CheckKeyConsistency;
-
-                if (PlatformDetection.IsWindows)
-                {
-                    if (GetType() == typeof(PfxFormatTests_SingleCert))
-                    {
-                        followup = x =>
-                        {
-                            CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
-                                () => x.GetRSAPrivateKey());
-
-                            // NTE_BAD_KEYSET
-                            Assert.Equal(-2146893802, ex.HResult);
-                        };
-                    }
-                }
 
                 ReadMultiPfx(
                     pfxBytes,
@@ -893,7 +925,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     cert,
                     new[] { cert, cert },
                     s_perphemeralImportFlags,
-                    followup);
+                    CheckMultiBoundKeyConsistency);
             }
         }
 
@@ -1098,6 +1130,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        protected virtual void CheckMultiBoundKeyConsistency(X509Certificate2 cert)
+        {
+            CheckKeyConsistency(cert);
+        }
+
         private static void CheckKeyConsistencyFails(X509Certificate2 cert)
         {
             using (RSA priv = cert.GetRSAPrivateKey())
@@ -1110,6 +1147,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     pub.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
                     "Cert public key verifies signature from cert private key");
             }
+        }
+
+        protected virtual void CheckMultiBoundKeyConsistencyFails(X509Certificate2 cert)
+        {
+            CheckKeyConsistencyFails(cert);
         }
 
         private static void AddContents(

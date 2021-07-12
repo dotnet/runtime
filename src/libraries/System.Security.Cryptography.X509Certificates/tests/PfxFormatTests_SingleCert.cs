@@ -87,5 +87,38 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.NotNull(ex.InnerException);
             }
         }
+
+        private static void CheckBadKeyset(X509Certificate2 cert)
+        {
+            CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
+                    () => cert.GetRSAPrivateKey());
+
+            // NTE_BAD_KEYSET
+            Assert.Equal(-2146893802, ex.HResult);
+        }
+
+        protected override void CheckMultiBoundKeyConsistency(X509Certificate2 cert)
+        {
+            if (PlatformDetection.IsWindows)
+            {
+                CheckBadKeyset(cert);
+            }
+            else
+            {
+                base.CheckMultiBoundKeyConsistency(cert);
+            }
+        }
+
+        protected override void CheckMultiBoundKeyConsistencyFails(X509Certificate2 cert)
+        {
+            if (PlatformDetection.IsWindows)
+            {
+                CheckBadKeyset(cert);
+            }
+            else
+            {
+                base.CheckMultiBoundKeyConsistencyFails(cert);
+            }
+        }
     }
 }
