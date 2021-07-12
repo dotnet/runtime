@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
@@ -24,24 +25,18 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool CanHaveIdMetadata => false;
 
+        internal override bool IsImmutableCollectionConverter => true;
+
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
             state.Current.ReturnValue = new Dictionary<TKey, TValue>();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
-            JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
-
-            Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>? creator = (Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>?)typeInfo.CreateObjectWithArgs;
-            if (creator == null)
-            {
-                creator = options.MemberAccessorStrategy.CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>();
-                typeInfo.CreateObjectWithArgs = creator;
-            }
-
+            Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>? creator =
+                (Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>?)state.Current.JsonTypeInfo.CreateObjectWithArgs;
+            Debug.Assert(creator != null);
             state.Current.ReturnValue = creator((Dictionary<TKey, TValue>)state.Current.ReturnValue!);
         }
 
@@ -94,6 +89,14 @@ namespace System.Text.Json.Serialization.Converters
 
             enumerator.Dispose();
             return true;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        internal override void Initialize(JsonSerializerOptions options, JsonTypeInfo? jsonTypeInfo = null)
+        {
+            Debug.Assert(jsonTypeInfo != null);
+            jsonTypeInfo.CreateObjectWithArgs = options.MemberAccessorStrategy.CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>();
         }
     }
 }

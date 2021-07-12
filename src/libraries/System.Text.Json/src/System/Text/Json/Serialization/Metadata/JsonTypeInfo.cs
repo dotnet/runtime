@@ -305,6 +305,12 @@ namespace System.Text.Json.Serialization.Metadata
                     {
                         ElementType = converter.ElementType;
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
+
+                        if (converter.IsImmutableCollectionConverter)
+                        {
+                            // Initialize a func to create immutable enumerable instances.
+                            converter.Initialize(Options, this);
+                        }
                     }
                     break;
                 case ConverterStrategy.Dictionary:
@@ -312,6 +318,12 @@ namespace System.Text.Json.Serialization.Metadata
                         KeyType = converter.KeyType;
                         ElementType = converter.ElementType;
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
+
+                        if (converter.IsImmutableCollectionConverter)
+                        {
+                            // Initialize a func to create immutable dictionary instances.
+                            converter.Initialize(Options, this);
+                        }
                     }
                     break;
                 case ConverterStrategy.Value:

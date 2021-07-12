@@ -16,7 +16,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
         }
 
-        protected PropertyVisibilityTests_Metadata(JsonSerializerWrapperForString serializerWrapper)
+        protected PropertyVisibilityTests_Metadata(Serialization.Tests.JsonSerializerWrapperForString serializerWrapper)
             : base(serializerWrapper)
         {
         }
@@ -259,7 +259,6 @@ namespace System.Text.Json.SourceGeneration.Tests
     }
 
     public partial class PropertyVisibilityTests_Default : PropertyVisibilityTests_Metadata
-    //public partial class PropertyVisibilityTests_Default : PropertyVisibilityTests
     {
         public PropertyVisibilityTests_Default()
             : base(new JsonSerializerWrapperForString_SourceGen(PropertyVisibilityTestsContext_Default.Default, (options) => new PropertyVisibilityTestsContext_Default(options)))

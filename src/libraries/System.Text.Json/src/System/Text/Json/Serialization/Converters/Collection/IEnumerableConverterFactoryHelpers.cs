@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Reflection;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
@@ -13,21 +14,6 @@ namespace System.Text.Json.Serialization
         // System.Text.Json doesn't take a direct reference to System.Collections.Immutable so
         // any netstandard2.0 consumers don't need to reference System.Collections.Immutable.
         // So instead, implement a "weak reference" by using strings to check for Immutable types.
-
-        // Immutable collection types.
-        private const string ImmutableArrayGenericTypeName = "System.Collections.Immutable.ImmutableArray`1";
-        private const string ImmutableListGenericTypeName = "System.Collections.Immutable.ImmutableList`1";
-        private const string ImmutableListGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableList`1";
-        private const string ImmutableStackGenericTypeName = "System.Collections.Immutable.ImmutableStack`1";
-        private const string ImmutableStackGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableStack`1";
-        private const string ImmutableQueueGenericTypeName = "System.Collections.Immutable.ImmutableQueue`1";
-        private const string ImmutableQueueGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableQueue`1";
-        private const string ImmutableSortedSetGenericTypeName = "System.Collections.Immutable.ImmutableSortedSet`1";
-        private const string ImmutableHashSetGenericTypeName = "System.Collections.Immutable.ImmutableHashSet`1";
-        private const string ImmutableSetGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableSet`1";
-        private const string ImmutableDictionaryGenericTypeName = "System.Collections.Immutable.ImmutableDictionary`2";
-        private const string ImmutableDictionaryGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableDictionary`2";
-        private const string ImmutableSortedDictionaryGenericTypeName = "System.Collections.Immutable.ImmutableSortedDictionary`2";
 
         // Immutable collection builder types.
         private const string ImmutableArrayTypeName = "System.Collections.Immutable.ImmutableArray";
@@ -107,49 +93,6 @@ namespace System.Text.Json.Serialization
             return null;
         }
 
-        public static bool IsImmutableDictionaryType(this Type type)
-        {
-            if (!type.IsGenericType || !type.Assembly.FullName!.StartsWith("System.Collections.Immutable,", StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            switch (type.GetGenericTypeDefinition().FullName)
-            {
-                case ImmutableDictionaryGenericTypeName:
-                case ImmutableDictionaryGenericInterfaceTypeName:
-                case ImmutableSortedDictionaryGenericTypeName:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        public static bool IsImmutableEnumerableType(this Type type)
-        {
-            if (!type.IsGenericType|| !type.Assembly.FullName!.StartsWith("System.Collections.Immutable,", StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            switch (type.GetGenericTypeDefinition().FullName)
-            {
-                case ImmutableArrayGenericTypeName:
-                case ImmutableListGenericTypeName:
-                case ImmutableListGenericInterfaceTypeName:
-                case ImmutableStackGenericTypeName:
-                case ImmutableStackGenericInterfaceTypeName:
-                case ImmutableQueueGenericTypeName:
-                case ImmutableQueueGenericInterfaceTypeName:
-                case ImmutableSortedSetGenericTypeName:
-                case ImmutableHashSetGenericTypeName:
-                case ImmutableSetGenericInterfaceTypeName:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
         [RequiresUnreferencedCode(ImmutableConvertersUnreferencedCodeMessage)]
         public static MethodInfo GetImmutableEnumerableCreateRangeMethod(this Type type, Type elementType)
         {
@@ -209,26 +152,26 @@ namespace System.Text.Json.Serialization
 
             switch (underlyingType.FullName)
             {
-                case ImmutableArrayGenericTypeName:
+                case ReflectionExtensions.ImmutableArrayGenericTypeName:
                     constructingTypeName = ImmutableArrayTypeName;
                     break;
-                case ImmutableListGenericTypeName:
-                case ImmutableListGenericInterfaceTypeName:
+                case ReflectionExtensions.ImmutableListGenericTypeName:
+                case ReflectionExtensions.ImmutableListGenericInterfaceTypeName:
                     constructingTypeName = ImmutableListTypeName;
                     break;
-                case ImmutableStackGenericTypeName:
-                case ImmutableStackGenericInterfaceTypeName:
+                case ReflectionExtensions.ImmutableStackGenericTypeName:
+                case ReflectionExtensions.ImmutableStackGenericInterfaceTypeName:
                     constructingTypeName = ImmutableStackTypeName;
                     break;
-                case ImmutableQueueGenericTypeName:
-                case ImmutableQueueGenericInterfaceTypeName:
+                case ReflectionExtensions.ImmutableQueueGenericTypeName:
+                case ReflectionExtensions.ImmutableQueueGenericInterfaceTypeName:
                     constructingTypeName = ImmutableQueueTypeName;
                     break;
-                case ImmutableSortedSetGenericTypeName:
+                case ReflectionExtensions.ImmutableSortedSetGenericTypeName:
                     constructingTypeName = ImmutableSortedSetTypeName;
                     break;
-                case ImmutableHashSetGenericTypeName:
-                case ImmutableSetGenericInterfaceTypeName:
+                case ReflectionExtensions.ImmutableHashSetGenericTypeName:
+                case ReflectionExtensions.ImmutableSetGenericInterfaceTypeName:
                     constructingTypeName = ImmutableHashSetTypeName;
                     break;
                 default:
@@ -253,11 +196,11 @@ namespace System.Text.Json.Serialization
 
             switch (underlyingType.FullName)
             {
-                case ImmutableDictionaryGenericTypeName:
-                case ImmutableDictionaryGenericInterfaceTypeName:
+                case ReflectionExtensions.ImmutableDictionaryGenericTypeName:
+                case ReflectionExtensions.ImmutableDictionaryGenericInterfaceTypeName:
                     constructingTypeName = ImmutableDictionaryTypeName;
                     break;
-                case ImmutableSortedDictionaryGenericTypeName:
+                case ReflectionExtensions.ImmutableSortedDictionaryGenericTypeName:
                     constructingTypeName = ImmutableSortedDictionaryTypeName;
                     break;
                 default:

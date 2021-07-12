@@ -3,33 +3,34 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class CollectionTests
+    public abstract partial class CollectionTests
     {
         [Fact]
-        public static void Write_ObjectModelCollection()
+        public async Task Write_ObjectModelCollection()
         {
             Collection<bool> c = new Collection<bool>() { true, false };
-            Assert.Equal("[true,false]", JsonSerializer.Serialize(c));
+            Assert.Equal("[true,false]", await JsonSerializerWrapperForString.SerializeWrapper(c));
 
             ObservableCollection<bool> oc = new ObservableCollection<bool>() { true, false };
-            Assert.Equal("[true,false]", JsonSerializer.Serialize(oc));
+            Assert.Equal("[true,false]", await JsonSerializerWrapperForString.SerializeWrapper(oc));
 
             SimpleKeyedCollection kc = new SimpleKeyedCollection() { true, false };
-            Assert.Equal("[true,false]", JsonSerializer.Serialize(kc));
-            Assert.Equal("[true,false]", JsonSerializer.Serialize<KeyedCollection<string, bool>>(kc));
+            Assert.Equal("[true,false]", await JsonSerializerWrapperForString.SerializeWrapper(kc));
+            Assert.Equal("[true,false]", await JsonSerializerWrapperForString.SerializeWrapper<KeyedCollection<string, bool>>(kc));
 
             ReadOnlyCollection<bool> roc = new ReadOnlyCollection<bool>(new List<bool> { true, false });
-            Assert.Equal("[true,false]", JsonSerializer.Serialize(roc));
+            Assert.Equal("[true,false]", await JsonSerializerWrapperForString.SerializeWrapper(roc));
 
             ReadOnlyObservableCollection<bool> rooc = new ReadOnlyObservableCollection<bool>(oc);
-            Assert.Equal("[true,false]", JsonSerializer.Serialize(rooc));
+            Assert.Equal("[true,false]", await JsonSerializerWrapperForString.SerializeWrapper(rooc));
 
             ReadOnlyDictionary<string, bool> rod = new ReadOnlyDictionary<string, bool>(new Dictionary<string, bool> { ["true"] = false });
-            Assert.Equal(@"{""true"":false}", JsonSerializer.Serialize(rod));
+            Assert.Equal(@"{""true"":false}", await JsonSerializerWrapperForString.SerializeWrapper(rod));
         }
     }
 }

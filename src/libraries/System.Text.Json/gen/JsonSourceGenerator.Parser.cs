@@ -40,9 +40,23 @@ namespace System.Text.Json.SourceGeneration
 
             private readonly MetadataLoadContextInternal _metadataLoadContext;
 
-            private readonly Type _ienumerableType;
             private readonly Type _listOfTType;
             private readonly Type _dictionaryType;
+            private readonly Type _idictionaryOfTKeyTValueType;
+            private readonly Type _ireadonlyDictionaryType;
+            private readonly Type _ilistOfTType;
+            private readonly Type _isetType;
+            private readonly Type _icollectionOfTType;
+            private readonly Type _stackOfTType;
+            private readonly Type _queueOfTType;
+            private readonly Type _concurrentStackType;
+            private readonly Type _concurrentQueueType;
+            private readonly Type _ienumerableOfTType;
+            private readonly Type _idictionaryType;
+            private readonly Type _ilistType;
+            private readonly Type _stackType;
+            private readonly Type _queueType;
+            private readonly Type _ienumerableType;
 
             private readonly Type _booleanType;
             private readonly Type _byteArrayType;
@@ -51,6 +65,7 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type _dateTimeOffsetType;
             private readonly Type _guidType;
             private readonly Type _nullableOfTType;
+            private readonly Type _objectType;
             private readonly Type _stringType;
             private readonly Type _uriType;
             private readonly Type _versionType;
@@ -81,9 +96,23 @@ namespace System.Text.Json.SourceGeneration
                 _executionContext = executionContext;
                 _metadataLoadContext = new MetadataLoadContextInternal(executionContext.Compilation);
 
-                _ienumerableType = _metadataLoadContext.Resolve(typeof(IEnumerable));
                 _listOfTType = _metadataLoadContext.Resolve(typeof(List<>));
                 _dictionaryType = _metadataLoadContext.Resolve(typeof(Dictionary<,>));
+                _idictionaryOfTKeyTValueType = _metadataLoadContext.Resolve(typeof(IDictionary<,>));
+                _ireadonlyDictionaryType = _metadataLoadContext.Resolve(typeof(IReadOnlyDictionary<,>));
+                _ilistOfTType = _metadataLoadContext.Resolve(typeof(IList<>));
+                _isetType = _metadataLoadContext.Resolve(typeof(ISet<>));
+                _icollectionOfTType = _metadataLoadContext.Resolve(typeof(ICollection<>));
+                _stackOfTType = _metadataLoadContext.Resolve(typeof(Stack<>));
+                _queueOfTType = _metadataLoadContext.Resolve(typeof(Queue<>));
+                _concurrentStackType = _metadataLoadContext.Resolve(typeof(Stack<>));
+                _concurrentQueueType = _metadataLoadContext.Resolve(typeof(Queue<>));
+                _ienumerableOfTType = _metadataLoadContext.Resolve(typeof(IEnumerable<>));
+                _idictionaryType = _metadataLoadContext.Resolve(typeof(IDictionary));
+                _ilistType = _metadataLoadContext.Resolve(typeof(IList));
+                _stackType = _metadataLoadContext.Resolve(typeof(Stack));
+                _queueType = _metadataLoadContext.Resolve(typeof(Queue));
+                _ienumerableType = _metadataLoadContext.Resolve(typeof(IEnumerable));
 
                 _booleanType = _metadataLoadContext.Resolve(typeof(bool));
                 _byteArrayType = _metadataLoadContext.Resolve(typeof(byte[]));
@@ -92,6 +121,7 @@ namespace System.Text.Json.SourceGeneration
                 _dateTimeOffsetType = _metadataLoadContext.Resolve(typeof(DateTimeOffset));
                 _guidType = _metadataLoadContext.Resolve(typeof(Guid));
                 _nullableOfTType = _metadataLoadContext.Resolve(typeof(Nullable<>));
+                _objectType = _metadataLoadContext.Resolve(typeof(object));
                 _stringType = _metadataLoadContext.Resolve(typeof(string));
                 _uriType = _metadataLoadContext.Resolve(typeof(Uri));
                 _versionType = _metadataLoadContext.Resolve(typeof(Version));
@@ -526,6 +556,10 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
+                if (type.Name.StartsWith("Concurrent"))
+                {
+                }
+
                 if (foundDesignTimeCustomConverter)
                 {
                     classType = converterInstatiationLogic != null
@@ -549,7 +583,7 @@ namespace System.Text.Json.SourceGeneration
                 }
                 else if (_ienumerableType.IsAssignableFrom(type))
                 {
-                    // Only T[], List<T>, and Dictionary<Tkey, TValue> are supported.
+                    Type actualTypeToConvert;
 
                     if (type.IsArray)
                     {
@@ -557,32 +591,126 @@ namespace System.Text.Json.SourceGeneration
                         collectionType = CollectionType.Array;
                         collectionValueType = type.GetElementType();
                     }
-                    else if (!type.IsGenericType)
+                    else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _listOfTType)) != null)
                     {
-                        classType = ClassType.TypeUnsupportedBySourceGen;
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.List;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _dictionaryType)) != null)
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.Dictionary;
+
+                        Type[] genericArgs = actualTypeToConvert.GetGenericArguments();
+                        collectionKeyType = genericArgs[0];
+                        collectionValueType = genericArgs[1];
+                    }
+                    else if (type.IsImmutableDictionaryType())
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.ImmutableDictionary;
+
+                        Type[] genericArgs = type.GetGenericArguments();
+                        collectionKeyType = genericArgs[0];
+                        collectionValueType = genericArgs[1];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_idictionaryOfTKeyTValueType)) != null)
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.GenericIDictionary;
+
+                        Type[] genericArgs = actualTypeToConvert.GetGenericArguments();
+                        collectionKeyType = genericArgs[0];
+                        collectionValueType = genericArgs[1];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_ireadonlyDictionaryType)) != null)
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.IReadOnlyDictionary;
+
+                        Type[] genericArgs = actualTypeToConvert.GetGenericArguments();
+                        collectionKeyType = genericArgs[0];
+                        collectionValueType = genericArgs[1];
+                    }
+                    else if (type.IsImmutableEnumerableType())
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.ImmutableCollection;
+                        collectionValueType = type.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_ilistOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.GenericIList;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_isetType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.ISet;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_icollectionOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.GenericICollection;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _stackOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.GenericStack;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _queueOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.GenericQueue;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _concurrentStackType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.ConcurrentStack;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _concurrentQueueType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.ConcurrentQueue;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_ienumerableOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.GenericIEnumerable;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if (_idictionaryType.IsAssignableFrom(type))
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.IDictionary;
+                        collectionKeyType = _stringType;
+                        collectionValueType = _objectType;
+                    }
+                    else if (typeof(IList).IsAssignableFrom(type))
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.IList;
+                        collectionValueType = _objectType;
+                    }
+                    else if (_stackType.IsAssignableFrom(type) || _queueType.IsAssignableFrom(type))
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.StackOrQueue;
+                        collectionValueType = _objectType;
                     }
                     else
                     {
-                        Type genericTypeDef = type.GetGenericTypeDefinition();
-                        Type[] genericTypeArgs = type.GetGenericArguments();
-
-                        if (genericTypeDef == _listOfTType)
-                        {
-                            classType = ClassType.Enumerable;
-                            collectionType = CollectionType.List;
-                            collectionValueType = genericTypeArgs[0];
-                        }
-                        else if (genericTypeDef == _dictionaryType)
-                        {
-                            classType = ClassType.Dictionary;
-                            collectionType = CollectionType.Dictionary;
-                            collectionKeyType = genericTypeArgs[0];
-                            collectionValueType = genericTypeArgs[1];
-                        }
-                        else
-                        {
-                            classType = ClassType.TypeUnsupportedBySourceGen;
-                        }
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.IEnumerable;
+                        collectionValueType = _objectType;
                     }
                 }
                 else
@@ -666,6 +794,9 @@ namespace System.Text.Json.SourceGeneration
 
                 return typeMetadata;
             }
+
+            private Type GetCompatibleGenericBaseClass(Type type, Type baseType)
+                => type.GetCompatibleGenericBaseClass(baseType, _objectType);
 
             private void CacheMember(
                 PropertyGenerationSpec propGenSpec,
@@ -936,7 +1067,7 @@ namespace System.Text.Json.SourceGeneration
                 _knownTypes.Add(_dateTimeType);
                 _knownTypes.Add(_dateTimeOffsetType);
                 _knownTypes.Add(_guidType);
-                _knownTypes.Add(_metadataLoadContext.Resolve(typeof(object)));
+                _knownTypes.Add(_objectType);
                 _knownTypes.Add(_stringType);
 
                 // System.Private.Uri may not be loaded in input compilation.

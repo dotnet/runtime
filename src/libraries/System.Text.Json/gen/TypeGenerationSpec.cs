@@ -57,6 +57,8 @@ namespace System.Text.Json.SourceGeneration
 
         public string? ConverterInstantiationLogic { get; private set; }
 
+        public string SerializeMethodName => $"{TypeInfoPropertyName}Serialize";
+
         public void Initialize(
             JsonSourceGenerationMode generationMode,
             string typeRef,

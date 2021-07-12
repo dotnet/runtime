@@ -7,24 +7,25 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.Text.Encodings.Web;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class DictionaryTests
+    public abstract partial class CollectionTests
     {
         [Fact]
-        public static void DictionaryOfString()
+        public async Task DictionaryOfString()
         {
             const string JsonString = @"{""Hello"":""World"",""Hello2"":""World2""}";
             const string ReorderedJsonString = @"{""Hello2"":""World2"",""Hello"":""World""}";
 
             {
-                IDictionary obj = JsonSerializer.Deserialize<IDictionary>(JsonString);
+                IDictionary obj = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary>(JsonString);
                 Assert.Equal("World", ((JsonElement)obj["Hello"]).GetString());
                 Assert.Equal("World2", ((JsonElement)obj["Hello2"]).GetString());
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -32,11 +33,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                Dictionary<string, string> obj = JsonSerializer.Deserialize<Dictionary<string, string>>(JsonString);
+                Dictionary<string, string> obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, string>>(JsonString);
                 Assert.Equal("World", obj["Hello"]);
                 Assert.Equal("World2", obj["Hello2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -44,11 +45,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                SortedDictionary<string, string> obj = JsonSerializer.Deserialize<SortedDictionary<string, string>>(JsonString);
+                SortedDictionary<string, string> obj = await JsonSerializerWrapperForString.DeserializeWrapper<SortedDictionary<string, string>>(JsonString);
                 Assert.Equal("World", obj["Hello"]);
                 Assert.Equal("World2", obj["Hello2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -56,11 +57,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                IDictionary<string, string> obj = JsonSerializer.Deserialize<IDictionary<string, string>>(JsonString);
+                IDictionary<string, string> obj = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary<string, string>>(JsonString);
                 Assert.Equal("World", obj["Hello"]);
                 Assert.Equal("World2", obj["Hello2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -68,11 +69,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                IReadOnlyDictionary<string, string> obj = JsonSerializer.Deserialize<IReadOnlyDictionary<string, string>>(JsonString);
+                IReadOnlyDictionary<string, string> obj = await JsonSerializerWrapperForString.DeserializeWrapper<IReadOnlyDictionary<string, string>>(JsonString);
                 Assert.Equal("World", obj["Hello"]);
                 Assert.Equal("World2", obj["Hello2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -80,11 +81,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                ImmutableDictionary<string, string> obj = JsonSerializer.Deserialize<ImmutableDictionary<string, string>>(JsonString);
+                ImmutableDictionary<string, string> obj = await JsonSerializerWrapperForString.DeserializeWrapper<ImmutableDictionary<string, string>>(JsonString);
                 Assert.Equal("World", obj["Hello"]);
                 Assert.Equal("World2", obj["Hello2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -92,11 +93,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                IImmutableDictionary<string, string> obj = JsonSerializer.Deserialize<IImmutableDictionary<string, string>>(JsonString);
+                IImmutableDictionary<string, string> obj = await JsonSerializerWrapperForString.DeserializeWrapper<IImmutableDictionary<string, string>>(JsonString);
                 Assert.Equal("World", obj["Hello"]);
                 Assert.Equal("World2", obj["Hello2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -104,11 +105,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                ImmutableSortedDictionary<string, string> obj = JsonSerializer.Deserialize<ImmutableSortedDictionary<string, string>>(JsonString);
+                ImmutableSortedDictionary<string, string> obj = await JsonSerializerWrapperForString.DeserializeWrapper<ImmutableSortedDictionary<string, string>>(JsonString);
                 Assert.Equal("World", obj["Hello"]);
                 Assert.Equal("World2", obj["Hello2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.True(JsonString == json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -116,11 +117,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                Hashtable obj = JsonSerializer.Deserialize<Hashtable>(JsonString);
+                Hashtable obj = await JsonSerializerWrapperForString.DeserializeWrapper<Hashtable>(JsonString);
                 Assert.Equal("World", ((JsonElement)obj["Hello"]).GetString());
                 Assert.Equal("World2", ((JsonElement)obj["Hello2"]).GetString());
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -128,11 +129,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                SortedList obj = JsonSerializer.Deserialize<SortedList>(JsonString);
+                SortedList obj = await JsonSerializerWrapperForString.DeserializeWrapper<SortedList>(JsonString);
                 Assert.Equal("World", ((JsonElement)obj["Hello"]).GetString());
                 Assert.Equal("World2", ((JsonElement)obj["Hello2"]).GetString());
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -141,17 +142,17 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ImplementsDictionary_DictionaryOfString()
+        public async Task ImplementsDictionary_DictionaryOfString()
         {
             const string JsonString = @"{""Hello"":""World"",""Hello2"":""World2""}";
             const string ReorderedJsonString = @"{""Hello2"":""World2"",""Hello"":""World""}";
 
             {
-                WrapperForIDictionary obj = JsonSerializer.Deserialize<WrapperForIDictionary>(JsonString);
+                WrapperForIDictionary obj = await JsonSerializerWrapperForString.DeserializeWrapper<WrapperForIDictionary>(JsonString);
                 Assert.Equal("World", ((JsonElement)obj["Hello"]).GetString());
                 Assert.Equal("World2", ((JsonElement)obj["Hello2"]).GetString());
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -159,11 +160,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                StringToStringDictionaryWrapper obj = JsonSerializer.Deserialize<StringToStringDictionaryWrapper>(JsonString);
+                StringToStringDictionaryWrapper obj = await JsonSerializerWrapperForString.DeserializeWrapper<StringToStringDictionaryWrapper>(JsonString);
                 Assert.Equal("World", obj["Hello"]);
                 Assert.Equal("World2", obj["Hello2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -171,11 +172,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                StringToStringSortedDictionaryWrapper obj = JsonSerializer.Deserialize<StringToStringSortedDictionaryWrapper>(JsonString);
+                StringToStringSortedDictionaryWrapper obj = await JsonSerializerWrapperForString.DeserializeWrapper<StringToStringSortedDictionaryWrapper>(JsonString);
                 Assert.Equal("World", obj["Hello"]);
                 Assert.Equal("World2", obj["Hello2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -183,11 +184,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                GenericIDictionaryWrapper<string, string> obj = JsonSerializer.Deserialize<GenericIDictionaryWrapper<string, string>>(JsonString);
+                GenericIDictionaryWrapper<string, string> obj = await JsonSerializerWrapperForString.DeserializeWrapper<GenericIDictionaryWrapper<string, string>>(JsonString);
                 Assert.Equal("World", obj["Hello"]);
                 Assert.Equal("World2", obj["Hello2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -195,14 +196,14 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericIReadOnlyDictionaryWrapper<string, string>>(JsonString));
+                await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<GenericIReadOnlyDictionaryWrapper<string, string>>(JsonString));
 
                 GenericIReadOnlyDictionaryWrapper<string, string> obj = new GenericIReadOnlyDictionaryWrapper<string, string>(new Dictionary<string, string>()
                 {
                     { "Hello", "World" },
                     { "Hello2", "World2" },
                 });
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -210,7 +211,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<StringToStringIImmutableDictionaryWrapper>(JsonString));
+                await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<StringToStringIImmutableDictionaryWrapper>(JsonString));
 
                 StringToStringIImmutableDictionaryWrapper obj = new StringToStringIImmutableDictionaryWrapper(new Dictionary<string, string>()
                 {
@@ -218,7 +219,7 @@ namespace System.Text.Json.Serialization.Tests
                     { "Hello2", "World2" },
                 });
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -226,11 +227,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                HashtableWrapper obj = JsonSerializer.Deserialize<HashtableWrapper>(JsonString);
+                HashtableWrapper obj = await JsonSerializerWrapperForString.DeserializeWrapper<HashtableWrapper>(JsonString);
                 Assert.Equal("World", ((JsonElement)obj["Hello"]).GetString());
                 Assert.Equal("World2", ((JsonElement)obj["Hello2"]).GetString());
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -238,11 +239,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                SortedListWrapper obj = JsonSerializer.Deserialize<SortedListWrapper>(JsonString);
+                SortedListWrapper obj = await JsonSerializerWrapperForString.DeserializeWrapper<SortedListWrapper>(JsonString);
                 Assert.Equal("World", ((JsonElement)obj["Hello"]).GetString());
                 Assert.Equal("World2", ((JsonElement)obj["Hello2"]).GetString());
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -250,11 +251,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                GenericStructIDictionaryWrapper<string, string> obj = JsonSerializer.Deserialize<GenericStructIDictionaryWrapper<string, string>>(JsonString);
+                GenericStructIDictionaryWrapper<string, string> obj = await JsonSerializerWrapperForString.DeserializeWrapper<GenericStructIDictionaryWrapper<string, string>>(JsonString);
                 Assert.Equal("World", obj["Hello"]);
                 Assert.Equal("World2", obj["Hello2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -262,12 +263,12 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                GenericStructIDictionaryWrapper<string, string>? obj = JsonSerializer.Deserialize<GenericStructIDictionaryWrapper<string, string>?>(JsonString);
+                GenericStructIDictionaryWrapper<string, string>? obj = await JsonSerializerWrapperForString.DeserializeWrapper<GenericStructIDictionaryWrapper<string, string>?>(JsonString);
                 Assert.True(obj.HasValue);
                 Assert.Equal("World", obj.Value["Hello"]);
                 Assert.Equal("World2", obj.Value["Hello2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -275,54 +276,54 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                GenericStructIDictionaryWrapper<string, string>? obj = JsonSerializer.Deserialize<GenericStructIDictionaryWrapper<string, string>?>("null");
+                GenericStructIDictionaryWrapper<string, string>? obj = await JsonSerializerWrapperForString.DeserializeWrapper<GenericStructIDictionaryWrapper<string, string>?>("null");
                 Assert.False(obj.HasValue);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal("null", json);
             }
 
             {
                 GenericStructIDictionaryWrapper<string, string> obj = default;
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal("{}", json);
             }
 
             {
                 StructWrapperForIDictionary obj = default;
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal("{}", json);
             }
         }
 
         [Fact]
-        public static void DictionaryOfObject()
+        public async Task DictionaryOfObject()
         {
             {
-                Dictionary<string, object> obj = JsonSerializer.Deserialize<Dictionary<string, object>>(@"{""Key1"":1}");
+                Dictionary<string, object> obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, object>>(@"{""Key1"":1}");
                 Assert.Equal(1, obj.Count);
                 JsonElement element = (JsonElement)obj["Key1"];
                 Assert.Equal(JsonValueKind.Number, element.ValueKind);
                 Assert.Equal(1, element.GetInt32());
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(@"{""Key1"":1}", json);
             }
 
             {
-                IDictionary<string, object> obj = JsonSerializer.Deserialize<IDictionary<string, object>>(@"{""Key1"":1}");
+                IDictionary<string, object> obj = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary<string, object>>(@"{""Key1"":1}");
                 Assert.Equal(1, obj.Count);
                 JsonElement element = (JsonElement)obj["Key1"];
                 Assert.Equal(JsonValueKind.Number, element.ValueKind);
                 Assert.Equal(1, element.GetInt32());
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(@"{""Key1"":1}", json);
             }
         }
 
         [Fact]
-        public static void ImplementsIDictionaryOfObject()
+        public async Task ImplementsIDictionaryOfObject()
         {
             var input = new GenericIDictionaryWrapper<string, object>(new Dictionary<string, object>
             {
@@ -330,17 +331,17 @@ namespace System.Text.Json.Serialization.Tests
                 { "Age", 32 }
             });
 
-            string json = JsonSerializer.Serialize(input, typeof(IDictionary<string, object>));
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(input, typeof(IDictionary<string, object>));
             Assert.Equal(@"{""Name"":""David"",""Age"":32}", json);
 
-            IDictionary<string, object> obj = JsonSerializer.Deserialize<IDictionary<string, object>>(json);
+            IDictionary<string, object> obj = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary<string, object>>(json);
             Assert.Equal(2, obj.Count);
             Assert.Equal("David", ((JsonElement)obj["Name"]).GetString());
             Assert.Equal(32, ((JsonElement)obj["Age"]).GetInt32());
         }
 
         [Fact]
-        public static void ImplementsIDictionaryOfString()
+        public async Task ImplementsIDictionaryOfString()
         {
             var input = new GenericIDictionaryWrapper<string, string>(new Dictionary<string, string>
             {
@@ -348,25 +349,25 @@ namespace System.Text.Json.Serialization.Tests
                 { "Job", "Software Architect" }
             });
 
-            string json = JsonSerializer.Serialize(input, typeof(IDictionary<string, string>));
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(input, typeof(IDictionary<string, string>));
             Assert.Equal(@"{""Name"":""David"",""Job"":""Software Architect""}", json);
 
-            IDictionary<string, string> obj = JsonSerializer.Deserialize<IDictionary<string, string>>(json);
+            IDictionary<string, string> obj = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary<string, string>>(json);
             Assert.Equal(2, obj.Count);
             Assert.Equal("David", obj["Name"]);
             Assert.Equal("Software Architect", obj["Job"]);
         }
 
         [Fact]
-        public static void PocoWithDictionaryObject()
+        public async Task PocoWithDictionaryObject()
         {
-            PocoDictionary dict = JsonSerializer.Deserialize<PocoDictionary>("{\n\t\"key\" : {\"a\" : \"b\", \"c\" : \"d\"}}");
+            PocoDictionary dict = await JsonSerializerWrapperForString.DeserializeWrapper<PocoDictionary>("{\n\t\"key\" : {\"a\" : \"b\", \"c\" : \"d\"}}");
             Assert.Equal("b", dict.key["a"]);
             Assert.Equal("d", dict.key["c"]);
         }
 
         [Fact]
-        public static void DictionaryOfObject_NonPrimitiveTypes()
+        public async Task DictionaryOfObject_NonPrimitiveTypes()
         {
             // https://github.com/dotnet/runtime/issues/29504
             Dictionary<string, object> dictionary = new Dictionary<string, object>
@@ -374,22 +375,22 @@ namespace System.Text.Json.Serialization.Tests
                 ["key"] = new Poco { Id = 10 },
             };
 
-            string json = JsonSerializer.Serialize(dictionary);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(dictionary);
             Assert.Equal(@"{""key"":{""Id"":10}}", json);
 
-            dictionary = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+            dictionary = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, object>>(json);
             Assert.Equal(1, dictionary.Count);
             JsonElement element = (JsonElement)dictionary["key"];
             Assert.Equal(@"{""Id"":10}", element.ToString());
         }
 
         [Fact]
-        public static void DictionaryOfList()
+        public async Task DictionaryOfList()
         {
             const string JsonString = @"{""Key1"":[1,2],""Key2"":[3,4]}";
 
             {
-                IDictionary obj = JsonSerializer.Deserialize<IDictionary>(JsonString);
+                IDictionary obj = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary>(JsonString);
 
                 Assert.Equal(2, obj.Count);
 
@@ -407,12 +408,12 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expectedNumber++, value.GetInt32());
                 }
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
             }
 
             {
-                IDictionary<string, List<int>> obj = JsonSerializer.Deserialize<IDictionary<string, List<int>>>(JsonString);
+                IDictionary<string, List<int>> obj = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary<string, List<int>>>(JsonString);
 
                 Assert.Equal(2, obj.Count);
                 Assert.Equal(2, obj["Key1"].Count);
@@ -422,12 +423,12 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(3, obj["Key2"][0]);
                 Assert.Equal(4, obj["Key2"][1]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
             }
 
             {
-                ImmutableDictionary<string, List<int>> obj = JsonSerializer.Deserialize<ImmutableDictionary<string, List<int>>>(JsonString);
+                ImmutableDictionary<string, List<int>> obj = await JsonSerializerWrapperForString.DeserializeWrapper<ImmutableDictionary<string, List<int>>>(JsonString);
 
                 Assert.Equal(2, obj.Count);
                 Assert.Equal(2, obj["Key1"].Count);
@@ -437,13 +438,13 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(3, obj["Key2"][0]);
                 Assert.Equal(4, obj["Key2"][1]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 const string ReorderedJsonString = @"{""Key2"":[3,4],""Key1"":[1,2]}";
                 Assert.True(JsonString == json || ReorderedJsonString == json);
             }
 
             {
-                IImmutableDictionary<string, List<int>> obj = JsonSerializer.Deserialize<IImmutableDictionary<string, List<int>>>(JsonString);
+                IImmutableDictionary<string, List<int>> obj = await JsonSerializerWrapperForString.DeserializeWrapper<IImmutableDictionary<string, List<int>>>(JsonString);
 
                 Assert.Equal(2, obj.Count);
                 Assert.Equal(2, obj["Key1"].Count);
@@ -454,17 +455,17 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(4, obj["Key2"][1]);
 
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 const string ReorderedJsonString = @"{""Key2"":[3,4],""Key1"":[1,2]}";
                 Assert.True(JsonString == json || ReorderedJsonString == json);
             }
         }
 
         [Fact]
-        public static void DictionaryOfArray()
+        public async Task DictionaryOfArray()
         {
             const string JsonString = @"{""Key1"":[1,2],""Key2"":[3,4]}";
-            Dictionary<string, int[]> obj = JsonSerializer.Deserialize<Dictionary<string, int[]>>(JsonString);
+            Dictionary<string, int[]> obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, int[]>>(JsonString);
 
             Assert.Equal(2, obj.Count);
             Assert.Equal(2, obj["Key1"].Length);
@@ -474,17 +475,17 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(3, obj["Key2"][0]);
             Assert.Equal(4, obj["Key2"][1]);
 
-            string json = JsonSerializer.Serialize(obj);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
             Assert.Equal(JsonString, json);
         }
 
         [Fact]
-        public static void ListOfDictionary()
+        public async Task ListOfDictionary()
         {
             const string JsonString = @"[{""Key1"":1,""Key2"":2},{""Key1"":3,""Key2"":4}]";
 
             {
-                List<Dictionary<string, int>> obj = JsonSerializer.Deserialize<List<Dictionary<string, int>>>(JsonString);
+                List<Dictionary<string, int>> obj = await JsonSerializerWrapperForString.DeserializeWrapper<List<Dictionary<string, int>>>(JsonString);
 
                 Assert.Equal(2, obj.Count);
                 Assert.Equal(2, obj[0].Count);
@@ -494,14 +495,14 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(3, obj[1]["Key1"]);
                 Assert.Equal(4, obj[1]["Key2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
                 Assert.Equal(JsonString, json);
             }
             {
-                List<ImmutableSortedDictionary<string, int>> obj = JsonSerializer.Deserialize<List<ImmutableSortedDictionary<string, int>>>(JsonString);
+                List<ImmutableSortedDictionary<string, int>> obj = await JsonSerializerWrapperForString.DeserializeWrapper<List<ImmutableSortedDictionary<string, int>>>(JsonString);
 
                 Assert.Equal(2, obj.Count);
                 Assert.Equal(2, obj[0].Count);
@@ -511,7 +512,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(3, obj[1]["Key1"]);
                 Assert.Equal(4, obj[1]["Key2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -520,12 +521,12 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ArrayOfDictionary()
+        public async Task ArrayOfDictionary()
         {
             const string JsonString = @"[{""Key1"":1,""Key2"":2},{""Key1"":3,""Key2"":4}]";
 
             {
-                Dictionary<string, int>[] obj = JsonSerializer.Deserialize<Dictionary<string, int>[]>(JsonString);
+                Dictionary<string, int>[] obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, int>[]>(JsonString);
 
                 Assert.Equal(2, obj.Length);
                 Assert.Equal(2, obj[0].Count);
@@ -535,7 +536,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(3, obj[1]["Key1"]);
                 Assert.Equal(4, obj[1]["Key2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -543,7 +544,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                ImmutableSortedDictionary<string, int>[] obj = JsonSerializer.Deserialize<ImmutableSortedDictionary<string, int>[]>(JsonString);
+                ImmutableSortedDictionary<string, int>[] obj = await JsonSerializerWrapperForString.DeserializeWrapper<ImmutableSortedDictionary<string, int>[]>(JsonString);
 
                 Assert.Equal(2, obj.Length);
                 Assert.Equal(2, obj[0].Count);
@@ -553,7 +554,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(3, obj[1]["Key1"]);
                 Assert.Equal(4, obj[1]["Key2"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -562,12 +563,12 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DictionaryOfDictionary()
+        public async Task DictionaryOfDictionary()
         {
             const string JsonString = @"{""Key1"":{""Key1a"":1,""Key1b"":2},""Key2"":{""Key2a"":3,""Key2b"":4}}";
 
             {
-                Dictionary<string, Dictionary<string, int>> obj = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, int>>>(JsonString);
+                Dictionary<string, Dictionary<string, int>> obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, Dictionary<string, int>>>(JsonString);
 
                 Assert.Equal(2, obj.Count);
                 Assert.Equal(2, obj["Key1"].Count);
@@ -577,7 +578,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(3, obj["Key2"]["Key2a"]);
                 Assert.Equal(4, obj["Key2"]["Key2b"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -585,7 +586,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                ImmutableSortedDictionary<string, ImmutableSortedDictionary<string, int>> obj = JsonSerializer.Deserialize<ImmutableSortedDictionary<string, ImmutableSortedDictionary<string, int>>>(JsonString);
+                ImmutableSortedDictionary<string, ImmutableSortedDictionary<string, int>> obj = await JsonSerializerWrapperForString.DeserializeWrapper<ImmutableSortedDictionary<string, ImmutableSortedDictionary<string, int>>>(JsonString);
 
                 Assert.Equal(2, obj.Count);
                 Assert.Equal(2, obj["Key1"].Count);
@@ -595,7 +596,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(3, obj["Key2"]["Key2a"]);
                 Assert.Equal(4, obj["Key2"]["Key2b"]);
 
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
                 json = JsonSerializer.Serialize<object>(obj);
@@ -604,10 +605,10 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DictionaryOfDictionaryOfDictionary()
+        public async Task DictionaryOfDictionaryOfDictionary()
         {
             const string JsonString = @"{""Key1"":{""Key1"":{""Key1"":1,""Key2"":2},""Key2"":{""Key1"":3,""Key2"":4}},""Key2"":{""Key1"":{""Key1"":5,""Key2"":6},""Key2"":{""Key1"":7,""Key2"":8}}}";
-            Dictionary<string, Dictionary<string, Dictionary<string, int>>> obj = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, Dictionary<string, int>>>>(JsonString);
+            Dictionary<string, Dictionary<string, Dictionary<string, int>>> obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, Dictionary<string, Dictionary<string, int>>>>(JsonString);
 
             Assert.Equal(2, obj.Count);
             Assert.Equal(2, obj["Key1"].Count);
@@ -628,7 +629,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(7, obj["Key2"]["Key2"]["Key1"]);
             Assert.Equal(8, obj["Key2"]["Key2"]["Key2"]);
 
-            string json = JsonSerializer.Serialize(obj);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
             Assert.Equal(JsonString, json);
 
             // Verify that typeof(object) doesn't interfere.
@@ -637,10 +638,10 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DictionaryOfArrayOfDictionary()
+        public async Task DictionaryOfArrayOfDictionary()
         {
             const string JsonString = @"{""Key1"":[{""Key1"":1,""Key2"":2},{""Key1"":3,""Key2"":4}],""Key2"":[{""Key1"":5,""Key2"":6},{""Key1"":7,""Key2"":8}]}";
-            Dictionary<string, Dictionary<string, int>[]> obj = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, int>[]>>(JsonString);
+            Dictionary<string, Dictionary<string, int>[]> obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, Dictionary<string, int>[]>>(JsonString);
 
             Assert.Equal(2, obj.Count);
             Assert.Equal(2, obj["Key1"].Length);
@@ -661,7 +662,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(7, obj["Key2"][1]["Key1"]);
             Assert.Equal(8, obj["Key2"][1]["Key2"]);
 
-            string json = JsonSerializer.Serialize(obj);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
             Assert.Equal(JsonString, json);
 
             // Verify that typeof(object) doesn't interfere.
@@ -787,32 +788,32 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void NestedDictionariesRoundtrip()
+        public async Task NestedDictionariesRoundtrip()
         {
             JsonSerializerOptions options = new JsonSerializerOptions();
             options.Converters.Add(new MyFactory());
 
             foreach ((Type dictionaryType, string testJson) in NestedDictionaryTypeData())
             {
-                object dict = JsonSerializer.Deserialize(testJson, dictionaryType, options);
-                Assert.Equal(testJson, JsonSerializer.Serialize(dict, options));
+                object dict = await JsonSerializerWrapperForString.DeserializeWrapper(testJson, dictionaryType, options);
+                Assert.Equal(testJson, await JsonSerializerWrapperForString.SerializeWrapper(dict, options));
             }
         }
 
         [Fact]
-        public static void DictionaryOfClasses()
+        public async Task DictionaryOfClasses()
         {
             {
                 IDictionary obj;
 
                 {
                     string json = @"{""Key1"":" + SimpleTestClass.s_json + @",""Key2"":" + SimpleTestClass.s_json + "}";
-                    obj = JsonSerializer.Deserialize<IDictionary>(json);
+                    obj = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary>(json);
                     Assert.Equal(2, obj.Count);
 
                     if (obj["Key1"] is JsonElement element)
                     {
-                        SimpleTestClass result = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+                        SimpleTestClass result = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleTestClass>(element.GetRawText());
                         result.Verify();
                     }
                     else
@@ -825,13 +826,13 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     // We can't compare against the json string above because property ordering is not deterministic (based on reflection order)
                     // so just round-trip the json and compare.
-                    string json = JsonSerializer.Serialize(obj);
-                    obj = JsonSerializer.Deserialize<IDictionary>(json);
+                    string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+                    obj = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary>(json);
                     Assert.Equal(2, obj.Count);
 
                     if (obj["Key1"] is JsonElement element)
                     {
-                        SimpleTestClass result = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+                        SimpleTestClass result = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleTestClass>(element.GetRawText());
                         result.Verify();
                     }
                     else
@@ -843,12 +844,12 @@ namespace System.Text.Json.Serialization.Tests
 
                 {
                     string json = JsonSerializer.Serialize<object>(obj);
-                    obj = JsonSerializer.Deserialize<IDictionary>(json);
+                    obj = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary>(json);
                     Assert.Equal(2, obj.Count);
 
                     if (obj["Key1"] is JsonElement element)
                     {
-                        SimpleTestClass result = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+                        SimpleTestClass result = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleTestClass>(element.GetRawText());
                         result.Verify();
                     }
                     else
@@ -864,7 +865,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 {
                     string json = @"{""Key1"":" + SimpleTestClass.s_json + @",""Key2"":" + SimpleTestClass.s_json + "}";
-                    obj = JsonSerializer.Deserialize<Dictionary<string, SimpleTestClass>>(json);
+                    obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, SimpleTestClass>>(json);
                     Assert.Equal(2, obj.Count);
                     obj["Key1"].Verify();
                     obj["Key2"].Verify();
@@ -873,8 +874,8 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     // We can't compare against the json string above because property ordering is not deterministic (based on reflection order)
                     // so just round-trip the json and compare.
-                    string json = JsonSerializer.Serialize(obj);
-                    obj = JsonSerializer.Deserialize<Dictionary<string, SimpleTestClass>>(json);
+                    string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+                    obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, SimpleTestClass>>(json);
                     Assert.Equal(2, obj.Count);
                     obj["Key1"].Verify();
                     obj["Key2"].Verify();
@@ -882,7 +883,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 {
                     string json = JsonSerializer.Serialize<object>(obj);
-                    obj = JsonSerializer.Deserialize<Dictionary<string, SimpleTestClass>>(json);
+                    obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, SimpleTestClass>>(json);
                     Assert.Equal(2, obj.Count);
                     obj["Key1"].Verify();
                     obj["Key2"].Verify();
@@ -894,7 +895,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 {
                     string json = @"{""Key1"":" + SimpleTestClass.s_json + @",""Key2"":" + SimpleTestClass.s_json + "}";
-                    obj = JsonSerializer.Deserialize<ImmutableSortedDictionary<string, SimpleTestClass>>(json);
+                    obj = await JsonSerializerWrapperForString.DeserializeWrapper<ImmutableSortedDictionary<string, SimpleTestClass>>(json);
                     Assert.Equal(2, obj.Count);
                     obj["Key1"].Verify();
                     obj["Key2"].Verify();
@@ -903,8 +904,8 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     // We can't compare against the json string above because property ordering is not deterministic (based on reflection order)
                     // so just round-trip the json and compare.
-                    string json = JsonSerializer.Serialize(obj);
-                    obj = JsonSerializer.Deserialize<ImmutableSortedDictionary<string, SimpleTestClass>>(json);
+                    string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+                    obj = await JsonSerializerWrapperForString.DeserializeWrapper<ImmutableSortedDictionary<string, SimpleTestClass>>(json);
                     Assert.Equal(2, obj.Count);
                     obj["Key1"].Verify();
                     obj["Key2"].Verify();
@@ -912,7 +913,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 {
                     string json = JsonSerializer.Serialize<object>(obj);
-                    obj = JsonSerializer.Deserialize<ImmutableSortedDictionary<string, SimpleTestClass>>(json);
+                    obj = await JsonSerializerWrapperForString.DeserializeWrapper<ImmutableSortedDictionary<string, SimpleTestClass>>(json);
                     Assert.Equal(2, obj.Count);
                     obj["Key1"].Verify();
                     obj["Key2"].Verify();
@@ -921,7 +922,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void UnicodePropertyNames()
+        public async Task UnicodePropertyNames()
         {
             var options = new JsonSerializerOptions();
             options.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
@@ -929,20 +930,20 @@ namespace System.Text.Json.Serialization.Tests
             {
                 Dictionary<string, int> obj;
 
-                obj = JsonSerializer.Deserialize<Dictionary<string, int>>(@"{""A\u0467"":1}");
+                obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, int>>(@"{""A\u0467"":1}");
                 Assert.Equal(1, obj["A\u0467"]);
 
                 // Specifying encoder on options does not impact deserialize.
-                obj = JsonSerializer.Deserialize<Dictionary<string, int>>(@"{""A\u0467"":1}", options);
+                obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, int>>(@"{""A\u0467"":1}", options);
                 Assert.Equal(1, obj["A\u0467"]);
 
                 string json;
                 // Verify the name is escaped after serialize.
-                json = JsonSerializer.Serialize(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(@"{""A\u0467"":1}", json);
 
                 // Verify with encoder.
-                json = JsonSerializer.Serialize(obj, options);
+                json = await JsonSerializerWrapperForString.SerializeWrapper(obj, options);
                 Assert.Equal("{\"A\u0467\":1}", json);
             }
 
@@ -952,11 +953,11 @@ namespace System.Text.Json.Serialization.Tests
 
                 string longPropertyName = new string('\u0467', charsInProperty);
 
-                Dictionary<string, int> obj = JsonSerializer.Deserialize<Dictionary<string, int>>($"{{\"{longPropertyName}\":1}}");
+                Dictionary<string, int> obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, int>>($"{{\"{longPropertyName}\":1}}");
                 Assert.Equal(1, obj[longPropertyName]);
 
                 // Verify the name is escaped after serialize.
-                string json = JsonSerializer.Serialize(obj);
+                string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
 
                 // Duplicate the unicode character 'charsInProperty' times.
                 string longPropertyNameEscaped = new StringBuilder().Insert(0, @"\u0467", charsInProperty).ToString();
@@ -965,106 +966,106 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(expectedJson, json);
 
                 // Verify the name is unescaped after deserialize.
-                obj = JsonSerializer.Deserialize<Dictionary<string, int>>(json);
+                obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, int>>(json);
                 Assert.Equal(1, obj[longPropertyName]);
             }
         }
 
         [Fact]
-        public static void CustomEscapingOnPropertyNameAndValue()
+        public async Task CustomEscapingOnPropertyNameAndValue()
         {
             var dict = new Dictionary<string, string>();
             dict.Add("A\u046701", "Value\u0467");
 
             // Baseline with no escaping.
-            var json = JsonSerializer.Serialize(dict);
+            var json = await JsonSerializerWrapperForString.SerializeWrapper(dict);
             Assert.Equal("{\"A\\u046701\":\"Value\\u0467\"}", json);
 
             // Enable escaping.
             var options = new JsonSerializerOptions();
             options.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 
-            json = JsonSerializer.Serialize(dict, options);
+            json = await JsonSerializerWrapperForString.SerializeWrapper(dict, options);
             Assert.Equal("{\"A\u046701\":\"Value\u0467\"}", json);
         }
 
         [Fact]
-        public static void ObjectToStringFail()
+        public async Task ObjectToStringFail()
         {
             // Baseline
             string json = @"{""MyDictionary"":{""Key"":""Value""}}";
             JsonSerializer.Deserialize<Dictionary<string, object>>(json);
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, string>>(json));
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, string>>(json));
         }
 
         [Fact]
-        public static void ObjectToJsonElement()
+        public async Task ObjectToJsonElement()
         {
             string json = @"{""MyDictionary"":{""Key"":""Value""}}";
-            Dictionary<string, JsonElement> result = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            Dictionary<string, JsonElement> result = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, JsonElement>>(json);
             JsonElement element = result["MyDictionary"];
             Assert.Equal(JsonValueKind.Object, element.ValueKind);
             Assert.Equal("Value", element.GetProperty("Key").GetString());
         }
 
         [Fact]
-        public static void Hashtable()
+        public async Task Hashtable()
         {
             const string Json = @"{""Key"":""Value""}";
 
             IDictionary ht = new Hashtable();
             ht.Add("Key", "Value");
-            string json = JsonSerializer.Serialize(ht);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(ht);
 
             Assert.Equal(Json, json);
 
-            ht = JsonSerializer.Deserialize<IDictionary>(json);
+            ht = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary>(json);
             Assert.IsType<JsonElement>(ht["Key"]);
             Assert.Equal("Value", ((JsonElement)ht["Key"]).GetString());
 
             // Verify round-tripped JSON.
-            json = JsonSerializer.Serialize(ht);
+            json = await JsonSerializerWrapperForString.SerializeWrapper(ht);
             Assert.Equal(Json, json);
         }
 
         [Fact]
-        public static void DeserializeDictionaryWithDuplicateKeys()
+        public async Task DeserializeDictionaryWithDuplicateKeys()
         {
             // Non-generic IDictionary case.
-            IDictionary iDictionary = JsonSerializer.Deserialize<IDictionary>(@"{""Hello"":""World"", ""Hello"":""NewValue""}");
+            IDictionary iDictionary = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary>(@"{""Hello"":""World"", ""Hello"":""NewValue""}");
             Assert.Equal("NewValue", iDictionary["Hello"].ToString());
 
             // Generic IDictionary case.
-            IDictionary<string, string> iNonGenericDictionary = JsonSerializer.Deserialize<IDictionary<string, string>>(@"{""Hello"":""World"", ""Hello"":""NewValue""}");
+            IDictionary<string, string> iNonGenericDictionary = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary<string, string>>(@"{""Hello"":""World"", ""Hello"":""NewValue""}");
             Assert.Equal("NewValue", iNonGenericDictionary["Hello"]);
 
-            IDictionary<string, object> iNonGenericObjectDictionary = JsonSerializer.Deserialize<IDictionary<string, object>>(@"{""Hello"":""World"", ""Hello"":""NewValue""}");
+            IDictionary<string, object> iNonGenericObjectDictionary = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary<string, object>>(@"{""Hello"":""World"", ""Hello"":""NewValue""}");
             Assert.Equal("NewValue", iNonGenericObjectDictionary["Hello"].ToString());
 
             // Strongly-typed IDictionary<,> case.
-            Dictionary<string, string> dictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(@"{""Hello"":""World"", ""Hello"":""NewValue""}");
+            Dictionary<string, string> dictionary = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, string>>(@"{""Hello"":""World"", ""Hello"":""NewValue""}");
             Assert.Equal("NewValue", dictionary["Hello"]);
 
-            dictionary = JsonSerializer.Deserialize<Dictionary<string, string>>(@"{""Hello"":""World"", ""myKey"" : ""myValue"", ""Hello"":""NewValue""}");
+            dictionary = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, string>>(@"{""Hello"":""World"", ""myKey"" : ""myValue"", ""Hello"":""NewValue""}");
             Assert.Equal("NewValue", dictionary["Hello"]);
 
             // Weakly-typed IDictionary case.
-            Dictionary<string, object> dictionaryObject = JsonSerializer.Deserialize<Dictionary<string, object>>(@"{""Hello"":""World"", ""Hello"": null}");
+            Dictionary<string, object> dictionaryObject = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, object>>(@"{""Hello"":""World"", ""Hello"": null}");
             Assert.Null(dictionaryObject["Hello"]);
         }
 
         [Fact]
-        public static void DeserializeDictionaryWithDuplicateProperties()
+        public async Task DeserializeDictionaryWithDuplicateProperties()
         {
-            PocoDuplicate foo = JsonSerializer.Deserialize<PocoDuplicate>(@"{""BoolProperty"": false, ""BoolProperty"": true}");
+            PocoDuplicate foo = await JsonSerializerWrapperForString.DeserializeWrapper<PocoDuplicate>(@"{""BoolProperty"": false, ""BoolProperty"": true}");
             Assert.True(foo.BoolProperty);
 
-            foo = JsonSerializer.Deserialize<PocoDuplicate>(@"{""BoolProperty"": false, ""IntProperty"" : 1, ""BoolProperty"": true , ""IntProperty"" : 2}");
+            foo = await JsonSerializerWrapperForString.DeserializeWrapper<PocoDuplicate>(@"{""BoolProperty"": false, ""IntProperty"" : 1, ""BoolProperty"": true , ""IntProperty"" : 2}");
             Assert.True(foo.BoolProperty);
             Assert.Equal(2, foo.IntProperty);
 
-            foo = JsonSerializer.Deserialize<PocoDuplicate>(@"{""DictProperty"" : {""a"" : ""b"", ""c"" : ""d""},""DictProperty"" : {""b"" : ""b"", ""c"" : ""e""}}");
+            foo = await JsonSerializerWrapperForString.DeserializeWrapper<PocoDuplicate>(@"{""DictProperty"" : {""a"" : ""b"", ""c"" : ""d""},""DictProperty"" : {""b"" : ""b"", ""c"" : ""e""}}");
             Assert.Equal(2, foo.DictProperty.Count); // We don't concat.
             Assert.Equal("e", foo.DictProperty["c"]);
         }
@@ -1088,20 +1089,20 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ClassWithNoSetterAndDictionary()
+        public async Task ClassWithNoSetterAndDictionary()
         {
             // We don't attempt to deserialize into dictionaries without a setter.
             string json = @"{""MyDictionary"":{""Key1"":""Value1"", ""Key2"":""Value2""}}";
-            ClassWithPopulatedDictionaryAndNoSetter obj = JsonSerializer.Deserialize<ClassWithPopulatedDictionaryAndNoSetter>(json);
+            ClassWithPopulatedDictionaryAndNoSetter obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithPopulatedDictionaryAndNoSetter>(json);
             Assert.Equal(1, obj.MyDictionary.Count);
         }
 
         [Fact]
-        public static void ClassWithNoSetterAndImmutableDictionary()
+        public async Task ClassWithNoSetterAndImmutableDictionary()
         {
             // We don't attempt to deserialize into dictionaries without a setter.
             string json = @"{""MyImmutableDictionary"":{""Key1"":""Value1"", ""Key2"":""Value2""}}";
-            ClassWithPopulatedDictionaryAndNoSetter obj = JsonSerializer.Deserialize<ClassWithPopulatedDictionaryAndNoSetter>(json);
+            ClassWithPopulatedDictionaryAndNoSetter obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithPopulatedDictionaryAndNoSetter>(json);
             Assert.Equal(1, obj.MyImmutableDictionary.Count);
         }
 
@@ -1184,10 +1185,10 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(@"{""Parsed1"":{""Key"":1},""Skipped2"":{""Key"":[1,2,3]}, ""Parsed3"":{""Key"":2}}")]
         [InlineData(@"{""Parsed1"":{""Key"":1},""Skipped2"":{""Key"":{}}, ""Parsed3"":{""Key"":2}}")]
         [InlineData(@"{""Parsed1"":{""Key"":1},""Skipped2"":{""Key"":null}, ""Parsed3"":{""Key"":2}}")]
-        public static void IgnoreDictionaryProperty(string json)
+        public async Task IgnoreDictionaryProperty(string json)
         {
             // Verify deserialization
-            ClassWithIgnoredDictionary2 obj = JsonSerializer.Deserialize<ClassWithIgnoredDictionary2>(json);
+            ClassWithIgnoredDictionary2 obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithIgnoredDictionary2>(json);
             Assert.Equal(1, obj.Parsed1.Count);
             Assert.Equal(1, obj.Parsed1["Key"]);
             Assert.Null(obj.Skipped2);
@@ -1195,8 +1196,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(2, obj.Parsed3["Key"]);
 
             // Round-trip and verify.
-            string jsonRoundTripped = JsonSerializer.Serialize(obj);
-            ClassWithIgnoredDictionary2 objRoundTripped = JsonSerializer.Deserialize<ClassWithIgnoredDictionary2>(jsonRoundTripped);
+            string jsonRoundTripped = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+            ClassWithIgnoredDictionary2 objRoundTripped = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithIgnoredDictionary2>(jsonRoundTripped);
             Assert.Equal(1, objRoundTripped.Parsed1.Count);
             Assert.Equal(1, objRoundTripped.Parsed1["Key"]);
             Assert.Null(objRoundTripped.Skipped2);
@@ -1205,25 +1206,25 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void IgnoreDictionaryPropertyWithDifferentOrdering()
+        public async Task IgnoreDictionaryPropertyWithDifferentOrdering()
         {
             // Verify all combinations of 3 properties with at least one ignore.
-            VerifyIgnore<ClassWithIgnoredDictionary1>(false, false, true);
-            VerifyIgnore<ClassWithIgnoredDictionary2>(false, true, false);
-            VerifyIgnore<ClassWithIgnoredDictionary3>(false, true, true);
-            VerifyIgnore<ClassWithIgnoredDictionary4>(true, false, false);
-            VerifyIgnore<ClassWithIgnoredDictionary5>(true, false, true);
-            VerifyIgnore<ClassWithIgnoredDictionary6>(true, true, false);
-            VerifyIgnore<ClassWithIgnoredDictionary7>(true, true, true);
+            await VerifyIgnore<ClassWithIgnoredDictionary1>(false, false, true);
+            await VerifyIgnore<ClassWithIgnoredDictionary2>(false, true, false);
+            await VerifyIgnore<ClassWithIgnoredDictionary3>(false, true, true);
+            await VerifyIgnore<ClassWithIgnoredDictionary4>(true, false, false);
+            await VerifyIgnore<ClassWithIgnoredDictionary5>(true, false, true);
+            await VerifyIgnore<ClassWithIgnoredDictionary6>(true, true, false);
+            await VerifyIgnore<ClassWithIgnoredDictionary7>(true, true, true);
 
             // Verify single case for IDictionary, [Ignore] and ImmutableDictionary.
             // Also specify addMissing to add additional skipped JSON that does not have a corresponding property.
-            VerifyIgnore<ClassWithIgnoredIDictionary>(false, true, false, addMissing: true);
-            VerifyIgnore<ClassWithIgnoreAttributeDictionary>(false, true, false, addMissing: true);
-            VerifyIgnore<ClassWithIgnoredImmutableDictionary>(false, true, false, addMissing: true);
+            await VerifyIgnore<ClassWithIgnoredIDictionary>(false, true, false, addMissing: true);
+            await VerifyIgnore<ClassWithIgnoreAttributeDictionary>(false, true, false, addMissing: true);
+            await VerifyIgnore<ClassWithIgnoredImmutableDictionary>(false, true, false, addMissing: true);
         }
 
-        private static void VerifyIgnore<T>(bool skip1, bool skip2, bool skip3, bool addMissing = false)
+        private async Task VerifyIgnore<T>(bool skip1, bool skip2, bool skip3, bool addMissing = false)
         {
             static IDictionary<string, int> GetProperty(T objectToVerify, string propertyName)
             {
@@ -1307,13 +1308,13 @@ namespace System.Text.Json.Serialization.Tests
 
             // Deserialize and verify.
             string jsonString = json.ToString();
-            T obj = JsonSerializer.Deserialize<T>(jsonString);
+            T obj = await JsonSerializerWrapperForString.DeserializeWrapper<T>(jsonString);
             Verify(obj);
 
             // Round-trip and verify.
             // Any skipped properties due to lack of a setter will now be "null" when serialized instead of "{}".
-            string jsonStringRoundTripped = JsonSerializer.Serialize(obj);
-            T objRoundTripped = JsonSerializer.Deserialize<T>(jsonStringRoundTripped);
+            string jsonStringRoundTripped = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+            T objRoundTripped = await JsonSerializerWrapperForString.DeserializeWrapper<T>(jsonStringRoundTripped);
             Verify(objRoundTripped);
         }
 
@@ -1329,45 +1330,45 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ClassWithPopulatedDictionary()
+        public async Task ClassWithPopulatedDictionary()
         {
             // We replace the contents.
             string json = @"{""MyDictionary"":{""Key1"":""Value1"", ""Key2"":""Value2""}}";
-            ClassWithPopulatedDictionaryAndSetter obj = JsonSerializer.Deserialize<ClassWithPopulatedDictionaryAndSetter>(json);
+            ClassWithPopulatedDictionaryAndSetter obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithPopulatedDictionaryAndSetter>(json);
             Assert.Equal(2, obj.MyDictionary.Count);
         }
 
         [Fact]
-        public static void ClassWithPopulatedImmutableDictionary()
+        public async Task ClassWithPopulatedImmutableDictionary()
         {
             // We replace the contents.
             string json = @"{""MyImmutableDictionary"":{""Key1"":""Value1"", ""Key2"":""Value2""}}";
-            ClassWithPopulatedDictionaryAndSetter obj = JsonSerializer.Deserialize<ClassWithPopulatedDictionaryAndSetter>(json);
+            ClassWithPopulatedDictionaryAndSetter obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithPopulatedDictionaryAndSetter>(json);
             Assert.Equal(2, obj.MyImmutableDictionary.Count);
         }
 
         [Fact]
-        public static void DictionaryNotSupported()
+        public async Task DictionaryNotSupported()
         {
             string json = @"{""MyDictionary"":{""Key"":""Value""}}";
 
-            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithNotSupportedDictionary>(json));
+            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithNotSupportedDictionary>(json));
 
             // The exception contains the type.
             Assert.Contains(typeof(Dictionary<int[,], int>).ToString(), ex.Message);
         }
 
         [Fact]
-        public static void DictionaryNotSupportedButIgnored()
+        public async Task DictionaryNotSupportedButIgnored()
         {
             string json = @"{""MyDictionary"":{""Key"":1}}";
-            ClassWithNotSupportedDictionaryButIgnored obj = JsonSerializer.Deserialize<ClassWithNotSupportedDictionaryButIgnored>(json);
+            ClassWithNotSupportedDictionaryButIgnored obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithNotSupportedDictionaryButIgnored>(json);
             Assert.Null(obj.MyDictionary);
         }
 
         // https://github.com/dotnet/runtime/issues/29933
         [Fact]
-        public static void Serialize_IDictionaryOfPoco()
+        public async Task Serialize_IDictionaryOfPoco()
         {
             // Arrange
             var value = new AllSingleUpperPropertiesParent()
@@ -1386,7 +1387,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             };
 
-            var actual = JsonSerializer.Serialize(value, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            var actual = await JsonSerializerWrapperForString.SerializeWrapper(value, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
             // Assert
             Assert.NotNull(actual);
@@ -1395,12 +1396,12 @@ namespace System.Text.Json.Serialization.Tests
 
         // https://github.com/dotnet/runtime/issues/29933
         [Fact]
-        public static void Deserialize_IDictionaryOfPoco()
+        public async Task Deserialize_IDictionaryOfPoco()
         {
             // Arrange
             string json = "{\"child\":{\"1\":{\"a\":\"1\",\"b\":\"\",\"c\":[],\"d\":[],\"e\":null,\"f\":[],\"g\":null,\"h\":null,\"i\":null,\"j\":null,\"k\":[]}}}";
 
-            var actual = JsonSerializer.Deserialize<AllSingleUpperPropertiesParent>(json, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            var actual = await JsonSerializerWrapperForString.DeserializeWrapper<AllSingleUpperPropertiesParent>(json, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
             // Assert
             Assert.NotNull(actual);
@@ -1412,7 +1413,7 @@ namespace System.Text.Json.Serialization.Tests
 
         // https://github.com/dotnet/runtime/issues/29893
         [Fact]
-        public static void ShouldHandleNullInDictionaries_Serialize()
+        public async Task ShouldHandleNullInDictionaries_Serialize()
         {
             var value = new ClassWithDictionaryOfString_ChildWithDictionaryOfString()
             {
@@ -1420,16 +1421,16 @@ namespace System.Text.Json.Serialization.Tests
                 Child = new ClassWithDictionaryOfString()
             };
 
-            var actual = JsonSerializer.Serialize(value);
+            var actual = await JsonSerializerWrapperForString.SerializeWrapper(value);
             Assert.Equal("{\"Test\":\"value1\",\"Dict\":null,\"Child\":{\"Test\":null,\"Dict\":null}}", actual);
         }
 
         // https://github.com/dotnet/runtime/issues/29893
         [Fact]
-        public static void ShouldHandleNullInDictionaries_Deserialize()
+        public async Task ShouldHandleNullInDictionaries_Deserialize()
         {
             var json = "{\"Test\":\"value1\",\"Dict\":null,\"Child\":{\"Test\":null,\"Dict\":null}}";
-            ClassWithDictionaryOfString_ChildWithDictionaryOfString actual = JsonSerializer.Deserialize<ClassWithDictionaryOfString_ChildWithDictionaryOfString>(json);
+            ClassWithDictionaryOfString_ChildWithDictionaryOfString actual = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithDictionaryOfString_ChildWithDictionaryOfString>(json);
 
             Assert.Equal("value1", actual.Test);
             Assert.Null(actual.Dict);
@@ -1440,7 +1441,7 @@ namespace System.Text.Json.Serialization.Tests
 
         // https://github.com/dotnet/runtime/issues/29893
         [Fact]
-        public static void ShouldHandleNullInDictionaries_Serialize_IgnoreNullValues()
+        public async Task ShouldHandleNullInDictionaries_Serialize_IgnoreNullValues()
         {
             var value = new ClassWithDictionaryOfString_ChildWithDictionaryOfString()
             {
@@ -1448,16 +1449,16 @@ namespace System.Text.Json.Serialization.Tests
                 Child = new ClassWithDictionaryOfString()
             };
 
-            var actual = JsonSerializer.Serialize(value, new JsonSerializerOptions { IgnoreNullValues = true });
+            var actual = await JsonSerializerWrapperForString.SerializeWrapper(value, new JsonSerializerOptions { IgnoreNullValues = true });
             Assert.Equal("{\"Test\":\"value1\",\"Child\":{}}", actual);
         }
 
         // https://github.com/dotnet/runtime/issues/29893
         [Fact]
-        public static void ShouldHandleNullInDictionaries_Deserialize_IgnoreNullValues()
+        public async Task ShouldHandleNullInDictionaries_Deserialize_IgnoreNullValues()
         {
             var json = "{\"Test\":\"value1\",\"Child\":{}}";
-            ClassWithDictionaryOfString_ChildWithDictionaryOfString actual = JsonSerializer.Deserialize<ClassWithDictionaryOfString_ChildWithDictionaryOfString>(json);
+            ClassWithDictionaryOfString_ChildWithDictionaryOfString actual = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithDictionaryOfString_ChildWithDictionaryOfString>(json);
 
             Assert.Equal("value1", actual.Test);
             Assert.Null(actual.Dict);
@@ -1468,14 +1469,14 @@ namespace System.Text.Json.Serialization.Tests
 
         // https://github.com/dotnet/runtime/issues/29888
         [Fact]
-        public static void DictionaryWithNullShouldPreserveOrder_Serialize()
+        public async Task DictionaryWithNullShouldPreserveOrder_Serialize()
         {
             var dictionaryFirst = new ClassWithDictionaryAndProperty_DictionaryFirst()
             {
                 Test = "value1"
             };
 
-            var actual = JsonSerializer.Serialize(dictionaryFirst);
+            var actual = await JsonSerializerWrapperForString.SerializeWrapper(dictionaryFirst);
             Assert.Equal("{\"Dict\":null,\"Test\":\"value1\"}", actual);
 
             var dictionaryLast = new ClassWithDictionaryAndProperty_DictionaryLast()
@@ -1483,22 +1484,22 @@ namespace System.Text.Json.Serialization.Tests
                 Test = "value1"
             };
 
-            actual = JsonSerializer.Serialize(dictionaryLast);
+            actual = await JsonSerializerWrapperForString.SerializeWrapper(dictionaryLast);
             Assert.Equal("{\"Test\":\"value1\",\"Dict\":null}", actual);
         }
 
         // https://github.com/dotnet/runtime/issues/29888
         [Fact]
-        public static void DictionaryWithNullShouldPreserveOrder_Deserialize()
+        public async Task DictionaryWithNullShouldPreserveOrder_Deserialize()
         {
             var json = "{\"Dict\":null,\"Test\":\"value1\"}";
-            ClassWithDictionaryAndProperty_DictionaryFirst dictionaryFirst = JsonSerializer.Deserialize<ClassWithDictionaryAndProperty_DictionaryFirst>(json);
+            ClassWithDictionaryAndProperty_DictionaryFirst dictionaryFirst = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithDictionaryAndProperty_DictionaryFirst>(json);
 
             Assert.Equal("value1", dictionaryFirst.Test);
             Assert.Null(dictionaryFirst.Dict);
 
             json = "{\"Test\":\"value1\",\"Dict\":null}";
-            ClassWithDictionaryAndProperty_DictionaryLast dictionaryLast = JsonSerializer.Deserialize<ClassWithDictionaryAndProperty_DictionaryLast>(json);
+            ClassWithDictionaryAndProperty_DictionaryLast dictionaryLast = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithDictionaryAndProperty_DictionaryLast>(json);
 
             Assert.Equal("value1", dictionaryLast.Test);
             Assert.Null(dictionaryLast.Dict);
@@ -1506,14 +1507,14 @@ namespace System.Text.Json.Serialization.Tests
 
         // https://github.com/dotnet/runtime/issues/29888
         [Fact]
-        public static void DictionaryWithNullShouldPreserveOrder_Serialize_IgnoreNullValues()
+        public async Task DictionaryWithNullShouldPreserveOrder_Serialize_IgnoreNullValues()
         {
             var dictionaryFirst = new ClassWithDictionaryAndProperty_DictionaryFirst()
             {
                 Test = "value1"
             };
 
-            var actual = JsonSerializer.Serialize(dictionaryFirst, new JsonSerializerOptions { IgnoreNullValues = true });
+            var actual = await JsonSerializerWrapperForString.SerializeWrapper(dictionaryFirst, new JsonSerializerOptions { IgnoreNullValues = true });
             Assert.Equal("{\"Test\":\"value1\"}", actual);
 
             var dictionaryLast = new ClassWithDictionaryAndProperty_DictionaryLast()
@@ -1521,29 +1522,29 @@ namespace System.Text.Json.Serialization.Tests
                 Test = "value1"
             };
 
-            actual = JsonSerializer.Serialize(dictionaryLast, new JsonSerializerOptions { IgnoreNullValues = true });
+            actual = await JsonSerializerWrapperForString.SerializeWrapper(dictionaryLast, new JsonSerializerOptions { IgnoreNullValues = true });
             Assert.Equal("{\"Test\":\"value1\"}", actual);
         }
 
         // https://github.com/dotnet/runtime/issues/29888
         [Fact]
-        public static void DictionaryWithNullShouldPreserveOrder_Deserialize_IgnoreNullValues()
+        public async Task DictionaryWithNullShouldPreserveOrder_Deserialize_IgnoreNullValues()
         {
             var json = "{\"Test\":\"value1\"}";
-            ClassWithDictionaryAndProperty_DictionaryFirst dictionaryFirst = JsonSerializer.Deserialize<ClassWithDictionaryAndProperty_DictionaryFirst>(json);
+            ClassWithDictionaryAndProperty_DictionaryFirst dictionaryFirst = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithDictionaryAndProperty_DictionaryFirst>(json);
 
             Assert.Equal("value1", dictionaryFirst.Test);
             Assert.Null(dictionaryFirst.Dict);
 
             json = "{\"Test\":\"value1\"}";
-            ClassWithDictionaryAndProperty_DictionaryLast dictionaryLast = JsonSerializer.Deserialize<ClassWithDictionaryAndProperty_DictionaryLast>(json);
+            ClassWithDictionaryAndProperty_DictionaryLast dictionaryLast = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithDictionaryAndProperty_DictionaryLast>(json);
 
             Assert.Equal("value1", dictionaryLast.Test);
             Assert.Null(dictionaryLast.Dict);
         }
 
         [Fact]
-        public static void NullDictionaryValuesShouldDeserializeAsNull()
+        public async Task NullDictionaryValuesShouldDeserializeAsNull()
         {
             const string json =
                     @"{" +
@@ -1564,7 +1565,7 @@ namespace System.Text.Json.Serialization.Tests
                         @"}" +
                     @"}";
 
-            SimpleClassWithDictionaries obj = JsonSerializer.Deserialize<SimpleClassWithDictionaries>(json);
+            SimpleClassWithDictionaries obj = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleClassWithDictionaries>(json);
             Assert.Null(obj.StringVals["key"]);
             Assert.Null(obj.ObjectVals["key"]);
             Assert.Null(obj.StringDictVals["key"]);
@@ -1726,32 +1727,32 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DictionaryOfTOnlyWithStringTValueAsInt()
+        public async Task DictionaryOfTOnlyWithStringTValueAsInt()
         {
             const string Json = @"{""One"":1,""Two"":2}";
 
             DictionaryThatOnlyImplementsIDictionaryOfStringTValue<int> dictionary;
 
-            dictionary = JsonSerializer.Deserialize<DictionaryThatOnlyImplementsIDictionaryOfStringTValue<int>>(Json);
+            dictionary = await JsonSerializerWrapperForString.DeserializeWrapper<DictionaryThatOnlyImplementsIDictionaryOfStringTValue<int>>(Json);
             Assert.Equal(1, dictionary["One"]);
             Assert.Equal(2, dictionary["Two"]);
 
-            string json = JsonSerializer.Serialize(dictionary);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(dictionary);
             Assert.Equal(Json, json);
         }
 
         [Fact]
-        public static void DictionaryOfTOnlyWithStringTValueAsPoco()
+        public async Task DictionaryOfTOnlyWithStringTValueAsPoco()
         {
             const string Json = @"{""One"":{""Id"":1},""Two"":{""Id"":2}}";
 
             DictionaryThatOnlyImplementsIDictionaryOfStringTValue<Poco> dictionary;
 
-            dictionary = JsonSerializer.Deserialize<DictionaryThatOnlyImplementsIDictionaryOfStringTValue<Poco>>(Json);
+            dictionary = await JsonSerializerWrapperForString.DeserializeWrapper<DictionaryThatOnlyImplementsIDictionaryOfStringTValue<Poco>>(Json);
             Assert.Equal(1, dictionary["One"].Id);
             Assert.Equal(2, dictionary["Two"].Id);
 
-            string json = JsonSerializer.Serialize(dictionary);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(dictionary);
             Assert.Equal(Json, json);
         }
 
@@ -1760,17 +1761,17 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DictionaryOfTOnlyWithStringPoco()
+        public async Task DictionaryOfTOnlyWithStringPoco()
         {
             const string Json = @"{""One"":{""Id"":1},""Two"":{""Id"":2}}";
 
             DictionaryThatOnlyImplementsIDictionaryOfStringPoco dictionary;
 
-            dictionary = JsonSerializer.Deserialize<DictionaryThatOnlyImplementsIDictionaryOfStringPoco>(Json);
+            dictionary = await JsonSerializerWrapperForString.DeserializeWrapper<DictionaryThatOnlyImplementsIDictionaryOfStringPoco>(Json);
             Assert.Equal(1, dictionary["One"].Id);
             Assert.Equal(2, dictionary["Two"].Id);
 
-            string json = JsonSerializer.Serialize(dictionary);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(dictionary);
             Assert.Equal(Json, json);
         }
 
@@ -1854,27 +1855,27 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void VerifyDictionaryThatHasIncomatibleEnumeratorWithInt()
+        public async Task VerifyDictionaryThatHasIncomatibleEnumeratorWithInt()
         {
             const string Json = @"{""One"":1,""Two"":2}";
 
             DictionaryThatHasIncompatibleEnumerator dictionary;
-            dictionary = JsonSerializer.Deserialize<DictionaryThatHasIncompatibleEnumerator>(Json);
+            dictionary = await JsonSerializerWrapperForString.DeserializeWrapper<DictionaryThatHasIncompatibleEnumerator>(Json);
             Assert.Equal(1, ((JsonElement)dictionary["One"]).GetInt32());
             Assert.Equal(2, ((JsonElement)dictionary["Two"]).GetInt32());
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(dictionary));
         }
 
         [Fact]
-        public static void VerifyDictionaryThatHasIncomatibleEnumeratorWithPoco()
+        public async Task VerifyDictionaryThatHasIncomatibleEnumeratorWithPoco()
         {
             const string Json = @"{""One"":{""Id"":1},""Two"":{""Id"":2}}";
 
             DictionaryThatHasIncompatibleEnumerator dictionary;
-            dictionary = JsonSerializer.Deserialize<DictionaryThatHasIncompatibleEnumerator>(Json);
+            dictionary = await JsonSerializerWrapperForString.DeserializeWrapper<DictionaryThatHasIncompatibleEnumerator>(Json);
             Assert.Equal(1, ((JsonElement)dictionary["One"]).GetProperty("Id").GetInt32());
             Assert.Equal(2, ((JsonElement)dictionary["Two"]).GetProperty("Id").GetInt32());
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(dictionary));
         }
 
         private class ClassWithoutParameterlessCtor
@@ -1896,14 +1897,14 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DictionaryWith_ObjectWithNoParameterlessCtor_AsValue_Throws()
+        public async Task DictionaryWith_ObjectWithNoParameterlessCtor_AsValue_Throws()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<string, ClassWithInternalParameterlessConstructor>>(@"{""key"":{}}"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<string, ClassWithPrivateParameterlessConstructor>>(@"{""key"":{}}"));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, ClassWithInternalParameterlessConstructor>>(@"{""key"":{}}"));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, ClassWithPrivateParameterlessConstructor>>(@"{""key"":{}}"));
         }
 
         [Fact]
-        public static void DictionaryWith_ObjectWithNoParameterlessCtor_Serialize_Works()
+        public async Task DictionaryWith_ObjectWithNoParameterlessCtor_Serialize_Works()
         {
             var noParameterless = new Dictionary<string, ClassWithoutParameterlessCtor>()
             {
@@ -1913,7 +1914,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             };
 
-            string json = JsonSerializer.Serialize(noParameterless);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(noParameterless);
             Assert.Equal("{\"key\":{\"Name\":\"parameterless\"}}", json);
 
             var onlyInternal = new Dictionary<string, ClassWithInternalParameterlessConstructor>()
@@ -1924,7 +1925,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
             };
 
-            json = JsonSerializer.Serialize(onlyInternal);
+            json = await JsonSerializerWrapperForString.SerializeWrapper(onlyInternal);
             Assert.Equal("{\"key\":{\"Name\":\"internal\"}}", json);
 
             var onlyPrivate = new Dictionary<string, ClassWithPrivateParameterlessConstructor>()
@@ -1932,7 +1933,7 @@ namespace System.Text.Json.Serialization.Tests
                 ["key"] = null
             };
 
-            json = JsonSerializer.Serialize(onlyPrivate);
+            json = await JsonSerializerWrapperForString.SerializeWrapper(onlyPrivate);
             Assert.Equal("{\"key\":null}", json);
         }
     }
