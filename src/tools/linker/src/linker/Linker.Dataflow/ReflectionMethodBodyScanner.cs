@@ -1558,10 +1558,12 @@ namespace Mono.Linker.Dataflow
 								// Overload that has the parameters as the second or fourth argument
 								int argsParam = parameters.Count == 2 || parameters.Count == 3 ? 1 : 3;
 
-								if (methodParams.Count > argsParam &&
-									methodParams[argsParam] is ArrayValue arrayValue &&
-									arrayValue.Size.AsConstInt () != null) {
-									ctorParameterCount = arrayValue.Size.AsConstInt ();
+								if (methodParams.Count > argsParam) {
+									if (methodParams[argsParam] is ArrayValue arrayValue &&
+										arrayValue.Size.AsConstInt () != null)
+										ctorParameterCount = arrayValue.Size.AsConstInt ();
+									else if (methodParams[argsParam] is NullValue)
+										ctorParameterCount = 0;
 								}
 
 								if (parameters.Count > 3) {
@@ -1588,9 +1590,14 @@ namespace Mono.Linker.Dataflow
 								reflectionContext.RecordHandledPattern ();
 							} else {
 								// Otherwise fall back to the bitfield requirements
-								var requiredMemberTypes = ctorParameterCount == 0
-									? DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
-									: GetDynamicallyAccessedMemberTypesFromBindingFlagsForConstructors (bindingFlags);
+								var requiredMemberTypes = GetDynamicallyAccessedMemberTypesFromBindingFlagsForConstructors (bindingFlags);
+
+								// Special case the public parameterless constructor if we know that there are 0 args passed in
+								if (ctorParameterCount == 0 &&
+									requiredMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors) &&
+									!requiredMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.NonPublicConstructors))
+									requiredMemberTypes = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+
 								RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberTypes, value, calledMethod.Parameters[0]);
 							}
 						}
@@ -1997,17 +2004,24 @@ namespace Mono.Linker.Dataflow
 					// We allow a new() constraint on a generic parameter to satisfy DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
 					reflectionContext.RecordHandledPattern ();
 				} else if (uniqueValue is LeafValueWithDynamicallyAccessedMemberNode valueWithDynamicallyAccessedMember) {
-					if (!valueWithDynamicallyAccessedMember.DynamicallyAccessedMemberTypes.HasFlag (requiredMemberTypes)) {
+					var availableMemberTypes = valueWithDynamicallyAccessedMember.DynamicallyAccessedMemberTypes;
+					if (!availableMemberTypes.HasFlag (requiredMemberTypes)) {
 						string missingMemberTypes = $"'{nameof (DynamicallyAccessedMemberTypes)}.{nameof (DynamicallyAccessedMemberTypes.All)}'";
 						if (requiredMemberTypes != DynamicallyAccessedMemberTypes.All) {
 							var missingMemberTypesList = AllDynamicallyAccessedMemberTypes
-								.Where (damt => (requiredMemberTypes & ~valueWithDynamicallyAccessedMember.DynamicallyAccessedMemberTypes & damt) == damt && damt != DynamicallyAccessedMemberTypes.None)
+								.Where (damt => (requiredMemberTypes & ~availableMemberTypes & damt) == damt && damt != DynamicallyAccessedMemberTypes.None)
 								.ToList ();
 
+							// PublicConstructors is a special case since its value is 3 - so PublicParameterlessConstructor (1) | _PublicConstructor_WithMoreThanOneParameter_ (2)
+							// The above bit logic only works for value with single bit set.
+							if (requiredMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors) &&
+								availableMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor) &&
+								!availableMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors))
+								missingMemberTypesList.Add (DynamicallyAccessedMemberTypes.PublicConstructors);
+
 							if (missingMemberTypesList.Contains (DynamicallyAccessedMemberTypes.PublicConstructors) &&
-								missingMemberTypesList.SingleOrDefault (x => x == DynamicallyAccessedMemberTypes.PublicParameterlessConstructor) is var ppc &&
-								ppc != DynamicallyAccessedMemberTypes.None)
-								missingMemberTypesList.Remove (ppc);
+								missingMemberTypesList.Contains (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor))
+								missingMemberTypesList.Remove (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
 
 							missingMemberTypes = string.Join (", ", missingMemberTypesList.Select (mmt => {
 								string mmtName = mmt == DynamicallyAccessedMemberTypesOverlay.Interfaces

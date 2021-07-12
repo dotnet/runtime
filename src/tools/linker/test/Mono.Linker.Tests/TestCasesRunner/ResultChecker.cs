@@ -765,16 +765,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 										return false;
 									} else {
-										if (mc.Origin?.MemberDefinition?.FullName == attrProvider.FullName)
-											return true;
-
-										// Compensate for cases where for some reason the OM doesn't preserve the declaring types
-										// on certain things after trimming.
-										if (mc.Origin?.MemberDefinition != null && mc.Origin?.MemberDefinition.DeclaringType == null &&
-											mc.Origin?.MemberDefinition.Name == attrProvider.Name)
-											return true;
-
-										return false;
+										return LogMessageHasSameOriginMember (mc, attrProvider);
 									}
 
 									return true;
@@ -805,7 +796,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								if (expectedWarningCode != null) {
 									int expectedWarningCodeNumber = int.Parse (expectedWarningCode.Substring (2));
 
-									var matchedMessages = loggedMessages.Where (mc => mc.Category == MessageCategory.Warning && mc.Code == expectedWarningCodeNumber).ToList ();
+									var matchedMessages = loggedMessages.Where (mc =>
+										mc.Category == MessageCategory.Warning &&
+										mc.Code == expectedWarningCodeNumber &&
+										LogMessageHasSameOriginMember (mc, attrProvider)).ToList ();
 									foreach (var matchedMessage in matchedMessages)
 										loggedMessages.Remove (matchedMessage);
 								}
@@ -853,6 +847,20 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (checkRemainingErrors) {
 				var remainingErrors = loggedMessages.Where (m => Regex.IsMatch (m.ToString (), @".*(error | warning): \d{4}.*"));
 				Assert.IsEmpty (remainingErrors, $"Found unexpected errors:{Environment.NewLine}{string.Join (Environment.NewLine, remainingErrors)}");
+			}
+
+			bool LogMessageHasSameOriginMember (MessageContainer mc, IMemberDefinition expectedOriginMember)
+			{
+				if (mc.Origin?.MemberDefinition?.FullName == expectedOriginMember.FullName)
+					return true;
+
+				// Compensate for cases where for some reason the OM doesn't preserve the declaring types
+				// on certain things after trimming.
+				if (mc.Origin?.MemberDefinition != null && mc.Origin?.MemberDefinition.DeclaringType == null &&
+					mc.Origin?.MemberDefinition.Name == expectedOriginMember.Name)
+					return true;
+
+				return false;
 			}
 		}
 

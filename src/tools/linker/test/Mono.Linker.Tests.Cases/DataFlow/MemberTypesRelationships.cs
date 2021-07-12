@@ -34,12 +34,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestNonPublicEvents (typeof (TestType));
 			TestInterfaces (typeof (TestType));
 			TestAll (typeof (TestType));
+			TestMultiple (typeof (TestType));
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicConstructors), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicConstructors))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicConstructors))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicMethods), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicMethods))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.All))]
 		static void TestPublicParameterlessConstructor (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
 		{
@@ -51,9 +52,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresAll (); // Warns
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll))]
+
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicConstructors))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicMethods), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicMethods))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.All))]
 		static void TestPublicConstructors (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
 		{
@@ -65,10 +67,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresAll (); // Warns
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicParameterlessConstructor))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicParameterlessConstructor), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicConstructors), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicConstructors))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicMethods), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicMethods))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.All))]
 		static void TestNonPublicConstructors (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
 		{
@@ -80,9 +82,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresAll (); // Warns
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicMethods))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicMethods), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicMethods))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicConstructors), "y '" + nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicConstructors) + "' i")]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.All))]
 		static void TestPublicMethods (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
 		{
@@ -93,9 +95,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresAll (); // Warns
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicMethods), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicMethods))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicConstructors))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.All))]
 		static void TestNonPublicMethods (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)] Type type)
 		{
@@ -106,9 +108,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresAll (); // Warns
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicFields))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicConstructors))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicFields), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicFields))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicConstructors), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicConstructors))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.All))]
 		static void TestPublicFields (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type)
 		{
@@ -119,9 +121,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresAll (); // Warns
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicFields), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicFields))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicConstructors))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.All))]
 		static void TestNonPublicFields (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicFields)] Type type)
 		{
@@ -132,9 +134,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresAll (); // Warns
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicNestedTypes))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresInterfaces))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicNestedTypes), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicNestedTypes))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresInterfaces), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.Interfaces))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.All))]
 		static void TestPublicNestedTypes (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicNestedTypes)] Type type)
 		{
@@ -145,9 +147,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresAll (); // Warns
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicNestedTypes))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresInterfaces))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicNestedTypes), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicNestedTypes))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresInterfaces), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.Interfaces))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.All))]
 		static void TestNonPublicNestedTypes (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicNestedTypes)] Type type)
 		{
@@ -158,9 +160,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresAll (); // Warns
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicProperties))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicProperties), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicProperties))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicFields), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicFields))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.All))]
 		static void TestPublicProperties (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
 		{
@@ -171,9 +173,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresAll (); // Warns
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicProperties))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicFields))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicProperties), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicProperties))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicFields), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicFields))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.All))]
 		static void TestNonPublicProperties (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicProperties)] Type type)
 		{
@@ -184,9 +186,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresAll (); // Warns
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicEvents))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicEvents), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicEvents))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicFields), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicFields))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.All))]
 		static void TestPublicEvents (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicEvents)] Type type)
 		{
@@ -197,9 +199,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresAll (); // Warns
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicEvents))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicFields))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicEvents), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicEvents))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicFields), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicFields))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.All))]
 		static void TestNonPublicEvents (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicEvents)] Type type)
 		{
@@ -210,9 +212,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresAll (); // Warns
 		}
 
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicNestedTypes))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicNestedTypes))]
-		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicNestedTypes), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.PublicNestedTypes))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresNonPublicNestedTypes), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicNestedTypes))]
+		[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresAll), nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.All))]
 		static void TestInterfaces (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] Type type)
 		{
@@ -242,6 +244,31 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresPublicEvents ();
 			type.RequiresNonPublicEvents ();
 			type.RequiresInterfaces ();
+		}
+
+		static void RequiresMultiplePrivates (
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.NonPublicFields)] Type type)
+		{
+		}
+
+		static void RequiresSomePublic (
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicNestedTypes | DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+		{
+		}
+
+		[ExpectedWarning ("IL2067",
+			nameof (RequiresMultiplePrivates),
+			nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicMethods),
+			nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicFields))]
+		[ExpectedWarning ("IL2067",
+			nameof (RequiresSomePublic),
+			nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.Interfaces),
+			nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicNestedTypes))]
+		static void TestMultiple (
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+		{
+			RequiresMultiplePrivates (type);
+			RequiresSomePublic (type);
 		}
 
 		class TestType { }

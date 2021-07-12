@@ -264,6 +264,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[UnrecognizedReflectionAccessPattern (typeof (GenericBaseTypeWithRequirements<>), "T", messageCode: "IL2091")]
 		class DerivedTypeWithOpenGenericOnBase<T> : GenericBaseTypeWithRequirements<T>
 		{
+			[UnrecognizedReflectionAccessPattern (typeof (GenericBaseTypeWithRequirements<>), "T", messageCode: "IL2091")]
+			public DerivedTypeWithOpenGenericOnBase () { }
 		}
 
 		[RecognizedReflectionAccessPattern]
@@ -363,11 +365,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				[RecognizedReflectionAccessPattern]
 				set;
 			}
+
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsProperty {
 				[UnrecognizedReflectionAccessPattern (typeof (TypeRequiresPublicMethods<>), "T", messageCode: "IL2091")]
-				get;
+				get => null;
 				[UnrecognizedReflectionAccessPattern (typeof (TypeRequiresPublicMethods<>), "T", messageCode: "IL2091")]
-				set;
+				set { }
 			}
 
 			[RecognizedReflectionAccessPattern]
@@ -424,6 +427,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class PartialyInstantiatedMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] TOuter>
 			: BaseForPartialInstantiation<TestType, TOuter>
 		{
+			[UnrecognizedReflectionAccessPattern (typeof (BaseForPartialInstantiation<,>), "TMethods", messageCode: "IL2091")]
+			public PartialyInstantiatedMethods () { }
 		}
 
 		[RecognizedReflectionAccessPattern]

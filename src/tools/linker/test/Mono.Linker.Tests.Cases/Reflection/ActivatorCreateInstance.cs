@@ -16,7 +16,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			Activator.CreateInstance (typeof (Test1));
 			Activator.CreateInstance (typeof (Test2), true);
 			Activator.CreateInstance (typeof (Test3), BindingFlags.NonPublic | BindingFlags.Instance, null, null, null);
-			Activator.CreateInstance (typeof (Test4), GetBindingFlags (), null, null, null);
+			Activator.CreateInstance (typeof (Test4), GetBindingFlags (), null, GetArgs (), null);
 			Activator.CreateInstance (typeof (Test5), new object[] { 1, "ss" });
 
 			var p = new ActivatorCreateInstance ();
@@ -51,6 +51,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestCreateInstanceOfTWithNoConstraint<TestCreateInstanceOfTWithNoConstraintType> ();
 
 			TestCreateInstanceOfTWithDataflow<TestCreateInstanceOfTWithDataflowType> ();
+
+			TestNullArgsOnKnownType ();
+			TestNullArgsOnAnnotatedType (typeof (TestType));
+			TestNullArgsNonPublicOnly (typeof (TestType));
+
+			CreateInstanceWithGetTypeFromHierarchy.Test ();
 		}
 
 		[Kept]
@@ -292,6 +298,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		private static object[] GetArgs ()
+		{
+			return null;
+		}
+
+		[Kept]
 		private static void WithAssemblyName ()
 		{
 			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless1");
@@ -485,5 +497,77 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			Activator.CreateInstance<T> ();
 		}
+
+		[Kept]
+		class TestNullArgsType
+		{
+			[Kept]
+			public TestNullArgsType () { }
+
+			public TestNullArgsType (int i) { }
+		}
+
+		[Kept]
+		[RecognizedReflectionAccessPattern]
+		private static void TestNullArgsOnKnownType ()
+		{
+			Activator.CreateInstance (typeof (TestNullArgsType), null);
+		}
+
+		[Kept]
+		[RecognizedReflectionAccessPattern]
+		private static void TestNullArgsOnAnnotatedType (
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor),
+			KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))] Type type)
+		{
+			Activator.CreateInstance (type, BindingFlags.Public | BindingFlags.Instance, null, null, CultureInfo.InvariantCulture);
+		}
+
+		[Kept]
+		[ExpectedWarning ("IL2067", nameof (DynamicallyAccessedMemberTypes) + "." + nameof (DynamicallyAccessedMemberTypes.NonPublicConstructors))]
+		private static void TestNullArgsNonPublicOnly (
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor),
+			KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))] Type type)
+		{
+			Activator.CreateInstance (type, BindingFlags.NonPublic | BindingFlags.Instance, null, null, CultureInfo.InvariantCulture);
+		}
+
+		[Kept]
+		class CreateInstanceWithGetTypeFromHierarchy
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[KeptMember (".ctor()")]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+			class AnnotatedBase
+			{
+				[Kept]
+				[ExpectedNoWarnings]
+				public void TestCreateInstance ()
+				{
+					Activator.CreateInstance (GetType (), BindingFlags.Public | BindingFlags.Instance, null, null, CultureInfo.InvariantCulture, null);
+				}
+			}
+
+			[Kept]
+			[KeptBaseType (typeof (AnnotatedBase))]
+			[KeptMember (".ctor()")]
+			class Derived : AnnotatedBase
+			{
+				[Kept]
+				public static void KeepIt () { }
+			}
+
+			[Kept]
+			public static void Test ()
+			{
+				Derived.KeepIt ();
+				(new AnnotatedBase ()).TestCreateInstance ();
+			}
+		}
+
+		[Kept]
+		[KeptMember (".ctor()")]
+		class TestType { }
 	}
 }
