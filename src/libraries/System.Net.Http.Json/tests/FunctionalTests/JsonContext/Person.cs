@@ -47,7 +47,7 @@ namespace System.Net.Http.Json.Functional.Tests
             properties[0] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
-                isPublic: false,
+                isPublic: true,
                 isVirtual: false,
                 declaringType: typeof(Person),
                 propertyTypeInfo: jsonContext.Int32,
@@ -63,7 +63,7 @@ namespace System.Net.Http.Json.Functional.Tests
             properties[1] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
-                isPublic: false,
+                isPublic: true,
                 isVirtual: false,
                 declaringType: typeof(Person),
                 propertyTypeInfo: jsonContext.String,
@@ -79,7 +79,7 @@ namespace System.Net.Http.Json.Functional.Tests
             properties[2] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
-                isPublic: false,
+                isPublic: true,
                 isVirtual: false,
                 declaringType: typeof(Person),
                 propertyTypeInfo: jsonContext.Person,
@@ -95,7 +95,7 @@ namespace System.Net.Http.Json.Functional.Tests
             properties[3] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
-                isPublic: false,
+                isPublic: true,
                 isVirtual: false,
                 declaringType: typeof(Person),
                 propertyTypeInfo: jsonContext.String,
