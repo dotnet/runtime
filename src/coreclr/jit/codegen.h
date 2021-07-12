@@ -216,6 +216,7 @@ protected:
     unsigned genCurDispOffset;
 
     static const char* genInsName(instruction ins);
+    const char* genInsDisplayName(emitter::instrDesc* id);
 #endif // DEBUG
 
     //-------------------------------------------------------------------------
@@ -1502,10 +1503,6 @@ public:
     void instGen_Load_Reg_From_Lcl(var_types srcType, regNumber dstReg, int varNum, int offs);
 
     void instGen_Store_Reg_Into_Lcl(var_types dstType, regNumber srcReg, int varNum, int offs);
-
-#ifdef DEBUG
-    void __cdecl instDisp(instruction ins, bool noNL, const char* fmt, ...);
-#endif
 
 #ifdef TARGET_XARCH
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);

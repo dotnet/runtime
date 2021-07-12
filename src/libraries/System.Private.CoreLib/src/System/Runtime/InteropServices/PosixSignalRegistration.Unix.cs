@@ -1,17 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Threading;
 
 namespace System.Runtime.InteropServices
 {
-    /// <summary>
-    /// Handles a <see cref="PosixSignal"/>.
-    /// </summary>
-    public sealed class PosixSignalRegistration : IDisposable
+    public sealed partial class PosixSignalRegistration
     {
         private static volatile bool s_initialized;
         private static readonly Dictionary<int, List<WeakReference<PosixSignalRegistration>?>> s_registrations = new();
@@ -29,45 +24,22 @@ namespace System.Runtime.InteropServices
             _handler = handler;
         }
 
-        /// <summary>
-        /// Registers a <paramref name="handler"/> that is invoked when the <paramref name="signal"/> occurs.
-        /// </summary>
-        /// <param name="signal">The signal to register for.</param>
-        /// <param name="handler">The handler that gets invoked.</param>
-        /// <returns>A <see cref="PosixSignalRegistration"/> instance that can be disposed to unregister.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="handler"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="signal"/> is out the range of expected values for the platform.</exception>
-        /// <exception cref="System.IO.IOException">An error occurred while setting up the signal handling or while installing the handler for the specified signal.</exception>
-        /// <remarks>
-        /// Raw values can be provided for <paramref name="signal"/> by casting them to <see cref="PosixSignal"/>.
-        ///
-        /// Default handling of the signal can be canceled through <see cref="PosixSignalContext.Cancel"/>.
-        /// For <c>SIGTERM</c>, <c>SIGINT</c>, and <c>SIGQUIT</c> process termination can be canceled.
-        /// For <c>SIGCHLD</c>, and <c>SIGCONT</c> terminal configuration can be canceled.
-        /// </remarks>
-        public static PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler)
+        public static partial PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler)
         {
             if (handler == null)
             {
                 throw new ArgumentNullException(nameof(handler));
             }
+
             int signo = Interop.Sys.GetPlatformSignalNumber(signal);
             if (signo == 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(signal));
+                throw new PlatformNotSupportedException();
             }
+
             PosixSignalRegistration registration = new PosixSignalRegistration(signal, signo, handler);
             registration.Register();
             return registration;
-        }
-
-        /// <summary>
-        /// Unregister the handler.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         private unsafe void Register()
@@ -84,6 +56,7 @@ namespace System.Runtime.InteropServices
                 Interop.Sys.SetPosixSignalHandler(&OnPosixSignal);
                 s_initialized = true;
             }
+
             lock (s_registrations)
             {
                 if (!s_registrations.TryGetValue(_signo, out List<WeakReference<PosixSignalRegistration>?>? signalRegistrations))
@@ -104,6 +77,7 @@ namespace System.Runtime.InteropServices
 
                 signalRegistrations.Add(new WeakReference<PosixSignalRegistration>(this));
             }
+
             _registered = true;
         }
 
@@ -116,6 +90,7 @@ namespace System.Runtime.InteropServices
                     _handler(context);
                     return true;
                 }
+
                 return false;
             }
         }
@@ -133,8 +108,9 @@ namespace System.Runtime.InteropServices
                 // For terminate/interrupt signals we use a dedicated Thread
                 // in case the ThreadPool is saturated.
                 bool useDedicatedThread = signal == PosixSignal.SIGINT ||
-                                            signal == PosixSignal.SIGQUIT ||
-                                            signal == PosixSignal.SIGTERM;
+                                          signal == PosixSignal.SIGQUIT ||
+                                          signal == PosixSignal.SIGTERM;
+
                 if (useDedicatedThread)
                 {
                     Thread handlerThread = new Thread(HandleSignal)
@@ -148,8 +124,10 @@ namespace System.Runtime.InteropServices
                 {
                     ThreadPool.UnsafeQueueUserWorkItem(HandleSignal, (signo, registrations));
                 }
+
                 return 1;
             }
+
             return 0;
         }
 
@@ -164,6 +142,7 @@ namespace System.Runtime.InteropServices
                         var registrations = new PosixSignalRegistration?[signalRegistrations.Count];
                         bool hasRegistrations = false;
                         bool pruneWeakReferences = false;
+
                         for (int i = 0; i < signalRegistrations.Count; i++)
                         {
                             if (signalRegistrations[i]!.TryGetTarget(out PosixSignalRegistration? registration))
@@ -210,7 +189,7 @@ namespace System.Runtime.InteropServices
                 bool handlersCalled = false;
                 if (state.registrations != null)
                 {
-                    PosixSignalContext ctx = new();
+                    PosixSignalContext ctx = new(0);
                     foreach (PosixSignalRegistration? registration in state.registrations)
                     {
                         if (registration != null)
@@ -241,10 +220,7 @@ namespace System.Runtime.InteropServices
             } while (true);
         }
 
-        ~PosixSignalRegistration()
-            => Dispose(false);
-
-        private void Dispose(bool disposing)
+        public partial void Dispose()
         {
             if (_registered)
             {
@@ -256,7 +232,7 @@ namespace System.Runtime.InteropServices
                     {
                         if (signalRegistrations[i]!.TryGetTarget(out PosixSignalRegistration? registration))
                         {
-                            if (object.ReferenceEquals(this, registration))
+                            if (ReferenceEquals(this, registration))
                             {
                                 signalRegistrations.RemoveAt(i);
                                 break;

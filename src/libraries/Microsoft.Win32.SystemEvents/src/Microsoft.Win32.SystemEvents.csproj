@@ -82,8 +82,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.Delegate.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.Delegate.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WtsApi32\Interop.Constants.cs"
              Link="Common\Interop\Windows\WtsApi32\Interop.Constants.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WtsApi32\Interop.WTSRegisterSessionNotification.cs"

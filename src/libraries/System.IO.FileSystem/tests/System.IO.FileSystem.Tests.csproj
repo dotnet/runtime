@@ -14,13 +14,16 @@
     <Compile Include="Base\InfoGetSetTimes.cs" />
     <Compile Include="Base\AllGetSetAttributes.cs" />
     <Compile Include="Base\StaticGetSetTimes.cs" />
-    <Compile Include="Base\BaseSymbolicLinks.cs" />
+    <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.cs" />
+    <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.FileSystem.cs" />
+    <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.FileSystemInfo.cs" />
     <Compile Include="Directory\EnumerableTests.cs" />
     <Compile Include="Directory\SymbolicLinks.cs" />
     <Compile Include="DirectoryInfo\SymbolicLinks.cs" />
     <Compile Include="FileInfo\GetSetAttributesCommon.cs" />
     <Compile Include="FileInfo\IsReadOnly.cs" />
     <Compile Include="FileInfo\Replace.cs" />
+    <Compile Include="FileInfo\SymbolicLinks.cs" />
     <Compile Include="FileStream\ctor_options_as.cs" />
     <Compile Include="FileStream\Handle.cs" />
     <Compile Include="Directory\GetLogicalDrives.cs" />
@@ -64,12 +67,14 @@
     <Compile Include="RandomAccess\WriteGatherAsync.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Unix.cs" />
     <Compile Include="FileSystemTest.Unix.cs" />
     <Compile Include="FileStream\ctor_options_as.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Interop\Unix\System.Native\Interop.Stat.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Windows.cs" />
     <Compile Include="FileSystemTest.Windows.cs" />
     <Compile Include="FileStream\ctor_options_as.Windows.cs" />
     <Compile Include="FileStream\FileStreamConformanceTests.Windows.cs" />
@@ -78,13 +83,20 @@
     <Compile Include="RandomAccess\SectorAlignedMemory.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Interop.CreateFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs" Link="Common\Interop\Windows\Interop.FILE_STANDARD_INFO.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs" Link="Common\Interop\Windows\Interop.GetFileInformationByHandleEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs" Link="Common\Interop\Windows\Interop.GetFinalPathNameByHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs" Link="Common\Interop\Windows\Interop.MemOptions.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualAlloc_Ptr.cs" Link="Common\Interop\Windows\Interop.VirtualAlloc_Ptr.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.cs" Link="Common\System\IO\PathInternal.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs" Link="Common\System\IO\PathInternal.Windows.cs" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceProcess.ServiceController\src\System.ServiceProcess.ServiceController.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Unix.cs" />
     <Compile Include="FileSystemTest.Browser.cs" />
     <Compile Include="FileStream\ctor_options_as.Browser.cs" />
   </ItemGroup>
@@ -137,6 +149,7 @@
     <Compile Include="File\Move.cs" />
     <Compile Include="File\ReadWriteAllText.cs" />
     <Compile Include="File\ReadWriteAllLines.cs" />
+    <Compile Include="File\SymbolicLinks.cs" />
     <Compile Include="TestData.cs" />
     <Compile Include="UnseekableFileStream.cs" />
     <Compile Include="FSAssert.cs" />

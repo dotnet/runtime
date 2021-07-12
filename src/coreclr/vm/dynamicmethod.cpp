@@ -403,8 +403,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     if (pInfo->m_loAddr != NULL || pInfo->m_hiAddr != NULL)
     {
-        m_pBaseAddr = ClrVirtualAllocWithinRange(pInfo->m_loAddr, pInfo->m_hiAddr,
-            ReserveBlockSize, MEM_RESERVE, PAGE_NOACCESS);
+        m_pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->ReserveWithinRange(ReserveBlockSize, pInfo->m_loAddr, pInfo->m_hiAddr);
         if (!m_pBaseAddr)
         {
             if (pInfo->getThrowOnOutOfMemoryWithinRange())
@@ -417,7 +416,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
         // top up the ReserveBlockSize to suggested minimum
         ReserveBlockSize = max(ReserveBlockSize, pInfo->getReserveSize());
 
-        m_pBaseAddr = ClrVirtualAllocExecutable(ReserveBlockSize, MEM_RESERVE, PAGE_NOACCESS);
+        m_pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->Reserve(ReserveBlockSize);
         if (!m_pBaseAddr)
             ThrowOutOfMemory();
     }
@@ -749,7 +748,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
 
         if (m_pLastAvailableCommittedAddr + sizeToCommit <= m_pBaseAddr + m_TotalBytesAvailable)
         {
-            if (NULL == ClrVirtualAlloc(m_pLastAvailableCommittedAddr, sizeToCommit, MEM_COMMIT, PAGE_EXECUTE_READWRITE))
+            if (NULL == ExecutableAllocator::Instance()->Commit(m_pLastAvailableCommittedAddr, sizeToCommit, true /* isExecutable */))
             {
                 LOG((LF_BCL, LL_ERROR, "CodeHeap [0x%p] - VirtualAlloc failed\n", this));
                 return NULL;

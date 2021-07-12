@@ -257,7 +257,7 @@ namespace System.Data
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes) =>
             (_dataView.Table != null ? _dataView.Table.GetPropertyDescriptorCollection(attributes) : s_zeroPropertyDescriptorCollection);
 
-        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd) => this;
+        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd) => this;
         #endregion
     }
 }

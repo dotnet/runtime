@@ -270,11 +270,11 @@ namespace System
         {
             if (Environment.Is64BitProcess)
             {
-                return (nuint)BitOperations.LeadingZeroCount((uint)value);
+                return (nuint)BitOperations.LeadingZeroCount((ulong)value);
             }
             else
             {
-                return (nuint)BitOperations.LeadingZeroCount((ulong)value);
+                return (nuint)BitOperations.LeadingZeroCount((uint)value);
             }
         }
 
@@ -283,37 +283,37 @@ namespace System
         {
             if (Environment.Is64BitProcess)
             {
-                return (nuint)BitOperations.PopCount((uint)value);
-            }
-            else
-            {
                 return (nuint)BitOperations.PopCount((ulong)value);
             }
-        }
-
-        [RequiresPreviewFeatures]
-        static nuint IBinaryInteger<nuint>.RotateLeft(nuint value, nuint rotateAmount)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nuint)BitOperations.RotateLeft((uint)value, (int)rotateAmount);
-            }
             else
             {
-                return (nuint)BitOperations.RotateLeft((ulong)value, (int)rotateAmount);
+                return (nuint)BitOperations.PopCount((uint)value);
             }
         }
 
         [RequiresPreviewFeatures]
-        static nuint IBinaryInteger<nuint>.RotateRight(nuint value, nuint rotateAmount)
+        static nuint IBinaryInteger<nuint>.RotateLeft(nuint value, int rotateAmount)
         {
             if (Environment.Is64BitProcess)
             {
-                return (nuint)BitOperations.RotateRight((uint)value, (int)rotateAmount);
+                return (nuint)BitOperations.RotateLeft((ulong)value, rotateAmount);
             }
             else
             {
-                return (nuint)BitOperations.RotateRight((ulong)value, (int)rotateAmount);
+                return (nuint)BitOperations.RotateLeft((uint)value, rotateAmount);
+            }
+        }
+
+        [RequiresPreviewFeatures]
+        static nuint IBinaryInteger<nuint>.RotateRight(nuint value, int rotateAmount)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return (nuint)BitOperations.RotateRight((ulong)value, rotateAmount);
+            }
+            else
+            {
+                return (nuint)BitOperations.RotateRight((uint)value, rotateAmount);
             }
         }
 
@@ -322,11 +322,11 @@ namespace System
         {
             if (Environment.Is64BitProcess)
             {
-                return (nuint)BitOperations.TrailingZeroCount((uint)value);
+                return (nuint)BitOperations.TrailingZeroCount((ulong)value);
             }
             else
             {
-                return (nuint)BitOperations.TrailingZeroCount((ulong)value);
+                return (nuint)BitOperations.TrailingZeroCount((uint)value);
             }
         }
 
@@ -339,11 +339,11 @@ namespace System
         {
             if (Environment.Is64BitProcess)
             {
-                return BitOperations.IsPow2((uint)value);
+                return BitOperations.IsPow2((ulong)value);
             }
             else
             {
-                return BitOperations.IsPow2((ulong)value);
+                return BitOperations.IsPow2((uint)value);
             }
         }
 
@@ -352,11 +352,11 @@ namespace System
         {
             if (Environment.Is64BitProcess)
             {
-                return (nuint)BitOperations.Log2((uint)value);
+                return (nuint)BitOperations.Log2((ulong)value);
             }
             else
             {
-                return (nuint)BitOperations.Log2((ulong)value);
+                return (nuint)BitOperations.Log2((uint)value);
             }
         }
 
@@ -406,11 +406,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static nuint IDecrementOperators<nuint>.operator --(nuint value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked nuint IDecrementOperators<nuint>.operator --(nuint value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -442,11 +442,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static nuint IIncrementOperators<nuint>.operator ++(nuint value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked nuint IIncrementOperators<nuint>.operator ++(nuint value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue
@@ -661,7 +661,7 @@ namespace System
         {
             if (typeof(TOther) == typeof(byte))
             {
-                return (nuint)(object)value;
+                return (byte)(object)value;
             }
             else if (typeof(TOther) == typeof(char))
             {

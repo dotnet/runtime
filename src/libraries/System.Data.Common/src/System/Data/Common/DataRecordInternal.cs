@@ -368,7 +368,7 @@ namespace System.Data.Common
             return _propertyDescriptors;
         }
 
-        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
+        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd)
         {
             return this;
         }

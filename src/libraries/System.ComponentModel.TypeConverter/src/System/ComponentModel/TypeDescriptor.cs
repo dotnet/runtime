@@ -2771,7 +2771,7 @@ namespace System.ComponentModel
                     return _handler.GetProperties(_instance, attributes);
                 }
 
-                object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd) => _instance;
+                object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd) => _instance;
             }
         }
 
@@ -3121,7 +3121,7 @@ namespace System.ComponentModel
             /// <summary>
             /// ICustomTypeDescriptor implementation.
             /// </summary>
-            object? ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
+            object? ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd)
             {
                 return _primary.GetPropertyOwner(pd) ?? _secondary.GetPropertyOwner(pd);
             }
@@ -3570,7 +3570,7 @@ namespace System.ComponentModel
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctor of this Type has RequiresUnreferencedCode.")]
-                object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
+                object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
                     // If so, we can call on it directly rather than creating another
@@ -3915,7 +3915,7 @@ namespace System.ComponentModel
                 /// <summary>
                 /// ICustomTypeDescriptor implementation.
                 /// </summary>
-                object? ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
+                object? ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd)
                 {
                     // Check to see if the provider we get is a ReflectTypeDescriptionProvider.
                     // If so, we can call on it directly rather than creating another

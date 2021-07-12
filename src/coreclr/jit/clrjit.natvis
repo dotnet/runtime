@@ -5,6 +5,13 @@ Licensed to the .NET Foundation under one or more agreements.
 The .NET Foundation licenses this file to you under the MIT license.
 -->
 
+<!--
+Visual Studio debugger visualizers for RyuJIT.
+
+Documentation for VS natvis format: https://docs.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects?view=vs-2019
+
+Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-us/visualstudio/debugger/format-specifiers-in-cpp?view=vs-2019
+-->
 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
@@ -180,6 +187,50 @@ The .NET Foundation licenses this file to you under the MIT license.
         <NextPointer>this-&gt;m_pNext</NextPointer>
         <ValueNode>this-&gt;m_value</ValueNode>
       </LinkedListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="jitstd::vector&lt;*&gt;">
+    <DisplayString Condition="m_nSize > 0">size={m_nSize,d} capacity={m_nCapacity,d}</DisplayString>
+    <DisplayString Condition="m_nSize == 0">Empty</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>m_nSize</Size>
+        <ValuePointer>m_pArray</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="JitExpandArray&lt;*&gt;">
+    <DisplayString Condition="m_size > 0">size={m_size,d}</DisplayString>
+    <DisplayString Condition="m_size == 0">Empty</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>m_size</Size>
+        <ValuePointer>m_members</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="JitExpandArrayStack&lt;*&gt;">
+    <DisplayString Condition="m_size > 0">size={m_size,d} used={m_used,d}</DisplayString>
+    <DisplayString Condition="m_size == 0">Empty</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>m_used</Size>
+        <ValuePointer>m_members</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- Loop cloning -->
+
+  <!-- LcOptInfo is really one of its derived types, so figure out which one. Set Inheritable=false to prevent recursion. -->
+  <Type Name="LcOptInfo" Inheritable="false">
+    <DisplayString>{optType,en}</DisplayString>
+    <Expand>
+      <ExpandedItem Condition="optType == LcOptInfo::OptType::LcJaggedArray">(LcJaggedArrayOptInfo*)this,nd</ExpandedItem>
+      <ExpandedItem Condition="optType == LcOptInfo::OptType::LcMdArray">(LcMdArrayOptInfo*)this,nd</ExpandedItem>
     </Expand>
   </Type>
 

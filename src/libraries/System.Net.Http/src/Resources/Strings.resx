@@ -196,13 +196,10 @@
     <value>The base address must be an absolute URI.</value>
   </data>
   <data name="net_http_client_invalid_requesturi" xml:space="preserve">
-    <value>An invalid request URI was provided. The request URI must either be an absolute URI or BaseAddress must be set.</value>
+    <value>An invalid request URI was provided. Either the request URI must be an absolute URI or BaseAddress must be set.</value>
   </data>
-  <data name="net_http_client_http_baseaddress_required" xml:space="preserve">
-    <value>Only 'http' and 'https' schemes are allowed.</value>
-  </data>
-  <data name="net_http_client_http_browser_baseaddress_required" xml:space="preserve">
-    <value>Only 'http', 'https', and 'blob' schemes are allowed.</value>
+  <data name="net_http_unsupported_requesturi_scheme" xml:space="preserve">
+    <value>The '{0}' scheme is not supported.</value>
   </data>
   <data name="net_http_parser_invalid_base64_string" xml:space="preserve">
     <value>Value '{0}' is not a valid Base64 string. Error: {1}</value>
