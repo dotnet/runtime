@@ -19,7 +19,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[SetupCompileAfter ("SecondForwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
 	[SetupLinkerAction ("copyused", "FirstForwarder")]
 
-	[KeptMemberInAssembly ("FirstForwarder.dll", typeof (ImplementationLibrary))]
+	[KeptTypeInAssembly ("FirstForwarder.dll", typeof (ImplementationLibrary))]
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary), "GetSomeValue()")]
 	[RemovedAssemblyReference ("FirstForwarder.dll", "SecondForwarder.dll")]
 	[RemovedForwarder ("FirstForwarder.dll", nameof (ImplementationStruct))]

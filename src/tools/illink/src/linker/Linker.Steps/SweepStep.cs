@@ -65,11 +65,14 @@ namespace Mono.Linker.Steps
 
 			// Update scopes before removing any type forwarder.
 			foreach (var assembly in assemblies) {
-				switch (Annotations.GetAction (assembly)) {
+				var action = Annotations.GetAction (assembly);
+				switch (action) {
 				case AssemblyAction.CopyUsed:
 				case AssemblyAction.Link:
 				case AssemblyAction.Save:
-					SweepAssemblyReferences (assembly);
+					bool changed = SweepAssemblyReferences (assembly);
+					if (changed && action == AssemblyAction.CopyUsed)
+						Annotations.SetAction (assembly, AssemblyAction.Save);
 					break;
 				}
 			}
@@ -183,8 +186,11 @@ namespace Mono.Linker.Steps
 
 			case AssemblyAction.CopyUsed:
 				AssemblyAction assemblyAction = AssemblyAction.Copy;
-				if (!Context.KeepTypeForwarderOnlyAssemblies && SweepTypeForwarders (assembly))
+				if (!Context.KeepTypeForwarderOnlyAssemblies && SweepTypeForwarders (assembly)) {
+					// Need to sweep references, in case sweeping type forwarders removed any
+					SweepAssemblyReferences (assembly);
 					assemblyAction = AssemblyAction.Save;
+				}
 
 				Annotations.SetAction (assembly, assemblyAction);
 				break;
@@ -197,7 +203,10 @@ namespace Mono.Linker.Steps
 				break;
 
 			case AssemblyAction.Save:
-				SweepTypeForwarders (assembly);
+				if (!Context.KeepTypeForwarderOnlyAssemblies && SweepTypeForwarders (assembly)) {
+					// Need to sweep references, in case sweeping type forwarders removed any
+					SweepAssemblyReferences (assembly);
+				}
 				break;
 			}
 		}
@@ -247,7 +256,7 @@ namespace Mono.Linker.Steps
 				SweepAssemblyReferences (assembly);
 		}
 
-		static void SweepAssemblyReferences (AssemblyDefinition assembly)
+		static bool SweepAssemblyReferences (AssemblyDefinition assembly)
 		{
 			//
 			// We used to run over list returned by GetTypeReferences but
@@ -258,7 +267,7 @@ namespace Mono.Linker.Steps
 			assembly.MainModule.AssemblyReferences.Clear ();
 
 			var ars = new AssemblyReferencesCorrector (assembly);
-			ars.Process ();
+			return ars.Process ();
 		}
 
 		bool IsUsedAssembly (AssemblyDefinition assembly)
@@ -561,6 +570,7 @@ namespace Mono.Linker.Steps
 			readonly DefaultMetadataImporter importer;
 
 			HashSet<TypeReference> updated;
+			bool changedAnyScopes;
 
 			public AssemblyReferencesCorrector (AssemblyDefinition assembly)
 			{
@@ -568,9 +578,10 @@ namespace Mono.Linker.Steps
 				this.importer = new DefaultMetadataImporter (assembly.MainModule);
 
 				updated = null;
+				changedAnyScopes = false;
 			}
 
-			public void Process ()
+			public bool Process ()
 			{
 				updated = new HashSet<TypeReference> ();
 
@@ -591,6 +602,10 @@ namespace Mono.Linker.Steps
 					UpdateTypeScope (mmodule.ExportedTypes);
 
 				updated = null;
+				var ret = changedAnyScopes;
+				changedAnyScopes = false;
+
+				return ret;
 			}
 
 			void UpdateScopes (TypeDefinition typeDefinition)
@@ -696,12 +711,17 @@ namespace Mono.Linker.Steps
 					if (td == null) {
 						// Forwarded type cannot be resolved but it was marked
 						// linker is running in --skip-unresolved true mode
+						var anr = (AssemblyNameReference) f.Scope;
+						f.Scope = importer.ImportReference (anr);
 						continue;
 					}
 
 					var tr = assembly.MainModule.ImportReference (td);
-					if (f.Scope != tr.Scope)
-						f.Scope = tr.Scope;
+					if (f.Scope == tr.Scope)
+						continue;
+
+					f.Scope = tr.Scope;
+					changedAnyScopes = true;
 				}
 			}
 
@@ -869,10 +889,8 @@ namespace Mono.Linker.Steps
 				if (type == null)
 					return;
 
-				if (updated.Contains (type))
+				if (!updated.Add (type))
 					return;
-
-				updated.Add (type);
 
 				// Can't update the scope of windows runtime projections
 				if (type.IsWindowsRuntimeProjection)
@@ -918,8 +936,11 @@ namespace Mono.Linker.Steps
 				}
 
 				var tr = assembly.MainModule.ImportReference (td);
-				if (type.Scope != tr.Scope)
-					type.Scope = tr.Scope;
+				if (type.Scope == tr.Scope)
+					return;
+
+				type.Scope = tr.Scope;
+				changedAnyScopes = true;
 			}
 		}
 	}

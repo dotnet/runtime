@@ -21,7 +21,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 
 	// https://github.com/mono/linker/issues/1536
 	//[KeptMemberInAssembly ("Forwarder.dll", typeof (ImplementationLibrary))]
-	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary))]
+	[KeptTypeInAssembly ("Implementation.dll", typeof (ImplementationLibrary))]
 	class UsedForwarderInGenericIsDynamicallyAccessedWithAssemblyCopyUsed
 	{
 		static void Main ()
