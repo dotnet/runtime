@@ -11,12 +11,12 @@ using Xunit;
 
 namespace Microsoft.Extensions.Configuration.Test
 {
-    public class ConfigTest
+    public class ConfigurationManagerTest
     {
         [Fact]
         public void AutoUpdates()
         {
-            var config = new Config();
+            var config = new ConfigurationManager();
 
             config.AddInMemoryCollection(new Dictionary<string, string>
             {
@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Configuration.Test
         [Fact]
         public void TriggersReloadTokenOnSourceAddition()
         {
-            var config = new Config();
+            var config = new ConfigurationManager();
 
             var reloadToken = ((IConfiguration)config).GetReloadToken();
 
@@ -43,11 +43,10 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.True(reloadToken.HasChanged);
         }
 
-
         [Fact]
         public void SettingValuesWorksWithoutManuallyAddingSource()
         {
-            var config = new Config
+            var config = new ConfigurationManager
             {
                 ["TestKey"] = "TestValue",
             };
@@ -58,7 +57,7 @@ namespace Microsoft.Extensions.Configuration.Test
         [Fact]
         public void SettingConfigValuesDoesNotTriggerReloadToken()
         {
-            var config = new Config();
+            var config = new ConfigurationManager();
             var reloadToken = ((IConfiguration)config).GetReloadToken();
 
             config["TestKey"] = "TestValue";
@@ -72,7 +71,7 @@ namespace Microsoft.Extensions.Configuration.Test
         [Fact]
         public void SettingIConfigurationBuilderPropertiesReloadsSources()
         {
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder configBuilder = config;
 
             config["PreReloadTestConfigKey"] = "PreReloadTestConfigValue";
@@ -104,7 +103,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var provider4 = new DisposableTestConfigurationProvider("qux", "qux-value");
             var provider5 = new DisposableTestConfigurationProvider("quux", "quux-value");
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder builder = config;
 
             builder.Add(new TestConfigurationSource(provider1));
@@ -141,7 +140,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var source4 = new TestConfigurationSource(provider4);
             var source5 = new TestConfigurationSource(provider5);
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder builder = config;
 
             builder.Add(source1);
@@ -179,7 +178,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var providerMock = new Mock<IConfigurationProvider>();
             providerMock.Setup(p => p.GetReloadToken()).Returns(changeToken);
 
-            var config = new Config();
+            var config = new ConfigurationManager();
 
             ((IConfigurationBuilder)config).Add(new TestConfigurationSource(providerMock.Object));
 
@@ -199,7 +198,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
             var source = new TestConfigurationSource(providerMock.Object);
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder builder = config;
 
             builder.Add(source);
@@ -221,7 +220,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 provider
             });
 
-            var config = new Config();
+            var config = new ConfigurationManager();
 
             config.AddConfiguration(chainedConfig, shouldDisposeConfiguration: shouldDispose);
 
@@ -252,7 +251,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var memConfigSrc2 = new MemoryConfigurationSource { InitialData = dic2 };
             var memConfigSrc3 = new MemoryConfigurationSource { InitialData = dic3 };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder configurationBuilder = config;
 
             // Act
@@ -299,7 +298,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var memConfigSrc2 = new MemoryConfigurationSource { InitialData = dic2 };
             var memConfigSrc3 = new MemoryConfigurationSource { InitialData = dic3 };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder configurationBuilder = config;
 
             // Act
@@ -307,7 +306,7 @@ namespace Microsoft.Extensions.Configuration.Test
             configurationBuilder.Add(memConfigSrc2);
             configurationBuilder.Add(memConfigSrc3);
 
-            var chained = new Config();
+            var chained = new ConfigurationManager();
             chained.AddConfiguration(config);
             var memVal1 = chained["mem1:keyinmem1"];
             var memVal2 = chained["Mem2:KeyInMem2"];
@@ -353,14 +352,14 @@ namespace Microsoft.Extensions.Configuration.Test
             var memConfigSrc2 = new MemoryConfigurationSource { InitialData = dic2 };
             var memConfigSrc3 = new MemoryConfigurationSource { InitialData = dic3 };
 
-            var config1 = new Config();
+            var config1 = new ConfigurationManager();
             IConfigurationBuilder configurationBuilder = config1;
 
             // Act
             configurationBuilder.Add(memConfigSrc1);
             configurationBuilder.Add(memConfigSrc2);
 
-            var config2 = new Config();
+            var config2 = new ConfigurationManager();
 
             config2
                 .AddConfiguration(config1)
@@ -413,7 +412,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var memConfigSrc2 = new MemoryConfigurationSource { InitialData = dic2 };
             var memConfigSrc3 = new MemoryConfigurationSource { InitialData = dic3 };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder configurationBuilder = config;
 
             // Act
@@ -467,7 +466,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var memConfigSrc2 = new MemoryConfigurationSource { InitialData = dic2 };
             var memConfigSrc3 = new MemoryConfigurationSource { InitialData = dic3 };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder configurationBuilder = config;
 
             // Act
@@ -511,7 +510,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var memConfigSrc1 = new MemoryConfigurationSource { InitialData = dic1 };
             var memConfigSrc2 = new MemoryConfigurationSource { InitialData = dic2 };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder configurationBuilder = config;
 
             // Act
@@ -525,7 +524,7 @@ namespace Microsoft.Extensions.Configuration.Test
         [Fact]
         public void NewConfigurationRootMayBeBuiltFromExistingWithDuplicateKeys()
         {
-            var configurationRoot = new Config();
+            var configurationRoot = new ConfigurationManager();
 
             configurationRoot.AddInMemoryCollection(new Dictionary<string, string>
             {
@@ -536,7 +535,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 {"KEYA:KEYB", "valueB"},
             });
 
-            var newConfigurationRoot = new Config();
+            var newConfigurationRoot = new ConfigurationManager();
 
             newConfigurationRoot.AddInMemoryCollection(configurationRoot.AsEnumerable());
 
@@ -557,7 +556,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var memConfigSrc2 = new TestMemorySourceProvider(dict);
             var memConfigSrc3 = new TestMemorySourceProvider(dict);
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder configurationBuilder = config;
 
             configurationBuilder.Add(memConfigSrc1);
@@ -604,7 +603,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var memConfigSrc2 = new MemoryConfigurationSource { InitialData = dic2 };
             var memConfigSrc3 = new MemoryConfigurationSource { InitialData = dic3 };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder configurationBuilder = config;
 
             configurationBuilder.Add(memConfigSrc1);
@@ -648,7 +647,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var memConfigSrc1 = new MemoryConfigurationSource { InitialData = dic1 };
             var memConfigSrc2 = new MemoryConfigurationSource { InitialData = dic2 };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder configurationBuilder = config;
 
             configurationBuilder.Add(memConfigSrc1);
@@ -686,7 +685,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var memConfigSrc2 = new MemoryConfigurationSource { InitialData = dic2 };
             var memConfigSrc3 = new MemoryConfigurationSource { InitialData = dic3 };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder configurationBuilder = config;
 
             configurationBuilder.Add(memConfigSrc1);
@@ -717,7 +716,7 @@ namespace Microsoft.Extensions.Configuration.Test
             var memConfigSrc2 = new MemoryConfigurationSource { InitialData = dict };
             var memConfigSrc3 = new MemoryConfigurationSource { InitialData = dict };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder configurationBuilder = config;
 
             // Act
@@ -736,7 +735,7 @@ namespace Microsoft.Extensions.Configuration.Test
         public void SetValueThrowsExceptionNoSourceRegistered()
         {
             // Arrange
-            var config = new Config();
+            var config = new ConfigurationManager();
 
             // A MemoryConfigurationSource is added by default, so there will be no error unless we clear it
             config["Title"] = "Welcome";
@@ -754,7 +753,7 @@ namespace Microsoft.Extensions.Configuration.Test
         public void SameReloadTokenIsReturnedRepeatedly()
         {
             // Arrange
-            IConfiguration config = new Config();
+            IConfiguration config = new ConfigurationManager();
 
             // Act
             var token1 = config.GetReloadToken();
@@ -768,7 +767,7 @@ namespace Microsoft.Extensions.Configuration.Test
         public void DifferentReloadTokenReturnedAfterReloading()
         {
             // Arrange
-            IConfigurationRoot config = new Config();
+            IConfigurationRoot config = new ConfigurationManager();
 
             // Act
             var token1 = config.GetReloadToken();
@@ -787,7 +786,7 @@ namespace Microsoft.Extensions.Configuration.Test
         public void TokenTriggeredWhenReloadOccurs()
         {
             // Arrange
-            IConfigurationRoot config = new Config();
+            IConfigurationRoot config = new ConfigurationManager();
 
             // Act
             var token1 = config.GetReloadToken();
@@ -804,7 +803,7 @@ namespace Microsoft.Extensions.Configuration.Test
         public void MultipleCallbacksCanBeRegisteredToReload()
         {
             // Arrange
-            IConfigurationRoot config = new Config();
+            IConfigurationRoot config = new ConfigurationManager();
 
             // Act
             var token1 = config.GetReloadToken();
@@ -836,7 +835,7 @@ namespace Microsoft.Extensions.Configuration.Test
         public void NewTokenAfterReloadIsNotChanged()
         {
             // Arrange
-            IConfigurationRoot config = new Config();
+            IConfigurationRoot config = new ConfigurationManager();
 
             // Act
             var token1 = config.GetReloadToken();
@@ -862,7 +861,7 @@ namespace Microsoft.Extensions.Configuration.Test
             {
                 [":Key2"] = "value"
             };
-            var config = new Config();
+            var config = new ConfigurationManager();
             config.AddInMemoryCollection(dict);
 
             // Act
@@ -884,7 +883,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 ["Key1::Key3"] = "value"
             };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             ((IConfigurationBuilder)config).AddInMemoryCollection(dict);
 
             // Act
@@ -908,7 +907,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 ["Key1:"] = "value"
             };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             ((IConfigurationBuilder)config).AddInMemoryCollection(dict);
 
             // Act
@@ -932,7 +931,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 {"Mem1:KeyInMem1:Deep1", "ValueDeep1"}
             };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             ((IConfigurationBuilder)config).AddInMemoryCollection(dict);
 
             // Act
@@ -957,7 +956,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 {"Mem1:KeyInMem1:Deep1", "ValueDeep1"}
             };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             ((IConfigurationBuilder)config).AddInMemoryCollection(dict);
 
             // Act
@@ -979,7 +978,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 {"Mem1:Deep1", "Value1"},
             };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             ((IConfigurationBuilder)config).AddInMemoryCollection(dict);
 
             Assert.Throws<InvalidOperationException>(() => config.GetRequiredSection("Mem2"));
@@ -997,7 +996,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 {"Mem2:KeyInMem2:Deep1", "ValueDeep2"}
             };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             ((IConfigurationBuilder)config).AddInMemoryCollection(dict);
 
             // Act
@@ -1022,7 +1021,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 {"Mem1", value}
             };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             ((IConfigurationBuilder)config).AddInMemoryCollection(dict);
 
             // Act
@@ -1041,7 +1040,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 {"Mem1", null}
             };
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             ((IConfigurationBuilder)config).AddInMemoryCollection(dict);
 
             // Act
@@ -1065,7 +1064,7 @@ namespace Microsoft.Extensions.Configuration.Test
             };
 
 
-            var config = new Config();
+            var config = new ConfigurationManager();
             ((IConfigurationBuilder)config).AddInMemoryCollection(dict);
 
             // Act
@@ -1079,7 +1078,7 @@ namespace Microsoft.Extensions.Configuration.Test
         public void ProviderWithNullReloadToken()
         {
             // Arrange
-            var config = new Config();
+            var config = new ConfigurationManager();
             IConfigurationBuilder builder = config;
 
             // Assert
@@ -1090,7 +1089,7 @@ namespace Microsoft.Extensions.Configuration.Test
         public void BuildReturnsThis()
         {
             // Arrange
-            var config = new Config();
+            var config = new ConfigurationManager();
 
             // Assert
             Assert.Same(config, ((IConfigurationBuilder)config).Build());

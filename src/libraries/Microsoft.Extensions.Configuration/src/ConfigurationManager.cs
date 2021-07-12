@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration
     /// Configuration is mutable configuration object. It is both an <see cref="IConfigurationBuilder"/> and an <see cref="IConfigurationRoot"/>.
     /// As sources are added, it updates its current view of configuration. Once Build is called, configuration is frozen.
     /// </summary>
-    public sealed class Config : IConfigurationBuilder, IConfigurationRoot, IDisposable
+    public sealed class ConfigurationManager : IConfigurationBuilder, IConfigurationRoot, IDisposable
     {
         private readonly ConfigurationSources _sources;
         private readonly ConfigurationBuilderProperties _properties;
@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Creates an empty mutable configuration object that is both an <see cref="IConfigurationBuilder"/> and an <see cref="IConfigurationRoot"/>.
         /// </summary>
-        public Config()
+        public ConfigurationManager()
         {
             _sources = new ConfigurationSources(this);
             _properties = new ConfigurationBuilderProperties(this);
@@ -181,9 +181,9 @@ namespace Microsoft.Extensions.Configuration
         private class ConfigurationSources : IList<IConfigurationSource>
         {
             private readonly List<IConfigurationSource> _sources = new();
-            private readonly Config _config;
+            private readonly ConfigurationManager _config;
 
-            public ConfigurationSources(Config config)
+            public ConfigurationSources(ConfigurationManager config)
             {
                 _config = config;
             }
@@ -262,9 +262,9 @@ namespace Microsoft.Extensions.Configuration
         private class ConfigurationBuilderProperties : IDictionary<string, object>
         {
             private readonly Dictionary<string, object> _properties = new();
-            private readonly Config _config;
+            private readonly ConfigurationManager _config;
 
-            public ConfigurationBuilderProperties(Config config)
+            public ConfigurationBuilderProperties(ConfigurationManager config)
             {
                 _config = config;
             }

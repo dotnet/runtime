@@ -28,9 +28,9 @@ namespace Microsoft.Extensions.Configuration
         public bool ShouldDisposeConfiguration { get { throw null; } set { } }
         public Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
     }
-    public sealed partial class Config : Microsoft.Extensions.Configuration.IConfigurationBuilder, Microsoft.Extensions.Configuration.IConfigurationRoot, System.IDisposable
+    public sealed partial class ConfigurationManager : Microsoft.Extensions.Configuration.IConfigurationBuilder, Microsoft.Extensions.Configuration.IConfigurationRoot, System.IDisposable
     {
-        public Config() { }
+        public ConfigurationManager() { }
         public string this[string key] { get { throw null; } set { throw null; } }
         public IConfigurationSection GetSection(string key) { throw null; }
         public System.Collections.Generic.IEnumerable<IConfigurationSection> GetChildren() { throw null; }
