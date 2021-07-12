@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
-    <ItemGroup>
+    <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(Version)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(Version)" />
     </ItemGroup>
@@ -40,9 +40,8 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
-      <!-- Enable once we add workloads based testing -->
-      <!--<RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />-->
-      <!--<RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />-->
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=$(ArtifactsBinDir)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=$(ArtifactsBinDir)" />

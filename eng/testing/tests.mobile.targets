@@ -7,6 +7,10 @@
 
     <PublishingTestsRun>true</PublishingTestsRun>
     <BundleTestAppTargets>BundleTestAppleApp;BundleTestAndroidApp</BundleTestAppTargets>
+
+    <!-- this catches the case when we are running tests, but not archiving them.
+         In case of archiving, the workload gets installed by code elsewhere -->
+    <InstallWorkloadForTesting Condition="'$(TestUsingWorkloads)' == 'true' and '$(ArchiveTests)' != 'true'">true</InstallWorkloadForTesting>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
@@ -290,6 +294,11 @@
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
           DependsOnTargets="Publish;$(BundleTestAppTargets);ArchiveTests" />
+
+  <Target Name="PrepareForTestUsingWorkloads"
+          BeforeTargets="Test"
+          DependsOnTargets="InstallWorkloadUsingArtifacts"
+          Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
   <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(SkipImportRepoLinkerTargets)' != 'true'" />
 </Project>
