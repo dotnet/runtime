@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
@@ -37,6 +38,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         catch (Exception ex)
                         {
                             DependencyInjectionEventSource.Log.ServiceRealizationFailed(ex);
+
+                            Debug.Fail($"We should never get exceptions from the background compilation.{Environment.NewLine}{ex}");
                         }
                     },
                     null);

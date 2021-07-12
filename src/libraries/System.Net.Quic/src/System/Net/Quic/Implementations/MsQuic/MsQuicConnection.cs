@@ -85,6 +85,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (releaseHandles)
                 {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{LogId} releasing handle after last stream.");
                     Handle?.Dispose();
                 }
             }
@@ -127,16 +128,29 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
+        internal string TraceId() => _state.LogId;
+
         // constructor for inbound connections
-        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle)
+        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle, bool remoteCertificateRequired = false, X509RevocationMode revocationMode = X509RevocationMode.Offline, RemoteCertificateValidationCallback? remoteCertificateValidationCallback = null)
         {
             _state.Handle = handle;
             _state.StateGCHandle = GCHandle.Alloc(_state);
             _state.Connected = true;
+            _isServer = true;
             _localEndPoint = localEndPoint;
             _remoteEndPoint = remoteEndPoint;
-            _remoteCertificateRequired = false;
-            _isServer = true;
+            _remoteCertificateRequired = remoteCertificateRequired;
+            _revocationMode = revocationMode;
+            _remoteCertificateValidationCallback = remoteCertificateValidationCallback;
+
+            if (_remoteCertificateRequired)
+            {
+                // We need to link connection for the validation callback.
+                // We need to be able to find the connection in HandleEventPeerCertificateReceived
+                // and dispatch it as sender to validation callback.
+                // After that Connection will be set back to null.
+                _state.Connection = this;
+            }
 
             try
             {
@@ -154,7 +168,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _state.LogId = MsQuicLogHelper.GetLogId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(_state, $"{_state.LogId} Inbound connection created");
+                NetEventSource.Info(_state, $"{TraceId()} Inbound connection created");
             }
         }
 
@@ -194,7 +208,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _state.LogId = MsQuicLogHelper.GetLogId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(_state, $"{_state.LogId} Outbound connection created");
+                NetEventSource.Info(_state, $"{TraceId()} Outbound connection created");
             }
         }
 
@@ -338,6 +352,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (connection == null)
             {
                 return MsQuicStatusCodes.InvalidState;
+            }
+
+            if (connection._isServer)
+            {
+                state.Connection = null;
             }
 
             try
@@ -685,6 +704,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} disposing {disposing}");
+
             bool releaseHandles = false;
             lock (_state)
             {
@@ -704,6 +725,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             _configuration?.Dispose();
             if (releaseHandles)
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} releasing handle");
+
                 // We may not be fully initialized if constructor fails.
                 _state.Handle?.Dispose();
             }

@@ -16,11 +16,15 @@
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/mini/mini-runtime.h>
+#include <mono/sgen/sgen-conf.h>
+#include <mono/sgen/sgen-tagged-pointer.h>
+#include "mono/utils/mono-logger-internals.h"
 #include <runtime_version.h>
 #include <clretwallmain.h>
 
@@ -49,8 +53,11 @@ char *_ep_rt_mono_managed_cmd_line = NULL;
 static GArray * _ep_rt_mono_sampled_thread_callstacks = NULL;
 static uint32_t _ep_rt_mono_max_sampled_thread_count = 32;
 
-// Mono profiler.
-static MonoProfilerHandle _ep_rt_mono_profiler = NULL;
+// Mono profilers.
+static MonoProfilerHandle _ep_rt_default_profiler = NULL;
+static MonoProfilerHandle _ep_rt_dotnet_runtime_profiler_provider = NULL;
+static MonoProfilerHandle _ep_rt_dotnet_mono_profiler_provider = NULL;
+static MonoCallSpec _ep_rt_dotnet_mono_profiler_provider_callspec = {0};
 
 // Phantom JIT compile method.
 MonoMethod *_ep_rt_mono_runtime_helper_compile_method = NULL;
@@ -196,6 +203,38 @@ typedef struct _AssemblyEventData AssemblyEventData;
 #define EXCEPTION_THROWN_FLAGS_IS_CSE 0x8
 #define EXCEPTION_THROWN_FLAGS_IS_CLS_COMPLIANT 0x10
 
+// Provider keyword flags.
+#define GC_KEYWORD 0x1
+#define GC_HANDLE_KEYWORD 0x2
+#define LOADER_KEYWORD 0x8
+#define JIT_KEYWORD 0x10
+#define APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD 0x800
+#define CONTENTION_KEYWORD 0x4000
+#define EXCEPTION_KEYWORD 0x8000
+#define THREADING_KEYWORD 0x10000
+#define GC_ALLOCATION_KEYWORD 0x200000
+#define GC_MOVES_KEYWORD 0x400000
+#define GC_ROOT_KEYWORD 0x800000
+#define GC_FINALIZATION_KEYWORD 0x1000000
+#define GC_RESIZE_KEYWORD 0x2000000
+#define METHOD_TRACING_KEYWORD 0x20000000
+#define TYPE_DIAGNOSTIC_KEYWORD 0x8000000000
+#define TYPE_LOADING_KEYWORD 0x8000000000
+#define MONITOR_KEYWORD 0x10000000000
+#define METHOD_INSTRUMENTATION_KEYWORD 0x40000000000
+
+// GC provider types.
+
+typedef struct _GCObjectAddressData {
+	MonoObject *object;
+	void *address;
+} GCObjectAddressData;
+
+typedef struct _GCAddressObjectData {
+	void *address;
+	MonoObject *object;
+} GCAddressObjectData;
+
 /*
  * Forward declares of all static functions.
  */
@@ -305,6 +344,10 @@ profiler_eventpipe_thread_exited (
 
 static
 bool
+parse_mono_profiler_options (const ep_char8_t *option);
+
+static
+bool
 get_module_event_data (
 	MonoImage *image,
 	ModuleEventData *module_data);
@@ -328,86 +371,86 @@ get_exception_ip_func (
 
 static
 void
-profiler_jit_begin (
+runtime_profiler_jit_begin (
 	MonoProfiler *prof,
 	MonoMethod *method);
 
 static
 void
-profiler_jit_failed (
+runtime_profiler_jit_failed (
 	MonoProfiler *prof,
 	MonoMethod *method);
 
 static
 void
-profiler_jit_done (
+runtime_profiler_jit_done (
 	MonoProfiler *prof,
 	MonoMethod *method,
 	MonoJitInfo *ji);
 
 static
 void
-profiler_image_loaded (
+runtime_profiler_image_loaded (
 	MonoProfiler *prof,
 	MonoImage *image);
 
 static
 void
-profiler_image_unloaded (
+runtime_profiler_image_unloaded (
 	MonoProfiler *prof,
 	MonoImage *image);
 
 static
 void
-profiler_assembly_loaded (
+runtime_profiler_assembly_loaded (
 	MonoProfiler *prof,
 	MonoAssembly *assembly);
 
 static
 void
-profiler_assembly_unloaded (
+runtime_profiler_assembly_unloaded (
 	MonoProfiler *prof,
 	MonoAssembly *assembly);
 
 static
 void
-profiler_thread_started (
+runtime_profiler_thread_started (
 	MonoProfiler *prof,
 	uintptr_t tid);
 
 static
 void
-profiler_thread_stopped (
+runtime_profiler_thread_stopped (
 	MonoProfiler *prof,
 	uintptr_t tid);
 
 static
 void
-profiler_class_loading (
+runtime_profiler_class_loading (
 	MonoProfiler *prof,
 	MonoClass *klass);
 
 static
 void
-profiler_class_failed (
+runtime_profiler_class_failed (
 	MonoProfiler *prof,
 	MonoClass *klass);
 
 static
 void
-profiler_class_loaded (
+runtime_profiler_class_loaded (
 	MonoProfiler *prof,
 	MonoClass *klass);
 
 static
 void
-profiler_exception_throw (
+runtime_profiler_exception_throw (
 	MonoProfiler *prof,
 	MonoObject *exception);
 
 static
 void
-profiler_exception_clause (
+runtime_profiler_exception_clause (
 	MonoProfiler *prof,
 	MonoMethod *method,
 	uint32_t clause_num,
@@ -416,34 +459,389 @@ profiler_exception_clause (
 
 static
 void
-profiler_monitor_contention (
+runtime_profiler_monitor_contention (
 	MonoProfiler *prof,
 	MonoObject *obj);
 
 static
 void
-profiler_monitor_acquired (
+runtime_profiler_monitor_acquired (
 	MonoProfiler *prof,
 	MonoObject *obj);
 
 static
 void
-profiler_monitor_failed (
+runtime_profiler_monitor_failed (
 	MonoProfiler *prof,
 	MonoObject *obj);
 
 static
 void
-profiler_jit_code_buffer (
+runtime_profiler_jit_code_buffer (
 	MonoProfiler *prof,
 	const mono_byte *buffer,
 	uint64_t size,
 	MonoProfilerCodeBufferType type,
 	const void *data);
 
+static
+void
+mono_profiler_app_domain_loading (
+	MonoProfiler *prof,
+	MonoDomain *domain);
+
+static
+void
+mono_profiler_app_domain_loaded (
+	MonoProfiler *prof,
+	MonoDomain *domain);
+
+static
+void
+mono_profiler_app_domain_unloading (
+	MonoProfiler *prof,
+	MonoDomain *domain);
+
+static
+void
+mono_profiler_app_domain_unloaded (
+	MonoProfiler *prof,
+	MonoDomain *domain);
+
+static
+void
+mono_profiler_app_domain_name (
+	MonoProfiler *prof,
+	MonoDomain *domain,
+	const char *name);
+
+static
+void
+mono_profiler_jit_begin (
+	MonoProfiler *prof,
+	MonoMethod *method);
+
+static
+void
+mono_profiler_jit_failed (
+	MonoProfiler *prof,
+	MonoMethod *method);
+
+static
+void
+mono_profiler_jit_done (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	MonoJitInfo *ji);
+
+static
+void
+mono_profiler_jit_chunk_created (
+	MonoProfiler *prof,
+	const mono_byte *chunk,
+	uintptr_t size);
+
+static
+void
+mono_profiler_jit_chunk_destroyed (
+	MonoProfiler *prof,
+	const mono_byte *chunk);
+
+static
+void
+mono_profiler_jit_code_buffer (
+	MonoProfiler *prof,
+	const mono_byte *buffer,
+	uint64_t size,
+	MonoProfilerCodeBufferType type,
+	const void *data);
+
+static
+void
+mono_profiler_class_loading (
+	MonoProfiler *prof,
+	MonoClass *klass);
+
+static
+void
+mono_profiler_class_failed (
+	MonoProfiler *prof,
+	MonoClass *klass);
+
+static
+void
+mono_profiler_class_loaded (
+	MonoProfiler *prof,
+	MonoClass *klass);
+
+static
+void
+mono_profiler_vtable_loading (
+	MonoProfiler *prof,
+	MonoVTable *vtable);
+
+static
+void
+mono_profiler_vtable_failed (
+	MonoProfiler *prof,
+	MonoVTable *vtable);
+
+static
+void
+mono_profiler_vtable_loaded (
+	MonoProfiler *prof,
+	MonoVTable *vtable);
+
+static
+void
+mono_profiler_module_loading (
+	MonoProfiler *prof,
+	MonoImage *image);
+
+static
+void
+mono_profiler_module_failed (
+	MonoProfiler *prof,
+	MonoImage *image);
+
+static
+void
+mono_profiler_module_loaded (
+	MonoProfiler *prof,
+	MonoImage *image);
+
+static
+void
+mono_profiler_module_unloading (
+	MonoProfiler *prof,
+	MonoImage *image);
+
+static
+void
+mono_profiler_module_unloaded (
+	MonoProfiler *prof,
+	MonoImage *image);
+
+static
+void
+mono_profiler_assembly_loading (
+	MonoProfiler *prof,
+	MonoAssembly *assembly);
+
+static
+void
+mono_profiler_assembly_loaded (
+	MonoProfiler *prof,
+	MonoAssembly *assembly);
+
+static
+void
+mono_profiler_assembly_unloading (
+	MonoProfiler *prof,
+	MonoAssembly *assembly);
+
+static
+void
+mono_profiler_assembly_unloaded (
+	MonoProfiler *prof,
+	MonoAssembly *assembly);
+
+static
+void
+mono_profiler_method_enter (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	MonoProfilerCallContext *context);
+
+static
+void
+mono_profiler_method_leave (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	MonoProfilerCallContext *context);
+
+static
+void
+mono_profiler_method_tail_call (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	MonoMethod *target_method);
+
+static
+void
+mono_profiler_method_exception_leave (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	MonoObject *exc);
+
+static
+void
+mono_profiler_method_free (
+	MonoProfiler *prof,
+	MonoMethod *method);
+
+static
+void
+mono_profiler_method_begin_invoke (
+	MonoProfiler *prof,
+	MonoMethod *method);
+
+static
+void
+mono_profiler_method_end_invoke (
+	MonoProfiler *prof,
+	MonoMethod *method);
+
+static
+MonoProfilerCallInstrumentationFlags
+mono_profiler_method_instrumentation (
+	MonoProfiler *prof,
+	MonoMethod *method);
+
+static
+void
+mono_profiler_exception_throw (
+	MonoProfiler *prof,
+	MonoObject *exc);
+
+static
+void
+mono_profiler_exception_clause (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	uint32_t clause_num,
+	MonoExceptionEnum clause_type,
+	MonoObject *exc);
+
+static
+void
+mono_profiler_gc_event (
+	MonoProfiler *prof,
+	MonoProfilerGCEvent gc_event,
+	uint32_t generation,
+	mono_bool serial);
+
+static
+void
+mono_profiler_gc_allocation (
+	MonoProfiler *prof,
+	MonoObject *object);
+
+static
+void
+mono_profiler_gc_moves (
+	MonoProfiler *prof,
+	MonoObject *const* objects,
+	uint64_t count);
+
+static
+void
+mono_profiler_gc_resize (
+	MonoProfiler *prof,
+	uintptr_t size);
+
+static
+void
+mono_profiler_gc_handle_created (
+	MonoProfiler *prof,
+	uint32_t handle,
+	MonoGCHandleType type,
+	MonoObject * object);
+
+static
+void
+mono_profiler_gc_handle_deleted (
+	MonoProfiler *prof,
+	uint32_t handle,
+	MonoGCHandleType type);
+
+static
+void
+mono_profiler_gc_finalizing (MonoProfiler *prof);
+
+static
+void
+mono_profiler_gc_finalized (MonoProfiler *prof);
+
+static
+void
+mono_profiler_gc_root_register (
+	MonoProfiler *prof,
+	const mono_byte *start,
+	uintptr_t size,
+	MonoGCRootSource source,
+	const void * key,
+	const char * name);
+
+static
+void
+mono_profiler_gc_root_unregister (
+	MonoProfiler *prof,
+	const mono_byte *start);
+
+static
+void
+mono_profiler_gc_roots (
+	MonoProfiler *prof,
+	uint64_t count,
+	const mono_byte *const * addresses,
+	MonoObject *const * objects);
+
+static
+void
+mono_profiler_monitor_contention (
+	MonoProfiler *prof,
+	MonoObject *object);
+
+static
+void
+mono_profiler_monitor_failed (
+	MonoProfiler *prof,
+	MonoObject *object);
+
+static
+void
+mono_profiler_monitor_acquired (
+	MonoProfiler *prof,
+	MonoObject *object);
+
+static
+void
+mono_profiler_thread_started (
+	MonoProfiler *prof,
+	uintptr_t tid);
+
+static
+void
+mono_profiler_thread_stopping (
+	MonoProfiler *prof,
+	uintptr_t tid);
+
+static
+void
+mono_profiler_thread_stopped (
+	MonoProfiler *prof,
+	uintptr_t tid);
+
+static
+void
+mono_profiler_thread_exited (
+	MonoProfiler *prof,
+	uintptr_t tid);
+
+static
+void
+mono_profiler_thread_name (
+	MonoProfiler *prof,
+	uintptr_t tid,
+	const char *name);
+
 /*
  * Forward declares of all private functions (accessed using extern in ep-rt-mono.h).
  */
+
+void
+ep_rt_mono_component_init (void);
 
 void
 ep_rt_mono_init (void);
@@ -525,6 +923,14 @@ ep_rt_mono_method_get_full_name (
 
 void
 ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints);
+
+static
+inline
+bool
+profiler_callback_is_enabled (uint64_t enabled_keywords, uint64_t keyword)
+{
+	return (enabled_keywords & keyword) == keyword;
+}
 
 static
 inline
@@ -1173,6 +1579,87 @@ profiler_eventpipe_thread_exited (
 	ep_rt_mono_thread_exited ();
 }
 
+static bool
+parse_mono_profiler_options (const ep_char8_t *option)
+{
+	do {
+		if (!*option)
+			return false;
+
+		if (!strncmp (option, "alloc", 5)) {
+			mono_profiler_enable_allocations ();
+			option += 5;
+		} else if (!strncmp (option, "exception", 9)) {
+			mono_profiler_enable_clauses ();
+			option += 9;
+		/*} else if (!strncmp (option, "sample", 6)) {
+			mono_profiler_enable_sampling (_ep_rt_dotnet_mono_profiler_provider);
+			option += 6;*/
+		} else {
+			return false;
+		}
+
+		if (*option == ',')
+			option++;
+	} while (*option);
+
+	return true;
+}
+
+void
+ep_rt_mono_component_init (void)
+{
+	_ep_rt_default_profiler = mono_profiler_create (NULL);
+	_ep_rt_dotnet_runtime_profiler_provider = mono_profiler_create (NULL);
+	_ep_rt_dotnet_mono_profiler_provider = mono_profiler_create (NULL);
+
+	char *diag_env = g_getenv("MONO_DIAGNOSTICS");
+	if (diag_env) {
+		int diag_argc = 1;
+		char **diag_argv = g_new (char *, 1);
+		if (diag_argv) {
+			diag_argv [0] = NULL;
+			if (!mono_parse_options_from (diag_env, &diag_argc, &diag_argv)) {
+				for (int i = 0; i < diag_argc; ++i) {
+					if (diag_argv [i]) {
+						if (strncmp (diag_argv [i], "--diagnostic-mono-profiler=", 27) == 0) {
+							if (!parse_mono_profiler_options (diag_argv [i] + 27))
+								mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed parsing MONO_DIAGNOSTICS environment variable option: %s", diag_argv [i]);
+						} else if (strncmp (diag_argv [i], "--diagnostic-mono-profiler-callspec=", 36) == 0) {
+							char *errstr = NULL;
+							if (!mono_callspec_parse (diag_argv [i] + 36, &_ep_rt_dotnet_mono_profiler_provider_callspec, &errstr)) {
+								mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed parsing '%s': %s", diag_argv [i], errstr);
+								g_free (errstr);
+								mono_callspec_cleanup (&_ep_rt_dotnet_mono_profiler_provider_callspec);
+							} else {
+								mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_instrumentation);
+							}
+						} else if (strncmp (diag_argv [i], "--diagnostic-ports=", 19) == 0) {
+							char *diag_ports_env = g_getenv("DOTNET_DiagnosticPorts");
+							if (diag_ports_env)
+								mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DIAGNOSTICS, "DOTNET_DiagnosticPorts environment variable already set, ignoring --diagnostic-ports used in MONO_DIAGNOSTICS environment variable");
+							else
+								g_setenv ("DOTNET_DiagnosticPorts", diag_argv [i] + 19, TRUE);
+							g_free (diag_ports_env);
+
+						} else {
+							mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed parsing MONO_DIAGNOSTICS environment variable, unknown option: %s", diag_argv [i]);
+						}
+
+						g_free (diag_argv [i]);
+						diag_argv [i] = NULL;
+					}
+				}
+
+				g_free (diag_argv);
+			} else {
+				mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed parsing MONO_DIAGNOSTICS environment variable");
+			}
+		}
+	}
+	g_free (diag_env);
+}
+
 void
 ep_rt_mono_init (void)
 {
@@ -1184,8 +1671,11 @@ ep_rt_mono_init (void)
 
 	_ep_rt_mono_initialized = TRUE;
 
-	_ep_rt_mono_profiler = mono_profiler_create (NULL);
-	mono_profiler_set_thread_stopped_callback (_ep_rt_mono_profiler, profiler_eventpipe_thread_exited);
+	EP_ASSERT (_ep_rt_default_profiler != NULL);
+	EP_ASSERT (_ep_rt_dotnet_runtime_profiler_provider != NULL);
+	EP_ASSERT (_ep_rt_dotnet_mono_profiler_provider != NULL);
+
+	mono_profiler_set_thread_stopped_callback (_ep_rt_default_profiler, profiler_eventpipe_thread_exited);
 
 	MonoMethodSignature *method_signature = mono_metadata_signature_alloc (mono_get_corlib (), 1);
 	if (method_signature) {
@@ -1204,11 +1694,13 @@ ep_rt_mono_init (void)
 		mono_error_cleanup (error);
 		mono_metadata_free_method_signature (method_signature);
 
-		_ep_rt_mono_runtime_helper_compile_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
 		if (_ep_rt_mono_runtime_helper_compile_method) {
-			_ep_rt_mono_runtime_helper_compile_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_runtime_helper_compile_method);
-			_ep_rt_mono_runtime_helper_compile_method_jitinfo->code_size = 20;
-			_ep_rt_mono_runtime_helper_compile_method_jitinfo->d.method = _ep_rt_mono_runtime_helper_compile_method;
+			_ep_rt_mono_runtime_helper_compile_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
+			if (_ep_rt_mono_runtime_helper_compile_method) {
+				_ep_rt_mono_runtime_helper_compile_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_runtime_helper_compile_method);
+				_ep_rt_mono_runtime_helper_compile_method_jitinfo->code_size = 20;
+				_ep_rt_mono_runtime_helper_compile_method_jitinfo->d.method = _ep_rt_mono_runtime_helper_compile_method;
+			}
 		}
 	}
 
@@ -1222,11 +1714,13 @@ ep_rt_mono_init (void)
 				_ep_rt_mono_monitor_enter_v4_method = mono_method_desc_search_in_class (desc, monitor);
 				mono_method_desc_free (desc);
 
-				_ep_rt_mono_monitor_enter_v4_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
-				if (_ep_rt_mono_monitor_enter_v4_method_jitinfo) {
-					_ep_rt_mono_monitor_enter_v4_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_monitor_enter_v4_method);
-					_ep_rt_mono_monitor_enter_v4_method_jitinfo->code_size = 20;
-					_ep_rt_mono_monitor_enter_v4_method_jitinfo->d.method = _ep_rt_mono_monitor_enter_v4_method;
+				if (_ep_rt_mono_monitor_enter_v4_method) {
+					_ep_rt_mono_monitor_enter_v4_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
+					if (_ep_rt_mono_monitor_enter_v4_method_jitinfo) {
+						_ep_rt_mono_monitor_enter_v4_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_monitor_enter_v4_method);
+						_ep_rt_mono_monitor_enter_v4_method_jitinfo->code_size = 20;
+						_ep_rt_mono_monitor_enter_v4_method_jitinfo->d.method = _ep_rt_mono_monitor_enter_v4_method;
+					}
 				}
 			}
 
@@ -1235,11 +1729,13 @@ ep_rt_mono_init (void)
 				_ep_rt_mono_monitor_enter_method = mono_method_desc_search_in_class (desc, monitor);
 				mono_method_desc_free (desc);
 
-				_ep_rt_mono_monitor_enter_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
-				if (_ep_rt_mono_monitor_enter_method_jitinfo) {
-					_ep_rt_mono_monitor_enter_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_monitor_enter_method);
-					_ep_rt_mono_monitor_enter_method_jitinfo->code_size = 20;
-					_ep_rt_mono_monitor_enter_method_jitinfo->d.method = _ep_rt_mono_monitor_enter_method;
+				if (_ep_rt_mono_monitor_enter_method ) {
+					_ep_rt_mono_monitor_enter_method_jitinfo = (MonoJitInfo *)g_new0 (MonoJitInfo, 1);
+					if (_ep_rt_mono_monitor_enter_method_jitinfo) {
+						_ep_rt_mono_monitor_enter_method_jitinfo->code_start = MINI_FTNPTR_TO_ADDR (_ep_rt_mono_monitor_enter_method);
+						_ep_rt_mono_monitor_enter_method_jitinfo->code_size = 20;
+						_ep_rt_mono_monitor_enter_method_jitinfo->d.method = _ep_rt_mono_monitor_enter_method;
+					}
 				}
 			}
 		}
@@ -1289,6 +1785,11 @@ ep_rt_mono_fini (void)
 	g_free (_ep_rt_mono_monitor_enter_v4_method_jitinfo);
 	_ep_rt_mono_monitor_enter_v4_method_jitinfo = NULL;
 	_ep_rt_mono_monitor_enter_v4_method = NULL;
+
+	if (_ep_rt_dotnet_mono_profiler_provider_callspec.enabled) {
+		mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+		mono_callspec_cleanup (&_ep_rt_dotnet_mono_profiler_provider_callspec);
+	}
 
 	_ep_rt_mono_sampled_thread_callstacks = NULL;
 	_ep_rt_mono_rand_provider = NULL;
@@ -1671,7 +2172,8 @@ ep_rt_mono_providers_validate_all_disabled (void)
 {
 	return (!MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled &&
 		!MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context.IsEnabled &&
-		!MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.IsEnabled);
+		!MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.IsEnabled &&
+		!MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.IsEnabled);
 }
 
 void
@@ -2809,7 +3311,7 @@ ep_rt_write_event_threadpool_working_thread_count (
 
 static
 void
-profiler_jit_begin (
+runtime_profiler_jit_begin (
 	MonoProfiler *prof,
 	MonoMethod *method)
 {
@@ -2818,7 +3320,7 @@ profiler_jit_begin (
 
 static
 void
-profiler_jit_failed (
+runtime_profiler_jit_failed (
 	MonoProfiler *prof,
 	MonoMethod *method)
 {
@@ -2827,7 +3329,7 @@ profiler_jit_failed (
 
 static
 void
-profiler_jit_done (
+runtime_profiler_jit_done (
 	MonoProfiler *prof,
 	MonoMethod *method,
 	MonoJitInfo *ji)
@@ -2838,7 +3340,7 @@ profiler_jit_done (
 
 static
 void
-profiler_image_loaded (
+runtime_profiler_image_loaded (
 	MonoProfiler *prof,
 	MonoImage *image)
 {
@@ -2848,7 +3350,7 @@ profiler_image_loaded (
 
 static
 void
-profiler_image_unloaded (
+runtime_profiler_image_unloaded (
 	MonoProfiler *prof,
 	MonoImage *image)
 {
@@ -2858,7 +3360,7 @@ profiler_image_unloaded (
 
 static
 void
-profiler_assembly_loaded (
+runtime_profiler_assembly_loaded (
 	MonoProfiler *prof,
 	MonoAssembly *assembly)
 {
@@ -2867,7 +3369,7 @@ profiler_assembly_loaded (
 
 static
 void
-profiler_assembly_unloaded (
+runtime_profiler_assembly_unloaded (
 	MonoProfiler *prof,
 	MonoAssembly *assembly)
 {
@@ -2876,7 +3378,7 @@ profiler_assembly_unloaded (
 
 static
 void
-profiler_thread_started (
+runtime_profiler_thread_started (
 	MonoProfiler *prof,
 	uintptr_t tid)
 {
@@ -2885,7 +3387,7 @@ profiler_thread_started (
 
 static
 void
-profiler_thread_stopped (
+runtime_profiler_thread_stopped (
 	MonoProfiler *prof,
 	uintptr_t tid)
 {
@@ -2894,7 +3396,7 @@ profiler_thread_stopped (
 
 static
 void
-profiler_class_loading (
+runtime_profiler_class_loading (
 	MonoProfiler *prof,
 	MonoClass *klass)
 {
@@ -2903,7 +3405,7 @@ profiler_class_loading (
 
 static
 void
-profiler_class_failed (
+runtime_profiler_class_failed (
 	MonoProfiler *prof,
 	MonoClass *klass)
 {
@@ -2912,7 +3414,7 @@ profiler_class_failed (
 
 static
 void
-profiler_class_loaded (
+runtime_profiler_class_loaded (
 	MonoProfiler *prof,
 	MonoClass *klass)
 {
@@ -2921,7 +3423,7 @@ profiler_class_loaded (
 
 static
 void
-profiler_exception_throw (
+runtime_profiler_exception_throw (
 	MonoProfiler *prof,
 	MonoObject *exc)
 {
@@ -2930,7 +3432,7 @@ profiler_exception_throw (
 
 static
 void
-profiler_exception_clause (
+runtime_profiler_exception_clause (
 	MonoProfiler *prof,
 	MonoMethod *method,
 	uint32_t clause_num,
@@ -2942,7 +3444,7 @@ profiler_exception_clause (
 
 static
 void
-profiler_monitor_contention (
+runtime_profiler_monitor_contention (
 	MonoProfiler *prof,
 	MonoObject *obj)
 {
@@ -2951,7 +3453,7 @@ profiler_monitor_contention (
 
 static
 void
-profiler_monitor_acquired (
+runtime_profiler_monitor_acquired (
 	MonoProfiler *prof,
 	MonoObject *obj)
 {
@@ -2960,7 +3462,7 @@ profiler_monitor_acquired (
 
 static
 void
-profiler_monitor_failed (
+runtime_profiler_monitor_failed (
 	MonoProfiler *prof,
 	MonoObject *obj)
 {
@@ -2969,7 +3471,7 @@ profiler_monitor_failed (
 
 static
 void
-profiler_jit_code_buffer (
+runtime_profiler_jit_code_buffer (
 	MonoProfiler *prof,
 	const mono_byte *buffer,
 	uint64_t size,
@@ -2992,55 +3494,99 @@ EventPipeEtwCallbackDotNETRuntime (
 	ep_rt_config_requires_lock_not_held ();
 
 	EP_ASSERT(is_enabled == 0 || is_enabled == 1) ;
-	EP_ASSERT (_ep_rt_mono_profiler != NULL);
+	EP_ASSERT (_ep_rt_dotnet_runtime_profiler_provider != NULL);
+
+	match_any_keywords = (is_enabled == 1) ? match_any_keywords : 0;
 
 	EP_LOCK_ENTER (section1)
-		if (is_enabled == 1 && !MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled) {
-			// Add profiler callbacks for DotNETRuntime provider events.
-			mono_profiler_set_jit_begin_callback (_ep_rt_mono_profiler, profiler_jit_begin);
-			mono_profiler_set_jit_failed_callback (_ep_rt_mono_profiler, profiler_jit_failed);
-			mono_profiler_set_jit_done_callback (_ep_rt_mono_profiler, profiler_jit_done);
-			mono_profiler_set_image_loaded_callback (_ep_rt_mono_profiler, profiler_image_loaded);
-			mono_profiler_set_image_unloaded_callback (_ep_rt_mono_profiler, profiler_image_unloaded);
-			mono_profiler_set_assembly_loaded_callback (_ep_rt_mono_profiler, profiler_assembly_loaded);
-			mono_profiler_set_assembly_unloaded_callback (_ep_rt_mono_profiler, profiler_assembly_unloaded);
-			mono_profiler_set_thread_started_callback (_ep_rt_mono_profiler, profiler_thread_started);
-			mono_profiler_set_thread_stopped_callback (_ep_rt_mono_profiler, profiler_thread_stopped);
-			mono_profiler_set_class_loading_callback (_ep_rt_mono_profiler, profiler_class_loading);
-			mono_profiler_set_class_failed_callback (_ep_rt_mono_profiler, profiler_class_failed);
-			mono_profiler_set_class_loaded_callback (_ep_rt_mono_profiler, profiler_class_loaded);
-			mono_profiler_set_exception_throw_callback (_ep_rt_mono_profiler, profiler_exception_throw);
-			mono_profiler_set_exception_clause_callback (_ep_rt_mono_profiler, profiler_exception_clause);
-			mono_profiler_set_monitor_contention_callback (_ep_rt_mono_profiler, profiler_monitor_contention);
-			mono_profiler_set_monitor_acquired_callback (_ep_rt_mono_profiler, profiler_monitor_acquired);
-			mono_profiler_set_monitor_failed_callback (_ep_rt_mono_profiler, profiler_monitor_failed);
-			mono_profiler_set_jit_code_buffer_callback (_ep_rt_mono_profiler, profiler_jit_code_buffer);
-		} else if (is_enabled == 0 && MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled) {
-			// Remove profiler callbacks for DotNETRuntime provider events.
-			mono_profiler_set_jit_code_buffer_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_monitor_failed_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_monitor_acquired_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_monitor_contention_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_exception_clause_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_exception_throw_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_class_loaded_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_class_failed_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_class_loading_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_thread_started_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_thread_started_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_assembly_unloaded_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_assembly_loaded_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_image_unloaded_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_image_loaded_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_jit_done_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_jit_failed_callback (_ep_rt_mono_profiler, NULL);
-			mono_profiler_set_jit_begin_callback (_ep_rt_mono_profiler, NULL);
-		}
-	EP_LOCK_EXIT (section1)
+		uint64_t enabled_keywords = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask;
 
-	MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.Level = level;
-	MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = match_any_keywords;
-	MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled = (is_enabled == 1 ? true : false);
+		if (profiler_callback_is_enabled(match_any_keywords, JIT_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, JIT_KEYWORD)) {
+				mono_profiler_set_jit_begin_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_jit_begin);
+				mono_profiler_set_jit_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_jit_failed);
+				mono_profiler_set_jit_done_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_jit_done);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, JIT_KEYWORD)) {
+				mono_profiler_set_jit_begin_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_jit_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_jit_done_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, LOADER_KEYWORD)) {
+			if (!profiler_callback_is_enabled(enabled_keywords, LOADER_KEYWORD)) {
+				mono_profiler_set_image_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_image_loaded);
+				mono_profiler_set_image_unloaded_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_image_unloaded);
+				mono_profiler_set_assembly_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_assembly_loaded);
+				mono_profiler_set_assembly_unloaded_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_assembly_unloaded);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, LOADER_KEYWORD)) {
+				mono_profiler_set_image_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_image_unloaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_assembly_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_assembly_unloaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD | THREADING_KEYWORD)) {
+			if (!profiler_callback_is_enabled(enabled_keywords, APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD | THREADING_KEYWORD)) {
+				mono_profiler_set_thread_started_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_thread_started);
+				mono_profiler_set_thread_stopped_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_thread_stopped);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD | THREADING_KEYWORD)) {
+				mono_profiler_set_thread_started_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_thread_stopped_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, TYPE_DIAGNOSTIC_KEYWORD)) {
+			if (!profiler_callback_is_enabled(enabled_keywords, TYPE_DIAGNOSTIC_KEYWORD)) {
+				mono_profiler_set_class_loading_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_class_loading);
+				mono_profiler_set_class_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_class_failed);
+				mono_profiler_set_class_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_class_loaded);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, TYPE_DIAGNOSTIC_KEYWORD)) {
+				mono_profiler_set_class_loading_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_class_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_class_loaded_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, EXCEPTION_KEYWORD)) {
+			if (!profiler_callback_is_enabled(enabled_keywords, EXCEPTION_KEYWORD)) {
+				mono_profiler_set_exception_throw_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_exception_throw);
+				mono_profiler_set_exception_clause_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_exception_clause);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, EXCEPTION_KEYWORD)) {
+				mono_profiler_set_exception_throw_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_exception_clause_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, CONTENTION_KEYWORD)) {
+			if (!profiler_callback_is_enabled(enabled_keywords, CONTENTION_KEYWORD)) {
+				mono_profiler_set_monitor_contention_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_monitor_contention);
+				mono_profiler_set_monitor_acquired_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_monitor_acquired);
+				mono_profiler_set_monitor_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, runtime_profiler_monitor_failed);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, CONTENTION_KEYWORD)) {
+				mono_profiler_set_monitor_contention_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_monitor_acquired_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+				mono_profiler_set_monitor_failed_callback (_ep_rt_dotnet_runtime_profiler_provider, NULL);
+			}
+		}
+
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.Level = level;
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = match_any_keywords;
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context.IsEnabled = (is_enabled == 1 ? true : false);
+	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
 	ep_rt_config_requires_lock_not_held ();
@@ -3093,6 +3639,1536 @@ EventPipeEtwCallbackDotNETRuntimeStress (
 	MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context.Level = level;
 	MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = match_any_keywords;
 	MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context.IsEnabled = (is_enabled == 1 ? true : false);
+}
+
+static
+void
+mono_profiler_app_domain_loading (
+	MonoProfiler *prof,
+	MonoDomain *domain)
+{
+	if (!EventEnabledMonoProfilerAppDomainLoading ())
+		return;
+
+	uint64_t domain_id = (uint64_t)domain;
+	FireEtwMonoProfilerAppDomainLoading (
+		clr_instance_get_id (),
+		domain_id,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_app_domain_loaded (
+	MonoProfiler *prof,
+	MonoDomain *domain)
+{
+	if (!EventEnabledMonoProfilerAppDomainLoaded ())
+		return;
+
+	uint64_t domain_id = (uint64_t)domain;
+	FireEtwMonoProfilerAppDomainLoaded (
+		clr_instance_get_id (),
+		domain_id,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_app_domain_unloading (
+	MonoProfiler *prof,
+	MonoDomain *domain)
+{
+	if (!EventEnabledMonoProfilerAppDomainUnloading ())
+		return;
+
+	uint64_t domain_id = (uint64_t)domain;
+	FireEtwMonoProfilerAppDomainUnloading (
+		clr_instance_get_id (),
+		domain_id,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_app_domain_unloaded (
+	MonoProfiler *prof,
+	MonoDomain *domain)
+{
+	if (!EventEnabledMonoProfilerAppDomainUnloaded ())
+		return;
+
+	uint64_t domain_id = (uint64_t)domain;
+	FireEtwMonoProfilerAppDomainUnloaded (
+		clr_instance_get_id (),
+		domain_id,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_app_domain_name (
+	MonoProfiler *prof,
+	MonoDomain *domain,
+	const char *name)
+{
+	if (!EventEnabledMonoProfilerAppDomainName ())
+		return;
+
+	uint64_t domain_id = (uint64_t)domain;
+	FireEtwMonoProfilerAppDomainName (
+		clr_instance_get_id (),
+		domain_id,
+		(const ep_char8_t *)(name ? name : ""),
+		NULL,
+		NULL);
+}
+
+static
+inline
+void
+get_jit_data (
+	MonoMethod *method,
+	uint64_t *method_id,
+	uint64_t *module_id,
+	uint32_t *method_token)
+{
+	*method_id = (uint64_t)method;
+	*module_id = 0;
+	*method_token = 0;
+
+	if (method) {
+		*method_token = method->token;
+		if (method->klass)
+			*module_id = (uint64_t)m_class_get_image (method->klass);
+	}
+}
+
+static
+void
+mono_profiler_jit_begin (
+	MonoProfiler *prof,
+	MonoMethod *method)
+{
+	if (!EventEnabledMonoProfilerJitBegin())
+		return;
+
+	uint64_t method_id;
+	uint64_t module_id;
+	uint32_t method_token;
+
+	get_jit_data (method, &method_id, &module_id, &method_token);
+
+	FireEtwMonoProfilerJitBegin (
+		clr_instance_get_id (),
+		method_id,
+		module_id,
+		method_token,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_jit_failed (
+	MonoProfiler *prof,
+	MonoMethod *method)
+{
+	if (!EventEnabledMonoProfilerJitFailed())
+		return;
+
+	uint64_t method_id;
+	uint64_t module_id;
+	uint32_t method_token;
+
+	get_jit_data (method, &method_id, &module_id, &method_token);
+
+	FireEtwMonoProfilerJitFailed (
+		clr_instance_get_id (),
+		method_id,
+		module_id,
+		method_token,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_jit_done (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	MonoJitInfo *ji)
+{
+	if (!EventEnabledMonoProfilerJitDone())
+		return;
+
+	uint64_t method_id;
+	uint64_t module_id;
+	uint32_t method_token;
+
+	get_jit_data (method, &method_id, &module_id, &method_token);
+
+	FireEtwMonoProfilerJitDone (
+		clr_instance_get_id (),
+		method_id,
+		module_id,
+		method_token,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_jit_chunk_created (
+	MonoProfiler *prof,
+	const mono_byte *chunk,
+	uintptr_t size)
+{
+	if (!EventEnabledMonoProfilerJitChunkCreated())
+		return;
+
+	FireEtwMonoProfilerJitChunkCreated (
+		clr_instance_get_id (),
+		chunk,
+		(uint64_t)size,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_jit_chunk_destroyed (
+	MonoProfiler *prof,
+	const mono_byte *chunk)
+{
+	if (!EventEnabledMonoProfilerJitChunkDestroyed())
+		return;
+
+	FireEtwMonoProfilerJitChunkDestroyed (
+		clr_instance_get_id (),
+		chunk,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_jit_code_buffer (
+	MonoProfiler *prof,
+	const mono_byte *buffer,
+	uint64_t size,
+	MonoProfilerCodeBufferType type,
+	const void *data)
+{
+	if (!EventEnabledMonoProfilerJitCodeBuffer())
+		return;
+
+	FireEtwMonoProfilerJitCodeBuffer (
+		clr_instance_get_id (),
+		buffer,
+		size,
+		(uint8_t)type,
+		NULL,
+		NULL);
+}
+
+static
+inline
+void
+get_class_data (
+	MonoClass *klass,
+	uint64_t *class_id,
+	uint64_t *module_id,
+	ep_char8_t **class_name)
+{
+	*class_id = (uint64_t)klass;
+	*module_id = 0;
+
+	if (klass)
+		*module_id = (uint64_t)m_class_get_image (klass);
+
+	if (klass && class_name)
+		*class_name = (ep_char8_t *)mono_type_get_name_full (m_class_get_byval_arg (klass), MONO_TYPE_NAME_FORMAT_IL);
+	else if (class_name)
+		*class_name = NULL;
+}
+
+static
+void
+mono_profiler_class_loading (
+	MonoProfiler *prof,
+	MonoClass *klass)
+{
+	if (!EventEnabledMonoProfilerClassLoading())
+		return;
+
+	uint64_t class_id;
+	uint64_t module_id;
+	
+	get_class_data (klass, &class_id, &module_id, NULL);
+
+	FireEtwMonoProfilerClassLoading (
+		clr_instance_get_id (),
+		class_id,
+		module_id,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_class_failed (
+	MonoProfiler *prof,
+	MonoClass *klass)
+{
+	if (!EventEnabledMonoProfilerClassFailed())
+		return;
+
+	uint64_t class_id;
+	uint64_t module_id;
+
+	get_class_data (klass, &class_id, &module_id, NULL);
+
+	FireEtwMonoProfilerClassFailed (
+		clr_instance_get_id (),
+		class_id,
+		module_id,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_class_loaded (
+	MonoProfiler *prof,
+	MonoClass *klass)
+{
+	if (!EventEnabledMonoProfilerClassLoaded())
+		return;
+
+	uint64_t class_id;
+	uint64_t module_id;
+	ep_char8_t *class_name;
+
+	get_class_data (klass, &class_id, &module_id, &class_name);
+
+	FireEtwMonoProfilerClassLoaded (
+		clr_instance_get_id (),
+		class_id,
+		module_id,
+		class_name ? class_name : "",
+		NULL,
+		NULL);
+
+	g_free (class_name);
+}
+
+static
+inline
+void
+get_vtable_data (
+	MonoVTable *vtable,
+	uint64_t *vtable_id,
+	uint64_t *class_id,
+	uint64_t *domain_id)
+{
+	*vtable_id = (uint64_t)vtable;
+	*class_id = 0;
+	*domain_id = 0;
+
+	if (vtable) {
+		*class_id = (uint64_t)mono_vtable_class_internal (vtable);
+		*domain_id = (uint64_t)mono_vtable_domain_internal (vtable);
+	}
+}
+
+static
+void
+mono_profiler_vtable_loading (
+	MonoProfiler *prof,
+	MonoVTable *vtable)
+{
+	if (!EventEnabledMonoProfilerVTableLoading())
+		return;
+
+	uint64_t vtable_id;
+	uint64_t class_id;
+	uint64_t domain_id;
+
+	get_vtable_data (vtable, &vtable_id, &class_id, &domain_id);
+
+	FireEtwMonoProfilerVTableLoading (
+		clr_instance_get_id (),
+		vtable_id,
+		class_id,
+		domain_id,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_vtable_failed (
+	MonoProfiler *prof,
+	MonoVTable *vtable)
+{
+	if (!EventEnabledMonoProfilerVTableFailed())
+		return;
+
+	uint64_t vtable_id;
+	uint64_t class_id;
+	uint64_t domain_id;
+
+	get_vtable_data (vtable, &vtable_id, &class_id, &domain_id);
+		
+	FireEtwMonoProfilerVTableFailed (
+		clr_instance_get_id (),
+		vtable_id,
+		class_id,
+		domain_id,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_vtable_loaded (
+	MonoProfiler *prof,
+	MonoVTable *vtable)
+{
+	if (!EventEnabledMonoProfilerVTableLoaded())
+		return;
+
+	uint64_t vtable_id;
+	uint64_t class_id;
+	uint64_t domain_id;
+
+	get_vtable_data (vtable, &vtable_id, &class_id, &domain_id);
+		
+	FireEtwMonoProfilerVTableLoaded (
+		clr_instance_get_id (),
+		vtable_id,
+		class_id,
+		domain_id,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_module_loading (
+	MonoProfiler *prof,
+	MonoImage *image)
+{
+	if (!EventEnabledMonoProfilerModuleLoading ())
+		return;
+	
+	FireEtwMonoProfilerModuleLoading (
+		clr_instance_get_id (),
+		(uint64_t)image,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_module_failed (
+	MonoProfiler *prof,
+	MonoImage *image)
+{
+	if (!EventEnabledMonoProfilerModuleFailed ())
+		return;
+
+	FireEtwMonoProfilerModuleFailed (
+		clr_instance_get_id (),
+		(uint64_t)image,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_module_loaded (
+	MonoProfiler *prof,
+	MonoImage *image)
+{
+	if (!EventEnabledMonoProfilerModuleLoaded ())
+		return;
+	
+	uint64_t module_id = (uint64_t)image;
+	const ep_char8_t *module_path = NULL;
+	const ep_char8_t *module_guid = NULL;
+
+	if (image) {
+		ModuleEventData module_data;
+		if (get_module_event_data (image, &module_data))
+			module_path = (const ep_char8_t *)module_data.module_il_path;
+		module_guid = (const ep_char8_t *)mono_image_get_guid (image);
+	}
+
+	FireEtwMonoProfilerModuleLoaded (
+		clr_instance_get_id (),
+		module_id,
+		module_path ? module_path : "",
+		module_guid ? module_guid : "",
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_module_unloading (
+	MonoProfiler *prof,
+	MonoImage *image)
+{
+	if (!EventEnabledMonoProfilerModuleUnloading ())
+		return;
+
+	FireEtwMonoProfilerModuleUnloading (
+		clr_instance_get_id (),
+		(uint64_t)image,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_module_unloaded (
+	MonoProfiler *prof,
+	MonoImage *image)
+{
+	if (!EventEnabledMonoProfilerModuleUnloaded ())
+		return;
+	
+	uint64_t module_id = (uint64_t)image;
+	const ep_char8_t *module_path = NULL;
+	const ep_char8_t *module_guid = NULL;
+
+	if (image) {
+		ModuleEventData module_data;
+		if (get_module_event_data (image, &module_data))
+			module_path = (const ep_char8_t *)module_data.module_il_path;
+		module_guid = (const ep_char8_t *)mono_image_get_guid (image);
+	}
+
+	FireEtwMonoProfilerModuleUnloaded (
+		clr_instance_get_id (),
+		module_id,
+		module_path ? module_path : "",
+		module_guid ? module_guid : "",
+		NULL,
+		NULL);
+}
+
+static
+inline
+void
+get_assembly_data (
+	MonoAssembly *assembly,
+	uint64_t *assembly_id,
+	uint64_t *module_id,
+	ep_char8_t **assembly_name)
+{
+	*assembly_id = (uint64_t)assembly;
+	*module_id = 0;
+
+	if (assembly)
+		*module_id = (uint64_t)mono_assembly_get_image_internal (assembly);
+
+	if (assembly && assembly_name)
+		*assembly_name = (ep_char8_t *)mono_stringify_assembly_name (&assembly->aname);
+	else if (assembly_name)
+		*assembly_name = NULL;
+}
+
+static
+void
+mono_profiler_assembly_loading (
+	MonoProfiler *prof,
+	MonoAssembly *assembly)
+{
+	if (!EventEnabledMonoProfilerAssemblyLoading ())
+		return;
+	
+	uint64_t assembly_id;
+	uint64_t module_id;
+
+	get_assembly_data (assembly, &assembly_id, &module_id, NULL);
+
+	FireEtwMonoProfilerAssemblyLoading (
+		clr_instance_get_id (),
+		assembly_id,
+		module_id,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_assembly_loaded (
+	MonoProfiler *prof,
+	MonoAssembly *assembly)
+{
+	if (!EventEnabledMonoProfilerAssemblyLoaded ())
+		return;
+
+	uint64_t assembly_id;
+	uint64_t module_id;
+	ep_char8_t *assembly_name;
+
+	get_assembly_data (assembly, &assembly_id, &module_id, &assembly_name);
+
+	FireEtwMonoProfilerAssemblyLoaded (
+		clr_instance_get_id (),
+		assembly_id,
+		module_id,
+		assembly_name ? assembly_name : "",
+		NULL,
+		NULL);
+
+	g_free (assembly_name);
+}
+
+static
+void
+mono_profiler_assembly_unloading (
+	MonoProfiler *prof,
+	MonoAssembly *assembly)
+{
+	if (!EventEnabledMonoProfilerAssemblyUnloading ())
+		return;
+	
+	uint64_t assembly_id;
+	uint64_t module_id;
+
+	get_assembly_data (assembly, &assembly_id, &module_id, NULL);
+
+	FireEtwMonoProfilerAssemblyUnloading (
+		clr_instance_get_id (),
+		assembly_id,
+		module_id,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_assembly_unloaded (
+	MonoProfiler *prof,
+	MonoAssembly *assembly)
+{
+	if (!EventEnabledMonoProfilerAssemblyUnloaded ())
+		return;
+
+	uint64_t assembly_id;
+	uint64_t module_id;
+	ep_char8_t *assembly_name;
+
+	get_assembly_data (assembly, &assembly_id, &module_id, &assembly_name);
+
+	FireEtwMonoProfilerAssemblyUnloaded (
+		clr_instance_get_id (),
+		assembly_id,
+		module_id,
+		assembly_name ? assembly_name : "",
+		NULL,
+		NULL);
+
+	g_free (assembly_name);
+}
+
+static
+void
+mono_profiler_method_enter (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	MonoProfilerCallContext *context)
+{
+	if (!EventEnabledMonoProfilerMethodEnter ())
+		return;
+
+	FireEtwMonoProfilerMethodEnter (
+		clr_instance_get_id (),
+		(uint64_t)method,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_method_leave (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	MonoProfilerCallContext *context)
+{
+	if (!EventEnabledMonoProfilerMethodLeave ())
+		return;
+
+	FireEtwMonoProfilerMethodLeave (
+		clr_instance_get_id (),
+		(uint64_t)method,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_method_tail_call (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	MonoMethod *target_method)
+{
+	if (!EventEnabledMonoProfilerMethodTailCall ())
+		return;
+
+	FireEtwMonoProfilerMethodTailCall (
+		clr_instance_get_id (),
+		(uint64_t)method,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_method_exception_leave (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	MonoObject *exc)
+{
+	if (!EventEnabledMonoProfilerMethodExceptionLeave ())
+		return;
+
+	FireEtwMonoProfilerMethodExceptionLeave (
+		clr_instance_get_id (),
+		(uint64_t)method,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_method_free (
+	MonoProfiler *prof,
+	MonoMethod *method)
+{
+	if (!EventEnabledMonoProfilerMethodFree ())
+		return;
+
+	FireEtwMonoProfilerMethodFree (
+		clr_instance_get_id (),
+		(uint64_t)method,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_method_begin_invoke (
+	MonoProfiler *prof,
+	MonoMethod *method)
+{
+	if (!EventEnabledMonoProfilerMethodBeginInvoke ())
+		return;
+
+	FireEtwMonoProfilerMethodBeginInvoke (
+		clr_instance_get_id (),
+		(uint64_t)method,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_method_end_invoke (
+	MonoProfiler *prof,
+	MonoMethod *method)
+{
+	if (!EventEnabledMonoProfilerMethodEndInvoke ())
+		return;
+
+	FireEtwMonoProfilerMethodEndInvoke (
+		clr_instance_get_id (),
+		(uint64_t)method,
+		NULL,
+		NULL);
+}
+
+static
+MonoProfilerCallInstrumentationFlags
+mono_profiler_method_instrumentation (
+	MonoProfiler *prof,
+	MonoMethod *method)
+{
+	if (_ep_rt_dotnet_mono_profiler_provider_callspec.len > 0 && !mono_callspec_eval (method, &_ep_rt_dotnet_mono_profiler_provider_callspec))
+		return MONO_PROFILER_CALL_INSTRUMENTATION_NONE;
+
+	return MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
+			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE |
+			MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL |
+			MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE;
+}
+
+static
+void
+mono_profiler_exception_throw (
+	MonoProfiler *prof,
+	MonoObject *exc)
+{
+	if (!EventEnabledMonoProfilerExceptionThrow ())
+		return;
+
+	uint64_t type_id = 0;
+
+	if (exc && mono_object_class(exc))
+		type_id = (uint64_t)m_class_get_byval_arg (mono_object_class(exc));
+
+	FireEtwMonoProfilerExceptionThrow (
+		clr_instance_get_id (),
+		type_id,
+		SGEN_POINTER_UNTAG_ALL (exc),
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_exception_clause (
+	MonoProfiler *prof,
+	MonoMethod *method,
+	uint32_t clause_num,
+	MonoExceptionEnum clause_type,
+	MonoObject *exc)
+{
+	if (!EventEnabledMonoProfilerExceptionClause ())
+		return;
+
+	uint64_t type_id = 0;
+
+	if (exc && mono_object_class(exc))
+		type_id = (uint64_t)m_class_get_byval_arg (mono_object_class(exc));
+
+	FireEtwMonoProfilerExceptionClause (
+		clr_instance_get_id (),
+		(uint8_t)clause_type,
+		clause_num,
+		(uint64_t)method,
+		type_id,
+		SGEN_POINTER_UNTAG_ALL (exc),
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_gc_event (
+	MonoProfiler *prof,
+	MonoProfilerGCEvent gc_event,
+	uint32_t generation,
+	mono_bool serial)
+{
+	if (!EventEnabledMonoProfilerGCEvent ())
+		return;
+
+	// TODO: Needs to be async safe.
+	/*FireEtwMonoProfilerGCEvent (
+		clr_instance_get_id (),
+		(uint8_t)gc_event,
+		generation,
+		NULL,
+		NULL);*/
+}
+
+static
+void
+mono_profiler_gc_allocation (
+	MonoProfiler *prof,
+	MonoObject *object)
+{
+	if (!EventEnabledMonoProfilerGCAllocation ())
+		return;
+
+	uint64_t vtable_id = 0;
+	uint64_t object_size = 0;
+
+	if (object) {
+		vtable_id = (uint64_t)mono_object_get_vtable_internal (object);
+		object_size = (uint64_t)mono_object_get_size_internal (object);
+		
+		/* account for object alignment */
+		object_size += 7;
+		object_size &= ~7;
+	}
+
+	FireEtwMonoProfilerGCAllocation (
+		clr_instance_get_id (),
+		vtable_id,
+		SGEN_POINTER_UNTAG_ALL (object),
+		object_size,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_gc_moves (
+	MonoProfiler *prof,
+	MonoObject *const* objects,
+	uint64_t count)
+{
+	if (!EventEnabledMonoProfilerGCMoves ())
+		return;
+
+	// TODO: Needs to be async safe.
+	/*uint64_t obj_count = count / 2;
+
+	GCObjectAddressData data [32];
+	uint64_t data_chunks = obj_count / G_N_ELEMENTS (data);
+	uint64_t data_rest = obj_count % G_N_ELEMENTS (data);
+	uint64_t current_obj = 0;
+
+	for (int chunk = 0; chunk < data_chunks; chunk++) {
+		for (int i = 0; i < G_N_ELEMENTS (data); i++) {
+			data [i].object = SGEN_POINTER_UNTAG_ALL (objects [current_obj++]);
+			data [i].address = objects [current_obj++];
+		}
+
+		FireEtwMonoProfilerGCMoves (
+			clr_instance_get_id (),
+			G_N_ELEMENTS (data),
+			sizeof (GCObjectAddressData),
+			data,
+			NULL,
+			NULL);
+	}
+
+	if ((data_rest != 0)&& (data_rest % 2 == 0)) {
+		for (int i = 0; i < data_rest; i++) {
+			data [i].object = SGEN_POINTER_UNTAG_ALL (objects [current_obj++]);
+			data [i].address = objects [current_obj++];
+		}
+
+		FireEtwMonoProfilerGCMoves (
+			clr_instance_get_id (),
+			data_rest,
+			sizeof (GCObjectAddressData),
+			data,
+			NULL,
+			NULL);
+	}*/
+}
+
+static
+void
+mono_profiler_gc_resize (
+	MonoProfiler *prof,
+	uintptr_t size)
+{
+	if (!EventEnabledMonoProfilerGCResize ())
+		return;
+
+	// TODO: Needs to be async safe.
+	/*FireEtwMonoProfilerGCResize (
+		clr_instance_get_id (),
+		(uint64_t)size,
+		NULL,
+		NULL);*/
+}
+
+static
+void
+mono_profiler_gc_handle_created (
+	MonoProfiler *prof,
+	uint32_t handle,
+	MonoGCHandleType type,
+	MonoObject *object)
+{
+	if (!EventEnabledMonoProfilerGCHandleCreated ())
+		return;
+
+	FireEtwMonoProfilerGCHandleCreated (
+		clr_instance_get_id (),
+		handle,
+		(uint8_t)type,
+		SGEN_POINTER_UNTAG_ALL (object),
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_gc_handle_deleted (
+	MonoProfiler *prof,
+	uint32_t handle,
+	MonoGCHandleType type)
+{
+	if (!EventEnabledMonoProfilerGCHandleDeleted ())
+		return;
+
+	FireEtwMonoProfilerGCHandleDeleted (
+		clr_instance_get_id (),
+		handle,
+		(uint8_t)type,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_gc_finalizing (MonoProfiler *prof)
+{
+	if (!EventEnabledMonoProfilerGCFinalizing ())
+		return;
+
+	FireEtwMonoProfilerGCFinalizing (
+		clr_instance_get_id (),
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_gc_finalized (MonoProfiler *prof)
+{
+	if (!EventEnabledMonoProfilerGCFinalized ())
+		return;
+
+	FireEtwMonoProfilerGCFinalized (
+		clr_instance_get_id (),
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_gc_finalizing_object (
+	MonoProfiler *prof,
+	MonoObject *object)
+{
+	if (!EventEnabledMonoProfilerGCFinalizingObject ())
+		return;
+
+	FireEtwMonoProfilerGCFinalizingObject (
+		clr_instance_get_id (),
+		SGEN_POINTER_UNTAG_ALL (object),
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_gc_finalized_object (
+	MonoProfiler *prof,
+	MonoObject * object)
+{
+	if (!EventEnabledMonoProfilerGCFinalizedObject ())
+		return;
+
+	FireEtwMonoProfilerGCFinalizedObject (
+		clr_instance_get_id (),
+		SGEN_POINTER_UNTAG_ALL (object),
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_gc_root_register (
+	MonoProfiler *prof,
+	const mono_byte *start,
+	uintptr_t size,
+	MonoGCRootSource source,
+	const void * key,
+	const char * name)
+{
+	if (!EventEnabledMonoProfilerGCRootRegister ())
+		return;
+
+	FireEtwMonoProfilerGCRootRegister (
+		clr_instance_get_id (),
+		start,
+		(uint64_t)size,
+		(uint8_t) source,
+		(uint64_t)key,
+		(const ep_char8_t *)(name ? name : ""),
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_gc_root_unregister (
+	MonoProfiler *prof,
+	const mono_byte *start)
+{
+	if (!EventEnabledMonoProfilerGCRootUnregister ())
+		return;
+
+	FireEtwMonoProfilerGCRootUnregister (
+		clr_instance_get_id (),
+		start,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_gc_roots (
+	MonoProfiler *prof,
+	uint64_t count,
+	const mono_byte *const * addresses,
+	MonoObject *const * objects)
+{
+	if (!EventEnabledMonoProfilerGCRoots ())
+		return;
+
+	// TODO: Needs to be async safe.
+	/*GCAddressObjectData data [32];
+	uint64_t data_chunks = count / G_N_ELEMENTS (data);
+	uint64_t data_rest = count % G_N_ELEMENTS (data);
+	uint64_t current_obj = 0;
+
+	for (int chunk = 0; chunk < data_chunks; chunk++) {
+		for (int i = 0; i < G_N_ELEMENTS (data); i++) {
+			data [i].address = addresses [current_obj];
+			data [i].object = SGEN_POINTER_UNTAG_ALL (objects [current_obj]);
+			current_obj++;
+		}
+
+		FireEtwMonoProfilerGCRoots (
+			clr_instance_get_id (),
+			G_N_ELEMENTS (data),
+			sizeof (GCAddressObjectData),
+			data,
+			NULL,
+			NULL);
+	}
+
+	if (data_rest != 0) {
+		for (int i = 0; i < data_rest; i++) {
+			data [i].address = addresses [current_obj];
+			data [i].object = SGEN_POINTER_UNTAG_ALL (objects [current_obj]);
+			current_obj++;
+		}
+
+		FireEtwMonoProfilerGCRoots (
+			clr_instance_get_id (),
+			data_rest,
+			sizeof (GCAddressObjectData),
+			data,
+			NULL,
+			NULL);
+	}*/
+}
+
+static
+void
+mono_profiler_monitor_contention (
+	MonoProfiler *prof,
+	MonoObject *object)
+{
+	if (!EventEnabledMonoProfilerMonitorContention ())
+		return;
+
+	FireEtwMonoProfilerMonitorContention (
+		clr_instance_get_id (),
+		SGEN_POINTER_UNTAG_ALL (object),
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_monitor_failed (
+	MonoProfiler *prof,
+	MonoObject *object)
+{
+	if (!EventEnabledMonoProfilerMonitorFailed ())
+		return;
+
+	FireEtwMonoProfilerMonitorFailed (
+		clr_instance_get_id (),
+		SGEN_POINTER_UNTAG_ALL (object),
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_monitor_acquired (
+	MonoProfiler *prof,
+	MonoObject *object)
+{
+	if (!EventEnabledMonoProfilerMonitorAcquired ())
+		return;
+
+	FireEtwMonoProfilerMonitorAcquired (
+		clr_instance_get_id (),
+		SGEN_POINTER_UNTAG_ALL (object),
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_thread_started (
+	MonoProfiler *prof,
+	uintptr_t tid)
+{
+	if (!EventEnabledMonoProfilerThreadStarted ())
+		return;
+
+	FireEtwMonoProfilerThreadStarted (
+		clr_instance_get_id (),
+		(uint64_t)tid,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_thread_stopping (
+	MonoProfiler *prof,
+	uintptr_t tid)
+{
+	if (!EventEnabledMonoProfilerThreadStopping ())
+		return;
+
+	FireEtwMonoProfilerThreadStopping (
+		clr_instance_get_id (),
+		(uint64_t)tid,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_thread_stopped (
+	MonoProfiler *prof,
+	uintptr_t tid)
+{
+	if (!EventEnabledMonoProfilerThreadStopped ())
+		return;
+
+	FireEtwMonoProfilerThreadStopped (
+		clr_instance_get_id (),
+		(uint64_t)tid,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_thread_exited (
+	MonoProfiler *prof,
+	uintptr_t tid)
+{
+	if (!EventEnabledMonoProfilerThreadExited ())
+		return;
+
+	FireEtwMonoProfilerThreadExited (
+		clr_instance_get_id (),
+		(uint64_t)tid,
+		NULL,
+		NULL);
+}
+
+static
+void
+mono_profiler_thread_name (
+	MonoProfiler *prof,
+	uintptr_t tid,
+	const char *name)
+{
+	if (!EventEnabledMonoProfilerThreadName ())
+		return;
+
+	FireEtwMonoProfilerThreadName (
+		clr_instance_get_id (),
+		(uint64_t)tid,
+		(ep_char8_t *)(name ? name : ""),
+		NULL,
+		NULL);
+}
+
+void
+EventPipeEtwCallbackDotNETRuntimeMonoProfiler (
+	const uint8_t *source_id,
+	unsigned long is_enabled,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_data)
+{
+	ep_rt_config_requires_lock_not_held ();
+
+	EP_ASSERT(is_enabled == 0 || is_enabled == 1) ;
+	EP_ASSERT (_ep_rt_dotnet_mono_profiler_provider != NULL);
+
+	match_any_keywords = (is_enabled == 1) ? match_any_keywords : 0;
+
+	EP_LOCK_ENTER (section1)
+		uint64_t enabled_keywords = MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask;
+
+		if (profiler_callback_is_enabled(match_any_keywords, LOADER_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, LOADER_KEYWORD)) {
+				mono_profiler_set_domain_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_loading);
+				mono_profiler_set_domain_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_loaded);
+				mono_profiler_set_domain_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_unloading);
+				mono_profiler_set_domain_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_unloaded);
+				mono_profiler_set_domain_name_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_app_domain_name);
+				mono_profiler_set_image_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_loading);
+				mono_profiler_set_image_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_failed);
+				mono_profiler_set_image_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_loaded);
+				mono_profiler_set_image_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_unloading);
+				mono_profiler_set_image_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_module_unloaded);
+				mono_profiler_set_assembly_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_assembly_loading);
+				mono_profiler_set_assembly_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_assembly_loaded);
+				mono_profiler_set_assembly_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_assembly_unloading);
+				mono_profiler_set_assembly_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_assembly_unloaded);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, LOADER_KEYWORD)) {
+				mono_profiler_set_domain_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_domain_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_domain_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_domain_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_domain_name_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_image_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_image_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_image_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_image_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_image_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_assembly_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_assembly_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_assembly_unloading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_assembly_unloaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, JIT_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, JIT_KEYWORD)) {
+				mono_profiler_set_jit_begin_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_begin);
+				mono_profiler_set_jit_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_failed);
+				mono_profiler_set_jit_done_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_done);
+				mono_profiler_set_jit_chunk_created_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_chunk_created);
+				mono_profiler_set_jit_chunk_destroyed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_chunk_destroyed);
+				mono_profiler_set_jit_code_buffer_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_jit_code_buffer);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, JIT_KEYWORD)) {
+				mono_profiler_set_jit_begin_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_jit_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_jit_done_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_jit_chunk_created_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_jit_chunk_destroyed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_jit_code_buffer_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, TYPE_LOADING_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, TYPE_LOADING_KEYWORD)) {
+				mono_profiler_set_class_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_class_loading);
+				mono_profiler_set_class_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_class_failed);
+				mono_profiler_set_class_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_class_loaded);
+				mono_profiler_set_vtable_loading_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_vtable_loading);
+				mono_profiler_set_vtable_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_vtable_failed);
+				mono_profiler_set_vtable_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_vtable_loaded);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, TYPE_LOADING_KEYWORD)) {
+				mono_profiler_set_class_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_class_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_class_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_vtable_loading_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_vtable_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_vtable_loaded_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, METHOD_TRACING_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, METHOD_TRACING_KEYWORD)) {
+				mono_profiler_set_method_enter_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_enter);
+				mono_profiler_set_method_leave_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_leave);
+				mono_profiler_set_method_tail_call_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_tail_call);
+				mono_profiler_set_method_exception_leave_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_exception_leave);
+				mono_profiler_set_method_free_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_free);
+				mono_profiler_set_method_begin_invoke_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_begin_invoke);
+				mono_profiler_set_method_end_invoke_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_end_invoke);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, METHOD_TRACING_KEYWORD)) {
+				mono_profiler_set_method_enter_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_method_leave_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_method_tail_call_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_method_exception_leave_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_method_free_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_method_begin_invoke_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_method_end_invoke_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, EXCEPTION_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, EXCEPTION_KEYWORD)) {
+				mono_profiler_set_exception_throw_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_exception_throw);
+				mono_profiler_set_exception_clause_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_exception_clause);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, EXCEPTION_KEYWORD)) {
+				mono_profiler_set_exception_throw_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_exception_clause_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD)) {
+				mono_profiler_set_gc_event_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_event);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD)) {
+				mono_profiler_set_gc_event_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_ALLOCATION_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_ALLOCATION_KEYWORD)) {
+				mono_profiler_set_gc_allocation_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_allocation);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_ALLOCATION_KEYWORD)) {
+				mono_profiler_set_gc_allocation_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_MOVES_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_MOVES_KEYWORD)) {
+				mono_profiler_set_gc_moves_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_moves);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_MOVES_KEYWORD)) {
+				mono_profiler_set_gc_moves_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_RESIZE_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_RESIZE_KEYWORD)) {
+				mono_profiler_set_gc_resize_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_resize);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_RESIZE_KEYWORD)) {
+				mono_profiler_set_gc_resize_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_HANDLE_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_HANDLE_KEYWORD)) {
+				mono_profiler_set_gc_handle_created_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_handle_created);
+				mono_profiler_set_gc_handle_deleted_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_handle_deleted);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_HANDLE_KEYWORD)) {
+				mono_profiler_set_gc_handle_created_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_gc_handle_deleted_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_FINALIZATION_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_FINALIZATION_KEYWORD)) {
+				mono_profiler_set_gc_finalizing_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_finalizing);
+				mono_profiler_set_gc_finalized_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_finalized);
+				mono_profiler_set_gc_finalizing_object_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_finalizing_object);
+				mono_profiler_set_gc_finalized_object_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_finalized_object);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_FINALIZATION_KEYWORD)) {
+				mono_profiler_set_gc_finalizing_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_gc_finalized_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_gc_finalizing_object_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_gc_finalized_object_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, GC_KEYWORD | GC_ROOT_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_ROOT_KEYWORD)) {
+				mono_profiler_set_gc_root_register_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_root_register);
+				mono_profiler_set_gc_root_unregister_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_root_unregister);
+				mono_profiler_set_gc_roots_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_gc_roots);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, GC_KEYWORD | GC_ROOT_KEYWORD)) {
+				mono_profiler_set_gc_root_register_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_gc_root_unregister_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_gc_roots_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, MONITOR_KEYWORD | CONTENTION_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, MONITOR_KEYWORD | CONTENTION_KEYWORD)) {
+				mono_profiler_set_monitor_contention_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_monitor_contention);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, MONITOR_KEYWORD | CONTENTION_KEYWORD)) {
+				mono_profiler_set_monitor_contention_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, MONITOR_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, MONITOR_KEYWORD)) {
+				mono_profiler_set_monitor_failed_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_monitor_failed);
+				mono_profiler_set_monitor_acquired_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_monitor_acquired);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, MONITOR_KEYWORD)) {
+				mono_profiler_set_monitor_failed_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_monitor_acquired_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (profiler_callback_is_enabled(match_any_keywords, THREADING_KEYWORD)) {
+			if (!profiler_callback_is_enabled (enabled_keywords, THREADING_KEYWORD)) {
+				mono_profiler_set_thread_started_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_started);
+				mono_profiler_set_thread_stopping_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_stopping);
+				mono_profiler_set_thread_stopped_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_stopped);
+				mono_profiler_set_thread_exited_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_exited);
+				mono_profiler_set_thread_name_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_thread_name);
+			}
+		} else {
+			if (profiler_callback_is_enabled (enabled_keywords, THREADING_KEYWORD)) {
+				mono_profiler_set_thread_started_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_thread_stopping_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_thread_stopped_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_thread_exited_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				mono_profiler_set_thread_name_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+			}
+		}
+
+		if (!_ep_rt_dotnet_mono_profiler_provider_callspec.enabled) {
+			if (profiler_callback_is_enabled(match_any_keywords, METHOD_INSTRUMENTATION_KEYWORD)) {
+				if (!profiler_callback_is_enabled (enabled_keywords, METHOD_INSTRUMENTATION_KEYWORD)) {
+					mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_dotnet_mono_profiler_provider, mono_profiler_method_instrumentation);
+				}
+			} else {
+				if (profiler_callback_is_enabled (enabled_keywords, METHOD_INSTRUMENTATION_KEYWORD)) {
+					mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_dotnet_mono_profiler_provider, NULL);
+				}
+			}
+		}
+
+		MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.Level = level;
+		MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = match_any_keywords;
+		MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.IsEnabled = (is_enabled == 1 ? true : false);
+	EP_LOCK_EXIT (section1)
+
+ep_on_exit:
+	ep_rt_config_requires_lock_not_held ();
+	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
 }
 
 #endif /* ENABLE_PERFTRACING */

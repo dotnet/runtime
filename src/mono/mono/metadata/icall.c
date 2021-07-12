@@ -6283,15 +6283,25 @@ ves_icall_System_Reflection_RuntimeModule_ResolveSignature (MonoImage *image, gu
 }
 
 static void
-check_for_invalid_array_type (MonoClass *klass, MonoError *error)
+check_for_invalid_array_type (MonoType *type, MonoError *error)
 {
+	gboolean allowed = TRUE;
 	char *name;
 
 	error_init (error);
 
-	if (m_class_get_byval_arg (klass)->type != MONO_TYPE_TYPEDBYREF)
-		return;
+	if (type->byref)
+		allowed = FALSE;
+	else if (type->type == MONO_TYPE_TYPEDBYREF)
+		allowed = FALSE;
 
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	if (m_class_is_byreflike (klass))
+		allowed = FALSE;
+
+	if (allowed)
+		return;
 	name = mono_type_get_full_name (klass);
 	mono_error_set_type_load_name (error, name, g_strdup (""), "");
 }
@@ -6307,9 +6317,9 @@ ves_icall_RuntimeType_make_array_type (MonoReflectionTypeHandle ref_type, int ra
 {
 	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
 
-	MonoClass *klass = mono_class_from_mono_type_internal (type);
-	check_for_invalid_array_type (klass, error);
+	check_for_invalid_array_type (type, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE));
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
 
 	MonoClass *aklass;
 	if (rank == 0) //single dimension array

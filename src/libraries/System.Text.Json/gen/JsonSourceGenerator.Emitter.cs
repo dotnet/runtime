@@ -500,7 +500,13 @@ namespace {_currentContext.ContextType.Namespace}
 
                 if (typeMetadata.GenerateSerializationLogic)
                 {
-                    serializeFuncSource = GenerateFastPathFuncForObject(typeCompilableName, serializeMethodName, typeMetadata.CanBeNull, properties);
+                    serializeFuncSource = GenerateFastPathFuncForObject(
+                        typeCompilableName,
+                        serializeMethodName,
+                        typeMetadata.CanBeNull,
+                        typeMetadata.ImplementsIJsonOnSerialized,
+                        typeMetadata.ImplementsIJsonOnSerializing,
+                        properties);
                     serializeFuncNamedArg = $@"serializeFunc: {serializeMethodName}";
                 }
                 else
@@ -635,6 +641,8 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                 string typeInfoTypeRef,
                 string serializeMethodName,
                 bool canBeNull,
+                bool implementsIJsonOnSerialized,
+                bool implementsIJsonOnSerializing,
                 List<PropertyGenerationSpec>? properties)
             {
                 JsonSourceGenerationOptionsAttribute options = _currentContext.GenerationOptions;
@@ -646,6 +654,12 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                 StringBuilder sb = new();
 
                 // Begin method definition
+                if (implementsIJsonOnSerializing)
+                {
+                    sb.Append($@"(({IJsonOnSerializingFullName}){ValueVarName}).OnSerializing();");
+                    sb.Append($@"{Environment.NewLine}    ");
+                }
+
                 sb.Append($@"{WriterVarName}.WriteStartObject();");
 
                 if (properties != null)
@@ -732,6 +746,12 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                 sb.Append($@"
 
         {WriterVarName}.WriteEndObject();");
+
+                if (implementsIJsonOnSerialized)
+                {
+                    sb.Append($@"{Environment.NewLine}    ");
+                    sb.Append($@"(({IJsonOnSerializedFullName}){ValueVarName}).OnSerialized();");
+                };
 
                 return GenerateFastPathFuncForType(serializeMethodName, typeInfoTypeRef, sb.ToString(), canBeNull);
             }

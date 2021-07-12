@@ -21,17 +21,12 @@ namespace Microsoft.Win32.SafeHandles
         internal ThreadPoolValueTaskSource GetThreadPoolValueTaskSource() =>
             Interlocked.Exchange(ref _reusableThreadPoolValueTaskSource, null) ?? new ThreadPoolValueTaskSource(this);
 
-        private void TryToReuse(ThreadPoolValueTaskSource source)
-        {
-            Interlocked.CompareExchange(ref _reusableThreadPoolValueTaskSource, source, null);
-        }
-
         /// <summary>
         /// A reusable <see cref="IValueTaskSource"/> implementation that
         /// queues asynchronous <see cref="RandomAccess"/> operations to
         /// be completed synchronously on the thread pool.
         /// </summary>
-        internal sealed class ThreadPoolValueTaskSource : IThreadPoolWorkItem, IValueTaskSource<int>, IValueTaskSource<long>
+        internal sealed class ThreadPoolValueTaskSource : IThreadPoolWorkItem, IValueTaskSource<int>, IValueTaskSource<long>, IValueTaskSource
         {
             private readonly SafeFileHandle _fileHandle;
             private ManualResetValueTaskSourceCore<long> _source;
@@ -68,7 +63,7 @@ namespace Microsoft.Win32.SafeHandles
                 finally
                 {
                     _source.Reset();
-                    _fileHandle.TryToReuse(this);
+                    Volatile.Write(ref _fileHandle._reusableThreadPoolValueTaskSource, this);
                 }
             }
 
@@ -77,6 +72,7 @@ namespace Microsoft.Win32.SafeHandles
                 _source.OnCompleted(continuation, state, token, flags);
             int IValueTaskSource<int>.GetResult(short token) => (int) GetResultAndRelease(token);
             long IValueTaskSource<long>.GetResult(short token) => GetResultAndRelease(token);
+            void IValueTaskSource.GetResult(short token) => GetResultAndRelease(token);
 
             private void ExecuteInternal()
             {
