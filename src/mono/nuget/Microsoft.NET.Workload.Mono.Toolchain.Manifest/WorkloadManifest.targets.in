@@ -111,8 +111,4 @@
                         RuntimePackLabels="Mono"
                         />
     </ItemGroup>
-<<<<<<< HEAD:src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/WorkloadManifest.targets.in
-=======
-
->>>>>>> origin/main:src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/WorkloadManifest.targets
 </Project>
