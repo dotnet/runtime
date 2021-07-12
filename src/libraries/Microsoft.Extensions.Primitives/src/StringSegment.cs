@@ -520,12 +520,12 @@ namespace Microsoft.Extensions.Primitives
 
             if (HasValue)
             {
-                if (startIndex < 0 || Offset + startIndex > Buffer.Length)
+                if (startIndex < 0 || startIndex > Length)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
                 }
 
-                if (count < 0 || Offset + startIndex + count > Buffer.Length)
+                if (count < 0 || startIndex + count > Length)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
                 }
