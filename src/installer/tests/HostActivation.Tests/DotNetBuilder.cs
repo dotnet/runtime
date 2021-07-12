@@ -181,7 +181,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             string path = Path.Combine(_path, "sdk", version);
             Directory.CreateDirectory(path);
 
-            File.Create(Path.Combine(path, "dotnet.dll"));
+            using var _ = File.Create(Path.Combine(path, "dotnet.dll"));
 
             RuntimeConfig dotnetRuntimeConfig = new RuntimeConfig(Path.Combine(path, "dotnet.runtimeconfig.json"));
             dotnetRuntimeConfig.WithFramework(new RuntimeConfig.Framework("Microsoft.NETCore.App", MNAVersion));

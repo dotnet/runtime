@@ -585,7 +585,7 @@ int fx_muxer_t::execute(
             argv,
             new_argoff,
             mode,
-            false,
+            false /*is_sdk_command*/,
             result_buffer,
             buffer_size,
             required_buffer_size);
@@ -740,7 +740,7 @@ int fx_muxer_t::initialize_for_app(
         host_info.app_path,
         opts,
         mode,
-        false,
+        false /*is_sdk_command*/,
         hostpolicy_dir,
         init);
     if (rc != StatusCode::Success)
@@ -1114,7 +1114,7 @@ int fx_muxer_t::handle_cli(
             new_argv.data(),
             new_argoff,
             host_mode_t::muxer,
-            true,
+            true /*is_sdk_command*/,
             nullptr /*result_buffer*/,
             0 /*buffer_size*/,
             nullptr/*required_buffer_size*/);
