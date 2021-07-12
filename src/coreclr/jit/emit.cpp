@@ -8130,8 +8130,8 @@ void emitter::emitInitIG(insGroup* ig)
 
 #ifdef DEBUG
     ig->lastGeneratedBlock = nullptr;
-    // Explicitly call the constructor, since IGs don't actually have a constructor.
-    ig->igBlocks.jitstd::list<BasicBlock*>::list(emitComp->getAllocator(CMK_LoopOpt));
+    // Explicitly call init, since IGs don't actually have a constructor.
+    ig->igBlocks.jitstd::list<BasicBlock*>::init(emitComp->getAllocator(CMK_LoopOpt));
 #endif
 }
 
