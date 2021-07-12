@@ -232,11 +232,10 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal((IntPtr)4, Marshal.OffsetOf<Point2<float>>(nameof(Point2<int>.y)));
             Assert.Equal((IntPtr)8, Marshal.OffsetOf<Point2<double>>(nameof(Point2<int>.y)));
 
-            // [COMPAT] Non-blittable generic types are supported in OffsetOf since they've always been allowed
+            // [COMPAT] Non-blittable generic types with value-type generic arguments are supported in OffsetOf since they've always been allowed
             // and it likely doesn't meet the bar to break back-compat.
             Assert.Equal((IntPtr)1, Marshal.OffsetOf<Point2<char>>(nameof(Point2<int>.y)));
             Assert.Equal((IntPtr)1, Marshal.OffsetOf<Point2<byte>>(nameof(Point2<int>.y)));
-            Assert.Equal((IntPtr)IntPtr.Size, Marshal.OffsetOf<Point2<string>>(nameof(Point2<int>.y)));
         }
 
         public class NonRuntimeType : Type
