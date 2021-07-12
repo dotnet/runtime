@@ -96,7 +96,7 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
     };
 
     // Call the GetCustomMarshaler method to retrieve the custom marshaler to use.
-    OBJECTREF CustomMarshalerObj;
+    OBJECTREF CustomMarshalerObj = NULL;
     GCPROTECT_BEGIN(CustomMarshalerObj);
     CustomMarshalerObj = getCustomMarshaler.Call_RetOBJECTREF(GetCustomMarshalerArgs);
     if (!CustomMarshalerObj)
