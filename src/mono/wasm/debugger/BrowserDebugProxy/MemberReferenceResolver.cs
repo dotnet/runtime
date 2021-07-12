@@ -31,6 +31,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.logger = logger;
             scopeCache = ctx.GetCacheForScope(scope_id);
         }
+
+        public MemberReferenceResolver(MonoProxy proxy, ExecutionContext ctx, SessionId session_id, JArray object_values, ILogger logger)
+        {
+            sessionId = session_id;
+            scopeId = -1;
+            this.proxy = proxy;
+            this.ctx = ctx;
+            this.logger = logger;
+            scopeCache = new PerScopeCache(object_values);
+            locals_fetched = true;
+        }
+
         public async Task<JObject> GetValueFromObject(JToken objRet, CancellationToken token)
         {
             if (objRet["value"]?["className"]?.Value<string>() == "System.Exception")
@@ -70,6 +82,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (scopeCache.MemberReferences.TryGetValue(var_name, out JObject ret)) {
                 return ret;
             }
+
+            if (scopeCache.ObjectFields.TryGetValue(var_name, out JObject valueRet)) {
+                return await GetValueFromObject(valueRet, token);
+            }
+
             foreach (string part in parts)
             {
                 string partTrimmed = part.Trim();

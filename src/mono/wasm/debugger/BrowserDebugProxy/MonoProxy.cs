@@ -29,7 +29,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList) : base(loggerFactory)
         {
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
-            sdbHelper = new MonoSDBHelper(this);
+            sdbHelper = new MonoSDBHelper(this, logger);
         }
 
         internal ExecutionContext GetContext(SessionId sessionId)
