@@ -211,6 +211,8 @@ namespace System.Data
             DeserializeDataTable(info, context, isSingleTable, remotingFormat);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Binary serialization is unsafe in general and is planned to be obsoleted. We do not want to mark interface or ctors of this class as unsafe as that would show many unnecessary warnings elsewhere.")]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             SerializationFormat remotingFormat = RemotingFormat;
@@ -2683,18 +2685,16 @@ namespace System.Data
             }
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public override ISite Site
+        public override ISite? Site
         {
             get { return base.Site; }
             set
             {
-                ISite oldSite = Site;
+                ISite? oldSite = Site;
                 if (value == null && oldSite != null)
                 {
-                    IContainer cont = oldSite.Container;
+                    IContainer? cont = oldSite.Container;
 
                     if (cont != null)
                     {
@@ -2710,7 +2710,6 @@ namespace System.Data
                 base.Site = value;
             }
         }
-#nullable enable
 
         internal DataRow AddRecords(int oldRecord, int newRecord)
         {
@@ -3197,12 +3196,9 @@ namespace System.Data
             return ndx;
         }
 
-        // TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         IList IListSource.GetList() => DefaultView;
 
         internal List<DataViewListener> GetListeners() => _dataViewListeners;
-#nullable enable
 
         // We need a HashCodeProvider for Case, Kana and Width insensitive
         internal int GetSpecialHashCode(string name)
@@ -4975,10 +4971,13 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode("Members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(IDataReader reader) => Load(reader, LoadOption.PreserveChanges, null);
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(IDataReader reader, LoadOption loadOption) => Load(reader, loadOption, null);
 
+        [RequiresUnreferencedCode("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(IDataReader reader, LoadOption loadOption, FillErrorEventHandler? errorHandler)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTable.Load|API> {0}, loadOption={1}", ObjectID, loadOption);
@@ -6705,8 +6704,6 @@ namespace System.Data
             return XmlSchema.Read(new XmlTextReader(stream), null);
         }
 
-        // TODO: Enable after System.Private.Xml is annotated
-#nullable disable
 #pragma warning disable 8632
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
@@ -6730,7 +6727,6 @@ namespace System.Data
             WriteXmlCore(writer);
         }
 #pragma warning restore 8632
-#nullable enable
 
         // This method exists so that suppression can be placed on `IXmlSerializable.WriteXml(XmlWriter writer)`
         private void WriteXmlCore(XmlWriter writer)
@@ -6738,6 +6734,7 @@ namespace System.Data
             WriteXmlSchema(writer, false);
             WriteXml(writer, XmlWriteMode.DiffGram, false);
         }
+#pragma warning restore 8632
 
         protected virtual void ReadXmlSerializable(XmlReader? reader) => ReadXml(reader, XmlReadMode.DiffGram, true);
 

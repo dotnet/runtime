@@ -14,44 +14,45 @@ namespace System.IO.Tests
         protected override long MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset)
             => RandomAccess.Write(handle, new ReadOnlyMemory<byte>[] { bytes }, fileOffset);
 
-        protected override bool ShouldThrowForAsyncHandle
-            => OperatingSystem.IsWindows(); // on Windows we can NOT perform sync IO using async handle
-
-        [Fact]
-        public void ThrowsArgumentNullExceptionForNullBuffers()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public void ThrowsArgumentNullExceptionForNullBuffers(FileOptions options)
         {
-            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write))
+            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: options))
             {
                 AssertExtensions.Throws<ArgumentNullException>("buffers", () => RandomAccess.Write(handle, buffers: null, 0));
             }
         }
 
-        [Fact]
-        public void ThrowsOnReadAccess()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public void ThrowsOnReadAccess(FileOptions options)
         {
-            using (SafeFileHandle handle = GetHandleToExistingFile(FileAccess.Read))
+            using (SafeFileHandle handle = GetHandleToExistingFile(FileAccess.Read, options))
             {
                 Assert.Throws<UnauthorizedAccessException>(() => RandomAccess.Write(handle, new ReadOnlyMemory<byte>[] { new byte[1] }, 0));
             }
         }
 
-        [Fact]
-        public void WriteUsingEmptyBufferReturnsZero()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public void WriteUsingEmptyBufferReturnsZero(FileOptions options)
         {
-            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write))
+            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, options: options))
             {
                 Assert.Equal(0, RandomAccess.Write(handle, new ReadOnlyMemory<byte>[] { Array.Empty<byte>() }, fileOffset: 0));
             }
         }
 
-        [Fact]
-        public void WritesBytesFromGivenBuffersToGivenFileAtGivenOffset()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public void WritesBytesFromGivenBuffersToGivenFileAtGivenOffset(FileOptions options)
         {
             const int fileSize = 4_001;
             string filePath = GetTestFilePath();
             byte[] content = RandomNumberGenerator.GetBytes(fileSize);
 
-            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, options))
             {
                 long total = 0;
                 long current = 0;
@@ -81,8 +82,9 @@ namespace System.IO.Tests
             Assert.Equal(content, File.ReadAllBytes(filePath));
         }
 
-        [Fact]
-        public void DuplicatedBufferDuplicatesContent()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public void DuplicatedBufferDuplicatesContent(FileOptions options)
         {
             const byte value = 1;
             const int repeatCount = 2;
@@ -90,7 +92,7 @@ namespace System.IO.Tests
             ReadOnlyMemory<byte> buffer = new byte[1] { value };
             List<ReadOnlyMemory<byte>> buffers = Enumerable.Repeat(buffer, repeatCount).ToList();
 
-            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Create, FileAccess.Write))
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Create, FileAccess.Write, options: options))
             {
                 Assert.Equal(repeatCount, RandomAccess.Write(handle, buffers, fileOffset: 0));
             }

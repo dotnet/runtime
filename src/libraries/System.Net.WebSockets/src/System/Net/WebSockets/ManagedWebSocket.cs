@@ -1503,7 +1503,15 @@ namespace System.Net.WebSockets
                         maskIndex = (maskIndex + 1) & 3;
                     }
 
-                    int rolledMask = (int)BitOperations.RotateRight((uint)mask, maskIndex * 8);
+                    int rolledMask;
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        rolledMask = (int)BitOperations.RotateRight((uint)mask, maskIndex * 8);
+                    }
+                    else
+                    {
+                        rolledMask = (int)BitOperations.RotateLeft((uint)mask, maskIndex * 8);
+                    }
 
                     // use SIMD if possible.
 

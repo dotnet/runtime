@@ -11,6 +11,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Security;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
@@ -615,16 +616,17 @@ namespace System
             try
             {
                 // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-                using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
+                using (SafeFileHandle sfh = File.OpenHandle(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    if (stream.Length == rawData.Length)
+                    long fileLength = RandomAccess.GetLength(sfh);
+                    if (fileLength == rawData.Length)
                     {
                         int index = 0;
                         int count = rawData.Length;
 
                         while (count > 0)
                         {
-                            int n = stream.Read(buffer, index, count);
+                            int n = RandomAccess.Read(sfh, buffer.AsSpan(index, count), index);
                             if (n == 0)
                                 ThrowHelper.ThrowEndOfFileException();
 

@@ -237,6 +237,22 @@ jobs:
         logicalmachine: 'perfpixel4a'
         iosLlvmBuild: False
 
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - Windows_x64
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSMono
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfpixel4a'
+        iosLlvmBuild: True
+
   # run mono microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:

@@ -677,7 +677,7 @@ namespace System.Data
         public static Exception DiffgramMissingSQL() => _Data(SR.Xml_MissingSQL);
         public static Exception DuplicateConstraintRead(string str) => _Data(SR.Format(SR.Xml_DuplicateConstraint, str));
         public static Exception ColumnTypeConflict(string name) => _Data(SR.Format(SR.Xml_ColumnConflict, name));
-        public static Exception CannotConvert(string name, string type) => _Data(SR.Format(SR.Xml_CannotConvert, name, type));
+        public static Exception CannotConvert(string name, string? type) => _Data(SR.Format(SR.Xml_CannotConvert, name, type));
         public static Exception MissingRefer(string name) => _Data(SR.Format(SR.Xml_MissingRefer, Keywords.REFER, Keywords.XSD_KEYREF, name));
         public static Exception InvalidPrefix(string name) => _Data(SR.Format(SR.Xml_InvalidPrefix_SpecialCharacters, name));
         public static Exception CanNotDeserializeObjectType() => _InvalidOperation(SR.Xml_CanNotDeserializeObjectType);

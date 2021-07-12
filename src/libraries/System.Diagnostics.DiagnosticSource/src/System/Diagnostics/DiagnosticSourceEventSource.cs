@@ -162,7 +162,7 @@ namespace System.Diagnostics
     [EventSource(Name = "Microsoft-Diagnostics-DiagnosticSource")]
     internal sealed class DiagnosticSourceEventSource : EventSource
     {
-        public static DiagnosticSourceEventSource Logger = new DiagnosticSourceEventSource();
+        public static DiagnosticSourceEventSource Log = new DiagnosticSourceEventSource();
 
         public static class Keywords
         {
@@ -1252,7 +1252,7 @@ namespace System.Diagnostics
                     }
                     object? ret = null;
                     // Avoid the exception which can be thrown during accessing the object properties.
-                    try { ret = fetch!.Fetch(obj); } catch (Exception e) { Logger.Message($"Property {objType}.{_propertyName} threw the exception {e}"); }
+                    try { ret = fetch!.Fetch(obj); } catch (Exception e) { Log.Message($"Property {objType}.{_propertyName} threw the exception {e}"); }
                     return ret;
                 }
 
@@ -1314,7 +1314,7 @@ namespace System.Diagnostics
                             }
 
                             // no implementation of IEnumerable<T> found, return a null fetcher
-                            Logger.Message($"*Enumerate applied to non-enumerable type {type}");
+                            Log.Message($"*Enumerate applied to non-enumerable type {type}");
                             return new PropertyFetch(type);
                         }
                         else
@@ -1322,13 +1322,13 @@ namespace System.Diagnostics
                             PropertyInfo? propertyInfo = typeInfo.GetDeclaredProperty(propertyName);
                             if (propertyInfo == null)
                             {
-                                Logger.Message($"Property {propertyName} not found on {type}. Ensure the name is spelled correctly. If you published the application with PublishTrimmed=true, ensure the property was not trimmed away.");
+                                Log.Message($"Property {propertyName} not found on {type}. Ensure the name is spelled correctly. If you published the application with PublishTrimmed=true, ensure the property was not trimmed away.");
                                 return new PropertyFetch(type);
                             }
                             // Delegate creation below is incompatible with static properties.
                             else if (propertyInfo.GetMethod?.IsStatic == true || propertyInfo.SetMethod?.IsStatic == true)
                             {
-                                Logger.Message($"Property {propertyName} is static.");
+                                Log.Message($"Property {propertyName} is static.");
                                 return new PropertyFetch(type);
                             }
                             Type typedPropertyFetcher = typeInfo.IsValueType ?
