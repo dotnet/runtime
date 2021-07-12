@@ -1385,6 +1385,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                     SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
                 }
             }
+            break;
         }
         default:
             DefaultPolicy::NoteInt(obs, value);
