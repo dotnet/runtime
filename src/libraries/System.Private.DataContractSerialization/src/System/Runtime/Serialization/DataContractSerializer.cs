@@ -34,9 +34,8 @@ namespace System.Runtime.Serialization
         private ISerializationSurrogateProvider? _serializationSurrogateProvider;
         private bool _serializeReadOnlyTypes;
 
-        private static SerializationOption _option = SetSerializationOption();
-
-        private static SerializationOption SetSerializationOption()
+        private static SerializationOption _option = GetDefaultSerializationOption();
+        private static SerializationOption GetDefaultSerializationOption()
         {
             if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst())
             {
