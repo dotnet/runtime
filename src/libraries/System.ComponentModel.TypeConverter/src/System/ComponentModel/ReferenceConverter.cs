@@ -30,7 +30,7 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this converter can convert an object in the
         /// given source type to a reference object using the specified context.
         /// </summary>
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             if (sourceType == typeof(string) && context != null)
             {
@@ -43,7 +43,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given object to the reference type.
         /// </summary>
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string text)
             {
@@ -53,7 +53,7 @@ namespace System.ComponentModel
                     // Try the reference service first.
                     if (context.GetService(typeof(IReferenceService)) is IReferenceService refSvc)
                     {
-                        object obj = refSvc.GetReference(text);
+                        object? obj = refSvc.GetReference(text);
                         if (obj != null)
                         {
                             return obj;
@@ -61,10 +61,10 @@ namespace System.ComponentModel
                     }
 
                     // Now try IContainer
-                    IContainer cont = context.Container;
+                    IContainer? cont = context.Container;
                     if (cont != null)
                     {
-                        object obj = cont.Components[text];
+                        object? obj = cont.Components[text];
                         if (obj != null)
                         {
                             return obj;
@@ -81,7 +81,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to the reference type using the specified context and arguments.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(string))
             {
@@ -90,7 +90,7 @@ namespace System.ComponentModel
                     // Try the reference service first.
                     if (context?.GetService(typeof(IReferenceService)) is IReferenceService refSvc)
                     {
-                        string name = refSvc.GetName(value);
+                        string? name = refSvc.GetName(value);
                         if (name != null)
                         {
                             return name;
@@ -100,8 +100,8 @@ namespace System.ComponentModel
                     // Now see if this is an IComponent.
                     if (!Marshal.IsComObject(value) && value is IComponent comp)
                     {
-                        ISite site = comp.Site;
-                        string name = site?.Name;
+                        ISite? site = comp.Site;
+                        string? name = site?.Name;
                         if (name != null)
                         {
                             return name;
@@ -121,13 +121,13 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a collection of standard values for the reference data type.
         /// </summary>
-        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
         {
-            List<object> components = null;
+            List<object?>? components = null;
 
             if (context != null)
             {
-                components = new List<object> { null };
+                components = new List<object?> { null };
 
                 // Try the reference service first.
                 if (context.GetService(typeof(IReferenceService)) is IReferenceService refSvc)
@@ -171,13 +171,13 @@ namespace System.ComponentModel
         /// Gets a value indicating whether the list of standard values returned from
         /// <see cref='System.ComponentModel.ReferenceConverter.GetStandardValues'/> is an exclusive list.
         /// </summary>
-        public override bool GetStandardValuesExclusive(ITypeDescriptorContext context) => true;
+        public override bool GetStandardValuesExclusive(ITypeDescriptorContext? context) => true;
 
         /// <summary>
         /// Gets a value indicating whether this object supports a standard set of values
         /// that can be picked from a list.
         /// </summary>
-        public override bool GetStandardValuesSupported(ITypeDescriptorContext context) => true;
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext? context) => true;
 
         /// <summary>
         /// Gets a value indicating whether a particular value can be added to
@@ -197,10 +197,10 @@ namespace System.ComponentModel
                 _converter = converter;
             }
 
-            public int Compare(object item1, object item2)
+            public int Compare(object? item1, object? item2)
             {
-                string itemName1 = _converter.ConvertToString(item1);
-                string itemName2 = _converter.ConvertToString(item2);
+                string? itemName1 = _converter.ConvertToString(item1);
+                string? itemName2 = _converter.ConvertToString(item2);
 
                 return string.Compare(itemName1, itemName2, StringComparison.InvariantCulture);
             }

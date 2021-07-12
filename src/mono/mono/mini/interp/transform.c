@@ -5310,6 +5310,13 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_U8_R8);
 #endif
 				break;
+			case STACK_TYPE_R4:
+#if SIZEOF_VOID_P == 4
+				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_U4_R4);
+#else
+				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_U8_R4);
+#endif
+				break;
 			case STACK_TYPE_I4:
 #if SIZEOF_VOID_P == 8
 				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_I8_U4);
@@ -6133,36 +6140,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			td->ip += 5;
 			break;
 		}
+#if SIZEOF_VOID_P == 8
 		case CEE_CONV_OVF_I_UN:
 		case CEE_CONV_OVF_U_UN:
-			CHECK_STACK (td, 1);
-			switch (td->sp [-1].type) {
-			case STACK_TYPE_R8:
-#if SIZEOF_VOID_P == 8
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_OVF_I8_UN_R8);
-#else
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_OVF_I4_UN_R8);
 #endif
-				break;
-			case STACK_TYPE_I8:
-#if SIZEOF_VOID_P == 4
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_OVF_I4_U8);
-#endif
-				break;
-			case STACK_TYPE_I4:
-#if SIZEOF_VOID_P == 8
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_I8_U4);
-#elif SIZEOF_VOID_P == 4
-				if (*td->ip == CEE_CONV_OVF_I_UN)
-					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_OVF_I4_U4);
-#endif
-				break;
-			default:
-				g_assert_not_reached ();
-				break;
-			}
-			++td->ip;
-			break;
 		case CEE_CONV_OVF_I8_UN:
 		case CEE_CONV_OVF_U8_UN:
 			CHECK_STACK (td, 1);
@@ -6171,7 +6152,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_OVF_I8_UN_R8);
 				break;
 			case STACK_TYPE_I8:
-				if (*td->ip == CEE_CONV_OVF_I8_UN)
+				if (*td->ip == CEE_CONV_OVF_I8_UN || *td->ip == CEE_CONV_OVF_I_UN)
 					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_OVF_I8_U8);
 				break;
 			case STACK_TYPE_I4:
@@ -6619,6 +6600,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			break;
 #if SIZEOF_VOID_P == 4
 		case CEE_CONV_OVF_I:
+		case CEE_CONV_OVF_I_UN:
 #endif
 		case CEE_CONV_OVF_I4:
 		case CEE_CONV_OVF_I4_UN:
@@ -6631,11 +6613,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_I4_R8);
 				break;
 			case STACK_TYPE_I4:
-				if (*td->ip == CEE_CONV_OVF_I4_UN)
+				if (*td->ip == CEE_CONV_OVF_I4_UN || *td->ip == CEE_CONV_OVF_I_UN)
 					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_I4_U4);
 				break;
 			case STACK_TYPE_I8:
-				if (*td->ip == CEE_CONV_OVF_I4_UN)
+				if (*td->ip == CEE_CONV_OVF_I4_UN || *td->ip == CEE_CONV_OVF_I_UN)
 					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_I4_U8);
 				else
 					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_I4_I8);
@@ -6647,6 +6629,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			break;
 #if SIZEOF_VOID_P == 4
 		case CEE_CONV_OVF_U:
+		case CEE_CONV_OVF_U_UN:
 #endif
 		case CEE_CONV_OVF_U4:
 		case CEE_CONV_OVF_U4_UN:
@@ -6659,7 +6642,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U4_R8);
 				break;
 			case STACK_TYPE_I4:
-				if (*td->ip != CEE_CONV_OVF_U4_UN)
+				if (*td->ip == CEE_CONV_OVF_U4 || *td->ip == CEE_CONV_OVF_U)
 					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U4_I4);
 				break;
 			case STACK_TYPE_I8:

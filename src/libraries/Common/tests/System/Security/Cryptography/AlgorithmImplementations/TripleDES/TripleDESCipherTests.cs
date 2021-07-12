@@ -492,6 +492,8 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
         {
             byte[] liveEncryptBytes;
             byte[] liveDecryptBytes;
+            byte[] liveOneShotDecryptBytes = null;
+            byte[] liveOneShotEncryptBytes = null;
 
             using (TripleDES tdes = TripleDESFactory.Create())
             {
@@ -505,6 +507,29 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 
                 liveEncryptBytes = TripleDESEncryptDirectKey(tdes, key, iv, plainBytes);
                 liveDecryptBytes = TripleDESDecryptDirectKey(tdes, key, iv, cipherBytes);
+
+                if (cipherMode == CipherMode.ECB)
+                {
+                    tdes.Key = key;
+                    liveOneShotDecryptBytes = tdes.DecryptEcb(cipherBytes, paddingMode);
+                    liveOneShotEncryptBytes = tdes.EncryptEcb(plainBytes, paddingMode);
+                }
+                else if (cipherMode == CipherMode.CBC)
+                {
+                    tdes.Key = key;
+                    liveOneShotDecryptBytes = tdes.DecryptCbc(cipherBytes, iv, paddingMode);
+                    liveOneShotEncryptBytes = tdes.EncryptCbc(plainBytes, iv, paddingMode);
+                }
+
+                if (liveOneShotDecryptBytes is not null)
+                {
+                    Assert.Equal(plainBytes, liveOneShotDecryptBytes);
+                }
+
+                if (liveOneShotEncryptBytes is not null)
+                {
+                    Assert.Equal(cipherBytes, liveOneShotEncryptBytes);
+                }
             }
 
             Assert.Equal(cipherBytes, liveEncryptBytes);

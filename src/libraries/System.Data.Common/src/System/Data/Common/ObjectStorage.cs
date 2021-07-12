@@ -349,7 +349,7 @@ namespace System.Data.Common
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        public override object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute xmlAttrib)
+        public override object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute? xmlAttrib)
         {
             object? retValue = null;
             bool isBaseCLRType = false;

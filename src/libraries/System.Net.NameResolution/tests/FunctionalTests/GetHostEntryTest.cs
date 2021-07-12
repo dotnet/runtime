@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.NameResolution.Tests
@@ -19,6 +20,7 @@ namespace System.Net.NameResolution.Tests
             IPAddress localIPAddress = await TestSettings.GetLocalIPAddress();
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(localIPAddress));
         }
+
 
         public static bool GetHostEntryWorks =
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
@@ -33,6 +35,12 @@ namespace System.Net.NameResolution.Tests
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntry_HostString_Ok(string hostName)
         {
+            if (PlatformDetection.IsSLES)
+            {
+                // See https://github.com/dotnet/runtime/issues/55271
+                throw new SkipTestException("SLES Tests environment is not configured for this test to work.");
+            }
+
             try
             {
                 await TestGetHostEntryAsync(() => Task.FromResult(Dns.GetHostEntry(hostName)));
@@ -79,8 +87,16 @@ namespace System.Net.NameResolution.Tests
         [ConditionalTheory(nameof(GetHostEntryWorks))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
-        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName) =>
+        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName)    
+        {
+            if (PlatformDetection.IsSLES)
+            {
+                // See https://github.com/dotnet/runtime/issues/55271
+                throw new SkipTestException("SLES Tests environment is not configured for this test to work.");
+            }
+
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(hostName));
+        }
 
         [Fact]
         public async Task Dns_GetHostEntryAsync_IPString_Ok() =>

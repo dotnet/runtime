@@ -322,7 +322,6 @@ namespace TaskCoverage
         /// FromAsync testing: Not supported in .NET Native
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52614", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void FromAsync()
         {
             Task emptyTask = new Task(() => { });

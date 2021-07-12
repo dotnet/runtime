@@ -9,9 +9,13 @@ using System.IO;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using System.Net;
 using HttpStress;
+
+[assembly:SupportedOSPlatform("windows")]
+[assembly:SupportedOSPlatform("linux")]
 
 /// <summary>
 /// Simple HttpClient stress app that launches Kestrel in-proc and runs many concurrent requests of varying types against it.

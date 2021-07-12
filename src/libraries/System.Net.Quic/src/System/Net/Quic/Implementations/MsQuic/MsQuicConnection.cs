@@ -20,6 +20,7 @@ namespace System.Net.Quic.Implementations.MsQuic
     {
         private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
+        private const uint DefaultResetValue = 0xffffffff; // Arbitrary value unlikely to conflict with application protocols.
 
         // Delegate that wraps the static function that will be called when receiving an event.
         private static readonly ConnectionCallbackDelegate s_connectionDelegate = new ConnectionCallbackDelegate(NativeCallbackHandler);
@@ -70,7 +71,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 SingleWriter = true,
             });
 
-            public void RemoveStream(MsQuicStream stream)
+            public void RemoveStream(MsQuicStream? stream)
             {
                 bool releaseHandles;
                 lock (this)
@@ -82,8 +83,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (releaseHandles)
                 {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{TraceId()} releasing handle after last stream.");
                     Handle?.Dispose();
-                    StateGCHandle.Free();
                 }
             }
 
@@ -123,18 +124,36 @@ namespace System.Net.Quic.Implementations.MsQuic
                     _closing = true;
                 }
             }
+
+            internal string TraceId()
+            {
+                return $"[MsQuicConnection#{this.GetHashCode()}/{Handle?.DangerousGetHandle():x}]";
+            }
         }
 
+        internal string TraceId() => _state.TraceId();
+
         // constructor for inbound connections
-        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle)
+        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle, bool remoteCertificateRequired = false, X509RevocationMode revocationMode = X509RevocationMode.Offline, RemoteCertificateValidationCallback? remoteCertificateValidationCallback = null)
         {
             _state.Handle = handle;
             _state.StateGCHandle = GCHandle.Alloc(_state);
             _state.Connected = true;
+            _isServer = true;
             _localEndPoint = localEndPoint;
             _remoteEndPoint = remoteEndPoint;
-            _remoteCertificateRequired = false;
-            _isServer = true;
+            _remoteCertificateRequired = remoteCertificateRequired;
+            _revocationMode = revocationMode;
+            _remoteCertificateValidationCallback = remoteCertificateValidationCallback;
+
+            if (_remoteCertificateRequired)
+            {
+                // We need to link connection for the validation callback.
+                // We need to be able to find the connection in HandleEventPeerCertificateReceived
+                // and dispatch it as sender to validation callback.
+                // After that Connection will be set back to null.
+                _state.Connection = this;
+            }
 
             try
             {
@@ -151,7 +170,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(_state, $"[Connection#{_state.GetHashCode()}] inbound connection created");
+                NetEventSource.Info(_state, $"{TraceId()} inbound connection created");
             }
         }
 
@@ -190,7 +209,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(_state, $"[Connection#{_state.GetHashCode()}] outbound connection created");
+                NetEventSource.Info(_state, $"{TraceId()} outbound connection created");
             }
         }
 
@@ -234,25 +253,28 @@ namespace System.Net.Quic.Implementations.MsQuic
                 state.ConnectTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
             }
 
-            state.AcceptQueue.Writer.Complete();
+            state.AcceptQueue.Writer.TryComplete();
             return MsQuicStatusCodes.Success;
         }
 
         private static uint HandleEventShutdownInitiatedByPeer(State state, ref ConnectionEvent connectionEvent)
         {
             state.AbortErrorCode = (long)connectionEvent.Data.ShutdownInitiatedByPeer.ErrorCode;
-            state.AcceptQueue.Writer.Complete();
+            state.AcceptQueue.Writer.TryComplete();
             return MsQuicStatusCodes.Success;
         }
 
         private static uint HandleEventShutdownComplete(State state, ref ConnectionEvent connectionEvent)
         {
+            // This is the final event on the connection, so free the GCHandle used by the event callback.
+            state.StateGCHandle.Free();
+
             state.Connection = null;
 
             state.ShutdownTcs.SetResult(MsQuicStatusCodes.Success);
 
             // Stop accepting new streams.
-            state.AcceptQueue.Writer.Complete();
+            state.AcceptQueue.Writer.TryComplete();
 
             // Stop notifying about available streams.
             TaskCompletionSource? unidirectionalTcs = null;
@@ -331,6 +353,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (connection == null)
             {
                 return MsQuicStatusCodes.InvalidState;
+            }
+
+            if (connection._isServer)
+            {
+                state.Connection = null;
             }
 
             try
@@ -532,6 +559,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _ => throw new Exception(SR.Format(SR.net_quic_unsupported_address_family, _remoteEndPoint.AddressFamily))
             };
 
+            Debug.Assert(_state.StateGCHandle.IsAllocated);
+
             _state.Connection = this;
             try
             {
@@ -546,6 +575,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch
             {
+                _state.StateGCHandle.Free();
                 _state.Connection = null;
                 throw;
             }
@@ -592,11 +622,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             IntPtr context,
             ref ConnectionEvent connectionEvent)
         {
-            var state = (State)GCHandle.FromIntPtr(context).Target!;
+            GCHandle gcHandle = GCHandle.FromIntPtr(context);
+            Debug.Assert(gcHandle.IsAllocated);
+            Debug.Assert(gcHandle.Target is not null);
+            var state = (State)gcHandle.Target;
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"[Connection#{state.GetHashCode()}] received event {connectionEvent.Type}");
+                NetEventSource.Info(state, $"{state.TraceId()} received event {connectionEvent.Type}");
             }
 
             try
@@ -625,8 +658,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(state, $"Exception occurred during connection callback: {ex.Message}");
+                    NetEventSource.Error(state, $"[Connection#{state.GetHashCode()}] Exception occurred during handling {connectionEvent.Type} connection callback: {ex}");
                 }
+
+                Debug.Fail($"[Connection#{state.GetHashCode()}] Exception occurred during handling {connectionEvent.Type} connection callback: {ex}");
 
                 // TODO: trigger an exception on any outstanding async calls.
 
@@ -648,9 +683,17 @@ namespace System.Net.Quic.Implementations.MsQuic
         private async Task FlushAcceptQueue()
         {
             _state.AcceptQueue.Writer.TryComplete();
-            await foreach (MsQuicStream item in _state.AcceptQueue.Reader.ReadAllAsync().ConfigureAwait(false))
+            await foreach (MsQuicStream stream in _state.AcceptQueue.Reader.ReadAllAsync().ConfigureAwait(false))
             {
-                item.Dispose();
+                if (stream.CanRead)
+                {
+                    stream.AbortRead(DefaultResetValue);
+                }
+                if (stream.CanWrite)
+                {
+                    stream.AbortWrite(DefaultResetValue);
+                }
+                stream.Dispose();
             }
         }
 
@@ -661,6 +704,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 return;
             }
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} disposing {disposing}");
 
             bool releaseHandles = false;
             lock (_state)
@@ -681,8 +726,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             _configuration?.Dispose();
             if (releaseHandles)
             {
-                _state!.Handle?.Dispose();
-                if (_state.StateGCHandle.IsAllocated) _state.StateGCHandle.Free();
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} releasing handle");
+
+                // We may not be fully initialized if constructor fails.
+                _state.Handle?.Dispose();
             }
         }
 

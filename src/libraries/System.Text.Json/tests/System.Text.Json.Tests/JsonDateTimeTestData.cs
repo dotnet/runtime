@@ -189,7 +189,6 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+1400\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555-1400\"" };
 
-
             // Proper format but invalid calendar date, time, or time zone designator fields
             yield return new object[] { "\"1997-00-16T19:20:30.4555555\"" };
             yield return new object[] { "\"1997-07-16T25:20:30.4555555\"" };
@@ -215,6 +214,7 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"1997-07-16T19:20:30.45555555550000000\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.45555555555555555\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.45555555555555555555\"" };
+            yield return new object[] { "\"1997-07-16T19:20:30.4555555555555555+01:300\"" };
 
             // Hex strings
 

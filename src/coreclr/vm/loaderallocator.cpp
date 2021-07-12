@@ -1137,7 +1137,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
     _ASSERTE(dwTotalReserveMemSize <= VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 #endif
 
-    BYTE * initReservedMem = ClrVirtualAllocExecutable(dwTotalReserveMemSize, MEM_RESERVE, PAGE_NOACCESS);
+    BYTE * initReservedMem = (BYTE*)ExecutableAllocator::Instance()->Reserve(dwTotalReserveMemSize);
 
     m_InitialReservedMemForLoaderHeaps = initReservedMem;
 
@@ -1672,17 +1672,24 @@ void AssemblyLoaderAllocator::SetCollectible()
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
     }
     CONTRACTL_END;
 
     m_IsCollectible = true;
-#ifndef DACCESS_COMPILE
-    m_pShuffleThunkCache = new ShuffleThunkCache(m_pStubHeap);
-#endif
 }
 
 #ifndef DACCESS_COMPILE
+
+void AssemblyLoaderAllocator::Init(AppDomain* pAppDomain)
+{
+    m_Id.Init();
+    LoaderAllocator::Init((BaseDomain *)pAppDomain);
+    if (IsCollectible())
+    {
+        m_pShuffleThunkCache = new ShuffleThunkCache(m_pStubHeap);
+    }
+}
 
 #ifndef CROSSGEN_COMPILE
 

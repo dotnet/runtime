@@ -169,7 +169,7 @@
     <value>Instruction set(s) to use for compilation</value>
   </data>
   <data name="InstructionSetMustNotBe" xml:space="preserve">
-    <value>Instruction set must not be '{0}' for this architecture and operating system</value>
+    <value>Instruction set '{0}' is not valid for this architecture and operating system</value>
   </data>
   <data name="InstructionSetWithoutInputBubble" xml:space="preserve">
     <value>Instruction set(s) specified without also specifying input-bubble</value>
@@ -344,5 +344,8 @@
   </data>
   <data name="PerfMapFilePathOption" xml:space="preserve">
     <value>Explicit specification of the PerfMap file path</value>
+  </data>
+  <data name="PerfMapFormatVersionOption" xml:space="preserve">
+    <value>Explicitly request a particular PerfMap format version</value>
   </data>
 </root>
