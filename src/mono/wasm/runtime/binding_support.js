@@ -791,9 +791,14 @@ var BindingSupportLib = {
 		},
 
 		mono_method_get_call_signature: function(method, mono_obj) {
-			this.bindings_lazy_init ();
+			let instanceRoot = MONO.mono_wasm_new_root (mono_obj);
+			try {
+				this.bindings_lazy_init ();
 
-			return this.call_method (this.get_call_sig, null, "im", [ method, mono_obj ]);
+				return this.call_method (this.get_call_sig, null, "im", [ method, instanceRoot.value ]);
+			} finally {
+				instanceRoot.release();
+			}
 		},
 
 		get_task_and_bind: function (tcs, js_obj) {
@@ -1475,10 +1480,14 @@ var BindingSupportLib = {
 			// Check to make sure the delegate is still alive on the CLR side of things.
 			if (typeof delegate_obj.__mono_delegate_alive__ !== "undefined") {
 				if (!delegate_obj.__mono_delegate_alive__)
-					throw new Error("The delegate target that is being invoked is no longer available.  Please check if it has been prematurely GC'd.");
+					// HACK: It is possible (though unlikely) for a delegate to be invoked after it's been collected
+					//  if it's being used as a JavaScript event handler and the host environment decides to fire events
+					//  at a point where we've already disposed of the object the event handler is attached to.
+					// As such, we log here instead of throwing an error. We may want to not log at all...
+					console.log("The delegate target that is being invoked is no longer available.  Please check if it has been prematurely GC'd.");
 			}
 
-			var [delegateRoot] = MONO.mono_wasm_new_roots ([this.extract_mono_obj (delegate_obj)]);
+			var delegateRoot = MONO.mono_wasm_new_root (this.extract_mono_obj (delegate_obj));
 			try {
 				if (typeof delegate_obj.__mono_delegate_invoke__ === "undefined")
 					delegate_obj.__mono_delegate_invoke__ = this.mono_wasm_get_delegate_invoke(delegateRoot.value);
@@ -1490,7 +1499,7 @@ var BindingSupportLib = {
 
 				return this.call_method (delegate_obj.__mono_delegate_invoke__, delegateRoot.value, delegate_obj.__mono_delegate_invoke_sig__, js_args);
 			} finally {
-				MONO.mono_wasm_release_roots (delegateRoot);
+				delegateRoot.release();
 			}
 		},
 
@@ -1586,22 +1595,22 @@ var BindingSupportLib = {
 		},
 		// Object wrapping helper functions to handle reference handles that will
 		// be used in managed code.
-		mono_wasm_register_obj: function(obj) {
+		mono_wasm_register_obj: function(js_obj) {
 
 			var gc_handle = undefined;
-			if (obj !== null && typeof obj !== "undefined")
+			if (js_obj !== null && typeof js_obj !== "undefined")
 			{
-				gc_handle = obj.__mono_gchandle__;
+				gc_handle = js_obj.__mono_gchandle__;
 
 				if (typeof gc_handle === "undefined") {
 					var handle = this.mono_wasm_free_list.length ?
 								this.mono_wasm_free_list.pop() : this.mono_wasm_ref_counter++;
-					obj.__mono_jshandle__ = handle;
+					js_obj.__mono_jshandle__ = handle;
 					// Obtain the JS -> C# type mapping.
-					var wasm_type = obj[Symbol.for("wasm type")];
-					obj.__owns_handle__ = true;
-					gc_handle = obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, obj.__owns_handle__, typeof wasm_type === "undefined" ? -1 : wasm_type);
-					this.mono_wasm_object_registry[handle] = obj;
+					var wasm_type = js_obj[Symbol.for("wasm type")];
+					js_obj.__owns_handle__ = true;
+					gc_handle = js_obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, js_obj.__owns_handle__, typeof wasm_type === "undefined" ? -1 : wasm_type);
+					this.mono_wasm_object_registry[handle] = js_obj;
 
 				}
 			}
@@ -1676,7 +1685,7 @@ var BindingSupportLib = {
 			// Release all managed objects that are loaded into the LMF
 			if (typeof __owned_objects__ !== "undefined")
 			{
-				// Look into passing the array of owned object handles in one pass.
+				// TODO: Look into passing the array of owned object handles in one pass.
 				var refidx;
 				for (refidx = 0; refidx < __owned_objects__.length; refidx++)
 				{
