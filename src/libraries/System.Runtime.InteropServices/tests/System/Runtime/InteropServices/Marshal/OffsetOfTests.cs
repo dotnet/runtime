@@ -225,7 +225,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void OffsetOf_Field_BlittableGeneric()
+        public void OffsetOf_Field_Generic()
         {
             Assert.Equal((IntPtr)4, Marshal.OffsetOf<Point2<int>>(nameof(Point2<int>.y)));
             Assert.Equal((IntPtr)8, Marshal.OffsetOf<Point2<ulong>>(nameof(Point2<int>.y)));
