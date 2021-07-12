@@ -157,7 +157,7 @@ namespace ILCompiler
         public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
         {
             DefType similarSpecifiedVector = GetSimilarVector(type);
-            if (similarSpecifiedVector == null)
+            if (similarSpecifiedVector == null && !_vectorAbiIsStable)
             {
                 List<FieldAndOffset> fieldsAndOffsets = new List<FieldAndOffset>();
                 foreach (FieldDesc field in type.GetFields())
@@ -175,6 +175,20 @@ namespace ILCompiler
                     ByteCountAlignment = LayoutInt.Indeterminate,
                     Offsets = fieldsAndOffsets.ToArray(),
                     LayoutAbiStable = false,
+                };
+                return instanceLayout;
+            }
+            else if (similarSpecifiedVector == null && _vectorAbiIsStable)
+            {
+                ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(type, layoutKind);
+                ComputedInstanceFieldLayout instanceLayout = new ComputedInstanceFieldLayout()
+                {
+                    ByteCountUnaligned = layoutFromMetadata.ByteCountUnaligned,
+                    ByteCountAlignment = layoutFromMetadata.ByteCountAlignment,
+                    FieldAlignment = layoutFromMetadata.FieldAlignment,
+                    FieldSize = layoutFromMetadata.FieldSize,
+                    Offsets = layoutFromMetadata.Offsets,
+                    LayoutAbiStable = _vectorAbiIsStable,
                 };
                 return instanceLayout;
             }
