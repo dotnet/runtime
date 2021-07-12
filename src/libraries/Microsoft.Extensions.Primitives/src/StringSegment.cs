@@ -453,16 +453,15 @@ namespace Microsoft.Extensions.Primitives
         public int IndexOf(char c, int start, int count)
         {
             int index = -1;
-            int offset = Offset + start;
 
             if (HasValue)
             {
-                if (start < 0 || (uint)offset > (uint)Buffer.Length)
+                if (start < 0 || start > Length)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
                 }
 
-                if (count < 0)
+                if (count < 0 || start + count > Length)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
                 }
