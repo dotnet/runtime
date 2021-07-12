@@ -34,16 +34,7 @@ namespace System.Runtime.Serialization
         private ISerializationSurrogateProvider? _serializationSurrogateProvider;
         private bool _serializeReadOnlyTypes;
 
-        private static SerializationOption _option = GetDefaultSerializationOption();
-        private static SerializationOption GetDefaultSerializationOption()
-        {
-            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst())
-            {
-                return SerializationOption.ReflectionOnly;
-            }
-
-            return IsReflectionBackupAllowed() ? SerializationOption.ReflectionAsBackup : SerializationOption.CodeGenOnly;
-        }
+        private static SerializationOption _option = IsReflectionBackupAllowed() ? SerializationOption.ReflectionAsBackup : SerializationOption.CodeGenOnly;
         private static bool _optionAlreadySet;
         internal static SerializationOption Option
         {
