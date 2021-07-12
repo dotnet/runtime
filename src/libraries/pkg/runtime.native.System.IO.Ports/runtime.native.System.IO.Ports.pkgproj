@@ -1,10 +1,16 @@
 ﻿<Project DefaultTargets="Build">
+  <PropertyGroup>
+    <BuildingAnOfficialBuildLeg Condition="'$(BuildingAnOfficialBuildLeg)' == '' and '$(OfficialBuildId)' != '' and '$(DotNetBuildFromSource)' != 'true'">true</BuildingAnOfficialBuildLeg>
+    <RequiresBuildRid Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' or '$(RuntimeFlavor)' != 'Mono'">true</RequiresBuildRid>
+    <ExcludeFromBuildRID>win*;linux-musl*</ExcludeFromBuildRID>
+  </PropertyGroup>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(PackageTargetRuntime)' != '' and !$(PackageTargetRuntime.ToLowerInvariant.StartsWith('win'))">
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == 'linux-arm' or '$(PackageTargetRuntime)' == 'linux-arm64' or '$(PackageTargetRuntime)' == 'linux-x64' or '$(PackageTargetRuntime)' == 'osx-x64' or '$(PackageTargetRuntime)' == 'freebsd-x64'">
     <File Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)" >
       <TargetPath>runtimes/$(OutputRid)/native</TargetPath>
     </File>

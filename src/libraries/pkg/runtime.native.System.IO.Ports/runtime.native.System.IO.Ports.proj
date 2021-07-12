@@ -1,9 +1,4 @@
 <Project DefaultTargets="Build">
-  <PropertyGroup>
-    <RequiresBuildRid Condition="'$(RuntimeFlavor)' != 'Mono'">true</RequiresBuildRid>
-    <ExcludeFromBuildRID>win*</ExcludeFromBuildRID>
-  </PropertyGroup>
-
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
