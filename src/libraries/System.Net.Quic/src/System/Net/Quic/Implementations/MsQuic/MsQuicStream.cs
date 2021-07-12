@@ -69,6 +69,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public void Cleanup()
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{TraceId()} releasing handles.");
+
                 ShutdownState = ShutdownState.Finished;
                 CleanupSendState(this);
                 Handle?.Dispose();
@@ -77,7 +79,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (StateGCHandle.IsAllocated) StateGCHandle.Free();
                 ConnectionState?.RemoveStream(null);
             }
+
+            internal string TraceId()
+            {
+                return $"[MsQuicStream#{this.GetHashCode()}/{Handle?.DangerousGetHandle():x}]";
+            }
         }
+
+        internal string TraceId() => _state.TraceId();
 
         // inbound.
         internal MsQuicStream(MsQuicConnection.State connectionState, SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
@@ -117,8 +126,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 NetEventSource.Info(
                     _state,
-                    $"[Stream#{_state.GetHashCode()}] inbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
-                        $"in Connection#{_state.ConnectionState.GetHashCode()}.");
+                    $"{TraceId()} inbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
+                        $"in {_state.ConnectionState.TraceId()}.");
             }
         }
 
@@ -170,8 +179,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 NetEventSource.Info(
                     _state,
-                    $"[Stream#{_state.GetHashCode()}] outbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
-                        $"in Connection#{_state.ConnectionState.GetHashCode()}.");
+                    $"{TraceId()} outbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
+                        $"in {_state.ConnectionState.TraceId()}.");
             }
         }
 
@@ -647,6 +656,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} disposing {disposing}");
+
             bool callShutdown = false;
             bool abortRead = false;
             bool releaseHandles = false;
@@ -698,10 +710,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.Cleanup();
             }
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Info(_state, $"[Stream#{_state.GetHashCode()}] disposed");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} disposed");
         }
 
         private void EnableReceive()
@@ -726,7 +735,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"[Stream#{state.GetHashCode()}] received event {evt.Type}");
+                NetEventSource.Info(state, $"{state.TraceId()} received event {evt.Type}");
             }
 
             try

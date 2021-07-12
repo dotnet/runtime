@@ -2988,6 +2988,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disAsmSpilled   = false;
     opts.disDiffable     = false;
     opts.disAddr         = false;
+    opts.disAlignment    = false;
     opts.dspCode         = false;
     opts.dspEHTable      = false;
     opts.dspDebugInfo    = false;
@@ -3134,6 +3135,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitDasmWithAddress() != 0)
         {
             opts.disAddr = true;
+        }
+
+        if (JitConfig.JitDasmWithAlignmentBoundaries() != 0)
+        {
+            opts.disAlignment = true;
         }
 
         if (JitConfig.JitLongAddress() != 0)

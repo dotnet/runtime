@@ -355,7 +355,7 @@ namespace System.IO.Tests
     /// <summary>
     /// Single tests that shouldn't be duplicated by inheritance.
     /// </summary>
-    [SkipOnPlatform(TestPlatforms.Browser, "https://github.com/dotnet/runtime/issues/40867 - flock not supported")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
     public sealed class File_Copy_Single : FileSystemTest
     {
         [Fact]

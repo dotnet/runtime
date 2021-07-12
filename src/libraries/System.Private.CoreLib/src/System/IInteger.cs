@@ -31,13 +31,13 @@ namespace System
         /// <param name="value">The value which is rotated left by <paramref name="rotateAmount" />.</param>
         /// <param name="rotateAmount">The amount by which <paramref name="value" /> is rotated left.</param>
         /// <returns>The result of rotating <paramref name="value" /> left by <paramref name="rotateAmount" />.</returns>
-        static abstract TSelf RotateLeft(TSelf value, TSelf rotateAmount);
+        static abstract TSelf RotateLeft(TSelf value, int rotateAmount);
 
         /// <summary>Rotates a value right by a given amount.</summary>
         /// <param name="value">The value which is rotated right by <paramref name="rotateAmount" />.</param>
         /// <param name="rotateAmount">The amount by which <paramref name="value" /> is rotated right.</param>
         /// <returns>The result of rotating <paramref name="value" /> right by <paramref name="rotateAmount" />.</returns>
-        static abstract TSelf RotateRight(TSelf value, TSelf rotateAmount);
+        static abstract TSelf RotateRight(TSelf value, int rotateAmount);
 
         /// <summary>Computes the number of trailing zeros in a value.</summary>
         /// <param name="value">The value whose trailing zeroes are to be counted.</param>
