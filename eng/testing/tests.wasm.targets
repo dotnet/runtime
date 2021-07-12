@@ -62,7 +62,6 @@
 
   <ItemGroup>
     <WorkloadIdForTesting Include="wasm-tools"
-                          Name="microsoft.net.workload.mono.toolchain"
                           ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
                           Version="$(PackageVersion)"
                           VersionBand="$(SdkBandVersion)" />

@@ -66,7 +66,7 @@ namespace Microsoft.Workload.Build.Tasks
                                                     debugMessageImportance: MessageImportance.High);
             if (exitCode != 0)
             {
-                Log.LogError($"workload install failed: {output}");
+                Log.LogError($"workload install failed");
                 return false;
             }
 
@@ -113,8 +113,6 @@ namespace Microsoft.Workload.Build.Tasks
 
             if (!PackageInstaller.Install(new[]{ pkgRef }, nugetConfigContents, Log, stopOnMissing))
                 return false;
-
-            Log.LogMessage(MessageImportance.High, $"\t=> {pkgRef.OutputDir}");
 
             string manifestDir = pkgRef.OutputDir;
             string jsonPath = Path.Combine(manifestDir, "WorkloadManifest.json");
