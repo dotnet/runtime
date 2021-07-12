@@ -4,12 +4,17 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
+using FSharpKind = System.Text.Json.Serialization.Metadata.FSharpCoreReflectionProxy.FSharpKind;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
     internal class FSharpTypeConverterFactory : JsonConverterFactory
     {
+        // Temporary solution to account for not implemented support for type-level attributes
+        // TODO remove once addressed https://github.com/mono/linker/issues/1742#issuecomment-875036480
+        [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
+        public FSharpTypeConverterFactory() { }
+
         private ObjectConverterFactory? _recordConverterFactory;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",

@@ -13,19 +13,24 @@ namespace System.Text.Json.Serialization.Metadata
     // The following class uses reflection to access the relevant APIs required to detect the various F# types we are looking to support.
 
     /// <summary>
-    /// The various categories of F# types that System.Text.Json supports.
-    /// </summary>
-    internal enum FSharpKind
-    {
-        Unrecognized, Option, List, Set, Map, Record
-    }
-
-    /// <summary>
     /// Proxy class used to access FSharp.Core metadata and reflection APIs that are not statically available to System.Text.Json.
     /// </summary>
     internal sealed class FSharpCoreReflectionProxy
     {
-        public const string FSharpCoreUnreferencedCodeMessage = "Uses Reflection to access FSharp.Core components, which requires unreferenced code.";
+        /// <summary>
+        /// The various categories of F# types that System.Text.Json supports.
+        /// </summary>
+        public enum FSharpKind
+        {
+            Unrecognized,
+            Option,
+            List,
+            Set,
+            Map,
+            Record
+        }
+
+        public const string FSharpCoreUnreferencedCodeMessage = "Uses Reflection to access FSharp.Core components at runtime.";
 
         private static object s_lockObj = new object();
         private static FSharpCoreReflectionProxy? s_singletonInstance;
@@ -50,6 +55,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// Checks if the provided System.Type instance is emitted by the F# compiler.
         /// If true, also initializes the proxy singleton for future by other F# types.
         /// </summary>
+        [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
         public static bool IsFSharpType(Type type)
         {
             if (s_singletonInstance is null)
@@ -83,8 +89,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The public methods are marked RequiresUnreferencedCode.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern", Justification = "The public methods are marked RequiresUnreferencedCode.")]
+        [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
         private FSharpCoreReflectionProxy(Assembly fsharpCoreAssembly)
         {
             Debug.Assert(fsharpCoreAssembly.GetName().Name == "FSharp.Core");
@@ -146,7 +151,6 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod", Justification = "The public methods are marked RequiresUnreferencedCode.")]
         public Func<IEnumerable<T>, TFSharpList> CreateFSharpListConstructor<TFSharpList, T>()
         {
             Debug.Assert(typeof(TFSharpList).GetGenericTypeDefinition() == _fsharpListType!);
@@ -154,7 +158,6 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod", Justification = "The public methods are marked RequiresUnreferencedCode.")]
         public Func<IEnumerable<T>, TFSharpSet> CreateFSharpSetConstructor<TFSharpSet, T>()
         {
             Debug.Assert(typeof(TFSharpSet).GetGenericTypeDefinition() == _fsharpSetType!);
@@ -162,7 +165,6 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod", Justification = "The public methods are marked RequiresUnreferencedCode.")]
         public Func<IEnumerable<Tuple<TKey, TValue>>, TFSharpMap> CreateFSharpMapConstructor<TFSharpMap, TKey, TValue>()
         {
             Debug.Assert(typeof(TFSharpMap).GetGenericTypeDefinition() == _fsharpMapType!);
