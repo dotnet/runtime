@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -14,6 +15,7 @@ namespace System.Text.Json.Serialization.Converters
             ((TCollection)state.Current.ReturnValue!).Push(value);
         }
 
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(Stack<>))]
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             if (state.Current.JsonTypeInfo.CreateObject == null)
