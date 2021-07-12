@@ -8,6 +8,7 @@
     <Compile Include="ZipFileExtensions.ZipArchive.Create.cs" />
     <Compile Include="ZipFileExtensions.ZipArchiveEntry.Extract.cs" />
     <Compile Include="ZipFileExtensions.ZipArchive.Extract.cs" />
+    <Compile Include="ZipFileHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
              Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"

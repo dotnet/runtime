@@ -495,7 +495,7 @@ namespace System.IO.Compression.Tests
                         string filename = Path.Combine(extractFolder.Path, permission + ".txt");
                         Assert.True(File.Exists(filename));
 
-                        EnsureFilePermissions(filename, permission);
+                        ZipFileHelpers.EnsureFilePermissions(filename, permission);
                     }
                 }
             }
