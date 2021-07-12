@@ -314,7 +314,6 @@ namespace System.Text.Json.Reflection
             return nestedTypes.ToArray();
         }
 
-        // TODO: make sure to use bindingAttr for correctness. Current implementation assumes public and non-static.
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
         {
             List<PropertyInfo> properties = new();
@@ -338,11 +337,6 @@ namespace System.Text.Json.Reflection
                     {
                         properties.Add(new PropertyInfoWrapper(propertySymbol, _metadataLoadContext));
                     }
-
-                    //if ((item.DeclaredAccessibility & Accessibility.Public) == Accessibility.Public)
-                    //{
-                    //    properties.Add(new PropertyInfoWrapper(property, _metadataLoadContext));
-                    //}
                 }
             }
 

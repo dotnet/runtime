@@ -659,14 +659,14 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                     sb.Append($@"{Environment.NewLine}    ");
                 }
 
-                sb.Append($@"{WriterVarName}.WriteStartObject();"); //  writer.WriteNumber(""yo"", 45);
+                sb.Append($@"{WriterVarName}.WriteStartObject();");
 
                 // Provide generation logic for each prop.
                 Debug.Assert(serializableProperties != null);
 
                 foreach (PropertyGenerationSpec propertyGenSpec in serializableProperties.Values)
                 {
-                    if (!ShouldIncludeForFastPath(propertyGenSpec, options))
+                    if (!ShouldIncludePropertyForFastPath(propertyGenSpec, options))
                     {
                         continue;
                     }
@@ -739,7 +739,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                 return GenerateFastPathFuncForType(serializeMethodName, typeRef, sb.ToString(), typeGenSpec.CanBeNull);
             }
 
-            private static bool ShouldIncludeForFastPath(PropertyGenerationSpec propertyGenSpec, JsonSourceGenerationOptionsAttribute options)
+            private static bool ShouldIncludePropertyForFastPath(PropertyGenerationSpec propertyGenSpec, JsonSourceGenerationOptionsAttribute options)
             {
                 TypeGenerationSpec propertyTypeSpec = propertyGenSpec.TypeGenerationSpec;
 
