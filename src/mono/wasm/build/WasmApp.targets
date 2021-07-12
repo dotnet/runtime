@@ -118,8 +118,11 @@
       <!-- emcc, and mono-aot-cross don't like relative paths for output files -->
       <_WasmIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm'))</_WasmIntermediateOutputPath>
 
+      <_HomeDirectory>$(UserProfile)</_HomeDirectory>
+      <_HomeDirectory Condition="'$(_HomeDirectory)' == ''">$(Home)</_HomeDirectory>
       <!-- windows emcc doesn't like a trailing slash -->
-      <WasmCachePath>$(_WasmIntermediateOutputPath)\cache</WasmCachePath>
+      <!--<WasmCachePath>$(_WasmIntermediateOutputPath)\cache</WasmCachePath>-->
+      <WasmCachePath Condition="'$(WasmCachePath)' == ''">$(_HomeDirectory)\.emscripten-cache\$(Configuration)</WasmCachePath>
       <!-- And it treats single backslash as escape sequence -->
       <WasmCachePath>$(WasmCachePath.Replace('\', '\\'))</WasmCachePath>
     </PropertyGroup>
