@@ -1,16 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "asansupport.h"
 #include <stdint.h>
+#include "asansupport.h"
 
 #ifndef HOST_WINDOWS
-#include "pal.h"
+#define HOST_SYMBOL __attribute__((weak))
+#define HOST_SYMBOL_CALLCONV 
 #else
 #include <windows.h>
+#define HOST_SYMBOL __declspec(dllexport)
+#define HOST_SYMBOL_CALLCONV __cdecl
 #endif
-
-
 
 #ifdef ASAN_SUPPORT_EXPOSE_SHADOW
 // Specify use_sigaltstack=0 as coreclr uses own alternate stack for signal handlers
@@ -22,7 +23,7 @@ namespace __asan
     extern uintptr_t kHighMemEnd, kMidMemBeg, kMidMemEnd;
 }
 
-extern "C" __declspec(dllexport) void __cdecl get_asan_shadow_range(uintptr_t* pHighMemEnd, uintptr_t* pMidMemBeg, uintptr_t* pMidMemEnd)
+extern "C" HOST_SYMBOL void HOST_SYMBOL_CALLCONV get_asan_shadow_range(uintptr_t* pHighMemEnd, uintptr_t* pMidMemBeg, uintptr_t* pMidMemEnd)
 {
     *pHighMemEnd = __asan::kHighMemEnd;
     *pMidMemBeg = __asan::kMidMemBeg;
@@ -42,6 +43,7 @@ namespace __asan
     static uintptr_t kHighMemEnd, kMidMemBeg, kMidMemEnd;
 }
 
+#ifdef HOST_WINDOWS
 namespace
 {
     typedef void(*get_asan_shadow_range_ptr)(uintptr_t* pHighMemEnd, uintptr_t* pMidMemBeg, uintptr_t* pMidMemEnd);
@@ -66,7 +68,22 @@ namespace
         initialized = true;
     }
 }
-
+#else
+extern "C" void __attribute__((weak)) get_asan_shadow_range(uintptr_t* pHighMemEnd, uintptr_t* pMidMemBeg, uintptr_t* pMidMemEnd);
+namespace
+{
+    void initialize_asan_shadow_range()
+    {
+        static bool initialized = false;
+        if (initialized)
+        {
+            return;
+        }
+        get_asan_shadow_range(&__asan::kHighMemEnd, &__asan::kMidMemBeg, &__asan::kMidMemEnd);
+        initialized = true;
+    }
+}
+#endif
 #endif
 
 // Ported from address sanitizer
