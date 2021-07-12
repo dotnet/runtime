@@ -1370,7 +1370,21 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             {
                 SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
             }
-            break;
+            else if (!m_IsForceInline && !m_HasProfile)
+            {
+                unsigned bbLimit = (unsigned)JitConfig.JitExtDefaultPolicyMaxBB();
+                if (m_IsPrejitRoot)
+                {
+                    // We're not able to recognize arg-specific foldable branches
+                    // in prejit-root mode.
+                    bbLimit += 5 + m_Switch * 10;
+                }
+                bbLimit += m_FoldableBranch * 2 + m_FoldableSwitch * 10;
+                if ((unsigned)value > bbLimit)
+                {
+                    SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
+                }
+            }
         }
         default:
             DefaultPolicy::NoteInt(obs, value);
@@ -1455,7 +1469,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_NonGenericCallsGeneric)
     {
-        multiplier += 1.5;
+        multiplier += 2.0;
         JITDUMP("\nInline candidate is generic and caller is not.  Multiplier increased to %g.", multiplier);
     }
 

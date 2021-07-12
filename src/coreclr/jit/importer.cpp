@@ -19090,7 +19090,6 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         {
             // Let's not report profiles for methods with insufficient samples during prejitting.
             hasProfile = true;
-            inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, profileFreq);
         }
     }
     else if ((pInlineInfo == nullptr) && rootCompiler->fgHaveProfileData())
