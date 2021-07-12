@@ -1508,8 +1508,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm)
     bool      hasLR  = false;
     bool      hasPC  = false;
     bool      useT2  = false;
-    bool      onlyT1 = false;
-
+    bool      isSingleBit = false; 
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
@@ -1559,10 +1558,9 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm)
 
             if (((imm - 1) & imm) == 0) // Is only one or zero bits set in imm?
             {
-                if (((imm == 0) && !hasLR) || // imm has no bits set, but hasLR is set
-                    (!hasPC && !hasLR))       // imm has one bit set, and neither of hasPC/hasLR are set
+		if (imm != 0)
                 {
-                    onlyT1 = true; // if only one bit is set we must use the T1 encoding
+		      isSingleBit = true; // only one bits set in imm
                 }
             }
 
@@ -1570,15 +1568,21 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm)
 
             if (((imm & 0x00ff) == imm) && !useT2)
             {
+		// for push {LR,} <reglist8> and pop  {PC,} <regist8> encoding
                 fmt = IF_T1_L1;
             }
-            else if (!onlyT1)
+            else if (!isSingleBit)
             {
+		// for other push and pop multiple registers encoding
                 fmt = IF_T2_I1;
             }
             else
             {
-                // We have to use the Thumb-2 push single register encoding
+                // We have to use the Thumb-2 push/pop single register encoding
+		if (hasLR)
+		{
+		      imm |= 0x4000;
+		}
                 regNumber reg = genRegNumFromMask(imm);
                 emitIns_R(ins, attr, reg);
                 return;
