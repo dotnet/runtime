@@ -17,7 +17,12 @@
 
     <!-- don't run any wasm build steps -->
     <WasmBuildAppAfterThisTarget />
-    <RunScriptInputName>RunScriptTemplate.sh</RunScriptInputName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RunScriptInputName Condition="'$(OS)' == 'Windows_NT'">RunScriptTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="'$(OS)' != 'Windows_NT'">RunScriptTemplate.sh</RunScriptInputName>
+
     <RunScriptInputPath>$(MSBuildThisFileDirectory)data\$(RunScriptInputName)</RunScriptInputPath>
   </PropertyGroup>
 
@@ -49,6 +54,7 @@
 
     <ItemGroup>
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="set_env_vars" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="CALL :SetEnvVars" />
     </ItemGroup>
 
     <PropertyGroup>
