@@ -130,7 +130,6 @@ namespace System.Net.Quic.Tests
                         await serverFunction(serverConnection);
                         serverFinished.Set();
                         clientFinished.Wait();
-                        await serverConnection.CloseAsync(0);
                     }),
                     Task.Run(async () =>
                     {
@@ -139,7 +138,6 @@ namespace System.Net.Quic.Tests
                         await clientFunction(clientConnection);
                         clientFinished.Set();
                         serverFinished.Wait();
-                        await clientConnection.CloseAsync(0);
                     })
                 }.WhenAllOrAnyFailed(millisecondsTimeout);
             }

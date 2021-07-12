@@ -11,6 +11,8 @@ namespace System.Net.Quic.Tests
     public abstract class QuicConnectionTests<T> : QuicTestBase<T>
         where T : IQuicImplProviderFactory, new()
     {
+        const int ExpectedErrorCode = 1234;
+
         [Fact]
         public async Task TestConnect()
         {
@@ -39,8 +41,6 @@ namespace System.Net.Quic.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55242", TestPlatforms.Linux)]
         public async Task AcceptStream_ConnectionAborted_ByClient_Throws()
         {
-            const int ExpectedErrorCode = 1234;
-
             using var sync = new SemaphoreSlim(0);
 
             await RunClientServer(
@@ -54,6 +54,149 @@ namespace System.Net.Quic.Tests
                     await sync.WaitAsync();
                     QuicConnectionAbortedException ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => serverConnection.AcceptStreamAsync().AsTask());
                     Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+                });
+        }
+
+        private static async Task DoWrites(QuicStream writer, int writeCount)
+        {
+            for (int i = 0; i < writeCount; i++)
+            {
+                await writer.WriteAsync(new byte[1]);
+            }
+        }
+
+        private static async Task DoReads(QuicStream reader, int readCount)
+        {
+            for (int i = 0; i < readCount; i++)
+            {
+                int bytesRead = await reader.ReadAsync(new byte[1]);
+                Assert.Equal(1, bytesRead);
+            }
+        }
+
+        [Theory]
+        // [InlineData(0)]  // Fails with TimeoutException -- needs investigation
+        [InlineData(1)]
+        [InlineData(10)]
+        public async Task CloseAsync_WithOpenLocalStream_LocalStreamFailsWithQuicOperationAbortedException(int writesBeforeClose)
+        {
+            if (typeof(T) == typeof(MockProviderFactory))
+            {
+                return;
+            }
+
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                    await DoWrites(clientStream, writesBeforeClose);
+
+                    // Wait for peer to receive data 
+                    await sync.WaitAsync();
+
+                    await clientConnection.CloseAsync(ExpectedErrorCode);
+
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await clientStream.ReadAsync(new byte[1]));
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await clientStream.WriteAsync(new byte[1]));
+
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
+                    await DoReads(serverStream, writesBeforeClose);
+
+                    sync.Release();
+
+                    // Wait for peer to fail stream
+                    await sync.WaitAsync();
+                });
+        }
+
+        [Theory]
+        // [InlineData(0)]  // Fails with TimeoutException -- needs investigation
+        [InlineData(1)]
+        [InlineData(10)]
+        public async Task Dispose_WithOpenLocalStream_LocalStreamFailsWithQuicOperationAbortedException(int writesBeforeClose)
+        {
+            if (typeof(T) == typeof(MockProviderFactory))
+            {
+                return;
+            }
+
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                    await DoWrites(clientStream, writesBeforeClose);
+
+                    // Wait for peer to receive data 
+                    await sync.WaitAsync();
+
+                    clientConnection.Dispose();
+
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await clientStream.ReadAsync(new byte[1]));
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await clientStream.WriteAsync(new byte[1]));
+
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
+                    await DoReads(serverStream, writesBeforeClose);
+
+                    sync.Release();
+
+                    // Wait for peer to fail stream
+                    await sync.WaitAsync();
+                });
+        }
+
+        [Theory]
+        // [InlineData(0)]  // Fails with TimeoutException -- needs investigation
+        [InlineData(1)]
+        [InlineData(10)]
+        public async Task CloseAsync_WithOpenPeerStream_PeerStreamFailsWithQuicConnectionAbortedException(int writesBeforeClose)
+        {
+            if (typeof(T) == typeof(MockProviderFactory))
+            {
+                return;
+            }
+
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                    await DoWrites(clientStream, writesBeforeClose);
+
+                    // Wait for peer to receive data 
+                    await sync.WaitAsync();
+
+                    QuicConnectionAbortedException ex;
+                    ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await clientStream.ReadAsync(new byte[1]));
+                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+                    ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await clientStream.WriteAsync(new byte[1]));
+                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
+                    await DoReads(serverStream, writesBeforeClose);
+
+                    sync.Release();
+
+                    await serverConnection.CloseAsync(ExpectedErrorCode);
+
+                    // Wait for peer to fail stream
+                    await sync.WaitAsync();
                 });
         }
     }
