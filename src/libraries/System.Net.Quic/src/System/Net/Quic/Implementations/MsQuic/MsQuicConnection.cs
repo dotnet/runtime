@@ -165,7 +165,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
-            _state.TraceId = MsQuicLogHelper.GetTraceId(_state.Handle);
+            _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(_state, $"{TraceId()} Inbound connection created");
@@ -205,7 +205,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
-            _state.TraceId = MsQuicLogHelper.GetTraceId(_state.Handle);
+            _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(_state, $"{TraceId()} Outbound connection created");
@@ -704,7 +704,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} disposing {disposing}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Stream disposing {disposing}");
 
             bool releaseHandles = false;
             lock (_state)
@@ -725,7 +725,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _configuration?.Dispose();
             if (releaseHandles)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} releasing handle");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Connection releasing handle");
 
                 // We may not be fully initialized if constructor fails.
                 _state.Handle?.Dispose();

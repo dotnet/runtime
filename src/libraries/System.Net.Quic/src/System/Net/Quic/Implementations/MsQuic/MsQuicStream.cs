@@ -644,7 +644,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} disposing {disposing}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Stream disposing {disposing}");
 
             bool callShutdown = false;
             bool abortRead = false;
