@@ -171,40 +171,6 @@ namespace System.Net.Quic.Tests
                 await stream.WriteAsync(buffer);
             }
         }
-
-        internal static void AssertArrayEqual(byte[] expected, byte[] actual)
-        {
-            for (int i = 0; i < expected.Length; ++i)
-            {
-                if (expected[i] == actual[i])
-                {
-                    continue;
-                }
-
-                var message = $"Wrong data starting from idx={i}\n" +
-                    $"Expected: {ToStringAroundIndex(expected, i)}\n" +
-                    $"Actual:   {ToStringAroundIndex(actual, i)}";
-
-                Assert.True(expected[i] == actual[i], message);
-            }
-        }
-
-        private static string ToStringAroundIndex(byte[] arr, int idx, int dl = 3, int dr = 7)
-        {
-            var sb = new StringBuilder(idx - (dl+1) >= 0 ? "[..., " : "[");
-
-            for (int i = idx - dl; i <= idx + dr; ++i)
-            {
-                if (i >= 0 && i < arr.Length)
-                {
-                    sb.Append($"{arr[i]}, ");
-                }
-            }
-
-            sb.Append(idx + (dr+1) < arr.Length ? "...]" : "]");
-
-            return sb.ToString();
-        }
     }
 
     public interface IQuicImplProviderFactory
