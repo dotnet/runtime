@@ -6686,7 +6686,7 @@ namespace System.Data
             return type;
         }
 
-        XmlSchema? IXmlSerializable.GetSchema() => GetSchema();
+        XmlSchema? IXmlSerializable.GetSchema() => GetXmlSchema();
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2046:UnrecognizedReflectionPattern",
