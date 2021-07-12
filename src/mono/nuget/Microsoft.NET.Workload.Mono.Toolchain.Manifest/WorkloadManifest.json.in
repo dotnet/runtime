@@ -60,9 +60,22 @@
       "abstract": true,
       "description": "MacCatalyst Mono Runtime and AOT Workload",
       "packs": [
-        "Microsoft.NETCore.App.Runtime.Mono.maccatalyst",
+        "Microsoft.NETCore.App.Runtime.Mono.maccatalyst-arm64",
+        "Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-arm64",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.maccatalyst-x64"
+      ],
+      "extends": [ "microsoft-net-runtime-mono-tooling" ],
+      "platforms": [ "osx-arm64", "osx-x64" ]
+    },
+    "microsoft-net-runtime-macos": {
+      "abstract": true,
+      "description": "MacOS CoreCLR and Mono Runtime Workload",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.Mono.osx-arm64",
+        "Microsoft.NETCore.App.Runtime.Mono.osx-x64",
+        "Microsoft.NETCore.App.Runtime.osx-arm64",
+        "Microsoft.NETCore.App.Runtime.osx-x64"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling" ],
       "platforms": [ "osx-arm64", "osx-x64" ]
@@ -164,6 +177,22 @@
       "version": "${PackageVersion}",
     },
     "Microsoft.NETCore.App.Runtime.Mono.maccatalyst-64": {
+      "kind": "framework",
+      "version": "${PackageVersion}",
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.osx-arm64": {
+      "kind": "framework",
+      "version": "${PackageVersion}",
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.osx-x64": {
+      "kind": "framework",
+      "version": "${PackageVersion}",
+    },
+    "Microsoft.NETCore.App.Runtime.osx-arm64": {
+      "kind": "framework",
+      "version": "${PackageVersion}",
+    },
+    "Microsoft.NETCore.App.Runtime.osx-x64": {
       "kind": "framework",
       "version": "${PackageVersion}",
     },
