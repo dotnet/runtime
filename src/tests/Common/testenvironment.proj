@@ -37,6 +37,10 @@
       COMPlus_EnableSSSE3;
       COMPlus_FeatureSIMD;
       COMPlus_ForceRelocs;
+      COMPlus_GCLargePages;
+      COMPlus_GCHeapHardLimitSOH;
+      COMPlus_GCHeapHardLimitLOH;
+      COMPlus_GCHeapHardLimitPOH;
       COMPlus_GCStress;
       COMPlus_HeapVerify;
       COMPlus_JITMinOpts;
@@ -155,6 +159,7 @@
     <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" />
     <TestEnvironment Include="dynamicpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
     <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0"/>
+    <TestEnvironment Include="gclargepages" GCLargePages="1" GCHeapHardLimitSOH="80000000" GCHeapHardLimitLOH="80000000" GCHeapHardLimitPOH="0" />
   </ItemGroup>
 
   <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables
