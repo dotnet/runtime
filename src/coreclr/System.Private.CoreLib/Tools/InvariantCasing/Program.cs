@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
 using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
@@ -35,7 +38,7 @@ namespace InvariantCasing
         private Dictionary<int, int> upperCasing = new();
         private Dictionary<int, int> lowerCasing = new();
 
-        public void ParseFile(string unicodeFileName) 
+        public void ParseFile(string unicodeFileName)
         {
             try
             {
@@ -132,7 +135,7 @@ namespace InvariantCasing
         {
             GenerateTable8_4_4(upperCasing, out ushort[] u1, out ushort[] u2, out ushort[] u3);
             GenerateTable8_4_4(lowerCasing, out ushort[] l1, out ushort[] l2, out ushort[] l3);
-           
+
             WriteTable(u1, "UpperCase1");
             WriteTable(u2, "UpperCase2");
             WriteTable(u3, "UpperCase3");
