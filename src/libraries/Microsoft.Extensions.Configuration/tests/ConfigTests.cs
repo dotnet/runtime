@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
             Assert.Equal("TestValue", config["TestKey"]);
 
-            // ConfigurationRoot doesn't fire the token today when the setter is called. Maybe we should change that.
+            // ConfigurationRoot doesn't fire the token today when the setter is called.
             Assert.False(reloadToken.HasChanged);
         }
 
