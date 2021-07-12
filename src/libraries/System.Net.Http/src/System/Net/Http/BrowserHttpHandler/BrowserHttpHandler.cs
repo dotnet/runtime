@@ -139,7 +139,7 @@ namespace System.Net.Http
 
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            throw new PlatformNotSupportedException ();
+            throw new PlatformNotSupportedException();
         }
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -323,22 +323,27 @@ namespace System.Net.Http
                 return httpResponse;
 
             }
-            catch (OperationCanceledException oce ) when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
             {
                 throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
             }
             catch (JSException jse)
             {
-                if (jse.Message.StartsWith("AbortError"))
-                {
-                    throw CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
-                }
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
-                }
-                throw new HttpRequestException(jse.Message, jse);
+                throw TranslateJSException(jse, cancellationToken);
             }
+        }
+
+        private static Exception TranslateJSException(JSException jse, CancellationToken cancellationToken)
+        {
+            if (jse.Message.StartsWith("AbortError", StringComparison.Ordinal))
+            {
+                return CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
+            }
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
+            }
+            return new HttpRequestException(jse.Message, jse);
         }
 
         private sealed class WasmFetchResponse : IDisposable
@@ -415,11 +420,7 @@ namespace System.Net.Http
                 }
                 catch (JSException jse)
                 {
-                    if (jse.Message.StartsWith("AbortError"))
-                    {
-                        throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
-                    }
-                    throw new HttpRequestException(jse.Message, jse);
+                    throw TranslateJSException(jse, cancellationToken);
                 }
 
                 return _data;
@@ -503,21 +504,13 @@ namespace System.Net.Http
                             _reader = (JSObject)body.Invoke("getReader");
                         }
                     }
-                    catch (OperationCanceledException oce ) when (cancellationToken.IsCancellationRequested)
+                    catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
                     {
                         throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
                     }
                     catch (JSException jse)
                     {
-                        if (jse.Message.StartsWith("AbortError"))
-                        {
-                            throw CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
-                        }
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
-                        }
-                        throw new HttpRequestException(jse.Message, jse);
+                        throw TranslateJSException(jse, cancellationToken);
                     }
                 }
 
@@ -547,21 +540,13 @@ namespace System.Net.Http
                             _bufferedBytes = binValue.ToArray();
                     }
                 }
-                catch (OperationCanceledException oce ) when (cancellationToken.IsCancellationRequested)
+                catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
                 {
                     throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
                 }
                 catch (JSException jse)
                 {
-                    if (jse.Message.StartsWith("AbortError"))
-                    {
-                        throw CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
-                    }
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
-                    }
-                    throw new HttpRequestException(jse.Message, jse);
+                    throw TranslateJSException(jse, cancellationToken);
                 }
 
                 return ReadBuffered();
