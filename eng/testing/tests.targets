@@ -1,13 +1,15 @@
 <Project>
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(RunScriptInputName)' == ''">
     <RunScriptInputName Condition="'$(TargetOS)' == 'windows'">RunnerTemplate.cmd</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' != 'windows'">RunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">AppleRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Android'">AndroidRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT'">WasmRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
+  </PropertyGroup>
 
-    <RunScriptInputPath>$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
+  <PropertyGroup>
+    <RunScriptInputPath Condition="'$(RunScriptInputPath)' == ''">$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
 
     <RunScriptOutputName Condition="'$(TargetOS)' != 'windows'">RunTests.sh</RunScriptOutputName>
     <RunScriptOutputName Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -140,6 +140,7 @@
     <Compile Include="Serialization\NumberHandlingTests.cs" />
     <Compile Include="Serialization\Object.ReadTests.cs" />
     <Compile Include="Serialization\Object.WriteTests.cs" />
+    <Compile Include="Serialization\OnSerializeTests.cs" />
     <Compile Include="Serialization\OptionsTests.cs" />
     <Compile Include="Serialization\PolymorphicTests.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />

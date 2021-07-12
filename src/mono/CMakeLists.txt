@@ -16,7 +16,7 @@ if(NOT MONO_LIB_NAME)
 endif()
 
 if(NOT MONO_SHARED_LIB_NAME)
-  set(MONO_SHARED_LIB_NAME "$(MONO_LIB_NAME)")
+  set(MONO_SHARED_LIB_NAME "${MONO_LIB_NAME}")
 endif()
 
 include(GNUInstallDirs)
@@ -61,29 +61,6 @@ endfunction()
 if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
-
-#
-# This is the version of the corlib-runtime interface. When
-# making changes to this interface (by changing the layout
-# of classes the runtime knows about, changing icall signature or
-# semantics etc), change this variable.
-#
-# This must be unique relative to corlib interface and semantics.
-#
-# If you change corlib such that a runtime change is required, or
-# vice versa, change this string. Examples include removing icalls,
-# adding icalls, changing icall signatures, and changing type layouts
-# that both sides know.
-#
-# It is an arbitrary string and should be parsed as such.
-# A guid works and is encouraged.
-#
-# There is no ordering of corlib versions, no old or new,
-# an exact match is required between corlib and runtime.
-#
-# This line is parsed by other tools, it should remain in the format they expect.
-#
-set(MONO_CORLIB_VERSION 1A5E0066-58DC-428A-B21C-0AD6CDAE2789)
 
 set(DISABLE_MDB 1)
 set(DISABLE_COM 1)
@@ -735,8 +712,15 @@ endif()
 ######################################
 # EXTRACT VERSION
 ######################################
-if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
+  if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "#undef VER_PRODUCTVERSION_STR\n#define VER_PRODUCTVERSION_STR \"42.42.42.42424\"\n")
+  else()
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+  endif()
+endif()
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/NativeVersion.rc")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/NativeVersion.rc" "\n")
 endif()
 if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h")
   file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h"

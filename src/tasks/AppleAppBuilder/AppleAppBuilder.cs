@@ -161,7 +161,7 @@ public class AppleAppBuilderTask : Task
             throw new ArgumentException($"MainLibraryFileName='{MainLibraryFileName}' was not found in AppDir='{AppDir}'");
         }
 
-        if (ProjectName.Contains(" "))
+        if (ProjectName.Contains(' '))
         {
             throw new ArgumentException($"ProjectName='{ProjectName}' should not contain spaces");
         }

@@ -35,9 +35,8 @@ namespace System.Net.Quic.Tests
             Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
         }
 
-        // this started to fail after updating msquic from cc104e836a5d4a5e0d324bc08b42136d2acac997 to 8e21db733f22533a613d404d2a86e64588019132
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55242", TestPlatforms.Linux)]
         public async Task AcceptStream_ConnectionAborted_ByClient_Throws()
         {
             const int ExpectedErrorCode = 1234;

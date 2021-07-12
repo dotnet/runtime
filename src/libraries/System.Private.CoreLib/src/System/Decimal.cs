@@ -1126,11 +1126,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static decimal IDecrementOperators<decimal>.operator --(decimal value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked decimal IDecrementOperators<decimal>.operator --(decimal value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -1162,11 +1162,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static decimal IIncrementOperators<decimal>.operator ++(decimal value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked decimal IIncrementOperators<decimal>.operator ++(decimal value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue

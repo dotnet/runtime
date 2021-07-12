@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -62,8 +61,18 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
-                AssertExtensions.Throws<ArgumentException>("value", () => client.BaseAddress = new Uri("ftp://onlyhttpsupported"));
                 AssertExtensions.Throws<ArgumentException>("value", () => client.BaseAddress = new Uri("/onlyabsolutesupported", UriKind.Relative));
+            }
+        }
+
+        [Fact]
+        public void BaseAddress_UnknownScheme_DoesNotThrow()
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
+            {
+                client.BaseAddress = new Uri("blob://foo.bar");
+                client.BaseAddress = new Uri("extensions://foo.bar");
+                client.BaseAddress = new Uri("foobar://foo.bar");
             }
         }
 

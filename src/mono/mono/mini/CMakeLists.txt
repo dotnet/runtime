@@ -381,6 +381,47 @@ if(NOT DISABLE_SHARED_LIBS)
     add_library(monosgen-shared-dac SHARED "mini-windows-dlldac.c")
     set_target_properties(monosgen-shared-dac PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME}-dac)
   endif()
+
+  if(BUILD_DARWIN_FRAMEWORKS)
+    if(TARGET_DARWIN)
+      # In cmake, you cannot have list entries which contain a space or semicolon - those are considered
+      # record separators (i.e. a list of list(APPEND foo "a" "b;c" "d e") is a five entry list of values
+      # a, b, c, d and e.
+      # So, in order to treat the components lists as single list entries, swap out the ; character
+      # for a temporary replacement character, allowing the full lists to be treated as single entries
+      string(REPLACE ";" "*" mono-components-objects-nowhitespace "${mono-components-objects}")
+      string(REPLACE ";" "*" mono-components-stub-objects-nowhitespace "${mono-components-stub-objects}")
+      list(APPEND FrameworkConfig Mono.debug Mono.release)
+      list(APPEND ComponentsObjects "${mono-components-objects-nowhitespace}" "${mono-components-stub-objects-nowhitespace}")
+      foreach(frameworkconfig componentsobjects IN ZIP_LISTS FrameworkConfig ComponentsObjects)
+        if("${componentsobjects}" STREQUAL "")
+          #components list is empty, use stubs instead
+          set(componentsobjects "${mono-components-stub-objects-nowhitespace}")
+        endif()
+        add_library(${frameworkconfig} SHARED $<TARGET_OBJECTS:monosgen-objects>)
+        target_compile_definitions(${frameworkconfig} PRIVATE -DMONO_DLL_EXPORT)
+        target_sources(${frameworkconfig} PRIVATE $<TARGET_OBJECTS:eglib_objects>)
+        target_link_libraries(${frameworkconfig} PRIVATE ${OS_LIBS} ${ICONV_LIB} ${LLVM_LIBS} ${ICU_LIBS})
+        if(ICU_LDFLAGS)
+          set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
+        endif()
+        if(STATIC_ICU)
+          set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINKER_LANGUAGE CXX)
+        endif ()
+        set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
+        string(REPLACE "*" ";" componentsobjects-whitespace "${componentsobjects}")
+        target_sources(${frameworkconfig} PRIVATE "${componentsobjects-whitespace}")
+        set_target_properties(${frameworkconfig} PROPERTIES
+          FRAMEWORK TRUE
+          FRAMEWORK_VERSION C
+          MACOSX_FRAMEWORK_IDENTIFIER net.dot.mono-framework
+        )
+        install(TARGETS ${frameworkconfig}
+          FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        )
+      endforeach()
+    endif()
+  endif()
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)

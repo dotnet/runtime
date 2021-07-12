@@ -450,10 +450,8 @@ namespace System.Data
         public object this[string property] { get { throw null; } set { } }
         public System.Data.DataRow Row { get { throw null; } }
         public System.Data.DataRowVersion RowVersion { get { throw null; } }
-#nullable disable
         string System.ComponentModel.IDataErrorInfo.Error { get { throw null; } }
         string System.ComponentModel.IDataErrorInfo.this[string colName] { get { throw null; } }
-#nullable enable
         public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged { add { } remove { } }
         public void BeginEdit() { }
         public void CancelEdit() { }
@@ -465,7 +463,6 @@ namespace System.Data
         public void EndEdit() { }
         public override bool Equals(object? other) { throw null; }
         public override int GetHashCode() { throw null; }
-#nullable disable
         System.ComponentModel.AttributeCollection System.ComponentModel.ICustomTypeDescriptor.GetAttributes() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetClassName() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetComponentName() { throw null; }
@@ -479,13 +476,12 @@ namespace System.Data
         object System.ComponentModel.ICustomTypeDescriptor.GetEditor(System.Type editorBaseType) { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[] attributes) { throw null; }
+        System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[]? attributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[] attributes) { throw null; }
-        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
-#nullable enable
+        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[]? attributes) { throw null; }
+        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd) { throw null; }
     }
     [System.ComponentModel.DefaultPropertyAttribute("DataSetName")]
     [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.DataSetDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
@@ -529,12 +525,10 @@ namespace System.Data
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public virtual System.Data.SchemaSerializationMode SchemaSerializationMode { get { throw null; } set { } }
-#nullable disable
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public override System.ComponentModel.ISite Site { get { throw null; } set { } }
+        public override System.ComponentModel.ISite? Site { get { throw null; } set { } }
         bool System.ComponentModel.IListSource.ContainsListCollection { get { throw null; } }
-#nullable enable
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public System.Data.DataTableCollection Tables { get { throw null; } }
         public event System.EventHandler? Initialized { add { } remove { } }
@@ -572,8 +566,11 @@ namespace System.Data
         public void InferXmlSchema(System.Xml.XmlReader? reader, string[]? nsArray) { }
         protected virtual void InitializeDerivedDataSet() { }
         protected bool IsBinarySerialized(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, params System.Data.DataTable[] tables) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, System.Data.FillErrorEventHandler? errorHandler, params System.Data.DataTable[] tables) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, params string[] tables) { }
         public void Merge(System.Data.DataRow[] rows) { }
         public void Merge(System.Data.DataRow[] rows, bool preserveChanges, System.Data.MissingSchemaAction missingSchemaAction) { }
@@ -616,12 +613,10 @@ namespace System.Data
         public virtual void Reset() { }
         protected virtual bool ShouldSerializeRelations() { throw null; }
         protected virtual bool ShouldSerializeTables() { throw null; }
-#nullable disable
         System.Collections.IList System.ComponentModel.IListSource.GetList() { throw null; }
         System.Xml.Schema.XmlSchema System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-#nullable enable
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
@@ -724,9 +719,7 @@ namespace System.Data
         public System.Data.DataRowCollection Rows { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-#nullable disable
-        public override System.ComponentModel.ISite Site { get { throw null; } set { } }
-#nullable enable
+        public override System.ComponentModel.ISite? Site { get { throw null; } set { } }
         bool System.ComponentModel.IListSource.ContainsListCollection { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
@@ -762,8 +755,11 @@ namespace System.Data
         protected virtual System.Type GetRowType() { throw null; }
         protected virtual System.Xml.Schema.XmlSchema? GetSchema() { throw null; }
         public void ImportRow(System.Data.DataRow? row) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, System.Data.FillErrorEventHandler? errorHandler) { }
         public System.Data.DataRow LoadDataRow(object?[] values, bool fAcceptChanges) { throw null; }
         public System.Data.DataRow LoadDataRow(object?[] values, System.Data.LoadOption loadOption) { throw null; }
@@ -812,10 +808,8 @@ namespace System.Data
         public System.Data.DataRow[] Select(string? filterExpression, string? sort, System.Data.DataViewRowState recordStates) { throw null; }
         System.Collections.IList System.ComponentModel.IListSource.GetList() { throw null; }
         System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
-#nullable disable
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-#nullable enable
         public override string ToString() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream) { }
@@ -1000,21 +994,19 @@ namespace System.Data
         bool System.Collections.IList.IsFixedSize { get { throw null; } }
         bool System.Collections.IList.IsReadOnly { get { throw null; } }
         object? System.Collections.IList.this[int recordIndex] { get { throw null; } set { } }
-#nullable disable
         bool System.ComponentModel.IBindingList.AllowEdit { get { throw null; } }
         bool System.ComponentModel.IBindingList.AllowNew { get { throw null; } }
         bool System.ComponentModel.IBindingList.AllowRemove { get { throw null; } }
         bool System.ComponentModel.IBindingList.IsSorted { get { throw null; } }
         System.ComponentModel.ListSortDirection System.ComponentModel.IBindingList.SortDirection { get { throw null; } }
-        System.ComponentModel.PropertyDescriptor System.ComponentModel.IBindingList.SortProperty { get { throw null; } }
+        System.ComponentModel.PropertyDescriptor? System.ComponentModel.IBindingList.SortProperty { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsChangeNotification { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsSearching { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsSorting { get { throw null; } }
-        string System.ComponentModel.IBindingListView.Filter { get { throw null; } set { } }
+        string? System.ComponentModel.IBindingListView.Filter { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members of types used in the filter expression might be trimmed.")] set { } }
         System.ComponentModel.ListSortDescriptionCollection System.ComponentModel.IBindingListView.SortDescriptions { get { throw null; } }
         bool System.ComponentModel.IBindingListView.SupportsAdvancedSorting { get { throw null; } }
         bool System.ComponentModel.IBindingListView.SupportsFiltering { get { throw null; } }
-#nullable enable
         public event System.EventHandler? Initialized { add { } remove { } }
         public event System.ComponentModel.ListChangedEventHandler? ListChanged { add { } remove { } }
         public virtual System.Data.DataRowView AddNew() { throw null; }
@@ -1042,9 +1034,8 @@ namespace System.Data
         void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
-#nullable disable
         void System.ComponentModel.IBindingList.AddIndex(System.ComponentModel.PropertyDescriptor property) { }
-        object System.ComponentModel.IBindingList.AddNew() { throw null; }
+        object? System.ComponentModel.IBindingList.AddNew() { throw null; }
         void System.ComponentModel.IBindingList.ApplySort(System.ComponentModel.PropertyDescriptor property, System.ComponentModel.ListSortDirection direction) { }
         int System.ComponentModel.IBindingList.Find(System.ComponentModel.PropertyDescriptor property, object key) { throw null; }
         void System.ComponentModel.IBindingList.RemoveIndex(System.ComponentModel.PropertyDescriptor property) { }
@@ -1053,7 +1044,6 @@ namespace System.Data
         void System.ComponentModel.IBindingListView.RemoveFilter() { }
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
         string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
-#nullable enable
         public System.Data.DataTable ToTable() { throw null; }
         public System.Data.DataTable ToTable(bool distinct, params string[] columnNames) { throw null; }
         public System.Data.DataTable ToTable(string? tableName) { throw null; }
@@ -1078,17 +1068,15 @@ namespace System.Data
         bool System.Collections.IList.IsFixedSize { get { throw null; } }
         bool System.Collections.IList.IsReadOnly { get { throw null; } }
         object? System.Collections.IList.this[int index] { get { throw null; } set { } }
-#nullable disable
         bool System.ComponentModel.IBindingList.AllowEdit { get { throw null; } }
         bool System.ComponentModel.IBindingList.AllowNew { get { throw null; } }
         bool System.ComponentModel.IBindingList.AllowRemove { get { throw null; } }
         bool System.ComponentModel.IBindingList.IsSorted { get { throw null; } }
         System.ComponentModel.ListSortDirection System.ComponentModel.IBindingList.SortDirection { get { throw null; } }
-        System.ComponentModel.PropertyDescriptor System.ComponentModel.IBindingList.SortProperty { get { throw null; } }
+        System.ComponentModel.PropertyDescriptor? System.ComponentModel.IBindingList.SortProperty { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsChangeNotification { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsSearching { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsSorting { get { throw null; } }
-#nullable enable
         public event System.ComponentModel.ListChangedEventHandler? ListChanged { add { } remove { } }
         public System.Data.DataView CreateDataView(System.Data.DataTable table) { throw null; }
         protected virtual void OnListChanged(System.ComponentModel.ListChangedEventArgs e) { }
@@ -1102,16 +1090,14 @@ namespace System.Data
         void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
-#nullable disable
         void System.ComponentModel.IBindingList.AddIndex(System.ComponentModel.PropertyDescriptor property) { }
-        object System.ComponentModel.IBindingList.AddNew() { throw null; }
+        object? System.ComponentModel.IBindingList.AddNew() { throw null; }
         void System.ComponentModel.IBindingList.ApplySort(System.ComponentModel.PropertyDescriptor property, System.ComponentModel.ListSortDirection direction) { }
         int System.ComponentModel.IBindingList.Find(System.ComponentModel.PropertyDescriptor property, object key) { throw null; }
         void System.ComponentModel.IBindingList.RemoveIndex(System.ComponentModel.PropertyDescriptor property) { }
         void System.ComponentModel.IBindingList.RemoveSort() { }
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
         string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
-#nullable enable
         protected virtual void TableCollectionChanged(object sender, System.ComponentModel.CollectionChangeEventArgs e) { }
     }
     [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataViewRowStateEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
@@ -1309,8 +1295,10 @@ namespace System.Data
         System.Data.MissingSchemaAction MissingSchemaAction { get; set; }
         System.Data.ITableMappingCollection TableMappings { get; }
         int Fill(System.Data.DataSet dataSet);
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType);
         System.Data.IDataParameter[] GetFillParameters();
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         int Update(System.Data.DataSet dataSet);
     }
     public partial interface IDataParameter
@@ -1357,6 +1345,7 @@ namespace System.Data
         System.DateTime GetDateTime(int i);
         decimal GetDecimal(int i);
         double GetDouble(int i);
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         System.Type GetFieldType(int i);
         float GetFloat(int i);
         System.Guid GetGuid(int i);
@@ -1756,7 +1745,7 @@ namespace System.Data.Common
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool ContinueUpdateOnError { get { throw null; } set { } }
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
-        public System.Data.LoadOption FillLoadOption { get { throw null; } set { } }
+        public System.Data.LoadOption FillLoadOption { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.MissingMappingAction.Passthrough)]
         public System.Data.MissingMappingAction MissingMappingAction { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.MissingSchemaAction.Add)]
@@ -1775,8 +1764,11 @@ namespace System.Data.Common
         protected virtual int Fill(System.Data.DataSet dataSet, string srcTable, System.Data.IDataReader dataReader, int startRecord, int maxRecords) { throw null; }
         protected virtual int Fill(System.Data.DataTable dataTable, System.Data.IDataReader dataReader) { throw null; }
         protected virtual int Fill(System.Data.DataTable[] dataTables, System.Data.IDataReader dataReader, int startRecord, int maxRecords) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("dataReader's schema table types cannot be statically analyzed.")]
         protected virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, string srcTable, System.Data.IDataReader dataReader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("dataReader's schema table types cannot be statically analyzed.")]
         protected virtual System.Data.DataTable? FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDataReader dataReader) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public virtual System.Data.IDataParameter[] GetFillParameters() { throw null; }
@@ -1789,6 +1781,7 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual bool ShouldSerializeFillLoadOption() { throw null; }
         protected virtual bool ShouldSerializeTableMappings() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public virtual int Update(System.Data.DataSet dataSet) { throw null; }
     }
     public sealed partial class DataColumnMapping : System.MarshalByRefObject, System.Data.IColumnMapping, System.ICloneable
@@ -2197,24 +2190,24 @@ namespace System.Data.Common
         void System.Collections.IDictionary.Remove(object keyword) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         System.ComponentModel.AttributeCollection System.ComponentModel.ICustomTypeDescriptor.GetAttributes() { throw null; }
-        string System.ComponentModel.ICustomTypeDescriptor.GetClassName() { throw null; }
-        string System.ComponentModel.ICustomTypeDescriptor.GetComponentName() { throw null; }
+        string? System.ComponentModel.ICustomTypeDescriptor.GetClassName() { throw null; }
+        string? System.ComponentModel.ICustomTypeDescriptor.GetComponentName() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         System.ComponentModel.TypeConverter System.ComponentModel.ICustomTypeDescriptor.GetConverter() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
-        System.ComponentModel.EventDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultEvent() { throw null; }
+        System.ComponentModel.EventDescriptor? System.ComponentModel.ICustomTypeDescriptor.GetDefaultEvent() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
-        System.ComponentModel.PropertyDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultProperty() { throw null; }
+        System.ComponentModel.PropertyDescriptor? System.ComponentModel.ICustomTypeDescriptor.GetDefaultProperty() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
-        object System.ComponentModel.ICustomTypeDescriptor.GetEditor(System.Type editorBaseType) { throw null; }
+        object? System.ComponentModel.ICustomTypeDescriptor.GetEditor(System.Type editorBaseType) { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[] attributes) { throw null; }
+        System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[]? attributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[] attributes) { throw null; }
-        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
+        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[]? attributes) { throw null; }
+        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd) { throw null; }
         public override string ToString() { throw null; }
         public virtual bool TryGetValue(string keyword, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? value) { throw null; }
     }
@@ -2256,10 +2249,15 @@ namespace System.Data.Common
         protected virtual int Fill(System.Data.DataTable dataTable, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
         protected virtual int Fill(System.Data.DataTable[] dataTables, int startRecord, int maxRecords, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
         public int Fill(int startRecord, int maxRecords, params System.Data.DataTable[] dataTables) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public override System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from command) schema table types cannot be statically analyzed.")]
         protected virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, System.Data.IDbCommand command, string srcTable, System.Data.CommandBehavior behavior) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, string srcTable) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public System.Data.DataTable? FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from command) schema table types cannot be statically analyzed.")]
         protected virtual System.Data.DataTable? FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
         protected virtual System.Data.IDataParameter GetBatchedParameter(int commandIdentifier, int parameterIndex) { throw null; }
         protected virtual bool GetBatchedRecordsAffected(int commandIdentifier, out int recordsAffected, out System.Exception? error) { throw null; }
@@ -2270,10 +2268,15 @@ namespace System.Data.Common
         protected virtual void OnRowUpdating(System.Data.Common.RowUpdatingEventArgs value) { }
         object System.ICloneable.Clone() { throw null; }
         protected virtual void TerminateBatching() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public int Update(System.Data.DataRow[] dataRows) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         protected virtual int Update(System.Data.DataRow[] dataRows, System.Data.Common.DataTableMapping tableMapping) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public override int Update(System.Data.DataSet dataSet) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public int Update(System.Data.DataSet dataSet, string srcTable) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public int Update(System.Data.DataTable dataTable) { throw null; }
     }
     public abstract partial class DbDataReader : System.MarshalByRefObject, System.Collections.IEnumerable, System.Data.IDataReader, System.Data.IDataRecord, System.IDisposable, System.IAsyncDisposable
@@ -2377,7 +2380,6 @@ namespace System.Data.Common
         public abstract object GetValue(int i);
         public abstract int GetValues(object[] values);
         public abstract bool IsDBNull(int i);
-#nullable disable
         System.ComponentModel.AttributeCollection System.ComponentModel.ICustomTypeDescriptor.GetAttributes() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetClassName() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetComponentName() { throw null; }
@@ -2391,13 +2393,12 @@ namespace System.Data.Common
         object System.ComponentModel.ICustomTypeDescriptor.GetEditor(System.Type editorBaseType) { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[] attributes) { throw null; }
+        System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[]? attributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[] attributes) { throw null; }
-        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
-#nullable enable
+        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[]? attributes) { throw null; }
+        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd) { throw null; }
     }
     public abstract partial class DbDataSourceEnumerator
     {

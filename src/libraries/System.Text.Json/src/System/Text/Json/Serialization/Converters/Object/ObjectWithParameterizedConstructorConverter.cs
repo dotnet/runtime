@@ -32,7 +32,12 @@ namespace System.Text.Json.Serialization.Converters
 
                 ReadConstructorArguments(ref state, ref reader, options);
 
-                obj = CreateObject(ref state.Current);
+                obj = (T)CreateObject(ref state.Current);
+
+                if (obj is IJsonOnDeserializing onDeserializing)
+                {
+                    onDeserializing.OnDeserializing();
+                }
 
                 if (argumentState.FoundPropertyCount > 0)
                 {
@@ -91,7 +96,12 @@ namespace System.Text.Json.Serialization.Converters
                     return false;
                 }
 
-                obj = CreateObject(ref state.Current);
+                obj = (T)CreateObject(ref state.Current);
+
+                if (obj is IJsonOnDeserializing onDeserializing)
+                {
+                    onDeserializing.OnDeserializing();
+                }
 
                 if (argumentState.FoundPropertyCount > 0)
                 {
@@ -128,6 +138,17 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
+            if (obj is IJsonOnDeserialized onDeserialized)
+            {
+                onDeserialized.OnDeserialized();
+            }
+
+            EndRead(ref state);
+
+            // Unbox
+            Debug.Assert(obj != null);
+            value = (T)obj;
+
             // Check if we are trying to build the sorted cache.
             if (state.Current.PropertyRefCache != null)
             {
@@ -139,10 +160,6 @@ namespace System.Text.Json.Serialization.Converters
             {
                 state.Current.JsonTypeInfo.UpdateSortedParameterCache(ref state.Current);
             }
-
-            EndRead(ref state);
-
-            value = (T)obj;
 
             return true;
         }

@@ -316,12 +316,12 @@ namespace System
             => (short)BitOperations.PopCount((ushort)value);
 
         [RequiresPreviewFeatures]
-        static short IBinaryInteger<short>.RotateLeft(short value, short rotateAmount)
-            => (short)((value << (rotateAmount & 15)) | (value >> ((16 - rotateAmount) & 15)));
+        static short IBinaryInteger<short>.RotateLeft(short value, int rotateAmount)
+            => (short)((value << (rotateAmount & 15)) | ((ushort)value >> ((16 - rotateAmount) & 15)));
 
         [RequiresPreviewFeatures]
-        static short IBinaryInteger<short>.RotateRight(short value, short rotateAmount)
-            => (short)((value >> (rotateAmount & 15)) | (value << ((16 - rotateAmount) & 15)));
+        static short IBinaryInteger<short>.RotateRight(short value, int rotateAmount)
+            => (short)(((ushort)value >> (rotateAmount & 15)) | (value << ((16 - rotateAmount) & 15)));
 
         [RequiresPreviewFeatures]
         static short IBinaryInteger<short>.TrailingZeroCount(short value)
@@ -391,11 +391,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static short IDecrementOperators<short>.operator --(short value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked short IDecrementOperators<short>.operator --(short value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -427,11 +427,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static short IIncrementOperators<short>.operator ++(short value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked short IIncrementOperators<short>.operator ++(short value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue
@@ -565,7 +565,7 @@ namespace System
         {
             if (typeof(TOther) == typeof(byte))
             {
-                return (short)(object)value;
+                return (byte)(object)value;
             }
             else if (typeof(TOther) == typeof(char))
             {

@@ -33,6 +33,9 @@ namespace System.Text.Json.SourceGeneration
 
         public ClassType ClassType { get; private set; }
 
+        public bool ImplementsIJsonOnSerialized { get; private set; }
+        public bool ImplementsIJsonOnSerializing { get; private set; }
+
         public bool IsValueType { get; private set; }
 
         public bool CanBeNull { get; private set; }
@@ -67,7 +70,9 @@ namespace System.Text.Json.SourceGeneration
             TypeGenerationSpec? collectionValueTypeMetadata,
             ObjectConstructionStrategy constructionStrategy,
             TypeGenerationSpec? nullableUnderlyingTypeMetadata,
-            string? converterInstantiationLogic)
+            string? converterInstantiationLogic,
+            bool implementsIJsonOnSerialized,
+            bool implementsIJsonOnSerializing)
         {
             GenerationMode = generationMode;
             TypeRef = $"global::{typeRef}";
@@ -84,6 +89,8 @@ namespace System.Text.Json.SourceGeneration
             ConstructionStrategy = constructionStrategy;
             NullableUnderlyingTypeMetadata = nullableUnderlyingTypeMetadata;
             ConverterInstantiationLogic = converterInstantiationLogic;
+            ImplementsIJsonOnSerialized = implementsIJsonOnSerialized;
+            ImplementsIJsonOnSerializing = implementsIJsonOnSerializing;
         }
 
         private bool FastPathIsSupported()

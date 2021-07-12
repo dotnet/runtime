@@ -4,15 +4,12 @@
     "Microsoft.NET.Workload.Emscripten": "${EmscriptenVersion}"
   },
   "workloads": {
-    "microsoft-net-sdk-blazorwebassembly-aot": {
-      "description": "Browser Runtime native performance tools",
+    "wasm-tools": {
+      "description": ".NET WebAssembly build tools",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Sdk",
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm",
-        "Microsoft.NET.Runtime.Emscripten.Node",
-        "Microsoft.NET.Runtime.Emscripten.Python",
-        "Microsoft.NET.Runtime.Emscripten.Sdk"
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
@@ -83,17 +80,17 @@
       "abstract": true,
       "description": "Shared native build tooling for Mono runtime",
       "packs": [
-        "Microsoft.NET.Runtime.RuntimeConfigParser.Task",
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
+        "Microsoft.NET.Runtime.MonoTargets.Sdk",
       ],
     }
   },
   "packs": {
-    "Microsoft.NET.Runtime.RuntimeConfigParser.Task": {
+    "Microsoft.NET.Runtime.MonoAOTCompiler.Task": {
       "kind": "Sdk",
       "version": "${PackageVersion}"
     },
-    "Microsoft.NET.Runtime.MonoAOTCompiler.Task": {
+    "Microsoft.NET.Runtime.MonoTargets.Sdk": {
       "kind": "Sdk",
       "version": "${PackageVersion}"
     },

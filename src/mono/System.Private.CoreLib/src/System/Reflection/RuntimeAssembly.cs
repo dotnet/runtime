@@ -253,9 +253,7 @@ namespace System.Reflection
 
         public override AssemblyName GetName(bool copiedName)
         {
-#pragma warning disable IL3002 // Suppressing for now. See https://github.com/dotnet/runtime/issues/54835
-            return AssemblyName.Create(_mono_assembly, CodeBase);
-#pragma warning restore IL3002
+            return AssemblyName.Create(_mono_assembly, get_code_base (this));
         }
 
         [RequiresUnreferencedCode("Types might be removed")]

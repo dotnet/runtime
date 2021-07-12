@@ -24,8 +24,6 @@ namespace Microsoft.Win32.SafeHandles
 
         internal bool CanSeek => !IsClosed && GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
 
-        internal bool IsPipe => GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE;
-
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
         internal static unsafe SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)

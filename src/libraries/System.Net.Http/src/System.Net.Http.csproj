@@ -53,7 +53,6 @@
     <Compile Include="System\Net\Http\HttpResponseMessage.cs" />
     <Compile Include="System\Net\Http\HttpRuleParser.cs" />
     <Compile Include="System\Net\Http\HttpTelemetry.cs" />
-    <Compile Include="System\Net\Http\HttpUtilities.cs" />
     <Compile Include="System\Net\Http\HttpVersionPolicy.cs" />
     <Compile Include="System\Net\Http\MessageProcessingHandler.cs" />
     <Compile Include="System\Net\Http\MultipartContent.cs" />
@@ -62,6 +61,7 @@
     <Compile Include="System\Net\Http\ReadOnlyMemoryContent.cs" />
     <Compile Include="System\Net\Http\RequestRetryType.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpMessageHandlerStage.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\RuntimeSettingParser.cs" />
     <Compile Include="System\Net\Http\StreamContent.cs" />
     <Compile Include="System\Net\Http\StreamToStreamCopy.cs" />
     <Compile Include="System\Net\Http\StringContent.cs" />
@@ -142,7 +142,7 @@
     <Compile Include="System\Net\Http\Headers\KnownHeader.Http2And3.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.NtAuth.cs" />
+    <Compile Condition="'$(TargetstvOS)' != 'true'" Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.NtAuth.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingWriteStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectHelper.cs" />
@@ -160,6 +160,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2ProtocolException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Stream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamWindowManager.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3Connection.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ConnectionException.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ProtocolException.cs" />
@@ -178,6 +179,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentWriteStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpUtilities.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\IHttpTrace.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\MultiProxy.cs" />
@@ -186,11 +188,10 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionContext.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpHandler.cs" />
     <Compile Include="System\Net\Http\HttpTelemetry.AnyOS.cs" />
-    <Compile Include="System\Net\Http\HttpUtilities.AnyOS.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocksHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocksException.cs" />
-    <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
+    <Compile Condition="'$(TargetstvOS)' != 'true'" Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
              Link="Common\System\Net\NTAuthentication.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs"
              Link="Common\System\Net\ContextFlagsPal.cs" />
@@ -322,28 +323,37 @@
              Link="Common\System\Net\Security\Unix\SafeFreeCredentials.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
              Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs"
-             Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs"
-             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeNegoCredentials.cs"
-             Link="Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SecChannelBindings.cs"
              Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs"
-             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.GssFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.Status.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetstvOS)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs"
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs"
+             Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteNegoContext.cs"
              Link="Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeNegoCredentials.cs"
+             Link="Common\System\Net\Security\Unix\SafeFreeNegoCredentials.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs"
+             Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetstvOS)' == 'true'">
+    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.NtAuth.tvOS.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.PlatformNotSupported.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\GssSafeHandles.PlatformNotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs"
+             Link="Common\System\Net\Security\NegotiateStreamPal.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
@@ -495,6 +505,7 @@
   <ItemGroup>
     <Compile Include="System\Net\Http\DiagnosticsHandler.cs" />
     <Compile Include="System\Net\Http\DiagnosticsHandlerLoggingStrings.cs" />
+    <Compile Include="System\Net\Http\GlobalHttpSettings.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpPlaintextStreamFilterContext.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs"
              Link="Common\System\Threading\Tasks\TaskCompletionSourceWithCancellation.cs" />
@@ -611,7 +622,6 @@
     <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\HttpTelemetry.Browser.cs" />
-    <Compile Include="System\Net\Http\BrowserHttpHandler\HttpUtilities.Browser.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
              Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
   </ItemGroup>

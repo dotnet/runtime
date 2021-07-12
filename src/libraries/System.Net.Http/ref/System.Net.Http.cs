@@ -37,7 +37,12 @@ namespace System.Net.Http
     }
     public partial class FormUrlEncodedContent : System.Net.Http.ByteArrayContent
     {
-        public FormUrlEncodedContent(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string?, string?>> nameValueCollection) : base (default(byte[])) { }
+        public FormUrlEncodedContent(
+            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<
+                #nullable disable
+                string, string
+                #nullable restore
+            >> nameValueCollection) : base (default(byte[])) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public delegate System.Text.Encoding? HeaderEncodingSelector<TContext>(string headerName, TContext context);
@@ -353,6 +358,7 @@ namespace System.Net.Http
     public sealed partial class SocketsHttpHandler : System.Net.Http.HttpMessageHandler
     {
         public SocketsHttpHandler() { }
+        public int InitialHttp2StreamWindowSize { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("browser")]
         public static bool IsSupported { get { throw null; } }
         public bool AllowAutoRedirect { get { throw null; } set { } }

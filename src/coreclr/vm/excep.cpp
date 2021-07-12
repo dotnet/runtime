@@ -6699,14 +6699,12 @@ AdjustContextForJITHelpers(
 
     PCODE ip = GetIP(pContext);
 
-#ifdef FEATURE_WRITEBARRIER_COPY
     if (IsIPInWriteBarrierCodeCopy(ip))
     {
         // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
         ip = AdjustWriteBarrierIP(ip);
         SetIP(pContext, ip);
     }
-#endif // FEATURE_WRITEBARRIER_COPY
 
 #ifdef FEATURE_DATABREAKPOINT
 

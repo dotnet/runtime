@@ -46,11 +46,11 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Announces to the component change service that a particular component has changed.
         /// </summary>
-        void OnComponentChanged(object component, MemberDescriptor member, object oldValue, object newValue);
+        void OnComponentChanged(object component, MemberDescriptor? member, object? oldValue, object? newValue);
 
         /// <summary>
         /// Announces to the component change service that a particular component is changing.
         /// </summary>
-        void OnComponentChanging(object component, MemberDescriptor member);
+        void OnComponentChanging(object component, MemberDescriptor? member);
     }
 }

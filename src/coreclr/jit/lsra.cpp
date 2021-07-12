@@ -196,9 +196,9 @@ BasicBlock::weight_t LinearScan::getWeight(RefPosition* refPos)
             if (refPos->getInterval()->isSpilled)
             {
                 // Decrease the weight if the interval has already been spilled.
-                if (varDsc->lvLiveInOutOfHndlr)
+                if (varDsc->lvLiveInOutOfHndlr || refPos->getInterval()->firstRefPosition->singleDefSpill)
                 {
-                    // An EH var is always spilled at defs, and we'll decrease the weight by half,
+                    // An EH-var/single-def is always spilled at defs, and we'll decrease the weight by half,
                     // since only the reload is needed.
                     weight = weight / 2;
                 }
@@ -1490,7 +1490,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
     // references when using the general GC encoding.
     unsigned lclNum = (unsigned)(varDsc - compiler->lvaTable);
-    if (varDsc->lvAddrExposed || !varDsc->IsEnregisterable() ||
+    if (varDsc->lvAddrExposed || !varDsc->IsEnregisterableType() ||
         (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT)))
     {
 #ifdef DEBUG
@@ -1794,7 +1794,7 @@ void LinearScan::identifyCandidates()
 
             if (varDsc->lvLiveInOutOfHndlr)
             {
-                newInt->isWriteThru = varDsc->lvEhWriteThruCandidate;
+                newInt->isWriteThru = varDsc->lvSingleDefRegCandidate;
                 setIntervalAsSpilled(newInt);
             }
 
@@ -3273,6 +3273,24 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
             fromRefPosition->spillAfter = true;
         }
     }
+
+    // Only handle the singledef intervals whose firstRefPosition is RefTypeDef and is not yet marked as spillAfter.
+    // The singledef intervals whose firstRefPositions are already marked as spillAfter, no need to mark them as
+    // singleDefSpill because they will always get spilled at firstRefPosition.
+    // This helps in spilling the singleDef at definition
+    //
+    // Note: Only mark "singleDefSpill" for those intervals who ever get spilled. The intervals that are never spilled
+    // will not be marked as "singleDefSpill" and hence won't get spilled at the first definition.
+    if (interval->isSingleDef && RefTypeIsDef(interval->firstRefPosition->refType) &&
+        !interval->firstRefPosition->spillAfter)
+    {
+        // TODO-CQ: Check if it is beneficial to spill at def, meaning, if it is a hot block don't worry about
+        // doing the spill. Another option is to track number of refpositions and a interval has more than X
+        // refpositions
+        // then perform this optimization.
+        interval->firstRefPosition->singleDefSpill = true;
+    }
+
     assert(toRefPosition != nullptr);
 
 #ifdef DEBUG
@@ -3955,16 +3973,16 @@ void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap in
 //
 // Arguments:
 //    currentBlock   - the BasicBlock we are about to allocate registers for
-//    allocationPass - true if we are currently allocating registers (versus writing them back)
 //
 // Return Value:
 //    None
 //
 // Notes:
-//    During the allocation pass, we use the outVarToRegMap of the selected predecessor to
-//    determine the lclVar locations for the inVarToRegMap.
-//    During the resolution (write-back) pass, we only modify the inVarToRegMap in cases where
-//    a lclVar was spilled after the block had been completed.
+//    During the allocation pass (allocationPassComplete = false), we use the outVarToRegMap
+//    of the selected predecessor to determine the lclVar locations for the inVarToRegMap.
+//    During the resolution (write-back when allocationPassComplete = true) pass, we only
+//    modify the inVarToRegMap in cases where a lclVar was spilled after the block had been
+//    completed.
 void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 {
     // If we have no register candidates we should only call this method during allocation.
@@ -5915,7 +5933,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             assert(currentRefPosition->refType == RefTypeExpUse);
         }
     }
-    else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType) &&
+    else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType) && (treeNode != nullptr) &&
              (!treeNode->IsMultiReg() || treeNode->gtGetOp1()->IsMultiRegNode()))
     {
         // In the case of a pure def, don't bother spilling - just assign it to the
@@ -5926,10 +5944,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         assert(interval->isSpilled);
         varDsc->SetRegNum(REG_STK);
         interval->physReg = REG_NA;
-        if (treeNode != nullptr)
-        {
-            writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
-        }
+        writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
     }
     else // Not reload and Not pure-def that's spillAfter
     {
@@ -6017,6 +6032,27 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
                     treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
                 }
             }
+        }
+
+        if (currentRefPosition->singleDefSpill && (treeNode != nullptr))
+        {
+            // This is the first (and only) def of a single-def var (only defs are marked 'singleDefSpill').
+            // Mark it as GTF_SPILL, so it is spilled immediately to the stack at definition and
+            // GTF_SPILLED, so the variable stays live in the register.
+            //
+            // TODO: This approach would still create the resolution moves but during codegen, will check for
+            // `lvSpillAtSingleDef` to decide whether to generate spill or not. In future, see if there is some
+            // better way to avoid resolution moves, perhaps by updating the varDsc->SetRegNum(REG_STK) in this
+            // method?
+            treeNode->gtFlags |= GTF_SPILL;
+            treeNode->gtFlags |= GTF_SPILLED;
+
+            if (treeNode->IsMultiReg())
+            {
+                treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
+            }
+
+            varDsc->lvSpillAtSingleDef = true;
         }
     }
 
@@ -8936,6 +8972,10 @@ void RefPosition::dump(LinearScan* linearScan)
     {
         printf(" spillAfter");
     }
+    if (this->singleDefSpill)
+    {
+        printf(" singleDefSpill");
+    }
     if (this->writeThru)
     {
         printf(" writeThru");
@@ -9678,12 +9718,12 @@ void LinearScan::dumpLsraAllocationEvent(
 
         case LSRA_EVENT_DONE_KILL_GC_REFS:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("Done       ");
+            printf("Done          ");
             break;
 
         case LSRA_EVENT_NO_GC_KILLS:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("None       ");
+            printf("None          ");
             break;
 
         // Block boundaries
@@ -11247,11 +11287,12 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
         spillCandidates &= ~spillCandidateBit;
         regNumber  spillCandidateRegNum    = genRegNumFromMask(spillCandidateBit);
         RegRecord* spillCandidateRegRecord = &linearScan->physRegs[spillCandidateRegNum];
+        Interval*  assignedInterval        = spillCandidateRegRecord->assignedInterval;
 
         // Can and should the interval in this register be spilled for this one,
         // if we don't find a better alternative?
         if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == currentLocation) &&
-            !spillCandidateRegRecord->assignedInterval->getNextRefPosition()->RegOptional())
+            !assignedInterval->getNextRefPosition()->RegOptional())
         {
             continue;
         }
@@ -11261,17 +11302,15 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
         }
 
         float        currentSpillWeight = 0;
-        RefPosition* recentRefPosition  = spillCandidateRegRecord->assignedInterval != nullptr
-                                             ? spillCandidateRegRecord->assignedInterval->recentRefPosition
-                                             : nullptr;
-        if ((recentRefPosition != nullptr) && (recentRefPosition->RegOptional()) &&
-            !(currentInterval->isLocalVar && recentRefPosition->IsActualRef()))
+        RefPosition* recentRefPosition  = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
+        if ((recentRefPosition != nullptr) &&
+            (recentRefPosition->RegOptional() && !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
         {
             // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
             // is not an actual ref. In those cases, we will reload in future (next) refPosition.
             // For such cases, consider the spill cost of next refposition.
             // See notes in "spillInterval()".
-            RefPosition* reloadRefPosition = spillCandidateRegRecord->assignedInterval->getNextRefPosition();
+            RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
             if (reloadRefPosition != nullptr)
             {
                 currentSpillWeight = linearScan->getWeight(reloadRefPosition);
