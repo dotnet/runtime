@@ -456,12 +456,12 @@ namespace Microsoft.Extensions.Primitives
 
             if (HasValue)
             {
-                if (start < 0 || start > Length)
+                if ((uint)start > (uint)Length)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
                 }
 
-                if (count < 0 || start + count > Length)
+                if ((uint)count > (uint)(Length - start))
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
                 }
@@ -519,12 +519,12 @@ namespace Microsoft.Extensions.Primitives
 
             if (HasValue)
             {
-                if (startIndex < 0 || startIndex > Length)
+                if ((uint)startIndex > (uint)Length)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
                 }
 
-                if (count < 0 || startIndex + count > Length)
+                if ((uint)count > (uint)(Length - startIndex))
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
                 }
