@@ -1388,6 +1388,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     else if (FgStack::IsArgument(arg0) && FgStack::IsConstantOrConstArg(arg1, impInlineInfo))
                     {
                         // "Arg op CNS" --> keep arg0 in the stack for the next ops
+                        pushedStack.Push(arg0);
                         handled = true;
                         compInlineResult->Note(InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS);
                     }
@@ -1396,7 +1397,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     else if (FgStack::IsArgument(arg1) && FgStack::IsConstantOrConstArg(arg0, impInlineInfo))
                     {
                         // "CNS op ARG" --> keep arg1 in the stack for the next ops
-                        pushedStack.Push(arg1);
                         handled = true;
                         compInlineResult->Note(InlineObservation::CALLEE_BINARY_EXRP_WITH_CNS);
                     }
@@ -1409,6 +1409,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         {
                             compInlineResult->Note(InlineObservation::CALLSITE_DIV_BY_CNS);
                         }
+                        pushedStack.Push(arg0);
                         handled = true;
                     }
                 }
