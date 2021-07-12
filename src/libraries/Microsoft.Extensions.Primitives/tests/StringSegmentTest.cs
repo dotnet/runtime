@@ -1266,6 +1266,17 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        public void IndexOfAny_StartOverflowsWithOffset_OutOfRangeThrows()
+        {
+            // Arrange
+            StringSegment segment = new StringSegment("12345", 0, 1);
+
+            // Act & Assert
+            ArgumentOutOfRangeException exception = Assert.Throws<ArgumentOutOfRangeException>(() => segment.IndexOfAny(new []{ '5' }, 2, 3));
+            Assert.Equal("start", exception.ParamName);
+        }
+
+        [Fact]
         public void LastIndexOf_ComputesIndex_RelativeToTheCurrentSegment()
         {
             // Arrange
