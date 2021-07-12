@@ -45,32 +45,14 @@ namespace Microsoft.Extensions.Configuration
             {
                 lock (_providerLock)
                 {
-                    for (int i = _providers.Count - 1; i >= 0; i--)
-                    {
-                        var provider = _providers[i];
-
-                        if (provider.TryGet(key, out string value))
-                        {
-                            return value;
-                        }
-                    }
-
-                    return null;
+                    return ConfigurationRoot.GetConfiguration(_providers, key);
                 }
             }
             set
             {
                 lock (_providerLock)
                 {
-                    if (_providers.Count == 0)
-                    {
-                        throw new InvalidOperationException(SR.Error_NoSources);
-                    }
-
-                    foreach (var provider in _providers)
-                    {
-                        provider.Set(key, value);
-                    }
+                    ConfigurationRoot.SetConfiguration(_providers, key, value);
                 }
             }
         }
@@ -84,12 +66,7 @@ namespace Microsoft.Extensions.Configuration
             lock (_providerLock)
             {
                 // ToList() to eagerly evaluate inside lock.
-                return _providers
-                    .Aggregate(Enumerable.Empty<string>(),
-                        static (seed, source) => source.GetChildKeys(seed, parentPath: null))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .Select(GetSection)
-                    .ToList();
+                return this.GetChildrenImplementation(null).ToList();
             }
         }
 
