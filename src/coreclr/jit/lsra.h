@@ -1,3 +1,4 @@
+
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 /*****************************************************************************/
@@ -1927,6 +1928,7 @@ public:
         , isPartiallySpilled(false)
 #endif
         , isWriteThru(false)
+        , isSingleDef(false)
 #ifdef DEBUG
         , intervalIndex(0)
 #endif
@@ -2021,6 +2023,9 @@ public:
 
     // True if this interval is associated with a lclVar that is written to memory at each definition.
     bool isWriteThru : 1;
+
+    // True if this interval has a single definition.
+    bool isSingleDef : 1;
 
 #ifdef DEBUG
     unsigned int intervalIndex;
@@ -2221,6 +2226,10 @@ public:
     // Spill and Copy info
     //   reload indicates that the value was spilled, and must be reloaded here.
     //   spillAfter indicates that the value is spilled here, so a spill must be added.
+    //   singleDefSpill indicates that it is associated with a single-def var and if it
+    //      is decided to get spilled, it will be spilled at firstRefPosition def. That
+    //      way, the the value of stack will always be up-to-date and no more spills or
+    //      resolutions (from reg to stack) will be needed for such single-def var.
     //   copyReg indicates that the value needs to be copied to a specific register,
     //      but that it will also retain its current assigned register.
     //   moveReg indicates that the value needs to be moved to a different register,
@@ -2239,6 +2248,7 @@ public:
 
     unsigned char reload : 1;
     unsigned char spillAfter : 1;
+    unsigned char singleDefSpill : 1;
     unsigned char writeThru : 1; // true if this var is defined in a register and also spilled. spillAfter must NOT be
                                  // set.
 
@@ -2286,6 +2296,7 @@ public:
         , lastUse(false)
         , reload(false)
         , spillAfter(false)
+        , singleDefSpill(false)
         , writeThru(false)
         , copyReg(false)
         , moveReg(false)
@@ -2444,7 +2455,7 @@ public:
         return *this;
     }
 
-    void dump();
+    void dump(LinearScan* linearScan);
 #endif // DEBUG
 };
 

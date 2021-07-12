@@ -500,7 +500,13 @@ namespace {_currentContext.ContextType.Namespace}
 
                 if (typeMetadata.GenerateSerializationLogic)
                 {
-                    serializeFuncSource = GenerateFastPathFuncForObject(typeCompilableName, serializeMethodName, typeMetadata.CanBeNull, properties);
+                    serializeFuncSource = GenerateFastPathFuncForObject(
+                        typeCompilableName,
+                        serializeMethodName,
+                        typeMetadata.CanBeNull,
+                        typeMetadata.ImplementsIJsonOnSerialized,
+                        typeMetadata.ImplementsIJsonOnSerializing,
+                        properties);
                     serializeFuncNamedArg = $@"serializeFunc: {serializeMethodName}";
                 }
                 else
@@ -635,17 +641,25 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                 string typeInfoTypeRef,
                 string serializeMethodName,
                 bool canBeNull,
+                bool implementsIJsonOnSerialized,
+                bool implementsIJsonOnSerializing,
                 List<PropertyGenerationSpec>? properties)
             {
-                JsonSerializerOptionsAttribute options = _currentContext.SerializerOptions;
+                JsonSourceGenerationOptionsAttribute options = _currentContext.GenerationOptions;
 
                 // Add the property names to the context-wide cache; we'll generate the source to initialize them at the end of generation.
-                string[] runtimePropNames = GetRuntimePropNames(properties, options.NamingPolicy);
+                string[] runtimePropNames = GetRuntimePropNames(properties, options.PropertyNamingPolicy);
                 _currentContext.RuntimePropertyNames.UnionWith(runtimePropNames);
 
                 StringBuilder sb = new();
 
                 // Begin method definition
+                if (implementsIJsonOnSerializing)
+                {
+                    sb.Append($@"(({IJsonOnSerializingFullName}){ValueVarName}).OnSerializing();");
+                    sb.Append($@"{Environment.NewLine}    ");
+                }
+
                 sb.Append($@"{WriterVarName}.WriteStartObject();");
 
                 if (properties != null)
@@ -732,6 +746,12 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                 sb.Append($@"
 
         {WriterVarName}.WriteEndObject();");
+
+                if (implementsIJsonOnSerialized)
+                {
+                    sb.Append($@"{Environment.NewLine}    ");
+                    sb.Append($@"(({IJsonOnSerializedFullName}){ValueVarName}).OnSerialized();");
+                };
 
                 return GenerateFastPathFuncForType(serializeMethodName, typeInfoTypeRef, sb.ToString(), canBeNull);
             }
@@ -855,7 +875,7 @@ private static void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName
                 {
                     runtimePropName = jsonPropName;
                 }
-                else if (namingPolicy == JsonKnownNamingPolicy.BuiltInCamelCase)
+                else if (namingPolicy == JsonKnownNamingPolicy.CamelCase)
                 {
                     runtimePropName = JsonNamingPolicy.CamelCase.ConvertName(clrPropName);
                 }
@@ -890,7 +910,7 @@ public {typeInfoPropertyTypeRef} {typeFriendlyName}
 
             private string WrapWithCheckForCustomConverterIfRequired(string source, string typeCompilableName, string typeFriendlyName, string numberHandlingNamedArg)
             {
-                if (_currentContext.SerializerOptions.IgnoreRuntimeCustomConverters)
+                if (_currentContext.GenerationOptions.IgnoreRuntimeCustomConverters)
                 {
                     return source;
                 }
@@ -933,9 +953,9 @@ public {contextTypeName}({JsonSerializerOptionsTypeRef} options) : base(options,
 
             private string GetLogicForDefaultSerializerOptionsInit()
             {
-                JsonSerializerOptionsAttribute options = _currentContext.SerializerOptions;
+                JsonSourceGenerationOptionsAttribute options = _currentContext.GenerationOptions;
 
-                string? namingPolicyInit = options.NamingPolicy == JsonKnownNamingPolicy.BuiltInCamelCase
+                string? namingPolicyInit = options.PropertyNamingPolicy == JsonKnownNamingPolicy.CamelCase
                     ? $@"
             PropertyNamingPolicy = {JsonNamingPolicyTypeRef}.CamelCase"
                     : null;
@@ -953,7 +973,7 @@ private static {JsonSerializerOptionsTypeRef} {DefaultOptionsStaticVarName} {{ g
 
             private string GetFetchLogicForRuntimeSpecifiedCustomConverter()
             {
-                if (_currentContext.SerializerOptions.IgnoreRuntimeCustomConverters)
+                if (_currentContext.GenerationOptions.IgnoreRuntimeCustomConverters)
                 {
                     return "";
                 }

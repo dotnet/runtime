@@ -7,7 +7,7 @@ namespace Internal.Cryptography
 {
     internal sealed partial class RC2Implementation
     {
-        private static ICryptoTransform CreateTransformCore(
+        private static UniversalCryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,

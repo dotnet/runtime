@@ -117,12 +117,6 @@ namespace System.Text.Json
             return IsInRangeInclusive(length, JsonConstants.MinimumDateTimeParseLength, JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsValidDateTimeOffsetParseLength(long length)
-        {
-            return IsInRangeInclusive(length, JsonConstants.MinimumDateTimeParseLength, JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
-        }
-
         /// <summary>
         /// Parse the given UTF-8 <paramref name="source"/> as extended ISO 8601 format.
         /// </summary>

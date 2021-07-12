@@ -177,18 +177,24 @@ namespace System.Threading.Tests
         {
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
 
-            ValueTask<bool> task = timer.WaitForNextTickAsync(new CancellationToken(true));
-            Assert.ThrowsAny<OperationCanceledException>(() => task.Result);
-
             var cts = new CancellationTokenSource();
-            task = timer.WaitForNextTickAsync(cts.Token);
+            ValueTask<bool> task = timer.WaitForNextTickAsync(cts.Token);
             cts.Cancel();
-            Assert.Equal(cts.Token, Assert.ThrowsAny<OperationCanceledException>(() => task.Result).CancellationToken);
 
-            for (int i = 0; i < 10; i++)
+            try
             {
-                Assert.True(await timer.WaitForNextTickAsync());
+                // If the task happens to succeed because the operation completes fast enough
+                // that it beats the cancellation request, then make sure it completed successfully.
+                Assert.True(await task);
             }
+            catch (OperationCanceledException oce)
+            {
+                // Otherwise, it must have been canceled with the relevant token.
+                Assert.Equal(cts.Token, oce.CancellationToken);
+            }
+
+            // We should be able to await the next tick either way.
+            Assert.True(await timer.WaitForNextTickAsync());
         }
 
         private static void WaitForTimerToBeCollected(WeakReference<PeriodicTimer> timer, bool expected)

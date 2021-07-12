@@ -525,7 +525,7 @@ RefPosition* LinearScan::newRefPosition(
            (regRecord->lastRefPosition->refType != theRefType));
     associateRefPosWithInterval(newRP);
 
-    DBEXEC(VERBOSE, newRP->dump());
+    DBEXEC(VERBOSE, newRP->dump(this));
     return newRP;
 }
 
@@ -620,7 +620,13 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
 
     associateRefPosWithInterval(newRP);
 
-    DBEXEC(VERBOSE, newRP->dump());
+    if (RefTypeIsDef(newRP->refType))
+    {
+        assert(theInterval != nullptr);
+        theInterval->isSingleDef = theInterval->firstRefPosition == newRP;
+    }
+
+    DBEXEC(VERBOSE, newRP->dump(this));
     return newRP;
 }
 
@@ -2333,6 +2339,15 @@ void LinearScan::buildIntervals()
             // assert(block->isRunRarely());
         }
 
+        // For frame poisoning we generate code into scratch BB right after prolog since
+        // otherwise the prolog might become too large. In this case we will put the poison immediate
+        // into the scratch register, so it will be killed here.
+        if (compiler->compShouldPoisonFrame() && compiler->fgFirstBBisScratch() && block == compiler->fgFirstBB)
+        {
+            addRefsForPhysRegMask(genRegMask(REG_SCRATCH), currentLoc + 1, RefTypeKill, true);
+            currentLoc += 2;
+        }
+
         LIR::Range& blockRange = LIR::AsRange(block);
         for (GenTree* node : blockRange)
         {
@@ -2593,20 +2608,20 @@ void LinearScan::buildIntervals()
     {
         lsraDumpIntervals("BEFORE VALIDATING INTERVALS");
         dumpRefPositions("BEFORE VALIDATING INTERVALS");
-        validateIntervals();
     }
+    validateIntervals();
+
 #endif // DEBUG
 }
 
 #ifdef DEBUG
 //------------------------------------------------------------------------
-// validateIntervals: A DEBUG-only method that checks that the lclVar RefPositions
-//                    do not reflect uses of undefined values
+// validateIntervals: A DEBUG-only method that checks that:
+//      - the lclVar RefPositions do not reflect uses of undefined values
+//      - A singleDef interval should have just first RefPosition as RefTypeDef.
 //
-// Notes: If an undefined use is encountered, it merely prints a message.
-//
-// TODO-Cleanup: This should probably assert, or at least print the message only
-//               when doing a JITDUMP.
+// TODO-Cleanup: If an undefined use is encountered, it merely prints a message
+// but probably assert.
 //
 void LinearScan::validateIntervals()
 {
@@ -2621,19 +2636,29 @@ void LinearScan::validateIntervals()
             Interval* interval = getIntervalForLocalVar(i);
 
             bool defined = false;
-            printf("-----------------\n");
+            JITDUMP("-----------------\n");
             for (RefPosition* ref = interval->firstRefPosition; ref != nullptr; ref = ref->nextRefPosition)
             {
-                ref->dump();
+                if (VERBOSE)
+                {
+                    ref->dump(this);
+                }
                 RefType refType = ref->refType;
                 if (!defined && RefTypeIsUse(refType))
                 {
                     if (compiler->info.compMethodName != nullptr)
                     {
-                        printf("%s: ", compiler->info.compMethodName);
+                        JITDUMP("%s: ", compiler->info.compMethodName);
                     }
-                    printf("LocalVar V%02u: undefined use at %u\n", interval->varNum, ref->nodeLocation);
+                    JITDUMP("LocalVar V%02u: undefined use at %u\n", interval->varNum, ref->nodeLocation);
                 }
+
+                // For single-def intervals, the only the first refposition should be a RefTypeDef
+                if (interval->isSingleDef && RefTypeIsDef(refType))
+                {
+                    assert(ref == interval->firstRefPosition);
+                }
+
                 // Note that there can be multiple last uses if they are on disjoint paths,
                 // so we can't really check the lastUse flag
                 if (ref->lastUse)

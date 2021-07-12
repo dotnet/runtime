@@ -154,7 +154,7 @@ namespace System.Net.Http
                     Debug.Assert(bytesRead > 0);
 
                     // Write that data out to the output stream
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1 || NETCOREAPP
                     await destination.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
 #else
                     await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);

@@ -15,6 +15,10 @@ namespace System.Security.Cryptography.Cng.Tests
         [ConditionalTheory(nameof(SupportsPersistedSymmetricKeys))]
         // AES128-ECB-NoPadding 2 blocks.
         [InlineData(128, 2 * BlockSizeBytes, CipherMode.ECB, PaddingMode.None)]
+        // AES128-ECB-Zeros 2 blocks.
+        [InlineData(128, 2 * BlockSizeBytes, CipherMode.ECB, PaddingMode.Zeros)]
+        // AES128-ECB-Zeros 1.5 blocks.
+        [InlineData(128, BlockSizeBytes + BlockSizeBytes / 2, CipherMode.ECB, PaddingMode.Zeros)]
         // AES128-CBC-NoPadding at 2 blocks
         [InlineData(128, 2 * BlockSizeBytes, CipherMode.CBC, PaddingMode.None)]
         // AES256-CBC-Zeros at 1.5 blocks

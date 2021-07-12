@@ -29,8 +29,9 @@
     <type fullname="System.Diagnostics.DebuggerVisualizerAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+  </assembly>
 
-    <!-- Hot reload attributes-->
+  <assembly fullname="System.Private.CoreLib" feature="System.Reflection.Metadata.MetadataUpdater.IsSupported" featurevalue="false">
     <type fullname="System.Reflection.Metadata.MetadataUpdateHandlerAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>

@@ -20,7 +20,7 @@ namespace System
             return _impl.Value;
         }
 
-        internal bool IsRuntimeImplemented() => this.UnderlyingSystemType is RuntimeType;
+        internal bool IsRuntimeImplemented() => this is RuntimeType;
 
         internal virtual bool IsTypeBuilder() => false;
 
@@ -152,6 +152,7 @@ namespace System
             return left.Equals(right);
         }
 
+        [Intrinsic]
         public static bool operator !=(Type? left, Type? right)
         {
             return !(left == right);

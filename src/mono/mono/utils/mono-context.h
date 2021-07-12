@@ -1076,7 +1076,7 @@ typedef struct {
  * The naming is misleading, the SIGCTX argument should be the platform's context
  * structure (ucontext_c on posix, CONTEXT on windows).
  */
-void mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx);
+MONO_COMPONENT_API void mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx);
 
 /*
  * This will not completely initialize SIGCTX since MonoContext contains less
@@ -1084,6 +1084,6 @@ void mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx);
  * the system, and use this function to override the parts of it which are
  * also in MonoContext.
  */
-void mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx);
+MONO_COMPONENT_API void mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx);
 
 #endif /* __MONO_MONO_CONTEXT_H__ */

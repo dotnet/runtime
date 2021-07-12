@@ -179,7 +179,7 @@ namespace System.Data.OleDb
         public int Fill(System.Data.DataTable dataTable, object ADODBRecordSet) { throw null; }
         protected override void OnRowUpdated(System.Data.Common.RowUpdatedEventArgs value) { }
         protected override void OnRowUpdating(System.Data.Common.RowUpdatingEventArgs value) { }
-        object? System.ICloneable.Clone() { throw null; }
+        object System.ICloneable.Clone() { throw null; }
     }
     public sealed partial class OleDbDataReader : System.Data.Common.DbDataReader
     {
@@ -363,7 +363,7 @@ namespace System.Data.OleDb
         public override object? Value { get { throw null; } set { } }
         public override void ResetDbType() { }
         public void ResetOleDbType() { }
-        object? System.ICloneable.Clone() { throw null; }
+        object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
     }
     [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DBParametersEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]

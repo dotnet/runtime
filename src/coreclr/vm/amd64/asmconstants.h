@@ -203,10 +203,6 @@ ASMCONSTANTS_C_ASSERT(METHODTABLE_EQUIVALENCE_FLAGS
 #define               METHODTABLE_EQUIVALENCE_FLAGS 0x0
 #endif
 
-#define               METHODTABLE_NONTRIVIALINTERFACECAST_FLAGS (0x00080000 + 0x40000000 + 0x00400000 + 0x00200000)
-ASMCONSTANTS_C_ASSERT(METHODTABLE_NONTRIVIALINTERFACECAST_FLAGS
-                    == MethodTable::enum_flag_NonTrivialInterfaceCast);
-
 #define               MethodTable__enum_flag_ContainsPointers 0x01000000
 ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers
                     == MethodTable::enum_flag_ContainsPointers);
