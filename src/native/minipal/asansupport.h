@@ -4,7 +4,9 @@
 #ifdef WIN32
 #include <windows.h>
 #else
-#include "palrt.h"
+#ifndef WINAPI
+#define WINAPI 
+#endif
 #endif
 
 bool WINAPI isAsanShadowAddress(void* address);
