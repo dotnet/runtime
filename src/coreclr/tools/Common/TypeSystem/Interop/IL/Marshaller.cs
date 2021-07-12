@@ -1634,7 +1634,7 @@ namespace Internal.TypeSystem.Interop
                 // String.Length + 2
                 LoadManagedValue(codeStream);
                 var stringLen =
-                            Context.SystemModule.GetKnownType("System", "String")
+                            Context.GetWellKnownType(WellKnownType.String)
                             .GetKnownMethod("get_Length", null);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(stringLen));
                 codeStream.EmitLdc(2);
