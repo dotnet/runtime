@@ -99,13 +99,13 @@
     <Compile Include="System\Data\ProviderBase\DbReferenceCollection.cs" />
     <Compile Include="System\Data\ProviderBase\WrappedIUnknown.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', $(NetCoreAppCurrent))) and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
     <Compile Include="UnsafeNativeMethods.COMWrappers.cs" />
     <Compile Include="OleDbComWrappers.cs" />
     <Compile Include="DbPropSet.COMWrappers.cs" />
     <Compile Include="OleDbConnection.COMWrappers.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', $(NetCoreAppCurrent))) and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetsWindows)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))">
     <Compile Include="UnsafeNativeMethods.NoCOMWrappers.cs" />
     <Compile Include="DbPropSet.NoCOMWrappers.cs" />
     <Compile Include="OleDbConnection.NoCOMWrappers.cs" />
