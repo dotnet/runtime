@@ -3020,11 +3020,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         // Get the largest SIMD register available if the size is large enough
         unsigned regSize = size >= YMM_REGSIZE_BYTES ? compiler->getSIMDVectorRegisterByteLength() : XMM_REGSIZE_BYTES;
 
-        if (regSize == YMM_REGSIZE_BYTES)
-        {
-            instGen(INS_vzeroupper);
-        }
-
         for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
         {
             if (srcLclNum != BAD_VAR_NUM)
@@ -3074,11 +3069,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                 emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
                                     dstAddrIndexScale, dstOffset);
             }
-        }
-
-        if (regSize == YMM_REGSIZE_BYTES)
-        {
-            instGen(INS_vzeroupper);
         }
 
         return;
