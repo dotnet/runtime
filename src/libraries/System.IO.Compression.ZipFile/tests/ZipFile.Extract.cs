@@ -171,5 +171,41 @@ namespace System.IO.Compression.Tests
                 }
             }
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixExtractSetsFilePermissionsFromExternalAttributes()
+        {
+            // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits don't get extracted to file permissions
+            string[] testPermissions = new[] { "777", "755", "644", "754", "7600" };
+            byte[] contents = Encoding.UTF8.GetBytes("contents");
+
+            string archivePath = GetTestFilePath();
+            using (FileStream fileStream = new FileStream(archivePath, FileMode.CreateNew))
+            using (ZipArchive archive = new ZipArchive(fileStream, ZipArchiveMode.Create))
+            {
+                foreach (string permission in testPermissions)
+                {
+                    ZipArchiveEntry entry = archive.CreateEntry(permission + ".txt");
+                    entry.ExternalAttributes = Convert.ToInt32(permission, 8) << 16;
+                    using Stream stream = entry.Open();
+                    stream.Write(contents);
+                    stream.Flush();
+                }
+            }
+
+            using (var tempFolder = new TempDirectory(GetTestFilePath()))
+            {
+                ZipFile.ExtractToDirectory(archivePath, tempFolder.Path);
+
+                foreach (string permission in testPermissions)
+                {
+                    string filename = Path.Combine(tempFolder.Path, permission + ".txt");
+                    Assert.True(File.Exists(filename));
+
+                    EnsureFilePermissions(filename, permission);
+                }
+            }
+        }
     }
 }

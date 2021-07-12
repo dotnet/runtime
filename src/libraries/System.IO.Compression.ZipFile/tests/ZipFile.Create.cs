@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -449,6 +450,70 @@ namespace System.IO.Compression.Tests
                     stream.CopyTo(es);
                 }
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void Unix_Create_SetsPermissionsInExternalAttributes()
+        {
+            // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits get preserved in ExternalAttributes
+            string[] testPermissions = new[] { "777", "755", "644", "600", "7600" };
+
+            using (var tempFolder = new TempDirectory(Path.Combine(GetTestFilePath(), "testFolder")))
+            {
+                foreach (string permission in testPermissions)
+                {
+                    CreateFile(tempFolder.Path, permission);
+                }
+
+                string archivePath = GetTestFilePath();
+                ZipFile.CreateFromDirectory(tempFolder.Path, archivePath);
+
+                using (ZipArchive archive = ZipFile.OpenRead(archivePath))
+                {
+                    Assert.Equal(5, archive.Entries.Count);
+
+                    foreach (ZipArchiveEntry entry in archive.Entries)
+                    {
+                        Assert.EndsWith(".txt", entry.Name, StringComparison.Ordinal);
+                        EnsureExternalAttributes(entry.Name.Substring(0, entry.Name.Length - 4), entry);
+                    }
+
+                    void EnsureExternalAttributes(string permissions, ZipArchiveEntry entry)
+                    {
+                        Assert.Equal(Convert.ToInt32(permissions, 8), (entry.ExternalAttributes >> 16) & 0xFFF);
+                    }
+                }
+
+                // test that round tripping the archive has the same file permissions
+                using (var extractFolder = new TempDirectory(Path.Combine(GetTestFilePath(), "extract")))
+                {
+                    ZipFile.ExtractToDirectory(archivePath, extractFolder.Path);
+
+                    foreach (string permission in testPermissions)
+                    {
+                        string filename = Path.Combine(extractFolder.Path, permission + ".txt");
+                        Assert.True(File.Exists(filename));
+
+                        EnsureFilePermissions(filename, permission);
+                    }
+                }
+            }
+        }
+
+        private static void CreateFile(string folderPath, string permissions)
+        {
+            string filename = Path.Combine(folderPath, $"{permissions}.txt");
+            File.WriteAllText(filename, "contents");
+            ChMod(filename, permissions);
+        }
+
+        [DllImport("libc")]
+        private static extern int chmod(string path, int mode);
+
+        private static void ChMod(string filename, string mode)
+        {
+            Assert.Equal(0, chmod(filename, Convert.ToInt32(mode, 8)));
         }
     }
 }
