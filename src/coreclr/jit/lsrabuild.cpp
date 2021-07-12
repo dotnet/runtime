@@ -3552,9 +3552,9 @@ int LinearScan::BuildReturn(GenTree* tree)
                 else
                 {
                     assert(compiler->lvaEnregMultiRegVars);
-                    LclVarDsc*     varDsc = compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum());
+                    LclVarDsc* varDsc = compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum());
                     nonCallRetTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(),
-                                                           compiler->info.compCallConv);
+                                                                  compiler->info.compCallConv);
                     pRetTypeDesc = &nonCallRetTypeDesc;
                     assert(compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum())->lvFieldCnt ==
                            nonCallRetTypeDesc.GetReturnRegCount());
