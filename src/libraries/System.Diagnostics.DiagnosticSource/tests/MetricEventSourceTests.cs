@@ -619,6 +619,33 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
+        public void EventSourceHandlesObservableCallbackException()
+        {
+            using Meter meter = new Meter("TestMeter15");
+            Counter<int> c = meter.CreateCounter<int>("counter1");
+            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1",
+                (Func<int>)(() => { throw new Exception("Example user exception"); }));
+
+            EventWrittenEventArgs[] events;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter15"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                c.Add(12);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc);
+            AssertInitialEnumerationCompleteEventPresent(events);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
+            AssertObservableCallbackErrorPresent(events);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
+        }
+
         private void AssertBeginInstrumentReportingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
         {
             var beginReportEvents = events.Where(e => e.EventName == "BeginInstrumentReporting").Select(e =>
@@ -832,6 +859,17 @@ namespace System.Diagnostics.Metrics.Tests
 
             Assert.Equal(expectedPairs, startEventsSeen);
             Assert.Equal(expectedPairs, stopEventsSeen);
+        }
+
+        private void AssertObservableCallbackErrorPresent(EventWrittenEventArgs[] events)
+        {
+            var errorEvents = events.Where(e => e.EventName == "ObservableInstrumentCallbackError").Select(e =>
+                new
+                {
+                    ErrorText = e.Payload[1].ToString(),
+                }).ToArray();
+            Assert.NotEmpty(errorEvents);
+            Assert.Contains("Example user exception", errorEvents[0].ErrorText);
         }
     }
 
