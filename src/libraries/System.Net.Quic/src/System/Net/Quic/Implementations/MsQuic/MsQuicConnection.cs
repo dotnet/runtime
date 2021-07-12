@@ -83,6 +83,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (releaseHandles)
                 {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{TraceId()} releasing handle after last stream.");
                     Handle?.Dispose();
                 }
             }
@@ -123,18 +124,36 @@ namespace System.Net.Quic.Implementations.MsQuic
                     _closing = true;
                 }
             }
+
+            internal string TraceId()
+            {
+                return $"[MsQuicConnection#{this.GetHashCode()}/{Handle?.DangerousGetHandle():x}]";
+            }
         }
 
+        internal string TraceId() => _state.TraceId();
+
         // constructor for inbound connections
-        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle)
+        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle, bool remoteCertificateRequired = false, X509RevocationMode revocationMode = X509RevocationMode.Offline, RemoteCertificateValidationCallback? remoteCertificateValidationCallback = null)
         {
             _state.Handle = handle;
             _state.StateGCHandle = GCHandle.Alloc(_state);
             _state.Connected = true;
+            _isServer = true;
             _localEndPoint = localEndPoint;
             _remoteEndPoint = remoteEndPoint;
-            _remoteCertificateRequired = false;
-            _isServer = true;
+            _remoteCertificateRequired = remoteCertificateRequired;
+            _revocationMode = revocationMode;
+            _remoteCertificateValidationCallback = remoteCertificateValidationCallback;
+
+            if (_remoteCertificateRequired)
+            {
+                // We need to link connection for the validation callback.
+                // We need to be able to find the connection in HandleEventPeerCertificateReceived
+                // and dispatch it as sender to validation callback.
+                // After that Connection will be set back to null.
+                _state.Connection = this;
+            }
 
             try
             {
@@ -151,7 +170,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(_state, $"[Connection#{_state.GetHashCode()}] inbound connection created");
+                NetEventSource.Info(_state, $"{TraceId()} inbound connection created");
             }
         }
 
@@ -190,7 +209,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(_state, $"[Connection#{_state.GetHashCode()}] outbound connection created");
+                NetEventSource.Info(_state, $"{TraceId()} outbound connection created");
             }
         }
 
@@ -334,6 +353,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (connection == null)
             {
                 return MsQuicStatusCodes.InvalidState;
+            }
+
+            if (connection._isServer)
+            {
+                state.Connection = null;
             }
 
             try
@@ -605,7 +629,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"[Connection#{state.GetHashCode()}] received event {connectionEvent.Type}");
+                NetEventSource.Info(state, $"{state.TraceId()} received event {connectionEvent.Type}");
             }
 
             try
@@ -681,6 +705,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} disposing {disposing}");
+
             bool releaseHandles = false;
             lock (_state)
             {
@@ -700,6 +726,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             _configuration?.Dispose();
             if (releaseHandles)
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} releasing handle");
+
                 // We may not be fully initialized if constructor fails.
                 _state.Handle?.Dispose();
             }

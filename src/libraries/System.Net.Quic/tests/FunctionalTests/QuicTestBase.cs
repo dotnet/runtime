@@ -26,6 +26,7 @@ namespace System.Net.Quic.Tests
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
         public X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+        public X509Certificate2 ClientCertificate = System.Net.Test.Common.Configuration.Certificates.GetClientCertificate();
 
         public bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
         {
@@ -76,6 +77,36 @@ namespace System.Net.Quic.Tests
                 ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
             };
             return CreateQuicListener(options);
+        }
+
+        internal async Task PingPong(QuicConnection client, QuicConnection server)
+        {
+            using QuicStream clientStream = client.OpenBidirectionalStream();
+            ValueTask t = clientStream.WriteAsync(s_ping);
+            using QuicStream serverStream = await server.AcceptStreamAsync();
+
+            byte[] buffer = new byte[s_ping.Length];
+            int remains = s_ping.Length;
+            while (remains > 0)
+            {
+                int readLength = await serverStream.ReadAsync(buffer, buffer.Length - remains, remains);
+                Assert.True(readLength > 0);
+                remains -= readLength;
+            }
+            Assert.Equal(s_ping, buffer);
+            await t;
+
+            t = serverStream.WriteAsync(s_pong);
+            remains = s_pong.Length;
+            while (remains > 0)
+            {
+                int readLength = await clientStream.ReadAsync(buffer, buffer.Length - remains, remains);
+                Assert.True(readLength > 0);
+                remains -= readLength;
+            }
+
+            Assert.Equal(s_pong, buffer);
+            await t;
         }
 
         private QuicListener CreateQuicListener(QuicListenerOptions options) => new QuicListener(ImplementationProvider, options);
@@ -168,38 +199,13 @@ namespace System.Net.Quic.Tests
             return bytesRead;
         }
 
-        internal static void AssertArrayEqual(byte[] expected, byte[] actual)
+        internal static async Task<int> WriteForever(QuicStream stream)
         {
-            for (int i = 0; i < expected.Length; ++i)
+            Memory<byte> buffer = new byte[] { 123 };
+            while (true)
             {
-                if (expected[i] == actual[i])
-                {
-                    continue;
-                }
-
-                var message = $"Wrong data starting from idx={i}\n" +
-                    $"Expected: {ToStringAroundIndex(expected, i)}\n" +
-                    $"Actual:   {ToStringAroundIndex(actual, i)}";
-
-                Assert.True(expected[i] == actual[i], message);
+                await stream.WriteAsync(buffer);
             }
-        }
-
-        private static string ToStringAroundIndex(byte[] arr, int idx, int dl = 3, int dr = 7)
-        {
-            var sb = new StringBuilder(idx - (dl+1) >= 0 ? "[..., " : "[");
-
-            for (int i = idx - dl; i <= idx + dr; ++i)
-            {
-                if (i >= 0 && i < arr.Length)
-                {
-                    sb.Append($"{arr[i]}, ");
-                }
-            }
-
-            sb.Append(idx + (dr+1) < arr.Length ? "...]" : "]");
-
-            return sb.ToString();
         }
     }
 

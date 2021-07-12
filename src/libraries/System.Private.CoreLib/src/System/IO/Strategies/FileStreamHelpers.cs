@@ -14,10 +14,28 @@ namespace System.IO.Strategies
         internal static bool UseNet5CompatStrategy { get; } = AppContextConfigHelper.GetBooleanConfig("System.IO.UseNet5CompatFileStream", "DOTNET_SYSTEM_IO_USENET5COMPATFILESTREAM");
 
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
-            => WrapIfDerivedType(fileStream, ChooseStrategyCore(handle, access, share, bufferSize, isAsync));
+        {
+            // The .NET 5 Compat strategy does not support bufferSize == 0.
+            // To minimize the risk of introducing bugs to it, we just pass 1 to disable the buffering.
+
+            FileStreamStrategy strategy = UseNet5CompatStrategy ?
+                new Net5CompatFileStreamStrategy(handle, access, bufferSize == 0 ? 1 : bufferSize, isAsync) :
+                EnableBufferingIfNeeded(ChooseStrategyCore(handle, access, share, isAsync), bufferSize);
+
+            return WrapIfDerivedType(fileStream, strategy);
+        }
 
         internal static FileStreamStrategy ChooseStrategy(FileStream fileStream, string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
-            => WrapIfDerivedType(fileStream, ChooseStrategyCore(path, mode, access, share, bufferSize, options, preallocationSize));
+        {
+            FileStreamStrategy strategy = UseNet5CompatStrategy ?
+                new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize == 0 ? 1 : bufferSize, options, preallocationSize) :
+                EnableBufferingIfNeeded(ChooseStrategyCore(path, mode, access, share, options, preallocationSize), bufferSize);
+
+            return WrapIfDerivedType(fileStream, strategy);
+        }
+
+        private static FileStreamStrategy EnableBufferingIfNeeded(FileStreamStrategy strategy, int bufferSize)
+            => bufferSize > 1 ? new BufferedFileStreamStrategy(strategy, bufferSize) : strategy;
 
         private static FileStreamStrategy WrapIfDerivedType(FileStream fileStream, FileStreamStrategy strategy)
             => fileStream.GetType() == typeof(FileStream)

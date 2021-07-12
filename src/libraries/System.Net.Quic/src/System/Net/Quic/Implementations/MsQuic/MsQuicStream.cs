@@ -20,11 +20,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private readonly State _state = new State();
 
+        private readonly bool _canRead;
+        private readonly bool _canWrite;
+
         // Backing for StreamId
         private long _streamId = -1;
-
-        // Used to check if StartAsync has been called.
-        private bool _started;
 
         private int _disposed;
 
@@ -59,7 +59,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             public int SendBufferMaxCount;
             public int SendBufferCount;
 
-            // Resettable completions to be used for multiple calls to send, start, and shutdown.
+            // Resettable completions to be used for multiple calls to send.
             public readonly ResettableCompletionSource<uint> SendResettableCompletionSource = new ResettableCompletionSource<uint>();
 
             public ShutdownWriteState ShutdownWriteState;
@@ -75,6 +75,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public void Cleanup()
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{TraceId()} releasing handles.");
+
                 ShutdownState = ShutdownState.Finished;
                 CleanupSendState(this);
                 Handle?.Dispose();
@@ -83,14 +85,22 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (StateGCHandle.IsAllocated) StateGCHandle.Free();
                 ConnectionState?.RemoveStream(null);
             }
+
+            internal string TraceId()
+            {
+                return $"[MsQuicStream#{this.GetHashCode()}/{Handle?.DangerousGetHandle():x}]";
+            }
         }
+
+        internal string TraceId() => _state.TraceId();
 
         // inbound.
         internal MsQuicStream(MsQuicConnection.State connectionState, SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
         {
             _state.Handle = streamHandle;
-            _started = true;
-            if (flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL))
+            _canRead = true;
+            _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
+            if (!_canWrite)
             {
                 _state.SendState = SendState.Closed;
             }
@@ -121,8 +131,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 NetEventSource.Info(
                     _state,
-                    $"[Stream#{_state.GetHashCode()}] inbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
-                        $"in Connection#{_state.ConnectionState.GetHashCode()}.");
+                    $"{TraceId()} inbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
+                        $"in {_state.ConnectionState.TraceId()}.");
             }
         }
 
@@ -131,8 +141,11 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             Debug.Assert(connectionState.Handle != null);
 
+            _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
+            _canWrite = true;
+
             _state.StateGCHandle = GCHandle.Alloc(_state);
-            if (flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL))
+            if (!_canRead)
             {
                 _state.ReadState = ReadState.Closed;
             }
@@ -171,14 +184,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 NetEventSource.Info(
                     _state,
-                    $"[Stream#{_state.GetHashCode()}] outbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
-                        $"in Connection#{_state.ConnectionState.GetHashCode()}.");
+                    $"{TraceId()} outbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
+                        $"in {_state.ConnectionState.TraceId()}.");
             }
         }
 
-        internal override bool CanRead => _disposed == 0 && _state.ReadState < ReadState.Aborted;
+        internal override bool CanRead => _disposed == 0 && _canRead;
 
-        internal override bool CanWrite => _disposed == 0 && _state.SendState < SendState.Aborted;
+        internal override bool CanWrite => _disposed == 0 && _canWrite;
 
         internal override long StreamId
         {
@@ -209,7 +222,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = await HandleWriteStartState(cancellationToken).ConfigureAwait(false);
+            using CancellationTokenRegistration registration = HandleWriteStartState(cancellationToken);
 
             await SendReadOnlySequenceAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
@@ -225,7 +238,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = await HandleWriteStartState(cancellationToken).ConfigureAwait(false);
+            using CancellationTokenRegistration registration = HandleWriteStartState(cancellationToken);
 
             await SendReadOnlyMemoryListAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
@@ -236,14 +249,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = await HandleWriteStartState(cancellationToken).ConfigureAwait(false);
+            using CancellationTokenRegistration registration = HandleWriteStartState(cancellationToken);
 
             await SendReadOnlyMemoryAsync(buffer, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
             HandleWriteCompletedState();
         }
 
-        private async ValueTask<CancellationTokenRegistration> HandleWriteStartState(CancellationToken cancellationToken)
+        private CancellationTokenRegistration HandleWriteStartState(CancellationToken cancellationToken)
         {
             if (_state.SendState == SendState.Closed)
             {
@@ -251,6 +264,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             else if ( _state.SendState == SendState.Aborted)
             {
+                if (_state.SendErrorCode != -1)
+                {
+                    throw new QuicStreamAbortedException(_state.SendErrorCode);
+                }
+
                 throw new OperationCanceledException(cancellationToken);
             }
 
@@ -264,14 +282,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     }
                 }
 
-                throw new System.OperationCanceledException(cancellationToken);
-            }
-
-            // Make sure start has completed
-            if (!_started)
-            {
-                await _state.SendResettableCompletionSource.GetTypelessValueTask().ConfigureAwait(false);
-                _started = true;
+                throw new OperationCanceledException(cancellationToken);
             }
 
             // if token was already cancelled, this would execute synchronously
@@ -301,6 +312,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (_state.SendState == SendState.Aborted)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
+
+                    if (_state.SendErrorCode != -1)
+                    {
+                        throw new QuicStreamAbortedException(_state.SendErrorCode);
+                    }
+
                     throw new OperationCanceledException(SR.net_quic_sending_aborted);
                 }
                 else if (_state.SendState == SendState.ConnectionClosed)
@@ -679,6 +696,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} disposing {disposing}");
+
             bool callShutdown = false;
             bool abortRead = false;
             bool releaseHandles = false;
@@ -730,10 +750,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.Cleanup();
             }
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Info(_state, $"[Stream#{_state.GetHashCode()}] disposed");
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} disposed");
         }
 
         private void EnableReceive()
@@ -759,17 +776,17 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"[Stream#{state.GetHashCode()}] received event {evt.Type}");
+                NetEventSource.Info(state, $"{state.TraceId()} received event {evt.Type}");
             }
 
             try
             {
-                switch ((QUIC_STREAM_EVENT_TYPE)evt.Type)
+                switch (evt.Type)
                 {
                     // Stream has started.
                     // Will only be done for outbound streams (inbound streams have already started)
                     case QUIC_STREAM_EVENT_TYPE.START_COMPLETE:
-                        return HandleEventStartComplete(state);
+                        return HandleEventStartComplete(state, ref evt);
                     // Received data on the stream
                     case QUIC_STREAM_EVENT_TYPE.RECEIVE:
                         return HandleEventRecv(state, ref evt);
@@ -802,12 +819,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(state, $"[Stream#{state.GetHashCode()}] Exception occurred during handling {(QUIC_STREAM_EVENT_TYPE)evt.Type} event: {ex}");
+                    NetEventSource.Error(state, $"[Stream#{state.GetHashCode()}] Exception occurred during handling {evt.Type} event: {ex}");
                 }
 
-                // This is getting hit currently
-                // See https://github.com/dotnet/runtime/issues/55302
-                //Debug.Fail($"[Stream#{state.GetHashCode()}] Exception occurred during handling {(QUIC_STREAM_EVENT_TYPE)evt.Type} event: {ex}");
+                Debug.Fail($"[Stream#{state.GetHashCode()}] Exception occurred during handling {evt.Type} event: {ex}");
 
                 return MsQuicStatusCodes.InternalError;
             }
@@ -913,22 +928,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicStatusCodes.Success;
         }
 
-        private static uint HandleEventStartComplete(State state)
+        private static uint HandleEventStartComplete(State state, ref StreamEvent evt)
         {
-            bool shouldComplete = false;
-            lock (state)
-            {
-                // Check send state before completing as send cancellation is shared between start and send.
-                if (state.SendState == SendState.None)
-                {
-                    shouldComplete = true;
-                }
-            }
-
-            if (shouldComplete)
-            {
-                state.SendResettableCompletionSource.Complete(MsQuicStatusCodes.Success);
-            }
+            // TODO: We should probably check for a failure as indicated by the event data (or at least assert no failure if we aren't expecting it).
+            // However, since there is no definition for START_COMPLETE event data currently, we can't do this right now.
 
             return MsQuicStatusCodes.Success;
         }
@@ -1413,7 +1416,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             /// <summary>
             /// The stream is open, but there is no data available.
             /// </summary>
-            None,
+            None = 0,
 
             /// <summary>
             /// Data is available in <see cref="State.ReceiveQuicBuffers"/>.
@@ -1448,7 +1451,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private enum ShutdownWriteState
         {
-            None,
+            None = 0,
             Canceled,
             Finished,
             ConnectionClosed
@@ -1456,7 +1459,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private enum ShutdownState
         {
-            None,
+            None = 0,
             Canceled,
             Pending,
             Finished,
@@ -1465,10 +1468,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private enum SendState
         {
-            None,
+            None = 0,
             Pending,
-            Aborted,
             Finished,
+
+            // Terminal states
+            Aborted,
             ConnectionClosed,
             Closed
         }

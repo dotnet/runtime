@@ -245,6 +245,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void SystemTrustCertificateWithCustomRootTrust(bool addCertificateToCustomRootTrust)
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
+            using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
             using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
             using (var chainHolder = new ChainHolder())
             {
@@ -252,6 +253,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.ChainPolicy.VerificationTime = microsoftDotCom.NotBefore.AddSeconds(1);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
 
                 if (addCertificateToCustomRootTrust)
                 {
@@ -269,16 +271,29 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     Assert.False(chain.Build(microsoftDotCom));
 
-                    // Linux and Windows do not search the default system root stores when CustomRootTrust is enabled
-                    if (PlatformDetection.UsesAppleCrypto)
+                    // Historically, Windows has not searched system stores when CustomRootTrust is enabled.
+                    // That seems to have recently (as of 2021-07-09) changed.
+
+                    Assert.InRange(chain.ChainElements.Count, 2, 3);
+
+                    if (chain.ChainElements.Count < 3)
                     {
-                        Assert.Equal(3, chain.ChainElements.Count);
-                        Assert.Equal(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
+                        Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
                     }
                     else
                     {
+                        Assert.Equal(X509ChainStatusFlags.UntrustedRoot, chain.AllStatusFlags());
+                    }
+
+                    // Check some known conditions.
+
+                    if (PlatformDetection.UsesAppleCrypto)
+                    {
+                        Assert.Equal(3, chain.ChainElements.Count);
+                    }
+                    else if (OperatingSystem.IsLinux())
+                    {
                         Assert.Equal(2, chain.ChainElements.Count);
-                        Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
                     }
                 }
             }

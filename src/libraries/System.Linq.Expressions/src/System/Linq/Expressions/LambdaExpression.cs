@@ -327,7 +327,7 @@ namespace System.Linq.Expressions
 
 #if !FEATURE_COMPILE
     // Separate expression creation class to hide the CreateExpressionFunc function from users reflecting on Expression<T>
-    public class ExpressionCreator<TDelegate>
+    internal static class ExpressionCreator<TDelegate>
     {
         public static Expression<TDelegate> CreateExpressionFunc(Expression body, string? name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
         {

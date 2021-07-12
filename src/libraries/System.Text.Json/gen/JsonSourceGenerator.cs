@@ -18,6 +18,10 @@ namespace System.Text.Json.SourceGeneration
     [Generator]
     public sealed partial class JsonSourceGenerator : ISourceGenerator
     {
+        private const string SystemTextJsonSourceGenerationName = "System.Text.Json.SourceGeneration";
+        private const string IJsonOnSerializedFullName = "System.Text.Json.Serialization.IJsonOnSerialized";
+        private const string IJsonOnSerializingFullName = "System.Text.Json.Serialization.IJsonOnSerializing";
+
         /// <summary>
         /// Registers a syntax resolver to receive compilation units.
         /// </summary>
@@ -50,8 +54,6 @@ namespace System.Text.Json.SourceGeneration
                 emitter.Emit();
             }
         }
-
-        private const string SystemTextJsonSourceGenerationName = "System.Text.Json.SourceGeneration";
 
         /// <summary>
         /// Helper for unit tests.

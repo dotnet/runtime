@@ -190,7 +190,7 @@ namespace System.Net.Quic.Tests
                     byte[] buffer = new byte[data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(data.Length, bytesRead);
-                    AssertArrayEqual(data, buffer);
+                    AssertExtensions.SequenceEqual(data, buffer);
 
                     for (int pos = 0; pos < data.Length; pos += writeSize)
                     {
@@ -213,7 +213,7 @@ namespace System.Net.Quic.Tests
                     byte[] buffer = new byte[data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(data.Length, bytesRead);
-                    AssertArrayEqual(data, buffer);
+                    AssertExtensions.SequenceEqual(data, buffer);
 
                     await stream.ShutdownCompleted();
                 }
@@ -391,7 +391,7 @@ namespace System.Net.Quic.Tests
                     }
 
                     Assert.Equal(testBuffer.Length, totalBytesRead);
-                    AssertArrayEqual(testBuffer, receiveBuffer);
+                    AssertExtensions.SequenceEqual(testBuffer, receiveBuffer);
 
                     await serverStream.ShutdownCompleted();
                 });
@@ -527,17 +527,15 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        public async Task StreamAbortedWithoutWriting_ReadThrows()
+        public async Task WriteAbortedWithoutWriting_ReadThrows()
         {
-            long expectedErrorCode = 1234;
+            const long expectedErrorCode = 1234;
 
             await RunClientServer(
                 clientFunction: async connection =>
                 {
                     await using QuicStream stream = connection.OpenUnidirectionalStream();
                     stream.AbortWrite(expectedErrorCode);
-
-                    await stream.ShutdownCompleted();
                 },
                 serverFunction: async connection =>
                 {
@@ -548,7 +546,32 @@ namespace System.Net.Quic.Tests
                     QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => ReadAll(stream, buffer));
                     Assert.Equal(expectedErrorCode, ex.ErrorCode);
 
-                    await stream.ShutdownCompleted();
+                    // We should still return true from CanRead, even though the read has been aborted.
+                    Assert.True(stream.CanRead);
+                }
+            );
+        }
+
+        [Fact]
+        public async Task ReadAbortedWithoutReading_WriteThrows()
+        {
+            const long expectedErrorCode = 1234;
+
+            await RunClientServer(
+                clientFunction: async connection =>
+                {
+                    await using QuicStream stream = connection.OpenBidirectionalStream();
+                    stream.AbortRead(expectedErrorCode);
+                },
+                serverFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.AcceptStreamAsync();
+
+                    QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => WriteForever(stream));
+                    Assert.Equal(expectedErrorCode, ex.ErrorCode);
+
+                    // We should still return true from CanWrite, even though the write has been aborted.
+                    Assert.True(stream.CanWrite);
                 }
             );
         }
@@ -556,7 +579,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task WritePreCanceled_Throws()
         {
-            long expectedErrorCode = 1234;
+            const long expectedErrorCode = 1234;
 
             await RunClientServer(
                 clientFunction: async connection =>
@@ -592,7 +615,7 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task WriteCanceled_NextWriteThrows()
         {
-            long expectedErrorCode = 1234;
+            const long expectedErrorCode = 1234;
 
             await RunClientServer(
                 clientFunction: async connection =>

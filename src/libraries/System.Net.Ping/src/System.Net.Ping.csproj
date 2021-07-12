@@ -46,6 +46,8 @@
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\UnixCommandLinePing.cs"
              Link="Common\System\Net\NetworkInformation\UnixCommandLinePing.cs" />
     <!-- Interop -->
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.DefaultPathBufferSize.cs"
+             Link="Common\Interop\Unix\Interop.DefaultPathBufferSize.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
@@ -58,6 +60,8 @@
              Link="Common\Interop\Unix\System.Native\Interop.Socket.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
              Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
+             Link="Common\System\Text\ValueUtf8Converter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetsApple)' != 'true'">
     <Compile Include="System\Net\NetworkInformation\Ping.Unix.cs" />

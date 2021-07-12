@@ -42,7 +42,8 @@ namespace HttpStress
         public int TaskNum { get; }
         public bool IsCancellationRequested { get; private set; }
 
-        public Version HttpVersion => _config.HttpVersion;
+        public Version HttpVersion => _client.DefaultRequestVersion;
+        public HttpVersionPolicy VersionPolicy => _client.DefaultVersionPolicy;
         public int MaxRequestParameters => _config.MaxParameters;
         public int MaxRequestUriSize => _config.MaxRequestUriSize;
         public int MaxRequestHeaderCount => _config.MaxRequestHeaderCount;
@@ -54,6 +55,7 @@ namespace HttpStress
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption httpCompletion = HttpCompletionOption.ResponseContentRead, CancellationToken? token = null)
         {
             request.Version = HttpVersion;
+            request.VersionPolicy = VersionPolicy;
 
             if (token != null)
             {
@@ -480,6 +482,12 @@ namespace HttpStress
 
         private static void ValidateStatusCode(HttpResponseMessage m, HttpStatusCode expectedStatus = HttpStatusCode.OK)
         {
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/55261")]
+            if (m.StatusCode == HttpStatusCode.InternalServerError)
+            {
+                throw new Exception("IGNORE");
+            }
+
             if (m.StatusCode != expectedStatus)
             {
                 throw new Exception($"Expected status code {expectedStatus}, got {m.StatusCode}");
