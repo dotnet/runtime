@@ -3020,6 +3020,11 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         // Get the largest SIMD register available if the size is large enough
         unsigned regSize = size >= YMM_REGSIZE_BYTES ? compiler->getSIMDVectorRegisterByteLength() : XMM_REGSIZE_BYTES;
 
+        if (regSize == YMM_REGSIZE_BYTES)
+        {
+            instGen(INS_vzeroupper);
+        }
+
         for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
         {
             if (srcLclNum != BAD_VAR_NUM)
@@ -3043,15 +3048,10 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
             }
         }
 
-        // TODO-CQ-XArch: On x86 we could copy 8 byte at once by using MOVQ instead of four 4 byte MOV stores.
-        // On x64 it may also be worth copying a 4/8 byte remainder using MOVD/MOVQ, that avoids the need to
-        // allocate a GPR just for the remainder.
-
         if (size > 0)
         {
             // Copy the remainder by moving the last regSize bytes of the buffer
             unsigned remainder = regSize - size;
-            size += remainder;
             srcOffset -= remainder;
             dstOffset -= remainder;
 
