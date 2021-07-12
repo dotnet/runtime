@@ -198,7 +198,7 @@ namespace Internal.Cryptography
             int feedbackSizeInBits,
             out int bytesWritten)
         {
-            throw new CryptographicException(SR.Cryptography_CfbCipherNotSupported);
+            throw new CryptographicException(SR.Format(SR.Cryptography_CipherModeNotSupported, CipherMode.CFB));
         }
 
         protected override bool TryEncryptCfbCore(
@@ -209,7 +209,7 @@ namespace Internal.Cryptography
             int feedbackSizeInBits,
             out int bytesWritten)
         {
-            throw new CryptographicException(SR.Cryptography_CfbCipherNotSupported);
+            throw new CryptographicException(SR.Format(SR.Cryptography_CipherModeNotSupported, CipherMode.CFB));
         }
 
         private static void ValidateCFBFeedbackSize(int feedback)
