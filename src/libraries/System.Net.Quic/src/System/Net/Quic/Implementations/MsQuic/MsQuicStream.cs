@@ -1418,7 +1418,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Any non-final state  --(event PEER_SEND_SHUTDOWN or SHUTDOWN_COMPLETED with ConnectionClosed=false)->  ReadsCompleted
         // Any non-final state  --(event PEER_SEND_ABORT)->  Aborted
         // Any non-final state  --(user calls AbortRead())->  Aborted
-        // Any state  --(CancellationToken's cancellation for ReadAsync())->  Aborted (TODO: should it be only for non-final as others?) 
+        // Any state  --(CancellationToken's cancellation for ReadAsync())->  Aborted (TODO: should it be only for non-final as others?)
         // Any non-final state  --(event SHUTDOWN_COMPLETED with ConnectionClosed=true)->  ConnectionClosed
         // Closed - no transitions, set for Unidirectional write-only streams
         private enum ReadState
