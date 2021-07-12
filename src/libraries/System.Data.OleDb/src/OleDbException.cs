@@ -11,7 +11,7 @@ using System.Text;
 
 namespace System.Data.OleDb
 {
-    public sealed partial class OleDbException : System.Data.Common.DbException
+    public sealed class OleDbException : System.Data.Common.DbException
     {
         private readonly OleDbErrorCollection oledbErrors;
 

@@ -12,8 +12,6 @@ using System.Text;
 
 namespace System.Data.OleDb
 {
-    using SysTx = Transactions;
-
     public sealed partial class OleDbConnection
     {
         internal static unsafe Exception? ProcessResults(OleDbHResult hresult, OleDbConnection? connection, object? src)
