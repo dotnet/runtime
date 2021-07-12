@@ -11,7 +11,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.Configuration.Test
 {
-    public class ConfigTests
+    public class ConfigTest
     {
         [Fact]
         public void AutoUpdates()
@@ -307,7 +307,8 @@ namespace Microsoft.Extensions.Configuration.Test
             configurationBuilder.Add(memConfigSrc2);
             configurationBuilder.Add(memConfigSrc3);
 
-            var chained = new ConfigurationBuilder().AddConfiguration(config).Build();
+            var chained = new Config();
+            chained.AddConfiguration(config);
             var memVal1 = chained["mem1:keyinmem1"];
             var memVal2 = chained["Mem2:KeyInMem2"];
             var memVal3 = chained["MEM3:KEYINMEM3"];
@@ -524,19 +525,21 @@ namespace Microsoft.Extensions.Configuration.Test
         [Fact]
         public void NewConfigurationRootMayBeBuiltFromExistingWithDuplicateKeys()
         {
-            var configurationRoot = new ConfigurationBuilder()
-                                    .AddInMemoryCollection(new Dictionary<string, string>
-                                        {
-                                            {"keya:keyb", "valueA"},
-                                        })
-                                    .AddInMemoryCollection(new Dictionary<string, string>
-                                        {
-                                            {"KEYA:KEYB", "valueB"}
-                                        })
-                                    .Build();
-            var newConfigurationRoot = new ConfigurationBuilder()
-                .AddInMemoryCollection(configurationRoot.AsEnumerable())
-                .Build();
+            var configurationRoot = new Config();
+
+            configurationRoot.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                {"keya:keyb", "valueA"},
+            });
+            configurationRoot.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                {"KEYA:KEYB", "valueB"},
+            });
+
+            var newConfigurationRoot = new Config();
+
+            newConfigurationRoot.AddInMemoryCollection(configurationRoot.AsEnumerable());
+
             Assert.Equal("valueB", newConfigurationRoot["keya:keyb"]);
         }
 
@@ -859,9 +862,8 @@ namespace Microsoft.Extensions.Configuration.Test
             {
                 [":Key2"] = "value"
             };
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(dict);
-            var config = configurationBuilder.Build();
+            var config = new Config();
+            config.AddInMemoryCollection(dict);
 
             // Act
             var children = config.GetChildren().ToArray();
