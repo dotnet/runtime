@@ -38,7 +38,6 @@
       TemplateFile="WorkloadManifest.json.in"
       Properties="@(_WorkloadManifestValues)"
       OutputPath="$(WorkloadManifestPath)" />
-
     <GenerateFileFromTemplate
       TemplateFile="WorkloadManifest.targets.in"
       Properties="@(_WorkloadManifestValues)"
