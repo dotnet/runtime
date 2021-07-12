@@ -15,8 +15,8 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[SetupCompileAfter ("Implementation.dll", new[] { "Dependencies/ImplementationLibrary.cs" })]
 	[SetupCompileAfter ("Forwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
 
-	[KeptMemberInAssembly ("Forwarder.dll", typeof (ImplementationLibraryAttribute))]
-	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibraryAttribute))]
+	[KeptTypeInAssembly ("Forwarder.dll", typeof (ImplementationLibraryAttribute))]
+	[KeptTypeInAssembly ("Implementation.dll", typeof (ImplementationLibraryAttribute))]
 
 	[Kept]
 	[KeptMember (".ctor()")]

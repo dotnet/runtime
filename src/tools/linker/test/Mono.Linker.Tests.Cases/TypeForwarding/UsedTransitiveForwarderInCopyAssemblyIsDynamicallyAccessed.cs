@@ -17,10 +17,10 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[SetupCompileAfter ("SecondForwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
 	[SetupLinkerAction ("copy", "FirstForwarder")]
 
-	[KeptMemberInAssembly ("FirstForwarder.dll", typeof (ImplementationLibrary))]
+	[KeptTypeInAssembly ("FirstForwarder.dll", typeof (ImplementationLibrary))]
 	// Dynamically accessing a type forwarder will cause the linker to mark the scope
 	// of type pointed to as well as the resolved type.
-	[KeptMemberInAssembly ("SecondForwarder.dll", typeof (ImplementationLibrary))]
+	[KeptTypeInAssembly ("SecondForwarder.dll", typeof (ImplementationLibrary))]
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary), "GetSomeValue()")]
 	class UsedTransitiveForwarderInCopyAssemblyIsDynamicallyAccessed
 	{

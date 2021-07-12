@@ -21,8 +21,8 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary), "GetSomeValue()")]
 	// The whole assembly is kept as is, since it is marked with the `copy` action.
-	[KeptMemberInAssembly ("Forwarder.dll", typeof (ImplementationLibrary))]
-	[KeptMemberInAssembly ("Forwarder.dll", "Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.AnotherLibrary`1")]
+	[KeptTypeInAssembly ("Forwarder.dll", typeof (ImplementationLibrary))]
+	[KeptTypeInAssembly ("Forwarder.dll", "Mono.Linker.Tests.Cases.TypeForwarding.Dependencies.AnotherLibrary`1")]
 	[KeptReferencesInAssembly ("Forwarder.dll", new[] { "System.Private.CoreLib", "Implementation", "Unused" })]
 	// Even though `Forwarder` references this assembly, none of its members are marked (none is used) and, since `Unused`
 	// has `link` action, it is removed.
