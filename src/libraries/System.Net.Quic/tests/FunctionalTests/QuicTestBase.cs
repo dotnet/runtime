@@ -9,12 +9,15 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using System.Diagnostics.Tracing;
 
 namespace System.Net.Quic.Tests
 {
     public abstract class QuicTestBase<T>
         where T : IQuicImplProviderFactory, new()
     {
+        private static readonly byte[] s_ping = Encoding.UTF8.GetBytes("PING");
+        private static readonly byte[] s_pong = Encoding.UTF8.GetBytes("PONG");
         private static readonly IQuicImplProviderFactory s_factory = new T();
 
         public static QuicImplementationProvider ImplementationProvider { get; } = s_factory.GetProvider();
