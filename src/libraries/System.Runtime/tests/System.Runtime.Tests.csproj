@@ -1,11 +1,15 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <FeatureGenericMath>true</FeatureGenericMath>
     <NoWarn>$(NoWarn),1718,SYSLIB0013</NoWarn>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>disable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs"
@@ -215,6 +219,7 @@
     <Compile Include="System\Reflection\TypeDelegatorTests.cs" />
     <Compile Include="System\Reflection\TypeTests.Get.CornerCases.cs" />
     <Compile Include="System\Reflection\TypeTests.GetMember.cs" />
+    <Compile Include="System\Runtime\DependentHandleTests.cs" />
     <Compile Include="System\Runtime\MemoryFailPointTests.cs" />
     <Compile Include="System\Runtime\NgenServicingAttributesTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\AttributesTests.cs" />
@@ -243,6 +248,20 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="System\ExitCodeTests.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureGenericMath)' == 'true'">
+    <Compile Include="System\ByteTests.GenericMath.cs" />
+    <Compile Include="System\CharTests.GenericMath.cs" />
+    <Compile Include="System\GenericMathHelpers.cs" />
+    <Compile Include="System\Int16Tests.GenericMath.cs" />
+    <Compile Include="System\Int32Tests.GenericMath.cs" />
+    <Compile Include="System\Int64Tests.GenericMath.cs" />
+    <Compile Include="System\IntPtrTests.GenericMath.cs" />
+    <Compile Include="System\SByteTests.GenericMath.cs" />
+    <Compile Include="System\UInt16Tests.GenericMath.cs" />
+    <Compile Include="System\UInt32Tests.GenericMath.cs" />
+    <Compile Include="System\UInt64Tests.GenericMath.cs" />
+    <Compile Include="System\UIntPtrTests.GenericMath.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\SignatureTypes.cs" />

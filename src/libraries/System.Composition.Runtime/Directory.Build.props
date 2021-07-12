@@ -1,9 +1,0 @@
-﻿<Project>
-  <Import Project="..\System.Composition\Directory.Build.props" />
-  <PropertyGroup>
-    <PackageDescription>Contains runtime components of the Managed Extensibility Framework.
-
-Commonly Used Types:
-System.Composition.CompositionContext</PackageDescription>
-  </PropertyGroup>
-</Project>

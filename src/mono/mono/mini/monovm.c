@@ -11,6 +11,8 @@
 #include <mono/mini/mini.h>
 #include <mono/utils/mono-logger-internals.h>
 
+#include <mono/metadata/components.h>
+
 static MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
 static MonoCoreLookupPaths *native_lib_paths;
 static MonoCoreLookupPaths *app_paths;

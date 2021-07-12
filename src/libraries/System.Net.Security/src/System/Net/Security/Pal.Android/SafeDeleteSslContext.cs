@@ -13,6 +13,8 @@ using Microsoft.Win32.SafeHandles;
 using PAL_KeyAlgorithm = Interop.AndroidCrypto.PAL_KeyAlgorithm;
 using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
 
+#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
+
 namespace System.Net
 {
     internal sealed class SafeDeleteSslContext : SafeDeleteContext

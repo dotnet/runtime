@@ -65,6 +65,8 @@
              Link="Common\System\Net\SocketAddress.cs" />
     <Compile Include="$(CommonPath)System\Net\TcpValidationHelpers.cs"
              Link="Common\System\Net\TcpValidationHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.cs"
+             Link="Common\System\Net\SocketProtocolSupportPal.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <!-- System.Net.Internals -->

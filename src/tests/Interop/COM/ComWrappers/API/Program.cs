@@ -18,10 +18,10 @@ namespace ComWrappersTests
         {
             protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
             {
-                IntPtr fpQueryInteface = default;
+                IntPtr fpQueryInterface = default;
                 IntPtr fpAddRef = default;
                 IntPtr fpRelease = default;
-                ComWrappers.GetIUnknownImpl(out fpQueryInteface, out fpAddRef, out fpRelease);
+                ComWrappers.GetIUnknownImpl(out fpQueryInterface, out fpAddRef, out fpRelease);
 
                 ComInterfaceEntry* entryRaw = null;
                 count = 0;
@@ -31,7 +31,7 @@ namespace ComWrappersTests
                     {
                         IUnknownImpl = new IUnknownVtbl()
                         {
-                            QueryInterface = fpQueryInteface,
+                            QueryInterface = fpQueryInterface,
                             AddRef = fpAddRef,
                             Release = fpRelease
                         },
@@ -70,9 +70,9 @@ namespace ComWrappersTests
             {
                 Console.WriteLine($"Running {nameof(ValidateIUnknownImpls)}...");
 
-                ComWrappers.GetIUnknownImpl(out IntPtr fpQueryInteface, out IntPtr fpAddRef, out IntPtr fpRelease);
+                ComWrappers.GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
-                Assert.AreNotEqual(fpQueryInteface, IntPtr.Zero);
+                Assert.AreNotEqual(fpQueryInterface, IntPtr.Zero);
                 Assert.AreNotEqual(fpAddRef, IntPtr.Zero);
                 Assert.AreNotEqual(fpRelease, IntPtr.Zero);
             }
@@ -198,7 +198,7 @@ namespace ComWrappersTests
 
         static void ValidateWrappersInstanceIsolation()
         {
-            Console.WriteLine($"Running {nameof(ValidateWrappersInstanceIsolation)}...");   
+            Console.WriteLine($"Running {nameof(ValidateWrappersInstanceIsolation)}...");
 
             var cw1 = new TestComWrappers();
             var cw2 = new TestComWrappers();

@@ -750,7 +750,16 @@ namespace System.Security.Cryptography.Xml
 
         internal static AsymmetricAlgorithm GetAnyPublicKey(X509Certificate2 certificate)
         {
-            return (AsymmetricAlgorithm)certificate.GetRSAPublicKey();
+            AsymmetricAlgorithm algorithm = (AsymmetricAlgorithm)certificate.GetRSAPublicKey() ?? certificate.GetECDsaPublicKey();
+
+#if NETCOREAPP
+            if (algorithm is null && !OperatingSystem.IsTvOS() && !OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst())
+            {
+                algorithm = certificate.GetDSAPublicKey();
+            }
+#endif
+
+            return algorithm;
         }
 
         internal const int MaxTransformsPerReference = 10;

@@ -311,14 +311,15 @@
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'BuildWasmApps'">
       <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" />
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
-                               Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'" />
+                               Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'"
+                               AsArchive="$(HelixCorrelationPayload.EndsWith('.zip'))" />
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
       <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
 

@@ -892,6 +892,13 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
     MEMORYSTATUSEX memStatus;
     GetProcessMemoryLoad(&memStatus);
 
+#ifndef TARGET_UNIX
+    // For 32-bit processes the virtual address range could be smaller than the amount of physical
+    // memory on the machine/in the container, we need to restrict by the VM.
+    if (memStatus.ullTotalVirtual < memStatus.ullTotalPhys)
+        return memStatus.ullTotalVirtual;
+#endif
+
     return memStatus.ullTotalPhys;
 }
 

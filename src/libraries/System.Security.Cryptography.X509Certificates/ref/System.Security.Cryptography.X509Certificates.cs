@@ -64,6 +64,7 @@ namespace System.Security.Cryptography.X509Certificates
         public PublicKey(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedData parameters, System.Security.Cryptography.AsnEncodedData keyValue) { }
         public System.Security.Cryptography.AsnEncodedData EncodedKeyValue { get { throw null; } }
         public System.Security.Cryptography.AsnEncodedData EncodedParameters { get { throw null; } }
+        [System.ObsoleteAttribute("PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey.", DiagnosticId = "SYSLIB0027", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Security.Cryptography.AsymmetricAlgorithm Key { get { throw null; } }
         public System.Security.Cryptography.Oid Oid { get { throw null; } }
         public static System.Security.Cryptography.X509Certificates.PublicKey CreateFromSubjectPublicKeyInfo(System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
@@ -253,6 +254,7 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Security.Cryptography.X509Certificates.X500DistinguishedName IssuerName { get { throw null; } }
         public System.DateTime NotAfter { get { throw null; } }
         public System.DateTime NotBefore { get { throw null; } }
+        [System.ObsoleteAttribute("X509Certificate2.PrivateKey is obsolete. Use the appropriate method to get the private key, such as GetRSAPrivateKey, or use the CopyWithPrivateKey method to create a new instance with a private key.", DiagnosticId = "SYSLIB0028", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Security.Cryptography.AsymmetricAlgorithm? PrivateKey { get { throw null; } set { } }
         public System.Security.Cryptography.X509Certificates.PublicKey PublicKey { get { throw null; } }
         public byte[] RawData { get { throw null; } }

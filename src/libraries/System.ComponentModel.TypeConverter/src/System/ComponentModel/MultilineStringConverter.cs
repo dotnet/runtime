@@ -14,7 +14,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to the specified destination type.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == null)
             {
@@ -34,7 +34,7 @@ namespace System.ComponentModel
         /// parameter using the specified context and attributes.
         /// </summary>
         [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
-        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+        public override PropertyDescriptorCollection? GetProperties(ITypeDescriptorContext? context, object value, Attribute[]? attributes)
         {
             return null;
         }
@@ -42,6 +42,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a value indicating whether this object supports properties.
         /// </summary>
-        public override bool GetPropertiesSupported(ITypeDescriptorContext context) => false;
+        public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => false;
     }
 }

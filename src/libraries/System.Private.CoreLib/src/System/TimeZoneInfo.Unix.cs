@@ -10,6 +10,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Security;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {

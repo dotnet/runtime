@@ -69,13 +69,14 @@
 #include <mono/utils/os-event.h>
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-time.h>
-#include <mono/mini/debugger-state-machine.h>
+#include <mono/component/debugger-state-machine.h>
+#include <mono/metadata/components.h>
 
 #include "mini.h"
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
-#include "debugger-agent.h"
+#include <mono/component/debugger-agent.h>
 #include "mini-runtime.h"
 #include "jit-icalls.h"
 
@@ -999,7 +1000,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		// see if we can notify any attached debugger instances.
 		//
 		// At this point we are accepting that the below step might end in a crash
-		mini_get_dbg_callbacks ()->send_crash (output, &hashes, 0 /* wait # seconds */);
+		mono_component_debugger ()->send_crash (output, &hashes, 0 /* wait # seconds */);
 	}
 	output = NULL;
 	mono_state_free_mem (&merp_mem);

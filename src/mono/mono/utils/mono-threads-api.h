@@ -48,7 +48,7 @@ mono_stackdata_get_stackpointer (const MonoStackData *stackdata)
 MONO_API MONO_RT_EXTERNAL_ONLY gpointer
 mono_threads_enter_gc_unsafe_region (gpointer* stackdata);
 
-gpointer
+MONO_COMPONENT_API gpointer
 mono_threads_enter_gc_unsafe_region_internal (MonoStackData *stackdata);
 
 MONO_API MONO_RT_EXTERNAL_ONLY void

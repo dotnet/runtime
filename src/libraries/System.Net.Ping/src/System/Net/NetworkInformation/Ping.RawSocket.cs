@@ -199,9 +199,7 @@ namespace System.Net.NetworkInformation
             using (Socket socket = GetRawSocket(socketConfig))
             {
                 int ipHeaderLength = socketConfig.IsIpv4 ? MinIpHeaderLengthInBytes : 0;
-                CancellationTokenSource timeoutTokenSource = new CancellationTokenSource();
-
-                timeoutTokenSource.CancelAfter(timeout);
+                CancellationTokenSource timeoutTokenSource = new CancellationTokenSource(timeout);
 
                 try
                 {
@@ -243,6 +241,10 @@ namespace System.Net.NetworkInformation
                 }
                 catch (OperationCanceledException)
                 {
+                }
+                finally
+                {
+                    timeoutTokenSource.Dispose();
                 }
 
                 // We have exceeded our timeout duration, and no reply has been received.

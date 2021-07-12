@@ -293,7 +293,10 @@ int WriteBarrierManager::ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier, 
 
     // the memcpy must come before the switch statment because the asserts inside the switch
     // are actually looking into the JIT_WriteBarrier buffer
-    memcpy(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), (LPVOID)GetCurrentWriteBarrierCode(), GetCurrentWriteBarrierSize());
+    {
+        ExecutableWriterHolder<void> writeBarrierWriterHolder(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), GetCurrentWriteBarrierSize());
+        memcpy(writeBarrierWriterHolder.GetRW(), (LPVOID)GetCurrentWriteBarrierCode(), GetCurrentWriteBarrierSize());
+    }
 
     switch (newWriteBarrier)
     {
@@ -544,7 +547,8 @@ int WriteBarrierManager::UpdateEphemeralBounds(bool isRuntimeSuspended)
             // Change immediate if different from new g_ephermeral_high.
             if (*(UINT64*)m_pUpperBoundImmediate != (size_t)g_ephemeral_high)
             {
-                *(UINT64*)m_pUpperBoundImmediate = (size_t)g_ephemeral_high;
+                ExecutableWriterHolder<UINT64> upperBoundWriterHolder((UINT64*)m_pUpperBoundImmediate, sizeof(UINT64));
+                *upperBoundWriterHolder.GetRW() = (size_t)g_ephemeral_high;
                 stompWBCompleteActions |= SWB_ICACHE_FLUSH;
             }
         }
@@ -557,7 +561,8 @@ int WriteBarrierManager::UpdateEphemeralBounds(bool isRuntimeSuspended)
             // Change immediate if different from new g_ephermeral_low.
             if (*(UINT64*)m_pLowerBoundImmediate != (size_t)g_ephemeral_low)
             {
-                *(UINT64*)m_pLowerBoundImmediate = (size_t)g_ephemeral_low;
+                ExecutableWriterHolder<UINT64> lowerBoundImmediateWriterHolder((UINT64*)m_pLowerBoundImmediate, sizeof(UINT64));
+                *lowerBoundImmediateWriterHolder.GetRW() = (size_t)g_ephemeral_low;
                 stompWBCompleteActions |= SWB_ICACHE_FLUSH;
             }
             break;
@@ -609,7 +614,8 @@ int WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSus
 #endif // FEATURE_SVR_GC
             if (*(UINT64*)m_pWriteWatchTableImmediate != (size_t)g_sw_ww_table)
             {
-                *(UINT64*)m_pWriteWatchTableImmediate = (size_t)g_sw_ww_table;
+                ExecutableWriterHolder<UINT64> writeWatchTableImmediateWriterHolder((UINT64*)m_pWriteWatchTableImmediate, sizeof(UINT64));
+                *writeWatchTableImmediateWriterHolder.GetRW() = (size_t)g_sw_ww_table;
                 stompWBCompleteActions |= SWB_ICACHE_FLUSH;
             }
             break;
@@ -621,14 +627,16 @@ int WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSus
 
     if (*(UINT64*)m_pCardTableImmediate != (size_t)g_card_table)
     {
-        *(UINT64*)m_pCardTableImmediate = (size_t)g_card_table;
+         ExecutableWriterHolder<UINT64> cardTableImmediateWriterHolder((UINT64*)m_pCardTableImmediate, sizeof(UINT64));
+        *cardTableImmediateWriterHolder.GetRW() = (size_t)g_card_table;
         stompWBCompleteActions |= SWB_ICACHE_FLUSH;
     }
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
     if (*(UINT64*)m_pCardBundleTableImmediate != (size_t)g_card_bundle_table)
     {
-        *(UINT64*)m_pCardBundleTableImmediate = (size_t)g_card_bundle_table;
+         ExecutableWriterHolder<UINT64> cardBundleTableImmediateWriterHolder((UINT64*)m_pCardBundleTableImmediate, sizeof(UINT64));
+        *cardBundleTableImmediateWriterHolder.GetRW() = (size_t)g_card_bundle_table;
         stompWBCompleteActions |= SWB_ICACHE_FLUSH;
     }
 #endif

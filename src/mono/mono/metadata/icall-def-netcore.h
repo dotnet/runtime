@@ -245,9 +245,9 @@ ICALL_TYPE(FIELDI, "System.Reflection.FieldInfo", FILEDI_1)
 HANDLES(FILEDI_1, "get_marshal_info", ves_icall_System_Reflection_FieldInfo_get_marshal_info, MonoReflectionMarshalAsAttribute, 1, (MonoReflectionField))
 HANDLES(FILEDI_2, "internal_from_handle_type", ves_icall_System_Reflection_FieldInfo_internal_from_handle_type, MonoReflectionField, 2, (MonoClassField_ref, MonoType_ref))
 
-ICALL_TYPE(ASSMEXT, "System.Reflection.Metadata.AssemblyExtensions", ASSMEXT_2)
-NOHANDLES(ICALL(ASSMEXT_2, "ApplyUpdateEnabled", ves_icall_AssemblyExtensions_ApplyUpdateEnabled))
-NOHANDLES(ICALL(ASSMEXT_1, "ApplyUpdate_internal", ves_icall_AssemblyExtensions_ApplyUpdate))
+ICALL_TYPE(MDUP, "System.Reflection.Metadata.MetadataUpdater", MDUP_1)
+NOHANDLES(ICALL(MDUP_1, "ApplyUpdateEnabled", ves_icall_AssemblyExtensions_ApplyUpdateEnabled))
+NOHANDLES(ICALL(MDUP_2, "ApplyUpdate_internal", ves_icall_AssemblyExtensions_ApplyUpdate))
 
 ICALL_TYPE(MBASE, "System.Reflection.MethodBase", MBASE_1)
 HANDLES(MBASE_1, "GetCurrentMethod", ves_icall_GetCurrentMethod, MonoReflectionMethod, 0, ())
@@ -270,7 +270,7 @@ HANDLES(RASSEM_6b, "GetTopLevelForwardedTypes", ves_icall_System_Reflection_Runt
 HANDLES(RASSEM_7, "InternalGetReferencedAssemblies", ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies, GPtrArray_ptr, 1, (MonoReflectionAssembly))
 HANDLES(RASSEM_8, "InternalImageRuntimeVersion", ves_icall_System_Reflection_RuntimeAssembly_InternalImageRuntimeVersion, MonoString, 1, (MonoReflectionAssembly))
 HANDLES(RASSEM_9, "get_EntryPoint", ves_icall_System_Reflection_RuntimeAssembly_get_EntryPoint, MonoReflectionMethod, 1, (MonoReflectionAssembly))
-HANDLES(RASSEM_10, "get_code_base", ves_icall_System_Reflection_RuntimeAssembly_get_code_base, MonoString, 2, (MonoReflectionAssembly, MonoBoolean))
+HANDLES(RASSEM_10, "get_code_base", ves_icall_System_Reflection_RuntimeAssembly_get_code_base, MonoString, 1, (MonoReflectionAssembly))
 HANDLES(RASSEM_11, "get_fullname", ves_icall_System_Reflection_RuntimeAssembly_get_fullname, MonoString, 1, (MonoReflectionAssembly))
 HANDLES(RASSEM_12, "get_location", ves_icall_System_Reflection_RuntimeAssembly_get_location, MonoString, 1, (MonoReflectionAssembly))
 
