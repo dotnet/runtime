@@ -1411,6 +1411,16 @@ namespace System.Net.Quic.Implementations.MsQuic
         private static Exception GetConnectionAbortedException(State state) =>
             ThrowHelper.GetConnectionAbortedException(state.ConnectionState.AbortErrorCode);
 
+        // Read state transitions:
+        //
+        // None  --(data arrives in event RECV)->  IndividualReadComplete  --(user calls ReadAsync() & completes syncronously)->  None
+        // None  --(user calls ReadAsync() & waits)->  PendingRead  --(data arrives in event RECV & completes user's ReadAsync())->  None
+        // Any non-final state  --(event PEER_SEND_SHUTDOWN or SHUTDOWN_COMPLETED with ConnectionClosed=false)->  ReadsCompleted
+        // Any non-final state  --(event PEER_SEND_ABORT)->  Aborted
+        // Any non-final state  --(user calls AbortRead())->  Aborted
+        // Any state  --(CancellationToken's cancellation for ReadAsync())->  Aborted (TODO: should it be only for non-final as others?) 
+        // Any non-final state  --(event SHUTDOWN_COMPLETED with ConnectionClosed=true)->  ConnectionClosed
+        // Closed - no transitions, set for Unidirectional write-only streams
         private enum ReadState
         {
             /// <summary>
@@ -1427,6 +1437,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             /// User called ReadAsync()
             /// </summary>
             PendingRead,
+
+            // following states are final:
 
             /// <summary>
             /// The peer has gracefully shutdown their sends / our receives; the stream's reads are complete.
