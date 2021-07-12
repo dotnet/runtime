@@ -1951,7 +1951,6 @@ void DiscretionaryPolicy::NoteDouble(InlineObservation obs, double value)
 {
     assert(obs == InlineObservation::CALLSITE_PROFILE_FREQUENCY);
     assert(value >= 0.0);
-    assert(m_ProfileFrequency == 0.0);
 
     m_ProfileFrequency = value;
 }
