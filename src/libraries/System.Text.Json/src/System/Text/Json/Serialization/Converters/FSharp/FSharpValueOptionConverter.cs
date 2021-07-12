@@ -7,32 +7,40 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    // Converter for F# optional values: https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-option-1.html
-    // Serializes `Some(value)` using the format of `value` and `None` values as `null`.
-    internal sealed class FSharpOptionConverter<TOption, TElement> : JsonResumableConverter<TOption>
-        where TOption : class
+    // Converter for F# struct optional values: https://fsharp.github.io/fsharp-core-docs/reference/fsharp-core-fsharpvalueoption-1.html
+    internal sealed class FSharpValueOptionConverter<TValueOption, TElement> : JsonResumableConverter<TValueOption>
+        where TValueOption : struct, IEquatable<TValueOption>
     {
         // While technically not implementing IEnumerable, F# optionals are effectively generic collections of at most one element.
         internal override ConverterStrategy ConverterStrategy => ConverterStrategy.Enumerable;
         internal override Type? ElementType => typeof(TElement);
 
-        private readonly Func<TOption, TElement> _optionValueGetter;
-        private readonly Func<TElement?, TOption> _optionConstructor;
+        public override bool HandleNull => true;
+
+        private readonly FSharpCoreReflectionProxy.StructGetter<TValueOption, TElement> _optionValueGetter;
+        private readonly Func<TElement?, TValueOption> _optionConstructor;
 
         [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
-        public FSharpOptionConverter(JsonConverter<TElement> elementConverter)
+        public FSharpValueOptionConverter(JsonConverter<TElement> elementConverter)
         {
-            _optionValueGetter = FSharpCoreReflectionProxy.Instance.CreateFSharpOptionValueGetter<TOption, TElement>();
-            _optionConstructor = FSharpCoreReflectionProxy.Instance.CreateFSharpOptionSomeConstructor<TOption, TElement>();
+            _optionValueGetter = FSharpCoreReflectionProxy.Instance.CreateFSharpValueOptionValueGetter<TValueOption, TElement>();
+            _optionConstructor = FSharpCoreReflectionProxy.Instance.CreateFSharpValueOptionSomeConstructor<TValueOption, TElement>();
             // If the element converter is value, this converter will also be writing values
             // Set a flag to signal this fact to the converter infrastructure.
             CanWriteJsonValues = elementConverter.ConverterStrategy == ConverterStrategy.Value;
         }
 
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out TOption? value)
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out TValueOption value)
         {
             state.Current.JsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
             var elementConverter = (JsonConverter<TElement>)state.Current.JsonPropertyInfo.ConverterBase;
+
+            // `null` values deserialize as `ValueNone`
+            if (!state.IsContinuation && reader.TokenType == JsonTokenType.Null)
+            {
+                value = default;
+                return true;
+            }
 
             if (elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element))
             {
@@ -40,17 +48,23 @@ namespace System.Text.Json.Serialization.Converters
                 return true;
             }
 
-            value = null;
+            value = default;
             return false;
         }
 
-        internal override bool OnTryWrite(Utf8JsonWriter writer, TOption value, JsonSerializerOptions options, ref WriteStack state)
+        internal override bool OnTryWrite(Utf8JsonWriter writer, TValueOption value, JsonSerializerOptions options, ref WriteStack state)
         {
-            Debug.Assert(value is not null); // 'None' values are encoded as null: handled by the base converter.
+            if (value.Equals(default))
+            {
+                // Write `ValueNone` values as null
+                writer.WriteNullValue();
+                return true;
+            }
+
             state.Current.DeclaredJsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
             var elementConverter = (JsonConverter<TElement>)state.Current.DeclaredJsonPropertyInfo.ConverterBase;
 
-            TElement element = _optionValueGetter(value);
+            TElement element = _optionValueGetter(ref value);
             return elementConverter.TryWrite(writer, element, options, ref state);
         }
     }

@@ -40,6 +40,11 @@ namespace System.Text.Json.Serialization.Converters
                     converterFactoryType = typeof(FSharpOptionConverter<,>).MakeGenericType(typeToConvert, elementType);
                     constructorArguments = new object[] { options.GetConverterInternal(elementType) };
                     break;
+                case FSharpKind.ValueOption:
+                    elementType = typeToConvert.GetGenericArguments()[0];
+                    converterFactoryType = typeof(FSharpValueOptionConverter<,>).MakeGenericType(typeToConvert, elementType);
+                    constructorArguments = new object[] { options.GetConverterInternal(elementType) };
+                    break;
                 case FSharpKind.List:
                     elementType = typeToConvert.GetGenericArguments()[0];
                     converterFactoryType = typeof(FSharpListConverter<,>).MakeGenericType(typeToConvert, elementType);

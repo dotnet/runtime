@@ -551,10 +551,14 @@ namespace System.Text.Json.Serialization
                     break;
 
                 default:
-
-                    // A non-value converter (object or collection) should always have Start and End tokens.
+                    // A non-value converter (object or collection) should always have Start and End tokens
+                    // unless it supports handling null value reads.
+                    if (!isValueConverter && !(HandleNullOnRead && tokenType == JsonTokenType.Null))
+                    {
+                        ThrowHelper.ThrowJsonException_SerializationConverterRead(this);
+                    }
                     // A value converter should not make any reads.
-                    if (!isValueConverter || reader.BytesConsumed != bytesConsumed)
+                    else if (reader.BytesConsumed != bytesConsumed)
                     {
                         ThrowHelper.ThrowJsonException_SerializationConverterRead(this);
                     }

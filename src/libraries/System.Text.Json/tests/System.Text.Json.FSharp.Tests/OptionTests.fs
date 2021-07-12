@@ -59,7 +59,7 @@ let ``Some collection element should serialize as the payload`` (value : 'T) =
     Assert.Equal(expected, actual)
 
 [<Fact>]
-let ``Some of null sgetOptionalElementInputs`` () =
+let ``Some of null should serialize as null`` () =
     let expected = "null"
     let actual = JsonSerializer.Serialize<string option>(Some null)
     Assert.Equal(expected, actual)
@@ -93,19 +93,19 @@ let ``Root-level null should deserialize as None``(_ : 'T) =
 
 [<Theory>]
 [<MemberData(nameof(getOptionalElementInputs))>]
-let ``Null property getOptionalElementInputsne``(_ : 'T) =
+let ``Null property should deserialize as None``(_ : 'T) =
     let actual = JsonSerializer.Deserialize<{| value : 'T option |}>("""{"value":null}""")
     Assert.Equal(None, actual.value)
 
 [<Theory>]
 [<MemberData(nameof(getOptionalElementInputs))>]
-let ``Missing propergetOptionalElementInputs None``(_ : 'T) =
+let ``Missing property should deserialize as None``(_ : 'T) =
     let actual = JsonSerializer.Deserialize<{| value : 'T option |}>("{}")
     Assert.Equal(None, actual.value)
 
 [<Theory>]
 [<MemberData(nameof(getOptionalElementInputs))>]
-let ``Null element sgetOptionalElementInputse``(_ : 'T) =
+let ``Null element should deserialize as None``(_ : 'T) =
     let expected = [Option<'T>.None]
     let actual = JsonSerializer.Deserialize<'T option []>("""[null]""")
     Assert.Equal(expected, actual)
