@@ -43,7 +43,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal sealed class State
         {
             public SafeMsQuicConnectionHandle Handle = null!; // set inside of MsQuicConnection ctor.
-            public string LogId = null!; // set inside of MsQuicConnection ctor.
+            public string TraceId = null!; // set inside of MsQuicConnection ctor.
 
             public GCHandle StateGCHandle;
 
@@ -85,7 +85,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (releaseHandles)
                 {
-                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{LogId} releasing handle after last stream.");
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{TraceId} releasing handle after last stream.");
                     Handle?.Dispose();
                 }
             }
@@ -128,7 +128,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal string TraceId() => _state.LogId;
+        internal string TraceId() => _state.TraceId;
 
         // constructor for inbound connections
         public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, SafeMsQuicConnectionHandle handle, bool remoteCertificateRequired = false, X509RevocationMode revocationMode = X509RevocationMode.Offline, RemoteCertificateValidationCallback? remoteCertificateValidationCallback = null)
@@ -165,7 +165,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
-            _state.LogId = MsQuicLogHelper.GetLogId(_state.Handle);
+            _state.TraceId = MsQuicLogHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(_state, $"{TraceId()} Inbound connection created");
@@ -205,7 +205,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
-            _state.LogId = MsQuicLogHelper.GetLogId(_state.Handle);
+            _state.TraceId = MsQuicLogHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(_state, $"{TraceId()} Outbound connection created");
@@ -389,7 +389,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (certificate == null)
                 {
-                    if (NetEventSource.Log.IsEnabled() && connection._remoteCertificateRequired) NetEventSource.Error(state, $"{state.LogId} Remote certificate required, but no remote certificate received");
+                    if (NetEventSource.Log.IsEnabled() && connection._remoteCertificateRequired) NetEventSource.Error(state, $"{state.TraceId} Remote certificate required, but no remote certificate received");
                     sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
                 }
                 else
@@ -419,18 +419,18 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     bool success = connection._remoteCertificateValidationCallback(connection, certificate, chain, sslPolicyErrors);
                     if (!success && NetEventSource.Log.IsEnabled())
-                        NetEventSource.Error(state, $"{state.LogId} Remote certificate rejected by verification callback");
+                        NetEventSource.Error(state, $"{state.TraceId} Remote certificate rejected by verification callback");
                     return success ? MsQuicStatusCodes.Success : MsQuicStatusCodes.HandshakeFailure;
                 }
 
                 if (NetEventSource.Log.IsEnabled())
-                    NetEventSource.Info(state, $"{state.LogId} Certificate validation for '${certificate?.Subject}' finished with ${sslPolicyErrors}");
+                    NetEventSource.Info(state, $"{state.TraceId} Certificate validation for '${certificate?.Subject}' finished with ${sslPolicyErrors}");
 
                 return (sslPolicyErrors == SslPolicyErrors.None) ? MsQuicStatusCodes.Success : MsQuicStatusCodes.HandshakeFailure;
             }
             catch (Exception ex)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, $"{state.LogId} Certificate validation failed ${ex.Message}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, $"{state.TraceId} Certificate validation failed ${ex.Message}");
             }
 
             return MsQuicStatusCodes.InternalError;
@@ -628,7 +628,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"{state.LogId} Connection received event {connectionEvent.Type}");
+                NetEventSource.Info(state, $"{state.TraceId} Connection received event {connectionEvent.Type}");
             }
 
             try
@@ -657,10 +657,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(state, $"{state.LogId} Exception occurred during handling {connectionEvent.Type} connection callback: {ex}");
+                    NetEventSource.Error(state, $"{state.TraceId} Exception occurred during handling {connectionEvent.Type} connection callback: {ex}");
                 }
 
-                Debug.Fail($"{state.LogId} Exception occurred during handling {connectionEvent.Type} connection callback: {ex}");
+                Debug.Fail($"{state.TraceId} Exception occurred during handling {connectionEvent.Type} connection callback: {ex}");
 
                 // TODO: trigger an exception on any outstanding async calls.
 

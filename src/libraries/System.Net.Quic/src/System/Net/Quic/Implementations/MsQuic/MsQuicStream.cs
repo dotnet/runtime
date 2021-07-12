@@ -33,7 +33,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             public SafeMsQuicStreamHandle Handle = null!; // set in ctor.
             public GCHandle StateGCHandle;
             public MsQuicConnection.State ConnectionState = null!; // set in ctor.
-            public string LogId = null!; // set in ctor.
+            public string TraceId = null!; // set in ctor.
 
             public ReadState ReadState;
             public long ReadErrorCode = -1;
@@ -67,7 +67,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public void Cleanup()
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{LogId} releasing handles.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{TraceId} releasing handles.");
 
                 ShutdownState = ShutdownState.Finished;
                 CleanupSendState(this);
@@ -79,7 +79,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal string TraceId() => _state.LogId;
+        internal string TraceId() => _state.TraceId;
 
         // inbound.
         internal MsQuicStream(MsQuicConnection.State connectionState, SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
@@ -114,13 +114,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _state.ConnectionState = connectionState;
 
-            _state.LogId = MsQuicLogHelper.GetLogId(_state.Handle);
+            _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(
                     _state,
                     $"{TraceId()} Inbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
-                        $"in connection {_state.ConnectionState.LogId}.");
+                        $"in connection {_state.ConnectionState.TraceId}.");
             }
         }
 
@@ -168,13 +168,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _state.ConnectionState = connectionState;
 
-            _state.LogId = MsQuicLogHelper.GetLogId(_state.Handle);
+            _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(
                     _state,
-                    $"{_state.LogId} Outbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
-                        $"in connection {_state.ConnectionState.LogId}.");
+                    $"{_state.TraceId} Outbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
+                        $"in connection {_state.ConnectionState.TraceId}.");
             }
         }
 
@@ -722,7 +722,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"{state.LogId} Stream received event {evt.Type}");
+                NetEventSource.Info(state, $"{state.TraceId} Stream received event {evt.Type}");
             }
 
             try
@@ -765,10 +765,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(state, $"{state.LogId} Exception occurred during handling Stream {evt.Type} event: {ex}");
+                    NetEventSource.Error(state, $"{state.TraceId} Exception occurred during handling Stream {evt.Type} event: {ex}");
                 }
 
-                Debug.Fail($"{state.LogId} Exception occurred during handling Stream {evt.Type} event: {ex}");
+                Debug.Fail($"{state.TraceId} Exception occurred during handling Stream {evt.Type} event: {ex}");
 
                 return MsQuicStatusCodes.InternalError;
             }
@@ -869,7 +869,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             lock (state)
             {
                 // This event won't occur within the middle of a receive.
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"{state.LogId} Stream completing resettable event source.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"{state.TraceId} Stream completing resettable event source.");
 
                 if (state.ReadState == ReadState.None)
                 {
@@ -948,7 +948,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             lock (state)
             {
                 // This event won't occur within the middle of a receive.
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"{state.LogId} Stream completing resettable event source.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"{state.TraceId} Stream completing resettable event source.");
 
                 if (state.ReadState == ReadState.None)
                 {
@@ -1238,7 +1238,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             long errorCode = state.ConnectionState.AbortErrorCode;
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"{state.LogId} Stream handling connection {state.ConnectionState.LogId} close" +
+                NetEventSource.Info(state, $"{state.TraceId} Stream handling connection {state.ConnectionState.TraceId} close" +
                     (errorCode != -1 ? $" with code {errorCode}" : ""));
             }
 
