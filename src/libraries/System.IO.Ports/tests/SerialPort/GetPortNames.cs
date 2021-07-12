@@ -80,8 +80,8 @@ namespace System.IO.Ports.Tests
             get
             {
                 var sb = new StringBuilder();
-                sb.AppendLine("PortHelper Ports: " + string.Join(",", PortHelper.GetPorts()));
-                sb.AppendLine("SerialPort Ports: " + string.Join(",", SerialPort.GetPortNames()));
+                sb.AppendLine($"PortHelper Ports: {string.Join(",", PortHelper.GetPorts())}");
+                sb.AppendLine($"SerialPort Ports: {string.Join(",", SerialPort.GetPortNames())}");
                 return sb.ToString();
             }
         }
