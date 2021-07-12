@@ -4,6 +4,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
+include_directories(${CLR_SRC_NATIVE_DIR}/common)
 
 # needed when zLib compression is used
 include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/AnyOS/zlib)
