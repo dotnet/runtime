@@ -179,6 +179,6 @@ namespace System.ComponentModel
         /// returned. Returning null from this method causes the TypeDescriptor object
         /// to use its default type description services.
         /// </summary>
-        public virtual object? GetPropertyOwner(PropertyDescriptor pd) => _parent?.GetPropertyOwner(pd);
+        public virtual object? GetPropertyOwner(PropertyDescriptor? pd) => _parent?.GetPropertyOwner(pd);
     }
 }

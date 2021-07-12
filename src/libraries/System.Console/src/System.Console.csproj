@@ -119,8 +119,6 @@
              Link="Common\Interop\Windows\Interop.ReadConsoleOutput.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCP.cs"
              Link="Common\Interop\Windows\Interop.SetConsoleCP.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs"
-             Link="Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCursorPosition.cs"
              Link="Common\Interop\Windows\Interop.SetConsoleCursorPosition.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleOutputCP.cs"

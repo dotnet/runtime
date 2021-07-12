@@ -116,6 +116,49 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/microsoft/msquic/pull/1728")]
+        public async Task ConnectWithClientCertificate()
+        {
+            bool clientCertificateOK = false;
+
+            var serverOptions = new QuicListenerOptions();
+            serverOptions.ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
+            serverOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
+            serverOptions.ServerAuthenticationOptions.ClientCertificateRequired = true;
+            serverOptions.ServerAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+            {
+                _output.WriteLine("client certificate {0}", cert);
+                Assert.NotNull(cert);
+                Assert.Equal(ClientCertificate.Thumbprint, ((X509Certificate2)cert).Thumbprint);
+
+                clientCertificateOK = true;
+                return true;
+            };
+            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, serverOptions);
+
+            QuicClientConnectionOptions clientOptions = new QuicClientConnectionOptions()
+            {
+                RemoteEndPoint = listener.ListenEndPoint,
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
+            };
+            clientOptions.ClientAuthenticationOptions.ClientCertificates = new X509CertificateCollection() { ClientCertificate };
+
+            using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, clientOptions);
+            ValueTask clientTask = clientConnection.ConnectAsync();
+
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await clientTask;
+            // Verify functionality of the connections.
+            await PingPong(clientConnection, serverConnection);
+            // check we completed the client certificate verification.
+            Assert.True(clientCertificateOK);
+
+            await serverConnection.CloseAsync(0);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52048")]
         public async Task WaitForAvailableUnidirectionStreamsAsyncWorks()
         {
             using QuicListener listener = CreateQuicListener(maxUnidirectionalStreams: 1);

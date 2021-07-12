@@ -15,6 +15,8 @@ namespace System.Net.Quic.Tests
     public abstract class QuicTestBase<T>
         where T : IQuicImplProviderFactory, new()
     {
+        private static readonly byte[] s_ping = Encoding.UTF8.GetBytes("PING");
+        private static readonly byte[] s_pong = Encoding.UTF8.GetBytes("PONG");
         private static readonly IQuicImplProviderFactory s_factory = new T();
 
         public static QuicImplementationProvider ImplementationProvider { get; } = s_factory.GetProvider();
@@ -23,6 +25,7 @@ namespace System.Net.Quic.Tests
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
         public X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+        public X509Certificate2 ClientCertificate = System.Net.Test.Common.Configuration.Certificates.GetClientCertificate();
 
         public bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
         {
@@ -73,6 +76,36 @@ namespace System.Net.Quic.Tests
                 ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
             };
             return CreateQuicListener(options);
+        }
+
+        internal async Task PingPong(QuicConnection client, QuicConnection server)
+        {
+            using QuicStream clientStream = client.OpenBidirectionalStream();
+            ValueTask t = clientStream.WriteAsync(s_ping);
+            using QuicStream serverStream = await server.AcceptStreamAsync();
+
+            byte[] buffer = new byte[s_ping.Length];
+            int remains = s_ping.Length;
+            while (remains > 0)
+            {
+                int readLength = await serverStream.ReadAsync(buffer, buffer.Length - remains, remains);
+                Assert.True(readLength > 0);
+                remains -= readLength;
+            }
+            Assert.Equal(s_ping, buffer);
+            await t;
+
+            t = serverStream.WriteAsync(s_pong);
+            remains = s_pong.Length;
+            while (remains > 0)
+            {
+                int readLength = await clientStream.ReadAsync(buffer, buffer.Length - remains, remains);
+                Assert.True(readLength > 0);
+                remains -= readLength;
+            }
+
+            Assert.Equal(s_pong, buffer);
+            await t;
         }
 
         private QuicListener CreateQuicListener(QuicListenerOptions options) => new QuicListener(ImplementationProvider, options);
@@ -128,6 +161,15 @@ namespace System.Net.Quic.Tests
             }
 
             return bytesRead;
+        }
+
+        internal static async Task<int> WriteForever(QuicStream stream)
+        {
+            Memory<byte> buffer = new byte[] { 123 };
+            while (true)
+            {
+                await stream.WriteAsync(buffer);
+            }
         }
 
         internal static void AssertArrayEqual(byte[] expected, byte[] actual)

@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Data.SqlTypes;
 using System.Reflection;
@@ -65,6 +66,8 @@ namespace System.Data
         /// <summary>
         /// Converts the given value object to the specified destination type.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "InstanceDescriptor calls GetType(string) on AssemblyQualifiedName of instance of type we already have in here.")]
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == null)

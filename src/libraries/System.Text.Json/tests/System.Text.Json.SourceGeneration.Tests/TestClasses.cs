@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json.SourceGeneration.Tests.RepeatedTypes
 {
@@ -106,6 +107,14 @@ namespace System.Text.Json.SourceGeneration.Tests
     public class MyIntermediateType
     {
         public MyType Type = new();
+    }
+
+    public class MyTypeWithCallbacks : IJsonOnSerializing, IJsonOnSerialized
+    {
+        public string MyProperty { get; set; }
+
+        public void OnSerializing() => MyProperty = "Before";
+        void IJsonOnSerialized.OnSerialized() => MyProperty = "After";
     }
 
     public class JsonMessage

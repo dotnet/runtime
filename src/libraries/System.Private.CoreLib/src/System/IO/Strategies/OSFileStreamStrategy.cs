@@ -53,8 +53,6 @@ namespace System.IO.Strategies
 
             try
             {
-                FileStreamHelpers.ValidateFileTypeForNonExtendedPaths(_fileHandle, path);
-
                 if (mode == FileMode.Append && CanSeek)
                 {
                     _appendStart = _filePosition = Length;

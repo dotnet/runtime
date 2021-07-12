@@ -329,16 +329,28 @@ void ComputeWriteBarrierRange(BYTE ** ppbStart, DWORD * pcbLength)
 {
     DWORD size = (PBYTE)JIT_PatchedWriteBarrierLast - (PBYTE)JIT_PatchedWriteBarrierStart;
     *ppbStart = (PBYTE)JIT_PatchedWriteBarrierStart;
+    if (IsWriteBarrierCopyEnabled())
+    {
+        *ppbStart = GetWriteBarrierCodeLocation(*ppbStart);
+    }
     *pcbLength = size;
 }
 
 void CopyWriteBarrier(PCODE dstCode, PCODE srcCode, PCODE endCode)
 {
-    TADDR dst = PCODEToPINSTR(dstCode);
+    TADDR dst = (TADDR)PCODEToPINSTR((PCODE)GetWriteBarrierCodeLocation((void*)dstCode));
     TADDR src = PCODEToPINSTR(srcCode);
     TADDR end = PCODEToPINSTR(endCode);
 
     size_t size = (PBYTE)end - (PBYTE)src;
+
+    ExecutableWriterHolder<void> writeBarrierWriterHolder;
+    if (IsWriteBarrierCopyEnabled())
+    {
+        writeBarrierWriterHolder = ExecutableWriterHolder<void>((void*)dst, size);
+        dst = (TADDR)writeBarrierWriterHolder.GetRW();
+    }
+
     memcpy((PVOID)dst, (PVOID)src, size);
 }
 
@@ -419,7 +431,7 @@ void UpdateGCWriteBarriers(bool postGrow = false)
     }
 #define GWB_PATCH_OFFSET(_global)                                       \
     if (pDesc->m_dw_##_global##_offset != 0xffff)                       \
-        PutThumb2Mov32((UINT16*)(to + pDesc->m_dw_##_global##_offset - 1), (UINT32)(dac_cast<TADDR>(_global)));
+        PutThumb2Mov32((UINT16*)(to + pDesc->m_dw_##_global##_offset), (UINT32)(dac_cast<TADDR>(_global)));
 
     // Iterate through the write barrier patch table created in the .clrwb section
     // (see write barrier asm code)
@@ -431,6 +443,13 @@ void UpdateGCWriteBarriers(bool postGrow = false)
         PBYTE to = FindWBMapping(pDesc->m_pFuncStart);
         if(to)
         {
+            to = (PBYTE)PCODEToPINSTR((PCODE)GetWriteBarrierCodeLocation(to));
+            ExecutableWriterHolder<BYTE> barrierWriterHolder;
+            if (IsWriteBarrierCopyEnabled())
+            {
+                barrierWriterHolder = ExecutableWriterHolder<BYTE>(to, pDesc->m_pFuncEnd - pDesc->m_pFuncStart);
+                to = barrierWriterHolder.GetRW();
+            }
             GWB_PATCH_OFFSET(g_lowest_address);
             GWB_PATCH_OFFSET(g_highest_address);
             GWB_PATCH_OFFSET(g_ephemeral_low);
