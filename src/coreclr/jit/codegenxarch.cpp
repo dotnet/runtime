@@ -3075,6 +3075,12 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                                     dstAddrIndexScale, dstOffset);
             }
         }
+
+        if (regSize == YMM_REGSIZE_BYTES)
+        {
+            instGen(INS_vzeroupper);
+        }
+
         return;
     }
 
