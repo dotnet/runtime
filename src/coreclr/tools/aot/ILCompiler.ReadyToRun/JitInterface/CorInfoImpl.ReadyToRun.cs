@@ -939,7 +939,8 @@ namespace Internal.JitInterface
 
         private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc, out object context, ref TypeDesc constrainedType)
         {
-            if (methodDesc != null && (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc) 
+            if (methodDesc != null && !methodDesc.IsAbstract &&
+                (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc) 
                 || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod) 
                 || methodDesc.IsPInvoke))
             {
