@@ -6273,7 +6273,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         InlineResult prejitResult(this, methodHnd, "prejit");
 
         // Profile data allows us to avoid early "too many IL bytes" outs.
-        prejitResult.NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, fgHaveProfileData());
+        prejitResult.NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, fgHaveSufficientProfileData());
 
         // Do the initial inline screen.
         impCanInlineIL(methodHnd, methodInfo, forceInline, &prejitResult);

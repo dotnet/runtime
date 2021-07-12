@@ -19074,25 +19074,17 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
 
     // If the call site has profile data, report the relative frequency of the site.
     //
-    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveProfileData() && pInlineInfo->iciBlock->hasProfileWeight())
+    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveSufficientProfileData())
     {
         const BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
         const BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
         profileFreq                               = entryWeight == 0.0f ? 0.0 : callSiteWeight / entryWeight;
+        hasProfile                                = true;
 
         assert(callSiteWeight >= 0);
         assert(entryWeight >= 0);
-
-        const BasicBlock::weight_t sufficientSamples = 1000.0f;
-
-        if ((rootCompiler->fgPgoSource != ICorJitInfo::PgoSource::Static) ||
-            ((callSiteWeight + entryWeight) > sufficientSamples))
-        {
-            // Let's not report profiles for methods with insufficient samples during prejitting.
-            hasProfile = true;
-        }
     }
-    else if ((pInlineInfo == nullptr) && rootCompiler->fgHaveProfileData())
+    else if (pInlineInfo == nullptr)
     {
         // Simulate a hot callsite for PrejitRoot mode.
         hasProfile  = true;
@@ -19247,7 +19239,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             }
 
             // Profile data allows us to avoid early "too many IL bytes" outs.
-            pParam->result->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, pParam->pThis->fgHaveProfileData());
+            pParam->result->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, pParam->pThis->fgHaveSufficientProfileData());
 
             bool forceInline;
             forceInline = !!(pParam->methAttr & CORINFO_FLG_FORCEINLINE);

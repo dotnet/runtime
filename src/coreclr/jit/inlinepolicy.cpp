@@ -1379,7 +1379,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                     // in prejit-root mode.
                     bbLimit += 5 + m_Switch * 10;
                 }
-                bbLimit += m_FoldableBranch * 2 + m_FoldableSwitch * 10;
+                bbLimit += m_FoldableBranch + m_FoldableSwitch * 10;
                 if ((unsigned)value > bbLimit)
                 {
                     SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
@@ -1470,7 +1470,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_NonGenericCallsGeneric)
     {
-        multiplier += 2.0;
+        multiplier += 1.5;
         JITDUMP("\nInline candidate is generic and caller is not.  Multiplier increased to %g.", multiplier);
     }
 
@@ -1484,7 +1484,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //  if (Math.Abs(arg0) > 10) { // same here
         //  etc.
         //
-        multiplier += 3.0 + m_FoldableBranch;
+        multiplier += 2.0 + m_FoldableBranch;
         JITDUMP("\nInline candidate has %d foldable branches.  Multiplier increased to %g.", m_FoldableBranch,
                 multiplier);
     }
@@ -1520,7 +1520,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_Intrinsic > 0)
     {
         // In most cases such intrinsics are lowered as single CPU instructions
-        multiplier += 1.0 + m_Intrinsic * 0.3;
+        multiplier += 1.0 + m_Intrinsic * 0.2;
         JITDUMP("\nInline has %d intrinsics.  Multiplier increased to %g.", m_Intrinsic, multiplier);
     }
 
@@ -1547,7 +1547,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //
         //  int Caller(string s) => Callee(s); // String is 'exact' (sealed)
         //
-        multiplier += 2.0;
+        multiplier += 1.5;
         JITDUMP("\nCallsite passes %d arguments of exact classes while callee accepts non-exact ones.  Multiplier "
                 "increased to %g.",
                 m_ArgIsExactClsSigIsNot, multiplier);
@@ -1696,7 +1696,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     }
 
     // Slow down if there are already too many locals
-    if (m_RootCompiler->lvaTableCnt > 50)
+    if (m_RootCompiler->lvaTableCnt > 16)
     {
         // E.g. MaxLocalsToTrack = 1024 and lvaTableCnt = 512 -> multiplier *= 0.5;
         const double lclFullness = min(1.0, (double)m_RootCompiler->lvaTableCnt / JitConfig.JitMaxLocalsToTrack());
