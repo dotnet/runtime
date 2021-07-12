@@ -19,13 +19,13 @@ namespace System.ComponentModel
         /// Creates a new extended property info. Callers can then treat this as
         /// a standard property.
         /// </summary>
-        public ExtendedPropertyDescriptor(ReflectPropertyDescriptor extenderInfo, Type receiverType, IExtenderProvider provider, Attribute[] attributes)
+        public ExtendedPropertyDescriptor(ReflectPropertyDescriptor extenderInfo, Type? receiverType, IExtenderProvider provider, Attribute[]? attributes)
             : base(extenderInfo, attributes)
         {
             Debug.Assert(extenderInfo != null, "ExtendedPropertyDescriptor must have extenderInfo");
             Debug.Assert(provider != null, "ExtendedPropertyDescriptor must have provider");
 
-            List<Attribute> attrList = new List<Attribute>(AttributeArray)
+            List<Attribute> attrList = new List<Attribute>(AttributeArray!)
             {
                 ExtenderProvidedPropertyAttribute.Create(extenderInfo, receiverType, provider)
             };
@@ -46,17 +46,17 @@ namespace System.ComponentModel
         {
             Debug.Assert(extender != null, "The original PropertyDescriptor must be non-null");
 
-            ExtenderProvidedPropertyAttribute attr = extender.Attributes[typeof(ExtenderProvidedPropertyAttribute)] as ExtenderProvidedPropertyAttribute;
+            ExtenderProvidedPropertyAttribute? attr = extender.Attributes[typeof(ExtenderProvidedPropertyAttribute)] as ExtenderProvidedPropertyAttribute;
 
             Debug.Assert(attr != null, "The original PropertyDescriptor does not have an ExtenderProvidedPropertyAttribute");
 
 
-            ReflectPropertyDescriptor reflectDesc = attr.ExtenderProperty as ReflectPropertyDescriptor;
+            ReflectPropertyDescriptor? reflectDesc = attr.ExtenderProperty as ReflectPropertyDescriptor;
 
             Debug.Assert(reflectDesc != null, "The original PropertyDescriptor has an invalid ExtenderProperty");
 
             _extenderInfo = reflectDesc;
-            _provider = attr.Provider;
+            _provider = attr.Provider!;
         }
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Determines if the property can be written to.
         /// </summary>
-        public override bool IsReadOnly => Attributes[typeof(ReadOnlyAttribute)].Equals(ReadOnlyAttribute.Yes);
+        public override bool IsReadOnly => Attributes[typeof(ReadOnlyAttribute)]!.Equals(ReadOnlyAttribute.Yes);
 
         /// <summary>
         /// Retrieves the data type of the property.
@@ -95,8 +95,8 @@ namespace System.ComponentModel
 
                 if (!(Attributes[typeof(DisplayNameAttribute)] is DisplayNameAttribute displayNameAttr) || displayNameAttr.IsDefaultAttribute())
                 {
-                    ISite site = GetSite(_provider);
-                    string providerName = site?.Name;
+                    ISite? site = GetSite(_provider);
+                    string? providerName = site?.Name;
                     if (providerName != null && providerName.Length > 0)
                     {
                         name = SR.Format(SR.MetaExtenderName, name, providerName);
@@ -110,7 +110,7 @@ namespace System.ComponentModel
         /// Retrieves the value of the property for the given component. This will
         /// throw an exception if the component does not have this property.
         /// </summary>
-        public override object GetValue(object comp) => _extenderInfo.ExtenderGetValue(_provider, comp);
+        public override object? GetValue(object? comp) => _extenderInfo.ExtenderGetValue(_provider, comp);
 
         /// <summary>
         /// Resets the value of this property on comp to the default value.
@@ -120,7 +120,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Sets the value of this property on the given component.
         /// </summary>
-        public override void SetValue(object component, object value)
+        public override void SetValue(object? component, object? value)
         {
             _extenderInfo.ExtenderSetValue(_provider, component, value, this);
         }

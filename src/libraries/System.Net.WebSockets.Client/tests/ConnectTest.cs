@@ -282,7 +282,6 @@ namespace System.Net.WebSockets.Client.Tests
 
         [ConditionalFact(nameof(WebSocketsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54152", TestPlatforms.Browser)]
         public async Task ConnectAsync_CancellationRequestedAfterConnect_ThrowsOperationCanceledException()
         {
             var releaseServer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

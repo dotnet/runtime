@@ -5686,6 +5686,39 @@ mono_array_new_full_checked (MonoClass *array_class, uintptr_t *lengths, intptr_
 	return array;
 }
 
+static MonoArray*
+mono_array_new_jagged_helper (MonoClass *klass, int n, uintptr_t *lengths, int index, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoArray *ret = mono_array_new_full_checked (klass, &lengths [index], NULL, error);
+	goto_if_nok (error, exit);
+
+	MONO_HANDLE_PIN (ret);
+
+	if (index < (n - 1)) {
+		// We have a new dimension argument. This means the elements in the allocated array
+		// are also arrays and we allocate each one of them.
+		MonoClass *element_class = m_class_get_element_class (klass);
+		g_assert (m_class_get_rank (element_class) == 1);
+		for (int i = 0; i < lengths [index]; i++) {
+			MonoArray *o = mono_array_new_jagged_helper (element_class, n, lengths, index + 1, error);
+			goto_if_nok (error, exit);
+			mono_array_setref_fast (ret, i, o);
+		}
+	}
+
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (ret);
+}
+
+MonoArray *
+mono_array_new_jagged_checked (MonoClass *klass, int n, uintptr_t *lengths, MonoError *error)
+{
+	return mono_array_new_jagged_helper (klass, n, lengths, 0, error);
+}
+
+
 /**
  * mono_array_new:
  * \param domain domain where the object is created

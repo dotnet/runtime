@@ -552,9 +552,9 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
     else
     {
         // If this is going live, the register must not have a variable in it, except
-        // in the case of an exception variable, which may be already treated as live
-        // in the register.
-        assert(varDsc->lvLiveInOutOfHndlr || ((regSet.GetMaskVars() & regMask) == 0));
+        // in the case of an exception or "spill at single-def" variable, which may be already treated
+        // as live in the register.
+        assert(varDsc->IsAlwaysAliveInMemory() || ((regSet.GetMaskVars() & regMask) == 0));
         regSet.AddMaskVars(regMask);
     }
 }
@@ -736,7 +736,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         bool       isGCRef    = (varDsc->TypeGet() == TYP_REF);
         bool       isByRef    = (varDsc->TypeGet() == TYP_BYREF);
         bool       isInReg    = varDsc->lvIsInReg();
-        bool       isInMemory = !isInReg || varDsc->lvLiveInOutOfHndlr;
+        bool       isInMemory = !isInReg || varDsc->IsAlwaysAliveInMemory();
 
         if (isInReg)
         {
@@ -777,8 +777,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         if (varDsc->lvIsInReg())
         {
             // If this variable is going live in a register, it is no longer live on the stack,
-            // unless it is an EH var, which always remains live on the stack.
-            if (!varDsc->lvLiveInOutOfHndlr)
+            // unless it is an EH/"spill at single-def" var, which always remains live on the stack.
+            if (!varDsc->IsAlwaysAliveInMemory())
             {
 #ifdef DEBUG
                 if (VarSetOps::IsMember(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex))
@@ -1070,7 +1070,7 @@ void CodeGen::genDefineTempLabel(BasicBlock* label)
 {
     genLogLabel(label);
     label->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                     gcInfo.gcRegByrefSetCur, false DEBUG_ARG(label->bbNum));
+                                                     gcInfo.gcRegByrefSetCur, false DEBUG_ARG(label));
 }
 
 // genDefineInlineTempLabel: Define an inline label that does not affect the GC
@@ -2064,9 +2064,8 @@ void CodeGen::genInsertNopForUnwinder(BasicBlock* block)
         // block starts an EH region. If we pointed the existing bbEmitCookie here, then the NOP
         // would be executed, which we would prefer not to do.
 
-        block->bbUnwindNopEmitCookie =
-            GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur,
-                                       false DEBUG_ARG(block->bbNum));
+        block->bbUnwindNopEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
+                                                                  gcInfo.gcRegByrefSetCur, false DEBUG_ARG(block));
 
         instGen(INS_nop);
     }
@@ -4355,16 +4354,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #endif // defined(UNIX_AMD64_ABI)
 
             noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
-#ifndef TARGET_64BIT
-#ifndef TARGET_ARM
-            // Right now we think that incoming arguments are not pointer sized.  When we eventually
-            // understand the calling convention, this still won't be true. But maybe we'll have a better
-            // idea of how to ignore it.
-
-            // On Arm, a long can be passed in register
-            noway_assert(genTypeSize(genActualType(varDsc->TypeGet())) == TARGET_POINTER_SIZE);
-#endif
-#endif // TARGET_64BIT
+#ifdef TARGET_X86
+            // On x86 we don't enregister args that are not pointer sized.
+            noway_assert(genTypeSize(varDsc->GetActualRegisterType()) == TARGET_POINTER_SIZE);
+#endif // TARGET_X86
 
             noway_assert(varDsc->lvIsInReg() && !regArgTab[argNum].circular);
 
@@ -11428,7 +11421,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             {
                 varReg = REG_STK;
             }
-            if ((varReg == REG_STK) || fieldVarDsc->lvLiveInOutOfHndlr)
+            if ((varReg == REG_STK) || fieldVarDsc->IsAlwaysAliveInMemory())
             {
                 if (!lclNode->AsLclVar()->IsLastUse(i))
                 {

@@ -16,11 +16,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         // This is workaround for a bug in ILTrimmer.
         // Without these DynamicDependency attributes, .ctor() will be removed from the safe handles.
         // Remove once fixed: https://github.com/mono/linker/issues/1660
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicRegistrationHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicConfigurationHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicListenerHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicConnectionHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicStreamHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicRegistrationHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicConfigurationHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicListenerHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicConnectionHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicStreamHandle))]
         private MsQuicApi(NativeApi* vtable)
         {
             uint status;

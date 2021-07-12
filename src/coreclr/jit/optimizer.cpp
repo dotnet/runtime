@@ -38,7 +38,6 @@ void Compiler::optInit()
     optNativeCallCount   = 0;
     optAssertionCount    = 0;
     optAssertionDep      = nullptr;
-    optCSECandidateTotal = 0;
     optCSEstart          = UINT_MAX;
     optCSEcount          = 0;
 }
@@ -5627,8 +5626,8 @@ void Compiler::optHoistLoopCode()
 #endif
 
 #if 0
-    // The code in this #if has been useful in debugging loop cloning issues, by
-    // enabling selective enablement of the loop cloning optimization according to
+    // The code in this #if has been useful in debugging loop hoisting issues, by
+    // enabling selective enablement of the loop hoisting optimization according to
     // method hash.
 #ifdef DEBUG
     unsigned methHash = info.compMethodHash();
@@ -5650,7 +5649,7 @@ void Compiler::optHoistLoopCode()
         return;
     printf("Doing loop hoisting in %s (0x%x).\n", info.compFullName, methHash);
 #endif // DEBUG
-#endif // 0     -- debugging loop cloning issues
+#endif // 0     -- debugging loop hoisting issues
 
 #ifdef DEBUG
     if (verbose)
@@ -5899,6 +5898,8 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
 
             printf("\n  LOOPV-FP(%d)=", pLoopDsc->lpLoopVarFPCount);
             lvaDispVarSet(loopFPVars);
+
+            printf("\n");
         }
 #endif
     }

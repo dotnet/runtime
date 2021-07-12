@@ -238,15 +238,10 @@ extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type,
 extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
 extern "C" FCDECL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj);
 
-#if defined(TARGET_ARM64) || defined(FEATURE_WRITEBARRIER_COPY)
 // ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
 // Copied write barriers must be called at a different location
 extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
 #define WriteBarrier_Helper JIT_WriteBarrier_Callable
-#else
-// in other cases the regular JIT helper is callable.
-#define WriteBarrier_Helper JIT_WriteBarrier
-#endif
 
 extern "C" FCDECL1(void, JIT_InternalThrow, unsigned exceptNum);
 extern "C" FCDECL1(void*, JIT_InternalThrowFromHelper, unsigned exceptNum);
@@ -344,28 +339,25 @@ EXTERN_C FCDECL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift);
 
 #ifdef TARGET_X86
 
+#define ENUM_X86_WRITE_BARRIER_REGISTERS() \
+    X86_WRITE_BARRIER_REGISTER(EAX) \
+    X86_WRITE_BARRIER_REGISTER(ECX) \
+    X86_WRITE_BARRIER_REGISTER(EBX) \
+    X86_WRITE_BARRIER_REGISTER(ESI) \
+    X86_WRITE_BARRIER_REGISTER(EDI) \
+    X86_WRITE_BARRIER_REGISTER(EBP)
+
 extern "C"
 {
-    void STDCALL JIT_CheckedWriteBarrierEAX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierEBX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierECX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierESI(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierEDI(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_CheckedWriteBarrierEBP(); // JIThelp.asm/JIThelp.s
 
-    void STDCALL JIT_DebugWriteBarrierEAX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierEBX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierECX(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierESI(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierEDI(); // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_DebugWriteBarrierEBP(); // JIThelp.asm/JIThelp.s
+// JIThelp.asm/JIThelp.s
+#define X86_WRITE_BARRIER_REGISTER(reg) \
+    void STDCALL JIT_CheckedWriteBarrier##reg(); \
+    void STDCALL JIT_DebugWriteBarrier##reg(); \
+    void STDCALL JIT_WriteBarrier##reg();
 
-    void STDCALL JIT_WriteBarrierEAX();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierEBX();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierECX();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierESI();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierEDI();        // JIThelp.asm/JIThelp.s
-    void STDCALL JIT_WriteBarrierEBP();        // JIThelp.asm/JIThelp.s
+    ENUM_X86_WRITE_BARRIER_REGISTERS()
+#undef X86_WRITE_BARRIER_REGISTER
 
     void STDCALL JIT_WriteBarrierGroup();
     void STDCALL JIT_WriteBarrierGroup_End();

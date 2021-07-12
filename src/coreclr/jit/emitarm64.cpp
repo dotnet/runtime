@@ -12286,7 +12286,7 @@ void emitter::emitDispIns(
             }
             else if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                emitPrintLabel(id->idAddr()->iiaIGlabel);
             }
             else
             {
@@ -12324,7 +12324,7 @@ void emitter::emitDispIns(
             emitDispReg(id->idReg1(), size, true);
             if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                emitPrintLabel(id->idAddr()->iiaIGlabel);
             }
             else
             {
@@ -12338,7 +12338,7 @@ void emitter::emitDispIns(
             emitDispImm(emitGetInsSC(id), true);
             if (id->idIsBound())
             {
-                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                emitPrintLabel(id->idAddr()->iiaIGlabel);
             }
             else
             {
@@ -12463,7 +12463,7 @@ void emitter::emitDispIns(
                 }
                 else if (id->idIsBound())
                 {
-                    printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                    emitPrintLabel(id->idAddr()->iiaIGlabel);
                 }
                 else
                 {

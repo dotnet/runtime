@@ -147,7 +147,7 @@ namespace System.Data.Common
             {
             }
 
-            public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+            public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
             {
                 if (typeof(InstanceDescriptor) == destinationType)
                 {
@@ -156,7 +156,7 @@ namespace System.Data.Common
                 return base.CanConvertTo(context, destinationType);
             }
 
-            public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+            public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
             {
                 if (null == destinationType)
                 {

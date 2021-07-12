@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Net.Quic;
-using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -282,6 +279,32 @@ namespace System.Net.Http
 
                 CheckDisposedOrStarted();
                 _settings._expect100ContinueTimeout = value;
+            }
+        }
+
+        /// <summary>
+        /// Defines the initial HTTP2 stream receive window size for all connections opened by the this <see cref="SocketsHttpHandler"/>.
+        /// </summary>
+        /// <remarks>
+        /// Larger the values may lead to faster download speed, but potentially higher memory footprint.
+        /// The property must be set to a value between 65535 and the configured maximum window size, which is 16777216 by default.
+        /// </remarks>
+        public int InitialHttp2StreamWindowSize
+        {
+            get => _settings._initialHttp2StreamWindowSize;
+            set
+            {
+                if (value < HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize || value > GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize)
+                {
+                    string message = SR.Format(
+                        SR.net_http_http2_invalidinitialstreamwindowsize,
+                        HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize,
+                        GlobalHttpSettings.SocketsHttpHandler.MaxHttp2StreamWindowSize);
+
+                    throw new ArgumentOutOfRangeException(nameof(InitialHttp2StreamWindowSize), message);
+                }
+                CheckDisposedOrStarted();
+                _settings._initialHttp2StreamWindowSize = value;
             }
         }
 
@@ -580,6 +603,17 @@ namespace System.Net.Http
                 {
                     request.Headers.ExpectContinue = false;
                 }
+            }
+
+            Uri? requestUri = request.RequestUri;
+            if (requestUri is null || !requestUri.IsAbsoluteUri)
+            {
+                return new InvalidOperationException(SR.net_http_client_invalid_requesturi);
+            }
+
+            if (!HttpUtilities.IsSupportedScheme(requestUri.Scheme))
+            {
+                return new NotSupportedException(SR.Format(SR.net_http_unsupported_requesturi_scheme, requestUri.Scheme));
             }
 
             return null;

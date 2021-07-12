@@ -7292,7 +7292,7 @@ void emitter::emitDispInsHelp(
                             lab = (insGroup*)emitCodeGetCookie(*bbp++);
                             assert(lab);
 
-                            printf("\n            DD      G_M%03u_IG%02u", emitComp->compMethodID, lab->igNum);
+                            printf("\n            DD      %s", emitLabelString(lab));
                         } while (--cnt);
                     }
                 }
@@ -7601,7 +7601,7 @@ void emitter::emitDispInsHelp(
         case IF_T2_M1: // Load Label
             emitDispReg(id->idReg1(), attr, true);
             if (id->idIsBound())
-                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                emitPrintLabel(id->idAddr()->iiaIGlabel);
             else
                 printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             break;
@@ -7646,7 +7646,7 @@ void emitter::emitDispInsHelp(
                 }
             }
             else if (id->idIsBound())
-                printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                emitPrintLabel(id->idAddr()->iiaIGlabel);
             else
                 printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
         }
