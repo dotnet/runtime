@@ -66,7 +66,7 @@ bool Compiler::fgHaveSufficientProfileData()
 
     if ((fgFirstBB != nullptr) && (fgPgoSource == ICorJitInfo::PgoSource::Static))
     {
-        const BasicBlock::weight_t sufficientSamples = 1000;
+        const BasicBlock::weight_t sufficientSamples = 5000;
         return fgFirstBB->bbWeight > sufficientSamples;
     }
     return true;
