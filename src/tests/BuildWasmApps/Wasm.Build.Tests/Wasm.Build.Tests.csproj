@@ -71,6 +71,8 @@
 
       <RunScriptCommand Condition="'$(XUnitMethodName)' != ''">$(RunScriptCommand) -method $(XUnitMethodName)</RunScriptCommand>
       <RunScriptCommand Condition="'$(XUnitClassName)' != ''">$(RunScriptCommand) -class $(XUnitClassName)</RunScriptCommand>
+
+      <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) -parallel none</RunScriptCommand>
     </PropertyGroup>
   </Target>
 </Project>
