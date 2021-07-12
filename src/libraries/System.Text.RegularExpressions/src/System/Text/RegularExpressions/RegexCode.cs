@@ -403,9 +403,9 @@ namespace System.Text.RegularExpressions
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine("Direction:  " + (RightToLeft ? "right-to-left" : "left-to-right"));
-            sb.AppendLine("Anchor:     " + RegexPrefixAnalyzer.AnchorDescription(LeadingAnchor));
-            sb.AppendLine("");
+            sb.AppendLine($"Direction:  {(RightToLeft ? "right-to-left" : "left-to-right")}");
+            sb.AppendLine($"Anchor:     {RegexPrefixAnalyzer.AnchorDescription(LeadingAnchor)}");
+            sb.AppendLine();
 
             if (BoyerMoorePrefix != null)
             {

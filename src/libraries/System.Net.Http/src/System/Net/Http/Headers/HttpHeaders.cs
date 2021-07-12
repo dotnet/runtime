@@ -449,7 +449,7 @@ namespace System.Net.Http.Headers
                 if (info.IsEmpty)
                 {
                     bool headerRemoved = Remove(descriptor);
-                    Debug.Assert(headerRemoved, "Existing header '" + descriptor.Name + "' couldn't be removed.");
+                    Debug.Assert(headerRemoved, $"Existing header '{descriptor.Name}' couldn't be removed.");
                 }
 
                 return result;

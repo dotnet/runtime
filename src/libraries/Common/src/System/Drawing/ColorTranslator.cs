@@ -386,9 +386,7 @@ namespace System.Drawing
             }
             else
             {
-                colorString = "#" + c.R.ToString("X2", null) +
-                                    c.G.ToString("X2", null) +
-                                    c.B.ToString("X2", null);
+                colorString = $"#{c.R:X2}{c.G:X2}{c.B:X2}";
             }
 
             return colorString;

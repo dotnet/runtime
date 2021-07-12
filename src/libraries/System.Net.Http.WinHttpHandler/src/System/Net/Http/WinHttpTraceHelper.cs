@@ -15,7 +15,7 @@ namespace System.Net.Http
 
             NetEventSource.Info(
                 thisOrContextObject,
-                $"handle=0x{handle.ToString("X")}, context=0x{context.ToString("X")}, {GetStringFromInternetStatus(status)}",
+                $"handle=0x{handle:X}, context=0x{context:X}, {GetStringFromInternetStatus(status)}",
                 memberName);
         }
 

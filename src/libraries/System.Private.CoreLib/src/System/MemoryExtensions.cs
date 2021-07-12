@@ -1933,14 +1933,14 @@ namespace System
             /// <param name="literalLength">The number of constant characters outside of interpolation expressions in the interpolated string.</param>
             /// <param name="formattedCount">The number of interpolation expressions in the interpolated string.</param>
             /// <param name="destination">The destination buffer.</param>
-            /// <param name="success">Upon return, true if the destination may be long enough to support the formatting, or false if it won't be.</param>
+            /// <param name="shouldAppend">Upon return, true if the destination may be long enough to support the formatting, or false if it won't be.</param>
             /// <remarks>This is intended to be called only by compiler-generated code. Arguments are not validated as they'd otherwise be for members intended to be used directly.</remarks>
-            public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, Span<char> destination, out bool success)
+            public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, Span<char> destination, out bool shouldAppend)
             {
                 _destination = destination;
                 _provider = null;
                 _pos = 0;
-                _success = success = destination.Length >= literalLength;
+                _success = shouldAppend = destination.Length >= literalLength;
                 _hasCustomFormatter = false;
             }
 
@@ -1949,14 +1949,14 @@ namespace System
             /// <param name="formattedCount">The number of interpolation expressions in the interpolated string.</param>
             /// <param name="destination">The destination buffer.</param>
             /// <param name="provider">An object that supplies culture-specific formatting information.</param>
-            /// <param name="success">Upon return, true if the destination may be long enough to support the formatting, or false if it won't be.</param>
+            /// <param name="shouldAppend">Upon return, true if the destination may be long enough to support the formatting, or false if it won't be.</param>
             /// <remarks>This is intended to be called only by compiler-generated code. Arguments are not validated as they'd otherwise be for members intended to be used directly.</remarks>
-            public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, Span<char> destination, IFormatProvider? provider, out bool success)
+            public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, Span<char> destination, IFormatProvider? provider, out bool shouldAppend)
             {
                 _destination = destination;
                 _provider = provider;
                 _pos = 0;
-                _success = success = destination.Length >= literalLength;
+                _success = shouldAppend = destination.Length >= literalLength;
                 _hasCustomFormatter = provider is not null && DefaultInterpolatedStringHandler.HasCustomFormatter(provider);
             }
 

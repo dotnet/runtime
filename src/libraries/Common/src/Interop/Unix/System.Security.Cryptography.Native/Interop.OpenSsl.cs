@@ -295,7 +295,7 @@ internal static partial class Interop
         {
 #if DEBUG
             ulong assertNoError = Crypto.ErrPeekError();
-            Debug.Assert(assertNoError == 0, "OpenSsl error queue is not empty, run: 'openssl errstr " + assertNoError.ToString("X") + "' for original error.");
+            Debug.Assert(assertNoError == 0, $"OpenSsl error queue is not empty, run: 'openssl errstr {assertNoError:X}' for original error.");
 #endif
             errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
 
@@ -349,7 +349,7 @@ internal static partial class Interop
         {
 #if DEBUG
             ulong assertNoError = Crypto.ErrPeekError();
-            Debug.Assert(assertNoError == 0, "OpenSsl error queue is not empty, run: 'openssl errstr " + assertNoError.ToString("X") + "' for original error.");
+            Debug.Assert(assertNoError == 0, $"OpenSsl error queue is not empty, run: 'openssl errstr {assertNoError:X}' for original error.");
 #endif
             errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
 
