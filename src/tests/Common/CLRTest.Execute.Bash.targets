@@ -336,10 +336,17 @@ fi
 
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Browser' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Browser' and '$(ForNode)' != 'true' ">
       <![CDATA[
 cd WasmApp
 ./run-v8.sh
+CLRTestExitCode=$?
+      ]]>
+      </BashCLRTestLaunchCmds>
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Browser' and '$(ForNode)' == 'true'">
+      <![CDATA[
+cd WasmApp
+./run-node.sh
 CLRTestExitCode=$?
       ]]>
       </BashCLRTestLaunchCmds>
