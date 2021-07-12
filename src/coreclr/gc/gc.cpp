@@ -2635,6 +2635,7 @@ size_t gc_heap::eph_gen_starts_size = 0;
 heap_segment* gc_heap::segment_standby_list;
 #if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
 heap_segment* gc_heap::regions_to_decommit = nullptr;
+heap_segment* gc_heap::large_regions_to_decommit = nullptr;
 #endif //USE_REGIONS && MULTIPLE_HEAPS
 bool          gc_heap::use_large_pages_p = 0;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
@@ -3854,7 +3855,7 @@ void region_allocator::delete_region (uint8_t* region_start)
     leave_spin_lock();
 }
 
-uint8_t* region_allocator::find_highest_basic_regions_on_freelists (int64_t n)
+uint8_t* region_allocator::find_highest_regions_on_freelists (int64_t n, bool small_region_p)
 {
     assert (n > 0);
 
@@ -3866,7 +3867,7 @@ uint8_t* region_allocator::find_highest_basic_regions_on_freelists (int64_t n)
         uint32_t current_val = *current_index;
         uint32_t current_num_units = get_num_units (current_val);
         bool free_p = is_unit_memory_free (current_val);
-        if (!free_p && (current_num_units == 1))
+        if (!free_p && ((current_num_units == 1) == small_region_p))
         {
             heap_segment* region = get_region_info (region_address_of (current_index));
             if (heap_segment_allocated (region) == nullptr)
@@ -3879,6 +3880,15 @@ uint8_t* region_allocator::find_highest_basic_regions_on_freelists (int64_t n)
     }
 
     return region_address_of (max (current_index, lowest_index));
+}
+uint8_t* region_allocator::find_highest_basic_regions_on_freelists (int64_t n)
+{
+    return find_highest_regions_on_freelists (n, true);
+}
+
+uint8_t* region_allocator::find_highest_large_regions_on_freelists(int64_t n)
+{
+    return find_highest_regions_on_freelists (n, false);
 }
 #endif //USE_REGIONS
 
@@ -11486,6 +11496,7 @@ void gc_heap::distribute_free_regions()
     int64_t total_num_free_regions = 0;
     int64_t total_num_free_large_regions = 0;
     ptrdiff_t total_ephemeral_budget = 0;
+    ptrdiff_t total_uoh_budget = 0;
     for (int i = 0; i < n_heaps; i++)
     {
         gc_heap* hp = g_heaps[i];
@@ -11506,8 +11517,21 @@ void gc_heap::distribute_free_regions()
         }
 
         total_ephemeral_budget += desired_allocation;
+
+        for (int gen = loh_generation; gen <= poh_generation; gen++)
+        {
+            dynamic_data* dd_gen = hp->dynamic_data_of (gen);
+
+            // estimate how much we are going to need in gen - assume half the free list space gets used
+            ptrdiff_t desired_allocation_gen = dd_new_allocation (dd_gen) - (generation_free_list_space (hp->generation_of (gen)) / 2);
+            if (desired_allocation_gen > 0)
+            {
+                total_uoh_budget += desired_allocation_gen;
+            }
+        }
     }
     int64_t total_ephemeral_regions_budget = total_ephemeral_budget >> min_segment_size_shr;
+    int64_t total_uoh_regions_budget = (total_uoh_budget >> min_segment_size_shr) * LARGE_REGION_FACTOR;
 
     // we may still have regions left on the regions_to_decommit list -
     // use these to fill the budget as well
@@ -11519,10 +11543,11 @@ void gc_heap::distribute_free_regions()
         num_regions_to_decommit++;
     }
 
-    dprintf (REGIONS_LOG, ("%Id free regions, %Id free large regions, %Id regions ephemeral budget, %Id regions to decommit",
+    dprintf (REGIONS_LOG, ("%Id free regions, %Id free large regions, %Id regions ephemeral budget, %I regions uoh budget, %Id regions to decommit",
         total_num_free_regions,
         total_num_free_large_regions,
         total_ephemeral_regions_budget,
+        total_uoh_regions_budget,
         num_regions_to_decommit));
 
     total_num_free_regions += num_regions_to_decommit;
@@ -11606,12 +11631,97 @@ void gc_heap::distribute_free_regions()
                 if (num_regions_to_decommit == 0)
                     break;
             }
+            // we should have found enough regions to decommit
             assert (num_regions_to_decommit == 0);
             gradual_decommit_in_progress_p = regions_to_decommit != nullptr;
         }
     }
-    int64_t target_num_large_regions = (total_num_free_large_regions + (n_heaps - 1)) / n_heaps;
-    heap_segment* surplus_large_regions = nullptr;
+    int64_t target_num_large_regions;
+    heap_segment* surplus_large_regions = large_regions_to_decommit;
+    large_regions_to_decommit = nullptr;
+    int64_t num_large_regions_to_decommit = 0;
+    for (heap_segment* region = surplus_large_regions; region != nullptr; region = heap_segment_next(region))
+    {
+        num_large_regions_to_decommit++;
+    }
+    total_num_free_large_regions += num_large_regions_to_decommit;
+    if (total_num_free_large_regions < total_uoh_regions_budget)
+    {
+        target_num_large_regions = (total_num_free_large_regions + (n_heaps - 1)) / n_heaps;
+    }
+    else
+    {
+        target_num_large_regions = (total_uoh_regions_budget + (n_heaps - 1)) / n_heaps;
+        total_uoh_regions_budget = target_num_large_regions * n_heaps;
+        num_large_regions_to_decommit = total_num_free_large_regions - total_uoh_regions_budget;
+        if (num_large_regions_to_decommit > 0)
+        {
+            uint8_t* threshold_large_region = global_region_allocator.find_highest_large_regions_on_freelists (num_regions_to_decommit);
+            dprintf (REGIONS_LOG, ("About to remove %Id large regions above threshold %Ix", num_regions_to_decommit, threshold_region));
+
+            heap_segment* last_large_region = nullptr;
+            heap_segment* next_large_region = nullptr;
+            for (heap_segment* region = surplus_large_regions; region != nullptr; region = next_large_region)
+            {
+                next_large_region = heap_segment_next (region);
+                if (get_region_start (region) >= threshold_large_region)
+                {
+                    if (last_large_region != nullptr)
+                    {
+                        heap_segment_next (last_large_region) = next_large_region;
+                    }
+                    else
+                    {
+                        surplus_large_regions = next_large_region;
+                    }
+                    heap_segment_next (region) = large_regions_to_decommit;
+                    large_regions_to_decommit = region;
+                    dprintf (REGIONS_LOG, ("Moved largeregion %Ix(%Ix) to decommit list", region, get_region_start (region)));
+                    if (--num_large_regions_to_decommit == 0)
+                        break;
+                }
+                else
+                {
+                    last_large_region = region;
+                }
+            }
+            for (int i = 0; i < n_heaps; i++)
+            {
+                gc_heap* hp = g_heaps[i];
+                heap_segment* last_large_region = nullptr;
+                heap_segment* next_large_region = nullptr;
+                for (heap_segment* region = hp->free_large_regions; region != nullptr; region = next_large_region)
+                {
+                    next_large_region = heap_segment_next (region);
+                    if (get_region_start (region) >= threshold_large_region)
+                    {
+                        if (last_large_region != nullptr)
+                        {
+                            heap_segment_next (last_large_region) = next_large_region;
+                        }
+                        else
+                        {
+                            hp->free_large_regions = next_large_region;
+                        }
+                        hp->num_free_large_regions--;
+                        heap_segment_next (region) = large_regions_to_decommit;
+                        large_regions_to_decommit = region;
+                        dprintf (REGIONS_LOG, ("Moved large region %Ix(%Ix) to decommit list", region, get_region_start (region)));
+                        if (--num_regions_to_decommit == 0)
+                            break;
+                    }
+                    else
+                    {
+                        last_large_region = region;
+                    }
+                }
+                if (num_large_regions_to_decommit == 0)
+                    break;
+            }
+            // we should have found enough large regions to decommit
+            assert (num_large_regions_to_decommit == 0);
+        }
+    }
     for (int i = 0; i < n_heaps; i++)
     {
         gc_heap* hp = g_heaps[i];
@@ -37616,42 +37726,46 @@ bool gc_heap::decommit_step ()
 
 #ifdef USE_REGIONS
     const size_t max_decommit_step_size = DECOMMIT_SIZE_PER_MILLISECOND * DECOMMIT_TIME_STEP_MILLISECONDS;
-    dprintf (REGIONS_LOG, ("decommit_step, regions_to_decommit = %Ix", regions_to_decommit));
-    heap_segment* region = regions_to_decommit;
-    while (region != nullptr)
+    dprintf (REGIONS_LOG, ("decommit_step, regions_to_decommit = %Ix, large_regions_to_decommit = %Ix", regions_to_decommit, large_regions_to_decommit));
+    for (int large_regions = 0; large_regions <= 1; large_regions++)
     {
-        regions_to_decommit = heap_segment_next (region);
+        heap_segment** region_link = large_regions ? &large_regions_to_decommit : &regions_to_decommit;
+        heap_segment* region = *region_link;
+        while (region != nullptr)
+        {
+            *region_link = heap_segment_next (region);
 
-        uint8_t* page_start = align_lower_page (get_region_start (region));
-        uint8_t* end = use_large_pages_p ? heap_segment_used(region) : heap_segment_committed(region);
-        size_t size = end - page_start;
-        bool decommit_succeeded_p = false;
-        if (!use_large_pages_p)
-        {
-            decommit_succeeded_p = virtual_decommit (page_start, size, heap_segment_oh (region), 0);
-            dprintf (REGIONS_LOG, ("decommitted region %Ix(%Ix-%Ix) (%Iu bytes) - success: %d",
-                region,
-                page_start,
-                end,
-                size,
-                decommit_succeeded_p));
+            uint8_t* page_start = align_lower_page(get_region_start(region));
+            uint8_t* end = use_large_pages_p ? heap_segment_used(region) : heap_segment_committed(region);
+            size_t size = end - page_start;
+            bool decommit_succeeded_p = false;
+            if (!use_large_pages_p)
+            {
+                decommit_succeeded_p = virtual_decommit(page_start, size, heap_segment_oh(region), 0);
+                dprintf(REGIONS_LOG, ("decommitted region %Ix(%Ix-%Ix) (%Iu bytes) - success: %d",
+                    region,
+                    page_start,
+                    end,
+                    size,
+                    decommit_succeeded_p));
+            }
+            if (!decommit_succeeded_p)
+            {
+                memclr(page_start, size);
+                dprintf(REGIONS_LOG, ("cleared region %Ix(%Ix-%Ix) (%Iu bytes)",
+                    region,
+                    page_start,
+                    end,
+                    size));
+            }
+            global_region_allocator.delete_region(get_region_start(region));
+            decommit_size += size;
+            if (decommit_size >= max_decommit_step_size)
+            {
+                return true;
+            }
+            region = *region_link;
         }
-        if (!decommit_succeeded_p)
-        {
-            memclr (page_start, size);
-            dprintf (REGIONS_LOG, ("cleared region %Ix(%Ix-%Ix) (%Iu bytes)",
-                region,
-                page_start,
-                end,
-                size));
-        }
-        global_region_allocator.delete_region (get_region_start (region));
-        decommit_size += size;
-        if (decommit_size >= max_decommit_step_size)
-        {
-            return true;
-        }
-        region = regions_to_decommit;
     }
 #else //USE_REGIONS
     for (int i = 0; i < n_heaps; i++)

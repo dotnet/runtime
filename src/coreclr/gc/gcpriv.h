@@ -4629,6 +4629,8 @@ protected:
 #if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
     PER_HEAP_ISOLATED
     heap_segment* regions_to_decommit;
+    PER_HEAP_ISOLATED
+    heap_segment* large_regions_to_decommit;
 #endif //USE_REGIONS && MULTIPLE_HEAPS
 
     PER_HEAP
@@ -5532,6 +5534,8 @@ private:
         return (val & ~region_alloc_free_bit);
     }
 
+    uint8_t* find_highest_regions_on_freelists (int64_t n, bool small_region_p);
+
 public:
     bool init (uint8_t* start, uint8_t* end, size_t alignment, uint8_t** lowest, uint8_t** highest);
     bool allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction);
@@ -5548,6 +5552,7 @@ public:
     size_t get_region_alignment () { return region_alignment; }
     size_t get_large_region_alignment () { return large_region_alignment; }
     uint8_t* find_highest_basic_regions_on_freelists (int64_t n);
+    uint8_t* find_highest_large_regions_on_freelists (int64_t n);
 };
 #endif //USE_REGIONS
 
