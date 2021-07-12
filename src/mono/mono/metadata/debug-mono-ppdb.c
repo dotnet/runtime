@@ -536,7 +536,7 @@ mono_ppdb_get_seq_points_internal (const char* ptr, MonoSymSeqPoint **seq_points
 		sp.end_column = start_col + delta_cols;
 
 		g_array_append_val (sps, sp);
-		if (sfiles && *sfiles) {
+		if (sindexes && *sindexes) {
 			g_ptr_array_add (*sindexes, GUINT_TO_POINTER ((*sfiles)->len - 1));
 		}
 	}
