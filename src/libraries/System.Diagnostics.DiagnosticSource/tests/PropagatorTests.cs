@@ -21,89 +21,89 @@ namespace System.Diagnostics.Tests
         public void TestAllPropagators()
         {
             RemoteExecutor.Invoke(() => {
-                Assert.NotNull(TextMapPropagator.Current);
+                Assert.NotNull(DistributedContextPropagator.Current);
 
                 //
                 // Default Propagator
                 //
 
-                Assert.Same(TextMapPropagator.CreateDefaultPropagator(), TextMapPropagator.Current);
+                Assert.Same(DistributedContextPropagator.CreateDefaultPropagator(), DistributedContextPropagator.Current);
 
                 TestDefaultPropagatorUsingW3CActivity(
-                                TextMapPropagator.Current,
+                                DistributedContextPropagator.Current,
                                 "Legacy1=true",
                                 new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("     LegacyKey1     ", "    LegacyValue1    ") });
 
                 TestDefaultPropagatorUsingHierarchicalActivity(
-                                TextMapPropagator.Current,
+                                DistributedContextPropagator.Current,
                                 "Legacy2=true",
                                 new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("LegacyKey2", "LegacyValue2") });
 
-                TestFields(TextMapPropagator.Current);
+                TestFields(DistributedContextPropagator.Current);
 
                 //
                 // NoOutput Propagator
                 //
 
-                TextMapPropagator.Current = TextMapPropagator.CreateNoOutputPropagator();
-                Assert.NotNull(TextMapPropagator.Current);
+                DistributedContextPropagator.Current = DistributedContextPropagator.CreateNoOutputPropagator();
+                Assert.NotNull(DistributedContextPropagator.Current);
                 TestNoOutputPropagatorUsingHierarchicalActivity(
-                                TextMapPropagator.Current,
+                                DistributedContextPropagator.Current,
                                 "ActivityState=1",
                                 new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("B1", "V1"), new KeyValuePair<string, string>(" B2 ", " V2 ")});
 
                 TestNoOutputPropagatorUsingHierarchicalActivity(
-                                TextMapPropagator.Current,
+                                DistributedContextPropagator.Current,
                                 "ActivityState=2",
                                 null);
 
                 TestNoOutputPropagatorUsingW3CActivity(
-                                TextMapPropagator.Current,
+                                DistributedContextPropagator.Current,
                                 "ActivityState=1",
                                 new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>(" B3 ", " V3"), new KeyValuePair<string, string>(" B4 ", " V4 "), new KeyValuePair<string, string>("B5", "V5")});
 
                 TestNoOutputPropagatorUsingW3CActivity(
-                                TextMapPropagator.Current,
+                                DistributedContextPropagator.Current,
                                 "ActivityState=2",
                                 null);
 
-                TestFields(TextMapPropagator.Current);
+                TestFields(DistributedContextPropagator.Current);
 
                 //
                 // Pass Through Propagator
                 //
 
-                TextMapPropagator.Current = TextMapPropagator.CreatePassThroughPropagator();
-                Assert.NotNull(TextMapPropagator.Current);
+                DistributedContextPropagator.Current = DistributedContextPropagator.CreatePassThroughPropagator();
+                Assert.NotNull(DistributedContextPropagator.Current);
                 TestPassThroughPropagatorUsingHierarchicalActivityWithParentChain(
-                                TextMapPropagator.Current,
+                                DistributedContextPropagator.Current,
                                 "PassThrough=true",
                                 new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("PassThroughKey1", "PassThroughValue1"), new KeyValuePair<string, string>("PassThroughKey2", "PassThroughValue2")});
 
                 TestPassThroughPropagatorUsingHierarchicalActivityWithParentId(
-                                TextMapPropagator.Current,
+                                DistributedContextPropagator.Current,
                                 "PassThrough1=true",
                                 new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("PassThroughKey3", "PassThroughValue3"), new KeyValuePair<string, string>(" PassThroughKey4 ", " PassThroughValue4 ")});
 
                 TestPassThroughPropagatorUsingW3CActivity(
-                                TextMapPropagator.Current,
+                                DistributedContextPropagator.Current,
                                 "PassThrough2=1",
                                 new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("     PassThroughKey4     ", "    PassThroughValue4    ") });
 
-                TestPassThroughPropagatorWithNullCurrent(TextMapPropagator.Current);
+                TestPassThroughPropagatorWithNullCurrent(DistributedContextPropagator.Current);
 
-                TestFields(TextMapPropagator.Current);
+                TestFields(DistributedContextPropagator.Current);
 
                 //
                 // Test Current
                 //
 
-                Assert.Throws<ArgumentNullException>(() => TextMapPropagator.Current = null);
+                Assert.Throws<ArgumentNullException>(() => DistributedContextPropagator.Current = null);
 
             }).Dispose();
         }
 
-        private void TestDefaultPropagatorUsingW3CActivity(TextMapPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
+        private void TestDefaultPropagatorUsingW3CActivity(DistributedContextPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
         {
             using Activity a = CreateW3CActivity("LegacyW3C1", "LegacyW3CState=1", baggage);
             using Activity b = CreateW3CActivity("LegacyW3C2", "LegacyW3CState=2", baggage);
@@ -117,7 +117,7 @@ namespace System.Diagnostics.Tests
             TestDefaultPropagatorUsing(Activity.Current, propagator, state, baggage);
         }
 
-        private void TestDefaultPropagatorUsingHierarchicalActivity(TextMapPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
+        private void TestDefaultPropagatorUsingHierarchicalActivity(DistributedContextPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
         {
             using Activity a = CreateHierarchicalActivity("LegacyHierarchical1", null, "LegacyHierarchicalState=1", baggage);
             using Activity b = CreateHierarchicalActivity("LegacyHierarchical2", null, "LegacyHierarchicalState=2", baggage);
@@ -131,7 +131,7 @@ namespace System.Diagnostics.Tests
             TestDefaultPropagatorUsing(Activity.Current, propagator, state, baggage);
         }
 
-        private void TestDefaultPropagatorUsing(Activity a, TextMapPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
+        private void TestDefaultPropagatorUsing(Activity a, DistributedContextPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
         {
             // Test with non-current
             propagator.Inject(a, null, (object carrier, string fieldName, string value) =>
@@ -167,7 +167,7 @@ namespace System.Diagnostics.Tests
             TestBaggageExtraction(propagator, a);
         }
 
-        private void TestNoOutputPropagatorUsingHierarchicalActivity(TextMapPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
+        private void TestNoOutputPropagatorUsingHierarchicalActivity(DistributedContextPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
         {
             using Activity a = CreateHierarchicalActivity("NoOutputHierarchical", null, state, baggage);
 
@@ -181,7 +181,7 @@ namespace System.Diagnostics.Tests
             TestBaggageExtraction(propagator, a);
         }
 
-        private void TestNoOutputPropagatorUsingW3CActivity(TextMapPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
+        private void TestNoOutputPropagatorUsingW3CActivity(DistributedContextPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
         {
             using Activity a = CreateW3CActivity("NoOutputW3C", state, baggage);
 
@@ -195,7 +195,7 @@ namespace System.Diagnostics.Tests
             TestBaggageExtraction(propagator, a);
         }
 
-        private void TestPassThroughPropagatorUsingHierarchicalActivityWithParentChain(TextMapPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
+        private void TestPassThroughPropagatorUsingHierarchicalActivityWithParentChain(DistributedContextPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
         {
             using Activity a = CreateHierarchicalActivity("PassThrough", null, state, baggage);
             using Activity b = CreateHierarchicalActivity("PassThroughChild1", null, state + "1", new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Child1Key", "Child1Value") } );
@@ -239,7 +239,7 @@ namespace System.Diagnostics.Tests
             TestBaggageExtraction(propagator, c);
         }
 
-        private void TestPassThroughPropagatorUsingHierarchicalActivityWithParentId(TextMapPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
+        private void TestPassThroughPropagatorUsingHierarchicalActivityWithParentId(DistributedContextPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
         {
             using Activity a = CreateHierarchicalActivity("PassThrough", "Parent1", state, baggage);
             using Activity b = CreateHierarchicalActivity("PassThroughChild1", "Parent2", state + "1", new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Child1Key", "Child1Value") } );
@@ -283,7 +283,7 @@ namespace System.Diagnostics.Tests
             TestBaggageExtraction(propagator, c);
         }
 
-        private void TestPassThroughPropagatorUsingW3CActivity(TextMapPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
+        private void TestPassThroughPropagatorUsingW3CActivity(DistributedContextPropagator propagator, string state, IEnumerable<KeyValuePair<string, string>> baggage)
         {
             using Activity a = CreateW3CActivity("PassThroughW3C", "PassThroughW3CState=1", baggage);
 
@@ -314,7 +314,7 @@ namespace System.Diagnostics.Tests
             TestBaggageExtraction(propagator, a);
         }
 
-        private void TestPassThroughPropagatorWithNullCurrent(TextMapPropagator propagator)
+        private void TestPassThroughPropagatorWithNullCurrent(DistributedContextPropagator propagator)
         {
             Activity.Current = null;
 
@@ -337,7 +337,7 @@ namespace System.Diagnostics.Tests
             });
         }
 
-        private void TestDefaultExtraction(TextMapPropagator propagator, Activity a)
+        private void TestDefaultExtraction(DistributedContextPropagator propagator, Activity a)
         {
             bool traceParentEncountered = false;
 
@@ -388,7 +388,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(a.TraceStateString, traceState);
         }
 
-        private void TestBaggageExtraction(TextMapPropagator propagator, Activity a)
+        private void TestBaggageExtraction(DistributedContextPropagator propagator, Activity a)
         {
             bool baggageEncountered = false;
 
@@ -425,7 +425,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(GetFormattedBaggage(a.Baggage, false, true), GetFormattedBaggage(b, true));
         }
 
-        private void TestFields(TextMapPropagator propagator)
+        private void TestFields(DistributedContextPropagator propagator)
         {
             Assert.True(propagator.Fields.Contains(TraceParent));
             Assert.True(propagator.Fields.Contains(RequestId));
@@ -532,14 +532,14 @@ namespace System.Diagnostics.Tests
         {
             RemoteExecutor.Invoke(() => {
 
-                TextMapPropagator.Current = new CustomPropagator();
+                DistributedContextPropagator.Current = new CustomPropagator();
                 using Activity a = CreateW3CActivity("CustomW3C1", "CustomW3CState=1", new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>(" CustomKey1 ", "    CustomValue1  ") });
 
                 string traceParent   = "x-" + a.Id ;
                 string traceState    = "x-" + a.TraceStateString;
                 string baggageString = "x=y, " + GetFormattedBaggage(a.Baggage);
 
-                TextMapPropagator.Current.Inject(a, null, (object carrier, string fieldName, string value) =>
+                DistributedContextPropagator.Current.Inject(a, null, (object carrier, string fieldName, string value) =>
                 {
                     if (fieldName == CustomPropagator.XTraceParent)
                     {
@@ -562,7 +562,7 @@ namespace System.Diagnostics.Tests
                     Assert.False(true, $"Encountered wrong header name '{fieldName}' in the Custom Propagator");
                 });
 
-                TextMapPropagator.Current.ExtractTraceIdAndState(null, (object carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
+                DistributedContextPropagator.Current.ExtractTraceIdAndState(null, (object carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
                 {
                     fieldValues = null;
                     fieldValue = null;
@@ -585,7 +585,7 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(traceParent, traceId);
                 Assert.Equal(traceState, state);
 
-                IEnumerable<KeyValuePair<string, string?>>? b = TextMapPropagator.Current.ExtractBaggage(null, (object carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
+                IEnumerable<KeyValuePair<string, string?>>? b = DistributedContextPropagator.Current.ExtractBaggage(null, (object carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
                 {
                     Assert.Null(carrier);
                     fieldValue = null;
@@ -607,7 +607,7 @@ namespace System.Diagnostics.Tests
             }).Dispose();
         }
 
-        internal class CustomPropagator : TextMapPropagator
+        internal class CustomPropagator : DistributedContextPropagator
         {
             internal const string XTraceParent = "x-traceparent";
             internal const string XTraceState = "x-tracestate";
