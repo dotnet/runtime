@@ -1484,7 +1484,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //  if (Math.Abs(arg0) > 10) { // same here
         //  etc.
         //
-        multiplier += 2.0 + m_FoldableBranch;
+        multiplier += 3.0 + m_FoldableBranch;
         JITDUMP("\nInline candidate has %d foldable branches.  Multiplier increased to %g.", m_FoldableBranch,
                 multiplier);
     }
@@ -1520,7 +1520,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_Intrinsic > 0)
     {
         // In most cases such intrinsics are lowered as single CPU instructions
-        multiplier += 1.0 + m_Intrinsic * 0.2;
+        multiplier += 1.0 + m_Intrinsic * 0.3;
         JITDUMP("\nInline has %d intrinsics.  Multiplier increased to %g.", m_Intrinsic, multiplier);
     }
 
@@ -1547,7 +1547,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //
         //  int Caller(string s) => Callee(s); // String is 'exact' (sealed)
         //
-        multiplier += 1.5;
+        multiplier += 2.5;
         JITDUMP("\nCallsite passes %d arguments of exact classes while callee accepts non-exact ones.  Multiplier "
                 "increased to %g.",
                 m_ArgIsExactClsSigIsNot, multiplier);
@@ -1567,7 +1567,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_FoldableExpr > 0)
     {
         // E.g. add/mul/ceq, etc. over constant/constant arguments
-        multiplier += m_FoldableExpr;
+        multiplier += 1.0 + m_FoldableExpr;
         JITDUMP("\nInline has %d foldable binary expressions.  Multiplier increased to %g.", m_FoldableExpr,
                 multiplier);
     }
@@ -1575,7 +1575,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_FoldableExprUn > 0)
     {
         // E.g. casts, negations, etc. over constants/constant arguments
-        multiplier += m_FoldableExprUn * 0.5;
+        multiplier += m_FoldableExprUn;
         JITDUMP("\nInline has %d foldable unary expressions.  Multiplier increased to %g.", m_FoldableExprUn,
                 multiplier);
     }
@@ -1696,7 +1696,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     }
 
     // Slow down if there are already too many locals
-    if (m_RootCompiler->lvaTableCnt > 16)
+    if (m_RootCompiler->lvaTableCnt > 64)
     {
         // E.g. MaxLocalsToTrack = 1024 and lvaTableCnt = 512 -> multiplier *= 0.5;
         const double lclFullness = min(1.0, (double)m_RootCompiler->lvaTableCnt / JitConfig.JitMaxLocalsToTrack());
