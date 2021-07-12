@@ -266,6 +266,7 @@ void GCLog (const char *fmt, ... );
 // to do so.
 //#define dprintf(l, x)
 #define dprintf(l,x) STRESS_LOG_VA(l,x);
+//#define dprintf(l,x) {if ((l <= 2) || (l == REGIONS_LOG)) {STRESS_LOG_VA(l,x);}}
 
 #endif //SIMPLE_DPRINTF
 
@@ -1911,8 +1912,10 @@ protected:
     void reset_heap_segment_pages (heap_segment* seg);
     PER_HEAP
     void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space);
+#if defined(MULTIPLE_HEAPS) && !defined(USE_REGIONS)
     PER_HEAP
     size_t decommit_ephemeral_segment_pages_step ();
+#endif //MULTIPLE_HEAPS && !USE_REGIONS
     PER_HEAP
     size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
     PER_HEAP_ISOLATED
@@ -1939,6 +1942,8 @@ protected:
     PER_HEAP
     void rearrange_heap_segments(BOOL compacting);
 #endif //!USE_REGIONS
+    PER_HEAP_ISOLATED
+    void distribute_free_regions();
     PER_HEAP_ISOLATED
     void reset_write_watch_for_gc_heap(void* base_address, size_t region_size);
     PER_HEAP_ISOLATED
@@ -4621,6 +4626,11 @@ protected:
     PER_HEAP_ISOLATED
     heap_segment* segment_standby_list;
 
+#if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
+    PER_HEAP_ISOLATED
+    heap_segment* regions_to_decommit;
+#endif //USE_REGIONS && MULTIPLE_HEAPS
+
     PER_HEAP
     size_t ordered_free_space_indices[MAX_NUM_BUCKETS];
 
@@ -5336,7 +5346,9 @@ public:
     size_t          saved_desired_allocation;
 #endif // _DEBUG
 #endif //MULTIPLE_HEAPS
+#if !defined(MULTIPLE_HEAPS) || !defined(USE_REGIONS)
     uint8_t*        decommit_target;
+#endif //!MULTIPLE_HEAPS || !USE_REGIONS
     uint8_t*        plan_allocated;
     // In the plan phase we change the allocated for a seg but we need this
     // value to correctly calculate how much space we can reclaim in 
@@ -5535,6 +5547,7 @@ public:
     size_t get_free() { return (total_free_units * region_alignment) ; }
     size_t get_region_alignment () { return region_alignment; }
     size_t get_large_region_alignment () { return large_region_alignment; }
+    uint8_t* find_highest_basic_regions_on_freelists (int64_t n);
 };
 #endif //USE_REGIONS
 
@@ -5602,11 +5615,13 @@ uint8_t*& heap_segment_committed (heap_segment* inst)
 {
   return inst->committed;
 }
+#if !defined(MULTIPLE_HEAPS) || !defined(USE_REGIONS)
 inline
 uint8_t*& heap_segment_decommit_target (heap_segment* inst)
 {
     return inst->decommit_target;
 }
+#endif //!MULTIPLE_HEAPS || !USE_REGIONS
 inline
 uint8_t*& heap_segment_used (heap_segment* inst)
 {
