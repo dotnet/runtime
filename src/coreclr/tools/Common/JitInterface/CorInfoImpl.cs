@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Text.Encodings;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -1907,11 +1908,33 @@ namespace Internal.JitInterface
         }
 
         private CORINFO_MODULE_STRUCT_* getClassModule(CORINFO_CLASS_STRUCT_* cls)
-        { throw new NotImplementedException("getClassModule"); }
+        {
+            TypeDesc type = HandleToObject(cls).GetTypeDefinition();
+            foreach (MethodDesc method in type.GetAllMethods())
+            {
+                MethodIL methodIL = _compilation.GetMethodIL(method);
+                if (methodIL != null)
+                {
+                    return ObjectToHandle(methodIL);
+                }
+            }
+            return null;
+        }
+
         private CORINFO_ASSEMBLY_STRUCT_* getModuleAssembly(CORINFO_MODULE_STRUCT_* mod)
-        { throw new NotImplementedException("getModuleAssembly"); }
+        {
+            MethodIL methodIL = HandleToObject(mod);
+            EcmaMethod method = methodIL.OwningMethod.GetTypicalMethodDefinition() as EcmaMethod;
+            IAssemblyDesc assembly = method?.Module.Assembly;
+
+            return (CORINFO_ASSEMBLY_STRUCT_*)ObjectToHandle(assembly);
+        }
+
         private byte* getAssemblyName(CORINFO_ASSEMBLY_STRUCT_* assem)
-        { throw new NotImplementedException("getAssemblyName"); }
+        {
+            IAssemblyDesc assembly = (IAssemblyDesc)HandleToObject((IntPtr)assem);
+            return (byte *)GetPin(StringToUTF8(assembly.GetName().Name));
+        }
 
         private void* LongLifetimeMalloc(UIntPtr sz)
         {
