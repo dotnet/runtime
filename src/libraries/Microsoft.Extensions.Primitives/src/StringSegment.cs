@@ -452,22 +452,26 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOf(char c, int start, int count)
         {
+            int index = -1;
             int offset = Offset + start;
 
-            if (!HasValue || start < 0 || (uint)offset > (uint)Buffer.Length)
+            if (HasValue)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-            }
+                if (start < 0 || (uint)offset > (uint)Buffer.Length)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                }
 
-            if (count < 0)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
-            }
+                if (count < 0)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
+                }
 
-            int index = AsSpan().Slice(start, count).IndexOf(c);
-            if (index >= 0)
-            {
-                index += start;
+                index = AsSpan(start, count).IndexOf(c);
+                if (index >= 0)
+                {
+                    index += start;
+                }
             }
 
             return index;
