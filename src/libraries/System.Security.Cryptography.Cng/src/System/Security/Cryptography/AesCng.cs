@@ -228,7 +228,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                // CFB8 is only supported for ncrypt keys.
+                // only CFB8 is supported for ncrypt keys.
                 if (feedback != 8)
                 {
                     throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
