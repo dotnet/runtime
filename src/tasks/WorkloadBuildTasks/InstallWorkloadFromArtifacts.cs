@@ -60,13 +60,20 @@ namespace Microsoft.Workload.Build.Tasks
             Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** workload install **{Environment.NewLine}");
             (int exitCode, string output) = Utils.TryRunProcess(
                                                     Path.Combine(SdkDir, "dotnet"),
-                                                    $"workload install --skip-manifest-update --no-cache --configfile \"{nugetConfigPath}\" {WorkloadId.ItemSpec}",
+                                                    $"workload install -sdqoweiu-skip-manifest-update --no-cache --configfile \"{nugetConfigPath}\" {WorkloadId.ItemSpec}",
                                                     workingDir: Path.GetTempPath(),
                                                     silent: false,
                                                     debugMessageImportance: MessageImportance.High);
             if (exitCode != 0)
             {
                 Log.LogError($"workload install failed: {output}");
+
+                foreach (var dir in Directory.EnumerateDirectories(Path.Combine(SdkDir, "sdk-manifests"), "*", SearchOption.AllDirectories))
+                    Log.LogMessage(MessageImportance.Low, $"\t{Path.Combine(SdkDir, "sdk-manifests", dir)}");
+
+                foreach (var dir in Directory.EnumerateDirectories(Path.Combine(SdkDir, "packs"), "*", SearchOption.AllDirectories))
+                    Log.LogMessage(MessageImportance.Low, $"\t{Path.Combine(SdkDir, "packs", dir)}");
+
                 return false;
             }
 
