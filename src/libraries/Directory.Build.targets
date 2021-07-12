@@ -355,6 +355,8 @@
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallScriptPath) -InstallDir $(SdkPathForWorkloadTesting) -Version $(SdkVersionForWorkloadTesting)"' />
 
     <WriteLinesToFile File="$(SdkForWorkloadTestingStampPath)" Lines="" Overwrite="true" />
+
+    <Exec Command="7z" IgnoreExitCode="true" />
   </Target>
 
   <Target Name="GetWorkloadInputs">
