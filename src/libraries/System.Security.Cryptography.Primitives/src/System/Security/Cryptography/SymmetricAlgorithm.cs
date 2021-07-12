@@ -1175,9 +1175,9 @@ namespace System.Security.Cryptography
         /// <param name="ciphertext">The data to decrypt.</param>
         /// <param name="iv">The initialization vector.</param>
         /// <param name="destination">The buffer to receive the plaintext data.</param>
+        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
         /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
         /// <param name="feedbackSizeInBits">The feedback size, specified in bits.</param>
-        /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
         /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the decrypted data; otherwise, <see langword="false" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <para>
@@ -1407,8 +1407,8 @@ namespace System.Security.Cryptography
         /// <param name="plaintext">The data to encrypt.</param>
         /// <param name="iv">The initialization vector.</param>
         /// <param name="destination">The buffer to receive the ciphertext data.</param>
-        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes written to <paramref name="destination" />.</param>
+        /// <param name="paddingMode">The padding mode used to produce the ciphertext and remove during decryption.</param>
         /// <param name="feedbackSizeInBits">The feedback size, specified in bits.</param>
         /// <returns><see langword="true"/> if <paramref name="destination"/> was large enough to receive the encrypted data; otherwise, <see langword="false" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
