@@ -1025,6 +1025,9 @@ namespace System.Net.Http
             Debug.Assert(lastStreamId >= 0);
             Exception resetException = new Http2ConnectionException(errorCode);
 
+            // There is no point sending more PING frames for RTT estimation:
+            _rttEstimator.OnGoAwayReceived();
+
             List<Http2Stream> streamsToAbort = new List<Http2Stream>();
             lock (SyncObject)
             {
