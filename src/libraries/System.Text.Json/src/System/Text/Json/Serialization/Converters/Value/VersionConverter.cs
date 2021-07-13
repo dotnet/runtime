@@ -11,6 +11,13 @@ namespace System.Text.Json.Serialization.Converters
     {
         private const int VersionComponentsCount = 4; // Major, Minor, Build, Revision
 
+#if BUILDING_INBOX_LIBRARY
+        private const int MaxStringLengthOfPositiveInt32 = 10; // int.MaxValue.ToString().Length
+
+        private const int
+            MaxStringLengthOfVersion = (MaxStringLengthOfPositiveInt32 * VersionComponentsCount) + 1 + 1 + 1; // 43, 1 is length of '.'
+#endif
+
         public override Version Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             ReadOnlySpan<byte> source = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
@@ -74,7 +81,18 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, Version value, JsonSerializerOptions options)
         {
+#if BUILDING_INBOX_LIBRARY
+            Debug.Assert(
+                JsonConstants.StackallocThreshold >= MaxStringLengthOfVersion * sizeof(char),
+                "Stack allocated buffer should not be bigger than stackalloc threshold defined in JsonConstants");
+            Span<char> span = stackalloc char[MaxStringLengthOfVersion];
+            value.TryFormat(span, out int charsWritten);
+            writer.WriteStringValue(span.Slice(0, charsWritten));
+            return;
+#else
             writer.WriteStringValue(value.ToString());
+            return;
+#endif
         }
 
         private static int GetIndexOfDot(ReadOnlySpan<byte> source) => source.IndexOf((byte)'.');
