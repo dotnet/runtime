@@ -848,6 +848,18 @@ mono_metadata_clean_generic_classes_for_image (MonoImage *image);
 gboolean
 mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index);
 
+int
+mono_metadata_table_num_rows_slow (MonoImage *image, int table_index);
+
+static inline int
+mono_metadata_table_num_rows (MonoImage *image, int table_index)
+{
+	if (G_LIKELY (!image->has_updates))
+		return table_info_get_rows (&image->tables [table_index]);
+	else
+		return mono_metadata_table_num_rows_slow (image, table_index);
+}
+
 /* token_index is 1-based */
 static inline gboolean
 mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)

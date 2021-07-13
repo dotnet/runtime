@@ -85,6 +85,9 @@ hot_reload_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx);
 static gboolean
 hot_reload_has_modified_rows (const MonoTableInfo *table);
 
+static int
+hot_reload_table_num_rows_slow (MonoImage *image, int table_index);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_available },
 	&hot_reload_set_fastpath_data,
@@ -103,6 +106,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_delta_heap_lookup,
 	&hot_reload_get_updated_method_ppdb,
 	&hot_reload_has_modified_rows,
+	&hot_reload_table_num_rows_slow,
 };
 
 MonoComponentHotReload *
@@ -1786,3 +1790,23 @@ hot_reload_has_modified_rows (const MonoTableInfo *table)
 	return info->any_modified_rows[tbl_index];
 }
 
+static int
+hot_reload_table_num_rows_slow (MonoImage *base, int table_index)
+{
+	BaselineInfo *base_info = baseline_info_lookup (base);
+	if (!base_info)
+		return FALSE;
+
+	uint32_t current_gen = hot_reload_get_thread_generation ();
+
+	int rows = table_info_get_rows (&base->tables [table_index]);
+	GList *cur;
+	for (cur = base_info->delta_image; cur; cur = cur->next) {
+		MonoImage *delta_image = (MonoImage*)cur->data;
+		DeltaInfo *delta_info = delta_info_lookup (delta_image);
+		if (delta_info->generation > current_gen)
+			break;
+		rows = delta_info->count [table_index].prev_gen_rows + delta_info->count [table_index].inserted_rows;
+	}
+	return rows;
+}

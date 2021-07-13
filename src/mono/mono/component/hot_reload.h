@@ -31,6 +31,7 @@ typedef struct _MonoComponentHotReload {
 	gboolean (*delta_heap_lookup) (MonoImage *base_image, MetadataHeapGetterFunc get_heap, uint32_t orig_index, MonoImage **image_out, uint32_t *index_out);
 	gpointer (*get_updated_method_ppdb) (MonoImage *base_image, uint32_t idx);
 	gboolean (*has_modified_rows) (const MonoTableInfo *table);
+	gboolean (*table_num_rows_slow) (MonoImage *base_image, int table_index);
 } MonoComponentHotReload;
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT
