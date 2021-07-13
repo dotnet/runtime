@@ -1398,7 +1398,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case (ElementType)ValueTypeId.Type:
                 case (ElementType)ValueTypeId.VType:
                 case (ElementType)ValueTypeId.FixedArray:
-                    ret = new JObject{{"Type", "void"}};
+                    ret = JObject.FromObject(new {
+                        value = new
+                        {
+                            type = "void",
+                            value = "void",
+                            description = "void"
+                        }});
                     break;
                 case ElementType.Boolean:
                 {

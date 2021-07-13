@@ -362,6 +362,11 @@ namespace DebuggerTests
                 return a + parm;
             }
 
+            public void CallMethodChangeValue()
+            {
+                a = a + 10;
+            }
+
             public int CallMethodWithMultipleParms(int parm, int parm2)
             {
                 return a + parm + parm2;

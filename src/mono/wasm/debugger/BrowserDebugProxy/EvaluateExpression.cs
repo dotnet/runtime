@@ -192,6 +192,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return value?.Value<bool>();
                     case "object":
                         return null;
+                    case "void":
+                        return null;
                 }
                 throw new Exception($"Evaluate of this datatype {type} not implemented yet");//, "Unsupported");
             }
@@ -211,6 +213,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                             else
                                 return "object";
                         }
+                    case "void":
+                        return "object";
                     default:
                         return value.GetType().FullName;
                 }
@@ -390,7 +394,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static object ConvertCSharpToJSType(object v, ITypeSymbol type)
         {
             if (v == null)
-                return new { type = "object", subtype = "null", className = type.ToString() };
+                return new { type = "object", subtype = "null", className = type.ToString(), description = type.ToString() };
 
             if (v is string s)
             {

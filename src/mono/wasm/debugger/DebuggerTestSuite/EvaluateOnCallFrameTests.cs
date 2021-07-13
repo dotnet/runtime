@@ -580,6 +580,27 @@ namespace DebuggerTests
                     ("this.CallMethodWithParm(this.a) + this.a", TNumber(3)),
                     ("this.CallMethodWithObj(this.objToTest)", TNumber(10)));
            });
+
+
+        [Fact]
+        public async Task EvaluateSimpleMethodCallsCheckChangedValue() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var frame = pause_location["callFrames"][0];
+                var props = await GetObjectOnFrame(frame, "this");
+                CheckNumber(props, "a", 1);
+
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("this.CallMethodChangeValue()", TObject("object", is_null : true)));
+
+                frame = pause_location["callFrames"][0];
+                props = await GetObjectOnFrame(frame, "this");
+                CheckNumber(props, "a", 11);
+           });
     }
 
 }
