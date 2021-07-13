@@ -22,9 +22,9 @@ namespace Wasm.Build.Tests
         [BuildAndRun(host: RunHost.V8, aot: false, parameters: false)]
         [BuildAndRun(host: RunHost.V8, aot: false, parameters: true)]
         [BuildAndRun(host: RunHost.V8, aot: true,  parameters: false)]
-        // [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: false)] // causes tests to be built for node but they still are run as V8 TODO fix
-        // [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: true)]
-        // [BuildAndRun(host: RunHost.NodeJS, aot: true,  parameters: false)]
+        [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: false)]
+        [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: true)]
+        [BuildAndRun(host: RunHost.NodeJS, aot: true,  parameters: false)]
         public void NoOpRebuild(BuildArgs buildArgs, bool nativeRelink, RunHost host, string id)
         {
             string projectName = $"rebuild_{buildArgs.Config}_{buildArgs.AOT}";
@@ -32,9 +32,13 @@ namespace Wasm.Build.Tests
 
             buildArgs = buildArgs with { ProjectName = projectName };
             
-            string nodeArgs = $"<ForNode>{(host == RunHost.NodeJS ? "true" : "false")}</ForNode>";
             string buildNative = $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>";
-            buildArgs = ExpandBuildArgs(buildArgs, $"{buildNative}\n{nodeArgs}");
+
+            string nodeArgs = "";
+            if (host == RunHost.NodeJS) {
+                nodeArgs = $"\n<ForNode>true</ForNode>\n<JSEngine>NodeJS</JSEngine>";
+            }
+            buildArgs = ExpandBuildArgs(buildArgs, $"{buildNative}{nodeArgs}");
 
             BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
