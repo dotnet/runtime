@@ -179,7 +179,6 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on iOS or MacCatalyst.
         /// </summary>
-        /// <remarks>
         [SupportedOSPlatformGuard("ios")]
         [SupportedOSPlatformGuard("maccatalyst")]
         public static bool IsIOS() =>
