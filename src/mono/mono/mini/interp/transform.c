@@ -3458,9 +3458,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				 * every time based on the signature.
 				 */
 				if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-					WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-					if (info) {
-						MonoMethod *pinvoke_method = info->d.managed_to_native.method;
+					MonoMethod *pinvoke_method = mono_marshal_method_from_wrapper (method);
+					if (pinvoke_method) {
 						imethod = mono_interp_get_imethod (pinvoke_method, error);
 						return_val_if_nok (error, FALSE);
 					}
