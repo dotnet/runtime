@@ -51,7 +51,7 @@ jobs:
       inputs:
         artifact: 'IntermediateArtifacts'
         path: $(workloadPackagesPath)
-        patterns: 'IntermediateArtifacts/*/Shipping/*.nupkg'
+        patterns: 'IntermediateArtifacts/MonoRuntimePacks/Shipping/*.nupkg'
 
     - task: CopyFiles@2
       displayName: Flatten packages
