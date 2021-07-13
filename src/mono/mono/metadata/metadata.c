@@ -2313,8 +2313,12 @@ mono_metadata_get_param_attrs (MonoImage *m, int def, int param_count)
 	guint lastp, i, param_index = mono_metadata_decode_row_col (methodt, def - 1, MONO_METHOD_PARAMLIST);
 	int *pattrs = NULL;
 
+	/* hot reload deltas may specify 0 for the param table index */
+	if (param_index == 0)
+		return NULL;
+
 	/* FIXME: metadata-update */
-	int rows = table_info_get_rows (methodt);
+	int rows = mono_metadata_table_num_rows (m, MONO_TABLE_METHOD);
 	if (def < rows)
 		lastp = mono_metadata_decode_row_col (methodt, def, MONO_METHOD_PARAMLIST);
 	else
