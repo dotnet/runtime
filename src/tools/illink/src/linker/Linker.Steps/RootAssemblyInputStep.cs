@@ -81,7 +81,11 @@ namespace Mono.Linker.Steps
 					CodeOptimizations.RemoveDescriptors |
 					CodeOptimizations.RemoveLinkAttributes |
 					CodeOptimizations.RemoveSubstitutions |
-					CodeOptimizations.RemoveDynamicDependencyAttribute, assembly.Name.Name);
+					CodeOptimizations.RemoveDynamicDependencyAttribute |
+					CodeOptimizations.OptimizeTypeHierarchyAnnotations, assembly.Name.Name);
+
+				// Enable EventSource special handling
+				Context.DisableEventSourceSpecialHandling = false;
 
 				// No metadata trimming
 				Context.MetadataTrimming = MetadataTrimming.None;
