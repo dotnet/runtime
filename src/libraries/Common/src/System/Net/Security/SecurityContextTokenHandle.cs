@@ -16,7 +16,7 @@ namespace System.Net.Security
 #endif
         private int _disposed;
 
-        private SecurityContextTokenHandle() : base()
+        public SecurityContextTokenHandle() : base()
         {
         }
 

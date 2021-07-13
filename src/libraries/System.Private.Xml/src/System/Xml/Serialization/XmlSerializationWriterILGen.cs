@@ -1176,6 +1176,7 @@ namespace System.Xml.Serialization
                 string aiVar = "ai" + memberTypeDesc.Name;
                 string iVar = "i";
                 string fullTypeName = memberTypeDesc.CSharpName;
+                ilg.EnterScope();
                 WriteArrayLocalDecl(fullTypeName, aVar, source, memberTypeDesc);
                 if (memberTypeDesc.IsNullable)
                 {
@@ -1361,6 +1362,8 @@ namespace System.Xml.Serialization
                 {
                     ilg.EndIf();
                 }
+
+                ilg.ExitScope();
             }
             else
             {
@@ -1435,6 +1438,7 @@ namespace System.Xml.Serialization
             if (elements.Length == 0 && text == null) return;
             string arrayTypeName = arrayTypeDesc.CSharpName;
             string aName = "a" + arrayTypeDesc.Name;
+            ilg.EnterScope();
             WriteArrayLocalDecl(arrayTypeName, aName, source, arrayTypeDesc);
             LocalBuilder aLoc = ilg.GetLocal(aName);
             if (arrayTypeDesc.IsNullable)
@@ -1486,6 +1490,8 @@ namespace System.Xml.Serialization
             {
                 ilg.EndIf();
             }
+
+            ilg.ExitScope();
         }
 
         [RequiresUnreferencedCode("calls WriteElements")]

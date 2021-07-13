@@ -380,3 +380,39 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
     *read = numberOfBytesRead;
     return size == 0 || numberOfBytesRead > 0;
 }
+
+const struct dyld_all_image_infos* g_image_infos = nullptr;
+
+void
+ModuleInfo::LoadModule()
+{
+    if (m_module == nullptr)
+    {
+        m_module = dlopen(m_moduleName.c_str(), RTLD_LAZY);
+        if (m_module != nullptr)
+        {
+            if (g_image_infos == nullptr)
+            {
+                struct task_dyld_info dyld_info;
+                mach_msg_type_number_t count = TASK_DYLD_INFO_COUNT;
+                kern_return_t result = task_info(mach_task_self_, TASK_DYLD_INFO, (task_info_t)&dyld_info, &count);
+                if (result == KERN_SUCCESS)
+                {
+                    g_image_infos = (const struct dyld_all_image_infos*)dyld_info.all_image_info_addr;
+                }
+            }
+            if (g_image_infos != nullptr)
+            {
+                for (int i = 0; i < g_image_infos->infoArrayCount; ++i)
+                {
+                    const struct dyld_image_info* image = g_image_infos->infoArray + i;
+                    if (strcasecmp(image->imageFilePath, m_moduleName.c_str()) == 0)
+                    {
+                        m_localBaseAddress = (uint64_t)image->imageLoadAddress;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}

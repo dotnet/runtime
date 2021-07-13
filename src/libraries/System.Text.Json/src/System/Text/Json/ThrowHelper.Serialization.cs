@@ -244,9 +244,9 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(MemberInfo memberInfo, Type parentType)
+        public static void ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(string memberName, Type declaringType)
         {
-            throw new InvalidOperationException(SR.Format(SR.JsonIncludeOnNonPublicInvalid, memberInfo.Name, parentType));
+            throw new InvalidOperationException(SR.Format(SR.JsonIncludeOnNonPublicInvalid, memberName, declaringType));
         }
 
         [DoesNotReturn]

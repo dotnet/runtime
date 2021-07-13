@@ -190,7 +190,7 @@ namespace System.Net.Quic.Tests
                     byte[] buffer = new byte[data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(data.Length, bytesRead);
-                    AssertArrayEqual(data, buffer);
+                    AssertExtensions.SequenceEqual(data, buffer);
 
                     for (int pos = 0; pos < data.Length; pos += writeSize)
                     {
@@ -213,7 +213,7 @@ namespace System.Net.Quic.Tests
                     byte[] buffer = new byte[data.Length];
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(data.Length, bytesRead);
-                    AssertArrayEqual(data, buffer);
+                    AssertExtensions.SequenceEqual(data, buffer);
 
                     await stream.ShutdownCompleted();
                 }
@@ -391,7 +391,7 @@ namespace System.Net.Quic.Tests
                     }
 
                     Assert.Equal(testBuffer.Length, totalBytesRead);
-                    AssertArrayEqual(testBuffer, receiveBuffer);
+                    AssertExtensions.SequenceEqual(testBuffer, receiveBuffer);
 
                     await serverStream.ShutdownCompleted();
                 });

@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
     internal class MetadataLoadContextInternal
     {
