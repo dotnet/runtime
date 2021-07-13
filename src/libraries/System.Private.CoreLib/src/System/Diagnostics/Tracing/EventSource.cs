@@ -2308,7 +2308,7 @@ namespace System.Diagnostics.Tracing
                 return false;
 
             // does is pass the level test?
-            if ((currentLevel != 0) && (currentLevel < eventLevel))
+            if (currentLevel < eventLevel)
                 return false;
 
             // if yes, does it pass the keywords test?

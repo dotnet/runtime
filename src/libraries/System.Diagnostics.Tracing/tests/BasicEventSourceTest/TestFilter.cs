@@ -34,6 +34,31 @@ namespace BasicEventSourceTests
                 Assert.Equal(0, listener.EventCount);
             }
         }
+
+        /// <summary>
+        /// Tests that Events with a level lower than the logging level will be filtered
+        /// In older versions of .NET there was a bug that special cased LogAlways and caused
+        /// EventListener at the LogAlways level not to do any level filtering. LogAlways isn't
+        /// intended to be a special case, it is merely the name for the most severe level.
+        /// https://github.com/dotnet/runtime/issues/51429
+        /// </summary>
+        [Fact]
+        public static void TestFilterEventLogAlways()
+        {
+            using (EventCountListener listener = new EventCountListener())
+            using (TestSource log = new TestSource())
+            {
+                listener.EnableEvents(log, EventLevel.LogAlways);
+
+                /* This call should be filtered since it is at WarningLevel and we are logging LogAlways */
+                log.WarningEventWithArgs(1, 2, 3, false);
+
+                /* This call should be filtered since it is at Verbose and we are logging LogAlways */
+                log.VerboseEvent();
+
+                Assert.Equal(0, listener.EventCount);
+            }
+        }
     }
 
     /// <summary>
