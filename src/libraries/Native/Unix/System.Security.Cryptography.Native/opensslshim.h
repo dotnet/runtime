@@ -458,7 +458,6 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_CTX_new) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_protos) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_select_cb) \
-    REQUIRED_FUNCTION(SSL_CTX_set_cert_verify_callback) \
     REQUIRED_FUNCTION(SSL_CTX_set_cipher_list) \
     LIGHTUP_FUNCTION(SSL_CTX_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_CTX_set_client_cert_cb) \
@@ -484,12 +483,16 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LEGACY_FUNCTION(SSL_library_init) \
     LEGACY_FUNCTION(SSL_load_error_strings) \
     REQUIRED_FUNCTION(SSL_new) \
+    REQUIRED_FUNCTION(SSL_peek) \
     REQUIRED_FUNCTION(SSL_read) \
+    REQUIRED_FUNCTION(SSL_renegotiate) \
     REQUIRED_FUNCTION(SSL_renegotiate_pending) \
     FALLBACK_FUNCTION(SSL_session_reused) \
     REQUIRED_FUNCTION(SSL_set_accept_state) \
     REQUIRED_FUNCTION(SSL_set_bio) \
     REQUIRED_FUNCTION(SSL_set_connect_state) \
+    FALLBACK_FUNCTION(SSL_set_options) \
+    REQUIRED_FUNCTION(SSL_set_verify) \
     REQUIRED_FUNCTION(SSL_shutdown) \
     LEGACY_FUNCTION(SSL_state) \
     LEGACY_FUNCTION(SSLeay) \
@@ -895,7 +898,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_new SSL_CTX_new_ptr
 #define SSL_CTX_set_alpn_protos SSL_CTX_set_alpn_protos_ptr
 #define SSL_CTX_set_alpn_select_cb SSL_CTX_set_alpn_select_cb_ptr
-#define SSL_CTX_set_cert_verify_callback SSL_CTX_set_cert_verify_callback_ptr
 #define SSL_CTX_set_cipher_list SSL_CTX_set_cipher_list_ptr
 #define SSL_CTX_set_ciphersuites SSL_CTX_set_ciphersuites_ptr
 #define SSL_CTX_set_client_cert_cb SSL_CTX_set_client_cert_cb_ptr
@@ -922,12 +924,18 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_library_init SSL_library_init_ptr
 #define SSL_load_error_strings SSL_load_error_strings_ptr
 #define SSL_new SSL_new_ptr
+#define SSL_peek SSL_peek_ptr
+#define SSL_state_string_long SSL_state_string_long_ptr
 #define SSL_read SSL_read_ptr
+#define ERR_print_errors_fp ERR_print_errors_fp_ptr
+#define SSL_renegotiate SSL_renegotiate_ptr
 #define SSL_renegotiate_pending SSL_renegotiate_pending_ptr
 #define SSL_session_reused SSL_session_reused_ptr
 #define SSL_set_accept_state SSL_set_accept_state_ptr
 #define SSL_set_bio SSL_set_bio_ptr
 #define SSL_set_connect_state SSL_set_connect_state_ptr
+#define SSL_set_options SSL_set_options_ptr
+#define SSL_set_verify SSL_set_verify_ptr
 #define SSL_shutdown SSL_shutdown_ptr
 #define SSL_state SSL_state_ptr
 #define SSLeay SSLeay_ptr
