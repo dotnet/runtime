@@ -4959,7 +4959,6 @@ namespace System
         public override string ToString() { throw null; }
         public static bool IsOSPlatform(string platform) { throw null; }
         public static bool IsOSPlatformVersionAtLeast(string platform, int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
-
         public static bool IsBrowser() { throw null; }
         public static bool IsLinux() { throw null; }
         public static bool IsFreeBSD() { throw null; }
