@@ -75,10 +75,9 @@ namespace System.Net.Quic.Tests
         }
 
         [Theory]
-        // [InlineData(0)]  // Fails with TimeoutException -- needs investigation
         [InlineData(1)]
         [InlineData(10)]
-        public async Task CloseAsync_WithOpenLocalStream_LocalStreamFailsWithQuicOperationAbortedException(int writesBeforeClose)
+        public async Task CloseAsync_WithOpenStream_LocalAndPeerStreamsFailWithQuicOperationAbortedException(int writesBeforeClose)
         {
             if (typeof(T) == typeof(MockProviderFactory))
             {
@@ -100,8 +99,6 @@ namespace System.Net.Quic.Tests
 
                     await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await clientStream.ReadAsync(new byte[1]));
                     await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await clientStream.WriteAsync(new byte[1]));
-
-                    sync.Release();
                 },
                 async serverConnection =>
                 {
@@ -110,13 +107,17 @@ namespace System.Net.Quic.Tests
 
                     sync.Release();
 
-                    // Wait for peer to fail stream
-                    await sync.WaitAsync();
+                    // Since the peer did the abort, we should receive the abort error code in the exception.
+                    QuicConnectionAbortedException ex;
+                    ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await serverStream.ReadAsync(new byte[1]));
+                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+                    ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await serverStream.WriteAsync(new byte[1]));
+                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
                 });
         }
 
+        [OuterLoop("Depends on IdleTimeout")]
         [Theory]
-        // [InlineData(0)]  // Fails with TimeoutException -- needs investigation
         [InlineData(1)]
         [InlineData(10)]
         public async Task Dispose_WithOpenLocalStream_LocalStreamFailsWithQuicOperationAbortedException(int writesBeforeClose)
@@ -125,6 +126,10 @@ namespace System.Net.Quic.Tests
             {
                 return;
             }
+
+            // Set a short idle timeout so that after we dispose the connection, the peer will discover the connection is dead before too long.
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.IdleTimeout = TimeSpan.FromSeconds(1);
 
             using var sync = new SemaphoreSlim(0);
 
@@ -141,8 +146,6 @@ namespace System.Net.Quic.Tests
 
                     await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await clientStream.ReadAsync(new byte[1]));
                     await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await clientStream.WriteAsync(new byte[1]));
-
-                    sync.Release();
                 },
                 async serverConnection =>
                 {
@@ -151,53 +154,11 @@ namespace System.Net.Quic.Tests
 
                     sync.Release();
 
-                    // Wait for peer to fail stream
-                    await sync.WaitAsync();
-                });
-        }
-
-        [Theory]
-        // [InlineData(0)]  // Fails with TimeoutException -- needs investigation
-        [InlineData(1)]
-        [InlineData(10)]
-        public async Task CloseAsync_WithOpenPeerStream_PeerStreamFailsWithQuicConnectionAbortedException(int writesBeforeClose)
-        {
-            if (typeof(T) == typeof(MockProviderFactory))
-            {
-                return;
-            }
-
-            using var sync = new SemaphoreSlim(0);
-
-            await RunClientServer(
-                async clientConnection =>
-                {
-                    using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
-                    await DoWrites(clientStream, writesBeforeClose);
-
-                    // Wait for peer to receive data 
-                    await sync.WaitAsync();
-
-                    QuicConnectionAbortedException ex;
-                    ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await clientStream.ReadAsync(new byte[1]));
-                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-                    ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(async () => await clientStream.WriteAsync(new byte[1]));
-                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-
-                    sync.Release();
-                },
-                async serverConnection =>
-                {
-                    using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
-                    await DoReads(serverStream, writesBeforeClose);
-
-                    sync.Release();
-
-                    await serverConnection.CloseAsync(ExpectedErrorCode);
-
-                    // Wait for peer to fail stream
-                    await sync.WaitAsync();
-                });
+                    // The client has done an abortive shutdown of the connection, which means we are not notified that the connection has closed.
+                    // But the connection idle timeout should kick in and eventually we will get exceptions.
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverStream.ReadAsync(new byte[1]));
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverStream.WriteAsync(new byte[1]));
+                }, listenerOptions: listenerOptions);
         }
     }
 

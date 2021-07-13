@@ -56,15 +56,21 @@ namespace System.Net.Quic.Tests
             return new QuicConnection(ImplementationProvider, endpoint, GetSslClientAuthenticationOptions());
         }
 
-        internal QuicListener CreateQuicListener(int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
+        internal QuicListenerOptions CreateQuicListenerOptions()
         {
-            var options = new QuicListenerOptions()
+            return new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
-                ServerAuthenticationOptions = GetSslServerAuthenticationOptions(),
-                MaxUnidirectionalStreams = maxUnidirectionalStreams,
-                MaxBidirectionalStreams = maxBidirectionalStreams
+                ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
             };
+        }
+
+        internal QuicListener CreateQuicListener(int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
+        {
+            var options = CreateQuicListenerOptions();
+            options.MaxUnidirectionalStreams = maxUnidirectionalStreams;
+            options.MaxBidirectionalStreams = maxBidirectionalStreams;
+
             return CreateQuicListener(options);
         }
 
@@ -110,12 +116,12 @@ namespace System.Net.Quic.Tests
 
         private QuicListener CreateQuicListener(QuicListenerOptions options) => new QuicListener(ImplementationProvider, options);
 
-        internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
+        internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000, QuicListenerOptions listenerOptions = null)
         {
             const long ClientCloseErrorCode = 11111;
             const long ServerCloseErrorCode = 22222;
 
-            using QuicListener listener = CreateQuicListener();
+            using QuicListener listener = CreateQuicListener(listenerOptions ?? CreateQuicListenerOptions());
 
             var serverFinished = new ManualResetEventSlim();
             var clientFinished = new ManualResetEventSlim();
