@@ -18,7 +18,7 @@
 #ifdef ASAN_SUPPORT_EXPOSE_SHADOW
 // Specify use_sigaltstack=0 as coreclr uses own alternate stack for signal handlers
 extern "C" const char *__asan_default_options() {
-  return "symbolize=1:use_sigaltstack=0";
+  return "symbolize=1 use_sigaltstack=0 detect_leaks=0";
 }
 namespace __asan
 {
