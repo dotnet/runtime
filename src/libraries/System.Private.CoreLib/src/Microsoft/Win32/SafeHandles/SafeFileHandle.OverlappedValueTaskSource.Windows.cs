@@ -86,10 +86,8 @@ namespace Microsoft.Win32.SafeHandles
 
             public ValueTaskSourceStatus GetStatus(short token) => _source.GetStatus(token);
             public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _source.OnCompleted(continuation, state, token, flags);
-            void IValueTaskSource.GetResult(short token) => GetResultAndRelease(token);
-            int IValueTaskSource<int>.GetResult(short token) => GetResultAndRelease(token);
-
-            private int GetResultAndRelease(short token)
+            void IValueTaskSource.GetResult(short token) => GetResult(token);
+            public int GetResult(short token)
             {
                 try
                 {

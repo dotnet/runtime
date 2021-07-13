@@ -793,12 +793,12 @@ namespace Microsoft.CSharp
             if (b == null)
             {
                 Output.Write("\\u");
-                Output.Write(((int)value).ToString("X4", CultureInfo.InvariantCulture));
+                Output.Write(((int)value).ToString("X4"));
             }
             else
             {
                 b.Append("\\u");
-                b.Append(((int)value).ToString("X4", CultureInfo.InvariantCulture));
+                b.Append(((int)value).ToString("X4"));
             }
         }
 
@@ -2501,7 +2501,7 @@ namespace Microsoft.CSharp
             {
                 foreach (byte b in checksumPragma.ChecksumData)
                 {
-                    Output.Write(b.ToString("X2", CultureInfo.InvariantCulture));
+                    Output.Write(b.ToString("X2"));
                 }
             }
             Output.WriteLine("\"");

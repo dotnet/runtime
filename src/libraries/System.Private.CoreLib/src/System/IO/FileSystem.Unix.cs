@@ -103,6 +103,36 @@ namespace System.IO
 
         public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool ignoreMetadataErrors)
         {
+            // Unix rename works in more cases, we limit to what is allowed by Windows File.Replace.
+            // These checks are not atomic, the file could change after a check was performed and before it is renamed.
+            Interop.Sys.FileStatus sourceStat;
+            if (Interop.Sys.LStat(sourceFullPath, out sourceStat) != 0)
+            {
+                Interop.ErrorInfo errno = Interop.Sys.GetLastErrorInfo();
+                throw Interop.GetExceptionForIoErrno(errno, sourceFullPath);
+            }
+            // Check source is not a directory.
+            if ((sourceStat.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
+            {
+                throw new UnauthorizedAccessException(SR.Format(SR.IO_NotAFile, sourceFullPath));
+            }
+
+            Interop.Sys.FileStatus destStat;
+            if (Interop.Sys.LStat(destFullPath, out destStat) == 0)
+            {
+                // Check destination is not a directory.
+                if ((destStat.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
+                {
+                    throw new UnauthorizedAccessException(SR.Format(SR.IO_NotAFile, destFullPath));
+                }
+                // Check source and destination are not the same.
+                if (sourceStat.Dev == destStat.Dev &&
+                    sourceStat.Ino == destStat.Ino)
+                  {
+                      throw new IOException(SR.Format(SR.IO_CannotReplaceSameFile, sourceFullPath, destFullPath));
+                  }
+            }
+
             if (destBackupFullPath != null)
             {
                 // We're backing up the destination file to the backup file, so we need to first delete the backup

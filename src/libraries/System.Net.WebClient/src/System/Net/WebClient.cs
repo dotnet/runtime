@@ -501,7 +501,7 @@ namespace System.Net
             {
                 if (needsHeaderAndBoundary)
                 {
-                    string boundary = "---------------------" + DateTime.Now.Ticks.ToString("x", NumberFormatInfo.InvariantInfo);
+                    string boundary = $"---------------------{DateTime.Now.Ticks:x}";
 
                     headers[HttpKnownHeaderNames.ContentType] = UploadFileContentType + "; boundary=" + boundary;
 

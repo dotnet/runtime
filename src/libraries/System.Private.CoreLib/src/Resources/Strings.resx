@@ -3778,6 +3778,12 @@
   <data name="IO_CannotCreateDirectory" xml:space="preserve">
     <value>The specified directory '{0}' cannot be created.</value>
   </data>
+  <data name="IO_CannotReplaceSameFile" xml:space="preserve">
+    <value>The source '{0}' and destination '{1}' are the same file.</value>
+  </data>
+  <data name="IO_NotAFile" xml:space="preserve">
+    <value>The specified path '{0}' is not a file.</value>
+  </data>
   <data name="IO_SourceDestMustBeDifferent" xml:space="preserve">
     <value>Source and destination path must be different.</value>
   </data>

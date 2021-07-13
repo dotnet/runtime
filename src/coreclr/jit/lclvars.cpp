@@ -3497,6 +3497,10 @@ void Compiler::lvaSortByRefCount()
             {
                 lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
             }
+            else if (!varDsc->IsEnregisterableType())
+            {
+                lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_IsStruct));
+            }
         }
         if (varDsc->lvIsStructField && (lvaGetParentPromotionType(lclNum) != PROMOTION_TYPE_INDEPENDENT))
         {
