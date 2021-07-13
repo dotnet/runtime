@@ -8,260 +8,153 @@ namespace System.Runtime.InteropServices
 {
     public sealed partial class PosixSignalRegistration
     {
-        private static volatile bool s_initialized;
-        private static readonly Dictionary<int, List<WeakReference<PosixSignalRegistration>?>> s_registrations = new();
+        private static readonly Dictionary<int, HashSet<Token>> s_registrations = Initialize();
 
-        private readonly Action<PosixSignalContext> _handler;
-        private readonly PosixSignal _signal;
-        private readonly int _signo;
-        private bool _registered;
-        private readonly object _gate = new object();
-
-        private PosixSignalRegistration(PosixSignal signal, int signo, Action<PosixSignalContext> handler)
+        private static unsafe Dictionary<int, HashSet<Token>> Initialize()
         {
-            _signal = signal;
-            _signo = signo;
-            _handler = handler;
-        }
-
-        public static partial PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler)
-        {
-            if (handler == null)
+            if (!Interop.Sys.InitializeTerminalAndSignalHandling())
             {
-                throw new ArgumentNullException(nameof(handler));
+                Interop.CheckIo(-1);
             }
 
+            Interop.Sys.SetPosixSignalHandler(&OnPosixSignal);
+
+            return new Dictionary<int, HashSet<Token>>();
+        }
+
+        private static PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler)
+        {
             int signo = Interop.Sys.GetPlatformSignalNumber(signal);
             if (signo == 0)
             {
                 throw new PlatformNotSupportedException();
             }
 
-            PosixSignalRegistration registration = new PosixSignalRegistration(signal, signo, handler);
-            registration.Register();
-            return registration;
-        }
+            var token = new Token(signal, signo, handler);
+            var registration = new PosixSignalRegistration(token);
 
-        private unsafe void Register()
-        {
-            if (!s_initialized)
+            lock (s_registrations)
             {
-                if (!Interop.Sys.InitializeTerminalAndSignalHandling())
+                if (!s_registrations.TryGetValue(signo, out HashSet<Token>? tokens))
+                {
+                    s_registrations[signo] = tokens = new HashSet<Token>();
+                }
+
+                if (tokens.Count == 0 &&
+                    !Interop.Sys.EnablePosixSignalHandling(signo))
                 {
                     // We can't use Win32Exception because that causes a cycle with
                     // Microsoft.Win32.Primitives.
                     Interop.CheckIo(-1);
                 }
 
-                Interop.Sys.SetPosixSignalHandler(&OnPosixSignal);
-                s_initialized = true;
+                tokens.Add(token);
             }
 
-            lock (s_registrations)
-            {
-                if (!s_registrations.TryGetValue(_signo, out List<WeakReference<PosixSignalRegistration>?>? signalRegistrations))
-                {
-                    signalRegistrations = new List<WeakReference<PosixSignalRegistration>?>();
-                    s_registrations.Add(_signo, signalRegistrations);
-                }
-
-                if (signalRegistrations.Count == 0)
-                {
-                    if (!Interop.Sys.EnablePosixSignalHandling(_signo))
-                    {
-                        // We can't use Win32Exception because that causes a cycle with
-                        // Microsoft.Win32.Primitives.
-                        Interop.CheckIo(-1);
-                    }
-                }
-
-                signalRegistrations.Add(new WeakReference<PosixSignalRegistration>(this));
-            }
-
-            _registered = true;
+            return registration;
         }
 
-        private bool CallHandler(PosixSignalContext context)
+        private void Unregister()
         {
-            lock (_gate)
+            lock (s_registrations)
             {
-                if (_registered)
+                if (_token is Token token)
                 {
-                    _handler(context);
-                    return true;
-                }
+                    _token = null;
 
-                return false;
+                    if (s_registrations.TryGetValue(token.SigNo, out HashSet<Token>? tokens))
+                    {
+                        tokens.Remove(token);
+                        if (tokens.Count == 0)
+                        {
+                            s_registrations.Remove(token.SigNo);
+                            Interop.Sys.DisablePosixSignalHandling(token.SigNo);
+                        }
+                    }
+                }
             }
         }
 
         [UnmanagedCallersOnly]
         private static int OnPosixSignal(int signo, PosixSignal signal)
         {
-            PosixSignalRegistration?[]? registrations = GetRegistrations(signo);
-            if (registrations != null)
+            if (GetTokens(signo) is Token[] tokens)
             {
                 // This is called on the native signal handling thread. We need to move to another thread so
                 // signal handling is not blocked. Otherwise we may get deadlocked when the handler depends
                 // on work triggered from the signal handling thread.
-
-                // For terminate/interrupt signals we use a dedicated Thread
-                // in case the ThreadPool is saturated.
-                bool useDedicatedThread = signal == PosixSignal.SIGINT ||
-                                          signal == PosixSignal.SIGQUIT ||
-                                          signal == PosixSignal.SIGTERM;
-
-                if (useDedicatedThread)
+                switch (signal)
                 {
-                    Thread handlerThread = new Thread(HandleSignal)
-                    {
-                        IsBackground = true,
-                        Name = ".NET Signal Handler"
-                    };
-                    handlerThread.UnsafeStart((signo, registrations));
-                }
-                else
-                {
-                    ThreadPool.UnsafeQueueUserWorkItem(HandleSignal, (signo, registrations));
+                    case PosixSignal.SIGINT:
+                    case PosixSignal.SIGQUIT:
+                    case PosixSignal.SIGTERM:
+                        // For terminate/interrupt signals we use a dedicated Thread in case the ThreadPool is saturated.
+                        new Thread(HandleSignal)
+                        {
+                            IsBackground = true,
+                            Name = ".NET Signal Handler"
+                        }.UnsafeStart((signo, tokens));
+                        break;
+
+                    default:
+                        ThreadPool.UnsafeQueueUserWorkItem(HandleSignal, (signo, tokens));
+                        break;
                 }
 
                 return 1;
             }
 
             return 0;
-        }
 
-        private static PosixSignalRegistration?[]? GetRegistrations(int signo)
-        {
-            lock (s_registrations)
+            static void HandleSignal(object? state)
             {
-                if (s_registrations.TryGetValue(signo, out List<WeakReference<PosixSignalRegistration>?>? signalRegistrations))
+                (int signo, Token[]? tokens) = ((int, Token[]?))state!;
+                do
                 {
-                    if (signalRegistrations.Count != 0)
+                    bool handlersCalled = false;
+                    if (tokens != null)
                     {
-                        var registrations = new PosixSignalRegistration?[signalRegistrations.Count];
-                        bool hasRegistrations = false;
-                        bool pruneWeakReferences = false;
-
-                        for (int i = 0; i < signalRegistrations.Count; i++)
-                        {
-                            if (signalRegistrations[i]!.TryGetTarget(out PosixSignalRegistration? registration))
-                            {
-                                registrations[i] = registration;
-                                hasRegistrations = true;
-                            }
-                            else
-                            {
-                                // WeakReference no longer holds an object. PosixSignalRegistration got finalized.
-                                signalRegistrations[i] = null;
-                                pruneWeakReferences = true;
-                            }
-                        }
-
-                        if (pruneWeakReferences)
-                        {
-                            signalRegistrations.RemoveAll(item => item is null);
-                        }
-
-                        if (hasRegistrations)
-                        {
-                            return registrations;
-                        }
-                        else
-                        {
-                            Interop.Sys.DisablePosixSignalHandling(signo);
-                        }
-                    }
-                }
-                return null;
-            }
-        }
-
-        private static void HandleSignal(object? state)
-        {
-            HandleSignal(((int, PosixSignalRegistration?[]))state!);
-        }
-
-        private static void HandleSignal((int signo, PosixSignalRegistration?[]? registrations) state)
-        {
-            do
-            {
-                bool handlersCalled = false;
-                if (state.registrations != null)
-                {
-                    PosixSignalContext ctx = new(0);
-                    foreach (PosixSignalRegistration? registration in state.registrations)
-                    {
-                        if (registration != null)
+                        PosixSignalContext ctx = new(0);
+                        foreach (Token token in tokens)
                         {
                             // Different values for PosixSignal map to the same signo.
                             // Match the PosixSignal value used when registering.
-                            ctx.Signal = registration._signal;
-                            if (registration.CallHandler(ctx))
-                            {
-                                handlersCalled = true;
-                            }
+                            ctx.Signal = token.Signal;
+                            token.Handler(ctx);
+                            handlersCalled = true;
+                        }
+
+                        if (ctx.Cancel)
+                        {
+                            return;
                         }
                     }
 
-                    if (ctx.Cancel)
+                    if (Interop.Sys.HandleNonCanceledPosixSignal(signo, handlersCalled ? 0 : 1))
                     {
                         return;
                     }
+
+                    // HandleNonCanceledPosixSignal returns false when handlers got registered.
+                    tokens = GetTokens(signo);
                 }
+                while (true);
+            }
 
-                if (Interop.Sys.HandleNonCanceledPosixSignal(state.signo, handlersCalled ? 0 : 1))
-                {
-                    return;
-                }
-
-                // HandleNonCanceledPosixSignal returns false when handlers got registered.
-                state.registrations = GetRegistrations(state.signo);
-            } while (true);
-        }
-
-        public partial void Dispose()
-        {
-            if (_registered)
+            static Token[]? GetTokens(int signo)
             {
+                Token[]? results = null;
+
                 lock (s_registrations)
                 {
-                    List<WeakReference<PosixSignalRegistration>?> signalRegistrations = s_registrations[_signo];
-                    bool pruneWeakReferences = false;
-                    for (int i = 0; i < signalRegistrations.Count; i++)
+                    if (s_registrations.TryGetValue(signo, out HashSet<Token>? tokens))
                     {
-                        if (signalRegistrations[i]!.TryGetTarget(out PosixSignalRegistration? registration))
-                        {
-                            if (ReferenceEquals(this, registration))
-                            {
-                                signalRegistrations.RemoveAt(i);
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            // WeakReference no longer holds an object. PosixSignalRegistration got finalized.
-                            signalRegistrations[i] = null;
-                            pruneWeakReferences = true;
-                        }
-                    }
-
-                    if (pruneWeakReferences)
-                    {
-                        signalRegistrations.RemoveAll(item => item is null);
-                    }
-
-                    if (signalRegistrations.Count == 0)
-                    {
-                        Interop.Sys.DisablePosixSignalHandling(_signo);
+                        results = new Token[tokens.Count];
+                        tokens.CopyTo(results);
                     }
                 }
 
-                // Synchronize with _handler invocations.
-                lock (_gate)
-                {
-                    _registered = false;
-                }
+                return results;
             }
         }
     }
