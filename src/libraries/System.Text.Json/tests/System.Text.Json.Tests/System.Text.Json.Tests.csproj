@@ -119,6 +119,7 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Dynamic.Sample.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.HandleNull.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Int32.cs" />
+    <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.Interface.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.InvalidCast.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.List.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.NullValueType.cs" />
