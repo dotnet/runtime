@@ -3125,29 +3125,10 @@ namespace System.Xml.Serialization
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
                     ilg.Call(XmlReader_Skip);
-                    if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan))
-                    {
-                        ConstructorInfo TimeSpan_ctor = typeof(TimeSpan).GetConstructor(
-                            CodeGenerator.InstanceBindingFlags,
-                            null,
-                            new Type[] { typeof(long) },
-                            null
-                            )!;
-                        ilg.Ldc(default(TimeSpan).Ticks);
-                        ilg.New(TimeSpan_ctor);
-                    }
-                    else if (element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset))
-                    {
-                        ConstructorInfo DateTimeOffset_ctor = typeof(DateTimeOffset).GetConstructor(
-                            CodeGenerator.InstanceBindingFlags,
-                            null,
-                            new Type[] { typeof(long), typeof(TimeSpan) },
-                            null
-                            )!;
-                        ilg.Ldc(default(DateTimeOffset).Ticks);
-                        ilg.Ldc(default(DateTimeOffset).Offset);
-                        ilg.New(DateTimeOffset_ctor);
-                    }
+                    LocalBuilder tmpLoc = ilg.GetTempLocal(element.Mapping.TypeDesc!.Type);
+                    ilg.Ldloca(tmpLoc);
+                    ilg.InitObj(element.Mapping.TypeDesc!.Type);
+                    ilg.Ldloc(tmpLoc);
                     WriteSourceEnd(source, element.Mapping.TypeDesc.Type);
                     ilg.Else();
                     WriteSourceBegin(source);
