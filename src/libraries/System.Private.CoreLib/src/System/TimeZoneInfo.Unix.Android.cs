@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 namespace System
 {
@@ -15,22 +16,12 @@ namespace System
         private const string TimeZoneFileName = "tzdata";
 
         private static AndroidTzData? s_tzData;
-        private static readonly object s_tzDataLock = new object();
 
         private static AndroidTzData AndroidTzDataInstance
         {
             get
             {
-                if (s_tzData == null)
-                {
-                    lock (s_tzDataLock)
-                    {
-                        if (s_tzData == null)
-                        {
-                            s_tzData = new AndroidTzData();
-                        }
-                    }
-                }
+                Interlocked.CompareExchange(ref s_tzData, new AndroidTzData(), null);
 
                 return s_tzData;
             }
