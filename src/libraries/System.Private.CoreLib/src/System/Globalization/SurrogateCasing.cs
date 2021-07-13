@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
-    internal static partial class SurrogateCasing
+    internal static class SurrogateCasing
     {
         // For simplicity ToUpper doesn't expect the Surrogate be formed with
         //  S = ((H - 0xD800) * 0x400) + (L - 0xDC00) + 0x10000

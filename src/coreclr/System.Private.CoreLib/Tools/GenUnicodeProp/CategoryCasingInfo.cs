@@ -43,7 +43,7 @@ namespace GenUnicodeProp
                     break;
             }
 
-            if (Program.IncludeCasingData)
+            if (Program.IncludeCasingData && codePoint.Value != 0x0130 && codePoint.Value != 0x0131 && codePoint.Value != 0x017f)
             {
                 _data.offsetToSimpleUppercase = (ushort)(codePoint.SimpleUppercaseMapping - codePoint.Value);
                 _data.offsetToSimpleLowercase = (ushort)(codePoint.SimpleLowercaseMapping - codePoint.Value);

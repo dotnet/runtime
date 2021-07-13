@@ -230,7 +230,7 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                return InvariantModeCasing.IndexOfIgnoreCae(source, value);
+                return InvariantModeCasing.IndexOfIgnoreCase(source, value);
             }
 
             if (GlobalizationMode.UseNls)

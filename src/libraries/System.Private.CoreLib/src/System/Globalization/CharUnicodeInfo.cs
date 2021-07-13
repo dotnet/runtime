@@ -250,6 +250,34 @@ namespace System.Globalization
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static char ToUpper(uint codePoint)
+        {
+            nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks(codePoint);
+
+            // If the offset is specified in shorts:
+            // Get the 'ref short' corresponding to where the addend is, read it as a signed 16-bit value, then add
+
+            ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(UppercaseValues));
+            ref short rsDelta = ref Unsafe.Add(ref rsStart, (int)offset);
+            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+            return (char)(delta + (int)codePoint);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static char ToLower(uint codePoint)
+        {
+            nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks(codePoint);
+
+            // If the offset is specified in shorts:
+            // Get the 'ref short' corresponding to where the addend is, read it as a signed 16-bit value, then add
+
+            ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(LowercaseValues));
+            ref short rsDelta = ref Unsafe.Add(ref rsStart, (int)offset);
+            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+            return (char)(delta + (int)codePoint);
+        }
+
         /*
          * GetUnicodeCategory
          * ==================
