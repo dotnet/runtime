@@ -578,6 +578,17 @@ namespace System.Net.Http
                 throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
 
+            Uri? requestUri = request.RequestUri;
+            if (requestUri is null || !requestUri.IsAbsoluteUri)
+            {
+                throw new InvalidOperationException(SR.net_http_client_invalid_requesturi);
+            }
+
+            if (requestUri.Scheme != Uri.UriSchemeHttp && requestUri.Scheme != Uri.UriSchemeHttps)
+            {
+                throw new NotSupportedException(SR.Format(SR.net_http_unsupported_requesturi_scheme, requestUri.Scheme));
+            }
+
             // Check for invalid combinations of properties.
             if (_proxy != null && _windowsProxyUsePolicy != WindowsProxyUsePolicy.UseCustomProxy)
             {

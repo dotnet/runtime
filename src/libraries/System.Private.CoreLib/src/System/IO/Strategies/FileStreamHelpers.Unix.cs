@@ -28,8 +28,6 @@ namespace System.IO.Strategies
             return result;
         }
 
-        internal static void ValidateFileTypeForNonExtendedPaths(SafeFileHandle handle, string originalPath) { /* nop */ }
-
         internal static long Seek(SafeFileHandle handle, long offset, SeekOrigin origin, bool closeInvalidHandle = false) =>
             CheckFileCall(Interop.Sys.LSeek(handle, offset, (Interop.Sys.SeekWhence)(int)origin), handle.Path); // SeekOrigin values are the same as Interop.libc.SeekWhence values
 

@@ -47,6 +47,8 @@ namespace System.Text.Json.Tests.Serialization
             properties[0] = JsonMetadataServices.CreatePropertyInfo<int>(
                 options,
                 isProperty: true,
+                isPublic: true,
+                isVirtual: false,
                 declaringType: typeof(HighLowTemps),
                 propertyTypeInfo: jsonContext.Int32,
                 converter: null,
@@ -54,12 +56,15 @@ namespace System.Text.Json.Tests.Serialization
                 setter: static (obj, value) => { ((HighLowTemps)obj).High = value; },
                 ignoreCondition: default,
                 numberHandling: default,
+                hasJsonInclude: false,
                 propertyName: nameof(Serialization.HighLowTemps.High),
                 jsonPropertyName: null);
             
             properties[1] = JsonMetadataServices.CreatePropertyInfo<int>(
                 options,
                 isProperty: true,
+                isPublic: true,
+                isVirtual: false,
                 declaringType: typeof(HighLowTemps),
                 propertyTypeInfo: jsonContext.Int32,
                 converter: null,
@@ -67,6 +72,7 @@ namespace System.Text.Json.Tests.Serialization
                 setter: static (obj, value) => { ((HighLowTemps)obj).Low = value; },
                 ignoreCondition: default,
                 numberHandling: default,
+                hasJsonInclude: false,
                 propertyName: nameof(Serialization.HighLowTemps.Low),
                 jsonPropertyName: null);
             

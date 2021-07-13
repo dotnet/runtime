@@ -305,7 +305,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(MakeArrayType_ByRef_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39001", TestRuntimes.Mono)]
         public void MakeArrayType_ByRef_ThrowsTypeLoadException(Type t)
         {
             Assert.Throws<TypeLoadException>(() => t.MakeArrayType());

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -28,13 +29,24 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             // set immediately in ctor, but we need a GCHandle to State in order to create the handle.
             public SafeMsQuicListenerHandle Handle = null!;
+            public string TraceId = null!; // set in ctor.
 
             public readonly SafeMsQuicConfigurationHandle ConnectionConfiguration;
             public readonly Channel<MsQuicConnection> AcceptConnectionQueue;
 
+            public bool RemoteCertificateRequired;
+            public X509RevocationMode RevocationMode = X509RevocationMode.Offline;
+            public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback;
+
             public State(QuicListenerOptions options)
             {
                 ConnectionConfiguration = SafeMsQuicConfigurationHandle.Create(options);
+                if (options.ServerAuthenticationOptions != null)
+                {
+                    RemoteCertificateRequired = options.ServerAuthenticationOptions.ClientCertificateRequired;
+                    RevocationMode = options.ServerAuthenticationOptions.CertificateRevocationCheckMode;
+                    RemoteCertificateValidationCallback = options.ServerAuthenticationOptions.RemoteCertificateValidationCallback;
+                }
 
                 AcceptConnectionQueue = Channel.CreateBounded<MsQuicConnection>(new BoundedChannelOptions(options.ListenBacklog)
                 {
@@ -64,7 +76,18 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
+            _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(_state, $"{_state.TraceId} Listener created");
+            }
+
             _listenEndPoint = Start(options);
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(_state, $"{_state.TraceId} Listener started");
+            }
         }
 
         internal override IPEndPoint ListenEndPoint
@@ -201,7 +224,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 uint status = MsQuicApi.Api.ConnectionSetConfigurationDelegate(connectionHandle, state.ConnectionConfiguration);
                 QuicExceptionHelpers.ThrowIfFailed(status, "ConnectionSetConfiguration failed.");
 
-                var msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, connectionHandle);
+                var msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, connectionHandle, state.RemoteCertificateRequired, state.RevocationMode, state.RemoteCertificateValidationCallback);
                 msQuicConnection.SetNegotiatedAlpn(connectionInfo.NegotiatedAlpn, connectionInfo.NegotiatedAlpnLength);
 
                 if (!state.AcceptConnectionQueue.Writer.TryWrite(msQuicConnection))

@@ -383,11 +383,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static int IDecrementOperators<int>.operator --(int value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked int IDecrementOperators<int>.operator --(int value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -419,11 +419,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static int IIncrementOperators<int>.operator ++(int value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked int IIncrementOperators<int>.operator ++(int value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue

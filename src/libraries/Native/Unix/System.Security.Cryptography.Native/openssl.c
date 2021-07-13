@@ -1330,7 +1330,9 @@ int32_t CryptoNative_OpenSslAvailable()
 #endif
 }
 
-int32_t CryptoNative_EnsureOpenSslInitialized()
+static int32_t g_initStatus = 1;
+
+static int32_t EnsureOpenSslInitializedCore()
 {
     // If portable then decide which OpenSSL we are, and call the right one.
     // If 1.0, call the 1.0 one.
@@ -1351,4 +1353,17 @@ int32_t CryptoNative_EnsureOpenSslInitialized()
 #else
     return EnsureOpenSsl11Initialized();
 #endif
+}
+
+static void EnsureOpenSslInitializedOnce()
+{
+    g_initStatus = EnsureOpenSslInitializedCore();
+}
+
+static pthread_once_t g_initializeShim = PTHREAD_ONCE_INIT;
+
+int32_t CryptoNative_EnsureOpenSslInitialized()
+{
+    pthread_once(&g_initializeShim, EnsureOpenSslInitializedOnce);
+    return g_initStatus;
 }
