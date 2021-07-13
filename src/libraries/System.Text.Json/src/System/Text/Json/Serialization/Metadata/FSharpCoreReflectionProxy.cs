@@ -141,7 +141,7 @@ namespace System.Text.Json.Serialization.Metadata
         public Func<TFSharpOption, T> CreateFSharpOptionValueGetter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TFSharpOption, T>()
         {
             Debug.Assert(typeof(TFSharpOption).GetGenericTypeDefinition() == _fsharpOptionType);
-            MethodInfo valueGetter = EnsureMemberExists(typeof(TFSharpOption).GetMethod("get_Value", BindingFlags.Public | BindingFlags.Instance), "Option.Value");
+            MethodInfo valueGetter = EnsureMemberExists(typeof(TFSharpOption).GetMethod("get_Value", BindingFlags.Public | BindingFlags.Instance), "Microsoft.FSharp.Core.FSharpOption<T>.get_Value()");
             return CreateDelegate<Func<TFSharpOption, T>>(valueGetter);
         }
 
@@ -149,7 +149,7 @@ namespace System.Text.Json.Serialization.Metadata
         public Func<TElement?, TFSharpOption> CreateFSharpOptionSomeConstructor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TFSharpOption, TElement>()
         {
             Debug.Assert(typeof(TFSharpOption).GetGenericTypeDefinition() == _fsharpOptionType);
-            MethodInfo methodInfo = EnsureMemberExists(typeof(TFSharpOption).GetMethod("Some", BindingFlags.Public | BindingFlags.Static), "Option.Some");
+            MethodInfo methodInfo = EnsureMemberExists(typeof(TFSharpOption).GetMethod("Some", BindingFlags.Public | BindingFlags.Static), "Microsoft.FSharp.Core.FSharpOption<T>.Some(T value)");
             return CreateDelegate<Func<TElement?, TFSharpOption>>(methodInfo);
         }
 
@@ -158,7 +158,7 @@ namespace System.Text.Json.Serialization.Metadata
             where TFSharpValueOption : struct
         {
             Debug.Assert(typeof(TFSharpValueOption).GetGenericTypeDefinition() == _fsharpValueOptionType);
-            MethodInfo valueGetter = EnsureMemberExists(typeof(TFSharpValueOption).GetMethod("get_Value", BindingFlags.Public | BindingFlags.Instance), "ValueOption.Value");
+            MethodInfo valueGetter = EnsureMemberExists(typeof(TFSharpValueOption).GetMethod("get_Value", BindingFlags.Public | BindingFlags.Instance), "Microsoft.FSharp.Core.FSharpValueOption<T>.get_Value()");
             return CreateDelegate<StructGetter<TFSharpValueOption, TElement>>(valueGetter);
         }
 
@@ -166,7 +166,7 @@ namespace System.Text.Json.Serialization.Metadata
         public Func<TElement?, TFSharpOption> CreateFSharpValueOptionSomeConstructor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TFSharpOption, TElement>()
         {
             Debug.Assert(typeof(TFSharpOption).GetGenericTypeDefinition() == _fsharpValueOptionType);
-            MethodInfo methodInfo = EnsureMemberExists(typeof(TFSharpOption).GetMethod("Some", BindingFlags.Public | BindingFlags.Static), "ValueOption.ValueSome");
+            MethodInfo methodInfo = EnsureMemberExists(typeof(TFSharpOption).GetMethod("Some", BindingFlags.Public | BindingFlags.Static), "Microsoft.FSharp.Core.FSharpValueOption<T>.ValueSome(T value)");
             return CreateDelegate<Func<TElement?, TFSharpOption>>(methodInfo);
         }
 
@@ -174,21 +174,21 @@ namespace System.Text.Json.Serialization.Metadata
         public Func<IEnumerable<TElement>, TFSharpList> CreateFSharpListConstructor<TFSharpList, TElement>()
         {
             Debug.Assert(typeof(TFSharpList).GetGenericTypeDefinition() == _fsharpListType);
-            return CreateDelegate<Func<IEnumerable<TElement>, TFSharpList>>(EnsureMemberExists(_fsharpListCtor, "List.ofSeq").MakeGenericMethod(typeof(TElement)));
+            return CreateDelegate<Func<IEnumerable<TElement>, TFSharpList>>(EnsureMemberExists(_fsharpListCtor, "Microsoft.FSharp.Collections.ListModule.OfSeq<T>(IEnumerable<T> source)").MakeGenericMethod(typeof(TElement)));
         }
 
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
         public Func<IEnumerable<TElement>, TFSharpSet> CreateFSharpSetConstructor<TFSharpSet, TElement>()
         {
             Debug.Assert(typeof(TFSharpSet).GetGenericTypeDefinition() == _fsharpSetType);
-            return CreateDelegate<Func<IEnumerable<TElement>, TFSharpSet>>(EnsureMemberExists(_fsharpSetCtor, "Set.ofSeq").MakeGenericMethod(typeof(TElement)));
+            return CreateDelegate<Func<IEnumerable<TElement>, TFSharpSet>>(EnsureMemberExists(_fsharpSetCtor, "Microsoft.FSharp.Collections.SetModule.OfSeq<T>(IEnumerable<T> source)").MakeGenericMethod(typeof(TElement)));
         }
 
         [RequiresUnreferencedCode(FSharpCoreUnreferencedCodeMessage)]
         public Func<IEnumerable<Tuple<TKey, TValue>>, TFSharpMap> CreateFSharpMapConstructor<TFSharpMap, TKey, TValue>()
         {
             Debug.Assert(typeof(TFSharpMap).GetGenericTypeDefinition() == _fsharpMapType);
-            return CreateDelegate<Func<IEnumerable<Tuple<TKey, TValue>>, TFSharpMap>>(EnsureMemberExists(_fsharpMapCtor, "Map.ofSeq").MakeGenericMethod(typeof(TKey), typeof(TValue)));
+            return CreateDelegate<Func<IEnumerable<Tuple<TKey, TValue>>, TFSharpMap>>(EnsureMemberExists(_fsharpMapCtor, "Microsoft.FSharp.Collections.MapModule.OfSeq<TKey, TValue>(IEnumerable<Tuple<TKey, TValue>> source)").MakeGenericMethod(typeof(TKey), typeof(TValue)));
         }
 
         private Attribute? GetFSharpCompilationMappingAttribute(Type type)
