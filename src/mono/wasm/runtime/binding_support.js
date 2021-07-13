@@ -1479,12 +1479,14 @@ var BindingSupportLib = {
 
 			// Check to make sure the delegate is still alive on the CLR side of things.
 			if (typeof delegate_obj.__mono_delegate_alive__ !== "undefined") {
-				if (!delegate_obj.__mono_delegate_alive__)
+				if (!delegate_obj.__mono_delegate_alive__) {
 					// HACK: It is possible (though unlikely) for a delegate to be invoked after it's been collected
 					//  if it's being used as a JavaScript event handler and the host environment decides to fire events
 					//  at a point where we've already disposed of the object the event handler is attached to.
 					// As such, we log here instead of throwing an error. We may want to not log at all...
 					console.log("The delegate target that is being invoked is no longer available.  Please check if it has been prematurely GC'd.");
+					return;
+				}
 			}
 
 			var delegateRoot = MONO.mono_wasm_new_root (this.extract_mono_obj (delegate_obj));
