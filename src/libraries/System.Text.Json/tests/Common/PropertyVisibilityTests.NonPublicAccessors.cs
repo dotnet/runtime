@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class PropertyVisibilityTests
+    public abstract partial class PropertyVisibilityTests
     {
         [Fact]
-        public static void NonPublic_AccessorsNotSupported_WithoutAttribute()
+        public async Task NonPublic_AccessorsNotSupported_WithoutAttribute()
         {
             string json = @"{
                 ""MyInt"":1,
@@ -18,20 +19,20 @@ namespace System.Text.Json.Serialization.Tests
                 ""MyUri"":""https://microsoft.com""
             }";
 
-            var obj = JsonSerializer.Deserialize<MyClass_WithNonPublicAccessors>(json);
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<MyClass_WithNonPublicAccessors>(json);
             Assert.Equal(0, obj.MyInt);
             Assert.Null(obj.MyString);
             Assert.Equal(2f, obj.GetMyFloat);
             Assert.Equal(new Uri("https://microsoft.com"), obj.MyUri);
 
-            json = JsonSerializer.Serialize(obj);
+            json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
             Assert.Contains(@"""MyInt"":0", json);
             Assert.Contains(@"""MyString"":null", json);
             Assert.DoesNotContain(@"""MyFloat"":", json);
             Assert.DoesNotContain(@"""MyUri"":", json);
         }
 
-        private class MyClass_WithNonPublicAccessors
+        public class MyClass_WithNonPublicAccessors
         {
             public int MyInt { get; private set; }
             public string MyString { get; internal set; }
@@ -43,7 +44,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Honor_JsonSerializablePropertyAttribute_OnProperties()
+        public virtual async Task Honor_JsonSerializablePropertyAttribute_OnProperties()
         {
             string json = @"{
                 ""MyInt"":1,
@@ -52,20 +53,20 @@ namespace System.Text.Json.Serialization.Tests
                 ""MyUri"":""https://microsoft.com""
             }";
 
-            var obj = JsonSerializer.Deserialize<MyClass_WithNonPublicAccessors_WithPropertyAttributes>(json);
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<MyClass_WithNonPublicAccessors_WithPropertyAttributes>(json);
             Assert.Equal(1, obj.MyInt);
             Assert.Equal("Hello", obj.MyString);
             Assert.Equal(2f, obj.GetMyFloat);
             Assert.Equal(new Uri("https://microsoft.com"), obj.MyUri);
 
-            json = JsonSerializer.Serialize(obj);
+            json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
             Assert.Contains(@"""MyInt"":1", json);
             Assert.Contains(@"""MyString"":""Hello""", json);
             Assert.Contains(@"""MyFloat"":2", json);
             Assert.Contains(@"""MyUri"":""https://microsoft.com""", json);
         }
 
-        private class MyClass_WithNonPublicAccessors_WithPropertyAttributes
+        public class MyClass_WithNonPublicAccessors_WithPropertyAttributes
         {
             [JsonInclude]
             public int MyInt { get; private set; }
@@ -103,19 +104,23 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ExtensionDataCanHaveNonPublicSetter()
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        // Need support for extension data.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
+#endif
+        public async Task ExtensionDataCanHaveNonPublicSetter()
         {
             string json = @"{""Key"":""Value""}";
 
             // Baseline
-            var obj1 = JsonSerializer.Deserialize<ClassWithExtensionData_NonPublicSetter>(json);
+            var obj1 = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithExtensionData_NonPublicSetter>(json);
             Assert.Null(obj1.ExtensionData);
-            Assert.Equal("{}", JsonSerializer.Serialize(obj1));
+            Assert.Equal("{}", await JsonSerializerWrapperForString.SerializeWrapper(obj1));
 
             // With attribute
-            var obj2 = JsonSerializer.Deserialize<ClassWithExtensionData_NonPublicSetter_WithAttribute>(json);
+            var obj2 = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithExtensionData_NonPublicSetter_WithAttribute>(json);
             Assert.Equal("Value", obj2.ExtensionData["Key"].GetString());
-            Assert.Equal(json, JsonSerializer.Serialize(obj2));
+            Assert.Equal(json, await JsonSerializerWrapperForString.SerializeWrapper(obj2));
         }
 
         private class ClassWithExtensionData_NonPublicSetter
@@ -138,7 +143,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void HonorCustomConverter()
+        public virtual async Task HonorCustomConverter_UsingPrivateSetter()
         {
             var options = new JsonSerializerOptions();
             options.Converters.Add(new JsonStringEnumConverter());
@@ -146,17 +151,17 @@ namespace System.Text.Json.Serialization.Tests
             string json = @"{""MyEnum"":""AnotherValue"",""MyInt"":2}";
 
             // Deserialization baseline, without enum converter, we get JsonException.
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StructWithPropertiesWithConverter>(json));
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<StructWithPropertiesWithConverter>(json));
 
-            var obj = JsonSerializer.Deserialize<StructWithPropertiesWithConverter>(json, options);
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<StructWithPropertiesWithConverter>(json, options);
             Assert.Equal(MySmallEnum.AnotherValue, obj.GetMyEnum);
             Assert.Equal(25, obj.MyInt);
 
             // ConverterForInt32 throws this exception.
-            Assert.Throws<NotImplementedException>(() => JsonSerializer.Serialize(obj, options));
+            await Assert.ThrowsAsync<NotImplementedException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(obj, options));
         }
 
-        private struct StructWithPropertiesWithConverter
+        public struct StructWithPropertiesWithConverter
         {
             [JsonInclude]
             public MySmallEnum MyEnum { private get; set; }
@@ -169,23 +174,23 @@ namespace System.Text.Json.Serialization.Tests
             internal MySmallEnum GetMyEnum => MyEnum;
         }
 
-        private enum MySmallEnum
+        public enum MySmallEnum
         {
             DefaultValue = 0,
             AnotherValue = 1
         }
 
         [Fact]
-        public static void HonorCaseInsensitivity()
+        public async Task HonorCaseInsensitivity()
         {
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
             string json = @"{""MYSTRING"":""Hello""}";
-            Assert.Null(JsonSerializer.Deserialize<MyStruct_WithNonPublicAccessors_WithTypeAttribute>(json).MyString);
-            Assert.Equal("Hello", JsonSerializer.Deserialize<MyStruct_WithNonPublicAccessors_WithTypeAttribute>(json, options).MyString);
+            Assert.Null((await JsonSerializerWrapperForString.DeserializeWrapper<MyStruct_WithNonPublicAccessors_WithTypeAttribute>(json)).MyString);
+            Assert.Equal("Hello", (await JsonSerializerWrapperForString.DeserializeWrapper<MyStruct_WithNonPublicAccessors_WithTypeAttribute>(json, options)).MyString);
         }
 
-        private struct MyStruct_WithNonPublicAccessors_WithTypeAttribute
+        public struct MyStruct_WithNonPublicAccessors_WithTypeAttribute
         {
             [JsonInclude]
             public int MyInt { get; private set; }
@@ -201,30 +206,30 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void HonorNamingPolicy()
+        public async Task HonorNamingPolicy()
         {
             var options = new JsonSerializerOptions { PropertyNamingPolicy = new SimpleSnakeCasePolicy() };
 
             string json = @"{""my_string"":""Hello""}";
-            Assert.Null(JsonSerializer.Deserialize<MyStruct_WithNonPublicAccessors_WithTypeAttribute>(json).MyString);
-            Assert.Equal("Hello", JsonSerializer.Deserialize<MyStruct_WithNonPublicAccessors_WithTypeAttribute>(json, options).MyString);
+            Assert.Null((await JsonSerializerWrapperForString.DeserializeWrapper<MyStruct_WithNonPublicAccessors_WithTypeAttribute>(json)).MyString);
+            Assert.Equal("Hello", (await JsonSerializerWrapperForString.DeserializeWrapper<MyStruct_WithNonPublicAccessors_WithTypeAttribute>(json, options)).MyString);
         }
 
         [Fact]
-        public static void HonorJsonPropertyName()
+        public virtual async Task HonorJsonPropertyName()
         {
             string json = @"{""prop1"":1,""prop2"":2}";
 
-            var obj = JsonSerializer.Deserialize<StructWithPropertiesWithJsonPropertyName>(json);
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<StructWithPropertiesWithJsonPropertyName>(json);
             Assert.Equal(MySmallEnum.AnotherValue, obj.GetMyEnum);
             Assert.Equal(2, obj.MyInt);
 
-            json = JsonSerializer.Serialize(obj);
+            json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
             Assert.Contains(@"""prop1"":1", json);
             Assert.Contains(@"""prop2"":2", json);
         }
 
-        private struct StructWithPropertiesWithJsonPropertyName
+        public struct StructWithPropertiesWithJsonPropertyName
         {
             [JsonInclude]
             [JsonPropertyName("prop1")]
@@ -239,9 +244,13 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Map_JsonSerializableProperties_ToCtorArgs()
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        // Needs support for parameterized ctors.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45448")]
+#endif
+        public async Task Map_JsonSerializableProperties_ToCtorArgs()
         {
-            var obj = JsonSerializer.Deserialize<PointWith_JsonSerializableProperties>(@"{""X"":1,""Y"":2}");
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<PointWith_JsonSerializableProperties>(@"{""X"":1,""Y"":2}");
             Assert.Equal(1, obj.X);
             Assert.Equal(2, obj.GetY);
         }
@@ -260,24 +269,24 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Public_And_NonPublicPropertyAccessors_PropertyAttributes()
+        public virtual async Task Public_And_NonPublicPropertyAccessors_PropertyAttributes()
         {
             string json = @"{""W"":1,""X"":2,""Y"":3,""Z"":4}";
 
-            var obj = JsonSerializer.Deserialize<ClassWithMixedPropertyAccessors_PropertyAttributes>(json);
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithMixedPropertyAccessors_PropertyAttributes>(json);
             Assert.Equal(1, obj.W);
             Assert.Equal(2, obj.X);
             Assert.Equal(3, obj.Y);
             Assert.Equal(4, obj.GetZ);
 
-            json = JsonSerializer.Serialize(obj);
+            json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
             Assert.Contains(@"""W"":1", json);
             Assert.Contains(@"""X"":2", json);
             Assert.Contains(@"""Y"":3", json);
             Assert.Contains(@"""Z"":4", json);
         }
 
-        private class ClassWithMixedPropertyAccessors_PropertyAttributes
+        public class ClassWithMixedPropertyAccessors_PropertyAttributes
         {
             [JsonInclude]
             public int W { get; set; }
@@ -301,40 +310,40 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty))]
-        public static void NonPublicProperty_WithJsonInclude_Invalid(Type type)
+        public virtual async Task NonPublicProperty_WithJsonInclude_Invalid(Type type)
         {
-            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("", type));
+            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper("{}", type));
             string exAsStr = ex.ToString();
             Assert.Contains("MyString", exAsStr);
             Assert.Contains(type.ToString(), exAsStr);
             Assert.Contains("JsonIncludeAttribute", exAsStr);
 
-            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(Activator.CreateInstance(type), type));
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(Activator.CreateInstance(type), type));
             exAsStr = ex.ToString();
             Assert.Contains("MyString", exAsStr);
             Assert.Contains(type.ToString(), exAsStr);
             Assert.Contains("JsonIncludeAttribute", exAsStr);
         }
 
-        private class ClassWithPrivateProperty_WithJsonIncludeProperty
+        public class ClassWithPrivateProperty_WithJsonIncludeProperty
         {
             [JsonInclude]
             private string MyString { get; set; }
         }
 
-        private class ClassWithInternalProperty_WithJsonIncludeProperty
+        public class ClassWithInternalProperty_WithJsonIncludeProperty
         {
             [JsonInclude]
             internal string MyString { get; }
         }
 
-        private class ClassWithProtectedProperty_WithJsonIncludeProperty
+        public class ClassWithProtectedProperty_WithJsonIncludeProperty
         {
             [JsonInclude]
             protected string MyString { get; private set; }
         }
 
-        private class ClassWithPrivateField_WithJsonIncludeProperty
+        public class ClassWithPrivateField_WithJsonIncludeProperty
         {
             [JsonInclude]
             private string MyString = null;
@@ -342,31 +351,31 @@ namespace System.Text.Json.Serialization.Tests
             public override string ToString() => MyString;
         }
 
-        private class ClassWithInternalField_WithJsonIncludeProperty
+        public class ClassWithInternalField_WithJsonIncludeProperty
         {
             [JsonInclude]
             internal string MyString = null;
         }
 
-        private class ClassWithProtectedField_WithJsonIncludeProperty
+        public class ClassWithProtectedField_WithJsonIncludeProperty
         {
             [JsonInclude]
             protected string MyString = null;
         }
 
-        private class ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty
+        public class ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty
         {
             [JsonInclude]
             private string MyString { get; init; }
         }
 
-        private class ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty
+        public class ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty
         {
             [JsonInclude]
             internal string MyString { get; init; }
         }
 
-        private class ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty
+        public class ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty
         {
             [JsonInclude]
             protected string MyString { get; init; }

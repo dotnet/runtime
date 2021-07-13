@@ -66,6 +66,9 @@ stub_mono_wasm_breakpoint_hit (void);
 static void
 stub_mono_wasm_single_step_hit (void);
 
+static void 
+stub_send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
+
 static MonoComponentDebugger fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &debugger_avaliable },
 	&stub_debugger_init,
@@ -87,7 +90,10 @@ static MonoComponentDebugger fn_table = {
 
 	//wasm
 	&stub_mono_wasm_breakpoint_hit,
-	&stub_mono_wasm_single_step_hit
+	&stub_mono_wasm_single_step_hit,
+
+	//HotReload
+	&stub_send_enc_delta,
 };
 
 static bool
@@ -199,5 +205,10 @@ stub_mono_wasm_breakpoint_hit (void)
 
 static void
 stub_mono_wasm_single_step_hit (void)
+{
+}
+
+static void 
+stub_send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dpdb_bytes, int32_t dpdb_len)
 {
 }
