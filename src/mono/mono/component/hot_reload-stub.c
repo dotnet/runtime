@@ -59,6 +59,9 @@ hot_reload_stub_table_bounds_check (MonoImage *base_image, int table_index, int 
 static gboolean
 hot_reload_stub_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, uint32_t orig_index, MonoImage **image_out, uint32_t *index_out);
 
+static gboolean
+hot_reload_stub_has_modified_rows (const MonoTableInfo *table);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
 	&hot_reload_stub_set_fastpath_data,
@@ -75,6 +78,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_get_updated_method_rva,
 	&hot_reload_stub_table_bounds_check,
 	&hot_reload_stub_delta_heap_lookup,
+	&hot_reload_stub_has_modified_rows,
 };
 
 static bool
@@ -170,6 +174,11 @@ static gboolean
 hot_reload_stub_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, uint32_t orig_index, MonoImage **image_out, uint32_t *index_out)
 {
 	g_assert_not_reached ();
+}
+
+static gboolean
+hot_reload_stub_has_modified_rows (const MonoTableInfo *table){
+	return FALSE;
 }
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT

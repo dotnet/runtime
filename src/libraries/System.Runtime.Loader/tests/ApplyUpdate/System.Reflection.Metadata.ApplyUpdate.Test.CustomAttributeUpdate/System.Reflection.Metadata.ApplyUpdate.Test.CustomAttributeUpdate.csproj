@@ -4,9 +4,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <DeltaScript>deltascript.json</DeltaScript>
-    <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="MethodBody1.cs" />
+    <Compile Include="CustomAttributeUpdate.cs" />
   </ItemGroup>
 </Project>
