@@ -11933,6 +11933,32 @@ namespace System.Reflection
         public virtual System.Type ResolveType(int metadataToken, System.Type[]? genericTypeArguments, System.Type[]? genericMethodArguments) { throw null; }
         public override string ToString() { throw null; }
     }
+    public sealed class NullabilityInfoContext
+    {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("By default nullability attributes are trimmed by the trimmer")]
+        public System.Reflection.NullabilityInfo Create(System.Reflection.EventInfo eventInfo) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("By default nullability attributes are trimmed by the trimmer")]
+        public System.Reflection.NullabilityInfo Create(System.Reflection.FieldInfo fieldInfo) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("By default nullability attributes are trimmed by the trimmer")]
+        public System.Reflection.NullabilityInfo Create(System.Reflection.ParameterInfo parameterInfo) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("By default nullability attributes are trimmed by the trimmer")]
+        public System.Reflection.NullabilityInfo Create(System.Reflection.PropertyInfo propertyInfo) { throw null; }
+    }
+    public sealed class NullabilityInfo
+    {
+        internal NullabilityInfo(System.Type type, System.Reflection.NullabilityState readState, System.Reflection.NullabilityState writeState, System.Reflection.NullabilityInfo? elementType, System.Reflection.NullabilityInfo[] genericTypeArguments) { }
+        public System.Type Type { get; }
+        public System.Reflection.NullabilityState ReadState { get; }
+        public System.Reflection.NullabilityState WriteState { get; }
+        public System.Reflection.NullabilityInfo? ElementType { get; }
+        public System.Reflection.NullabilityInfo[] GenericTypeArguments { get; }
+    }
+    public enum NullabilityState
+    {
+        Unknown,
+        NotNull,
+        Nullable
+    }
     public delegate System.Reflection.Module ModuleResolveEventHandler(object sender, System.ResolveEventArgs e);
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
     public sealed partial class ObfuscateAssemblyAttribute : System.Attribute
