@@ -3018,12 +3018,9 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         instruction simdMov = simdUnalignedMovIns();
 
         // Get the largest SIMD register available if the size is large enough
-        unsigned regSize = size >= YMM_REGSIZE_BYTES ? compiler->getSIMDVectorRegisterByteLength() : XMM_REGSIZE_BYTES;
-
-        if (regSize == YMM_REGSIZE_BYTES)
-        {
-            instGen(INS_vzeroupper);
-        }
+        unsigned regSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
+                               ? YMM_REGSIZE_BYTES
+                               : XMM_REGSIZE_BYTES;
 
         for (; size >= regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
         {
@@ -3052,6 +3049,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         {
             // Copy the remainder by moving the last regSize bytes of the buffer
             unsigned remainder = regSize - size;
+            assert(remainder <= size);
+
             srcOffset -= remainder;
             dstOffset -= remainder;
 
@@ -3074,11 +3073,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                 emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
                                     dstAddrIndexScale, dstOffset);
             }
-        }
-
-        if (regSize == YMM_REGSIZE_BYTES)
-        {
-            instGen(INS_vzeroupper);
         }
 
         return;
