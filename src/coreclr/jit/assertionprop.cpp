@@ -1271,6 +1271,10 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     }
 
                     toType = op2->CastToType();
+                    if (toType == TYP_UINT)
+                    {
+                        toType = TYP_INT;
+                    }
                 SUBRANGE_COMMON:
                     if ((assertionKind != OAK_SUBRANGE) && (assertionKind != OAK_EQUAL))
                     {
