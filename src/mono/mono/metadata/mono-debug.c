@@ -1121,7 +1121,7 @@ mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrA
 		int idx = mono_metadata_token_index (minfo->method->token);
 		gpointer ptr = mono_metadata_update_get_updated_method_ppdb (img, idx);
 		if (ptr != NULL) {
-			mono_ppdb_get_seq_points_enc (ptr, seq_points,  n_seq_points);
+			mono_ppdb_get_seq_points_enc (ptr, seq_points, n_seq_points);
 			return;
 		}
 	} 
