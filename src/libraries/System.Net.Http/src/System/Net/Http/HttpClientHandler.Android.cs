@@ -10,7 +10,10 @@ namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
-        private static MethodInfo? _underlyingHandlerMethod;
+        private static MethodInfo? _nativeHandlerMethod;
+
+        private const string NativeHandlerType = "Xamarin.Android.Net.AndroidMessageHandler";
+        private const string AssemblyName = "Mono.Android";
 
         public virtual bool SupportsAutomaticDecompression => true;
         public virtual bool SupportsProxy => true;
@@ -24,24 +27,24 @@ namespace System.Net.Http
         {
             get
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    return _socketHandler!.AutomaticDecompression;
+                    return GetAutomaticDecompression();
                 }
                 else
                 {
-                    return GetAutomaticDecompression();
+                    return _socketHandler!.AutomaticDecompression;
                 }
             }
             set
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    _socketHandler!.AutomaticDecompression = value;
+                    SetAutomaticDecompression(value);
                 }
                 else
                 {
-                    SetAutomaticDecompression(value);
+                    _socketHandler!.AutomaticDecompression = value;
                 }
             }
         }
@@ -54,24 +57,24 @@ namespace System.Net.Http
         {
             get
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    return _socketHandler!.UseProxy;
+                    return GetUseProxy();
                 }
                 else
                 {
-                    return GetUseProxy();
+                    return _socketHandler!.UseProxy;
                 }
             }
             set
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    _socketHandler!.UseProxy = value;
+                    SetUseProxy(value);
                 }
                 else
                 {
-                    SetUseProxy(value);
+                    _socketHandler!.UseProxy = value;
                 }
             }
         }
@@ -84,24 +87,24 @@ namespace System.Net.Http
         {
             get
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    return _socketHandler!.Proxy;
+                    return GetProxy();
                 }
                 else
                 {
-                    return GetProxy();
+                    return _socketHandler!.Proxy;
                 }
             }
             set
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    _socketHandler!.Proxy = value;
+                    SetProxy(value!);
                 }
                 else
                 {
-                    SetProxy(value!);
+                    _socketHandler!.Proxy = value;
                 }
             }
         }
@@ -114,24 +117,24 @@ namespace System.Net.Http
         {
             get
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    return _socketHandler!.PreAuthenticate;
+                    return GetPreAuthenticate();
                 }
                 else
                 {
-                    return GetPreAuthenticate();
+                    return _socketHandler!.PreAuthenticate;
                 }
             }
             set
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    _socketHandler!.PreAuthenticate = value;
+                    SetPreAuthenticate(value);
                 }
                 else
                 {
-                    SetPreAuthenticate(value);
+                    _socketHandler!.PreAuthenticate = value;
                 }
             }
         }
@@ -144,91 +147,91 @@ namespace System.Net.Http
         {
             get
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    return _socketHandler!.MaxAutomaticRedirections;
+                    return GetMaxAutomaticRedirections();
                 }
                 else
                 {
-                    return GetMaxAutomaticRedirections();
+                    return _socketHandler!.MaxAutomaticRedirections;
                 }
             }
             set
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    _socketHandler!.MaxAutomaticRedirections = value;
+                    SetMaxAutomaticRedirections(value);
                 }
                 else
                 {
-                    SetMaxAutomaticRedirections(value);
+                    _socketHandler!.MaxAutomaticRedirections = value;
                 }
             }
         }
 
-        [DynamicDependency("get_MaxAutomaticRedirections", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("get_MaxAutomaticRedirections", NativeHandlerType, AssemblyName)]
         private int GetMaxAutomaticRedirections() => (int)InvokeNativeHandlerMethod("get_MaxAutomaticRedirections");
 
-        [DynamicDependency("set_MaxAutomaticRedirections", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("set_MaxAutomaticRedirections", NativeHandlerType, AssemblyName)]
         private void SetMaxAutomaticRedirections(int value) => InvokeNativeHandlerMethod("set_MaxAutomaticRedirections", value);
 
-        [DynamicDependency("get_PreAuthenticate", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("get_PreAuthenticate", NativeHandlerType, AssemblyName)]
         private bool GetPreAuthenticate() => (bool)InvokeNativeHandlerMethod("get_PreAuthenticate");
 
-        [DynamicDependency("set_PreAuthenticate", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("set_PreAuthenticate", NativeHandlerType, AssemblyName)]
         private void SetPreAuthenticate(bool value) => InvokeNativeHandlerMethod("set_PreAuthenticate", value);
 
-        [DynamicDependency("get_UseProxy", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("get_UseProxy", NativeHandlerType, AssemblyName)]
         private bool GetUseProxy() => (bool)InvokeNativeHandlerMethod("get_UseProxy");
 
-        [DynamicDependency("set_UseProxy", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("set_UseProxy", NativeHandlerType, AssemblyName)]
         private void SetUseProxy(bool value) => InvokeNativeHandlerMethod("set_UseProxy", value);
 
-        [DynamicDependency("get_Proxy", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("get_Proxy", NativeHandlerType, AssemblyName)]
         private IWebProxy GetProxy() => (IWebProxy)InvokeNativeHandlerMethod("get_Proxy");
 
-        [DynamicDependency("set_Proxy", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("set_Proxy", NativeHandlerType, AssemblyName)]
         private void SetProxy(IWebProxy value) => InvokeNativeHandlerMethod("set_Proxy", value);
 
-        [DynamicDependency("get_AutomaticDecompression", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("get_AutomaticDecompression", NativeHandlerType, AssemblyName)]
         private DecompressionMethods GetAutomaticDecompression() => (DecompressionMethods)InvokeNativeHandlerMethod("get_AutomaticDecompression");
 
-        [DynamicDependency("set_AutomaticDecompression", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("set_AutomaticDecompression", NativeHandlerType, AssemblyName)]
         private void SetAutomaticDecompression(DecompressionMethods value) => InvokeNativeHandlerMethod("set_AutomaticDecompression", value);
 
-        [DynamicDependency("get_UseCookies", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("get_UseCookies", NativeHandlerType, AssemblyName)]
         private bool GetUseCookies() => (bool)InvokeNativeHandlerMethod("get_UseCookies");
 
-        [DynamicDependency("set_UseCookies", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("set_UseCookies", NativeHandlerType, AssemblyName)]
         private void SetUseCookies(bool value) => InvokeNativeHandlerMethod("set_UseCookies", value);
 
-        [DynamicDependency("get_CookieContainer", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("get_CookieContainer", NativeHandlerType, AssemblyName)]
         private CookieContainer GetCookieContainer() => (CookieContainer)InvokeNativeHandlerMethod("get_CookieContainer");
 
-        [DynamicDependency("set_CookieContainer", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("set_CookieContainer", NativeHandlerType, AssemblyName)]
         private void SetCookieContainer(CookieContainer value) => InvokeNativeHandlerMethod("set_CookieContainer", value);
 
-        [DynamicDependency("get_AllowAutoRedirect", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("get_AllowAutoRedirect", NativeHandlerType, AssemblyName)]
         private bool GetAllowAutoRedirect() => (bool)InvokeNativeHandlerMethod("get_AllowAutoRedirect");
 
-        [DynamicDependency("set_AllowAutoRedirect", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("set_AllowAutoRedirect", NativeHandlerType, AssemblyName)]
         private void SetAllowAutoRedirect(bool value) => InvokeNativeHandlerMethod("set_AllowAutoRedirect", value);
 
-        [DynamicDependency("get_Credentials", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("get_Credentials", NativeHandlerType, AssemblyName)]
         private ICredentials GetCredentials() => (ICredentials)InvokeNativeHandlerMethod("get_Credentials");
 
-        [DynamicDependency("set_Credentials", "Xamarin.Android.Net.AndroidMessageHandler", "Mono.Android")]
+        [DynamicDependency("set_Credentials", NativeHandlerType, AssemblyName)]
         private void SetCredentials(ICredentials? value) => InvokeNativeHandlerMethod("set_Credentials", value);
 
         private HttpMessageHandler CreateNativeHandler()
         {
-            if (_underlyingHandlerMethod == null)
+            if (_nativeHandlerMethod == null)
             {
                 Type? androidEnv = Type.GetType("Android.Runtime.AndroidEnvironment, Mono.Android");
-                _underlyingHandlerMethod = androidEnv!.GetMethod("GetHttpMessageHandler", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                _nativeHandlerMethod = androidEnv!.GetMethod("GetHttpMessageHandler", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             }
 
-            return (HttpMessageHandler)_underlyingHandlerMethod!.Invoke(null, null)!;
+            return (HttpMessageHandler)_nativeHandlerMethod!.Invoke(null, null)!;
         }
     }
 }

@@ -9,41 +9,44 @@ namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
-        private static MethodInfo? _underlyingHandlerMethod;
+        private static MethodInfo? _nativeHandlerMethod;
 
-        [DynamicDependency("get_UseCookies", "System.Net.Http.NSUrlSessionHandler", "Xamarin.MacCatalyst")]
+        private const string NativeHandlerType = "System.Net.Http.NSUrlSessionHandler";
+        private const string AssemblyName = "Xamarin.MacCatalyst";
+
+        [DynamicDependency("get_UseCookies", NativeHandlerType, AssemblyName)]
         private bool GetUseCookies() => (bool)InvokeNativeHandlerMethod("get_UseCookies");
 
-        [DynamicDependency("set_UseCookies", "System.Net.Http.NSUrlSessionHandler", "Xamarin.MacCatalyst")]
+        [DynamicDependency("set_UseCookies", NativeHandlerType, AssemblyName)]
         private void SetUseCookies(bool value) => InvokeNativeHandlerMethod("set_UseCookies", value);
 
-        [DynamicDependency("get_CookieContainer", "System.Net.Http.NSUrlSessionHandler", "Xamarin.MacCatalyst")]
+        [DynamicDependency("get_CookieContainer", NativeHandlerType, AssemblyName)]
         private CookieContainer GetCookieContainer() => (CookieContainer)InvokeNativeHandlerMethod("get_CookieContainer");
 
-        [DynamicDependency("set_CookieContainer", "System.Net.Http.NSUrlSessionHandler", "Xamarin.MacCatalyst")]
+        [DynamicDependency("set_CookieContainer", NativeHandlerType, AssemblyName)]
         private void SetCookieContainer(CookieContainer value) => InvokeNativeHandlerMethod("set_CookieContainer", value);
 
-        [DynamicDependency("get_AllowAutoRedirect", "System.Net.Http.NSUrlSessionHandler", "Xamarin.MacCatalyst")]
+        [DynamicDependency("get_AllowAutoRedirect", NativeHandlerType, AssemblyName)]
         private bool GetAllowAutoRedirect() => (bool)InvokeNativeHandlerMethod("get_AllowAutoRedirect");
 
-        [DynamicDependency("set_AllowAutoRedirect", "System.Net.Http.NSUrlSessionHandler", "Xamarin.MacCatalyst")]
+        [DynamicDependency("set_AllowAutoRedirect", NativeHandlerType, AssemblyName)]
         private void SetAllowAutoRedirect(bool value) => InvokeNativeHandlerMethod("set_AllowAutoRedirect", value);
 
-        [DynamicDependency("get_Credentials", "System.Net.Http.NSUrlSessionHandler", "Xamarin.MacCatalyst")]
+        [DynamicDependency("get_Credentials", NativeHandlerType, AssemblyName)]
         private ICredentials GetCredentials() => (ICredentials)InvokeNativeHandlerMethod("get_Credentials");
 
-        [DynamicDependency("set_Credentials", "System.Net.Http.NSUrlSessionHandler", "Xamarin.MacCatalyst")]
+        [DynamicDependency("set_Credentials", NativeHandlerType, AssemblyName)]
         private void SetCredentials(ICredentials? value) => InvokeNativeHandlerMethod("set_Credentials", value);
 
         private HttpMessageHandler CreateNativeHandler()
         {
-            if (_underlyingHandlerMethod == null)
+            if (_nativeHandlerMethod == null)
             {
                 Type? runtimeOptions = Type.GetType("ObjCRuntime.RuntimeOptions, Xamarin.MacCatalyst");
-                _underlyingHandlerMethod = runtimeOptions!.GetMethod("GetHttpMessageHandler", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                _nativeHandlerMethod = runtimeOptions!.GetMethod("GetHttpMessageHandler", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             }
 
-            return (HttpMessageHandler)_underlyingHandlerMethod!.Invoke(null, null)!;
+            return (HttpMessageHandler)_nativeHandlerMethod!.Invoke(null, null)!;
         }
     }
 }

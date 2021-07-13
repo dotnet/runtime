@@ -4,7 +4,7 @@
       <method signature="System.Boolean IsGloballyEnabled()" body="stub" value="false" feature="System.Net.Http.EnableActivityPropagation" featurevalue="false" />
     </type>
     <type fullname="System.Net.Http.HttpClientHandler">
-      <method signature="System.Boolean IsNativeHandlerEnabled()" body="stub" value="false" feature="System.Net.Http.UseNativeHttpHandler" featurevalue="false" />
+      <method signature="System.Boolean get_IsNativeHandlerEnabled()" body="stub" value="false" feature="System.Net.Http.UseNativeHttpHandler" featurevalue="false" />
     </type>
   </assembly>
 </linker>

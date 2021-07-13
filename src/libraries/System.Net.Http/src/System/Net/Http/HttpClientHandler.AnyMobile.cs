@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -20,7 +21,10 @@ namespace System.Net.Http
         private readonly SocketsHttpHandler? _socketHandler;
         private readonly DiagnosticsHandler? _diagnosticsHandler;
 
-        private readonly HttpMessageHandler? _underlyingHandler;
+        private readonly HttpMessageHandler? _nativeHandler;
+
+        private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods =
+            new ConcurrentDictionary<string, MethodInfo?>();
 
         private volatile bool _disposed;
 
@@ -28,15 +32,15 @@ namespace System.Net.Http
         {
             HttpMessageHandler handler;
 
-            if (IsSocketHandler)
+            if (IsNativeHandlerEnabled)
             {
-                _socketHandler = new SocketsHttpHandler();
-                handler = _socketHandler;
+                _nativeHandler = CreateNativeHandler();
+                handler = _nativeHandler;
             }
             else
             {
-                _underlyingHandler = CreateNativeHandler();
-                handler = _underlyingHandler;
+                _socketHandler = new SocketsHttpHandler();
+                handler = _socketHandler;
             }
 
             if (DiagnosticsHandler.IsGloballyEnabled())
@@ -51,13 +55,13 @@ namespace System.Net.Http
             {
                 _disposed = true;
 
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    _socketHandler!.Dispose();
+                    _nativeHandler!.Dispose();
                 }
                 else
                 {
-                    _underlyingHandler!.Dispose();
+                    _socketHandler!.Dispose();
                 }
             }
 
@@ -69,24 +73,24 @@ namespace System.Net.Http
         {
             get
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    return _socketHandler!.UseCookies;
+                    return GetUseCookies();
                 }
                 else
                 {
-                    return GetUseCookies();
+                    return _socketHandler!.UseCookies;
                 }
             }
             set
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    _socketHandler!.UseCookies = value;
+                    SetUseCookies(value);
                 }
                 else
                 {
-                    SetUseCookies(value);
+                    _socketHandler!.UseCookies = value;
                 }
             }
         }
@@ -96,13 +100,13 @@ namespace System.Net.Http
         {
             get
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    return _socketHandler!.CookieContainer;
+                    return GetCookieContainer();
                 }
                 else
                 {
-                    return GetCookieContainer();
+                    return _socketHandler!.CookieContainer;
                 }
             }
             set
@@ -112,13 +116,13 @@ namespace System.Net.Http
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    _socketHandler!.CookieContainer = value;
+                    SetCookieContainer(value);
                 }
                 else
                 {
-                    SetCookieContainer(value);
+                    _socketHandler!.CookieContainer = value;
                 }
             }
         }
@@ -143,13 +147,13 @@ namespace System.Net.Http
             get
             {
                 ICredentials? creds;
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    creds = _socketHandler!.Credentials;
+                    creds = GetCredentials();
                 }
                 else
                 {
-                    creds = GetCredentials();
+                    creds = _socketHandler!.Credentials;
                 }
 
                 return creds == CredentialCache.DefaultCredentials;
@@ -158,31 +162,31 @@ namespace System.Net.Http
             {
                 if (value)
                 {
-                    if (IsSocketHandler)
+                    if (IsNativeHandlerEnabled)
                     {
-                        _socketHandler!.Credentials = CredentialCache.DefaultCredentials;
+                        SetCredentials(CredentialCache.DefaultCredentials);
                     }
                     else
                     {
-                        SetCredentials(CredentialCache.DefaultCredentials);
+                        _socketHandler!.Credentials = CredentialCache.DefaultCredentials;
                     }
                 }
                 else
                 {
-                    if (IsSocketHandler)
-                    {
-                        if (_socketHandler!.Credentials == CredentialCache.DefaultCredentials)
-                        {
-                            _socketHandler!.Credentials = null;
-                        }
-                    }
-                    else
+                    if (IsNativeHandlerEnabled)
                     {
                         ICredentials? creds = GetCredentials();
 
                         if (creds == CredentialCache.DefaultCredentials)
                         {
                             SetCredentials(null!);
+                        }
+                    }
+                    else
+                    {
+                        if (_socketHandler!.Credentials == CredentialCache.DefaultCredentials)
+                        {
+                            _socketHandler!.Credentials = null;
                         }
                     }
                 }
@@ -194,25 +198,25 @@ namespace System.Net.Http
         {
             get
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    return _socketHandler!.Credentials;
+                    return GetCredentials();
                 }
                 else
                 {
-                    return GetCredentials();
+                    return _socketHandler!.Credentials;
                 }
 
             }
             set
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    _socketHandler!.Credentials = value;
+                    SetCredentials(value!);
                 }
                 else
                 {
-                    SetCredentials(value!);
+                    _socketHandler!.Credentials = value;
                 }
             }
         }
@@ -221,24 +225,24 @@ namespace System.Net.Http
         {
             get
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    return _socketHandler!.AllowAutoRedirect;
+                    return GetAllowAutoRedirect();
                 }
                 else
                 {
-                    return GetAllowAutoRedirect();
+                    return _socketHandler!.AllowAutoRedirect;
                 }
             }
             set
             {
-                if (IsSocketHandler)
+                if (IsNativeHandlerEnabled)
                 {
-                    _socketHandler!.AllowAutoRedirect = value;
+                    SetAllowAutoRedirect(value);
                 }
                 else
                 {
-                    SetAllowAutoRedirect(value);
+                    _socketHandler!.AllowAutoRedirect = value;
                 }
             }
         }
@@ -383,13 +387,13 @@ namespace System.Net.Http
                 return _diagnosticsHandler!.SendAsync(request, cancellationToken);
             }
 
-            if (IsSocketHandler)
+            if (IsNativeHandlerEnabled)
             {
-                return _socketHandler!.SendAsync(request, cancellationToken);
+                return _nativeHandler!.SendAsync(request, cancellationToken);
             }
             else
             {
-                return _underlyingHandler!.SendAsync(request, cancellationToken);
+                return _socketHandler!.SendAsync(request, cancellationToken);
             }
         }
 
@@ -411,12 +415,18 @@ namespace System.Net.Http
 
         private object InvokeNativeHandlerMethod(string name, params object?[] parameters)
         {
-            return _underlyingHandler!.GetType()!.GetMethod(name)!.Invoke(_underlyingHandler, parameters)!;
+            MethodInfo? method;
+
+            if (!s_cachedMethods.TryGetValue(name, out method))
+            {
+                method = _nativeHandler!.GetType()!.GetMethod(name);
+                s_cachedMethods[name] = method;
+            }
+
+            return method!.Invoke(_nativeHandler, parameters)!;
         }
 
-        private static bool IsSocketHandler => !IsNativeHandlerEnabled();
-
-        private static bool IsNativeHandlerEnabled() => RuntimeSettingParser.QueryRuntimeSettingSwitch(
+        private static bool IsNativeHandlerEnabled => RuntimeSettingParser.QueryRuntimeSettingSwitch(
                 "System.Net.Http.UseNativeHttpHandler",
                 false);
     }
