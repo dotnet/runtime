@@ -26,11 +26,11 @@ namespace System.Net.Http
                 "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT",
                 true);
 
-            // Default to disable HTTP/3 and QUIC, but enable that to be overridden
+            // Default to disable HTTP/3 (and by an extent QUIC), but enable that to be overridden
             // by an AppContext switch, or by an environment variable being set to true/1.
-            public static bool AllowHttp3AndQuic { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
-                "System.Net.SocketsHttpHandler.Http3AndQuicSupport",
-                "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3ANDQUICSUPPORT",
+            public static bool AllowHttp3 { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
+                "System.Net.SocketsHttpHandler.Http3Support",
+                "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3SUPPORT",
                 false);
 
             // Switch to disable the HTTP/2 dynamic window scaling algorithm. Enabled by default.

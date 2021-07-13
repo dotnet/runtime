@@ -125,11 +125,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         static MsQuicApi()
         {
-            if (!IsHttp3AndQuicEnabled())
+            if (!IsHttp3Enabled())
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Info(null, $"HTTP/3 and QUIC is not enabled, see 'System.Net.SocketsHttpHandler.Http3AndQuicSupport' AppContext switch.");
+                    NetEventSource.Info(null, $"HTTP/3 and QUIC is not enabled, see 'System.Net.SocketsHttpHandler.Http3Support' AppContext switch.");
                 }
 
                 return;
@@ -174,18 +174,18 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         // Note that this is copy-pasted from S.N.Http just to hide S.N.Quic behind the same AppContext switch
         // since this library is considered "private" for 6.0.
         // We should get rid of this once S.N.Quic API surface is officially exposed.
-        private static bool IsHttp3AndQuicEnabled()
+        private static bool IsHttp3Enabled()
         {
             bool value;
 
             // First check for the AppContext switch, giving it priority over the environment variable.
-            if (AppContext.TryGetSwitch("System.Net.SocketsHttpHandler.Http3AndQuicSupport", out value))
+            if (AppContext.TryGetSwitch("System.Net.SocketsHttpHandler.Http3Support", out value))
             {
                 return value;
             }
 
             // AppContext switch wasn't used. Check the environment variable.
-            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3ANDQUICSUPPORT");
+            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3SUPPORT");
 
             if (bool.TryParse(envVar, out value))
             {
