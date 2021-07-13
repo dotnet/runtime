@@ -1869,13 +1869,11 @@ namespace System.Reflection.Emit
             if (!type.IsGenericType)
                 throw new ArgumentException("Type is not a generic type", nameof(type));
 
-            if (type.IsGenericTypeDefinition)
-                throw new ArgumentException("Type cannot be a generic type definition", nameof(type));
+            if (constructor.DeclaringType != type.GetGenericTypeDefinition())
+                throw new ArgumentException("constructor declaring type is not the generic type definition of type", nameof(constructor));
 
             if (!constructor.DeclaringType!.IsGenericTypeDefinition)
                 throw new ArgumentException("constructor declaring type is not a generic type definition", nameof(constructor));
-            if (constructor.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException("constructor declaring type is not the generic type definition of type", nameof(constructor));
             if (constructor == null)
                 throw new NullReferenceException(); //MS raises this instead of an ArgumentNullException
 
@@ -1921,14 +1919,11 @@ namespace System.Reflection.Emit
             if (!type.IsGenericType)
                 throw new ArgumentException("Type is not a generic type", nameof(type));
 
-            if (type.IsGenericTypeDefinition)
-                throw new ArgumentException("Type cannot be a generic type definition", nameof(type));
+            if (field.DeclaringType != type.GetGenericTypeDefinition())
+                throw new ArgumentException("field declaring type is not the generic type definition of type", nameof(field));
 
             if (field is FieldOnTypeBuilderInst)
                 throw new ArgumentException("The specified field must be declared on a generic type definition.", nameof(field));
-
-            if (field.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException("field declaring type is not the generic type definition of type", nameof(field));
 
             FieldInfo res = type.GetField(field);
             if (res == null)
