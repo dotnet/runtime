@@ -255,7 +255,7 @@ namespace System.Reflection.Tests
             new[]
             {
                 new object[] { 1234 },
-                new object[] { typeof(ModuleTests).GetMethod("ResolveType").MetadataToken },
+                new object[] { typeof(ModuleTests).GetMethod("ResolveTypes").MetadataToken },
             }
             .Union(NullTokens);
 
