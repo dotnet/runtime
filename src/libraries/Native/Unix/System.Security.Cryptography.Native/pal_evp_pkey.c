@@ -32,9 +32,12 @@ EVP_PKEY* CryptoNative_EvpPKeyDuplicate(EVP_PKEY* currentKey, int32_t algId)
 
     if (currentAlgId == EVP_PKEY_RSA)
     {
-        RSA* rsa = EVP_PKEY_get0_RSA(currentKey);
+        const RSA* rsa = EVP_PKEY_get0_RSA(currentKey);
 
-        if (rsa == NULL || !EVP_PKEY_set1_RSA(newKey, rsa))
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+        if (rsa == NULL || !EVP_PKEY_set1_RSA(newKey, (RSA*)rsa))
+#pragma clang diagnostic pop
         {
             success = false;
         }

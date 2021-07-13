@@ -834,7 +834,7 @@ int local_EVP_PKEY_check(EVP_PKEY_CTX* ctx)
     {
         case NID_rsaEncryption:
         {
-            RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+            const RSA* rsa = EVP_PKEY_get0_RSA(pkey);
 
             if (rsa != NULL)
             {
