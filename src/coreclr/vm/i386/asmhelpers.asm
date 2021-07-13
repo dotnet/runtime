@@ -1142,69 +1142,20 @@ _VarargPInvokeStub@0 endp
 ; Invoked for marshaling-required unmanaged CALLI calls as a stub.
 ; EAX       - the unmanaged target
 ; ECX, EDX  - arguments
-; [ESP + 4] - the VASigCookie
+; EBX       - the VASigCookie
 ;
 _GenericPInvokeCalliHelper@0 proc public
-    ; save the target
-    push    eax
 
-    ; EAX <- VASigCookie
-    mov     eax, [esp + 8]           ; skip target and retaddr
-
-    mov     eax, [eax + VASigCookie__StubOffset]
-    test    eax, eax
-
+    cmp     dword ptr [ebx + VASigCookie__StubOffset], 0
     jz      GoCallCalliWorker
-    ; ---------------------------------------
 
-    push    eax
-
-    ; stack layout at this point:
-    ;
-    ; |         ...          |
-    ; |   stack arguments    | ESP + 16
-    ; +----------------------+
-    ; |     VASigCookie*     | ESP + 12
-    ; +----------------------+
-    ; |    return address    | ESP + 8
-    ; +----------------------+
-    ; | CALLI target address | ESP + 4
-    ; +----------------------+
-    ; |   stub entry point   | ESP + 0
-    ; ------------------------
-
-    ; remove VASigCookie from the stack
-    mov     eax, [esp + 8]
-    mov     [esp + 12], eax
-
-    ; move stub entry point below the RA
-    mov     eax, [esp]
-    mov     [esp + 8], eax
-
-    ; load EAX with the target address
-    pop     eax
-    pop     eax
-
-    ; stack layout at this point:
-    ;
-    ; |         ...          |
-    ; |   stack arguments    | ESP + 8
-    ; +----------------------+
-    ; |    return address    | ESP + 4
-    ; +----------------------+
-    ; |   stub entry point   | ESP + 0
-    ; ------------------------
-
-    ; CALLI target address is in EAX
-    ret
+    ; Stub is already prepared, just jump to it
+    jmp     dword ptr [ebx + VASigCookie__StubOffset]
 
 GoCallCalliWorker:
-    ; the target is on the stack and will become m_Datum of PInvokeCalliFrame
-    ; call the stub generating worker
-    pop     eax
-
     ;
-    ; target ptr in EAX, VASigCookie ptr in EDX
+    ; call the stub generating worker
+    ; target ptr in EAX, VASigCookie ptr in EBX
     ;
 
     STUB_PROLOG
@@ -1215,7 +1166,7 @@ GoCallCalliWorker:
     push        eax
 
     push        eax                         ; unmanaged target
-    push        dword ptr [esi + 4*7]       ; pVaSigCookie (first stack argument)
+    push        ebx                         ; pVaSigCookie (first stack argument)
     push        esi                         ; pTransitionBlock
 
     call        _GenericPInvokeCalliStubWorker@12

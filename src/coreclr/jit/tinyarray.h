@@ -64,7 +64,7 @@ public:
 
     TinyArrayRef operator[](unsigned int n)
     {
-        assert((n + 1) * bits_per_element <= sizeof(itemType) * 8);
+        assert((n + 1) * bits_per_element <= sizeof(storageType) * 8);
         return TinyArrayRef(&data, n);
     }
     // only use this for clearing it

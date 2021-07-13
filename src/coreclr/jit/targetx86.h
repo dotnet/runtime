@@ -178,7 +178,7 @@
   #define RBM_PINVOKE_TARGET_PARAM RBM_EAX
 
   // GenericPInvokeCalliHelper cookie parameter
-  #define REG_PINVOKE_COOKIE_PARAM REG_STK
+  #define REG_PINVOKE_COOKIE_PARAM REG_EBX
 
   // IL stub's secret parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM    REG_EAX
