@@ -336,21 +336,21 @@ fi
 
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Browser' and '$(ForNode)' != 'true' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'Browser' And '$(ForNode)' != 'true' ">
       <![CDATA[
 cd WasmApp
 ./run-v8.sh
 CLRTestExitCode=$?
       ]]>
       </BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Browser' and '$(ForNode)' == 'true'">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'Browser' And '$(ForNode)' == 'true'">
       <![CDATA[
 cd WasmApp
 ./run-node.sh
 CLRTestExitCode=$?
       ]]>
       </BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'Android' ">
       <![CDATA[
 # run Android app
 __Command=""

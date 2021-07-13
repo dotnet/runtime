@@ -176,17 +176,6 @@ const IOHandler = {
 		IOHandler.read = async (file) => await readFunc(file);
 	},
 
-	/** Write the content to a file at a certain path
-	 * @type {(content: string, path: string) => void}
-	 * @param {string} content the contents to write to the file
-	 * @param {string} path the path to which to write the contents
-	*/
-	writeContentToFile: function(content, path) { // writes a string to a file
-		const stream = FS.open(path, 'w+');
-		FS.write(stream, content, 0, content.length, 0);
-		FS.close(stream);
-	},
-
 	/** Returns an async fetch request
 	 * @type {(path: string, params: object) => Promise<{ok: boolean, url: string, arrayBuffer: Promise<Uint8Array>}>}
 	 * @param {string} path the path to the file to fetch
@@ -337,14 +326,6 @@ var Module = {
 			App.init ();
 		};
 		Module.config.fetch_file_cb = function (asset) {
-			// console.log("fetch_file_cb('" + asset + "')");
-			// for testing purposes add BCL assets to VFS until we special case File.Open
-			// to identify when an assembly from the BCL is being open and resolve it correctly.
-			/*
-			var content = new Uint8Array (read (asset, 'binary'));
-			var path = asset.substr(Module.config.deploy_prefix.length);
-			IOHandler.writeContentToFile(content, path);
-			*/
 			return IOHandler.fetch (asset, { credentials: 'same-origin' });
 		};
 
@@ -357,7 +338,6 @@ var App = {
 	 * @type {() => void}
 	 */
 	init: function () {
-
 		const wasm_set_main_args = Module.cwrap ('mono_wasm_set_main_args', 'void', ['number', 'number']);
 		const wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
 
