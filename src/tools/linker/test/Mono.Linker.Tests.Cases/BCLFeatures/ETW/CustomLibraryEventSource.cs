@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Diagnostics.Tracing;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW
 {
-	public class CustomEventSource
+	[SetupLinkerArgument ("-a", "test.exe", "library")]
+	[KeptMember (".ctor()")]
+	public class CustomLibraryEventSource
 	{
 		public static void Main ()
 		{
-			// This call will trigger Object.GetType() Reflection pattern that will preserve all
-			EventSource.GenerateManifest (typeof (MyCompanyEventSource), null);
+			// Reference to a derived EventSource but does not trigger Object.GetType()
+			var b = CustomEventSourceInLibraryMode.Log.IsEnabled ();
 		}
 	}
 
@@ -19,44 +22,37 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW
 	[KeptMember (".ctor()")]
 	[KeptMember (".cctor()")]
 
-	[EventSource (Name = "MyCompany")]
-	class MyCompanyEventSource : EventSource
+	[EventSource (Name = "MyLibraryCompany")]
+	class CustomEventSourceInLibraryMode : EventSource
 	{
-		[KeptMember (".ctor()")]
+		// In library mode, we special case nested types
 		[Kept]
 		public class Keywords
 		{
 			[Kept]
 			public const EventKeywords Page = (EventKeywords) 1;
 
-			[Kept]
 			public int Unused;
 		}
 
-		[KeptMember (".ctor()")]
 		[Kept]
 		public class Tasks
 		{
 			[Kept]
 			public const EventTask Page = (EventTask) 1;
 
-			[Kept]
 			public int Unused;
 		}
 
-		[KeptMember (".ctor()")]
-		[Kept]
 		class NotMatching
 		{
 		}
 
 		[Kept]
-		public static MyCompanyEventSource Log = new MyCompanyEventSource ();
+		public static CustomEventSourceInLibraryMode Log = new CustomEventSourceInLibraryMode ();
 
-		[Kept]
 		int private_member;
 
-		[Kept]
 		void PrivateMethod () { }
 	}
 }

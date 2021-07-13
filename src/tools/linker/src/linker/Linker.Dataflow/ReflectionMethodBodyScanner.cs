@@ -124,6 +124,9 @@ namespace Mono.Linker.Dataflow
 			Debug.Assert (annotation != DynamicallyAccessedMemberTypes.None);
 
 			reflectionPatternContext.AnalyzingPattern ();
+			// Handle cases where a type has no members but annotations are to be applied to derived type members
+			reflectionPatternContext.RecordHandledPattern ();
+
 			MarkTypeForDynamicallyAccessedMembers (ref reflectionPatternContext, type, annotation);
 		}
 
