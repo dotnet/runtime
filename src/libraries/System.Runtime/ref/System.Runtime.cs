@@ -13284,7 +13284,7 @@ namespace System.Runtime.InteropServices
         public FieldOffsetAttribute(int offset) { }
         public int Value { get { throw null; } }
     }
-    public partial struct GCHandle
+    public partial struct GCHandle : System.IDisposable
     {
         private int _dummyPrimitive;
         public bool IsAllocated { get { throw null; } }
@@ -13292,6 +13292,7 @@ namespace System.Runtime.InteropServices
         public System.IntPtr AddrOfPinnedObject() { throw null; }
         public static System.Runtime.InteropServices.GCHandle Alloc(object? value) { throw null; }
         public static System.Runtime.InteropServices.GCHandle Alloc(object? value, System.Runtime.InteropServices.GCHandleType type) { throw null; }
+        public void Dispose() { }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         public void Free() { }
         public static System.Runtime.InteropServices.GCHandle FromIntPtr(System.IntPtr value) { throw null; }

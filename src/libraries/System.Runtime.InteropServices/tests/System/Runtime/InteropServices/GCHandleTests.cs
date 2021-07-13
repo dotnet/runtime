@@ -119,6 +119,43 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<InvalidOperationException>(() => handle.Free());
         }
 
+        [Fact]
+        public void Dispose_NotInitialized_DoesntThrow()
+        {
+            var handle = new GCHandle();
+            handle.Dispose();
+        }
+
+        [Fact]
+        public void Dispose_WorksAsExpected()
+        {
+            object target = new object();
+            GCHandle handle = GCHandle.Alloc(target);
+
+            try
+            {
+                Assert.Equal(target, handle.Target);
+                Assert.True(handle.IsAllocated);
+
+                handle.Dispose();
+
+                Assert.False(handle.IsAllocated);
+
+                // Repeated Dispose() calls are just a no-op
+                handle.Dispose();
+                handle.Dispose();
+                handle.Dispose();
+                handle.Dispose();
+
+                Assert.False(handle.IsAllocated);
+            }
+            finally
+            {
+                handle.Dispose();
+                Assert.False(handle.IsAllocated);
+            }
+        }
+
         public static IEnumerable<object[]> Equals_TestData()
         {
             GCHandle handle = GCHandle.Alloc(new object());
