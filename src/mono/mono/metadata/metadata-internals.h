@@ -1235,4 +1235,18 @@ mono_type_get_array_type_internal (MonoType *type)
 	return type->data.array;
 }
 
+static inline int
+mono_metadata_table_to_ptr_table (int table_num)
+{
+	switch (table_num) {
+	case MONO_TABLE_FIELD: return MONO_TABLE_FIELD_POINTER;
+	case MONO_TABLE_METHOD: return MONO_TABLE_METHOD_POINTER;
+	case MONO_TABLE_PARAM: return MONO_TABLE_PARAM_POINTER;
+	case MONO_TABLE_PROPERTY: return MONO_TABLE_PROPERTY_POINTER;
+	case MONO_TABLE_EVENT: return MONO_TABLE_EVENT_POINTER;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
