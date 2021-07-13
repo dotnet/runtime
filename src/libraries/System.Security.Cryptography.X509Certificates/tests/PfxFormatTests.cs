@@ -752,8 +752,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                                 {
                                     CheckMultiBoundKeyConsistency(x);
                                 }
-                                else
+                                else if (x.HasPrivateKey)
                                 {
+                                    // On macOS cert2WithKey.HasPrivateKey is
+                                    // false because the SecIdentityRef won't
+                                    // bind the mismatched private key.
                                     CheckMultiBoundKeyConsistencyFails(x);
                                 }
                             });
