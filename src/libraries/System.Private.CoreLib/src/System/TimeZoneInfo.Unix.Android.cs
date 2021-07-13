@@ -266,9 +266,9 @@ namespace System
                 // tzdata files are expected to start with the form of "tzdata2012f\0" depending on the year of the tzdata used which is 2012 in this example
                 if (header.signature[0] != (byte)'t' || header.signature[1] != (byte)'z' || header.signature[2] != (byte)'d' || header.signature[3] != (byte)'a' || header.signature[4] != (byte)'t' || header.signature[5] != (byte)'a' || header.signature[11] != 0)
                 {
-                    var b = new StringBuilder();
+                    var b = new StringBuilder(buffer.Length);
                     for (int i = 0; i < 12; ++i) {
-                        b.Append(' ').Append((header.signature[i]).ToString("x2"));
+                        b.Append(' ').Append(HexConverter.ToCharLower(buffer[i]));
                     }
 
                     throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadTZHeader, tzFilePath, b.ToString()));
