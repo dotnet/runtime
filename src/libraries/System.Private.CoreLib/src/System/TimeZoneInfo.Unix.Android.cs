@@ -256,7 +256,7 @@ namespace System
             [MemberNotNull(nameof(_lengths))]
             private unsafe void ReadHeader(string tzFilePath, Stream fs)
             {
-                int size = Math.Max(Marshal.SizeOf(typeof(AndroidTzDataHeader)), Marshal.SizeOf(typeof(AndroidTzDataEntry)));
+                int size = Math.Max(sizeof(AndroidTzDataHeader)), sizeof(AndroidTzDataEntry)));
                 Span<byte> buffer = stackalloc byte[size];
                 AndroidTzDataHeader header = ReadAt<AndroidTzDataHeader>(tzFilePath, fs, 0, buffer);
 
@@ -282,7 +282,7 @@ namespace System
             private unsafe T ReadAt<T>(string tzFilePath, Stream fs, long position, Span<byte> buffer)
                 where T : struct
             {
-                int size = Marshal.SizeOf(typeof(T));
+                int size = sizeof(T));
                 Debug.Assert(buffer.Length >= size);
 
                 fs.Position = position;
@@ -325,7 +325,7 @@ namespace System
             private unsafe void ReadIndex(string tzFilePath, Stream fs, int indexOffset, int dataOffset, Span<byte> buffer)
             {
                 int indexSize = dataOffset - indexOffset;
-                int entrySize = Marshal.SizeOf(typeof(AndroidTzDataEntry));
+                int entrySize = sizeof(AndroidTzDataEntry));
                 int entryCount = indexSize / entrySize;
 
                 _byteOffsets = new int[entryCount];
@@ -341,7 +341,7 @@ namespace System
                     _ids![i] = new string(p, 0, GetStringLength(p, 40), Encoding.ASCII);
                     _lengths![i] = NetworkToHostOrder(entry.length);
 
-                    if (_lengths![i] < Marshal.SizeOf(typeof(AndroidTzDataHeader)))
+                    if (_lengths![i] < sizeof(AndroidTzDataHeader)))
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_BadIndexLength);
                     }
