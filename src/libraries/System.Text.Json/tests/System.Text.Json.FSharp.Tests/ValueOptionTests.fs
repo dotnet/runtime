@@ -3,6 +3,7 @@
 open System.Text.Json
 open System.Text.Json.Tests.FSharp.Helpers
 open Xunit
+open System.Text.Json.Serialization
 
 let getOptionalElementInputs() = seq {
     let wrap value = [| box value |]
@@ -83,6 +84,14 @@ let ``ValueSome of ValueSome of ValueNone should serialize as null`` (_ : 'T) =
 let ``ValueSome of ValueSome of value should serialize as value`` (value : 'T) =
     let expected = JsonSerializer.Serialize value
     let actual = JsonSerializer.Serialize(ValueSome (ValueSome value))
+    Assert.Equal(expected, actual)
+
+[<Theory>]
+[<MemberData(nameof(getOptionalElementInputs))>]
+let ``WhenWritingDefault enabled should skip ValueNone properties``(_ : 'T) =
+    let expected = "{}"
+    let options = new JsonSerializerOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault)
+    let actual = JsonSerializer.Serialize<{| value : 'T voption |}>({| value = ValueNone |}, options)
     Assert.Equal(expected, actual)
 
 [<Theory>]

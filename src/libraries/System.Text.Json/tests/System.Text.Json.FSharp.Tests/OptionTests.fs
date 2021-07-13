@@ -1,6 +1,7 @@
 ﻿module System.Text.Json.Tests.FSharp.OptionTests
 
 open System.Text.Json
+open System.Text.Json.Serialization
 open System.Text.Json.Tests.FSharp.Helpers
 open Xunit
 
@@ -83,6 +84,14 @@ let ``Some of Some of None should serialize as null`` (_ : 'T) =
 let ``Some of Some of value should serialize as value`` (value : 'T) =
     let expected = JsonSerializer.Serialize value
     let actual = JsonSerializer.Serialize(Some (Some value))
+    Assert.Equal(expected, actual)
+
+[<Theory>]
+[<MemberData(nameof(getOptionalElementInputs))>]
+let ``WhenWritingNull enabled should skip None properties``(_ : 'T) =
+    let expected = "{}"
+    let options = new JsonSerializerOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)
+    let actual = JsonSerializer.Serialize<{| value : 'T option |}>({| value = None |}, options)
     Assert.Equal(expected, actual)
 
 [<Theory>]
