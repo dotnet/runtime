@@ -3,7 +3,7 @@ if (CLR_CMAKE_HOST_WIN32)
   add_compile_options(/wd4365)
 
   # IJW
-  add_compile_options(/clr)
+  add_compile_options(/clr:netcore)
 
   # IJW requires the CRT as a dll, not linked in
   set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:Debug>DLL)
@@ -27,4 +27,12 @@ if (CLR_CMAKE_HOST_WIN32)
     string(REPLACE "/GR-" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   endif()
 
+  execute_process(
+    COMMAND powershell -ExecutionPolicy ByPass -NoProfile "${CMAKE_CURRENT_LIST_DIR}/getRefPackFolder.ps1"
+    OUTPUT_VARIABLE CLR_SDK_REF_PACK
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  add_compile_options(/AI${CLR_SDK_REF_PACK})
+
+  list(APPEND LINK_LIBRARIES_ADDITIONAL ijwhost)
 endif()
