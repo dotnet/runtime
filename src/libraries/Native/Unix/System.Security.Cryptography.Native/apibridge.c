@@ -828,7 +828,7 @@ int local_EVP_PKEY_check(EVP_PKEY_CTX* ctx)
         return -1;
     }
 
-    int id = EVP_PKEY_base_id(pkey);
+    int id = EVP_PKEY_get_base_id(pkey);
 
     switch (id)
     {
@@ -862,7 +862,7 @@ int local_EVP_PKEY_public_check(EVP_PKEY_CTX* ctx)
         return -1;
     }
 
-    int id = EVP_PKEY_base_id(pkey);
+    int id = EVP_PKEY_get_base_id(pkey);
 
     switch (id)
     {

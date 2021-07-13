@@ -13,7 +13,7 @@ EVP_PKEY* CryptoNative_EvpPKeyDuplicate(EVP_PKEY* currentKey, int32_t algId)
 {
     assert(currentKey != NULL);
 
-    int currentAlgId = EVP_PKEY_base_id(currentKey);
+    int currentAlgId = EVP_PKEY_get_base_id(currentKey);
 
     if (algId != NID_undef && algId != currentAlgId)
     {
@@ -80,7 +80,7 @@ int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey)
 
 static bool CheckKey(EVP_PKEY* key, int32_t algId, int32_t (*check_func)(EVP_PKEY_CTX*))
 {
-    if (algId != NID_undef && EVP_PKEY_base_id(key) != algId)
+    if (algId != NID_undef && EVP_PKEY_get_base_id(key) != algId)
     {
         ERR_put_error(ERR_LIB_EVP, 0, EVP_R_UNSUPPORTED_ALGORITHM, __FILE__, __LINE__);
         return false;
