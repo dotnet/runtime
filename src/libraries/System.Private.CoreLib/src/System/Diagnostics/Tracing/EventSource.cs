@@ -191,6 +191,7 @@ namespace System.Diagnostics.Tracing
     [AttributeUsage(AttributeTargets.Class)]
     internal sealed class EventSourceAutoGenerateAttribute : Attribute
     {
+        public bool SkipLogSingleton { get; set; }
     }
 
 #endif

@@ -9,7 +9,7 @@ namespace System.Diagnostics.Tracing
     /// RuntimeEventSource is an EventSource that represents events emitted by the managed runtime.
     /// </summary>
     [EventSource(Guid = "49592C0F-5A05-516D-AA4B-A64E02026C89", Name = EventSourceName)]
-    [EventSourceAutoGenerate]
+    [EventSourceAutoGenerate(SkipLogSingleton = true)]
     internal sealed partial class RuntimeEventSource : EventSource
     {
         internal const string EventSourceName = "System.Runtime";
@@ -44,10 +44,6 @@ namespace System.Diagnostics.Tracing
         {
             s_RuntimeEventSource = new RuntimeEventSource();
         }
-
-        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as you can't make a constructor partial.
-        private RuntimeEventSource(int _) { }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
         {

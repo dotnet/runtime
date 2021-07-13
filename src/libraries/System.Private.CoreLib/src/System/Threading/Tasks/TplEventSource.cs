@@ -46,15 +46,6 @@ namespace System.Threading.Tasks
             DebugActivityId = IsEnabled(EventLevel.Informational, Keywords.DebugActivityId);
         }
 
-        /// <summary>
-        /// Defines the singleton instance for the TPL ETW provider.
-        /// </summary>
-        public static readonly TplEventSource Log = new TplEventSource();
-
-        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as you can't make a constructor partial.
-        private TplEventSource(int _) { }
-
         /// <summary>Configured behavior of a task wait operation.</summary>
         public enum TaskWaitBehavior : int
         {

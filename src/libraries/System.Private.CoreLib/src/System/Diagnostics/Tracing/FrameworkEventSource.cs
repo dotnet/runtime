@@ -14,7 +14,6 @@ namespace System.Diagnostics.Tracing
 #if !ES_BUILD_STANDALONE
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
 #endif
-        public static readonly FrameworkEventSource Log = new FrameworkEventSource();
 
         // Keyword definitions.  These represent logical groups of events that can be turned on and off independently
         // Often each task has a keyword, but where tasks are determined by subsystem, keywords are determined by
@@ -32,10 +31,6 @@ namespace System.Diagnostics.Tracing
             /// <summary>Send / Receive - begin transfer/end transfer</summary>
             public const EventTask ThreadTransfer = (EventTask)3;
         }
-
-        // Parameterized constructor to block initialization and ensure the EventSourceGenerator is creating the default constructor
-        // as you can't make a constructor partial.
-        private FrameworkEventSource(int _) { }
 
         // optimized for common signatures (used by the ThreadTransferSend/Receive events)
 #if !ES_BUILD_STANDALONE

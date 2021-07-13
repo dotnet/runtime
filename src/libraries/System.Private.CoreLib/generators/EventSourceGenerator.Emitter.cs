@@ -52,6 +52,9 @@ namespace {ec.Namespace}
     {{");
                 GenerateConstructor(ec);
 
+                if (ec.EmitLogProperty)
+                    GenerateLogSingleton(ec.ClassName);
+
                 GenerateProviderMetadata(ec.SourceName);
 
                 _builder.AppendLine($@"
@@ -68,6 +71,15 @@ namespace {ec.Namespace}
             {
                 _builder.AppendLine($@"
         private {ec.ClassName}() : base(new Guid({ec.Guid.ToString("x").Replace("{", "").Replace("}", "")}), ""{ec.SourceName}"") {{ }}");
+
+                _builder.AppendLine($@"
+        private {ec.ClassName}(bool _) : base() {{ }}");
+            }
+
+            private void GenerateLogSingleton(string className)
+            {
+                _builder.AppendLine($@"
+        public static readonly {className} Log = IsSupported ? new() : new(false);");
             }
 
             private void GenerateProviderMetadata(string sourceName)
