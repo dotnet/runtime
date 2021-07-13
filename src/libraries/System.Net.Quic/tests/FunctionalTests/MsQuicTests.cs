@@ -216,7 +216,7 @@ namespace System.Net.Quic.Tests
         public async Task SetListenerTimeoutWorksWithSmallTimeout()
         {
             var quicOptions = new QuicListenerOptions();
-            quicOptions.IdleTimeout = TimeSpan.FromSeconds(10);
+            quicOptions.IdleTimeout = TimeSpan.FromSeconds(1);
             quicOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
             quicOptions.ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
 
@@ -476,7 +476,7 @@ namespace System.Net.Quic.Tests
                         byte[] buffer = new byte[data.Length];
                         int bytesRead = await ReadAll(stream, buffer);
                         Assert.Equal(data.Length, bytesRead);
-                        AssertArrayEqual(data, buffer);
+                        AssertExtensions.SequenceEqual(data, buffer);
 
                         for (int pos = 0; pos < data.Length; pos += writeSize)
                         {
@@ -499,7 +499,7 @@ namespace System.Net.Quic.Tests
                         byte[] buffer = new byte[data.Length];
                         int bytesRead = await ReadAll(stream, buffer);
                         Assert.Equal(data.Length, bytesRead);
-                        AssertArrayEqual(data, buffer);
+                        AssertExtensions.SequenceEqual(data, buffer);
 
                         await stream.ShutdownCompleted();
                     }
