@@ -3,5 +3,7 @@
 
   <PropertyGroup>
     <JitPackagesConfigFileDirectory>$(MSBuildThisFileDirectory)config\</JitPackagesConfigFileDirectory>
+    
+    <IgnoreForCI Condition="'$(ForNode)' == 'true'">true</IgnoreForCI>
   </PropertyGroup>
 </Project>

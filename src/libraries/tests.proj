@@ -338,8 +338,6 @@
 
   <!-- Temporary list of exclusions just to get green test pipelines and allow for incrementally fixing the issues -->
   <ItemGroup Condition="'$(ForNode)' == 'true'">
-    <!-- For some reason the exit code is always 0 even though there is indication that the test executeed correctly and should have passed -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\JIT\**\*.csproj" />
     <!-- Particularly the SymbolsAreMarshaledAsStrings test is failing as it is returning a ever so slightly modified string -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Runtime.InteropServices.JavaScript\tests\System.Private.Runtime.InteropServices.JavaScript.Tests.csproj" />
     <!-- Causes out of memory exceptions. I think this is linked to it using an old version of node and v8 -->
