@@ -7627,9 +7627,9 @@ class OptBoolsDsc
 public:
     OptBoolsDsc(BasicBlock* b1, BasicBlock* b2, Compiler* comp)
     {
-        m_b1 = b1;
-        m_b2 = b2;
-        m_b3 = nullptr;
+        m_b1   = b1;
+        m_b2   = b2;
+        m_b3   = nullptr;
         m_comp = comp;
     }
 
@@ -8177,7 +8177,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 //
 // Arguments:
 //      b3:    Pointer to basic block b3
-// 
+//
 //  Returns:
 //      true if boolean optimization is done and m_b1, m_b2 and m_b3 are folded into m_b1, else false.
 //
