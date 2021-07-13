@@ -9,7 +9,7 @@ namespace System
 {
     public sealed class OperatingSystem : ISerializable, ICloneable
     {
-#if TARGET_UNIX && !TARGET_OSX
+#if TARGET_UNIX && !TARGET_OSX && !TARGET_MACCATALYST && !TARGET_IOS
         private static readonly string s_osPlatformName = Interop.Sys.GetUnixName();
 #endif
 
