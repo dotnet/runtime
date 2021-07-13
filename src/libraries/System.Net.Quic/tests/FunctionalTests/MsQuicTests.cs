@@ -199,56 +199,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        public async Task ConnectWithServerOptionsSelectionCallback()
-        {
-            SslServerAuthenticationOptions serverOptions = GetSslServerAuthenticationOptions();
-            using CancellationTokenSource cts = new CancellationTokenSource();
-            cts.CancelAfter(PassingTestTimeout);
-
-            X509Certificate? receivedCertificate = null;
-            string? receivedHostName = null;
-            SslProtocols receivedProtocol = SslProtocols.None;
-
-            var quicOptions = new QuicListenerOptions();
-            quicOptions.ListenEndPoint = new IPEndPoint(Socket.OSSupportsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0);
-            quicOptions.ServerOptionsSelectionCallback = (sender, info, state, token) =>
-            {
-                receivedHostName = info.ServerName;
-                receivedProtocol = info.SslProtocols;
-                return new ValueTask<SslServerAuthenticationOptions>(serverOptions);
-            };
-
-            // to start listener we don't need certificate but we need ALPN.
-            // If this changes, we should remove this
-            quicOptions.ServerAuthenticationOptions = new SslServerAuthenticationOptions() { ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol } };
-
-            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, quicOptions);
-
-            QuicClientConnectionOptions clientOptions = new QuicClientConnectionOptions()
-            {
-                RemoteEndPoint = listener.ListenEndPoint,
-                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
-            };
-
-            clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
-            {
-                receivedCertificate = cert;
-                return true;
-            };
-
-            QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, clientOptions);
-            ValueTask clientTask = clientConnection.ConnectAsync(cts.Token);
-            QuicConnection serverConnection = await listener.AcceptConnectionAsync(cts.Token);
-            await clientTask;
-
-            Assert.Equal(clientOptions.ClientAuthenticationOptions.TargetHost, receivedHostName);
-            Assert.Equal(serverOptions.ServerCertificate, receivedCertificate);
-            Assert.Equal(SslProtocols.Tls13, receivedProtocol);
-            clientConnection.Dispose();
-            serverConnection.Dispose();
-        }
-
-        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         [ActiveIssue("https://github.com/microsoft/msquic/pull/1728")]
         public async Task ConnectWithClientCertificate()

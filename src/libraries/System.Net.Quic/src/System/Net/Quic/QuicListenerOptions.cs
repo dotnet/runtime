@@ -25,16 +25,6 @@ namespace System.Net.Quic
         /// </summary>
         public int ListenBacklog { get; set; } = 512;
 
-        /// <summary>
-        /// Callback to pick crypto setting per SNI.
-        /// </summary>
-        public QuicListener.ServerOptionsSelectionCallback? ServerOptionsSelectionCallback { get; set; }
-
-        /// <summary>
-        /// State passed to ServerOptionsSelectionCallback
-        /// </summary>
-        public object? ServerOptionsSelectionCallbackState { get; set; }
-
         public QuicListenerOptions()
         {
             IdleTimeout = TimeSpan.FromTicks(10 * TimeSpan.TicksPerMinute);

@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -19,8 +18,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 {
     internal sealed class MsQuicListener : QuicListenerProvider, IDisposable
     {
-        private static readonly ConstructorInfo _SslClientHelloInfo = typeof(SslClientHelloInfo).GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)![0];
-
         private static readonly ListenerCallbackDelegate s_listenerDelegate = new ListenerCallbackDelegate(NativeCallbackHandler);
 
         private readonly State _state;
@@ -39,24 +36,16 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public QuicOptions ConnectionOptions = new QuicOptions();
             public SslServerAuthenticationOptions AuthenticationOptions = new SslServerAuthenticationOptions();
-            public QuicListener.ServerOptionsSelectionCallback? ServerOptionsSelectionCallback;
-            public object? ServerOptionsSelectionCallbackState;
 
             public State(QuicListenerOptions options)
             {
                 ConnectionOptions.IdleTimeout = options.IdleTimeout;
                 ConnectionOptions.MaxBidirectionalStreams = options.MaxBidirectionalStreams;
                 ConnectionOptions.MaxUnidirectionalStreams = options.MaxUnidirectionalStreams;
-                ServerOptionsSelectionCallback = options.ServerOptionsSelectionCallback;
-                ServerOptionsSelectionCallbackState = options.ServerOptionsSelectionCallbackState;
 
                 bool delayConfiguration = false;
 
-                if (options.ServerOptionsSelectionCallback != null)
-                {
-                    delayConfiguration = true;
-                }
-                else if (options.ServerAuthenticationOptions != null)
+                if (options.ServerAuthenticationOptions != null)
                 {
                     AuthenticationOptions.ClientCertificateRequired = options.ServerAuthenticationOptions.ClientCertificateRequired;
                     AuthenticationOptions.CertificateRevocationCheckMode = options.ServerAuthenticationOptions.CertificateRevocationCheckMode;
@@ -246,32 +235,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 SafeMsQuicConfigurationHandle? connectionConfiguration = state.ConnectionConfiguration;
 
-                if (state.ServerOptionsSelectionCallback != null)
-                {
-                    // SslClientHelloInfo does not have public constructor (yet?)
-                    object[] parameters = new object[2];
-                    parameters[0] = targetHost;
-                    parameters[1] = SslProtocols.Tls13;
-                    SslClientHelloInfo info = (SslClientHelloInfo)_SslClientHelloInfo.Invoke(parameters);
-
-                    // We should figure out what to do with cancellation.
-                    ValueTask<SslServerAuthenticationOptions> t = state.ServerOptionsSelectionCallback(state, info, state.ServerOptionsSelectionCallbackState, default);
-                    if (t.IsCompletedSuccessfully)
-                    {
-                        // Easy pass, we completed synchronously. We can take similar path to ServerCertificateSelectionCallback.
-                        connectionConfiguration = SafeMsQuicConfigurationHandle.Create(state.ConnectionOptions, t.Result, targetHost);
-                    }
-                    else
-                    {
-                        // We can return MsQuicStatusCodes.Pending and park the processing.
-                        // MsQuic should wait either for setting configuration or for closing the connection.
-                        // For now we will block and the result.
-
-                        SslServerAuthenticationOptions options = t.AsTask().GetAwaiter().GetResult();
-                        connectionConfiguration = SafeMsQuicConfigurationHandle.Create(state.ConnectionOptions, options, targetHost);
-                    }
-                }
-                else if (state.AuthenticationOptions.ServerCertificateSelectionCallback != null)
+                if (state.AuthenticationOptions.ServerCertificateSelectionCallback != null)
                 {
                     // ServerCertificateSelectionCallback is synchronous. We will call it as needed when building configuration
                     connectionConfiguration = SafeMsQuicConfigurationHandle.Create(state.ConnectionOptions, state.AuthenticationOptions, targetHost);
