@@ -170,14 +170,18 @@ namespace System.Globalization
                     continue;
                 }
 
-                if (char.IsHighSurrogate(c) && i < source.Length - 1 && char.IsLowSurrogate(source[i + 1]))
+                if (char.IsHighSurrogate(c) && i < source.Length - 1)
                 {
-                    // well formed surrogates
-                    SurrogateCasing.ToUpper(c, source[i + 1], out ushort h, out ushort l);
-                    destination[i]   = (char)h;
-                    destination[i+1] = (char)l;
-                    i++; // skip the low surrogate
-                    continue;
+                    char cl = source[i + 1];
+                    if (char.IsLowSurrogate(cl))
+                    {
+                        // well formed surrogates
+                        SurrogateCasing.ToUpper(c, cl, out char h, out char l);
+                        destination[i]   = h;
+                        destination[i+1] = l;
+                        i++; // skip the low surrogate
+                        continue;
+                    }
                 }
 
                 destination[i] = ToUpper(c);
@@ -244,8 +248,8 @@ namespace System.Globalization
                 }
 
                 // we come here only if we have valid full surrogates
-                SurrogateCasing.ToUpper(a, charA, out ushort h1, out ushort l1);
-                SurrogateCasing.ToUpper(b, charB, out ushort h2, out ushort l2);
+                SurrogateCasing.ToUpper(a, charA, out char h1, out char l1);
+                SurrogateCasing.ToUpper(b, charB, out char h2, out char l2);
 
                 if (h1 != h2)
                 {

@@ -241,27 +241,11 @@ namespace System.Globalization
             return OrdinalCasing.IndexOf(source, value);
         }
 
-        internal static int LastIndexOfNoIgnoreCase(string source, string value, int startIndex, int count)
+        internal static int LastIndexOf(string source, string value, int startIndex, int count)
         {
-            // startIndex is the index into source where we start search backwards from.
-            // leftStartIndex is the index into source of the start of the string that is
-            // count characters away from startIndex.
-            int leftStartIndex = startIndex - count + 1;
-
-            for (int i = startIndex - value.Length + 1; i >= leftStartIndex; i--)
-            {
-                int valueIndex, sourceIndex;
-
-                for (valueIndex = 0, sourceIndex = i;
-                    valueIndex < value.Length && source[sourceIndex] == value[valueIndex];
-                    valueIndex++, sourceIndex++) ;
-
-                if (valueIndex == value.Length) {
-                    return i;
-                }
-            }
-
-            return -1;
+            int result = source.AsSpan(startIndex, count).LastIndexOf(value);
+            if (result >= 0) { result += startIndex; } // if match found, adjust 'result' by the actual start position
+            return result;
         }
 
         internal static unsafe int LastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
@@ -288,7 +272,7 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                return ignoreCase ? InvariantModeCasing.LastIndexOfIgnoreCase(source.AsSpan().Slice(startIndex, count), value) : LastIndexOfNoIgnoreCase(source, value, startIndex, count);
+                return ignoreCase ? InvariantModeCasing.LastIndexOfIgnoreCase(source.AsSpan().Slice(startIndex, count), value) : LastIndexOf(source, value, startIndex, count);
             }
 
             if (GlobalizationMode.UseNls)
@@ -298,7 +282,7 @@ namespace System.Globalization
 
             if (!ignoreCase)
             {
-                LastIndexOfNoIgnoreCase(source, value, startIndex, count);
+                LastIndexOf(source, value, startIndex, count);
             }
 
             if (!source.TryGetSpan(startIndex, count, out ReadOnlySpan<char> sourceSpan))

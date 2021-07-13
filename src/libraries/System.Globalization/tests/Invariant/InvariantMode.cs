@@ -454,7 +454,7 @@ namespace System.Globalization.Tests
 
             yield return new object[] { "embedded\0NuLL\0Byte\0", "EMBEDDED\0NULL\0BYTE\0", true };
 
-            // LATIN SMALL LETTER O WITH ACUTE, which has an upper case variant.
+            // LATIN SMALL LETTER O WITH ACUTE, mapped to LATIN CAPITAL LETTER O WITH ACUTE.
             yield return new object[] { "\u00F3", "\u00D3", true };
 
             // SNOWMAN, which does not have an upper case variant.
@@ -1167,8 +1167,9 @@ namespace System.Globalization.Tests
         [InlineData('A', 'A', 'a')]
         [InlineData('i', 'I', 'i')] // to verify that we don't special-case the Turkish I in the invariant globalization mode
         [InlineData('I', 'I', 'i')]
-        [InlineData(0x00C1, 0x00C1, 0x00C1)] // U+00C1 LATIN CAPITAL LETTER A WITH ACUTE
-        [InlineData(0x00E1, 0x00E1, 0x00E1)] // U+00E1 LATIN SMALL LETTER A WITH ACUTE
+        [InlineData('\u017f', '\u017f', '\u017f')] // Latin small letter long S shouldn't be case mapped in the invariant mode.
+        [InlineData(0x00C1, 0x00C1, 0x00E1)] // U+00C1 LATIN CAPITAL LETTER A WITH ACUTE
+        [InlineData(0x00E1, 0x00C1, 0x00E1)] // U+00E1 LATIN SMALL LETTER A WITH ACUTE
         [InlineData(0x00D7, 0x00D7, 0x00D7)] // U+00D7 MULTIPLICATION SIGN
         public void TestRune(int original, int expectedToUpper, int expectedToLower)
         {

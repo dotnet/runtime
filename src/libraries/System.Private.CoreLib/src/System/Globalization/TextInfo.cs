@@ -809,7 +809,7 @@ namespace System.Globalization
                 ReadOnlySpan<char> src = input.AsSpan(inputIndex, 2);
                 if (GlobalizationMode.Invariant)
                 {
-                    SurrogateCasing.ToUpper(src[0], src[1], out ushort h, out ushort l);
+                    SurrogateCasing.ToUpper(src[0], src[1], out char h, out char l);
                     result.Append(h);
                     result.Append(l);
                 }

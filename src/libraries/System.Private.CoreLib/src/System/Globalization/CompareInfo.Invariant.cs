@@ -60,18 +60,22 @@ namespace System.Globalization
             for (int i = 0; i < source.Length; i++)
             {
                 char c = source[i];
-                if (char.IsHighSurrogate(c) && i < source.Length - 1 && char.IsLowSurrogate(source[i + 1]))
+                if (char.IsHighSurrogate(c) && i < source.Length - 1)
                 {
-                    SurrogateCasing.ToUpper(c, source[i + 1], out ushort hr, out ushort lr);
-                    BinaryPrimitives.WriteUInt16BigEndian(sortKey, hr);
-                    BinaryPrimitives.WriteUInt16BigEndian(sortKey, lr);
-                    i++;
-                    sortKey = sortKey.Slice(2 * sizeof(ushort));
-                    continue;
+                    char cl = source[i + 1];
+                    if (char.IsLowSurrogate(cl))
+                    {
+                        SurrogateCasing.ToUpper(c, cl, out char hr, out char lr);
+                        BinaryPrimitives.WriteUInt16BigEndian(sortKey, hr);
+                        BinaryPrimitives.WriteUInt16BigEndian(sortKey, lr);
+                        i++;
+                        sortKey = sortKey.Slice(2 * sizeof(ushort));
+                        continue;
+                    }
                 }
 
                 // convert machine-endian to big-endian
-                BinaryPrimitives.WriteUInt16BigEndian(sortKey, (ushort)InvariantModeCasing.ToUpper(source[i]));
+                BinaryPrimitives.WriteUInt16BigEndian(sortKey, (ushort)InvariantModeCasing.ToUpper(c));
                 sortKey = sortKey.Slice(sizeof(ushort));
             }
         }

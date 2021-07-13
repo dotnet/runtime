@@ -251,31 +251,81 @@ namespace System.Globalization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static char ToUpper(uint codePoint)
+        internal static char ToUpper(char codePoint)
         {
+            nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks((uint)codePoint);
+
+            // The offset is specified in shorts:
+            // Get the 'ref short' corresponding to where the addend is, read it as a signed 16-bit value, then add
+
+            ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(UppercaseValues));
+            ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
+            nint delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+            return (char)(delta + (nint)codePoint);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static uint ToUpper(uint codePoint)
+        {
+            if (UnicodeUtility.IsBmpCodePoint(codePoint))
+            {
+                return ToUpper((char) codePoint);
+            }
+
+            if (!UnicodeUtility.IsValidCodePoint(codePoint))
+            {
+                // We don't throw here even if we are getting invalid codepoint. We just return the same input value at that time.
+                return codePoint;
+            }
+
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks(codePoint);
+
+            // The offset is specified in shorts:
+            // Get the 'ref short' corresponding to where the addend is, read it as a signed 16-bit value, then add
+
+            ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(UppercaseValues));
+            ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
+            nint delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+            return (uint)(delta + (nint)codePoint);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static char ToLower(char codePoint)
+        {
+            nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks((uint)codePoint);
 
             // If the offset is specified in shorts:
             // Get the 'ref short' corresponding to where the addend is, read it as a signed 16-bit value, then add
 
-            ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(UppercaseValues));
-            ref short rsDelta = ref Unsafe.Add(ref rsStart, (int)offset);
-            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
-            return (char)(delta + (int)codePoint);
+            ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(LowercaseValues));
+            ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
+            nint delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+            return (char)(delta + (nint)codePoint);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static char ToLower(uint codePoint)
+        internal static uint ToLower(uint codePoint)
         {
+            if (UnicodeUtility.IsBmpCodePoint(codePoint))
+            {
+                return ToLower((char) codePoint);
+            }
+
+            if (!UnicodeUtility.IsValidCodePoint(codePoint))
+            {
+                // We don't throw here even if we are getting invalid codepoint. We just return the same input value at that time.
+                return codePoint;
+            }
+
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks(codePoint);
 
             // If the offset is specified in shorts:
             // Get the 'ref short' corresponding to where the addend is, read it as a signed 16-bit value, then add
 
             ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(LowercaseValues));
-            ref short rsDelta = ref Unsafe.Add(ref rsStart, (int)offset);
-            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
-            return (char)(delta + (int)codePoint);
+            ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
+            nint delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+            return (uint)(delta + (int)codePoint);
         }
 
         /*
