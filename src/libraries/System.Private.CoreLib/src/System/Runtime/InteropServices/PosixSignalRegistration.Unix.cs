@@ -220,7 +220,7 @@ namespace System.Runtime.InteropServices
             } while (true);
         }
 
-        public partial void Dispose()
+        private void Unregister()
         {
             if (_registered)
             {

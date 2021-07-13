@@ -31,8 +31,12 @@ namespace System.Runtime.InteropServices
         public static partial PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler);
 
         /// <summary>Unregister the handler.</summary>
-        public partial void Dispose();
+        public void Dispose()
+        {
+            Unregister();
+            GC.SuppressFinalize(this);
+        }
 
-        ~PosixSignalRegistration() => Dispose();
+        ~PosixSignalRegistration() => Unregister();
     }
 }

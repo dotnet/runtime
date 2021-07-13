@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public partial void Dispose()
+        private void Unregister()
         {
             lock (SyncObj)
             {

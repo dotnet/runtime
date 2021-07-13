@@ -20,6 +20,6 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
-        public partial void Dispose() { }
+        private void Unregister() { }
     }
 }
