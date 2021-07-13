@@ -142,11 +142,6 @@ namespace System
             s_dataStore = new Dictionary<string, object?>(count);
             for (int i = 0; i < count; i++)
             {
-                Debug.WriteLine("DEBUG SETUP");
-                Debug.WriteLine(i);
-                Debug.WriteLine(new string(pNames[i]));
-                Debug.WriteLine(new string(pValues[i]));
-                Debug.WriteLine("");
                 s_dataStore.Add(new string(pNames[i]), new string(pValues[i]));
             }
         }
