@@ -1079,11 +1079,20 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 			continue;
 
 #ifndef ALLOW_METHOD_ADD
+
 		if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "\tcannot add new method with token 0x%08x", log_token);
 			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: cannot add new method with token 0x%08x", log_token);
 			unsupported_edits = TRUE;
 		}
+
+#endif
+
+#ifdef ALLOW_METHOD_ADD
+		/* adding a new parameter to a new method is ok */
+		/* FIXME: total rows, not just the baseline rows */
+		if (func_code == ENC_FUNC_ADD_PARAM && token_index > table_info_get_rows (&image_base->tables [token_table]))
+			continue;
 #endif
 
 		g_assert (func_code == 0); /* anything else doesn't make sense here */
@@ -1104,6 +1113,10 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 			/* okay, supported */
 			break;
 		case MONO_TABLE_METHOD:
+#ifdef ALLOW_METHOD_ADD
+			if (func_code == ENC_FUNC_ADD_PARAM)
+				continue; /* ok, allowed */
+#endif
 			/* handled above */
 			break;
 		case MONO_TABLE_PROPERTY: {
@@ -1274,6 +1287,7 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 	int rows = table_info_get_rows (table_enclog);
 
 	MonoClass *add_method_klass = NULL;
+	uint32_t add_param_method_index = 0;
 
 	gboolean assemblyref_updated = FALSE;
 	for (int i = 0; i < rows ; ++i) {
@@ -1303,6 +1317,13 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 				return FALSE;
 			}
 			add_method_klass = klass;
+			break;
+		}
+
+		case ENC_FUNC_ADD_PARAM: {
+			g_assert (token_table == MONO_TABLE_METHOD);
+			/* assert that the token_index is equal to the number of rows in the table.  We only allow adding a param to the newest method def */
+			add_param_method_index = token_index;
 			break;
 		}
 #endif
@@ -1347,12 +1368,19 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			break;
 		}
 		case MONO_TABLE_METHOD: {
+#ifdef ALLOW_METHOD_ADD
+			/* if adding a param, handle it with the next record */
+			if (func_code == ENC_FUNC_ADD_PARAM)
+				break;
+
 			if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
 				if (!add_method_klass)
 					g_error ("EnC: new method added but I don't know the class, should be caught by pass1");
 				g_assert (add_method_klass);
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new method 0x%08x to class %s.%s", token_index, m_class_get_name_space (add_method_klass), m_class_get_name (add_method_klass));
+				add_method_klass = NULL;
 			}
+#endif
 
 			if (!base_info->method_table_update)
 				base_info->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
@@ -1394,6 +1422,12 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			/* ok, pass1 checked for disallowed modifications */
 			break;
 		}
+#ifdef ALLOW_METHOD_ADD
+		case MONO_TABLE_PARAM: {
+			/* here we would really like to update the method's paramlist column to point to the new params. */
+			break;
+		}
+#endif
 		default: {
 			g_assert (token_index > table_info_get_rows (&image_base->tables [token_table]));
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
