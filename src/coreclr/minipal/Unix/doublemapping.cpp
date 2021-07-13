@@ -14,10 +14,11 @@
 #include <assert.h>
 #include <limits.h>
 #include <errno.h>
-#if defined(TARGET_LINUX) && !defined(ARM_SOFTFP)
+#if defined(TARGET_LINUX) && !defined(MFD_CLOEXEC)
 #include <linux/memfd.h>
 #include <sys/syscall.h> // __NR_memfd_create
-#endif // TARGET_LINUX && !ARM_SOFTFP
+#define memfd_create(...) syscall(__NR_memfd_create, __VA_ARGS__)
+#endif // TARGET_LINUX && !MFD_CLOEXEC
 #include "minipal.h"
 
 #if defined(TARGET_OSX) && defined(TARGET_AMD64)
@@ -31,10 +32,6 @@ static const off_t MaxDoubleMappedSize = 2048ULL*1024*1024*1024;
 #else
 static const off_t MaxDoubleMappedSize = UINT_MAX;
 #endif
-
-#if defined(TARGET_LINUX) && !defined(ARM_SOFTFP)
-#define memfd_create(...) syscall(__NR_memfd_create, __VA_ARGS__)
-#endif // TARGET_LINUX && !ARM_SOFTFP
 
 #endif // TARGET_OSX
 
