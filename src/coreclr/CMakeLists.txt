@@ -77,7 +77,6 @@ if(NOT CLR_CROSS_COMPONENTS_BUILD)
   set(CLR_SINGLE_FILE_HOST_ONLY 1)
   add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost/apphost/static Corehost.Static)
   add_dependencies(runtime singlefilehost)
-  add_sanitizers(singlefilehost)
 endif()
 #-------------------------
 # Enable C++ EH with SEH
