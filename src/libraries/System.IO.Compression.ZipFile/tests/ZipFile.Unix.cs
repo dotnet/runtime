@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -109,6 +108,29 @@ namespace System.IO.Compression.Tests
             // so only use the last 3 numbers of permissions to verify the file permissions
             permissions = permissions.Length > 3 ? permissions.Substring(permissions.Length - 3) : permissions;
             Assert.Equal(Convert.ToInt32(permissions, 8), status.Mode & 0xFFF);
+        }
+
+        [Theory]
+        [InlineData("sharpziplib.zip", "644")]
+        [InlineData("Linux_RW_RW_R__.zip", "664")]
+        [InlineData("Linux_RWXRW_R__.zip", "764")]
+        [InlineData("OSX_RWXRW_R__.zip", "764")]
+        public void UnixExtractFilePermissionsCompat(string zipName, string expectedPermissions)
+        {
+            string zipFileName = compat(zipName);
+            using (var tempFolder = new TempDirectory(GetTestFilePath()))
+            {
+                ZipFile.ExtractToDirectory(zipFileName, tempFolder.Path);
+
+                using ZipArchive archive = ZipFile.Open(zipFileName, ZipArchiveMode.Read);
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    string filename = Path.Combine(tempFolder.Path, entry.FullName);
+                    Assert.True(File.Exists(filename), $"File '{filename}' should exist");
+
+                    EnsureFilePermissions(filename, expectedPermissions);
+                }
+            }
         }
     }
 }

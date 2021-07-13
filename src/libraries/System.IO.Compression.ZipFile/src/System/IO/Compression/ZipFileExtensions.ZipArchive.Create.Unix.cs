@@ -10,8 +10,7 @@ namespace System.IO.Compression
             Interop.Sys.FileStatus status;
             if (Interop.Sys.FStat(fs.SafeFileHandle, out status) != 0)
             {
-                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                throw new IOException(error.GetErrorMessage(), error.RawErrno);
+                Interop.CheckIO(Interop.Sys.GetLastErrorInfo(), fs.Name);
             }
 
             entry.ExternalAttributes |= status.Mode << 16;

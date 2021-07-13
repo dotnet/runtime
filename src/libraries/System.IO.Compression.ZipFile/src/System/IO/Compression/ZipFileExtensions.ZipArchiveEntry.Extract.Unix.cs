@@ -24,8 +24,7 @@ namespace System.IO.Compression
             {
                 if (Interop.Sys.FChMod(fs.SafeFileHandle, permissions) != 0)
                 {
-                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                    throw new IOException(error.GetErrorMessage(), error.RawErrno);
+                    Interop.CheckIO(Interop.Sys.GetLastErrorInfo(), fs.Name);
                 }
             }
         }
