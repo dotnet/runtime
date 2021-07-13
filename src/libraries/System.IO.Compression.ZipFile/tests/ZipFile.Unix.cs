@@ -111,12 +111,14 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
-        [InlineData("sharpziplib.zip", "644")]
+        [InlineData("sharpziplib.zip", null)] // ExternalAttributes are not set in this .zip, use the system default
         [InlineData("Linux_RW_RW_R__.zip", "664")]
         [InlineData("Linux_RWXRW_R__.zip", "764")]
         [InlineData("OSX_RWXRW_R__.zip", "764")]
         public void UnixExtractFilePermissionsCompat(string zipName, string expectedPermissions)
         {
+            expectedPermissions = GetExpectedPermissions(expectedPermissions);
+
             string zipFileName = compat(zipName);
             using (var tempFolder = new TempDirectory(GetTestFilePath()))
             {
@@ -131,6 +133,27 @@ namespace System.IO.Compression.Tests
                     EnsureFilePermissions(filename, expectedPermissions);
                 }
             }
+        }
+
+        private static string GetExpectedPermissions(string expectedPermissions)
+        {
+            if (string.IsNullOrEmpty(expectedPermissions))
+            {
+                // Create a new file, and get its permissions to get the current system default permissions
+
+                using (var tempFolder = new TempDirectory())
+                {
+                    string filename = Path.Combine(tempFolder.Path, Path.GetRandomFileName());
+                    File.WriteAllText(filename, "contents");
+
+                    Interop.Sys.FileStatus status;
+                    Assert.Equal(0, Interop.Sys.Stat(filename, out status));
+
+                    expectedPermissions = Convert.ToString(status.Mode & 0xFFF, 8);
+                }
+            }
+
+            return expectedPermissions;
         }
     }
 }
