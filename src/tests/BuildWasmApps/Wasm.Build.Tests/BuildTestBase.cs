@@ -484,6 +484,8 @@ namespace Wasm.Build.Tests
             Console.WriteLine($"WorkingDirectory: {workingDir}");
             _testOutput.WriteLine($"WorkingDirectory: {workingDir}");
             StringBuilder outputBuilder = new ();
+            object syncObj = new();
+
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = path,
@@ -549,12 +551,15 @@ namespace Wasm.Build.Tests
 
             void LogData(string label, string? message)
             {
-                if (logToXUnit && message != null)
+                lock (syncObj)
                 {
-                    _testOutput.WriteLine($"{label} {message}");
-                    Console.WriteLine($"{label} {message}");
+                    if (logToXUnit && message != null)
+                    {
+                        _testOutput.WriteLine($"{label} {message}");
+                        Console.WriteLine($"{label} {message}");
+                    }
+                    outputBuilder.AppendLine($"{label} {message}");
                 }
-                outputBuilder.AppendLine($"{label} {message}");
             }
         }
 
