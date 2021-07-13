@@ -5,10 +5,12 @@
 #include "asansupport.h"
 
 #ifndef HOST_WINDOWS
+#define WEAK_SYMBOL __attribute__((weak))
 #define HOST_SYMBOL __attribute__((weak))
 #define HOST_SYMBOL_CALLCONV 
 #else
 #include <windows.h>
+#define WEAK_SYMBOL 
 #define HOST_SYMBOL __declspec(dllexport)
 #define HOST_SYMBOL_CALLCONV __cdecl
 #endif
@@ -89,7 +91,7 @@ namespace
 // Ported from address sanitizer
 extern "C"
 {
-    extern uintptr_t __asan_shadow_memory_dynamic_address;
+    extern WEAK_SYMBOL uintptr_t __asan_shadow_memory_dynamic_address;
 }
 
 namespace __asan
