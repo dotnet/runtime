@@ -7,9 +7,6 @@
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
-  </ItemGroup>
   <PropertyGroup>
     <RuntimeSerializationSources>System\Runtime\Serialization</RuntimeSerializationSources>
     <JsonSources>System\Runtime\Serialization\Json</JsonSources>

@@ -1,5 +1,0 @@
-<linker>
-  <type fullname="System.Runtime.Serialization.DataContractSerializer" featurevalue="true" feature="System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported">
-    <method signature="System.Runtime.Serialization.DataContractSerializer.SerializationOption get_Option()" body="stub" value="1" />
-  </type>
-</linker>
