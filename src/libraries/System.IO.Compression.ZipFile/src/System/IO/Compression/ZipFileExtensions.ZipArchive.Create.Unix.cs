@@ -8,10 +8,7 @@ namespace System.IO.Compression
         static partial void SetExternalAttributes(FileStream fs, ZipArchiveEntry entry)
         {
             Interop.Sys.FileStatus status;
-            if (Interop.Sys.FStat(fs.SafeFileHandle, out status) != 0)
-            {
-                Interop.CheckIO(Interop.Sys.GetLastErrorInfo(), fs.Name);
-            }
+            Interop.CheckIo(Interop.Sys.FStat(fs.SafeFileHandle, out status), fs.Name);
 
             entry.ExternalAttributes |= status.Mode << 16;
         }

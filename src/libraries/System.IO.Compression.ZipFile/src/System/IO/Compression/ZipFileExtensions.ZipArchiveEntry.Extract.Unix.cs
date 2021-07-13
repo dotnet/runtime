@@ -22,10 +22,7 @@ namespace System.IO.Compression
             // include the permissions, or was made on Windows.
             if (permissions != 0)
             {
-                if (Interop.Sys.FChMod(fs.SafeFileHandle, permissions) != 0)
-                {
-                    Interop.CheckIO(Interop.Sys.GetLastErrorInfo(), fs.Name);
-                }
+                Interop.CheckIo(Interop.Sys.FChMod(fs.SafeFileHandle, permissions), fs.Name);
             }
         }
     }
