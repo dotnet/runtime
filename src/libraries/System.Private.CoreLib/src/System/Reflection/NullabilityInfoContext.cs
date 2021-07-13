@@ -60,6 +60,7 @@ namespace System.Reflection
         /// <param name="parameterInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the parameterInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
+        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(ParameterInfo parameterInfo)
         {
             if (parameterInfo is null)
@@ -171,6 +172,7 @@ namespace System.Reflection
         /// <param name="propertyInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the propertyInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
+        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(PropertyInfo propertyInfo)
         {
             if (propertyInfo is null)
@@ -232,6 +234,7 @@ namespace System.Reflection
         /// <param name="eventInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the eventInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
+        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(EventInfo eventInfo)
         {
             if (eventInfo is null)
@@ -250,6 +253,7 @@ namespace System.Reflection
         /// <param name="fieldInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the fieldInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
+        [RequiresUnreferencedCode("By default nullability attributes are trimmed by the trimmer")]
         public NullabilityInfo Create(FieldInfo fieldInfo)
         {
             if (fieldInfo is null)
