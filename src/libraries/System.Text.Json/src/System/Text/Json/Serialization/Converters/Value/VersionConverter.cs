@@ -2,79 +2,50 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Text;
 using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class VersionConverter : JsonConverter<Version>
     {
-        private const int VersionComponentsCount = 4; // Major, Minor, Build, Revision
-
-#if BUILDING_INBOX_LIBRARY
-        private const int MaxStringLengthOfPositiveInt32 = 10; // int.MaxValue.ToString().Length
-
-        private const int
-            MaxStringLengthOfVersion = (MaxStringLengthOfPositiveInt32 * VersionComponentsCount) + 1 + 1 + 1; // 43, 1 is length of '.'
-#endif
-
         public override Version Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            ReadOnlySpan<byte> source = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
-
-            Span<int?> versionComponents = stackalloc int?[VersionComponentsCount] { null, null, null, null };
-            int indexOfDot = GetIndexOfDot(source);
-
-            if (reader._stringHasEscaping || indexOfDot == -1)
+            if (reader._stringHasEscaping)
             {
                 ThrowHelper.ThrowJsonException();
             }
 
-            Debug.Assert(source.IndexOf(JsonConstants.BackSlash) == -1, "Version value should have no escaping");
-            Debug.Assert(indexOfDot != -1, "Version should have at least Major and Minor values separated by \".\"");
+#if BUILDING_INBOX_LIBRARY
 
-            for (int i = 0; i < versionComponents.Length; i++)
+            ReadOnlySpan<byte> source = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
+
+            int maxCharCount = JsonReaderHelper.s_utf8Encoding.GetMaxCharCount(source.Length);
+            char[]? pooledChars = null;
+            Span<char> charBuffer = maxCharCount * sizeof(char) <= JsonConstants.StackallocThreshold
+                ? stackalloc char[maxCharCount]
+                : pooledChars = ArrayPool<char>.Shared.Rent(maxCharCount);
+            int writtenChars = JsonReaderHelper.s_utf8Encoding.GetChars(source, charBuffer);
+            bool isParsingSuccessful = Version.TryParse(charBuffer.Slice(0, writtenChars), out Version? result);
+
+            if (pooledChars != null)
             {
-                bool lastComponent = indexOfDot == -1;
-                var readOnlySpan = lastComponent ? source : source.Slice(0, indexOfDot);
-                if (Utf8Parser.TryParse(readOnlySpan, out int value, out _))
-                {
-                    if (value < 0)
-                    {
-                        ThrowHelper.ThrowJsonException();
-                    }
-
-                    versionComponents[i] = value;
-                    source = source.Slice(indexOfDot + 1);
-                    indexOfDot = GetIndexOfDot(source);
-                    if (lastComponent)
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    ThrowHelper.ThrowJsonException();
-                }
+                charBuffer.Clear();
+                ArrayPool<char>.Shared.Return(pooledChars);
             }
 
-            ref int? major = ref versionComponents[0];
-            ref int? minor = ref versionComponents[1];
-            ref int? build = ref versionComponents[2];
-            ref int? revision = ref versionComponents[3];
-            if (major.HasValue && minor.HasValue && build.HasValue && revision.HasValue)
+            if (isParsingSuccessful)
             {
-                return new Version(major.Value, minor.Value, build.Value, revision.Value);
-            }
-            else if (major.HasValue && minor.HasValue && build.HasValue)
-            {
-                return new Version(major.Value, minor.Value, build.Value);
-            }
-            else if (major.HasValue && minor.HasValue)
-            {
-                return new Version(major.Value, minor.Value);
+                Debug.Assert(result != null);
+                return result;
             }
 
+#else
+            string? versionString = reader.GetString();
+            if (Version.TryParse(versionString, out Version? result))
+            {
+                return result;
+            }
+#endif
             ThrowHelper.ThrowJsonException();
             return null;
         }
@@ -82,11 +53,16 @@ namespace System.Text.Json.Serialization.Converters
         public override void Write(Utf8JsonWriter writer, Version value, JsonSerializerOptions options)
         {
 #if BUILDING_INBOX_LIBRARY
-            Debug.Assert(
-                JsonConstants.StackallocThreshold >= MaxStringLengthOfVersion * sizeof(char),
+            const int versionComponentsCount = 4; // Major, Minor, Build, Revision
+
+            const int maxStringLengthOfPositiveInt32 = 10; // int.MaxValue.ToString().Length
+
+            const int maxStringLengthOfVersion = (maxStringLengthOfPositiveInt32 * versionComponentsCount) + 1 + 1 + 1; // 43, 1 is length of '.'
+            Debug.Assert(JsonConstants.StackallocThreshold >= maxStringLengthOfVersion * sizeof(char),
                 "Stack allocated buffer should not be bigger than stackalloc threshold defined in JsonConstants");
-            Span<char> span = stackalloc char[MaxStringLengthOfVersion];
-            value.TryFormat(span, out int charsWritten);
+            Span<char> span = stackalloc char[maxStringLengthOfVersion];
+            bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
+            Debug.Assert(formattedSuccessfully);
             writer.WriteStringValue(span.Slice(0, charsWritten));
             return;
 #else
