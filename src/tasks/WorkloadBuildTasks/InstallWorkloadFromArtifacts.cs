@@ -60,7 +60,7 @@ namespace Microsoft.Workload.Build.Tasks
             Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** workload install **{Environment.NewLine}");
             (int exitCode, string output) = Utils.TryRunProcess(
                                                     Path.Combine(SdkDir, "dotnet"),
-                                                    $"workload install -sdqoweiu-skip-manifest-update --no-cache --configfile \"{nugetConfigPath}\" {WorkloadId.ItemSpec}",
+                                                    $"workload install -skip-manifest-update --no-cache --configfile \"{nugetConfigPath}\" {WorkloadId.ItemSpec}",
                                                     workingDir: Path.GetTempPath(),
                                                     silent: false,
                                                     debugMessageImportance: MessageImportance.High);
