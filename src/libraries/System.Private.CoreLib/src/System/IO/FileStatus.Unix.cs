@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.IO
 {
-    internal struct FileStatus
+    internal partial struct FileStatus
     {
         private const int NanosecondsPerTick = 100;
 
@@ -255,7 +255,7 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileCache.CTime, _fileCache.CTimeNsec);
         }
 
-        internal void SetCreationTime(string path, DateTimeOffset time)
+        private void SetCreationTime_StandardUnixImpl(string path, DateTimeOffset time)
         {
             // Unix provides APIs to update the last access time (atime) and last modification time (mtime).
             // There is no API to update the CreationTime.
@@ -266,7 +266,7 @@ namespace System.IO
             // Updating the mtime, causes the ctime to be set to 'now'. So, on platforms that don't store a
             // CreationTime, GetCreationTime will return the value that was previously set (when that value
             // wasn't in the future).
-            SetLastWriteTime(path, time);
+            SetAccessOrWriteTime_StandardUnixImpl(path, time, isAccessTime: false);
         }
 
         internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)
@@ -294,20 +294,24 @@ namespace System.IO
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick).ToLocalTime();
         }
 
-        private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
+        private unsafe void SetAccessOrWriteTime_StandardUnixImpl(string path, DateTimeOffset time, bool isAccessTime)
         {
-            // force a refresh so that we have an up-to-date times for values not being overwritten
-            _initializedFileCache = -1;
-            EnsureCachesInitialized(path);
+            // Used for access time or as a fallback on OSX, used always on other Unix platforms.
 
+            // force a refresh so that we have an up-to-date times for values not being overwritten
+            InvalidateCaches();
+            EnsureCachesInitialized(path);
+            SetAccessOrWriteTimeImpl(path, time, isAccessTime);
+            InvalidateCaches();
+        }
+
+        private unsafe void SetAccessOrWriteTimeImpl(string path, DateTimeOffset time, bool isAccessTime)
+        {
             // we use utimes()/utimensat() to set the accessTime and writeTime
             Interop.Sys.TimeSpec* buf = stackalloc Interop.Sys.TimeSpec[2];
 
             long seconds = time.ToUnixTimeSeconds();
-
-            const long TicksPerMillisecond = 10000;
-            const long TicksPerSecond = TicksPerMillisecond * 1000;
-            long nanoseconds = (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
+            long nanoseconds = UnixTimeSecondsToNanoseconds(time, seconds);
 
 #if TARGET_BROWSER
             buf[0].TvSec = seconds;
@@ -331,7 +335,6 @@ namespace System.IO
             }
 #endif
             Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);
-            _initializedFileCache = -1;
         }
 
         internal long GetLength(ReadOnlySpan<char> path, bool continueOnError = false)
@@ -420,6 +423,13 @@ namespace System.IO
                 InvalidateCaches();
                 throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), new string(path));
             }
+        }
+
+        private static long UnixTimeSecondsToNanoseconds(DateTimeOffset time, long seconds)
+        {
+            const long TicksPerMillisecond = 10000;
+            const long TicksPerSecond = TicksPerMillisecond * 1000;
+            return (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
         }
 
         private bool TryRefreshFileCache(ReadOnlySpan<char> path) =>

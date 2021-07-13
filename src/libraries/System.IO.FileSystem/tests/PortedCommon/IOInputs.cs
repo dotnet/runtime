@@ -8,7 +8,7 @@ using System.Linq;
 
 internal static class IOInputs
 {
-    public static bool SupportsSettingCreationTime => OperatingSystem.IsWindows();
+    public static bool SupportsSettingCreationTime => OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
     public static bool SupportsGettingCreationTime => OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
 
     // Max path length (minus trailing \0). Unix values vary system to system; just using really long values here likely to be more than on the average system.
