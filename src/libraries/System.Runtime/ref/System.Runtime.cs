@@ -4965,10 +4965,8 @@ namespace System
         public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         public static bool IsAndroid() { throw null; }
         public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("ios")]
         [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("maccatalyst")]
         public static bool IsIOS() { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("ios")]
         [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("maccatalyst")]
         public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
         public static bool IsMacOS() { throw null; }

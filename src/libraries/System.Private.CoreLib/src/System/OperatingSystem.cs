@@ -179,7 +179,6 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on iOS or MacCatalyst.
         /// </summary>
-        [SupportedOSPlatformGuard("ios")]
         [SupportedOSPlatformGuard("maccatalyst")]
         public static bool IsIOS() =>
 #if TARGET_IOS || TARGET_MACCATALYST
@@ -191,7 +190,6 @@ namespace System
         /// <summary>
         /// Check for the iOS/MacCatalyst version (returned by 'libobjc.get_operatingSystemVersion') with a >= version comparison. Used to guard APIs that were added in the given iOS release.
         /// </summary>
-        [SupportedOSPlatformGuard("ios")]
         [SupportedOSPlatformGuard("maccatalyst")]
         public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0)
             => IsIOS() && IsOSVersionAtLeast(major, minor, build, 0);
