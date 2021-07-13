@@ -1,8 +1,4 @@
 <Project>
-  <PropertyGroup>
-    <IgnoreForCI Condition="'$(ForNode)' == 'true'">true</IgnoreForCI>
-  </PropertyGroup>
-  
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
