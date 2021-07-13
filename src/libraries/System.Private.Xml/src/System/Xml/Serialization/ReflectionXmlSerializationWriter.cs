@@ -397,6 +397,17 @@ namespace System.Xml.Serialization
                 {
                     WriteQualifiedNameElement(name, ns!, element.Default, (XmlQualifiedName)o!, element.IsNullable, mapping.IsSoap, mapping);
                 }
+                else if (o == null && element.IsNullable)
+                {
+                    if (mapping.IsSoap)
+                    {
+                        WriteNullTagEncoded(element.Name, ns);
+                    }
+                    else
+                    {
+                        WriteNullTagLiteral(element.Name, ns);
+                    }
+                }
                 else
                 {
                     WritePrimitiveMethodRequirement suffixNullable = mapping.IsSoap ? WritePrimitiveMethodRequirement.Encoded : WritePrimitiveMethodRequirement.None;

@@ -43,6 +43,19 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_ByteArrayNull()
+    {
+        Assert.Null(SerializeAndDeserialize<byte[]>(null,
+@"<?xml version=""1.0""?>
+<base64Binary d1p1:nil=""true"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"" />"));
+        byte[] x = new byte[] { 1, 2 };
+        byte[] y = SerializeAndDeserialize<byte[]>(x,
+@"<?xml version=""1.0""?>
+<base64Binary>AQI=</base64Binary>");
+        Assert.Equal(x, y);
+    }
+
+    [Fact]
     public static void Xml_CharAsRoot()
     {
         Assert.StrictEqual(SerializeAndDeserialize<char>(char.MinValue,
@@ -1277,6 +1290,19 @@ public static partial class XmlSerializerTests
 
         Assert.NotNull(actual);
         Assert.True(Enumerable.SequenceEqual(value.XmlAttributeForms, actual.XmlAttributeForms));
+    }
+
+    [Fact]
+    public static void XML_TypeWithNullableByteArray()
+    {
+        var value = new TypeWithNullableByteArray(); // XmlAttributeForms == null
+
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <XmlAttributeForms xsi:nil=\"true\" />\r\n</MyXmlType>");
+
+        Assert.NotNull(actual);
+        Assert.Null(value.XmlAttributeForms);
+        Assert.Null(actual.XmlAttributeForms);
     }
 
     [Fact]

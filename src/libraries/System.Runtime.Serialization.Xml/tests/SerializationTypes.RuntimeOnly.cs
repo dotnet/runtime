@@ -1988,6 +1988,13 @@ namespace SerializationTypes
     }
 
     [XmlType(TypeName = "MyXmlType")]
+    public class TypeWithNullableByteArray
+    {
+        [XmlElement(DataType = "base64Binary", IsNullable = true)]
+        public byte[] XmlAttributeForms { get; set; }
+    }
+
+    [XmlType(TypeName = "MyXmlType")]
     public class TypeWithByteArrayArrayAsXmlAttribute
     {
         [XmlAttribute(Form = XmlSchemaForm.Qualified)]
