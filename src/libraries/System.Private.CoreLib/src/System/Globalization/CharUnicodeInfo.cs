@@ -269,7 +269,7 @@ namespace System.Globalization
         {
             if (UnicodeUtility.IsBmpCodePoint(codePoint))
             {
-                return ToUpper((char) codePoint);
+                return ToUpper((char)codePoint);
             }
 
             if (!UnicodeUtility.IsValidCodePoint(codePoint))
