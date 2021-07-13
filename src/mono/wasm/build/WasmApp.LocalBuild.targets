@@ -40,7 +40,6 @@
 
   <!-- Use local runtime pack -->
   <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences" DependsOnTargets="_PrepareAndValidateWasmInputs">
-    <Error Condition="@(ResolvedRuntimePack->Count()) == 0" Text="No runtime pack was resolved!" />
     <ItemGroup>
       <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackLocationToUse)"
                            Condition="'$(MicrosoftNetCoreAppRuntimePackLocationToUse)' != '' and
