@@ -59,20 +59,17 @@
     <Compile Include="System\Text\Json\Nodes\JsonArray.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonArray.IList.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNode.cs" />
-    <Compile Include="System\Text\Json\Nodes\JsonNode.Dynamic.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNode.Operators.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNode.Parse.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNode.To.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNodeOptions.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonObject.cs" />
-    <Compile Include="System\Text\Json\Nodes\JsonObject.Dynamic.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonObject.IDictionary.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValue.CreateOverloads.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValue.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueNotTrimmable.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueOfT.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueTrimmable.cs" />
-    <Compile Include="System\Text\Json\Nodes\MetaDynamic.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeNumberResult.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeTokenResult.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderException.cs" />
@@ -298,7 +295,6 @@
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
-    <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />
@@ -315,7 +311,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
-    <PackageReference Include="System.Linq.Expressions" Version="$(SystemLinqExpressionsVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />

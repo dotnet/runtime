@@ -495,6 +495,322 @@ namespace System.Security.Cryptography.Primitives.Tests
                 alg.TryEncryptCbc(Array.Empty<byte>(), badIv, destination, out _, PaddingMode.None));
         }
 
+        [Fact]
+        public static void EncryptCfb_NotSupportedInDerived()
+        {
+            AnySizeAlgorithm alg = new AnySizeAlgorithm { BlockSize = 128 };
+
+            Assert.Throws<NotSupportedException>(() =>
+                alg.EncryptCfb(Array.Empty<byte>(), new byte[alg.BlockSize / 8]));
+        }
+
+        [Fact]
+        public static void DecryptCfb_NotSupportedInDerived()
+        {
+            AnySizeAlgorithm alg = new AnySizeAlgorithm { BlockSize = 128 };
+
+            Assert.Throws<NotSupportedException>(() =>
+                alg.DecryptCfb(Array.Empty<byte>(), new byte[alg.BlockSize / 8]));
+        }
+
+        [Fact]
+        public static void EncryptCfb_EncryptProducesIncorrectlyPaddedValue()
+        {
+            static bool EncryptImpl(
+                ReadOnlySpan<byte> plaintext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                int feedbackSizeInBits,
+                out int bytesWritten)
+            {
+                bytesWritten = destination.Length + 1;
+                return true;
+            }
+
+            OneShotSymmetricAlgorithm alg = new OneShotSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryEncryptCfbCoreImpl = EncryptImpl,
+            };
+
+            Assert.Throws<CryptographicException>(() =>
+                alg.EncryptCfb(Array.Empty<byte>(), new byte[alg.BlockSize / 8], PaddingMode.None));
+        }
+
+        [Fact]
+        public static void DecryptCfb_DecryptBytesWrittenLies()
+        {
+            static bool DecryptImpl(
+                ReadOnlySpan<byte> ciphertext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                int feedbackSizeInBits,
+                out int bytesWritten)
+            {
+                bytesWritten = destination.Length + 1;
+                return true;
+            }
+
+            OneShotSymmetricAlgorithm alg = new OneShotSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryDecryptCfbCoreImpl = DecryptImpl,
+            };
+
+            Assert.Throws<CryptographicException>(() =>
+                alg.DecryptCfb(new byte[128 / 8], new byte[128 / 8], feedbackSizeInBits: 128));
+        }
+
+        [Fact]
+        public static void EncryptCfb_EncryptCoreFails()
+        {
+            static bool EncryptImpl(
+                ReadOnlySpan<byte> plaintext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                int feedbackSizeInBits,
+                out int bytesWritten)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            OneShotSymmetricAlgorithm alg = new OneShotSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryEncryptCfbCoreImpl = EncryptImpl,
+            };
+
+            Assert.Throws<CryptographicException>(() =>
+                alg.EncryptCfb(Array.Empty<byte>(), new byte[128 / 8], feedbackSizeInBits: 128));
+        }
+
+        [Fact]
+        public static void EncryptCfb_EncryptCoreOverflowWritten()
+        {
+            static bool EncryptImpl(
+                ReadOnlySpan<byte> plaintext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                int feedbackSizeInBits,
+                out int bytesWritten)
+            {
+                bytesWritten = -1;
+                return true;
+            }
+
+            OneShotSymmetricAlgorithm alg = new OneShotSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryEncryptCfbCoreImpl = EncryptImpl,
+            };
+
+            Assert.Throws<CryptographicException>(() =>
+                alg.EncryptCfb(Array.Empty<byte>(), new byte[128 / 8], feedbackSizeInBits: 128));
+        }
+
+        [Fact]
+        public static void DecryptCfb_DecryptCoreFails()
+        {
+            static bool DecryptImpl(
+                ReadOnlySpan<byte> ciphertext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                int feedbackSizeInBits,
+                out int bytesWritten)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            OneShotSymmetricAlgorithm alg = new OneShotSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryDecryptCfbCoreImpl = DecryptImpl,
+            };
+
+            Assert.Throws<CryptographicException>(() =>
+                alg.DecryptCfb(Array.Empty<byte>(), new byte[128 / 8], feedbackSizeInBits: 128));
+        }
+
+        [Fact]
+        public static void DecryptCfb_DecryptCoreOverflowWritten()
+        {
+            static bool DecryptImpl(
+                ReadOnlySpan<byte> ciphertext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                int feedbackSizeInBits,
+                out int bytesWritten)
+            {
+                bytesWritten = -1;
+                return true;
+            }
+
+            OneShotSymmetricAlgorithm alg = new OneShotSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryDecryptCfbCoreImpl = DecryptImpl,
+            };
+
+            Assert.Throws<CryptographicException>(() =>
+                alg.DecryptCfb(Array.Empty<byte>(), new byte[128 / 8], feedbackSizeInBits: 8));
+        }
+
+        [Fact]
+        public static void DecryptCfb_BadInitializationVectorLength()
+        {
+            static bool DecryptImpl(
+                ReadOnlySpan<byte> ciphertext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                int feedbackSizeInBits,
+                out int bytesWritten)
+            {
+                Assert.True(false, "Initialization vector was not validated, core should not have been called.");
+                bytesWritten = 0;
+                return false;
+            }
+
+            OneShotSymmetricAlgorithm alg = new OneShotSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryDecryptCfbCoreImpl = DecryptImpl,
+            };
+
+            byte[] badIv = new byte[alg.BlockSize / 8 + 1];
+            byte[] destination = new byte[128 / 8];
+
+            AssertExtensions.Throws<ArgumentException>("iv", () =>
+                alg.DecryptCfb(Array.Empty<byte>(), badIv, feedbackSizeInBits: 128));
+
+            AssertExtensions.Throws<ArgumentException>("iv", () =>
+                alg.DecryptCfb(Array.Empty<byte>(), badIv, destination, feedbackSizeInBits: 128));
+
+            AssertExtensions.Throws<ArgumentException>("iv", () =>
+                alg.TryDecryptCfb(Array.Empty<byte>(), badIv, destination, out _, feedbackSizeInBits: 128));
+        }
+
+        [Fact]
+        public static void EncryptCfb_BadInitializationVectorLength()
+        {
+            static bool EncryptImpl(
+                ReadOnlySpan<byte> plaintext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                int feedbackSizeInBits,
+                out int bytesWritten)
+            {
+                Assert.True(false, "Initialization vector was not validated, core should not have been called.");
+                bytesWritten = 0;
+                return false;
+            }
+
+            OneShotSymmetricAlgorithm alg = new OneShotSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryEncryptCfbCoreImpl = EncryptImpl,
+            };
+
+            byte[] badIv = new byte[alg.BlockSize / 8 + 1];
+            byte[] destination = new byte[128 / 8];
+
+            AssertExtensions.Throws<ArgumentException>("iv", () =>
+                alg.EncryptCfb(Array.Empty<byte>(), badIv, feedbackSizeInBits: 128));
+
+            AssertExtensions.Throws<ArgumentException>("iv", () =>
+                alg.EncryptCfb(Array.Empty<byte>(), badIv, destination, feedbackSizeInBits: 128));
+
+            AssertExtensions.Throws<ArgumentException>("iv", () =>
+                alg.TryEncryptCfb(Array.Empty<byte>(), badIv, destination, out _, feedbackSizeInBits: 128));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(19)]
+        [InlineData(256)]
+        public static void DecryptCfb_BadFeedbackSizes(int feedbackSize)
+        {
+            static bool DecryptImpl(
+                ReadOnlySpan<byte> ciphertext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                int feedbackSizeInBits,
+                out int bytesWritten)
+            {
+                Assert.True(false, "Feedback size was not validated, core should not have been called.");
+                bytesWritten = 0;
+                return false;
+            }
+
+            OneShotSymmetricAlgorithm alg = new OneShotSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryDecryptCfbCoreImpl = DecryptImpl,
+            };
+
+            byte[] iv = new byte[alg.BlockSize / 8];
+            byte[] destination = Array.Empty<byte>();
+
+            AssertExtensions.Throws<ArgumentException>("feedbackSizeInBits", () =>
+                alg.DecryptCfb(Array.Empty<byte>(), iv, feedbackSizeInBits: feedbackSize));
+
+            AssertExtensions.Throws<ArgumentException>("feedbackSizeInBits", () =>
+                alg.DecryptCfb(Array.Empty<byte>(), iv, destination, feedbackSizeInBits: feedbackSize));
+
+            AssertExtensions.Throws<ArgumentException>("feedbackSizeInBits", () =>
+                alg.TryDecryptCfb(Array.Empty<byte>(), iv, destination, out _, feedbackSizeInBits: feedbackSize));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(19)]
+        [InlineData(256)]
+        public static void EncryptCfb_BadFeedbackSizes(int feedbackSize)
+        {
+            static bool EncryptImpl(
+                ReadOnlySpan<byte> ciphertext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                int feedbackSizeInBits,
+                out int bytesWritten)
+            {
+                Assert.True(false, "Feedback size was not validated, core should not have been called.");
+                bytesWritten = 0;
+                return false;
+            }
+
+            OneShotSymmetricAlgorithm alg = new OneShotSymmetricAlgorithm
+            {
+                BlockSize = 128,
+                TryEncryptCfbCoreImpl = EncryptImpl,
+            };
+
+            byte[] iv = new byte[alg.BlockSize / 8];
+            byte[] destination = Array.Empty<byte>();
+
+            AssertExtensions.Throws<ArgumentException>("feedbackSizeInBits", () =>
+                alg.DecryptCfb(Array.Empty<byte>(), iv, feedbackSizeInBits: feedbackSize));
+
+            AssertExtensions.Throws<ArgumentException>("feedbackSizeInBits", () =>
+                alg.DecryptCfb(Array.Empty<byte>(), iv, destination, feedbackSizeInBits: feedbackSize));
+
+            AssertExtensions.Throws<ArgumentException>("feedbackSizeInBits", () =>
+                alg.TryDecryptCfb(Array.Empty<byte>(), iv, destination, out _, feedbackSizeInBits: feedbackSize));
+        }
+
         public static IEnumerable<object[]> CiphertextLengthTheories
         {
             get
@@ -622,10 +938,28 @@ namespace System.Security.Cryptography.Primitives.Tests
                 PaddingMode paddingMode,
                 out int bytesWritten);
 
+            public delegate bool TryEncryptCfbCoreFunc(
+                ReadOnlySpan<byte> plaintext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                int feedbackSizeInBits,
+                out int bytesWritten);
+
+            public delegate bool TryDecryptCfbCoreFunc(
+                ReadOnlySpan<byte> ciphertext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                int feedbackSizeInBits,
+                out int bytesWritten);
+
             public TryEncryptEcbCoreFunc TryEncryptEcbCoreImpl { get; set; }
             public TryDecryptEcbCoreFunc TryDecryptEcbCoreImpl { get; set; }
             public TryEncryptCbcCoreFunc TryEncryptCbcCoreImpl { get; set; }
             public TryDecryptCbcCoreFunc TryDecryptCbcCoreImpl { get; set; }
+            public TryEncryptCfbCoreFunc TryEncryptCfbCoreImpl { get; set; }
+            public TryDecryptCfbCoreFunc TryDecryptCfbCoreImpl { get; set; }
 
             protected override bool TryEncryptEcbCore(
                 ReadOnlySpan<byte> plaintext,
@@ -652,6 +986,22 @@ namespace System.Security.Cryptography.Primitives.Tests
                 Span<byte> destination,
                 PaddingMode paddingMode,
                 out int bytesWritten) => TryDecryptCbcCoreImpl(ciphertext, iv, destination, paddingMode, out bytesWritten);
+
+            protected override bool TryEncryptCfbCore(
+                ReadOnlySpan<byte> plaintext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                int feedbackSizeInBits,
+                out int bytesWritten) => TryEncryptCfbCoreImpl(plaintext, iv, destination, paddingMode, feedbackSizeInBits, out bytesWritten);
+
+            protected override bool TryDecryptCfbCore(
+                ReadOnlySpan<byte> ciphertext,
+                ReadOnlySpan<byte> iv,
+                Span<byte> destination,
+                PaddingMode paddingMode,
+                int feedbackSizeInBits,
+                out int bytesWritten) => TryDecryptCfbCoreImpl(ciphertext, iv, destination, paddingMode, feedbackSizeInBits, out bytesWritten);
         }
     }
 }
