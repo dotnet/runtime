@@ -252,8 +252,8 @@ namespace Wasm.Build.Tests
             if (buildArgs.AOT)
             {
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
-                extraProperties += $"\n<EmccVerbose>true</EmccVerbose>\n";
             }
+            extraProperties += $"\n<EmccVerbose>true</EmccVerbose>\n";
 
             string projectContents = projectTemplate
                                         .Replace("##EXTRA_PROPERTIES##", extraProperties)
