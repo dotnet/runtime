@@ -7625,13 +7625,21 @@ struct OptTestInfo
 class OptBoolsDsc
 {
 public:
+    OptBoolsDsc(BasicBlock* b1, BasicBlock* b2, Compiler* comp)
+    {
+        m_b1 = b1;
+        m_b2 = b2;
+        m_b3 = nullptr;
+        m_comp = comp;
+    }
+
+private:
     BasicBlock* m_b1; // The first basic block with the BBJ_COND conditional jump type
     BasicBlock* m_b2; // The next basic block of m_b1. Either BBJ_COND or BBJ_RETURN type
     BasicBlock* m_b3; // m_b1->bbJumpDest. Null if m_b2 is not a return block.
 
     Compiler* m_comp; // The pointer to the Compiler instance
 
-private:
     OptTestInfo m_testInfo1; // The first test info
     OptTestInfo m_testInfo2; // The second test info
     GenTree*    m_t3;        // The root node of the first statement of m_b3
@@ -7647,9 +7655,9 @@ private:
 
 public:
     bool optOptimizeBoolsCondBlock();
-    bool optOptimizeBoolsReturnBlock();
+    bool optOptimizeBoolsReturnBlock(BasicBlock* b3);
 #ifdef DEBUG
-    void optOptimizeBoolsGcStress(BasicBlock* condBlock);
+    void optOptimizeBoolsGcStress();
 #endif
 
 private:
@@ -8167,11 +8175,14 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 //-----------------------------------------------------------------------------
 //  optOptimizeBoolsReturnBlock: Optimize boolean when m_b1 is BBJ_COND and m_b2 and m_b3 are BBJ_RETURN
 //
+// Arguments:
+//      b3:    Pointer to basic block b3
+// 
 //  Returns:
 //      true if boolean optimization is done and m_b1, m_b2 and m_b3 are folded into m_b1, else false.
 //
 //  Notes:
-//      m_b1, m_b2, and m_b3 of OptBoolsDsc are set on entry.
+//      m_b1, m_b2 and m_b3 of OptBoolsDsc are set on entry.
 //
 //      if B1.bbJumpDest == b3, it transforms
 //          B1 : brtrue(t1, B3)
@@ -8187,9 +8198,12 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 //          and it is folded into
 //              B1: GT_RETURN (BBJ_RETURN)
 //
-bool OptBoolsDsc::optOptimizeBoolsReturnBlock()
+bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
 {
-    assert(m_b1 != nullptr && m_b2 != nullptr && m_b3 != nullptr);
+    assert(m_b1 != nullptr && m_b2 != nullptr);
+
+    // m_b3 is set for cond/return/return case
+    m_b3 = b3;
 
     m_sameTarget        = false;
     Statement* const s1 = optOptimizeBoolsChkBlkCond();
@@ -8314,20 +8328,17 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock()
 //  optOptimizeBoolsGcStress: Replace x==null with (x|x)==0 if x is a GC-type.
 //                            This will stress code-gen and the emitter to make sure they support such trees.
 //
-//  Arguments:
-//      condBlock       The conditional basic block
-//
 #ifdef DEBUG
 
-void OptBoolsDsc::optOptimizeBoolsGcStress(BasicBlock* condBlock)
+void OptBoolsDsc::optOptimizeBoolsGcStress()
 {
     if (!m_comp->compStressCompile(m_comp->STRESS_OPT_BOOLS_GC, 20))
     {
         return;
     }
 
-    assert(condBlock->bbJumpKind == BBJ_COND);
-    GenTree* cond = condBlock->lastStmt()->GetRootNode();
+    assert(m_b1->bbJumpKind == BBJ_COND);
+    GenTree* cond = m_b1->lastStmt()->GetRootNode();
 
     assert(cond->gtOper == GT_JTRUE);
 
@@ -8463,7 +8474,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 }
 
 //-----------------------------------------------------------------------------
-// optOptimizeBools:    Folds boolean conditionals for GT_JTRUE/GR_RETURN nodes
+// optOptimizeBools:    Folds boolean conditionals for GT_JTRUE/GT_RETURN nodes
 //
 // Notes:
 //      If the operand of GT_JTRUE/GT_RETURN node is GT_EQ/GT_NE of the form
@@ -8560,7 +8571,9 @@ void Compiler::optOptimizeBools()
                 continue;
             }
 
-            // The next block also needs to be a condition
+            OptBoolsDsc optBoolsDsc(b1, b2, this);
+
+            // The next block needs to be a condition or return block.
 
             if (b2->bbJumpKind == BBJ_COND)
             {
@@ -8570,11 +8583,6 @@ void Compiler::optOptimizeBools()
                 }
 
                 // When it is conditional jumps
-                OptBoolsDsc optBoolsDsc;
-                optBoolsDsc.m_b1   = b1;
-                optBoolsDsc.m_b2   = b2;
-                optBoolsDsc.m_b3   = nullptr;
-                optBoolsDsc.m_comp = this;
 
                 if (optBoolsDsc.optOptimizeBoolsCondBlock())
                 {
@@ -8583,13 +8591,8 @@ void Compiler::optOptimizeBools()
             }
             else if (b2->bbJumpKind == BBJ_RETURN)
             {
-                // If there is no b1->bbJumpDest, we're done
-
+                // Set b3 to b1 jump destination
                 BasicBlock* b3 = b1->bbJumpDest;
-                if (b3 == nullptr)
-                {
-                    break;
-                }
 
                 // b3 must not be marked as BBF_DONT_REMOVE
 
@@ -8605,12 +8608,7 @@ void Compiler::optOptimizeBools()
                     continue;
                 }
 
-                OptBoolsDsc optBoolsDsc;
-                optBoolsDsc.m_b1   = b1;
-                optBoolsDsc.m_b2   = b2;
-                optBoolsDsc.m_b3   = b3;
-                optBoolsDsc.m_comp = this;
-                if (optBoolsDsc.optOptimizeBoolsReturnBlock())
+                if (optBoolsDsc.optOptimizeBoolsReturnBlock(b3))
                 {
                     change = true;
                 }
@@ -8618,9 +8616,7 @@ void Compiler::optOptimizeBools()
             else
             {
 #ifdef DEBUG
-                OptBoolsDsc optBoolsDsc;
-                optBoolsDsc.m_comp = this;
-                optBoolsDsc.optOptimizeBoolsGcStress(b1);
+                optBoolsDsc.optOptimizeBoolsGcStress();
 #endif
             }
         }
