@@ -9,7 +9,7 @@ namespace System.IO.Tests
 {
     public class FileStream_DeleteOnClose : FileSystemTest
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public async Task DeleteOnClose_UsableAsMutex()
         {
             var cts = new CancellationTokenSource();
@@ -48,6 +48,11 @@ namespace System.IO.Tests
                         }
                         await Task.Delay(TimeSpan.FromMilliseconds(1));
                     }
+                    catch (UnauthorizedAccessException)
+                    {
+                        // This can occur when the file is being deleted on Windows.
+                        await Task.Delay(TimeSpan.FromMilliseconds(1));
+                    }
                     catch (IOException)
                     {
                         await Task.Delay(TimeSpan.FromMilliseconds(1));
@@ -62,7 +67,7 @@ namespace System.IO.Tests
             }
 
             // Wait for 1000 locks.
-            cts.CancelAfter(TimeSpan.FromSeconds(30));
+            cts.CancelAfter(TimeSpan.FromSeconds(60));
             Volatile.Write(ref locksRemaining, 1000);
             await Task.WhenAll(tasks);
 
