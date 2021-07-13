@@ -453,6 +453,8 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [OuterLoop("May take several seconds")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55588")]
         public async Task ByteMixingOrNativeAVE_MinimalFailingTest()
         {
             const int writeSize = 64 * 1024;
