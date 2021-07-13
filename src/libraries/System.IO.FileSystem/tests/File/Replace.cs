@@ -109,6 +109,37 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Replace(testFile, testFile2, "*\0*"));
         }
 
+        [Fact]
+        public void SourceCannotBeADirectory()
+        {
+            string testFile = GetTestFilePath();
+            File.Create(testFile).Dispose();
+            string testDir = GetTestFilePath();
+            Directory.CreateDirectory(testDir);
+
+            Assert.Throws<UnauthorizedAccessException>(() => File.Replace(testDir, testFile, null));
+        }
+
+        [Fact]
+        public void DestinationCannotBeADirectory()
+        {
+            string testFile = GetTestFilePath();
+            File.Create(testFile).Dispose();
+            string testDir = GetTestFilePath();
+            Directory.CreateDirectory(testDir);
+
+            Assert.Throws<UnauthorizedAccessException>(() => File.Replace(testFile, testDir, null));
+        }
+
+        [Fact]
+        public void SourceAndDestinationCannotBeTheSame()
+        {
+            string testFile = GetTestFilePath();
+            File.Create(testFile).Dispose();
+
+            Assert.Throws<IOException>(() => File.Replace(testFile, testFile, null));
+        }
+
         #endregion
     }
 
