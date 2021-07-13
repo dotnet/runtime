@@ -156,7 +156,7 @@ namespace System.IO.Pipes
 
         private void CompleteCallback(int resultState)
         {
-            Debug.Assert(resultState == ResultSuccess || resultState == ResultError, "Unexpected result state " + resultState);
+            Debug.Assert(resultState == ResultSuccess || resultState == ResultError, $"Unexpected result state {resultState}");
             CancellationToken cancellationToken = _cancellationRegistration.Token;
 
             ReleaseResources();

@@ -36,7 +36,7 @@ namespace System.Net.Mail
         //
         internal static bool TryReadReverse(string data, int index, out int outIndex, bool throwExceptionIfFail)
         {
-            Debug.Assert(0 <= index && index < data.Length, "index was outside the bounds of the string: " + index);
+            Debug.Assert(0 <= index && index < data.Length, $"index was outside the bounds of the string: {index}");
 
             int startIndex = index;
 
