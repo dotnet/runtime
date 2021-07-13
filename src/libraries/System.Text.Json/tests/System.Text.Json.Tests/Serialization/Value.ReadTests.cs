@@ -332,10 +332,27 @@ namespace System.Text.Json.Serialization.Tests
             version = JsonSerializer.Deserialize<Version>(@"""1.2.3.4""");
             Assert.Equal(new Version(1, 2, 3, 4), version);
 
+            version = JsonSerializer.Deserialize<Version>(@"""2147483647.2147483647""");
+            Assert.Equal(new Version(int.MaxValue, int.MaxValue), version);
+
+            version = JsonSerializer.Deserialize<Version>(@"""2147483647.2147483647.2147483647""");
+            Assert.Equal(new Version(int.MaxValue, int.MaxValue, int.MaxValue), version);
+
+            version = JsonSerializer.Deserialize<Version>(@"""2147483647.2147483647.2147483647.2147483647""");
+            Assert.Equal(new Version(int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue), version);
+
             version = JsonSerializer.Deserialize<Version>("null");
             Assert.Null(version);
 
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Version>(@""""""));
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Version>(@"""-2147483648.-2147483648"""));
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Version>(@"""-2147483648.-2147483648.-2147483648"""));
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Version>(@"""-2147483648.-2147483648.-2147483648.-2147483648"""));
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Version>(@"""1.-1"""));
         }
 
         [Fact]
