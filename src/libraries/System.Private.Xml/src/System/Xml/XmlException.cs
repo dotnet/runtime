@@ -234,9 +234,8 @@ namespace System.Xml
             if (XmlCharType.IsHighSurrogate(invChar) && nextChar != 0)
             {
                 int combinedChar = XmlCharType.CombineSurrogateChar(nextChar, invChar);
-                ReadOnlySpan<char> invAndNextChars = stackalloc char[] { invChar, nextChar };
-                aStringList[0] = new string(invAndNextChars);
-                aStringList[1] = string.Format(CultureInfo.InvariantCulture, "0x{0:X2}", combinedChar);
+                aStringList[0] = new string(stackalloc char[] { invChar, nextChar });
+                aStringList[1] = $"0x{combinedChar:X2}";
             }
             else
             {
@@ -249,7 +248,7 @@ namespace System.Xml
                 {
                     aStringList[0] = invChar.ToString();
                 }
-                aStringList[1] = string.Format(CultureInfo.InvariantCulture, "0x{0:X2}", (int)invChar);
+                aStringList[1] = $"0x{(int)invChar:X2}";
             }
             return aStringList;
         }

@@ -349,15 +349,12 @@ namespace System.Net.Http
                     var sb = new StringBuilder();
 
                     Debug.Assert(_originAuthority != null);
-                    sb
-                        .Append(IsSecure ? "https://" : "http://")
-                        .Append(_originAuthority.IdnHost);
+                    sb.Append(IsSecure ? "https://" : "http://")
+                      .Append(_originAuthority.IdnHost);
 
                     if (_originAuthority.Port != (IsSecure ? DefaultHttpsPort : DefaultHttpPort))
                     {
-                        sb
-                            .Append(':')
-                            .Append(_originAuthority.Port.ToString(CultureInfo.InvariantCulture));
+                        sb.Append(CultureInfo.InvariantCulture, $":{_originAuthority.Port}");
                     }
 
                     _http2AltSvcOriginUri = Encoding.ASCII.GetBytes(sb.ToString());

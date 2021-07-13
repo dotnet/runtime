@@ -221,12 +221,12 @@ namespace System.Runtime.Serialization
             if (isNew)
             {
                 xmlWriter.WriteAttributeString(Globals.SerPrefix, DictionaryGlobals.IdLocalName,
-                                            DictionaryGlobals.SerializationNamespace, string.Format(CultureInfo.InvariantCulture, "i{0}", objectId));
+                                            DictionaryGlobals.SerializationNamespace, string.Create(CultureInfo.InvariantCulture, $"i{objectId}"));
                 return false;
             }
             else
             {
-                xmlWriter.WriteAttributeString(Globals.SerPrefix, DictionaryGlobals.RefLocalName, DictionaryGlobals.SerializationNamespace, string.Format(CultureInfo.InvariantCulture, "i{0}", objectId));
+                xmlWriter.WriteAttributeString(Globals.SerPrefix, DictionaryGlobals.RefLocalName, DictionaryGlobals.SerializationNamespace, string.Create(CultureInfo.InvariantCulture, $"i{objectId}"));
                 return true;
             }
         }

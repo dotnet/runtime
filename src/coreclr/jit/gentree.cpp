@@ -14856,19 +14856,15 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             JITDUMP("\nFolding operator with constant nodes into a constant:\n");
             DISPTREE(tree);
 
-#ifdef TARGET_64BIT
-            // Some operations are performed as 64 bit instead of 32 bit so the upper 32 bits
-            // need to be discarded. Since constant values are stored as ssize_t and the node
-            // has TYP_INT the result needs to be sign extended rather than zero extended.
-            i1 = INT32(i1);
-#endif // TARGET_64BIT
-
             // Also all conditional folding jumps here since the node hanging from
             // GT_JTRUE has to be a GT_CNS_INT - value 0 or 1.
 
             tree->ChangeOperConst(GT_CNS_INT);
             tree->ChangeType(TYP_INT);
-            tree->AsIntCon()->SetIconValue(i1);
+            // Some operations are performed as 64 bit instead of 32 bit so the upper 32 bits
+            // need to be discarded. Since constant values are stored as ssize_t and the node
+            // has TYP_INT the result needs to be sign extended rather than zero extended.
+            tree->AsIntCon()->SetIconValue(static_cast<int>(i1));
             tree->AsIntCon()->gtFieldSeq = fieldSeq;
             if (vnStore != nullptr)
             {

@@ -66,11 +66,11 @@ namespace System.Web
                         {
                             if (string.IsNullOrEmpty(keys[i]))
                             {
-                                sb.AppendFormat("{0}&", UrlEncode(value));
+                                sb.Append(UrlEncode(value)).Append('&');
                             }
                             else
                             {
-                                sb.AppendFormat("{0}={1}&", keys[i], UrlEncode(value));
+                                sb.AppendFormat($"{keys[i]}={UrlEncode(value)}&");
                             }
                         }
                     }

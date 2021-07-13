@@ -47,12 +47,15 @@ namespace System.Net.Http.Json.Functional.Tests
             properties[0] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
+                isPublic: true,
+                isVirtual: false,
                 declaringType: typeof(Person),
                 propertyTypeInfo: jsonContext.Int32,
                 converter: null,
                 getter: static (obj) => { return ((Person)obj).Age; },
                 setter: static (obj, value) => { ((Person)obj).Age = value; },
                 ignoreCondition: default,
+                hasJsonInclude: false,
                 numberHandling: default,
                 propertyName: nameof(Tests.Person.Age),
                 jsonPropertyName: null);
@@ -60,12 +63,15 @@ namespace System.Net.Http.Json.Functional.Tests
             properties[1] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
+                isPublic: true,
+                isVirtual: false,
                 declaringType: typeof(Person),
                 propertyTypeInfo: jsonContext.String,
                 converter: null,
                 getter: static (obj) => { return ((Person)obj).Name; },
                 setter: static (obj, value) => { ((Person)obj).Name = value; },
                 ignoreCondition: default,
+                hasJsonInclude: false,
                 numberHandling: default,
                 propertyName: nameof(Tests.Person.Name),
                 jsonPropertyName: null);
@@ -73,12 +79,15 @@ namespace System.Net.Http.Json.Functional.Tests
             properties[2] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
+                isPublic: true,
+                isVirtual: false,
                 declaringType: typeof(Person),
                 propertyTypeInfo: jsonContext.Person,
                 converter: null,
                 getter: static (obj) => { return ((Person)obj).Parent; },
                 setter: static (obj, value) => { ((Person)obj).Parent = value; },
                 ignoreCondition: default,
+                hasJsonInclude: false,
                 numberHandling: default,
                 propertyName: nameof(Tests.Person.Parent),
                 jsonPropertyName: null);
@@ -86,12 +95,15 @@ namespace System.Net.Http.Json.Functional.Tests
             properties[3] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
+                isPublic: true,
+                isVirtual: false,
                 declaringType: typeof(Person),
                 propertyTypeInfo: jsonContext.String,
                 converter: null,
                 getter: static (obj) => { return ((Person)obj).PlaceOfBirth; },
                 setter: static (obj, value) => { ((Person)obj).PlaceOfBirth = value; },
                 ignoreCondition: default,
+                hasJsonInclude: false,
                 numberHandling: default,
                 propertyName: nameof(Tests.Person.PlaceOfBirth),
                 jsonPropertyName: null);

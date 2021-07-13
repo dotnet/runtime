@@ -17,6 +17,9 @@ namespace System.Diagnostics
     public partial class Process : IDisposable
     {
         private static volatile bool s_initialized;
+        private static uint s_euid;
+        private static uint s_egid;
+        private static uint[]? s_groups;
         private static readonly object s_initializedGate = new object();
         private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
 
@@ -743,13 +746,53 @@ namespace System.Diagnostics
                 {
                     string subPath = pathParser.ExtractCurrent();
                     path = Path.Combine(subPath, program);
-                    if (File.Exists(path))
+                    if (IsExecutable(path))
                     {
                         return path;
                     }
                 }
             }
             return null;
+        }
+
+        private static bool IsExecutable(string fullPath)
+        {
+            Interop.Sys.FileStatus fileinfo;
+
+            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
+            {
+                return false;
+            }
+
+            // Check if the path is a directory.
+            if ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
+            {
+                return false;
+            }
+
+            Interop.Sys.Permissions permissions = (Interop.Sys.Permissions)fileinfo.Mode;
+
+            if (s_euid == 0)
+            {
+                // We're root.
+                return (permissions & Interop.Sys.Permissions.S_IXUGO) != 0;
+            }
+
+            if (s_euid == fileinfo.Uid)
+            {
+                // We own the file.
+                return (permissions & Interop.Sys.Permissions.S_IXUSR) != 0;
+            }
+
+            if (s_egid == fileinfo.Gid ||
+                (s_groups != null && Array.BinarySearch(s_groups, fileinfo.Gid) >= 0))
+            {
+                // A group we're a member of owns the file.
+                return (permissions & Interop.Sys.Permissions.S_IXGRP) != 0;
+            }
+
+            // Other.
+            return (permissions & Interop.Sys.Permissions.S_IXOTH) != 0;
         }
 
         private static long s_ticksPerSecond;
@@ -1019,6 +1062,14 @@ namespace System.Diagnostics
                     if (!Interop.Sys.InitializeTerminalAndSignalHandling())
                     {
                         throw new Win32Exception();
+                    }
+
+                    s_euid = Interop.Sys.GetEUid();
+                    s_egid = Interop.Sys.GetEGid();
+                    s_groups = Interop.Sys.GetGroups();
+                    if (s_groups != null)
+                    {
+                        Array.Sort(s_groups);
                     }
 
                     // Register our callback.

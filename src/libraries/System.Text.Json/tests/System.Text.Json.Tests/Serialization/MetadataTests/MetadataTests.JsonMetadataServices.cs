@@ -21,6 +21,8 @@ namespace System.Text.Json.Tests.Serialization
             ArgumentNullException ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreatePropertyInfo<int>(
                 options: null,
                 isProperty: true,
+                isPublic: false,
+                isVirtual: false,
                 declaringType: typeof(Point),
                 propertyTypeInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
                 converter: null,
@@ -28,6 +30,7 @@ namespace System.Text.Json.Tests.Serialization
                 setter: null,
                 ignoreCondition: default,
                 numberHandling: default,
+                hasJsonInclude: false,
                 propertyName: "MyInt",
                 jsonPropertyName: null));
             Assert.Contains("options", ane.ToString());
@@ -36,6 +39,8 @@ namespace System.Text.Json.Tests.Serialization
             ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreatePropertyInfo<int>(
                 options: options,
                 isProperty: true,
+                isPublic: false,
+                isVirtual: false,
                 declaringType: null,
                 propertyTypeInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
                 converter: null,
@@ -43,6 +48,7 @@ namespace System.Text.Json.Tests.Serialization
                 setter: null,
                 ignoreCondition: default,
                 numberHandling: default,
+                hasJsonInclude: false,
                 propertyName: "MyInt",
                 jsonPropertyName: null));
             Assert.Contains("declaringType", ane.ToString());
@@ -51,6 +57,8 @@ namespace System.Text.Json.Tests.Serialization
             ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreatePropertyInfo<int>(
                 options: options,
                 isProperty: true,
+                isPublic: false,
+                isVirtual: false,
                 declaringType: typeof(Point),
                 propertyTypeInfo: null,
                 converter: null,
@@ -58,6 +66,7 @@ namespace System.Text.Json.Tests.Serialization
                 setter: null,
                 ignoreCondition: default,
                 numberHandling: default,
+                hasJsonInclude: false,
                 propertyName: "MyInt",
                 jsonPropertyName: null));
             Assert.Contains("propertyTypeInfo", ane.ToString());
@@ -66,6 +75,8 @@ namespace System.Text.Json.Tests.Serialization
             ane = Assert.Throws<ArgumentNullException>(() => JsonMetadataServices.CreatePropertyInfo<int>(
                 options: options,
                 isProperty: true,
+                isPublic: false,
+                isVirtual: false,
                 declaringType: typeof(Point),
                 propertyTypeInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
                 converter: null,
@@ -73,6 +84,7 @@ namespace System.Text.Json.Tests.Serialization
                 setter: null,
                 ignoreCondition: default,
                 numberHandling: default,
+                hasJsonInclude: false,
                 propertyName: null,
                 jsonPropertyName: null));
             Assert.Contains("propertyName", ane.ToString());
@@ -81,6 +93,8 @@ namespace System.Text.Json.Tests.Serialization
             InvalidOperationException ioe = Assert.Throws<InvalidOperationException>(() => JsonMetadataServices.CreatePropertyInfo<MyClass>(
                 options: options,
                 isProperty: true,
+                isPublic: false,
+                isVirtual: false,
                 declaringType: typeof(Point),
                 // Converter invalid because you'd need to create with JsonMetadataServices.CreatePropertyInfo<MyDerivedClass> instead.
                 propertyTypeInfo: JsonMetadataServices.CreateValueInfo<MyClass>(options, new DerivedClassConverter()),
@@ -89,11 +103,30 @@ namespace System.Text.Json.Tests.Serialization
                 setter: null,
                 ignoreCondition: default,
                 numberHandling: default,
+                hasJsonInclude: false,
                 propertyName: "MyProp",
                 jsonPropertyName: null));
             string ioeAsStr = ioe.ToString();
             Assert.Contains("Point.MyProp", ioeAsStr);
             Assert.Contains("MyClass", ioeAsStr);
+
+            // Fields cannot be virtual.
+            ioe = Assert.Throws<InvalidOperationException>(() => JsonMetadataServices.CreatePropertyInfo<int>(
+                options: options,
+                isProperty: false,
+                isPublic: false,
+                isVirtual: true,
+                declaringType: typeof(Point),
+                propertyTypeInfo: JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter),
+                converter: null,
+                getter: null,
+                setter: null,
+                ignoreCondition: default,
+                numberHandling: default,
+                hasJsonInclude: false,
+                propertyName: "X",
+                jsonPropertyName: null));
+            Assert.Contains("field", ioe.ToString());
 
             // Source generator tests verify that generated metadata is actually valid.
         }

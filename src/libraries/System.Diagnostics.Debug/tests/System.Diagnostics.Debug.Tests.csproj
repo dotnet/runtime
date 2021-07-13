@@ -10,12 +10,12 @@
     <DefaultReferenceExclusion Include="System.Diagnostics.Debug" />
     <DefaultReferenceExclusion Include="System.Runtime.Extensions" />
     <ProjectReference Include="$(CoreLibProject)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj;
-                               $(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj"
-                      SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DebugTests.cs" />
+    <Compile Include="DebugTestsNoListeners.Interpolation.cs" />
     <Compile Include="DebugTestsNoListeners.cs" />
     <Compile Include="DebugTestsUsingListeners.cs" />
     <Compile Include="DebuggerBrowsableAttributeTests.cs" />
