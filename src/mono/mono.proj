@@ -508,6 +508,7 @@
       <_Objcopy Condition="'$(_ObjcopyFound)' != '0'">objcopy</_Objcopy>
     </PropertyGroup>
     <ItemGroup>
+      <FilesToStrip Include="$(_MonoRuntimeFilePath)" />
       <FilesToStrip Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(SharedLibExt)" />
       <FilesToStrip Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\Mono*framework\**\Mono*" Exclude="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\Mono*framework\**\*.dwarf" />
     </ItemGroup>
