@@ -126,6 +126,7 @@ GTNODE(UMOD             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(OR               , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
 GTNODE(XOR              , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
 GTNODE(AND              , GenTreeOp          ,1,(GTK_BINOP|GTK_LOGOP))
+GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP)
 
 GTNODE(LSH              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(RSH              , GenTreeOp          ,0,GTK_BINOP)

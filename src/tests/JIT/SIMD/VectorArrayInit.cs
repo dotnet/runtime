@@ -67,7 +67,7 @@ internal partial class VectorTest
             {
                 Vector<T> v = new Vector<T>(inputArray, -1);
             }
-            catch (IndexOutOfRangeException)
+            catch (ArgumentOutOfRangeException)
             {
                 caught = true;
             }
@@ -77,7 +77,7 @@ internal partial class VectorTest
             }
             if (!caught)
             {
-                Console.WriteLine("Failed to throw IndexOutOfRangeException for a negative index.");
+                Console.WriteLine("Failed to throw ArgumentOutOfRangeException for a negative index.");
                 returnVal = Fail;
             }
 
@@ -87,7 +87,7 @@ internal partial class VectorTest
             {
                 Vector<T> v = new Vector<T>(inputArray, inputArray.Length);
             }
-            catch (IndexOutOfRangeException)
+            catch (ArgumentOutOfRangeException)
             {
                 caught = true;
             }
@@ -97,7 +97,7 @@ internal partial class VectorTest
             }
             if (!caught)
             {
-                Console.WriteLine("Failed to throw IndexOutOfRangeException for an out-of-range index.");
+                Console.WriteLine("Failed to throw ArgumentOutOfRangeException for an out-of-range index.");
                 returnVal = Fail;
             }
 
@@ -107,7 +107,7 @@ internal partial class VectorTest
             {
                 Vector<T> v = new Vector<T>(inputArray, inputArray.Length - 1);
             }
-            catch (IndexOutOfRangeException)
+            catch (ArgumentOutOfRangeException)
             {
                 caught = true;
             }
@@ -117,7 +117,7 @@ internal partial class VectorTest
             }
             if (!caught)
             {
-                Console.WriteLine("Failed to throw IndexOutOfRangeException for insufficient range in target array.");
+                Console.WriteLine("Failed to throw ArgumentOutOfRangeException for insufficient range in target array.");
                 returnVal = Fail;
             }
 

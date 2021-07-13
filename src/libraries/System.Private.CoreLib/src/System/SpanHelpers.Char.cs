@@ -587,8 +587,8 @@ namespace System
                     // to see if we have double the size for Vector256<ushort>.Count
                     if (lengthToExamine >= (nuint)Vector128<ushort>.Count)
                     {
-                        Vector256<ushort> values0 = Vector256.Create(value0);
-                        Vector256<ushort> values1 = Vector256.Create(value1);
+                        Vector256<ushort> values0 = Vector256.Create((ushort)value0);
+                        Vector256<ushort> values1 = Vector256.Create((ushort)value1);
 
                         // Subtract Vector128<ushort>.Count so we have now subtracted Vector256<ushort>.Count
                         lengthToExamine -= (nuint)Vector128<ushort>.Count;
@@ -637,8 +637,8 @@ namespace System
                 Debug.Assert(length >= Vector128<ushort>.Count);
                 {
                     Vector128<ushort> search;
-                    Vector128<ushort> values0 = Vector128.Create(value0);
-                    Vector128<ushort> values1 = Vector128.Create(value1);
+                    Vector128<ushort> values0 = Vector128.Create((ushort)value0);
+                    Vector128<ushort> values1 = Vector128.Create((ushort)value1);
                     // First time this checks against 0 and we will move into final compare if it fails.
                     while (lengthToExamine > offset)
                     {
@@ -824,9 +824,9 @@ namespace System
                     // to see if we have double the size for Vector256<ushort>.Count
                     if (lengthToExamine >= (nuint)Vector128<ushort>.Count)
                     {
-                        Vector256<ushort> values0 = Vector256.Create(value0);
-                        Vector256<ushort> values1 = Vector256.Create(value1);
-                        Vector256<ushort> values2 = Vector256.Create(value2);
+                        Vector256<ushort> values0 = Vector256.Create((ushort)value0);
+                        Vector256<ushort> values1 = Vector256.Create((ushort)value1);
+                        Vector256<ushort> values2 = Vector256.Create((ushort)value2);
 
                         // Subtract Vector128<ushort>.Count so we have now subtracted Vector256<ushort>.Count
                         lengthToExamine -= (nuint)Vector128<ushort>.Count;
@@ -879,9 +879,9 @@ namespace System
                 Debug.Assert(length >= Vector128<ushort>.Count);
                 {
                     Vector128<ushort> search;
-                    Vector128<ushort> values0 = Vector128.Create(value0);
-                    Vector128<ushort> values1 = Vector128.Create(value1);
-                    Vector128<ushort> values2 = Vector128.Create(value2);
+                    Vector128<ushort> values0 = Vector128.Create((ushort)value0);
+                    Vector128<ushort> values1 = Vector128.Create((ushort)value1);
+                    Vector128<ushort> values2 = Vector128.Create((ushort)value2);
                     // First time this checks against 0 and we will move into final compare if it fails.
                     while (lengthToExamine > offset)
                     {
@@ -1076,10 +1076,10 @@ namespace System
                     // to see if we have double the size for Vector256<ushort>.Count
                     if (lengthToExamine >= (nuint)Vector128<ushort>.Count)
                     {
-                        Vector256<ushort> values0 = Vector256.Create(value0);
-                        Vector256<ushort> values1 = Vector256.Create(value1);
-                        Vector256<ushort> values2 = Vector256.Create(value2);
-                        Vector256<ushort> values3 = Vector256.Create(value3);
+                        Vector256<ushort> values0 = Vector256.Create((ushort)value0);
+                        Vector256<ushort> values1 = Vector256.Create((ushort)value1);
+                        Vector256<ushort> values2 = Vector256.Create((ushort)value2);
+                        Vector256<ushort> values3 = Vector256.Create((ushort)value3);
 
                         // Subtract Vector128<ushort>.Count so we have now subtracted Vector256<ushort>.Count
                         lengthToExamine -= (nuint)Vector128<ushort>.Count;
@@ -1129,10 +1129,10 @@ namespace System
                 Debug.Assert(length >= Vector128<ushort>.Count);
                 {
                     Vector128<ushort> search;
-                    Vector128<ushort> values0 = Vector128.Create(value0);
-                    Vector128<ushort> values1 = Vector128.Create(value1);
-                    Vector128<ushort> values2 = Vector128.Create(value2);
-                    Vector128<ushort> values3 = Vector128.Create(value3);
+                    Vector128<ushort> values0 = Vector128.Create((ushort)value0);
+                    Vector128<ushort> values1 = Vector128.Create((ushort)value1);
+                    Vector128<ushort> values2 = Vector128.Create((ushort)value2);
+                    Vector128<ushort> values3 = Vector128.Create((ushort)value3);
                     // First time this checks against 0 and we will move into final compare if it fails.
                     while (lengthToExamine > offset)
                     {
@@ -1326,12 +1326,11 @@ namespace System
                     // to see if we have double the size for Vector256<ushort>.Count
                     if (lengthToExamine >= (nuint)Vector128<ushort>.Count)
                     {
-                        Vector256<ushort> values0 = Vector256.Create(value0);
-                        Vector256<ushort> values1 = Vector256.Create(value1);
-                        Vector256<ushort> values2 = Vector256.Create(value2);
-                        Vector256<ushort> values3 = Vector256.Create(value3);
-
-                        Vector256<ushort> values4 = Vector256.Create(value4);
+                        Vector256<ushort> values0 = Vector256.Create((ushort)value0);
+                        Vector256<ushort> values1 = Vector256.Create((ushort)value1);
+                        Vector256<ushort> values2 = Vector256.Create((ushort)value2);
+                        Vector256<ushort> values3 = Vector256.Create((ushort)value3);
+                        Vector256<ushort> values4 = Vector256.Create((ushort)value4);
 
                         // Subtract Vector128<ushort>.Count so we have now subtracted Vector256<ushort>.Count
                         lengthToExamine -= (nuint)Vector128<ushort>.Count;
@@ -1383,11 +1382,11 @@ namespace System
                 Debug.Assert(length >= Vector128<ushort>.Count);
                 {
                     Vector128<ushort> search;
-                    Vector128<ushort> values0 = Vector128.Create(value0);
-                    Vector128<ushort> values1 = Vector128.Create(value1);
-                    Vector128<ushort> values2 = Vector128.Create(value2);
-                    Vector128<ushort> values3 = Vector128.Create(value3);
-                    Vector128<ushort> values4 = Vector128.Create(value4);
+                    Vector128<ushort> values0 = Vector128.Create((ushort)value0);
+                    Vector128<ushort> values1 = Vector128.Create((ushort)value1);
+                    Vector128<ushort> values2 = Vector128.Create((ushort)value2);
+                    Vector128<ushort> values3 = Vector128.Create((ushort)value3);
+                    Vector128<ushort> values4 = Vector128.Create((ushort)value4);
                     // First time this checks against 0 and we will move into final compare if it fails.
                     while (lengthToExamine > offset)
                     {

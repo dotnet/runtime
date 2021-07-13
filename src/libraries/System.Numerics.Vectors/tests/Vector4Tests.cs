@@ -27,7 +27,7 @@ namespace System.Numerics.Tests
             Assert.Throws<NullReferenceException>(() => v1.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => v1.CopyTo(a, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => v1.CopyTo(a, a.Length));
-            AssertExtensions.Throws<ArgumentException>(null, () => v1.CopyTo(a, a.Length - 2));
+            Assert.Throws<ArgumentException>(() => v1.CopyTo(a, a.Length - 2));
 
             v1.CopyTo(a, 1);
             v1.CopyTo(b);
@@ -1146,7 +1146,7 @@ namespace System.Numerics.Tests
             Vector4 expected = new Vector4(value);
 
             Assert.Equal(expected, target);
-            Assert.Throws<IndexOutOfRangeException>(() => new Vector4(new float[3]));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Vector4(new float[3]));
         }
 
         // A test for Add (Vector4f, Vector4f)

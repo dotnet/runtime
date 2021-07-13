@@ -47,7 +47,7 @@ namespace System.Numerics
         {
             if (values.Length < 2)
             {
-                Vector.ThrowInsufficientNumberOfElementsException(2);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
 
             this = Unsafe.ReadUnaligned<Vector2>(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(values)));
@@ -501,7 +501,7 @@ namespace System.Numerics
         /// <summary>Copies the elements of the vector to a specified array.</summary>
         /// <param name="array">The destination array.</param>
         /// <remarks><paramref name="array" /> must have at least two elements. The method copies the vector's elements starting at index 0.</remarks>
-        /// <exception cref="System.ArgumentNullException"><paramref name="array" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.NullReferenceException"><paramref name="array" /> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentException">The number of elements in the current instance is greater than in the array.</exception>
         /// <exception cref="System.RankException"><paramref name="array" /> is multidimensional.</exception>
         [Intrinsic]
@@ -515,7 +515,7 @@ namespace System.Numerics
         /// <param name="array">The destination array.</param>
         /// <param name="index">The index at which to copy the first element of the vector.</param>
         /// <remarks><paramref name="array" /> must have a sufficient number of elements to accommodate the two vector elements. In other words, elements <paramref name="index" /> and <paramref name="index" /> + 1 must already exist in <paramref name="array" />.</remarks>
-        /// <exception cref="System.ArgumentNullException"><paramref name="array" /> is <see langword="null" />.</exception>
+        /// <exception cref="System.NullReferenceException"><paramref name="array" /> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentException">The number of elements in the current instance is greater than in the array.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="index" /> is less than zero.
         /// -or-
@@ -526,18 +526,17 @@ namespace System.Numerics
         {
             if (array is null)
             {
-                // Match the JIT's exception type here. For perf, a NullReference is thrown instead of an ArgumentNull.
-                throw new NullReferenceException(SR.Arg_NullArgumentNullRef);
+                ThrowHelper.ThrowNullReferenceException();
             }
 
             if ((index < 0) || (index >= array.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.Format(SR.Arg_ArgumentOutOfRangeException, index));
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             }
 
             if ((array.Length - index) < 2)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_ElementsInSourceIsGreaterThanDestination, index));
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
             array[index] = X;
