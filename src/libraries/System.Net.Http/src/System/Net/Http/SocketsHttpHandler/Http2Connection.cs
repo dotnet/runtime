@@ -35,13 +35,11 @@ namespace System.Net.Http
         private readonly Dictionary<int, Http2Stream> _httpStreams;
 
         private readonly CreditManager _connectionWindow;
-        private readonly CreditManager _concurrentStreams;
         private RttEstimator _rttEstimator;
 
         private int _nextStream;
         private bool _expectingSettingsAck;
         private int _initialServerStreamWindowSize;
-        private int _maxConcurrentStreams;
         private int _pendingWindowUpdate;
         private long _idleSinceTickCount;
 
@@ -1511,7 +1509,7 @@ namespace System.Net.Http
                 // assigning the stream ID to ensure only one stream gets an ID, and it must be held
                 // across setting the initial window size (available credit) and storing the stream into
                 // collection such that window size updates are able to atomically affect all known streams.
-                http2Stream.Initialize(_nextStream, _initialWindowSize);
+                http2Stream.Initialize(_nextStream, _initialServerStreamWindowSize);
 
                 // Client-initiated streams are always odd-numbered, so increase by 2.
                 _nextStream += 2;
