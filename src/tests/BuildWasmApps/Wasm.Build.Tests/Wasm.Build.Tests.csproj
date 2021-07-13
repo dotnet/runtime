@@ -74,6 +74,9 @@
       <RunScriptCommand Condition="'$(XUnitClassName)' != ''">$(RunScriptCommand) -class $(XUnitClassName)</RunScriptCommand>
 
       <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) -parallel none</RunScriptCommand>
+
+      <!-- this allows use of test attributes from dotnet.xunitextensions -->
+      <RunScriptCommand>$(RunScriptCommand) -notrait category=IgnoreForCI -notrait category=failing</RunScriptCommand>
     </PropertyGroup>
   </Target>
 </Project>

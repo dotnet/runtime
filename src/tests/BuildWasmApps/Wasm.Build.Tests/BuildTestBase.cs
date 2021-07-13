@@ -57,18 +57,7 @@ namespace Wasm.Build.Tests
             if (!string.IsNullOrEmpty(nugetPackagesPath))
             {
                 if (!Directory.Exists(nugetPackagesPath))
-                {
                     Directory.CreateDirectory(nugetPackagesPath);
-                    Console.WriteLine ($"-- Created {nugetPackagesPath}");
-                }
-                else
-                {
-                    Console.WriteLine ($"-- already exists {nugetPackagesPath}");
-                }
-            }
-            else
-            {
-                Console.WriteLine ($"-- NUGET_PACKAGES envvar was empty");
             }
 
             Console.WriteLine ("");
