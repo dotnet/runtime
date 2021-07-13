@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
-using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -198,7 +197,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (enumerableCallSite.ServiceCallSites.Length == 0)
             {
-                argument.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.GetArrayEmptyMethodInfo(enumerableCallSite.ItemType));
+                argument.Generator.Emit(OpCodes.Call, ServiceLookupHelpers.GetArrayEmptyMethodInfo(enumerableCallSite.ItemType));
             }
             else
             {
@@ -245,7 +244,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             argument.Generator.Emit(OpCodes.Ldelem, typeof(Func<IServiceProvider, object>));
 
             argument.Generator.Emit(OpCodes.Ldarg_1);
-            argument.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.InvokeFactoryMethodInfo);
+            argument.Generator.Emit(OpCodes.Call, ServiceLookupHelpers.InvokeFactoryMethodInfo);
 
             argument.Factories.Add(factoryCallSite.Factory);
             return null;
@@ -357,7 +356,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // Load address of lockTaken
                 context.Generator.Emit(OpCodes.Ldloca_S, lockTakenLocal.LocalIndex);
                 // Monitor.Enter
-                context.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.MonitorEnterMethodInfo);
+                context.Generator.Emit(OpCodes.Call, ServiceLookupHelpers.MonitorEnterMethodInfo);
 
                 // Load resolved services
                 Ldloc(context.Generator, resolvedServicesLocal.LocalIndex);
@@ -366,7 +365,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // Load address of result local
                 context.Generator.Emit(OpCodes.Ldloca_S, resultLocal.LocalIndex);
                 // .TryGetValue
-                context.Generator.Emit(OpCodes.Callvirt, ExpressionResolverBuilder.TryGetValueMethodInfo);
+                context.Generator.Emit(OpCodes.Callvirt, ServiceLookupHelpers.TryGetValueMethodInfo);
 
                 // Jump to the end if already in cache
                 context.Generator.Emit(OpCodes.Brtrue, skipCreationLabel);
@@ -391,7 +390,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // load value
                 Ldloc(context.Generator, resultLocal.LocalIndex);
                 // .Add
-                context.Generator.Emit(OpCodes.Callvirt, ExpressionResolverBuilder.AddMethodInfo);
+                context.Generator.Emit(OpCodes.Callvirt, ServiceLookupHelpers.AddMethodInfo);
 
                 context.Generator.MarkLabel(skipCreationLabel);
 
@@ -404,7 +403,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // Load syncLocal
                 Ldloc(context.Generator, syncLocal.LocalIndex);
                 // Monitor.Exit
-                context.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.MonitorExitMethodInfo);
+                context.Generator.Emit(OpCodes.Call, ServiceLookupHelpers.MonitorExitMethodInfo);
 
                 context.Generator.MarkLabel(returnLabel);
 
@@ -438,7 +437,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static void EndCaptureDisposable(ILEmitResolverBuilderContext argument)
         {
             // Call CaptureDisposabl we expect calee and arguments to be on the stackcontext.Generator.BeginExceptionBlock
-            argument.Generator.Emit(OpCodes.Callvirt, ExpressionResolverBuilder.CaptureDisposableMethodInfo);
+            argument.Generator.Emit(OpCodes.Callvirt, ServiceLookupHelpers.CaptureDisposableMethodInfo);
         }
 
         private void Ldloc(ILGenerator generator, int index)

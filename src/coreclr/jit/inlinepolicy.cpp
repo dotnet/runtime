@@ -1648,7 +1648,15 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         const double profileTrustCoef = (double)JitConfig.JitExtDefaultPolicyProfTrust() / 10.0;
         const double profileScale     = (double)JitConfig.JitExtDefaultPolicyProfScale() / 10.0;
 
-        multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
+        if (m_RootCompiler->fgPgoSource == ICorJitInfo::PgoSource::Dynamic)
+        {
+            // For now we only "trust" dynamic profiles.
+            multiplier *= (1.0 - profileTrustCoef) + min(m_ProfileFrequency, 1.0) * profileScale;
+        }
+        else
+        {
+            multiplier *= min(m_ProfileFrequency, 1.0) * profileScale;
+        }
         JITDUMP("\nCallsite has profile data: %g.", m_ProfileFrequency);
     }
 

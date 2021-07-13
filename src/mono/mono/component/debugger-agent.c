@@ -307,6 +307,14 @@ typedef struct {
 	MonoStackHash *hashes;
 } EventInfo;
 
+typedef struct {
+	MonoImage *image;
+	gconstpointer meta_bytes;
+	int meta_len;
+	gconstpointer pdb_bytes;
+	int pdb_len;
+} EnCInfo;
+
 #ifdef HOST_WIN32
 #define get_last_sock_error() WSAGetLastError()
 #define MONO_EWOULDBLOCK WSAEWOULDBLOCK
@@ -1604,7 +1612,7 @@ static MonoGHashTable *suspended_objs;
 
 #ifdef TARGET_WASM
 void 
-mono_init_debugger_agent_for_wasm (int log_level_parm)
+mono_init_debugger_agent_for_wasm (int log_level_parm, MonoProfilerHandle *prof)
 {
 	if (mono_atomic_cas_i32 (&agent_inited, 1, 0) == 1)
 		return;
@@ -1615,6 +1623,7 @@ mono_init_debugger_agent_for_wasm (int log_level_parm)
 	ids_init();
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
 	obj_to_objref = g_hash_table_new (NULL, NULL);
+	pending_assembly_loads = g_ptr_array_new ();
 
 	log_level = log_level_parm;
 	event_requests = g_ptr_array_new ();
@@ -1622,6 +1631,8 @@ mono_init_debugger_agent_for_wasm (int log_level_parm)
 	transport = &transports [0];
 	memset(&debugger_wasm_thread, 0, sizeof(DebuggerTlsData));
 	agent_config.enabled = TRUE;
+
+	mono_profiler_set_jit_done_callback (*prof, jit_done);
 }
 #endif
 
@@ -3600,6 +3611,9 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 		case EVENT_KIND_TYPE_LOAD:
 			buffer_add_typeid (&buf, domain, (MonoClass *)arg);
 			break;
+		case MDBGPROT_EVENT_KIND_METHOD_UPDATE:
+			buffer_add_methodid (&buf, domain, (MonoMethod *)arg);
+			break;
 		case EVENT_KIND_BREAKPOINT:
 		case EVENT_KIND_STEP: {
 			GET_DEBUGGER_TLS();
@@ -3655,6 +3669,15 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 		case EVENT_KIND_KEEPALIVE:
 			suspend_policy = SUSPEND_POLICY_NONE;
 			break;
+		
+		case MDBGPROT_EVENT_KIND_ENC_UPDATE: {
+			EnCInfo *ei = (EnCInfo *)arg;
+			buffer_add_moduleid (&buf, mono_domain_get (), ei->image);
+			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) ei->meta_bytes, ei->meta_len);
+			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) ei->pdb_bytes, ei->pdb_len);
+			break;
+		}
+
 		default:
 			g_assert_not_reached ();
 		}
@@ -4060,6 +4083,9 @@ jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 
 	send_type_load (method->klass);
 
+	if (m_class_get_image(method->klass)->has_updates) {
+		process_profiler_event (MDBGPROT_EVENT_KIND_METHOD_UPDATE, method);
+	}
 	if (jinfo)
 		mono_de_add_pending_breakpoints (method, jinfo);
 }
@@ -6517,6 +6543,28 @@ get_types_for_source_file (gpointer key, gpointer value, gpointer user_data)
 	}
 }
 
+static void 
+send_enc_delta (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dpdb_bytes, int32_t dpdb_len)
+{	
+	//TODO: if it came from debugger we don't need to pass the parameters back, they are already on debugger client side.
+	if (agent_config.enabled) {
+		int suspend_policy;
+		GSList *events;
+		mono_loader_lock ();
+		events = create_event_list (MDBGPROT_EVENT_KIND_ENC_UPDATE, NULL, NULL, NULL, &suspend_policy);
+		mono_loader_unlock ();
+
+		EnCInfo info;
+		info.image = image;
+		info.meta_bytes = dpdb_bytes;
+		info.meta_len = dpdb_len;
+		info.pdb_bytes = dpdb_bytes;
+		info.pdb_len = dpdb_len;
+
+		process_event (MDBGPROT_EVENT_KIND_ENC_UPDATE, &info, 0, NULL, events, suspend_policy);
+	} 
+}
+
 static gboolean
 module_apply_changes (MonoImage *image, MonoArray *dmeta, MonoArray *dil, MonoArray *dpdb, MonoError *error)
 {
@@ -6525,9 +6573,9 @@ module_apply_changes (MonoImage *image, MonoArray *dmeta, MonoArray *dil, MonoAr
 	int32_t dmeta_len = mono_array_length_internal (dmeta);
 	gpointer dil_bytes = (gpointer)mono_array_addr_internal (dil, char, 0);
 	int32_t dil_len = mono_array_length_internal (dil);
-	gpointer dpdb_bytes G_GNUC_UNUSED = !dpdb ? NULL : (gpointer)mono_array_addr_internal (dpdb, char, 0);
-	int32_t dpdb_len G_GNUC_UNUSED = !dpdb ? 0 : mono_array_length_internal (dpdb);
-	mono_image_load_enc_delta (image, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
+	gpointer dpdb_bytes = !dpdb ? NULL : (gpointer)mono_array_addr_internal (dpdb, char, 0);
+	int32_t dpdb_len = !dpdb ? 0 : mono_array_length_internal (dpdb);
+	mono_image_load_enc_delta (image, dmeta_bytes, dmeta_len, dil_bytes, dil_len, dpdb_bytes, dpdb_len, error);
 	return is_ok (error);
 }
 	
@@ -7239,6 +7287,7 @@ event_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 			req->info = mono_de_set_breakpoint (NULL, METHOD_EXIT_IL_OFFSET, req, NULL);
 		} else if (req->event_kind == EVENT_KIND_EXCEPTION) {
 		} else if (req->event_kind == EVENT_KIND_TYPE_LOAD) {
+		} else if (req->event_kind == MDBGPROT_EVENT_KIND_METHOD_UPDATE) {
 		} else {
 			if (req->nmodifiers) {
 				g_free (req);
@@ -10278,6 +10327,7 @@ debugger_agent_add_function_pointers(MonoComponentDebugger* fn_table)
 	fn_table->debug_log_is_enabled = debugger_agent_debug_log_is_enabled;
 	fn_table->send_crash = mono_debugger_agent_send_crash;
 	fn_table->transport_handshake = debugger_agent_transport_handshake;
+	fn_table->send_enc_delta = send_enc_delta;
 }
 
 

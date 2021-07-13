@@ -796,6 +796,43 @@ namespace System.Runtime.InteropServices
     {
         public OptionalAttribute() { }
     }
+    public enum PosixSignal
+    {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGTSTP = -10,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGTTOU = -9,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGTTIN = -8,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGWINCH = -7,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGCONT = -6,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGCHLD = -5,
+        SIGTERM = -4,
+        SIGQUIT = -3,
+        SIGINT = -2,
+        SIGHUP = -1,
+    }
+    public sealed partial class PosixSignalContext
+    {
+        public PosixSignalContext(System.Runtime.InteropServices.PosixSignal signal) { }
+        public bool Cancel { get { throw null; } set { } }
+        public System.Runtime.InteropServices.PosixSignal Signal { get { throw null; } }
+    }
+    public sealed partial class PosixSignalRegistration : System.IDisposable
+    {
+        internal PosixSignalRegistration() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        public static System.Runtime.InteropServices.PosixSignalRegistration Create(System.Runtime.InteropServices.PosixSignal signal, System.Action<System.Runtime.InteropServices.PosixSignalContext> handler) { throw null; }
+        public void Dispose() { }
+        ~PosixSignalRegistration() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class PreserveSigAttribute : System.Attribute
     {

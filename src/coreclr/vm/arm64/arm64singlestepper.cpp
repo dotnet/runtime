@@ -46,11 +46,7 @@ Arm64SingleStepper::Arm64SingleStepper()
 Arm64SingleStepper::~Arm64SingleStepper()
 {
 #if !defined(DACCESS_COMPILE)
-#ifdef TARGET_UNIX
     SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->BackoutMem(m_rgCode, kMaxCodeBuffer * sizeof(uint32_t));
-#else
-    DeleteExecutable(m_rgCode);
-#endif
 #endif
 }
 
@@ -59,11 +55,7 @@ void Arm64SingleStepper::Init()
 #if !defined(DACCESS_COMPILE)
     if (m_rgCode == NULL)
     {
-#ifdef TARGET_UNIX
         m_rgCode = (uint32_t *)(void *)SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->AllocMem(S_SIZE_T(kMaxCodeBuffer * sizeof(uint32_t)));
-#else
-        m_rgCode = new (executable) uint32_t[kMaxCodeBuffer];
-#endif
     }
 #endif
 }
@@ -207,7 +199,7 @@ void Arm64SingleStepper::Apply(T_CONTEXT *pCtx)
 
     unsigned int idxNextInstruction = 0;
 
-    ExecutableWriterHolder<DWORD> codeWriterHolder(m_rgCode, sizeof(m_rgCode));
+    ExecutableWriterHolder<DWORD> codeWriterHolder(m_rgCode, kMaxCodeBuffer * sizeof(m_rgCode[0]));
 
     if (TryEmulate(pCtx, opcode, false))
     {
@@ -230,7 +222,7 @@ void Arm64SingleStepper::Apply(T_CONTEXT *pCtx)
     pCtx->Pc = (uint64_t)m_rgCode;
 
     // Make sure the CPU sees the updated contents of the buffer.
-    FlushInstructionCache(GetCurrentProcess(), m_rgCode, sizeof(m_rgCode));
+    FlushInstructionCache(GetCurrentProcess(), m_rgCode, kMaxCodeBuffer * sizeof(m_rgCode[0]));
 
     // Done, set the state.
     m_state = Applied;

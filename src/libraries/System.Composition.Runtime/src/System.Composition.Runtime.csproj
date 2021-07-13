@@ -2,6 +2,12 @@
   <PropertyGroup>
     <RootNamespace>System.Composition</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <PackageDescription>Contains runtime components of the Managed Extensibility Framework.
+
+Commonly Used Types:
+System.Composition.CompositionContext</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,5 +24,9 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 </Project>

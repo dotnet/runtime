@@ -5045,7 +5045,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
         {
             PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W("");
             UINT8 startupMode = 0;
-            UINT startupFlags = 0;
+            UINT startupFlags = CorHost2::GetStartupFlags();
             PathString dllPath;
             UINT8 Sku = ETW::InfoLog::InfoStructs::CoreCLR;
 

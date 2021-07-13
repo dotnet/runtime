@@ -376,7 +376,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
             if (signalRestarts)
             {
                 // This signal mustn't be ignored because it will be restarted.
-                PROCAbort();
+                PROCAbort(code);
             }
             return;
         }
@@ -391,7 +391,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
             {
                 // We can't invoke the original handler because returning from the
                 // handler doesn't restart the exception.
-                PROCAbort();
+                PROCAbort(code);
             }
         }
         else
@@ -403,7 +403,8 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
     }
 
     PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
-    PROCCreateCrashDumpIfEnabled();
+
+    PROCCreateCrashDumpIfEnabled(code);
 }
 
 /*++
@@ -575,13 +576,13 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
                 if (SwitchStackAndExecuteHandler(code | StackOverflowFlag, siginfo, context, (size_t)handlerStackTop))
                 {
-                    PROCAbort();
+                    PROCAbort(SIGSEGV);
                 }
             }
             else
             {
                 (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-                PROCAbort();
+                PROCAbort(SIGSEGV);
             }
         }
 

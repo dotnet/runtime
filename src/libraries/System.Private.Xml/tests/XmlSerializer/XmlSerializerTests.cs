@@ -70,6 +70,44 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
+    public static void Xml_NamespaceTypeNameClashTest()
+    {
+        var serializer = new XmlSerializer(typeof(NamespaceTypeNameClashContainer));
+
+        Assert.NotNull(serializer);
+
+        var root = new NamespaceTypeNameClashContainer
+        {
+            A = new[] { new SerializationTypes.TypeNameClashA.TypeNameClash { Name = "N1" }, new SerializationTypes.TypeNameClashA.TypeNameClash { Name = "N2" } },
+            B = new[] { new SerializationTypes.TypeNameClashB.TypeNameClash { Name = "N3" } }
+        };
+
+        var xml = @"<?xml version=""1.0""?>
+        <Root xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+          <A>
+            <Name>N1</Name>
+          </A>
+          <A>
+            <Name>N2</Name>
+          </A>
+          <B>
+            <Name>N3</Name>
+          </B>
+        </Root>";
+
+        var actualRoot = SerializeAndDeserialize<NamespaceTypeNameClashContainer>(root, xml);
+
+        Assert.NotNull(actualRoot);
+        Assert.NotNull(actualRoot.A);
+        Assert.NotNull(actualRoot.B);
+        Assert.Equal(root.A.Length, actualRoot.A.Length);
+        Assert.Equal(root.B.Length, actualRoot.B.Length);
+        Assert.Equal(root.A[0].Name, actualRoot.A[0].Name);
+        Assert.Equal(root.A[1].Name, actualRoot.A[1].Name);
+        Assert.Equal(root.B[0].Name, actualRoot.B[0].Name);
+    }
+
+    [Fact]
     public static void Xml_ArrayAsGetSet()
     {
         TypeWithGetSetArrayMembers x = new TypeWithGetSetArrayMembers

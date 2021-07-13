@@ -637,7 +637,7 @@ namespace System.Xml.Serialization
             (Type, string) typeMemberNameTuple = (o.GetType(), memberName);
             if (!s_setMemberValueDelegateCache.TryGetValue(typeMemberNameTuple, out ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate? result))
             {
-                MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetMember(o.GetType(), memberName);
+                MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetEffectiveSetInfo(o.GetType(), memberName);
                 Debug.Assert(memberInfo != null, "memberInfo could not be retrieved");
                 Type memberType;
                 if (memberInfo is PropertyInfo propInfo)
