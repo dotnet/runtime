@@ -112,6 +112,9 @@ namespace System.Net.Quic.Tests
 
         internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
         {
+            const long ClientCloseErrorCode = 11111;
+            const long ServerCloseErrorCode = 22222;
+
             using QuicListener listener = CreateQuicListener();
 
             var serverFinished = new ManualResetEventSlim();
@@ -130,6 +133,7 @@ namespace System.Net.Quic.Tests
                         await serverFunction(serverConnection);
                         serverFinished.Set();
                         clientFinished.Wait();
+                        await serverConnection.CloseAsync(ServerCloseErrorCode);
                     }),
                     Task.Run(async () =>
                     {
@@ -138,6 +142,7 @@ namespace System.Net.Quic.Tests
                         await clientFunction(clientConnection);
                         clientFinished.Set();
                         serverFinished.Wait();
+                        await clientConnection.CloseAsync(ClientCloseErrorCode);
                     })
                 }.WhenAllOrAnyFailed(millisecondsTimeout);
             }

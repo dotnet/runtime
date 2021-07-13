@@ -743,7 +743,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         // It's unclear how to gracefully wait for a connection to be 100% done.
         internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
-            ThrowIfDisposed();
+            if (_disposed == 1)
+            {
+                return default;
+            }
 
             return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE, errorCode);
         }
