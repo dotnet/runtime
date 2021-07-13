@@ -306,9 +306,8 @@ namespace System.Text.Json.Serialization.Metadata
                         ElementType = converter.ElementType;
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
 
-                        if (converter.IsImmutableCollectionConverter)
+                        if (converter.RequiresDynamicMemberAccessors)
                         {
-                            // Initialize a func to create immutable enumerable instances.
                             converter.Initialize(Options, this);
                         }
                     }
@@ -319,9 +318,8 @@ namespace System.Text.Json.Serialization.Metadata
                         ElementType = converter.ElementType;
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
 
-                        if (converter.IsImmutableCollectionConverter)
+                        if (converter.RequiresDynamicMemberAccessors)
                         {
-                            // Initialize a func to create immutable dictionary instances.
                             converter.Initialize(Options, this);
                         }
                     }

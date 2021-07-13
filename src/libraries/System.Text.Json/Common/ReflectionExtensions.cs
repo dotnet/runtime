@@ -12,21 +12,37 @@ namespace System.Text.Json.Reflection
     internal static partial class ReflectionExtensions
     {
         // Immutable collection types.
-        public const string ImmutableArrayGenericTypeName = "System.Collections.Immutable.ImmutableArray`1";
-        public const string ImmutableListGenericTypeName = "System.Collections.Immutable.ImmutableList`1";
-        public const string ImmutableListGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableList`1";
-        public const string ImmutableStackGenericTypeName = "System.Collections.Immutable.ImmutableStack`1";
-        public const string ImmutableStackGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableStack`1";
-        public const string ImmutableQueueGenericTypeName = "System.Collections.Immutable.ImmutableQueue`1";
-        public const string ImmutableQueueGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableQueue`1";
-        public const string ImmutableSortedSetGenericTypeName = "System.Collections.Immutable.ImmutableSortedSet`1";
-        public const string ImmutableHashSetGenericTypeName = "System.Collections.Immutable.ImmutableHashSet`1";
-        public const string ImmutableSetGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableSet`1";
-        public const string ImmutableDictionaryGenericTypeName = "System.Collections.Immutable.ImmutableDictionary`2";
-        public const string ImmutableDictionaryGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableDictionary`2";
-        public const string ImmutableSortedDictionaryGenericTypeName = "System.Collections.Immutable.ImmutableSortedDictionary`2";
+        private const string ImmutableArrayGenericTypeName = "System.Collections.Immutable.ImmutableArray`1";
+        private const string ImmutableListGenericTypeName = "System.Collections.Immutable.ImmutableList`1";
+        private const string ImmutableListGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableList`1";
+        private const string ImmutableStackGenericTypeName = "System.Collections.Immutable.ImmutableStack`1";
+        private const string ImmutableStackGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableStack`1";
+        private const string ImmutableQueueGenericTypeName = "System.Collections.Immutable.ImmutableQueue`1";
+        private const string ImmutableQueueGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableQueue`1";
+        private const string ImmutableSortedSetGenericTypeName = "System.Collections.Immutable.ImmutableSortedSet`1";
+        private const string ImmutableHashSetGenericTypeName = "System.Collections.Immutable.ImmutableHashSet`1";
+        private const string ImmutableSetGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableSet`1";
+        private const string ImmutableDictionaryGenericTypeName = "System.Collections.Immutable.ImmutableDictionary`2";
+        private const string ImmutableDictionaryGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableDictionary`2";
+        private const string ImmutableSortedDictionaryGenericTypeName = "System.Collections.Immutable.ImmutableSortedDictionary`2";
 
-        public static Type? GetCompatibleGenericBaseClass(this Type type, Type baseType, Type? objectType = null)
+        // Immutable collection builder types.
+        private const string ImmutableArrayTypeName = "System.Collections.Immutable.ImmutableArray";
+        private const string ImmutableListTypeName = "System.Collections.Immutable.ImmutableList";
+        private const string ImmutableStackTypeName = "System.Collections.Immutable.ImmutableStack";
+        private const string ImmutableQueueTypeName = "System.Collections.Immutable.ImmutableQueue";
+        private const string ImmutableSortedSetTypeName = "System.Collections.Immutable.ImmutableSortedSet";
+        private const string ImmutableHashSetTypeName = "System.Collections.Immutable.ImmutableHashSet";
+        private const string ImmutableDictionaryTypeName = "System.Collections.Immutable.ImmutableDictionary";
+        private const string ImmutableSortedDictionaryTypeName = "System.Collections.Immutable.ImmutableSortedDictionary";
+
+        public const string CreateRangeMethodName = "CreateRange";
+
+        public static Type? GetCompatibleGenericBaseClass(
+            this Type type,
+            Type baseType,
+            Type? objectType = null,
+            bool sourceGenType = false)
         {
             Debug.Assert(baseType.IsGenericType);
             Debug.Assert(!baseType.IsInterface);
@@ -42,7 +58,8 @@ namespace System.Text.Json.Reflection
                 if (baseTypeToCheck.IsGenericType)
                 {
                     Type genericTypeToCheck = baseTypeToCheck.GetGenericTypeDefinition();
-                    if (genericTypeToCheck == baseType)
+                    if (genericTypeToCheck == baseType ||
+                        (sourceGenType && (OpenGenericTypesHaveSamePrefix(baseType, genericTypeToCheck))))
                     {
                         return baseTypeToCheck;
                     }
@@ -94,14 +111,14 @@ namespace System.Text.Json.Reflection
             return null;
         }
 
-        public static bool IsImmutableDictionaryType(this Type type)
+        public static bool IsImmutableDictionaryType(this Type type, bool sourceGenType = false)
         {
-            if (!type.IsGenericType || !type.Assembly.FullName!.StartsWith("System.Collections.Immutable,", StringComparison.Ordinal))
+            if (!type.IsGenericType || !type.Assembly.FullName!.StartsWith("System.Collections.Immutable", StringComparison.Ordinal))
             {
                 return false;
             }
 
-            switch (type.GetGenericTypeDefinition().FullName)
+            switch (GetBaseNameFromGenericType(type, sourceGenType))
             {
                 case ImmutableDictionaryGenericTypeName:
                 case ImmutableDictionaryGenericInterfaceTypeName:
@@ -112,14 +129,14 @@ namespace System.Text.Json.Reflection
             }
         }
 
-        public static bool IsImmutableEnumerableType(this Type type)
+        public static bool IsImmutableEnumerableType(this Type type, bool sourceGenType = false)
         {
-            if (!type.IsGenericType || !type.Assembly.FullName!.StartsWith("System.Collections.Immutable,", StringComparison.Ordinal))
+            if (!type.IsGenericType || !type.Assembly.FullName!.StartsWith("System.Collections.Immutable", StringComparison.Ordinal))
             {
                 return false;
             }
 
-            switch (type.GetGenericTypeDefinition().FullName)
+            switch (GetBaseNameFromGenericType(type, sourceGenType))
             {
                 case ImmutableArrayGenericTypeName:
                 case ImmutableListGenericTypeName:
@@ -135,6 +152,76 @@ namespace System.Text.Json.Reflection
                 default:
                     return false;
             }
+        }
+
+        public static string? GetImmutableDictionaryConstructingTypeName(this Type type, bool sourceGenType = false)
+        {
+            Debug.Assert(type.IsImmutableDictionaryType(sourceGenType));
+
+            // Use the generic type definition of the immutable collection to determine
+            // an appropriate constructing type, i.e. a type that we can invoke the
+            // `CreateRange<T>` method on, which returns the desired immutable collection.
+            switch (GetBaseNameFromGenericType(type, sourceGenType))
+            {
+                case ImmutableDictionaryGenericTypeName:
+                case ImmutableDictionaryGenericInterfaceTypeName:
+                    return ImmutableDictionaryTypeName;
+                case ImmutableSortedDictionaryGenericTypeName:
+                    return ImmutableSortedDictionaryTypeName;
+                default:
+                    // We verified that the type is an immutable collection, so the
+                    // generic definition is one of the above.
+                    return null;
+            }
+        }
+
+        public static string? GetImmutableEnumerableConstructingTypeName(this Type type, bool sourceGenType = false)
+        {
+            Debug.Assert(type.IsImmutableEnumerableType(sourceGenType));
+
+            // Use the generic type definition of the immutable collection to determine
+            // an appropriate constructing type, i.e. a type that we can invoke the
+            // `CreateRange<T>` method on, which returns the desired immutable collection.
+            switch (GetBaseNameFromGenericType(type, sourceGenType))
+            {
+                case ImmutableArrayGenericTypeName:
+                    return ImmutableArrayTypeName;
+                case ImmutableListGenericTypeName:
+                case ImmutableListGenericInterfaceTypeName:
+                    return ImmutableListTypeName;
+                case ImmutableStackGenericTypeName:
+                case ImmutableStackGenericInterfaceTypeName:
+                    return ImmutableStackTypeName;
+                case ImmutableQueueGenericTypeName:
+                case ImmutableQueueGenericInterfaceTypeName:
+                    return ImmutableQueueTypeName;
+                case ImmutableSortedSetGenericTypeName:
+                    return ImmutableSortedSetTypeName;
+                case ImmutableHashSetGenericTypeName:
+                case ImmutableSetGenericInterfaceTypeName:
+                    return ImmutableHashSetTypeName;
+                default:
+                    // We verified that the type is an immutable collection, so the
+                    // generic definition is one of the above.
+                    return null;
+            }
+        }
+
+        private static bool OpenGenericTypesHaveSamePrefix(Type t1, Type t2)
+            => t1.FullName == GetBaseNameFromGenericTypeDef(t2);
+
+        private static string GetBaseNameFromGenericType(Type genericType, bool sourceGenType)
+        {
+            Type genericTypeDef = genericType.GetGenericTypeDefinition();
+            return sourceGenType ? GetBaseNameFromGenericTypeDef(genericTypeDef) : genericTypeDef.FullName!;
+        }
+
+        private static string GetBaseNameFromGenericTypeDef(Type genericTypeDef)
+        {
+            Debug.Assert(genericTypeDef.IsGenericType);
+            string fullName = genericTypeDef.FullName!;
+            int length = fullName.IndexOf("`") + 2;
+            return fullName.Substring(0, length);
         }
 
         public static bool IsVirtual(this PropertyInfo? propertyInfo)

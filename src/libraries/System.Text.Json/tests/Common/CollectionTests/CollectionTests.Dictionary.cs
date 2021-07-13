@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -40,7 +40,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -52,7 +52,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -76,7 +76,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -88,7 +88,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
             }
 
@@ -100,7 +100,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
             }
 
@@ -112,7 +112,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.True(JsonString == json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.True(JsonString == json);
             }
 
@@ -124,7 +124,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
             }
 
@@ -136,7 +136,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
         }
@@ -155,7 +155,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -167,7 +167,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -179,7 +179,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -191,7 +191,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -206,7 +206,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -222,7 +222,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
             }
 
@@ -234,7 +234,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.True(JsonString == json || ReorderedJsonString == json);
             }
 
@@ -246,7 +246,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -258,7 +258,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -271,7 +271,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -498,7 +498,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
             {
@@ -515,7 +515,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
         }
@@ -539,7 +539,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -557,7 +557,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
         }
@@ -581,7 +581,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
 
@@ -599,7 +599,7 @@ namespace System.Text.Json.Serialization.Tests
                 string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
                 Assert.Equal(JsonString, json);
 
-                json = JsonSerializer.Serialize<object>(obj);
+                json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                 Assert.Equal(JsonString, json);
             }
         }
@@ -633,7 +633,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonString, json);
 
             // Verify that typeof(object) doesn't interfere.
-            json = JsonSerializer.Serialize<object>(obj);
+            json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
             Assert.Equal(JsonString, json);
         }
 
@@ -666,7 +666,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonString, json);
 
             // Verify that typeof(object) doesn't interfere.
-            json = JsonSerializer.Serialize<object>(obj);
+            json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
             Assert.Equal(JsonString, json);
         }
 
@@ -787,6 +787,9 @@ namespace System.Text.Json.Serialization.Tests
             return tests;
         }
 
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Too many dynamically generated serializable types to manually add to a serialization context.")]
+#endif
         [Fact]
         public async Task NestedDictionariesRoundtrip()
         {
@@ -801,6 +804,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Needs full SimpleTestClass support.")]
+#endif
         public async Task DictionaryOfClasses()
         {
             {
@@ -843,7 +849,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
 
                 {
-                    string json = JsonSerializer.Serialize<object>(obj);
+                    string json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                     obj = await JsonSerializerWrapperForString.DeserializeWrapper<IDictionary>(json);
                     Assert.Equal(2, obj.Count);
 
@@ -882,7 +888,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
 
                 {
-                    string json = JsonSerializer.Serialize<object>(obj);
+                    string json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                     obj = await JsonSerializerWrapperForString.DeserializeWrapper<Dictionary<string, SimpleTestClass>>(json);
                     Assert.Equal(2, obj.Count);
                     obj["Key1"].Verify();
@@ -912,7 +918,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
 
                 {
-                    string json = JsonSerializer.Serialize<object>(obj);
+                    string json = await JsonSerializerWrapperForString.SerializeWrapper<object>(obj);
                     obj = await JsonSerializerWrapperForString.DeserializeWrapper<ImmutableSortedDictionary<string, SimpleTestClass>>(json);
                     Assert.Equal(2, obj.Count);
                     obj["Key1"].Verify();
@@ -1348,6 +1354,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Multi-dim arrays not supported.")]
+#endif
         public async Task DictionaryNotSupported()
         {
             string json = @"{""MyDictionary"":{""Key"":""Value""}}";
@@ -1359,6 +1368,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Multi-dim arrays not supported.")]
+#endif
         public async Task DictionaryNotSupportedButIgnored()
         {
             string json = @"{""MyDictionary"":{""Key"":1}}";
@@ -1878,19 +1890,19 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(dictionary));
         }
 
-        private class ClassWithoutParameterlessCtor
+        public class ClassWithoutParameterlessCtor
         {
             public ClassWithoutParameterlessCtor(int num) { }
             public string Name { get; set; }
         }
 
-        private class ClassWithInternalParameterlessConstructor
+        public class ClassWithInternalParameterlessConstructor
         {
             internal ClassWithInternalParameterlessConstructor() { }
             public string Name { get; set; }
         }
 
-        private class ClassWithPrivateParameterlessConstructor
+        public class ClassWithPrivateParameterlessConstructor
         {
             private ClassWithPrivateParameterlessConstructor() { }
             public string Name { get; set; }

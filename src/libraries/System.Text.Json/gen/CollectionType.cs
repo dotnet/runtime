@@ -10,24 +10,27 @@ namespace System.Text.Json.SourceGeneration
     internal enum CollectionType
     {
         NotApplicable,
+        // Dictionary types
+        IDictionary,
+        Dictionary,
+        ImmutableDictionary,
+        IDictionaryOfTKeyTValue,
+        IReadOnlyDictionary,
+        // Non-dictionary types
         Array,
         List,
         IEnumerable,
         IList,
-        GenericIList,
+        IListOfT,
         ISet,
-        GenericICollection,
-        GenericStack,
-        GenericQueue,
+        ICollectionOfT,
+        StackOfT,
+        QueueOfT,
         ConcurrentStack,
         ConcurrentQueue,
-        GenericIEnumerable,
-        StackOrQueue,
-        ImmutableCollection,
-        IDictionary,
-        Dictionary,
-        ImmutableDictionary,
-        GenericIDictionary,
-        IReadOnlyDictionary
+        IEnumerableOfT,
+        Stack,
+        Queue,
+        ImmutableEnumerable
     }
 }

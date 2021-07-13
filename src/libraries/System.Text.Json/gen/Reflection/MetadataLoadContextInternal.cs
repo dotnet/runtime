@@ -43,14 +43,16 @@ namespace System.Text.Json.Reflection
             MainAssembly = new AssemblyWrapper(compilation.Assembly, this);
         }
 
-        public Type Resolve<T>() => Resolve(typeof(T));
-
         public Type? Resolve(Type type)
         {
             string assemblyName = type.Assembly.GetName().Name;
             IAssemblySymbol assemblySymbol;
 
-            if (assemblyName == "System.Private.CoreLib" || assemblyName == "mscorlib" || assemblyName == "System.Runtime" || assemblyName == "System.Private.Uri")
+            if (assemblyName == "System.Private.CoreLib" ||
+                assemblyName == "mscorlib" ||
+                assemblyName == "System.Runtime" ||
+                assemblyName == "System.Private.Uri" ||
+                assemblyName == "System.Collections")
             {
                 Type resolvedType = ResolveFromAssembly(type, CoreAssembly.Symbol);
                 if (resolvedType != null)
@@ -74,12 +76,28 @@ namespace System.Text.Json.Reflection
                 assemblyName = typeForwardedFrom.GetConstructorArgument<string>(0);
             }
 
-            if (!_assemblies.TryGetValue(new AssemblyName(assemblyName).Name, out assemblySymbol))
+            Type? candidate;
+
+            if (_assemblies.TryGetValue(new AssemblyName(assemblyName).Name, out assemblySymbol))
             {
-                return null;
+                candidate = ResolveFromAssembly(type, assemblySymbol);
+                if (candidate != null)
+                {
+                    return type;
+                }
             }
 
-            return ResolveFromAssembly(type, assemblySymbol);
+            // Last-ditch fallback: check all of the assemblies.
+            foreach (IAssemblySymbol assembly in _assemblies.Values)
+            {
+                candidate = ResolveFromAssembly(type, assembly);
+                if (candidate != null)
+                {
+                    return type;
+                }
+            }
+
+            throw new NotSupportedException();
         }
 
         private Type? ResolveFromAssembly(Type type, IAssemblySymbol assemblySymbol)

@@ -1239,7 +1239,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(json, serialized);
         }
 
-        private class Client
+        public class Client
         {
             private ICollection<string> _allowedGrantTypes = new HashSetWithBackingCollection();
 

@@ -59,7 +59,8 @@ namespace System.Text.Json.Serialization.Metadata
             JsonNumberHandling numberHandling,
             Action<Utf8JsonWriter, T>? serializeFunc,
             Type elementType,
-            object? createObjectWithArgs = null)
+            object? createObjectWithArgs = null,
+            object? addFunc = null)
             : base(typeof(T), options, ConverterStrategy.Enumerable)
         {
             JsonConverter<T> converter = new JsonMetadataServicesConverter<T>(converterCreator, ConverterStrategy.Enumerable, keyType: null, elementType);
@@ -70,6 +71,7 @@ namespace System.Text.Json.Serialization.Metadata
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
             Serialize = serializeFunc;
             CreateObjectWithArgs = createObjectWithArgs;
+            AddMethodDelegate = addFunc;
             SetCreateObjectFunc(createObjectFunc);
         }
 

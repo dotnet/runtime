@@ -47,6 +47,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Need extension data support.")]
+#endif
         public async Task IgnoreKeyPolicyForExtensionData()
         {
             var options = new JsonSerializerOptions
@@ -286,6 +289,9 @@ namespace System.Text.Json.Serialization.Tests
         }
         
         [Fact]
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Need extension data support.")]
+#endif
         public async Task SerializationWithJsonExtensionDataAttribute_IgoneDictionaryKeyPolicy()
         {
             var expectedJson = @"{""KeyInt"":1000,""KeyString"":""text"",""KeyBool"":true,""KeyObject"":{},""KeyList"":[],""KeyDictionary"":{}}";
@@ -328,7 +334,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonCamel, json);
         }
 
-        private class CustomClass
+        public class CustomClass
         {
             public string Name { get; set; }
             public int Number { get; set; }
@@ -361,7 +367,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonCamel, json);
         }
 
-        private class TestClassWithDictionary
+        public class TestClassWithDictionary
         {
            public Dictionary<string, CustomClass> Data { get; set; }
 		}
@@ -382,6 +388,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("Need KVP support.")]
+#endif
         public async Task CamelCaseSerialize_ForKeyValuePairWithDictionaryValue_ApplyDictionaryKeyPolicy()
         {
             const string JsonCamel = @"{""Key"":""KeyPair"",""Value"":{""keyDict"":{""Name"":""text"",""Number"":1000,""isValid"":true,""Values"":[1,2,3]}}}";

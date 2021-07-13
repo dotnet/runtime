@@ -17,6 +17,9 @@ namespace System.Text.Json.Serialization.Converters
         {
         }
 
+        // Used by source-gen initialization for reflection-free serialization.
+        public ImmutableEnumerableOfTConverter(bool dummy) { }
+
         protected override void Add(in TElement value, ref ReadStack state)
         {
             ((List<TElement>)state.Current.ReturnValue!).Add(value);
@@ -24,7 +27,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool CanHaveIdMetadata => false;
 
-        internal override bool IsImmutableCollectionConverter => true;
+        internal override bool RequiresDynamicMemberAccessors => true;
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {

@@ -124,7 +124,7 @@ namespace System.Text.Json.Serialization.Metadata
             => new JsonTypeInfoInternal<TCollection>(
                 options,
                 createObjectFunc,
-                () => new ImmutableDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>(),
+                () => new ImmutableDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>(dummy: false),
                 keyInfo,
                 valueInfo,
                 numberHandling,
@@ -132,6 +132,39 @@ namespace System.Text.Json.Serialization.Metadata
                 typeof(TKey),
                 typeof(TValue),
                 createRangeFunc ?? throw new ArgumentNullException(nameof(createRangeFunc)));
+
+        /// <summary>
+        /// Creates metadata for types assignable to <see cref="IDictionary{TKey, TValue}"/>.
+        /// </summary>
+        /// <typeparam name="TCollection">The generic definition of the type.</typeparam>
+        /// <typeparam name="TKey">The generic definition of the key type.</typeparam>
+        /// <typeparam name="TValue">The generic definition of the value type.</typeparam>
+        /// <param name="options"></param>
+        /// <param name="createObjectFunc">A <see cref="Func{TResult}"/> to create an instance of the list when deserializing.</param>
+        /// <param name="keyInfo">A <see cref="JsonTypeInfo"/> instance representing the key type.</param>
+        /// <param name="valueInfo">A <see cref="JsonTypeInfo"/> instance representing the value type.</param>
+        /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
+        /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.</param>
+        /// <returns></returns>
+        public static JsonTypeInfo<TCollection> CreateIDictionaryInfo<TCollection, TKey, TValue>(
+            JsonSerializerOptions options,
+            Func<TCollection> createObjectFunc,
+            JsonTypeInfo keyInfo,
+            JsonTypeInfo valueInfo,
+            JsonNumberHandling numberHandling,
+            Action<Utf8JsonWriter, TCollection>? serializeFunc)
+            where TCollection : IDictionary<TKey, TValue>
+            where TKey : notnull
+            => new JsonTypeInfoInternal<TCollection>(
+                options,
+                createObjectFunc,
+                () => new IDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>(),
+                keyInfo,
+                valueInfo,
+                numberHandling,
+                serializeFunc,
+                typeof(TKey),
+                typeof(TValue));
 
         /// <summary>
         /// Creates metadata for types assignable to <see cref="IReadOnlyDictionary{TKey, TValue}"/>.
@@ -153,7 +186,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonTypeInfo valueInfo,
             JsonNumberHandling numberHandling,
             Action<Utf8JsonWriter, TCollection>? serializeFunc)
-            where TCollection : Dictionary<TKey, TValue>
+            where TCollection : IReadOnlyDictionary<TKey, TValue>
             where TKey : notnull
             => new JsonTypeInfoInternal<TCollection>(
                 options,
@@ -191,12 +224,38 @@ namespace System.Text.Json.Serialization.Metadata
             => new JsonTypeInfoInternal<TCollection>(
                 options,
                 createObjectFunc,
-                () => new ImmutableEnumerableOfTConverter<TCollection, TElement>(),
+                () => new ImmutableEnumerableOfTConverter<TCollection, TElement>(dummy: false),
                 elementInfo,
                 numberHandling,
                 serializeFunc,
                 typeof(TElement),
                 createRangeFunc ?? throw new ArgumentNullException(nameof(createRangeFunc)));
+
+        /// <summary>
+        /// Creates metadata for types assignable to <see cref="IList"/>.
+        /// </summary>
+        /// <typeparam name="TCollection">The generic definition of the type.</typeparam>
+        /// <param name="options"></param>
+        /// <param name="createObjectFunc">A <see cref="Func{TResult}"/> to create an instance of the list when deserializing.</param>
+        /// <param name="objectInfo">A <see cref="JsonTypeInfo"/> instance representing the element type.</param>
+        /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
+        /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.</param>
+        /// <returns></returns>
+        public static JsonTypeInfo<TCollection> CreateIListInfo<TCollection>(
+            JsonSerializerOptions options,
+            Func<TCollection>? createObjectFunc,
+            JsonTypeInfo objectInfo,
+            JsonNumberHandling numberHandling,
+            Action<Utf8JsonWriter, TCollection>? serializeFunc)
+            where TCollection : IList
+            => new JsonTypeInfoInternal<TCollection>(
+                options,
+                createObjectFunc,
+                () => new IListConverter<TCollection>(),
+                objectInfo,
+                numberHandling,
+                serializeFunc,
+                typeof(object));
 
         /// <summary>
         /// Creates metadata for types assignable to <see cref="IList{T}"/>.
@@ -209,7 +268,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
         /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.</param>
         /// <returns></returns>
-        public static JsonTypeInfo<TCollection> CreateIListOfTInfo<TCollection, TElement>(
+        public static JsonTypeInfo<TCollection> CreateIListInfo<TCollection, TElement>(
             JsonSerializerOptions options,
             Func<TCollection>? createObjectFunc,
             JsonTypeInfo elementInfo,
@@ -263,7 +322,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
         /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.</param>
         /// <returns></returns>
-        public static JsonTypeInfo<TCollection> CreateICollectionOfTInfo<TCollection, TElement>(
+        public static JsonTypeInfo<TCollection> CreateICollectionInfo<TCollection, TElement>(
             JsonSerializerOptions options,
             Func<TCollection>? createObjectFunc,
             JsonTypeInfo elementInfo,
@@ -290,7 +349,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
         /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.</param>
         /// <returns></returns>
-        public static JsonTypeInfo<TCollection> CreateStackOfTInfo<TCollection, TElement>(
+        public static JsonTypeInfo<TCollection> CreateStackInfo<TCollection, TElement>(
             JsonSerializerOptions options,
             Func<TCollection>? createObjectFunc,
             JsonTypeInfo elementInfo,
@@ -317,7 +376,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
         /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.</param>
         /// <returns></returns>
-        public static JsonTypeInfo<TCollection> CreateQueueOfTInfo<TCollection, TElement>(
+        public static JsonTypeInfo<TCollection> CreateQueueInfo<TCollection, TElement>(
             JsonSerializerOptions options,
             Func<TCollection>? createObjectFunc,
             JsonTypeInfo elementInfo,
@@ -344,7 +403,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
         /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.</param>
         /// <returns></returns>
-        public static JsonTypeInfo<TCollection> CreateConcurrentStackOfTInfo<TCollection, TElement>(
+        public static JsonTypeInfo<TCollection> CreateConcurrentStackInfo<TCollection, TElement>(
             JsonSerializerOptions options,
             Func<TCollection>? createObjectFunc,
             JsonTypeInfo elementInfo,
@@ -371,7 +430,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
         /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.</param>
         /// <returns></returns>
-        public static JsonTypeInfo<TCollection> CreateConcurrentQueueOfTInfo<TCollection, TElement>(
+        public static JsonTypeInfo<TCollection> CreateConcurrentQueueInfo<TCollection, TElement>(
             JsonSerializerOptions options,
             Func<TCollection>? createObjectFunc,
             JsonTypeInfo elementInfo,
@@ -398,7 +457,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
         /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.</param>
         /// <returns></returns>
-        public static JsonTypeInfo<TCollection> CreateIEnumerableOfTInfo<TCollection, TElement>(
+        public static JsonTypeInfo<TCollection> CreateIEnumerableInfo<TCollection, TElement>(
             JsonSerializerOptions options,
             Func<TCollection>? createObjectFunc,
             JsonTypeInfo elementInfo,
@@ -420,6 +479,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <typeparam name="TCollection">The generic definition of the type.</typeparam>
         /// <param name="options"></param>
         /// <param name="createObjectFunc">A <see cref="Func{TResult}"/> to create an instance of the list when deserializing.</param>
+        /// <param name="stringInfo">A <see cref="JsonTypeInfo"/> instance representing <see cref="string"/> instances.</param>
         /// <param name="objectInfo">A <see cref="JsonTypeInfo"/> instance representing <see cref="object"/> instances.</param>
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
         /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.</param>
@@ -427,6 +487,7 @@ namespace System.Text.Json.Serialization.Metadata
         public static JsonTypeInfo<TCollection> CreateIDictionaryInfo<TCollection>(
             JsonSerializerOptions options,
             Func<TCollection>? createObjectFunc,
+            JsonTypeInfo stringInfo,
             JsonTypeInfo objectInfo,
             JsonNumberHandling numberHandling,
             Action<Utf8JsonWriter, TCollection>? serializeFunc)
@@ -435,11 +496,11 @@ namespace System.Text.Json.Serialization.Metadata
                 options,
                 createObjectFunc,
                 () => new IDictionaryConverter<TCollection>(),
-                keyInfo: objectInfo,
+                keyInfo: stringInfo,
                 valueInfo: objectInfo,
                 numberHandling,
                 serializeFunc,
-                typeof(object),
+                typeof(string),
                 typeof(object));
 
         /// <summary>
@@ -451,22 +512,26 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="elementInfo">A <see cref="JsonTypeInfo"/> instance representing the element type.</param>
         /// <param name="numberHandling">The <see cref="JsonNumberHandling"/> option to apply to number collection elements.</param>
         /// <param name="serializeFunc">An optimized serialization implementation assuming pre-determined <see cref="JsonSourceGenerationOptionsAttribute"/> defaults.</param>
+        /// <param name="addFunc">A method for adding elements to the collection when using the serializer's code-paths.</param>
         /// <returns></returns>
         public static JsonTypeInfo<TCollection> CreateStackOrQueueInfo<TCollection>(
             JsonSerializerOptions options,
             Func<TCollection>? createObjectFunc,
             JsonTypeInfo elementInfo,
             JsonNumberHandling numberHandling,
-            Action<Utf8JsonWriter, TCollection>? serializeFunc)
+            Action<Utf8JsonWriter, TCollection>? serializeFunc,
+            Action<TCollection, object?> addFunc)
             where TCollection : IEnumerable
             => new JsonTypeInfoInternal<TCollection>(
                 options,
                 createObjectFunc,
-                () => new IEnumerableWithAddMethodConverter<TCollection>(),
+                () => new IEnumerableWithAddMethodConverter<TCollection>(dummy: false),
                 elementInfo,
                 numberHandling,
                 serializeFunc,
-                typeof(object));
+                typeof(object),
+                createObjectWithArgs: null,
+                addFunc: addFunc ?? throw new ArgumentNullException(nameof(addFunc)));
 
         /// <summary>
         /// Creates metadata for types assignable to <see cref="IList"/>.
@@ -488,7 +553,7 @@ namespace System.Text.Json.Serialization.Metadata
             => new JsonTypeInfoInternal<TCollection>(
                 options,
                 createObjectFunc,
-                () => new IEnumerableWithAddMethodConverter<TCollection>(),
+                () => new IEnumerableConverter<TCollection>(),
                 elementInfo,
                 numberHandling,
                 serializeFunc,

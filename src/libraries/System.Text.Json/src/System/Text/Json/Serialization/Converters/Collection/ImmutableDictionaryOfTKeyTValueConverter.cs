@@ -18,6 +18,9 @@ namespace System.Text.Json.Serialization.Converters
         {
         }
 
+        // Used by source-gen initialization for reflection-free serialization.
+        public ImmutableDictionaryOfTKeyTValueConverter(bool dummy) { }
+
         protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
             ((Dictionary<TKey, TValue>)state.Current.ReturnValue!)[key] = value;
@@ -25,7 +28,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool CanHaveIdMetadata => false;
 
-        internal override bool IsImmutableCollectionConverter => true;
+        internal override bool RequiresDynamicMemberAccessors => true;
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {

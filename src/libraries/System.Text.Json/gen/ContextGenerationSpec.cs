@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Text.Json.Reflection;
+using System.Diagnostics;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -11,6 +12,7 @@ namespace System.Text.Json.SourceGeneration
     /// Represents the set of input types and options needed to provide an
     /// implementation for a user-provided JsonSerializerContext-derived type.
     /// </summary>
+    [DebuggerDisplay("ContextTypeRef={ContextTypeRef}")]
     internal sealed class ContextGenerationSpec
     {
         public JsonSourceGenerationOptionsAttribute GenerationOptions { get; init; }
@@ -34,6 +36,6 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public HashSet<string> RuntimePropertyNames { get; } = new();
 
-        public string ContextTypeRef => $"global::{ContextType.GetUniqueCompilableTypeName()}";
+        public string ContextTypeRef => ContextType.GetCompilableName();
     }
 }

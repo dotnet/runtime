@@ -1,7 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
     <NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
   </PropertyGroup>
@@ -58,7 +59,7 @@
     <Compile Include="ContextClasses.cs" />
     <Compile Include="JsonSerializerContextTests.cs" />
     <Compile Include="Serialization\CollectionTests.cs" />
-    <Compile Include="Serialization\JsonSerializerWrapperForString_SourceGen.cs" />
+    <Compile Include="Serialization\JsonSerializerWrapper.cs" />
     <Compile Include="JsonTestHelper.cs" />
     <Compile Include="MetadataAndSerializationContextTests.cs" />
     <Compile Include="MetadataContextTests.cs" />
