@@ -294,7 +294,7 @@ namespace System
 
                 fixed (byte* b = buffer)
                 {
-                    return (T)Marshal.PtrToStructure((IntPtr)b, typeof(T))!; // Is ! the right way to handle Unboxing a possibly null value. Should there be some check instead?
+                    return (T)Marshal.PtrToStructure((IntPtr)b, typeof(T))!;
                 }
             }
 
@@ -364,7 +364,6 @@ namespace System
                 int offset = _byteOffsets![i];
                 int length = _lengths![i];
                 var buffer = new byte[length];
-                // Do we need to lock to prevent multithreading issues like the mono/mono implementation?
                 string tzFilePath = GetTimeZoneDirectory() + TimeZoneFileName;
                 using (FileStream fs = File.OpenRead(tzFilePath))
                 {
