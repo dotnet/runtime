@@ -67,8 +67,8 @@ namespace System.IO.Tests
             }
 
             // Wait for 1000 locks.
-            cts.CancelAfter(TimeSpan.FromSeconds(60));
-            Volatile.Write(ref locksRemaining, 1000);
+            cts.CancelAfter(TimeSpan.FromSeconds(100));
+            Volatile.Write(ref locksRemaining, 500);
             await Task.WhenAll(tasks);
 
             Assert.True(exclusive, "Exclusive");
