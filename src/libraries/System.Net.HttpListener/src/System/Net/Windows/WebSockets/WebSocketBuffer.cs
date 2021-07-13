@@ -281,10 +281,7 @@ namespace System.Net.WebSockets
                 return;
             }
 
-            if (_pinnedSendBufferHandle.IsAllocated)
-            {
-                _pinnedSendBufferHandle.Free();
-            }
+            _pinnedSendBufferHandle.Dispose();
 
             _pinnedSendBuffer = ArraySegment<byte>.Empty;
         }
@@ -620,10 +617,7 @@ namespace System.Net.WebSockets
 
         private void CleanUp()
         {
-            if (_gcHandle.IsAllocated)
-            {
-                _gcHandle.Free();
-            }
+            _gcHandle.Dispose();
 
             ReleasePinnedSendBuffer();
         }

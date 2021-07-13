@@ -896,10 +896,7 @@ namespace System.Net.Sockets
             }
 
             // Unpin any existing.
-            if (_socketAddressGCHandle.IsAllocated)
-            {
-                _socketAddressGCHandle.Free();
-            }
+            _socketAddressGCHandle.Dispose();
 
             // Pin down the new one.
             _socketAddressGCHandle = GCHandle.Alloc(_socketAddress!.Buffer, GCHandleType.Pinned);

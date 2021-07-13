@@ -326,10 +326,7 @@ namespace Microsoft.Win32.SafeHandles
                 _writeBio?.Dispose();
             }
 
-            if (AlpnHandle.IsAllocated)
-            {
-                AlpnHandle.Free();
-            }
+            AlpnHandle.Dispose();
 
             base.Dispose(disposing);
         }

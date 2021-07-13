@@ -1664,22 +1664,13 @@ namespace System.Net
                     }
                     finally
                     {
-                        if (headersArrayHandle.IsAllocated)
-                        {
-                            headersArrayHandle.Free();
-                        }
-                        if (wwwAuthenticateHandle.IsAllocated)
-                        {
-                            wwwAuthenticateHandle.Free();
-                        }
+                        headersArrayHandle.Dispose();
+                        wwwAuthenticateHandle.Dispose();
                         if (challengeHandles != null)
                         {
                             for (int i = 0; i < challengeHandles.Length; i++)
                             {
-                                if (challengeHandles[i].IsAllocated)
-                                {
-                                    challengeHandles[i].Free();
-                                }
+                                challengeHandles[i].Dispose();
                             }
                         }
                     }

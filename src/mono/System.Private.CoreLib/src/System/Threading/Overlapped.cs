@@ -175,10 +175,7 @@ namespace System.Threading
             {
                 for (int i = 0; i < _pinnedData.Length; i++)
                 {
-                    if (_pinnedData[i].IsAllocated)
-                    {
-                        _pinnedData[i].Free();
-                    }
+                    _pinnedData[i].Dispose();
                 }
                 _pinnedData = null;
             }
@@ -186,8 +183,7 @@ namespace System.Threading
             if (_pNativeOverlapped != null)
             {
                 GCHandle handle = *(GCHandle*)(_pNativeOverlapped + 1);
-                if (handle.IsAllocated)
-                    handle.Free();
+                handle.Dispose();
 
                 Marshal.FreeHGlobal((IntPtr)_pNativeOverlapped);
                 //CORERT: Interop.MemFree((IntPtr)_pNativeOverlapped);

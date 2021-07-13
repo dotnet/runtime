@@ -584,10 +584,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
             {
                 foreach (GCHandle gcHandle in pinnedHeaders)
                 {
-                    if (gcHandle.IsAllocated)
-                    {
-                        gcHandle.Free();
-                    }
+                    gcHandle.Dispose();
                 }
             }
         }

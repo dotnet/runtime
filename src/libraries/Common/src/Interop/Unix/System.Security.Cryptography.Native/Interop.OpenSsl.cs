@@ -212,10 +212,7 @@ internal static partial class Interop
                 }
                 catch
                 {
-                    if (alpnHandle.IsAllocated)
-                    {
-                        alpnHandle.Free();
-                    }
+                    alpnHandle.Dispose();
 
                     throw;
                 }
