@@ -43,8 +43,6 @@ namespace System.Runtime.InteropServices
                 if (tokens.Count == 0 &&
                     !Interop.Sys.EnablePosixSignalHandling(signo))
                 {
-                    // We can't use Win32Exception because that causes a cycle with
-                    // Microsoft.Win32.Primitives.
                     Interop.CheckIo(-1);
                 }
 
@@ -78,83 +76,69 @@ namespace System.Runtime.InteropServices
         [UnmanagedCallersOnly]
         private static int OnPosixSignal(int signo, PosixSignal signal)
         {
-            if (GetTokens(signo) is Token[] tokens)
+            Token[]? tokens = null;
+
+            lock (s_registrations)
             {
-                // This is called on the native signal handling thread. We need to move to another thread so
-                // signal handling is not blocked. Otherwise we may get deadlocked when the handler depends
-                // on work triggered from the signal handling thread.
-                switch (signal)
+                if (s_registrations.TryGetValue(signo, out HashSet<Token>? registrations))
                 {
-                    case PosixSignal.SIGINT:
-                    case PosixSignal.SIGQUIT:
-                    case PosixSignal.SIGTERM:
-                        // For terminate/interrupt signals we use a dedicated Thread in case the ThreadPool is saturated.
-                        new Thread(HandleSignal)
-                        {
-                            IsBackground = true,
-                            Name = ".NET Signal Handler"
-                        }.UnsafeStart((signo, tokens));
-                        break;
-
-                    default:
-                        ThreadPool.UnsafeQueueUserWorkItem(HandleSignal, (signo, tokens));
-                        break;
+                    tokens = new Token[registrations.Count];
+                    registrations.CopyTo(tokens);
                 }
-
-                return 1;
             }
 
-            return 0;
+            if (tokens is null)
+            {
+                return 0;
+            }
+
+            // This is called on the native signal handling thread. We need to move to another thread so
+            // signal handling is not blocked. Otherwise we may get deadlocked when the handler depends
+            // on work triggered from the signal handling thread.
+            switch (signal)
+            {
+                case PosixSignal.SIGINT:
+                case PosixSignal.SIGQUIT:
+                case PosixSignal.SIGTERM:
+                    // For terminate/interrupt signals we use a dedicated Thread in case the ThreadPool is saturated.
+                    new Thread(HandleSignal)
+                    {
+                        IsBackground = true,
+                        Name = ".NET Signal Handler"
+                    }.UnsafeStart((signo, tokens));
+                    break;
+
+                default:
+                    ThreadPool.UnsafeQueueUserWorkItem(HandleSignal, (signo, tokens));
+                    break;
+            }
+
+            return 1;
 
             static void HandleSignal(object? state)
             {
                 (int signo, Token[]? tokens) = ((int, Token[]?))state!;
-                do
-                {
-                    bool handlersCalled = false;
-                    if (tokens != null)
-                    {
-                        PosixSignalContext ctx = new(0);
-                        foreach (Token token in tokens)
-                        {
-                            // Different values for PosixSignal map to the same signo.
-                            // Match the PosixSignal value used when registering.
-                            ctx.Signal = token.Signal;
-                            token.Handler(ctx);
-                            handlersCalled = true;
-                        }
 
-                        if (ctx.Cancel)
-                        {
-                            return;
-                        }
+                bool handlersCalled = false;
+                if (tokens != null)
+                {
+                    PosixSignalContext ctx = new(0);
+                    foreach (Token token in tokens)
+                    {
+                        // Different values for PosixSignal map to the same signo.
+                        // Match the PosixSignal value used when registering.
+                        ctx.Signal = token.Signal;
+                        token.Handler(ctx);
+                        handlersCalled = true;
                     }
 
-                    if (Interop.Sys.HandleNonCanceledPosixSignal(signo, handlersCalled ? 0 : 1))
+                    if (ctx.Cancel)
                     {
                         return;
                     }
-
-                    // HandleNonCanceledPosixSignal returns false when handlers got registered.
-                    tokens = GetTokens(signo);
-                }
-                while (true);
-            }
-
-            static Token[]? GetTokens(int signo)
-            {
-                Token[]? results = null;
-
-                lock (s_registrations)
-                {
-                    if (s_registrations.TryGetValue(signo, out HashSet<Token>? tokens))
-                    {
-                        results = new Token[tokens.Count];
-                        tokens.CopyTo(results);
-                    }
                 }
 
-                return results;
+                Interop.Sys.HandleNonCanceledPosixSignal(signo, handlersCalled ? 0 : 1);
             }
         }
     }
