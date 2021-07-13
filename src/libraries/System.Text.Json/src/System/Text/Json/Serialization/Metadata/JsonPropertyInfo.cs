@@ -74,6 +74,12 @@ namespace System.Text.Json.Serialization.Metadata
                 DeterminePropertyName();
                 DetermineIgnoreCondition(ignoreCondition);
 
+                JsonPropertyOrderAttribute? orderAttr = GetAttribute<JsonPropertyOrderAttribute>(MemberInfo);
+                if (orderAttr != null)
+                {
+                    Order = orderAttr.Order;
+                }
+
                 JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
                 DetermineNumberHandlingForProperty(attribute?.Handling, declaringTypeNumberHandling);
             }
@@ -365,6 +371,11 @@ namespace System.Text.Json.Serialization.Metadata
         internal byte[] EscapedNameSection { get; set; } = null!;
 
         internal JsonSerializerOptions Options { get; set; } = null!; // initialized in Init method
+
+        /// <summary>
+        /// The property order.
+        /// </summary>
+        internal int Order { get; set; }
 
         internal bool ReadJsonAndAddExtensionProperty(
             object obj,
