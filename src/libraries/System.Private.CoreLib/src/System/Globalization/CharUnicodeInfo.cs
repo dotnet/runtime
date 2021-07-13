@@ -294,7 +294,7 @@ namespace System.Globalization
         {
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks((uint)codePoint);
 
-            // If the offset is specified in shorts:
+            // The offset is specified in shorts:
             // Get the 'ref short' corresponding to where the addend is, read it as a signed 16-bit value, then add
 
             ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(LowercaseValues));
