@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Tests
     /// <summary>
     /// Base class for wrapping string-based JsonSerializer methods which allows tests to run under different configurations.
     /// </summary>
-    public abstract class JsonSerializerWrapperForString
+    public abstract partial class JsonSerializerWrapperForString
     {
         private static readonly JsonSerializerOptions _optionsWithSmallBuffer = new JsonSerializerOptions { DefaultBufferSize = 1 };
 
@@ -21,22 +21,6 @@ namespace System.Text.Json.Serialization.Tests
         public static JsonSerializerWrapperForString AsyncStreamSerializerWithSmallBuffer => new AsyncStreamSerializerWrapperWithSmallBuffer();
         public static JsonSerializerWrapperForString SyncStreamSerializer => new SyncStreamSerializerWrapper();
         public static JsonSerializerWrapperForString ReaderWriterSerializer => new ReaderWriterSerializerWrapper();
-
-        protected internal abstract Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null);
-
-        protected internal abstract Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null);
-
-        protected internal abstract Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context);
-
-        protected internal abstract Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo);
-
-        protected internal abstract Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null);
-
-        protected internal abstract Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null);
-
-        protected internal abstract Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo);
-
-        protected internal abstract Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context);
 
         private class SpanSerializerWrapper : JsonSerializerWrapperForString
         {
