@@ -47,6 +47,8 @@ namespace System.Text.Json.Tests.Serialization
             properties[0] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
+                isPublic: true,
+                isVirtual: false,
                 declaringType: typeof(WeatherForecastWithPOCOs),
                 propertyTypeInfo: jsonContext.DateTimeOffset,
                 converter: null,
@@ -54,12 +56,15 @@ namespace System.Text.Json.Tests.Serialization
                 setter: static (obj, value) => { ((WeatherForecastWithPOCOs)obj).Date = value; },
                 ignoreCondition: default,
                 numberHandling: default,
+                hasJsonInclude: false,
                 propertyName: nameof(Serialization.WeatherForecastWithPOCOs.Date),
                 jsonPropertyName: null);
             
             properties[1] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
+                isPublic: true,
+                isVirtual: false,
                 declaringType: typeof(WeatherForecastWithPOCOs),
                 propertyTypeInfo: jsonContext.Int32,
                 converter: null,
@@ -67,12 +72,15 @@ namespace System.Text.Json.Tests.Serialization
                 setter: static (obj, value) => { ((WeatherForecastWithPOCOs)obj).TemperatureCelsius = value; },
                 ignoreCondition: default,
                 numberHandling: default,
+                hasJsonInclude: false,
                 propertyName: nameof(Serialization.WeatherForecastWithPOCOs.TemperatureCelsius),
                 jsonPropertyName: null);
             
             properties[2] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
+                isPublic: true,
+                isVirtual: false,
                 declaringType: typeof(WeatherForecastWithPOCOs),
                 propertyTypeInfo: jsonContext.String,
                 converter: null,
@@ -80,12 +88,15 @@ namespace System.Text.Json.Tests.Serialization
                 setter: static (obj, value) => { ((WeatherForecastWithPOCOs)obj).Summary = value; },
                 ignoreCondition: default,
                 numberHandling: default,
+                hasJsonInclude: false,
                 propertyName: nameof(Serialization.WeatherForecastWithPOCOs.Summary),
                 jsonPropertyName: null);
             
             properties[3] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
+                isPublic: true,
+                isVirtual: false,
                 declaringType: typeof(WeatherForecastWithPOCOs),
                 propertyTypeInfo: jsonContext.ListSystemDateTimeOffset,
                 converter: null,
@@ -93,12 +104,15 @@ namespace System.Text.Json.Tests.Serialization
                 setter: static (obj, value) => { ((WeatherForecastWithPOCOs)obj).DatesAvailable = value; },
                 ignoreCondition: default,
                 numberHandling: default,
+                hasJsonInclude: false,
                 propertyName: nameof(Serialization.WeatherForecastWithPOCOs.DatesAvailable),
                 jsonPropertyName: null);
             
             properties[4] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
+                isPublic: true,
+                isVirtual: false,
                 declaringType: typeof(WeatherForecastWithPOCOs),
                 propertyTypeInfo: jsonContext.Dictionary,
                 converter: null,
@@ -106,12 +120,15 @@ namespace System.Text.Json.Tests.Serialization
                 setter: static (obj, value) => { ((WeatherForecastWithPOCOs)obj).TemperatureRanges = value; },
                 ignoreCondition: default,
                 numberHandling: default,
+                hasJsonInclude: false,
                 propertyName: nameof(Serialization.WeatherForecastWithPOCOs.TemperatureRanges),
                 jsonPropertyName: null);
             
             properties[5] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: true,
+                isPublic: true,
+                isVirtual: false,
                 declaringType: typeof(WeatherForecastWithPOCOs),
                 propertyTypeInfo: jsonContext.StringArray,
                 converter: null,
@@ -119,12 +136,15 @@ namespace System.Text.Json.Tests.Serialization
                 setter: static (obj, value) => { ((WeatherForecastWithPOCOs)obj).SummaryWords = value; },
                 ignoreCondition: default,
                 numberHandling: default,
+                hasJsonInclude: false,
                 propertyName: nameof(Serialization.WeatherForecastWithPOCOs.SummaryWords),
                 jsonPropertyName: null);
             
             properties[6] = JsonMetadataServices.CreatePropertyInfo(
                 options,
                 isProperty: false,
+                isPublic: true,
+                isVirtual: false,
                 declaringType: typeof(WeatherForecastWithPOCOs),
                 propertyTypeInfo: jsonContext.String,
                 converter: null,
@@ -132,6 +152,7 @@ namespace System.Text.Json.Tests.Serialization
                 setter: static (obj, value) => { ((WeatherForecastWithPOCOs)obj).SummaryField = value; },
                 ignoreCondition: default,
                 numberHandling: default,
+                hasJsonInclude: false,
                 propertyName: nameof(Serialization.WeatherForecastWithPOCOs.SummaryField),
                 jsonPropertyName: null);
             

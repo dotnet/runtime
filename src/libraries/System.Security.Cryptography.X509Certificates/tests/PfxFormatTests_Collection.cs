@@ -12,10 +12,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] pfxBytes,
             string correctPassword,
             X509Certificate2 expectedCert,
+            X509KeyStorageFlags nonExportFlags,
             Action<X509Certificate2> otherWork)
         {
-            ReadPfx(pfxBytes, correctPassword, expectedCert, null, otherWork, s_importFlags);
-            ReadPfx(pfxBytes, correctPassword, expectedCert, null, otherWork, s_exportableImportFlags);
+            X509KeyStorageFlags exportFlags = nonExportFlags | X509KeyStorageFlags.Exportable;
+
+            ReadPfx(pfxBytes, correctPassword, expectedCert, null, otherWork, nonExportFlags);
+            ReadPfx(pfxBytes, correctPassword, expectedCert, null, otherWork, exportFlags);
         }
 
         protected override void ReadMultiPfx(
@@ -23,6 +26,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string correctPassword,
             X509Certificate2 expectedSingleCert,
             X509Certificate2[] expectedOrder,
+            X509KeyStorageFlags nonExportFlags,
             Action<X509Certificate2> perCertOtherWork)
         {
             ReadPfx(
@@ -31,7 +35,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 expectedSingleCert,
                 expectedOrder,
                 perCertOtherWork,
-                s_importFlags);
+                nonExportFlags);
 
             ReadPfx(
                 pfxBytes,
@@ -39,7 +43,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 expectedSingleCert,
                 expectedOrder,
                 perCertOtherWork,
-                s_exportableImportFlags);
+                nonExportFlags | X509KeyStorageFlags.Exportable);
         }
 
         private void ReadPfx(
@@ -89,13 +93,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         protected override void ReadUnreadablePfx(
             byte[] pfxBytes,
             string bestPassword,
+            X509KeyStorageFlags importFlags,
             int win32Error,
             int altWin32Error)
         {
             X509Certificate2Collection coll = new X509Certificate2Collection();
 
             CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
-                () => coll.Import(pfxBytes, bestPassword, s_importFlags));
+                () => coll.Import(pfxBytes, bestPassword, importFlags));
 
             if (OperatingSystem.IsWindows())
             {

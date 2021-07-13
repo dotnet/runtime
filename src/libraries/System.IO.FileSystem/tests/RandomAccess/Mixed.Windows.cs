@@ -62,8 +62,17 @@ namespace System.IO.Tests
                     {
                         writeBuffer[0] = (byte)fileOffset;
 
-                        Assert.Equal(writeBuffer.Length, syncWrite ? RandomAccess.Write(handle, writeBuffer, fileOffset) : await RandomAccess.WriteAsync(handle, writeBuffer, fileOffset));
+                        if (syncWrite)
+                        {
+                            RandomAccess.Write(handle, writeBuffer, fileOffset);
+                        }
+                        else
+                        {
+                            await RandomAccess.WriteAsync(handle, writeBuffer, fileOffset);
+                        }
+
                         Assert.Equal(writeBuffer.Length, syncRead ? RandomAccess.Read(handle, readBuffer, fileOffset) : await RandomAccess.ReadAsync(handle, readBuffer, fileOffset));
+
                         Assert.Equal(writeBuffer[0], readBuffer[0]);
 
                         fileOffset += 1;
@@ -116,8 +125,17 @@ namespace System.IO.Tests
                         writeBuffer_1[0] = (byte)fileOffset;
                         writeBuffer_2[0] = (byte)(fileOffset+1);
 
-                        Assert.Equal(writeBuffer_1.Length + writeBuffer_2.Length, syncWrite ? RandomAccess.Write(handle, writeBuffers, fileOffset) : await RandomAccess.WriteAsync(handle, writeBuffers, fileOffset));
+                        if (syncWrite)
+                        {
+                            RandomAccess.Write(handle, writeBuffers, fileOffset);
+                        }
+                        else
+                        {
+                            await RandomAccess.WriteAsync(handle, writeBuffers, fileOffset);
+                        }
+
                         Assert.Equal(writeBuffer_1.Length + writeBuffer_2.Length, syncRead ? RandomAccess.Read(handle, readBuffers, fileOffset) : await RandomAccess.ReadAsync(handle, readBuffers, fileOffset));
+
                         Assert.Equal(writeBuffer_1[0], readBuffer_1[0]);
                         Assert.Equal(writeBuffer_2[0], readBuffer_2[0]);
 
