@@ -84,6 +84,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false)]
         public async Task ConnectTimeout_PlaintextStreamFilterTimesOut_Throws(bool useSsl)
         {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                // HTTP3 does not support PlaintextStreamFilter
+                return;
+            }
+
             var releaseServer = new TaskCompletionSource();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {

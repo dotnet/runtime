@@ -129,7 +129,7 @@ namespace System.Net.Http.Functional.Tests
                 DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.Padded, 10, 1);
                 await connection.WriteFrameAsync(invalidFrame);
 
-                await AssertProtocolErrorAsync(sendTask, ProtocolErrors.PROTOCOL_ERROR);
+                await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
             }
         }
 
