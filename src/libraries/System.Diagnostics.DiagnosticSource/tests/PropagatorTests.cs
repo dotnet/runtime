@@ -527,6 +527,14 @@ namespace System.Diagnostics.Tests
             return list;
         }
 
+        [Fact]
+        public void TestBuiltInPropagatorsAreCached()
+        {
+            Assert.Same(DistributedContextPropagator.CreateDefaultPropagator(), DistributedContextPropagator.CreateDefaultPropagator());
+            Assert.Same(DistributedContextPropagator.CreateNoOutputPropagator(), DistributedContextPropagator.CreateNoOutputPropagator());
+            Assert.Same(DistributedContextPropagator.CreatePassThroughPropagator(), DistributedContextPropagator.CreatePassThroughPropagator());
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestCustomPropagator()
         {
