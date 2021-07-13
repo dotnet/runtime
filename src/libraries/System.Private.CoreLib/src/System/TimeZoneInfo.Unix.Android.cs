@@ -188,9 +188,6 @@ namespace System
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
-            value = null;
-            e = null;
-
             value = id == LocalId ? GetLocalTimeZoneCore() : GetTimeZone(id, id);
 
             if (value == null)
@@ -199,6 +196,7 @@ namespace System
                 return TimeZoneInfoResult.TimeZoneNotFoundException;
             }
 
+            e = null;
             return TimeZoneInfoResult.Success;
         }
 
