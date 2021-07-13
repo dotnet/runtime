@@ -1,10 +1,2 @@
-BlazorWasmTests
-InvariantGlobalizationTests
-LocalEMSDKTests
-MainWithArgsTests
 NativeBuildTests
-NativeLibraryTests
 RebuildTests
-SatelliteAssembliesTests
-WasmBuildAppTests
-WorkloadTests

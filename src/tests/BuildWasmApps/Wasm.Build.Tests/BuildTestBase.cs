@@ -252,10 +252,7 @@ namespace Wasm.Build.Tests
             if (buildArgs.AOT)
             {
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    extraProperties += $"\n<EmccVerbose>false</EmccVerbose>\n";
-                else
-                    extraProperties += $"\n<EmccVerbose>true</EmccVerbose>\n";
+                extraProperties += $"\n<EmccVerbose>true</EmccVerbose>\n";
             }
 
             string projectContents = projectTemplate
