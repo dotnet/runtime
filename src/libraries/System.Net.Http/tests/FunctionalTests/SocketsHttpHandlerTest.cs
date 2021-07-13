@@ -2077,11 +2077,9 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalTheory(nameof(SupportsAlpn))]
-        [MemberData(nameof(ManyIterations))]
-        public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled(int m)
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled()
         {
-            Assert.True(m > -1);
             const int MaxConcurrentStreams = 2;
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
             using SocketsHttpHandler handler = CreateHandler();
@@ -2209,14 +2207,6 @@ namespace System.Net.Http.Functional.Tests
                 await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
                 await VerifySendTasks(sendTasks).ConfigureAwait(false);
-            }
-        }
-
-        public static IEnumerable<object[]> ManyIterations()
-        {
-            for (var i = 0; i < 1000; i++)
-            {
-                yield return new object[] {i};
             }
         }
 
