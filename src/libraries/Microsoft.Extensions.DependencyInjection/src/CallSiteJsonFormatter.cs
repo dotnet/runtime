@@ -81,11 +81,6 @@ namespace Microsoft.Extensions.DependencyInjection
             return null;
         }
 
-        protected override object VisitServiceScopeFactory(ServiceScopeFactoryCallSite serviceScopeFactoryCallSite, CallSiteFormatterContext argument)
-        {
-            return null;
-        }
-
         protected override object VisitIEnumerable(IEnumerableCallSite enumerableCallSite, CallSiteFormatterContext argument)
         {
             argument.WriteProperty("itemType", enumerableCallSite.ItemType);

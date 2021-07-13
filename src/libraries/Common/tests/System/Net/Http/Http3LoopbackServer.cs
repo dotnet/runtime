@@ -57,7 +57,10 @@ namespace System.Net.Test.Common
         public override async Task<GenericLoopbackConnection> EstablishGenericConnectionAsync()
         {
             QuicConnection con = await _listener.AcceptConnectionAsync().ConfigureAwait(false);
-            return new Http3LoopbackConnection(con);
+            Http3LoopbackConnection connection = new Http3LoopbackConnection(con);
+
+            await connection.EstablishControlStreamAsync();
+            return connection;
         }
 
         public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)

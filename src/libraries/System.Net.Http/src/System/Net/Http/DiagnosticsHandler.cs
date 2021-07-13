@@ -15,6 +15,9 @@ namespace System.Net.Http
     /// </summary>
     internal sealed class DiagnosticsHandler : DelegatingHandler
     {
+        private static readonly DiagnosticListener s_diagnosticListener =
+                new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
+
         /// <summary>
         /// DiagnosticHandler constructor
         /// </summary>
@@ -28,13 +31,10 @@ namespace System.Net.Http
         {
             // check if there is a parent Activity (and propagation is not suppressed)
             // or if someone listens to HttpHandlerDiagnosticListener
-            return IsGloballyEnabled() && (Activity.Current != null || Settings.s_diagnosticListener.IsEnabled());
+            return IsGloballyEnabled() && (Activity.Current != null || s_diagnosticListener.IsEnabled());
         }
 
-        internal static bool IsGloballyEnabled()
-        {
-            return Settings.s_activityPropagationEnabled;
-        }
+        internal static bool IsGloballyEnabled() => GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation;
 
         // SendAsyncCore returns already completed ValueTask for when async: false is passed.
         // Internally, it calls the synchronous Send method of the base class.
@@ -59,7 +59,7 @@ namespace System.Net.Http
             }
 
             Activity? activity = null;
-            DiagnosticListener diagnosticListener = Settings.s_diagnosticListener;
+            DiagnosticListener diagnosticListener = s_diagnosticListener;
 
             // if there is no listener, but propagation is enabled (with previous IsEnabled() check)
             // do not write any events just start/stop Activity and propagate Ids
@@ -267,37 +267,6 @@ namespace System.Net.Http
             public TaskStatus RequestTaskStatus { get; }
 
             public override string ToString() => $"{{ {nameof(Response)} = {Response}, {nameof(LoggingRequestId)} = {LoggingRequestId}, {nameof(Timestamp)} = {Timestamp}, {nameof(RequestTaskStatus)} = {RequestTaskStatus} }}";
-        }
-
-        private static class Settings
-        {
-            private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
-            private const string EnableActivityPropagationAppCtxSettingName = "System.Net.Http.EnableActivityPropagation";
-
-            public static readonly bool s_activityPropagationEnabled = GetEnableActivityPropagationValue();
-
-            private static bool GetEnableActivityPropagationValue()
-            {
-                // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(EnableActivityPropagationAppCtxSettingName, out bool enableActivityPropagation))
-                {
-                    return enableActivityPropagation;
-                }
-
-                // AppContext switch wasn't used. Check the environment variable to determine which handler should be used.
-                string? envVar = Environment.GetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName);
-                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
-                {
-                    // Suppress Activity propagation.
-                    return false;
-                }
-
-                // Defaults to enabling Activity propagation.
-                return true;
-            }
-
-            public static readonly DiagnosticListener s_diagnosticListener =
-                new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
         }
 
         private static void InjectHeaders(Activity currentActivity, HttpRequestMessage request)

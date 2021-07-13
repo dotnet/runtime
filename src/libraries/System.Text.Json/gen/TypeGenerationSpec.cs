@@ -3,8 +3,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
-using System.Text.Json.SourceGeneration.Reflection;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -23,18 +24,18 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public string TypeInfoPropertyName { get; set; }
 
-        public bool GenerateMetadata { get; set; } = true;
+        public JsonSourceGenerationMode GenerationMode { get; set; }
 
-        private bool? _generateSerializationLogic;
-        public bool GenerateSerializationLogic
-        {
-            get => _generateSerializationLogic ??= FastPathIsSupported();
-            set => _generateSerializationLogic = value;
-        }
+        public bool GenerateMetadata => GenerationModeIsSpecified(JsonSourceGenerationMode.Metadata);
+
+        public bool GenerateSerializationLogic => GenerationModeIsSpecified(JsonSourceGenerationMode.Serialization) && FastPathIsSupported();
 
         public Type Type { get; private set; }
 
         public ClassType ClassType { get; private set; }
+
+        public bool ImplementsIJsonOnSerialized { get; private set; }
+        public bool ImplementsIJsonOnSerializing { get; private set; }
 
         public bool IsValueType { get; private set; }
 
@@ -42,7 +43,7 @@ namespace System.Text.Json.SourceGeneration
 
         public JsonNumberHandling? NumberHandling { get; private set; }
 
-        public List<PropertyGenerationSpec>? PropertiesMetadata { get; private set; }
+        public List<PropertyGenerationSpec>? PropertyGenSpecList { get; private set; }
 
         public CollectionType CollectionType { get; private set; }
 
@@ -57,20 +58,24 @@ namespace System.Text.Json.SourceGeneration
         public string? ConverterInstantiationLogic { get; private set; }
 
         public void Initialize(
+            JsonSourceGenerationMode generationMode,
             string typeRef,
             string typeInfoPropertyName,
             Type type,
             ClassType classType,
             bool isValueType,
             JsonNumberHandling? numberHandling,
-            List<PropertyGenerationSpec>? propertiesMetadata,
+            List<PropertyGenerationSpec>? propertyGenSpecList,
             CollectionType collectionType,
             TypeGenerationSpec? collectionKeyTypeMetadata,
             TypeGenerationSpec? collectionValueTypeMetadata,
             ObjectConstructionStrategy constructionStrategy,
             TypeGenerationSpec? nullableUnderlyingTypeMetadata,
-            string? converterInstantiationLogic)
+            string? converterInstantiationLogic,
+            bool implementsIJsonOnSerialized,
+            bool implementsIJsonOnSerializing)
         {
+            GenerationMode = generationMode;
             TypeRef = $"global::{typeRef}";
             TypeInfoPropertyName = typeInfoPropertyName;
             Type = type;
@@ -78,16 +83,98 @@ namespace System.Text.Json.SourceGeneration
             IsValueType = isValueType;
             CanBeNull = !isValueType || nullableUnderlyingTypeMetadata != null;
             NumberHandling = numberHandling;
-            PropertiesMetadata = propertiesMetadata;
+            PropertyGenSpecList = propertyGenSpecList;
             CollectionType = collectionType;
             CollectionKeyTypeMetadata = collectionKeyTypeMetadata;
             CollectionValueTypeMetadata = collectionValueTypeMetadata;
             ConstructionStrategy = constructionStrategy;
             NullableUnderlyingTypeMetadata = nullableUnderlyingTypeMetadata;
             ConverterInstantiationLogic = converterInstantiationLogic;
+            ImplementsIJsonOnSerialized = implementsIJsonOnSerialized;
+            ImplementsIJsonOnSerializing = implementsIJsonOnSerializing;
         }
 
-        public bool FastPathIsSupported()
+        public bool TryFilterSerializableProps(
+                JsonSourceGenerationOptionsAttribute options,
+                [NotNullWhen(true)] out Dictionary<string, PropertyGenerationSpec>? serializableProperties,
+                out bool castingRequiredForProps)
+        {
+            serializableProperties = new Dictionary<string, PropertyGenerationSpec>();
+            Dictionary<string, PropertyGenerationSpec>? ignoredMembers = null;
+
+            for (int i = 0; i < PropertyGenSpecList.Count; i++)
+            {
+                PropertyGenerationSpec propGenSpec = PropertyGenSpecList[i];
+                bool hasJsonInclude = propGenSpec.HasJsonInclude;
+                JsonIgnoreCondition? ignoreCondition = propGenSpec.DefaultIgnoreCondition;
+
+                if (ignoreCondition == JsonIgnoreCondition.WhenWritingNull && !propGenSpec.TypeGenerationSpec.CanBeNull)
+                {
+                    goto ReturnFalse;
+                }
+
+                if (!propGenSpec.IsPublic)
+                {
+                    if (hasJsonInclude)
+                    {
+                        goto ReturnFalse;
+                    }
+
+                    continue;
+                }
+
+                if (!propGenSpec.IsProperty && !hasJsonInclude && !options.IncludeFields)
+                {
+                    continue;
+                }
+
+                string memberName = propGenSpec.ClrName!;
+
+                // The JsonPropertyNameAttribute or naming policy resulted in a collision.
+                if (!serializableProperties.TryAdd(propGenSpec.RuntimePropertyName, propGenSpec))
+                {
+                    PropertyGenerationSpec other = serializableProperties[propGenSpec.RuntimePropertyName]!;
+
+                    if (other.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
+                    {
+                        // Overwrite previously cached property since it has [JsonIgnore].
+                        serializableProperties[propGenSpec.RuntimePropertyName] = propGenSpec;
+                    }
+                    else if (
+                        // Does the current property have `JsonIgnoreAttribute`?
+                        propGenSpec.DefaultIgnoreCondition != JsonIgnoreCondition.Always &&
+                        // Is the current property hidden by the previously cached property
+                        // (with `new` keyword, or by overriding)?
+                        other.ClrName != memberName &&
+                        // Was a property with the same CLR name was ignored? That property hid the current property,
+                        // thus, if it was ignored, the current property should be ignored too.
+                        ignoredMembers?.ContainsKey(memberName) != true)
+                    {
+                        // We throw if we have two public properties that have the same JSON property name, and neither have been ignored.
+                        serializableProperties = null;
+                        castingRequiredForProps = false;
+                        return false;
+                    }
+                    // Ignore the current property.
+                }
+
+                if (propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
+                {
+                    (ignoredMembers ??= new Dictionary<string, PropertyGenerationSpec>()).Add(memberName, propGenSpec);
+                }
+            }
+
+            Debug.Assert(PropertyGenSpecList.Count >= serializableProperties.Count);
+            castingRequiredForProps = PropertyGenSpecList.Count > serializableProperties.Count;
+            return true;
+
+ReturnFalse:
+            serializableProperties = null;
+            castingRequiredForProps = false;
+            return false;
+        }
+
+        private bool FastPathIsSupported()
         {
             if (ClassType == ClassType.Object)
             {
@@ -106,5 +193,7 @@ namespace System.Text.Json.SourceGeneration
 
             return false;
         }
+
+        private bool GenerationModeIsSpecified(JsonSourceGenerationMode mode) => GenerationMode == JsonSourceGenerationMode.Default || (mode & GenerationMode) != 0;
     }
 }

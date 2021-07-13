@@ -1,4 +1,15 @@
 <Project InitialTargets="_OverridePackDependsOnForCsProjToPkgProj">
+  
+  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificAssemblies;LibIntellisenseDocs</TargetsForTfmSpecificContentInPackage>
+    <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeDebugSymbolsWithTfm</TargetsForTfmSpecificDebugSymbolsInPackage>
+    <IncludeBuildOutput Condition="'$(TargetsAnyOS)' != 'true' or '$(ExcludeFromPackage)' == 'true'">false</IncludeBuildOutput>  
+    <!-- Don't include target platform specific dependencies, since we use the target platform to represent RIDs instead -->
+    <SuppressDependenciesWhenPacking Condition="'$(ExcludeFromPackage)' == 'true' or ('$(TargetsAnyOS)' != 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0')))">true</SuppressDependenciesWhenPacking>
+    <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
+    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(MajorVersion), 1)).0.0</PackageValidationBaselineVersion>
+  </PropertyGroup>
+
   <!--     There are some packages where we require only one ref for a specific framework to be present. In order to avoid problems with this package when targetting 
            dektop with RAR we will make sure there are no exclude=compile references in the package.
     For more info, please check issues:
@@ -41,5 +52,31 @@
   <Target Name="_BuildPkgProj">
     <MSBuild Projects="$(PkgProjPath)"
              Targets="Build" />
+  </Target>
+
+  <Target Name="AddRuntimeSpecificAssemblies"
+          DependsOnTargets="BuiltProjectOutputGroup;SatelliteDllsProjectOutputGroup;$(TargetsForTfmSpecificBuildOutput)"
+          Condition="'$(TargetsAnyOS)' != 'true' and '$(ExcludeFromPackage)' == ''">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="@(SatelliteDllsProjectOutputGroupOutput);
+                            @(BuiltProjectOutputGroupOutput)">
+        <PackagePath>runtimes/$(_runtimeOS)/lib/$(TargetFrameworkWithoutSuffix)</PackagePath>
+      </TfmSpecificPackageFile>
+    </ItemGroup>
+  </Target>
+
+  <!-- Runtime independent symbols are automatically added by the pack task.-->
+  <Target Name="AddRuntimeDebugSymbolsWithTfm"
+          Condition="'$(IncludeSymbols)' == 'true' and '$(TargetsAnyOS)' != 'true' and '$(ExcludeFromPackage)' == ''">
+    <PropertyGroup>
+      <RuntimeSymbolPath>$([System.IO.Path]::GetDirectoryName($(TargetPath)))\$(TargetName).pdb</RuntimeSymbolPath>
+    </PropertyGroup>
+
+    <ItemGroup Condition="Exists('$(RuntimeSymbolPath)')">
+      <TfmSpecificDebugSymbolsFile Include="$(RuntimeSymbolPath)">
+        <TargetPath>/runtimes/$(_runtimeOS)/lib/$(TargetFrameworkWithoutSuffix)/$(TargetName).pdb</TargetPath>
+        <TargetFramework>$(TargetFrameworkWithoutSuffix)</TargetFramework>
+      </TfmSpecificDebugSymbolsFile>
+    </ItemGroup>
   </Target>
 </Project>

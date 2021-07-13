@@ -4176,6 +4176,26 @@ InitializeCrashDump()
 
 #endif // HOST_WINDOWS
 
+bool GenerateDump(
+    LPCWSTR dumpName,
+    int dumpType,
+    bool diag)
+{
+#ifdef TARGET_UNIX
+    MAKE_UTF8PTR_FROMWIDE_NOTHROW (dumpNameUtf8, dumpName);
+    if (dumpNameUtf8 == nullptr)
+    {
+        return false;
+    }
+    else
+    {
+        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, diag);
+    }
+#else // TARGET_UNIX
+    return GenerateCrashDump(dumpName, dumpType, diag);
+#endif // TARGET_UNIX
+}
+
 //************************************************************************************
 // Create crash dump if enabled and terminate process. Generates crash dumps for both
 // Windows and Linux if enabled. For Linux, it happens in TerminateProcess in the PAL.
@@ -6679,14 +6699,12 @@ AdjustContextForJITHelpers(
 
     PCODE ip = GetIP(pContext);
 
-#ifdef FEATURE_WRITEBARRIER_COPY
     if (IsIPInWriteBarrierCodeCopy(ip))
     {
         // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
         ip = AdjustWriteBarrierIP(ip);
         SetIP(pContext, ip);
     }
-#endif // FEATURE_WRITEBARRIER_COPY
 
 #ifdef FEATURE_DATABREAKPOINT
 

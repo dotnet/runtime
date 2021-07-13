@@ -985,11 +985,6 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest
-    {
-        public SocketsHttpHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
-    }
-
     public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
@@ -1932,6 +1927,30 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Fact]
+        public void InitialHttp2StreamWindowSize_GetSet_Roundtrips()
+        {
+            using var handler = new SocketsHttpHandler();
+            Assert.Equal(HttpClientHandlerTestBase.DefaultInitialWindowSize, handler.InitialHttp2StreamWindowSize); // default value
+
+            handler.InitialHttp2StreamWindowSize = 1048576;
+            Assert.Equal(1048576, handler.InitialHttp2StreamWindowSize);
+
+            handler.InitialHttp2StreamWindowSize = HttpClientHandlerTestBase.DefaultInitialWindowSize;
+            Assert.Equal(HttpClientHandlerTestBase.DefaultInitialWindowSize, handler.InitialHttp2StreamWindowSize);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(65534)]
+        [InlineData(32 * 1024 * 1024)]
+        public void InitialHttp2StreamWindowSize_InvalidValue_ThrowsArgumentOutOfRangeException(int value)
+        {
+            using var handler = new SocketsHttpHandler();
+            Assert.Throws<ArgumentOutOfRangeException>(() => handler.InitialHttp2StreamWindowSize = value);
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -1971,6 +1990,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(handler.UseProxy);
                 Assert.Null(handler.ConnectCallback);
                 Assert.Null(handler.PlaintextStreamFilter);
+                Assert.Equal(HttpClientHandlerTestBase.DefaultInitialWindowSize, handler.InitialHttp2StreamWindowSize);
 
                 Assert.Throws(expectedExceptionType, () => handler.AllowAutoRedirect = false);
                 Assert.Throws(expectedExceptionType, () => handler.AutomaticDecompression = DecompressionMethods.GZip);
@@ -1992,6 +2012,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws(expectedExceptionType, () => handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests);
                 Assert.Throws(expectedExceptionType, () => handler.ConnectCallback = (context, token) => default);
                 Assert.Throws(expectedExceptionType, () => handler.PlaintextStreamFilter = (context, token) => default);
+                Assert.Throws(expectedExceptionType, () => handler.InitialHttp2StreamWindowSize = 128 * 1024);
             }
         }
     }
@@ -2274,6 +2295,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Task<HttpResponseMessage> warmUpTask = client.GetAsync(server.Address);
             Http2LoopbackConnection connection = await GetConnection(server, maxConcurrentStreams, readTimeout).WaitAsync(TestHelper.PassingTestTimeout * 2).ConfigureAwait(false);
+
             // Wait until the client confirms MaxConcurrentStreams setting took into effect.
             Task settingAckReceived = connection.SettingAckWaiter;
             while (true)
@@ -3103,7 +3125,6 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
-    // TODO: Many Cookie tests are failing for HTTP3.
     [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     public sealed class SocketsHttpHandlerTest_Cookies_Http3_MsQuic : HttpClientHandlerTest_Cookies
@@ -3138,8 +3159,6 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
-    // TODO: Many cancellation tests are failing for HTTP3.
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_MsQuic : SocketsHttpHandler_Cancellation_Test
     {
@@ -3148,7 +3167,6 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/53093")]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_Mock : SocketsHttpHandler_Cancellation_Test
     {
@@ -3187,5 +3205,101 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_HttpClientHandler_Finalization_Http3_Mock(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public abstract class SocketsHttpHandler_RequestValidationTest
+    {
+        protected abstract bool TestAsync { get; }
+
+        [Fact]
+        public void Send_NullRequest_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("request", () =>
+            {
+                var invoker = new HttpMessageInvoker(new SocketsHttpHandler());
+                if (TestAsync)
+                {
+                    invoker.SendAsync(null, CancellationToken.None);
+                }
+                else
+                {
+                    invoker.Send(null, CancellationToken.None);
+                }
+            });
+        }
+
+        [Fact]
+        public void Send_NullRequestUri_ThrowsInvalidOperationException()
+        {
+            Throws<InvalidOperationException>(new HttpRequestMessage());
+        }
+
+        [Fact]
+        public void Send_RelativeRequestUri_ThrowsInvalidOperationException()
+        {
+            Throws<InvalidOperationException>(new HttpRequestMessage(HttpMethod.Get, new Uri("/relative", UriKind.Relative)));
+        }
+
+        [Fact]
+        public void Send_UnsupportedRequestUriScheme_ThrowsNotSupportedException()
+        {
+            Throws<NotSupportedException>(new HttpRequestMessage(HttpMethod.Get, "foo://foo.bar"));
+        }
+
+        [Fact]
+        public void Send_MajorVersionZero_ThrowsNotSupportedException()
+        {
+            Throws<NotSupportedException>(new HttpRequestMessage { Version = new Version(0, 42) });
+        }
+
+        [Fact]
+        public void Send_TransferEncodingChunkedWithNoContent_ThrowsHttpRequestException()
+        {
+            var request = new HttpRequestMessage();
+            request.Headers.TransferEncodingChunked = true;
+
+            HttpRequestException exception = Throws<HttpRequestException>(request);
+            Assert.IsType<InvalidOperationException>(exception.InnerException);
+        }
+
+        [Fact]
+        public void Send_Http10WithTransferEncodingChunked_ThrowsNotSupportedException()
+        {
+            var request = new HttpRequestMessage
+            {
+                Content = new StringContent("foo"),
+                Version = new Version(1, 0)
+            };
+            request.Headers.TransferEncodingChunked = true;
+
+            Throws<NotSupportedException>(request);
+        }
+
+        private TException Throws<TException>(HttpRequestMessage request)
+            where TException : Exception
+        {
+            var invoker = new HttpMessageInvoker(new SocketsHttpHandler());
+            if (TestAsync)
+            {
+                Task<HttpResponseMessage> task = invoker.SendAsync(request, CancellationToken.None);
+                Assert.Equal(TaskStatus.Faulted, task.Status);
+                return Assert.IsType<TException>(task.Exception.InnerException);
+            }
+            else
+            {
+                return Assert.Throws<TException>(() => invoker.Send(request, CancellationToken.None));
+            }
+        }
+    }
+
+    public sealed class SocketsHttpHandler_RequestValidationTest_Async : SocketsHttpHandler_RequestValidationTest
+    {
+        protected override bool TestAsync => true;
+    }
+
+    public sealed class SocketsHttpHandler_RequestValidationTest_Sync : SocketsHttpHandler_RequestValidationTest
+    {
+        protected override bool TestAsync => false;
     }
 }

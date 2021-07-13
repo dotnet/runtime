@@ -373,7 +373,7 @@ namespace System.Xml.Serialization
                 {
                     if (mappings[j].Name == member.ChoiceIdentifier.MemberName)
                     {
-                        choiceSource = "p[" + j.ToString(CultureInfo.InvariantCulture) + "]";
+                        choiceSource = $"p[{j}]";
                         break;
                     }
                 }
@@ -447,17 +447,17 @@ namespace System.Xml.Serialization
             for (int i = 0; i < mappings.Length; i++)
             {
                 MemberMapping mapping = mappings[i];
-                string source = "p[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+                string source = $"p[{i}]";
                 string arraySource = source;
                 if (mapping.Xmlns != null)
                 {
-                    arraySource = "((" + mapping.TypeDesc!.CSharpName + ")" + source + ")";
+                    arraySource = $"(({mapping.TypeDesc!.CSharpName}){source})";
                 }
                 string choiceSource = GetChoiceIdentifierSource(mappings, mapping);
                 Member member = new Member(this, source, arraySource, "a", i, mapping, choiceSource);
                 Member anyMember = new Member(this, source, null, "a", i, mapping, choiceSource);
                 if (!mapping.IsSequence)
-                    member.ParamsReadSource = "paramsRead[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+                    member.ParamsReadSource = $"paramsRead[{i}]";
                 if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
                 {
                     string nameSpecified = mapping.Name + "Specified";
@@ -465,7 +465,7 @@ namespace System.Xml.Serialization
                     {
                         if (mappings[j].Name == nameSpecified)
                         {
-                            member.CheckSpecifiedSource = "p[" + j.ToString(CultureInfo.InvariantCulture) + "]";
+                            member.CheckSpecifiedSource = $"p[{j}]";
                             break;
                         }
                     }
@@ -685,15 +685,11 @@ namespace System.Xml.Serialization
             return methodName;
         }
 
-        private string NextMethodName(string name)
-        {
-            return "Read" + (++NextMethodNumber).ToString(CultureInfo.InvariantCulture) + "_" + CodeIdentifier.MakeValidInternal(name);
-        }
+        private string NextMethodName(string name) =>
+            string.Create(CultureInfo.InvariantCulture, $"Read{++NextMethodNumber}_{CodeIdentifier.MakeValidInternal(name)}");
 
-        private string NextIdName(string name)
-        {
-            return "id" + (++_nextIdNumber).ToString(CultureInfo.InvariantCulture) + "_" + CodeIdentifier.MakeValidInternal(name);
-        }
+        private string NextIdName(string name) =>
+            string.Create(CultureInfo.InvariantCulture, $"id{++_nextIdNumber}_{CodeIdentifier.MakeValidInternal(name)}");
 
         [RequiresUnreferencedCode("XmlSerializationReader methods have RequiresUnreferencedCode")]
         private void WritePrimitive(TypeMapping mapping, string source)
@@ -1571,7 +1567,7 @@ namespace System.Xml.Serialization
                     string source = RaCodeGen.GetStringForMember("o", mapping.Name, structMapping.TypeDesc);
                     Member member = new Member(this, source, "a", i, mapping, GetChoiceIdentifierSource(mapping, "o", structMapping.TypeDesc));
                     if (!mapping.IsSequence)
-                        member.ParamsReadSource = "paramsRead[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+                        member.ParamsReadSource = $"paramsRead[{i}]";
                     member.IsNullable = mapping.TypeDesc!.IsNullable;
                     if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
                         member.CheckSpecifiedSource = RaCodeGen.GetStringForMember("o", mapping.Name + "Specified", structMapping.TypeDesc);

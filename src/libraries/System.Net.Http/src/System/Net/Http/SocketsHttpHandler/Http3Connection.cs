@@ -9,6 +9,7 @@ using System.Net.Quic;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Security;
 
@@ -78,7 +79,7 @@ namespace System.Net.Http
             _connection = connection;
 
             bool altUsedDefaultPort = pool.Kind == HttpConnectionKind.Http && authority.Port == HttpConnectionPool.DefaultHttpPort || pool.Kind == HttpConnectionKind.Https && authority.Port == HttpConnectionPool.DefaultHttpsPort;
-            string altUsedValue = altUsedDefaultPort ? authority.IdnHost : authority.IdnHost + ":" + authority.Port.ToString(Globalization.CultureInfo.InvariantCulture);
+            string altUsedValue = altUsedDefaultPort ? authority.IdnHost : string.Create(CultureInfo.InvariantCulture, $"{authority.IdnHost}:{authority.Port}");
             _altUsedEncodedHeader = QPack.QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReferenceToArray(KnownHeaders.AltUsed.Name, altUsedValue);
 
             // Errors are observed via Abort().
@@ -568,7 +569,7 @@ namespace System.Net.Http
                     switch (frameType)
                     {
                         case Http3FrameType.GoAway:
-                            await ProcessGoAwayFameAsync(payloadLength).ConfigureAwait(false);
+                            await ProcessGoAwayFrameAsync(payloadLength).ConfigureAwait(false);
                             break;
                         case Http3FrameType.Settings:
                             // If an endpoint receives a second SETTINGS frame on the control stream, the endpoint MUST respond with a connection error of type H3_FRAME_UNEXPECTED.
@@ -685,12 +686,12 @@ namespace System.Net.Http
                 }
             }
 
-            async ValueTask ProcessGoAwayFameAsync(long goawayPayloadLength)
+            async ValueTask ProcessGoAwayFrameAsync(long goawayPayloadLength)
             {
                 long lastStreamId;
                 int bytesRead;
 
-                while (!VariableLengthIntegerHelper.TryRead(buffer.AvailableSpan, out lastStreamId, out bytesRead))
+                while (!VariableLengthIntegerHelper.TryRead(buffer.ActiveSpan, out lastStreamId, out bytesRead))
                 {
                     buffer.EnsureAvailableSpace(VariableLengthIntegerHelper.MaximumEncodedLength);
                     bytesRead = await stream.ReadAsync(buffer.AvailableMemory, CancellationToken.None).ConfigureAwait(false);

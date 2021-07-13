@@ -8,7 +8,7 @@
     <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
     <MicrosoftNetCoreAppRuntimePackRidDir>{MicrosoftNetCoreAppRuntimePackRidDir}</MicrosoftNetCoreAppRuntimePackRidDir>
     <RepositoryEngineeringDir>{RepositoryEngineeringDir}</RepositoryEngineeringDir>
-    <TargetFramework>{NetCoreAppCurrent}</TargetFramework>
+    <TargetFramework>{TestTargetFramework}</TargetFramework>
     <RuntimeIdentifier>{RuntimeIdentifier}</RuntimeIdentifier>
     <UseMonoRuntime>{UseMonoRuntime}</UseMonoRuntime>
     <TargetingPackDir>{TargetingPackDir}</TargetingPackDir>

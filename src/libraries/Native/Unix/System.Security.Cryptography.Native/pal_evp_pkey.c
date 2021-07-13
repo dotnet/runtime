@@ -20,7 +20,7 @@ void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey)
 int32_t CryptoNative_EvpPKeySize(EVP_PKEY* pkey)
 {
     assert(pkey != NULL);
-    return EVP_PKEY_size(pkey);
+    return EVP_PKEY_get_size(pkey);
 }
 
 int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey)

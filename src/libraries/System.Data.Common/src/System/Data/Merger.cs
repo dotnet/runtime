@@ -608,7 +608,7 @@ namespace System.Data
                 }
                 else
                 {
-                    Debug.Assert(MissingSchemaAction.Error == _missingSchemaAction, "Unexpected value of MissingSchemaAction parameter : " + _missingSchemaAction.ToString());
+                    Debug.Assert(MissingSchemaAction.Error == _missingSchemaAction, $"Unexpected value of MissingSchemaAction parameter : {_missingSchemaAction}");
                     throw ExceptionBuilder.MergeMissingDefinition(relation.RelationName);
                 }
             }

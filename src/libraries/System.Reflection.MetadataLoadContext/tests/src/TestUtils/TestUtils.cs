@@ -123,7 +123,7 @@ namespace System.Reflection.Tests
 
             for (int i = 0; i < bytes.Length; i++)
             {
-                builder.Append(bytes[i].ToString("X2"));
+                builder.Append($"{bytes[i]:X2}");
             }
 
             return builder.ToString();

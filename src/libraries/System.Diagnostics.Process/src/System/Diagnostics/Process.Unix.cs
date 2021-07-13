@@ -17,6 +17,9 @@ namespace System.Diagnostics
     public partial class Process : IDisposable
     {
         private static volatile bool s_initialized;
+        private static uint s_euid;
+        private static uint s_egid;
+        private static uint[]? s_groups;
         private static readonly object s_initializedGate = new object();
         private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
 
@@ -743,13 +746,53 @@ namespace System.Diagnostics
                 {
                     string subPath = pathParser.ExtractCurrent();
                     path = Path.Combine(subPath, program);
-                    if (File.Exists(path))
+                    if (IsExecutable(path))
                     {
                         return path;
                     }
                 }
             }
             return null;
+        }
+
+        private static bool IsExecutable(string fullPath)
+        {
+            Interop.Sys.FileStatus fileinfo;
+
+            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
+            {
+                return false;
+            }
+
+            // Check if the path is a directory.
+            if ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
+            {
+                return false;
+            }
+
+            Interop.Sys.Permissions permissions = (Interop.Sys.Permissions)fileinfo.Mode;
+
+            if (s_euid == 0)
+            {
+                // We're root.
+                return (permissions & Interop.Sys.Permissions.S_IXUGO) != 0;
+            }
+
+            if (s_euid == fileinfo.Uid)
+            {
+                // We own the file.
+                return (permissions & Interop.Sys.Permissions.S_IXUSR) != 0;
+            }
+
+            if (s_egid == fileinfo.Gid ||
+                (s_groups != null && Array.BinarySearch(s_groups, fileinfo.Gid) >= 0))
+            {
+                // A group we're a member of owns the file.
+                return (permissions & Interop.Sys.Permissions.S_IXGRP) != 0;
+            }
+
+            // Other.
+            return (permissions & Interop.Sys.Permissions.S_IXOTH) != 0;
         }
 
         private static long s_ticksPerSecond;
@@ -1021,8 +1064,17 @@ namespace System.Diagnostics
                         throw new Win32Exception();
                     }
 
+                    s_euid = Interop.Sys.GetEUid();
+                    s_egid = Interop.Sys.GetEGid();
+                    s_groups = Interop.Sys.GetGroups();
+                    if (s_groups != null)
+                    {
+                        Array.Sort(s_groups);
+                    }
+
                     // Register our callback.
                     Interop.Sys.RegisterForSigChld(&OnSigChild);
+                    SetDelayedSigChildConsoleConfigurationHandler();
 
                     s_initialized = true;
                 }
@@ -1030,29 +1082,29 @@ namespace System.Diagnostics
         }
 
         [UnmanagedCallersOnly]
-        private static void OnSigChild(int reapAll)
+        private static int OnSigChild(int reapAll, int configureConsole)
         {
+            // configureConsole is non zero when there are PosixSignalRegistrations that
+            // may Cancel the terminal configuration that happens when there are no more
+            // children using the terminal.
+            // When the registrations don't cancel the terminal configuration,
+            // DelayedSigChildConsoleConfiguration will be called.
+
             // Lock to avoid races with Process.Start
             s_processStartLock.EnterWriteLock();
             try
             {
-                ProcessWaitState.CheckChildren(reapAll != 0);
+                bool childrenUsingTerminalPre = AreChildrenUsingTerminal;
+                ProcessWaitState.CheckChildren(reapAll != 0, configureConsole != 0);
+                bool childrenUsingTerminalPost = AreChildrenUsingTerminal;
+
+                // return whether console configuration was skipped.
+                return childrenUsingTerminalPre && !childrenUsingTerminalPost && configureConsole == 0 ? 1 : 0;
             }
             finally
             {
                 s_processStartLock.ExitWriteLock();
             }
         }
-
-        /// <summary>
-        /// This method is called when the number of child processes that are using the terminal changes.
-        /// It updates the terminal configuration if necessary.
-        /// </summary>
-        internal static void ConfigureTerminalForChildProcesses(int increment)
-        {
-            ConfigureTerminalForChildProcessesInner(increment);
-        }
-
-        static partial void ConfigureTerminalForChildProcessesInner(int increment);
     }
 }

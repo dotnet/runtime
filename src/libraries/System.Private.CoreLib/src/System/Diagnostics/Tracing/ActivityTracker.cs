@@ -321,7 +321,7 @@ namespace System.Diagnostics.Tracing
             {
                 if (activityInfo == null)
                     return "";
-                return Path(activityInfo.m_creator) + "/" + activityInfo.m_uniqueId.ToString();
+                return $"{Path(activityInfo.m_creator)}/{activityInfo.m_uniqueId}";
             }
 
             public override string ToString()

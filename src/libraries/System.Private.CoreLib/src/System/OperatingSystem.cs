@@ -75,9 +75,10 @@ namespace System
                             os = "<unknown> "; break;
                     }
 
+                    Span<char> stackBuffer = stackalloc char[128];
                     _versionString = string.IsNullOrEmpty(_servicePack) ?
-                        os + _version.ToString() :
-                        os + _version.ToString(3) + " " + _servicePack;
+                        string.Create(null, stackBuffer, $"{os}{_version}") :
+                        string.Create(null, stackBuffer, $"{os}{_version.ToString(3)} {_servicePack}");
                 }
 
                 return _versionString;
@@ -192,6 +193,13 @@ namespace System
         /// </summary>
         public static bool IsMacOS() =>
 #if TARGET_OSX
+            true;
+#else
+            false;
+#endif
+
+        internal static bool IsOSXLike() =>
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             true;
 #else
             false;

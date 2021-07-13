@@ -577,7 +577,6 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         PrintBar($">{(int)proportion,2}%", ref curIndex, d => d * 100 > proportion, true);
                     PrintBar("0%", ref curIndex, d => true, false);
 
-                    var wtf = sorted.Where(t => double.IsNaN(t.Overlap)).ToList();
                     PrintOutput(FormattableString.Invariant($"The average overlap is {sorted.Average(t => t.Overlap)*100:F2}% for the {sorted.Count} methods with matching flow graphs and profile data"));
                     double mse = sorted.Sum(t => (100 - t.Overlap*100) * (100 - t.Overlap*100)) / sorted.Count;
                     PrintOutput(FormattableString.Invariant($"The mean squared error is {mse:F2}"));

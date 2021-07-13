@@ -265,7 +265,6 @@
 
   <PropertyGroup>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
-    <LibrariesConfiguration>Release</LibrariesConfiguration>
   </PropertyGroup>
 
   <ItemGroup>

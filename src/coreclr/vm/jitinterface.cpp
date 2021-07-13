@@ -8973,7 +8973,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 int canonicallyMatchingInterfacesFound = 0;
                 while (it.Next())
                 {
-                    if (it.GetInterface()->GetCanonicalMethodTable() == pOwnerMT)
+                    if (it.GetInterface(pObjMT)->GetCanonicalMethodTable() == pOwnerMT)
                     {
                         canonicallyMatchingInterfacesFound++;
                         if (canonicallyMatchingInterfacesFound > 1)
@@ -11212,25 +11212,9 @@ void CEEJitInfo::GetProfilingHandle(bool                      *pbHookFunction,
 }
 
 /*********************************************************************/
-void CEEJitInfo::BackoutJitData(EEJitManager * jitMgr)
+void CEEJitInfo::WriteCodeBytes()
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    CodeHeader* pCodeHeader = m_CodeHeader;
-    if (pCodeHeader)
-        jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
-}
-
-/*********************************************************************/
-void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+    LIMITED_METHOD_CONTRACT;
 
 #ifdef USE_INDIRECT_CODEHEADER
     if (m_pRealCodeHeader != NULL)
@@ -11246,6 +11230,34 @@ void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
         ExecutableWriterHolder<void> codeWriterHolder((void *)m_CodeHeader, m_codeWriteBufferSize);
         memcpy(codeWriterHolder.GetRW(), m_CodeHeaderRW, m_codeWriteBufferSize);
     }
+}
+
+/*********************************************************************/
+void CEEJitInfo::BackoutJitData(EEJitManager * jitMgr)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    // The RemoveJitData call below requires the m_CodeHeader to be valid, so we need to write
+    // the code bytes to the target memory location.
+    WriteCodeBytes();
+
+    CodeHeader* pCodeHeader = m_CodeHeader;
+    if (pCodeHeader)
+        jitMgr->RemoveJitData(pCodeHeader, m_GCinfo_len, m_EHinfo_len);
+}
+
+/*********************************************************************/
+void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    WriteCodeBytes();
 
     // Now that the code header was written to the final location, publish the code via the nibble map
     jitMgr->NibbleMapSet(m_pCodeHeap, m_CodeHeader->GetCodeStartAddress(), TRUE);
@@ -11863,7 +11875,7 @@ WORD CEEJitInfo::getRelocTypeHint(void * target)
     if (m_fAllowRel32)
     {
         // The JIT calls this method for data addresses only. It always uses REL32s for direct code targets.
-        if (IsPreferredExecutableRange(target))
+        if (ExecutableAllocator::IsPreferredExecutableRange(target))
             return IMAGE_REL_BASED_REL32;
     }
 #endif // TARGET_AMD64
@@ -14289,9 +14301,10 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     MethodTable::InterfaceMapIterator it = thImpl.GetMethodTable()->IterateInterfaceMap();
                     while (it.Next())
                     {
-                        if (pInterfaceTypeCanonical == it.GetInterface()->GetCanonicalMethodTable())
+                        MethodTable *pItfInMap = it.GetInterface(thImpl.GetMethodTable());
+                        if (pInterfaceTypeCanonical == pItfInMap->GetCanonicalMethodTable())
                         {
-                            pDeclMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pDeclMethod, it.GetInterface(), FALSE, pDeclMethod->GetMethodInstantiation(), FALSE, TRUE);
+                            pDeclMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pDeclMethod, pItfInMap, FALSE, pDeclMethod->GetMethodInstantiation(), FALSE, TRUE);
                             break;
                         }
                     }
