@@ -1337,7 +1337,8 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             m_CodeSize           = static_cast<unsigned>(value);
             unsigned maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxIL());
 
-            if (m_HasProfile)
+            // TODO: Enable for PgoSource::Static as well if it's not the generic profile we bundle.
+            if (m_HasProfile && (m_RootCompiler->fgPgoSource == ICorJitInfo::PgoSource::Dynamic))
             {
                 maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILProf());
             }
@@ -1432,13 +1433,13 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_ReturnsStructByValue)
     {
         // For structs-passed-by-value we might avoid expensive copy operations if we inline.
-        multiplier += 1.5;
+        multiplier += 2.0;
         JITDUMP("\nInline candidate returns a struct by value.  Multiplier increased to %g.", multiplier);
     }
     else if (m_ArgIsStructByValue > 0)
     {
         // Same here
-        multiplier += 1.5;
+        multiplier += 2.0;
         JITDUMP("\n%d arguments are structs passed by value.  Multiplier increased to %g.", m_ArgIsStructByValue,
                 multiplier);
     }
@@ -1464,13 +1465,13 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
 
     if (m_ArgFeedsRangeCheck > 0)
     {
-        multiplier += 0.5;
+        multiplier += 1.0;
         JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
     }
 
     if (m_NonGenericCallsGeneric)
     {
-        multiplier += 1.5;
+        multiplier += 2.0;
         JITDUMP("\nInline candidate is generic and caller is not.  Multiplier increased to %g.", multiplier);
     }
 

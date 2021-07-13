@@ -464,7 +464,7 @@ CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))
 // relies on PGO if it exists and generally is more aggressive.
 CONFIG_INTEGER(JitExtDefaultPolicy, W("JitExtDefaultPolicy"), 1)
 CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, W("JitExtDefaultPolicyMaxIL"), 0x80)
-CONFIG_INTEGER(JitExtDefaultPolicyMaxILProf, W("JitExtDefaultPolicyMaxILProf"), 0x200)
+CONFIG_INTEGER(JitExtDefaultPolicyMaxILProf, W("JitExtDefaultPolicyMaxILProf"), 0x400)
 CONFIG_INTEGER(JitExtDefaultPolicyMaxBB, W("JitExtDefaultPolicyMaxBB"), 7)
 
 // Inliner uses the following formula for PGO-driven decisions:
