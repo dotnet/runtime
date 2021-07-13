@@ -3049,7 +3049,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         {
             // Copy the remainder by moving the last regSize bytes of the buffer
             unsigned remainder = regSize - size;
-            assert(remainder <= size);
+            assert(remainder <= regSize);
 
             srcOffset -= remainder;
             dstOffset -= remainder;
