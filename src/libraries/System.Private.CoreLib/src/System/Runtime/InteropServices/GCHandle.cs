@@ -83,17 +83,9 @@ namespace System.Runtime.InteropServices
         public void Free()
         {
             IntPtr handle = _handle;
-
-            if ((nint)handle != 0)
-            {
-                _handle = IntPtr.Zero;
-
-                InternalFree(GetHandleValue(handle));
-            }
-            else
-            {
-                ThrowHelper.ThrowInvalidOperationException_HandleIsNotInitialized();
-            }
+            ThrowIfInvalid(handle);
+            _handle = IntPtr.Zero;
+            InternalFree(GetHandleValue(handle));
         }
 
         // Target property - allows getting / updating of the handle's referent.
