@@ -92,6 +92,8 @@ namespace System.Runtime.InteropServices
                 return 0;
             }
 
+            Debug.Assert(tokens.Length != 0);
+
             // This is called on the native signal handling thread. We need to move to another thread so
             // signal handling is not blocked. Otherwise we may get deadlocked when the handler depends
             // on work triggered from the signal handling thread.
@@ -117,28 +119,21 @@ namespace System.Runtime.InteropServices
 
             static void HandleSignal(object? state)
             {
-                (int signo, Token[]? tokens) = ((int, Token[]?))state!;
+                (int signo, Token[] tokens) = ((int, Token[]))state!;
 
-                bool handlersCalled = false;
-                if (tokens != null)
+                PosixSignalContext ctx = new(0);
+                foreach (Token token in tokens)
                 {
-                    PosixSignalContext ctx = new(0);
-                    foreach (Token token in tokens)
-                    {
-                        // Different values for PosixSignal map to the same signo.
-                        // Match the PosixSignal value used when registering.
-                        ctx.Signal = token.Signal;
-                        token.Handler(ctx);
-                        handlersCalled = true;
-                    }
-
-                    if (ctx.Cancel)
-                    {
-                        return;
-                    }
+                    // Different values for PosixSignal map to the same signo.
+                    // Match the PosixSignal value used when registering.
+                    ctx.Signal = token.Signal;
+                    token.Handler(ctx);
                 }
 
-                Interop.Sys.HandleNonCanceledPosixSignal(signo, handlersCalled ? 0 : 1);
+                if (!ctx.Cancel)
+                {
+                    Interop.Sys.HandleNonCanceledPosixSignal(signo);
+                }
             }
         }
     }

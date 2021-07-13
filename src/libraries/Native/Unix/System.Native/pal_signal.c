@@ -233,7 +233,7 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
     }
 }
 
-void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode, int32_t handlersDisposed)
+void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode)
 {
     switch (signalCode)
     {
@@ -275,11 +275,6 @@ void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode, int32_t handl
             {
                 // Original handler doesn't do anything.
                 break;
-            }
-            if (handlersDisposed && g_hasPosixSignalRegistrations[signalCode - 1])
-            {
-                // New handlers got registered.
-                return;
             }
             // Restore and invoke the original handler.
             pthread_mutex_lock(&lock);
@@ -384,7 +379,7 @@ static void* SignalHandlerLoop(void* arg)
 
         if (!usePosixSignalHandler)
         {
-            SystemNative_HandleNonCanceledPosixSignal(signalCode, 0);
+            SystemNative_HandleNonCanceledPosixSignal(signalCode);
         }
     }
 }
