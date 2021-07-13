@@ -29,6 +29,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.FileSystem.Net5Co
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StreamConformanceTests", "..\Common\tests\StreamConformanceTests\StreamConformanceTests.csproj", "{FEF03BCC-509F-4646-9132-9DE27FA3DA6F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.FileSystem.DisabledFileLocking.Tests", "tests\DisabledFileLockingTests\System.IO.FileSystem.DisabledFileLocking.Tests.csproj", "{D20CD3B7-A332-4D47-851A-FD8C80AE10B9}"
+EndProject
 Global
 	GlobalSection(NestedProjects) = preSolution
 		{D350D6E7-52F1-40A4-B646-C178F6BBB689} = {1A727AF9-4F39-4109-BB8F-813286031DC9}
@@ -43,6 +45,7 @@ Global
 		{D7DF8034-3AE5-4DEF-BCC4-6353239391BF} = {D9FB1730-B750-4C0D-8D24-8C992DEB6034}
 		{48E07F12-8597-40DE-8A37-CCBEB9D54012} = {1A727AF9-4F39-4109-BB8F-813286031DC9}
 		{FEF03BCC-509F-4646-9132-9DE27FA3DA6F} = {1A727AF9-4F39-4109-BB8F-813286031DC9}
+		{D20CD3B7-A332-4D47-851A-FD8C80AE10B9} = {1A727AF9-4F39-4109-BB8F-813286031DC9}
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -97,6 +100,10 @@ Global
 		{FEF03BCC-509F-4646-9132-9DE27FA3DA6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FEF03BCC-509F-4646-9132-9DE27FA3DA6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FEF03BCC-509F-4646-9132-9DE27FA3DA6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D20CD3B7-A332-4D47-851A-FD8C80AE10B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D20CD3B7-A332-4D47-851A-FD8C80AE10B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D20CD3B7-A332-4D47-851A-FD8C80AE10B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D20CD3B7-A332-4D47-851A-FD8C80AE10B9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

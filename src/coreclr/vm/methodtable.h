@@ -105,24 +105,36 @@ struct InterfaceInfo_t
 #endif
 
     // Method table of the interface
+#ifdef FEATURE_PREJIT
 #if defined(FEATURE_NGEN_RELOCS_OPTIMIZATIONS)
     RelativeFixupPointer<PTR_MethodTable> m_pMethodTable;
 #else
     FixupPointer<PTR_MethodTable> m_pMethodTable;
+#endif
+#else
+    PTR_MethodTable m_pMethodTable;
 #endif
 
 public:
     FORCEINLINE PTR_MethodTable GetMethodTable()
     {
         LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_PREJIT
         return ReadPointerMaybeNull(this, &InterfaceInfo_t::m_pMethodTable);
+#else
+        return VolatileLoadWithoutBarrier(&m_pMethodTable);
+#endif
     }
 
 #ifndef DACCESS_COMPILE
     void SetMethodTable(MethodTable * pMT)
     {
         LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_PREJIT
         m_pMethodTable.SetValueMaybeNull(pMT);
+#else
+        return VolatileStoreWithoutBarrier(&m_pMethodTable, pMT);
+#endif
     }
 
     // Get approximate method table. This is used by the type loader before the type is fully loaded.
@@ -132,7 +144,11 @@ public:
 #ifndef DACCESS_COMPILE
     InterfaceInfo_t(InterfaceInfo_t &right)
     {
+#ifdef FEATURE_PREJIT
         m_pMethodTable.SetValueMaybeNull(right.m_pMethodTable.GetValueMaybeNull());
+#else
+        VolatileStoreWithoutBarrier(&m_pMethodTable, VolatileLoadWithoutBarrier(&right.m_pMethodTable));
+#endif
     }
 #else // !DACCESS_COMPILE
 private:
@@ -2222,12 +2238,14 @@ public:
             }
             CONTRACT_END;
 
-            bool exactMatch = m_pMap->GetMethodTable() == pMT;
+            MethodTable *pCurrentMethodTable = m_pMap->GetMethodTable();
+
+            bool exactMatch = pCurrentMethodTable == pMT;
             if (!exactMatch)
             {
-                if (m_pMap->GetMethodTable()->HasSameTypeDefAs(pMT) && 
+                if (pCurrentMethodTable->HasSameTypeDefAs(pMT) && 
                     pMT->HasInstantiation() && 
-                    m_pMap->GetMethodTable()->IsSpecialMarkerTypeForGenericCasting() && 
+                    pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() && 
                     pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
                 {
                     exactMatch = true;

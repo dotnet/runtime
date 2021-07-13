@@ -713,8 +713,10 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 
         return pItfMT;
     }
-#endif
     MethodTable * pItfMT = m_pMethodTable.GetValue();
+#else
+    MethodTable * pItfMT = GetMethodTable();
+#endif
     ClassLoader::EnsureLoaded(TypeHandle(pItfMT), CLASS_LOAD_APPROXPARENTS);
     return pItfMT;
 }
@@ -9269,7 +9271,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                     {
                         if (it.CurrentInterfaceMatches(this, pInterfaceType))
                         {
-                            // This is the variant interface check logic, skip the 
+                            // This is the variant interface check logic, skip the exact matches as they were handled above
                             continue;
                         }
 

@@ -37,14 +37,14 @@
     <DebuggerSupport>false</DebuggerSupport>
   </PropertyGroup>
 
-  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
-  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences" DependsOnTargets="_PrepareAndValidateWasmInputs">
+  <Target Name="UpdateTargetingAndRuntimePack" AfterTargets="ResolveFrameworkReferences" DependsOnTargets="_PrepareAndValidateWasmInputs">
     <ItemGroup>
       <RuntimePack>
         <PackageDirectory>$(MicrosoftNetCoreAppRuntimePackLocationToUse)</PackageDirectory>
       </RuntimePack>
+      <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackLocationToUse)" />
     </ItemGroup>
-    <Message Text="Using Runtime pack from: %(RuntimePack.PackageDirectory)" Importance="high" />
+    <Message Text="Using Runtime pack from: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
   <!-- the actual properties need to get set in the props, so because UsingTasks depend on those. -->

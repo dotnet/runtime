@@ -55,5 +55,11 @@
       <property name="Scope">member</property>
       <property name="Target">M:System.Data.Odbc.OdbcMetaDataFactory.NewDataTableFromReader(System.Data.IDataReader,System.Object[]@,System.String)</property>
     </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2093</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Data.Odbc.OdbcDataReader.GetFieldType(System.Int32)</property>
+    </attribute>
   </assembly>
 </linker>

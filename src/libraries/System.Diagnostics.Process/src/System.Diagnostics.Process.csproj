@@ -233,6 +233,8 @@
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs"
              Link="Common\Interop\Unix\Interop.Close.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.DefaultPathBufferSize.cs"
+             Link="Common\Interop\Unix\Interop.DefaultPathBufferSize.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs"
              Link="Common\Interop\Unix\Interop.GetHostName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SysConf.cs"
@@ -257,10 +259,14 @@
              Link="Common\Interop\Unix\Interop.ReadLink.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RegisterForSigChld.cs"
              Link="Common\Interop\Unix\Interop.RegisterForRegisterForSigChld.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetDelayedSigChildConsoleConfigurationHandler.cs"
+             Link="Common\Interop\Unix\Interop.SetDelayedSigChildConsoleConfigurationHandler.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ResourceLimits.cs"
              Link="Common\Interop\Unix\Interop.ResourceLimits.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"
              Link="Common\Interop\Unix\Interop.PathConf.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
+             Link="Common\System\Text\ValueUtf8Converter.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.WaitId.cs"
              Link="Common\Interop\Unix\Interop.WaitId.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.WaitPid.cs"
@@ -271,7 +277,10 @@
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(IsiOSLike)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ConfigureTerminalForChildProcess.cs"
              Link="Common\Interop\Unix\Interop.ConfigureTerminalForChildProcess.cs" />
-    <Compile Include="System\Diagnostics\Process.Unix.ConfigureTerminalForChildProcesses.cs" />
+    <Compile Include="System\Diagnostics\Process.ConfigureTerminalForChildProcesses.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(IsiOSLike)' == 'true'">
+    <Compile Include="System\Diagnostics\Process.ConfigureTerminalForChildProcesses.iOS.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true'">
     <Compile Include="System\Diagnostics\Process.Linux.cs" />
