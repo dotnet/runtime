@@ -10,6 +10,7 @@
     <Compile Include="ValueOptionTests.fs" />
     <Compile Include="CollectionTests.fs" />
     <Compile Include="RecordTests.fs" />
+    <Compile Include="UnionTests.fs" />
   </ItemGroup>
 
 </Project>

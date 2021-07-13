@@ -64,7 +64,8 @@ namespace System.Text.Json.Serialization.Converters
                     ObjectConverterFactory objectFactory = _recordConverterFactory ??= new ObjectConverterFactory(useDefaultConstructorInUnannotatedStructs: false);
                     Debug.Assert(objectFactory.CanConvert(typeToConvert));
                     return objectFactory.CreateConverter(typeToConvert, options);
-
+                case FSharpKind.Union:
+                    throw new NotSupportedException(SR.FSharpDiscriminatedUnionsNotSupported);
                 default:
                     Debug.Fail("Unrecognized F# type.");
                     throw new Exception();

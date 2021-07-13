@@ -614,4 +614,7 @@
   <data name="MissingFSharpCoreMember" xml:space="preserve">
     <value>Could not locate required member '{0}' from FSharp.Core. This might happen because your application has enabled member-level trimming.</value>
   </data>
+  <data name="FSharpDiscriminatedUnionsNotSupported" xml:space="preserve">
+    <value>F# discriminated union serialization is not supported. Consider authoring a custom converter for the type.</value>
+  </data>
 </root>

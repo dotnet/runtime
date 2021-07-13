@@ -28,7 +28,8 @@ namespace System.Text.Json.Serialization.Metadata
             List,
             Set,
             Map,
-            Record
+            Record,
+            Union
         }
 
         // Binding a struct getter method to a delegate requires that the struct parameter is passed byref.
@@ -133,6 +134,7 @@ namespace System.Text.Json.Serialization.Metadata
             return (GetSourceConstructFlags(compilationMappingAttribute) & SourceConstructFlags.KindMask) switch
             {
                 SourceConstructFlags.RecordType => FSharpKind.Record,
+                SourceConstructFlags.SumType => FSharpKind.Union,
                 _ => FSharpKind.Unrecognized
             };
         }

@@ -1,9 +1,9 @@
 ﻿module System.Text.Json.Tests.FSharp.RecordTests
 
 open System.Text.Json
+open System.Text.Json.Serialization
 open System.Text.Json.Tests.FSharp.Helpers
 open Xunit
-open System.Text.Json.Serialization
 
 type MyRecord =
     {
