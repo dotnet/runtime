@@ -1040,6 +1040,55 @@ namespace DebuggerTests
             await cli.SendCommand("Runtime.evaluate", run_method, token);
             return await insp.WaitFor(Inspector.PAUSE);
         }
+
+        internal async Task<JObject> LoadAssemblyAndTestHotReload(string asm_file, string pdb_file, string asm_file_hot_reload, string class_name, string method_name)
+        {
+            // Simulate loading an assembly into the framework
+            byte[] bytes = File.ReadAllBytes(asm_file);
+            string asm_base64 = Convert.ToBase64String(bytes);
+            bytes = File.ReadAllBytes(pdb_file);
+            string pdb_base64 = Convert.ToBase64String(bytes);
+
+            bytes = File.ReadAllBytes($"{asm_file_hot_reload}.1.dmeta");
+            string dmeta1 = Convert.ToBase64String(bytes);
+
+            bytes = File.ReadAllBytes($"{asm_file_hot_reload}.1.dil");
+            string dil1 = Convert.ToBase64String(bytes);
+
+            bytes = File.ReadAllBytes($"{asm_file_hot_reload}.1.dpdb");
+            string dpdb1 = Convert.ToBase64String(bytes);
+
+
+            bytes = File.ReadAllBytes($"{asm_file_hot_reload}.2.dmeta");
+            string dmeta2 = Convert.ToBase64String(bytes);
+
+            bytes = File.ReadAllBytes($"{asm_file_hot_reload}.2.dil");
+            string dil2 = Convert.ToBase64String(bytes);
+
+            bytes = File.ReadAllBytes($"{asm_file_hot_reload}.2.dpdb");
+            string dpdb2 = Convert.ToBase64String(bytes);
+
+            string expression = $"let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}';";
+            expression = $"{expression} let dmeta1 = '{dmeta1}'; let dil1 = '{dil1}'; let dpdb1 = '{dpdb1}';";
+            expression = $"{expression} let dmeta2 = '{dmeta2}'; let dil2 = '{dil2}'; let dpdb2 = '{dpdb2}';";
+            expression = $"{{ {expression} invoke_static_method('[debugger-test] TestHotReload:LoadLazyHotReload', asm_b64, pdb_b64, dmeta1, dil1, dpdb1, dmeta2, dil2, dpdb2); }}";
+            var load_assemblies = JObject.FromObject(new
+            {
+                expression
+            });
+
+            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
+
+            Assert.True(load_assemblies_res.IsOk);
+            Thread.Sleep(1000);
+            var run_method = JObject.FromObject(new
+            {
+                expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] TestHotReload:RunMethod', '" + class_name + "', '" + method_name + "'); }, 1);"
+            });
+
+            await cli.SendCommand("Runtime.evaluate", run_method, token);
+            return await insp.WaitFor(Inspector.PAUSE);
+        }
     }
 
     class DotnetObjectId
