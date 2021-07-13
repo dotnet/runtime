@@ -96,15 +96,8 @@ namespace System.IO.Compression.Tests
         {
             string filename = Path.Combine(folderPath, $"{permissions}.txt");
             File.WriteAllText(filename, "contents");
-            ChMod(filename, permissions);
-        }
 
-        [DllImport("libc")]
-        private static extern int chmod(string path, int mode);
-
-        private static void ChMod(string filename, string mode)
-        {
-            Assert.Equal(0, chmod(filename, Convert.ToInt32(mode, 8)));
+            Assert.Equal(0, Interop.Sys.ChMod(filename, Convert.ToInt32(permissions, 8)));
         }
 
         private static void EnsureFilePermissions(string filename, string permissions)
