@@ -119,8 +119,6 @@
              Link="Common\Interop\Windows\Interop.ReadConsoleOutput.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCP.cs"
              Link="Common\Interop\Windows\Interop.SetConsoleCP.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs"
-             Link="Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCursorPosition.cs"
              Link="Common\Interop\Windows\Interop.SetConsoleCursorPosition.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleOutputCP.cs"
@@ -196,10 +194,6 @@
              Link="Common\Interop\Unix\Interop.GetEUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
              Link="Common\Interop\Unix\Interop.GetPwUid.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RegisterForCtrlC.cs"
-             Link="Common\Interop\Unix\Interop.RegisterForCtrlC.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RestoreAndHandleCtrl.cs"
-             Link="Common\Interop\Unix\Interop.RestoreAndHandleCtrl.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetTerminalInvalidationHandler.cs"
              Link="Common\Interop\Unix\Interop.SetTerminalInvalidationHandler.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetSignalForBreak.cs"
@@ -230,9 +224,6 @@
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
     <Reference Include="Microsoft.Win32.Primitives" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Reference Include="System.Threading.Thread" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsBrowser)' == 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />

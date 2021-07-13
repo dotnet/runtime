@@ -32,11 +32,12 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal ServiceProvider(IEnumerable<ServiceDescriptor> serviceDescriptors, ServiceProviderOptions options)
         {
+            // note that Root needs to be set before calling GetEngine(), because the engine may need to access Root
+            Root = new ServiceProviderEngineScope(this, isRootScope: true);
             _engine = GetEngine();
             _createServiceAccessor = CreateServiceAccessor;
             _realizedServices = new ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object>>();
 
-            Root = new ServiceProviderEngineScope(this, isRootScope: true);
             CallSiteFactory = new CallSiteFactory(serviceDescriptors);
             // The list of built in services that aren't part of the list of service descriptors
             // keep this in sync with CallSiteFactory.IsService

@@ -318,19 +318,19 @@ namespace System
 
         [RequiresPreviewFeatures]
         static sbyte IBinaryInteger<sbyte>.LeadingZeroCount(sbyte value)
-            => (sbyte)(BitOperations.LeadingZeroCount((byte)value) - 16);
+            => (sbyte)(BitOperations.LeadingZeroCount((byte)value) - 24);
 
         [RequiresPreviewFeatures]
         static sbyte IBinaryInteger<sbyte>.PopCount(sbyte value)
             => (sbyte)BitOperations.PopCount((byte)value);
 
         [RequiresPreviewFeatures]
-        static sbyte IBinaryInteger<sbyte>.RotateLeft(sbyte value, sbyte rotateAmount)
-            => (sbyte)((value << (rotateAmount & 7)) | (value >> ((8 - rotateAmount) & 7)));
+        static sbyte IBinaryInteger<sbyte>.RotateLeft(sbyte value, int rotateAmount)
+            => (sbyte)((value << (rotateAmount & 7)) | ((byte)value >> ((8 - rotateAmount) & 7)));
 
         [RequiresPreviewFeatures]
-        static sbyte IBinaryInteger<sbyte>.RotateRight(sbyte value, sbyte rotateAmount)
-            => (sbyte)((value >> (rotateAmount & 7)) | (value << ((8 - rotateAmount) & 7)));
+        static sbyte IBinaryInteger<sbyte>.RotateRight(sbyte value, int rotateAmount)
+            => (sbyte)(((byte)value >> (rotateAmount & 7)) | (value << ((8 - rotateAmount) & 7)));
 
         [RequiresPreviewFeatures]
         static sbyte IBinaryInteger<sbyte>.TrailingZeroCount(sbyte value)
@@ -400,11 +400,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static sbyte IDecrementOperators<sbyte>.operator --(sbyte value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked sbyte IDecrementOperators<sbyte>.operator --(sbyte value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -436,11 +436,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static sbyte IIncrementOperators<sbyte>.operator ++(sbyte value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked sbyte IIncrementOperators<sbyte>.operator ++(sbyte value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue

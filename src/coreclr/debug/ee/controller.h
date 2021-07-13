@@ -266,14 +266,28 @@ public:
 
     LONG AddRef()
     {
-        LONG newRefCount = InterlockedIncrement(&m_refCount);
+#if !defined(DACCESS_COMPILE) && defined(HOST_OSX) && defined(HOST_ARM64)
+        ExecutableWriterHolder<LONG> refCountWriterHolder(&m_refCount, sizeof(LONG));
+        LONG *pRefCountRW = refCountWriterHolder.GetRW();
+#else // !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
+        LONG *pRefCountRW = &m_refCount;
+#endif // !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
+
+        LONG newRefCount = InterlockedIncrement(pRefCountRW);
         _ASSERTE(newRefCount > 0);
         return newRefCount;
     }
 
     LONG Release()
     {
-        LONG newRefCount = InterlockedDecrement(&m_refCount);
+#if !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
+        ExecutableWriterHolder<LONG> refCountWriterHolder(&m_refCount, sizeof(LONG));
+        LONG *pRefCountRW = refCountWriterHolder.GetRW();
+#else // !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
+        LONG *pRefCountRW = &m_refCount;
+#endif // !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
+
+        LONG newRefCount = InterlockedDecrement(pRefCountRW);
         _ASSERTE(newRefCount >= 0);
 
         if (newRefCount == 0)

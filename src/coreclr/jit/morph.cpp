@@ -74,6 +74,9 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
     call->gtCallMoreFlags       = GTF_CALL_M_EMPTY;
     call->gtInlineCandidateInfo = nullptr;
     call->gtControlExpr         = nullptr;
+#ifdef UNIX_X86_ABI
+    call->gtFlags |= GTF_CALL_POP_ARGS;
+#endif // UNIX_X86_ABI
 
 #if DEBUG
     // Helper calls are never candidates.
@@ -639,7 +642,6 @@ OPTIMIZECAST:
                             case GT_IND:
                             case GT_CLS_VAR:
                             case GT_LCL_FLD:
-                            case GT_ARR_ELEM:
                                 oper->gtType = dstType;
                                 // We're changing the type here so we need to update the VN;
                                 // in other cases we discard the cast without modifying oper
@@ -2895,9 +2897,10 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     }
 
 #ifdef TARGET_X86
-    // Compute the maximum number of arguments that can be passed in registers.
-    // For X86 we handle the varargs and unmanaged calling conventions
+// Compute the maximum number of arguments that can be passed in registers.
+// For X86 we handle the varargs and unmanaged calling conventions
 
+#ifndef UNIX_X86_ABI
     if (call->gtFlags & GTF_CALL_POP_ARGS)
     {
         noway_assert(intArgRegNum < MAX_REG_ARG);
@@ -2908,6 +2911,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         if (callHasRetBuffArg)
             maxRegArgs++;
     }
+#endif // UNIX_X86_ABI
 
     if (call->IsUnmanaged())
     {
@@ -5577,8 +5581,9 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     GenTree* arrRef = asIndex->Arr();
     GenTree* index  = asIndex->Index();
 
-    bool chkd = ((tree->gtFlags & GTF_INX_RNGCHK) != 0); // if false, range checking will be disabled
-    bool nCSE = ((tree->gtFlags & GTF_DONT_CSE) != 0);
+    bool chkd             = ((tree->gtFlags & GTF_INX_RNGCHK) != 0);  // if false, range checking will be disabled
+    bool indexNonFaulting = ((tree->gtFlags & GTF_INX_NOFAULT) != 0); // if true, mark GTF_IND_NONFAULTING
+    bool nCSE             = ((tree->gtFlags & GTF_DONT_CSE) != 0);
 
     GenTree* arrRefDefn = nullptr; // non-NULL if we need to allocate a temp for the arrRef expression
     GenTree* indexDefn  = nullptr; // non-NULL if we need to allocate a temp for the index expression
@@ -5738,9 +5743,9 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         this->compFloatingPointUsed = true;
     }
 
-    // We've now consumed the GTF_INX_RNGCHK, and the node
+    // We've now consumed the GTF_INX_RNGCHK and GTF_INX_NOFAULT, and the node
     // is no longer a GT_INDEX node.
-    tree->gtFlags &= ~GTF_INX_RNGCHK;
+    tree->gtFlags &= ~(GTF_INX_RNGCHK | GTF_INX_NOFAULT);
 
     tree->AsOp()->gtOp1 = addr;
 
@@ -5748,7 +5753,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     tree->gtFlags |= GTF_IND_ARR_INDEX;
 
     // If there's a bounds check, the indir won't fault.
-    if (bndsChk)
+    if (bndsChk || indexNonFaulting)
     {
         tree->gtFlags |= GTF_IND_NONFAULTING;
     }
@@ -12082,23 +12087,8 @@ DONE_MORPHING_CHILDREN:
                         tree->AsOp()->gtOp2 = op2 = op2->AsCast()->CastOp();
                     }
                 }
-                else if (op2->OperIsCompare() && varTypeIsByte(effectiveOp1->TypeGet()))
-                {
-                    /* We don't need to zero extend the setcc instruction */
-                    op2->gtType = TYP_BYTE;
-                }
             }
-            // If we introduced a CSE we may need to undo the optimization above
-            // (i.e. " op2->gtType = TYP_BYTE;" which depends upon op1 being a GT_IND of a byte type)
-            // When we introduce the CSE we remove the GT_IND and subsitute a GT_LCL_VAR in it place.
-            else if (op2->OperIsCompare() && (op2->gtType == TYP_BYTE) && (op1->gtOper == GT_LCL_VAR))
-            {
-                unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
-                LclVarDsc* varDsc = &lvaTable[varNum];
 
-                /* We again need to zero extend the setcc instruction */
-                op2->gtType = varDsc->TypeGet();
-            }
             fgAssignSetVarDef(tree);
 
             /* We can't CSE the LHS of an assignment */
@@ -12339,9 +12329,6 @@ DONE_MORPHING_CHILDREN:
                     {
                         gtReverseCond(op1);
                     }
-
-                    /* Propagate gtType of tree into op1 in case it is TYP_BYTE for setcc optimization */
-                    op1->gtType = tree->gtType;
 
                     noway_assert((op1->gtFlags & GTF_RELOP_JMP_USED) == 0);
                     op1->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
@@ -16004,6 +15991,16 @@ void Compiler::fgMorphBlocks()
 
 #endif
 
+    if (!compEnregLocals())
+    {
+        // Morph is checking if lvDoNotEnregister is already set for some optimizations.
+        // If we are running without `CLFLG_REGVAR` flag set (`compEnregLocals() == false`)
+        // then we already know that we won't enregister any locals and it is better to set
+        // this flag before we start reading it.
+        // The main reason why this flag is not set is that we are running in minOpts.
+        lvSetMinOptsDoNotEnreg();
+    }
+
     /*-------------------------------------------------------------------------
      * Process all basic blocks in the function
      */
@@ -17427,14 +17424,18 @@ void Compiler::fgRetypeImplicitByRefArgs()
 #endif // DEBUG
 
                 // Propagate address-taken-ness and do-not-enregister-ness.
-                newVarDsc->lvAddrExposed     = varDsc->lvAddrExposed;
-                newVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
+                newVarDsc->lvAddrExposed           = varDsc->lvAddrExposed;
+                newVarDsc->lvDoNotEnregister       = varDsc->lvDoNotEnregister;
+                newVarDsc->lvLiveInOutOfHndlr      = varDsc->lvLiveInOutOfHndlr;
+                newVarDsc->lvSingleDef             = varDsc->lvSingleDef;
+                newVarDsc->lvSingleDefRegCandidate = varDsc->lvSingleDefRegCandidate;
+                newVarDsc->lvSpillAtSingleDef      = varDsc->lvSpillAtSingleDef;
 #ifdef DEBUG
-                newVarDsc->lvLclBlockOpAddr   = varDsc->lvLclBlockOpAddr;
-                newVarDsc->lvLclFieldExpr     = varDsc->lvLclFieldExpr;
-                newVarDsc->lvVMNeedsStackAddr = varDsc->lvVMNeedsStackAddr;
-                newVarDsc->lvLiveInOutOfHndlr = varDsc->lvLiveInOutOfHndlr;
-                newVarDsc->lvLiveAcrossUCall  = varDsc->lvLiveAcrossUCall;
+                newVarDsc->lvLclBlockOpAddr            = varDsc->lvLclBlockOpAddr;
+                newVarDsc->lvLclFieldExpr              = varDsc->lvLclFieldExpr;
+                newVarDsc->lvVMNeedsStackAddr          = varDsc->lvVMNeedsStackAddr;
+                newVarDsc->lvSingleDefDisqualifyReason = varDsc->lvSingleDefDisqualifyReason;
+                newVarDsc->lvLiveAcrossUCall           = varDsc->lvLiveAcrossUCall;
 #endif // DEBUG
 
                 // If the promotion is dependent, the promoted temp would just be committed

@@ -274,7 +274,7 @@ namespace System.Data.Common
         public abstract object ConvertXmlToObject(string s);
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        public virtual object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute xmlAttrib)
+        public virtual object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute? xmlAttrib)
         {
             return ConvertXmlToObject(xmlReader.Value);
         }

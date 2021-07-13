@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
-using System.Text.Json.SourceGeneration.Reflection;
+using System.Text.Json.Reflection;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -18,6 +18,8 @@ namespace System.Text.Json.SourceGeneration
         public Type ContextType { get; init; }
 
         public List<TypeGenerationSpec> RootSerializableTypes { get; } = new();
+
+        public HashSet<TypeGenerationSpec>? NullableUnderlyingTypes { get; } = new();
 
         public List<string> ContextClassDeclarationList { get; init; }
 

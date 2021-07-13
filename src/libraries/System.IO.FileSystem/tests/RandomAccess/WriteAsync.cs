@@ -11,9 +11,9 @@ namespace System.IO.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     [SkipOnPlatform(TestPlatforms.Browser, "async file IO is not supported on browser")]
-    public class RandomAccess_WriteAsync : RandomAccess_Base<ValueTask<int>>
+    public class RandomAccess_WriteAsync : RandomAccess_Base<ValueTask>
     {
-        protected override ValueTask<int> MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset)
+        protected override ValueTask MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset)
             => RandomAccess.WriteAsync(handle, bytes, fileOffset);
 
         [Theory]
@@ -44,11 +44,11 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(GetSyncAsyncOptions))]
-        public async Task WriteUsingEmptyBufferReturnsZeroAsync(FileOptions options)
+        public async Task WriteUsingEmptyBufferReturnsAsync(FileOptions options)
         {
             using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, options: options))
             {
-                Assert.Equal(0, await RandomAccess.WriteAsync(handle, Array.Empty<byte>(), fileOffset: 0));
+                await RandomAccess.WriteAsync(handle, Array.Empty<byte>(), fileOffset: 0);
             }
         }
 
@@ -63,17 +63,14 @@ namespace System.IO.Tests
             using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, options))
             {
                 int total = 0;
-                int current = 0;
 
                 while (total != fileSize)
                 {
                     Memory<byte> buffer = content.AsMemory(total, Math.Min(content.Length - total, fileSize / 4));
 
-                    current = await RandomAccess.WriteAsync(handle, buffer, fileOffset: total);
+                    await RandomAccess.WriteAsync(handle, buffer, fileOffset: total);
 
-                    Assert.InRange(current, 0, buffer.Length);
-
-                    total += current;
+                    total += buffer.Length;
                 }
             }
 
