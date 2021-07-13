@@ -165,19 +165,22 @@ namespace System
         // Also follows the locations found at the bottom of https://github.com/aosp-mirror/platform_bionic/blob/master/libc/tzcode/bionic.cpp
         private static string GetTimeZoneDirectory()
         {
+            string apexTzDataFileDir = GetApexTimeDataRoot() + "/etc/tz/";
             // Android 10+, TimeData module where the updates land
-            if (File.Exists(Path.Combine(GetApexTimeDataRoot() + "/etc/tz/", TimeZoneFileName)))
+            if (File.Exists(Path.Combine(apexTzDataFileDir, TimeZoneFileName)))
             {
-                return GetApexTimeDataRoot() + "/etc/tz/";
+                return apexTzDataFileDir;
             }
+            string apexRuntimeFileDir = GetApexRuntimeRoot() + "/etc/tz/";
             // Android 10+, Fallback location if the above isn't found or corrupted
-            if (File.Exists(Path.Combine(GetApexRuntimeRoot() + "/etc/tz/", TimeZoneFileName)))
+            if (File.Exists(Path.Combine(apexRuntimeFileDir, TimeZoneFileName)))
             {
-                return GetApexRuntimeRoot() + "/etc/tz/";
+                return apexRuntimeFileDir;
             }
-            if (File.Exists(Path.Combine(Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/", TimeZoneFileName)))
+            string androidDataFileDir = Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/";
+            if (File.Exists(Path.Combine(androidDataFileDir, TimeZoneFileName)))
             {
-                return Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/";
+                return androidDataFileDir;
             }
 
             return Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory;
