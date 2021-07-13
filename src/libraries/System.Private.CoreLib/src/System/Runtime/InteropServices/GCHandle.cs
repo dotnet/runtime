@@ -73,9 +73,9 @@ namespace System.Runtime.InteropServices
 
             if ((nint)handle != 0)
             {
-                InternalFree(GetHandleValue(handle));
-
                 _handle = IntPtr.Zero;
+
+                InternalFree(GetHandleValue(handle));
             }
         }
 
@@ -86,9 +86,9 @@ namespace System.Runtime.InteropServices
 
             if ((nint)handle != 0)
             {
-                InternalFree(GetHandleValue(handle));
-
                 _handle = IntPtr.Zero;
+
+                InternalFree(GetHandleValue(handle));
             }
             else
             {
