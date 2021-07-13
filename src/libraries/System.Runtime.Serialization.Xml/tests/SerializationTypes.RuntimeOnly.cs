@@ -837,6 +837,8 @@ namespace SerializationTypes
         public string @Name5 { get; set; }
 
         public virtual string Name6 { get; set; }
+
+        public virtual string Name7 { get; set; }
     }
 
     public class DerivedTypeWithDifferentOverrides : BaseType
@@ -852,6 +854,8 @@ namespace SerializationTypes
         public new string Name5 { get; set; }
 
         public override string Name6 { get; set; }
+
+        public override string Name7 { set { base.Name7 = value; } }
     }
 
     public class DerivedTypeWithDifferentOverrides2 : DerivedTypeWithDifferentOverrides
