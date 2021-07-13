@@ -39,7 +39,7 @@ namespace System.Net
                 case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_MEMORY:
                     throw new OutOfMemoryException();
                 default:
-                    Debug.Fail("Unexpected error: " + error.ToString());
+                    Debug.Fail($"Unexpected error: {error}");
                     return SocketError.SocketError;
             }
         }
@@ -76,9 +76,11 @@ namespace System.Net
                     Interop.Sys.IPAddress* addressHandle = hostEntry.IPAddressList;
                     for (int i = 0; i < hostEntry.IPAddressCount; i++)
                     {
-                        if (Array.IndexOf(nativeAddresses, addressHandle[i], 0, nativeAddressCount) == -1)
+                        Interop.Sys.IPAddress nativeAddr = addressHandle[i];
+                        if (Array.IndexOf(nativeAddresses, nativeAddr, 0, nativeAddressCount) == -1 &&
+                            (!nativeAddr.IsIPv6 || SocketProtocolSupportPal.OSSupportsIPv6)) // Do not include IPv6 addresses if IPV6 support is force-disabled
                         {
-                            nativeAddresses[nativeAddressCount++] = addressHandle[i];
+                            nativeAddresses[nativeAddressCount++] = nativeAddr;
                         }
                     }
 

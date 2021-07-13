@@ -297,7 +297,7 @@ int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
 
     // EVP_PKEY_verify is not consistent on whether a mis-sized hash is an error or just a mismatch.
     // Normalize to mismatch.
-    if (hashLen != EVP_MD_size(digest))
+    if (hashLen != EVP_MD_get_size(digest))
     {
         ret = 0;
         goto done;

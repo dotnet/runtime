@@ -37,8 +37,14 @@ namespace System.Text.Json.Serialization
                             // Guard against unsupported features
                             Options.Converters.Count == 0 &&
                             Options.Encoder == null &&
-                            Options.NumberHandling == JsonNumberHandling.Strict &&
+                            // Disallow custom number handling we'd need to honor when writing.
+                            // AllowReadingFromString and Strict are fine since there's no action to take when writing.
+                            (Options.NumberHandling & (JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowNamedFloatingPointLiterals)) == 0 &&
                             Options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.None &&
+#pragma warning disable SYSLIB0020
+                            !Options.IgnoreNullValues && // This property is obsolete.
+#pragma warning restore SYSLIB0020
+
                             // Ensure options values are consistent with expected defaults.
                             Options.DefaultIgnoreCondition == _defaultOptions.DefaultIgnoreCondition &&
                             Options.IgnoreReadOnlyFields == _defaultOptions.IgnoreReadOnlyFields &&
@@ -78,7 +84,7 @@ namespace System.Text.Json.Serialization
         /// Creates an instance of <see cref="JsonSerializerContext"/> and binds it with the indicated <see cref="JsonSerializerOptions"/>.
         /// </summary>
         /// <param name="instanceOptions">The run-time provided options for the context instance.</param>
-        /// <param name="defaultOptions">The default run-time options for the context. It's values are defined at design-time via <see cref="JsonSerializerOptionsAttribute"/>.</param>
+        /// <param name="defaultOptions">The default run-time options for the context. It's values are defined at design-time via <see cref="JsonSourceGenerationOptionsAttribute"/>.</param>
         /// <remarks>
         /// If no instance options are passed, then no options are set until the context is bound using <see cref="JsonSerializerOptions.AddContext{TContext}"/>,
         /// or until <see cref="Options"/> is called, where a new options instance is created and bound.

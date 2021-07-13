@@ -116,14 +116,14 @@ namespace ComWrappersTests.GlobalInstance
                 }
                 else if (string.Equals(ManagedServerTypeName, obj.GetType().Name))
                 {
-                    IntPtr fpQueryInteface = default;
+                    IntPtr fpQueryInterface = default;
                     IntPtr fpAddRef = default;
                     IntPtr fpRelease = default;
-                    ComWrappers.GetIUnknownImpl(out fpQueryInteface, out fpAddRef, out fpRelease);
+                    ComWrappers.GetIUnknownImpl(out fpQueryInterface, out fpAddRef, out fpRelease);
 
                     var vtbl = new IUnknownVtbl()
                     {
-                        QueryInterface = fpQueryInteface,
+                        QueryInterface = fpQueryInterface,
                         AddRef = fpAddRef,
                         Release = fpRelease
                     };
@@ -176,14 +176,14 @@ namespace ComWrappersTests.GlobalInstance
 
             private unsafe ComInterfaceEntry* ComputeVtablesForTestObject(Test obj, out int count)
             {
-                IntPtr fpQueryInteface = default;
+                IntPtr fpQueryInterface = default;
                 IntPtr fpAddRef = default;
                 IntPtr fpRelease = default;
-                ComWrappers.GetIUnknownImpl(out fpQueryInteface, out fpAddRef, out fpRelease);
+                ComWrappers.GetIUnknownImpl(out fpQueryInterface, out fpAddRef, out fpRelease);
 
                 var iUnknownVtbl = new IUnknownVtbl()
                 {
-                    QueryInterface = fpQueryInteface,
+                    QueryInterface = fpQueryInterface,
                     AddRef = fpAddRef,
                     Release = fpRelease
                 };

@@ -69,13 +69,14 @@
 #include <mono/utils/os-event.h>
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-time.h>
-#include <mono/mini/debugger-state-machine.h>
+#include <mono/component/debugger-state-machine.h>
+#include <mono/metadata/components.h>
 
 #include "mini.h"
 #include <string.h>
 #include <ctype.h>
 #include "trace.h"
-#include "debugger-agent.h"
+#include <mono/component/debugger-agent.h>
 #include "mini-runtime.h"
 #include "jit-icalls.h"
 
@@ -135,17 +136,30 @@ mono_runtime_shutdown_handlers (void)
 static GHashTable *mono_saved_signal_handlers = NULL;
 
 static struct sigaction *
-get_saved_signal_handler (int signo, gboolean remove)
+get_saved_signal_handler (int signo)
 {
 	if (mono_saved_signal_handlers) {
 		/* The hash is only modified during startup, so no need for locking */
 		struct sigaction *handler = (struct sigaction*)g_hash_table_lookup (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
-		if (remove && handler)
-			g_hash_table_remove (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
 		return handler;
 	}
 	return NULL;
 }
+
+
+static void
+remove_saved_signal_handler (int signo)
+{
+	if (mono_saved_signal_handlers) {
+		/* The hash is only modified during startup, so no need for locking */
+		struct sigaction *handler = (struct sigaction*)g_hash_table_lookup (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
+		if (handler)
+			g_hash_table_remove (mono_saved_signal_handlers, GINT_TO_POINTER (signo));
+	}
+	return;
+}
+
+
 
 static void
 save_old_signal_handler (int signo, struct sigaction *old_action)
@@ -181,7 +195,7 @@ gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
 	int signal = MONO_SIG_HANDLER_GET_SIGNO ();
-	struct sigaction *saved_handler = (struct sigaction *)get_saved_signal_handler (signal, FALSE);
+	struct sigaction *saved_handler = (struct sigaction *)get_saved_signal_handler (signal);
 
 	if (saved_handler && saved_handler->sa_handler) {
 		if (!(saved_handler->sa_flags & SA_SIGINFO)) {
@@ -376,7 +390,7 @@ static void
 remove_signal_handler (int signo)
 {
 	struct sigaction sa;
-	struct sigaction *saved_action = get_saved_signal_handler (signo, TRUE);
+	struct sigaction *saved_action = get_saved_signal_handler (signo);
 
 	if (!saved_action) {
 		sa.sa_handler = SIG_DFL;
@@ -387,6 +401,7 @@ remove_signal_handler (int signo)
 	} else {
 		g_assert (sigaction (signo, saved_action, NULL) != -1);
 	}
+	remove_saved_signal_handler(signo);
 }
 
 void
@@ -985,7 +1000,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		// see if we can notify any attached debugger instances.
 		//
 		// At this point we are accepting that the below step might end in a crash
-		mini_get_dbg_callbacks ()->send_crash (output, &hashes, 0 /* wait # seconds */);
+		mono_component_debugger ()->send_crash (output, &hashes, 0 /* wait # seconds */);
 	}
 	output = NULL;
 	mono_state_free_mem (&merp_mem);

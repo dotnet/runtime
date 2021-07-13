@@ -58,7 +58,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (_converterStrategy == ConverterStrategy.Object && jsonTypeInfo.PropertyCache == null)
             {
-                jsonTypeInfo.InitializeDeserializePropCache();
+                jsonTypeInfo.InitializePropCache();
             }
 
             return Converter.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
@@ -79,9 +79,9 @@ namespace System.Text.Json.Serialization.Converters
                 return true;
             }
 
-            if (_converterStrategy == ConverterStrategy.Object && jsonTypeInfo.PropertyCacheArray == null)
+            if (_converterStrategy == ConverterStrategy.Object && jsonTypeInfo.PropertyCache == null)
             {
-                jsonTypeInfo.InitializeSerializePropCache();
+                jsonTypeInfo.InitializePropCache();
             }
 
             return Converter.OnTryWrite(writer, value, options, ref state);

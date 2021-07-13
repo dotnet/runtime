@@ -181,6 +181,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TransitionBlock.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\VirtualResolutionFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Win32ResourcesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SortableDependencyNodeCompilerSpecific.cs" />

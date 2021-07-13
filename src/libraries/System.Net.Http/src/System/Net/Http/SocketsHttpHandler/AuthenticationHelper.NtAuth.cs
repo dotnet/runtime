@@ -108,7 +108,7 @@ namespace System.Net.Http
 
                             if (!isProxyAuth && !authUri.IsDefaultPort)
                             {
-                                hostName = $"{hostName}:{authUri.Port}";
+                                hostName = string.Create(null, stackalloc char[128], $"{hostName}:{authUri.Port}");
                             }
                         }
 
@@ -119,7 +119,7 @@ namespace System.Net.Http
                         }
 
                         ChannelBinding? channelBinding = connection.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint);
-                        NTAuthentication authContext = new NTAuthentication(isServer: false, challenge.SchemeName, challenge.Credential, spn, ContextFlagsPal.Connection, channelBinding);
+                        NTAuthentication authContext = new NTAuthentication(isServer: false, challenge.SchemeName, challenge.Credential, spn, ContextFlagsPal.Connection | ContextFlagsPal.InitIntegrity, channelBinding);
                         string? challengeData = challenge.ChallengeData;
                         try
                         {

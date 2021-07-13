@@ -25,12 +25,6 @@ namespace System.Text.Json
         public const string SingleFormatString = "G9";
 #endif
 
-        private const string CompiledNewline = @"
-";
-
-        private static readonly bool s_replaceNewlines =
-            !StringComparer.Ordinal.Equals(CompiledNewline, Environment.NewLine);
-
         public static string NewtonsoftReturnStringHelper(TextReader reader)
         {
             var sb = new StringBuilder();
@@ -812,11 +806,22 @@ namespace System.Text.Json
         public static string StripWhitespace(this string value)
             => s_stripWhitespace.Replace(value, string.Empty);
 
+#if NET6_0_OR_GREATER
+        // This is needed due to the fact that git might normalize line endings when checking-out files
+        public static string NormalizeLineEndings(this string value) => value.ReplaceLineEndings();
+#else
+        private const string CompiledNewline = @"
+";
+
+        private static readonly bool s_replaceNewlines =
+            !StringComparer.Ordinal.Equals(CompiledNewline, Environment.NewLine);
+
         // Should be called only on compile-time strings
         // This is needed due to the fact that git might normalize line endings when checking-out files
         public static string NormalizeLineEndings(this string value)
             => s_replaceNewlines ?
             value.Replace(CompiledNewline, Environment.NewLine) :
             value;
+#endif
     }
 }

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -57,7 +58,7 @@ namespace System.Data
             _found = true;
 
             // add column to the dependency list, do not add duplicate columns
-            Debug.Assert(_column != null, "Failed to bind column " + _name);
+            Debug.Assert(_column != null, $"Failed to bind column {_name}");
 
             int i;
             for (i = 0; i < list.Count; i++)
@@ -75,12 +76,14 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval()
         {
             // can not eval column without ROW value;
             throw ExprException.EvalNoContext();
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(DataRow? row, DataRowVersion version)
         {
             if (!_found)
@@ -101,6 +104,7 @@ namespace System.Data
             return _column![row.GetRecordFromVersion(version)];
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(int[] records)
         {
             throw ExprException.ComputeNotAggregate(ToString()!);

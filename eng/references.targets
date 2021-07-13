@@ -7,13 +7,6 @@
     <_FindDependencies>false</_FindDependencies>
   </PropertyGroup>
 
-  <!-- netstandard is a default reference whenever building an implementation assembly for .NETCoreApp. -->
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                        '$(IsSourceProject)' == 'true'">
-    <Reference Include="netstandard"
-               Private="false" />
-  </ItemGroup>
-
    <!-- If a CoreLib ProjectReference is present, make all P2P assets non transitive. -->
   <ItemGroup Condition="'@(ProjectReference)' != '' and
                          @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))">

@@ -969,7 +969,6 @@ class BaseStackGuard;
 
 struct PortableTailCallFrame
 {
-    PortableTailCallFrame* Prev;
     void* TailCallAwareReturnAddress;
     void* NextCall;
 };
@@ -3623,16 +3622,6 @@ private:
     //---------------------------------------------------------------
     DWORD m_profilerCallbackState;
 
-#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
-    //---------------------------------------------------------------
-    // m_dwProfilerEvacuationCounter keeps track of how many profiler
-    // callback calls remain on the stack
-    //---------------------------------------------------------------
-    // Why volatile?
-    // See code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization.
-    Volatile<DWORD> m_dwProfilerEvacuationCounter;
-#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
-
 private:
     UINT32 m_workerThreadPoolCompletionCount;
     static UINT64 s_workerThreadPoolCompletionCountOverflow;
@@ -3801,30 +3790,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_pProfilerFilterContext;
     }
-
-#ifdef PROFILING_SUPPORTED
-
-    FORCEINLINE DWORD GetProfilerEvacuationCounter(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwProfilerEvacuationCounter;
-    }
-
-    FORCEINLINE void IncProfilerEvacuationCounter(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_dwProfilerEvacuationCounter++;
-        _ASSERTE(m_dwProfilerEvacuationCounter != 0U);
-    }
-
-    FORCEINLINE void DecProfilerEvacuationCounter(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_dwProfilerEvacuationCounter != 0U);
-        m_dwProfilerEvacuationCounter--;
-    }
-
-#endif // PROFILING_SUPPORTED
 
     //-------------------------------------------------------------------------
     // The hijack lock enforces that a thread on which a profiler is currently
@@ -6306,17 +6271,22 @@ private:
 
 BOOL Debug_IsLockedViaThreadSuspension();
 
-#ifdef FEATURE_WRITEBARRIER_COPY
+inline BOOL IsWriteBarrierCopyEnabled()
+{
+#ifdef DACCESS_COMPILE
+    return FALSE;
+#else // DACCESS_COMPILE
+#ifdef HOST_OSX
+    return TRUE;
+#else
+    return ExecutableAllocator::IsWXORXEnabled();
+#endif
+#endif // DACCESS_COMPILE
+}
 
 BYTE* GetWriteBarrierCodeLocation(VOID* barrier);
 BOOL IsIPInWriteBarrierCodeCopy(PCODE controlPc);
 PCODE AdjustWriteBarrierIP(PCODE controlPc);
-
-#else // FEATURE_WRITEBARRIER_COPY
-
-#define GetWriteBarrierCodeLocation(barrier) ((BYTE*)(barrier))
-
-#endif // FEATURE_WRITEBARRIER_COPY
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 extern thread_local Thread* t_pStackWalkerWalkingThread;

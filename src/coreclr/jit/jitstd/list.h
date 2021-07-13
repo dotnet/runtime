@@ -160,6 +160,17 @@ public:
         Node* m_pNode;
     };
 
+#ifdef DEBUG
+    void init(const Allocator& a)
+    {
+        m_pHead = nullptr;
+        m_pTail = nullptr;
+        m_nSize = 0;
+        m_allocator = a;
+        m_nodeAllocator = a;
+    }
+#endif
+
     explicit list(const Allocator&);
     list(size_type n, const T& value, const Allocator&);
 

@@ -543,10 +543,7 @@ public:
     ValueNum VNApplySelectorsAssign(
         ValueNumKind vnk, ValueNum map, FieldSeqNode* fieldSeq, ValueNum rhs, var_types indType, BasicBlock* block);
 
-    // Used after VNApplySelectorsAssign has determined that "elem" is to be writen into a Map using VNForMapStore
-    // It determines whether the 'elem' is of an appropriate type to be writen using using an indirection of 'indType'
-    // It may insert a cast to indType or return a unique value number for an incompatible indType.
-    ValueNum VNApplySelectorsAssignTypeCoerce(ValueNum elem, var_types indType, BasicBlock* block);
+    ValueNum VNApplySelectorsAssignTypeCoerce(ValueNum srcElem, var_types dstIndType, BasicBlock* block);
 
     ValueNumPair VNPairApplySelectors(ValueNumPair map, FieldSeqNode* fieldSeq, var_types indType);
 

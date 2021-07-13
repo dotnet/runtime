@@ -67,7 +67,6 @@ bool g_EnableSIS = false;
 
 // The following instances are used for invoking overloaded new/delete
 InteropSafe interopsafe;
-InteropSafeExecutable interopsafeEXEC;
 
 #ifndef DACCESS_COMPILE
 
@@ -366,10 +365,10 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     //
     Thread * pThread;
     bool fIsCooperative;
-    
+
     pThread = g_pEEInterface->GetThread();
     fIsCooperative = (pThread != NULL) && (pThread->PreemptiveGCDisabled());
-    
+
     if (m_fShutdownMode && !fIsCooperative)
     {
         // The big fear is that some other random thread will take the debugger-lock and then block on something else,
@@ -1316,16 +1315,21 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
 {
     WRAPPER_NO_CONTRACT;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     // Allocate the breakpoint instruction info in executable memory.
-    m_bpInfoSegment = new (interopsafeEXEC, nothrow) DebuggerEvalBreakpointInfoSegment(this);
+    void *bpInfoSegmentRX = g_pDebugger->GetInteropSafeExecutableHeap()->Alloc(sizeof(DebuggerEvalBreakpointInfoSegment));
+
+#if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE) && defined(HOST_OSX) && defined(HOST_ARM64)
+    ExecutableWriterHolder<DebuggerEvalBreakpointInfoSegment> bpInfoSegmentWriterHolder((DebuggerEvalBreakpointInfoSegment*)bpInfoSegmentRX, sizeof(DebuggerEvalBreakpointInfoSegment));
+    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = bpInfoSegmentWriterHolder.GetRW();
+#else // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
+    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = (DebuggerEvalBreakpointInfoSegment*)bpInfoSegmentRX;
+#endif // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
+    new (bpInfoSegmentRW) DebuggerEvalBreakpointInfoSegment(this);
+    m_bpInfoSegment = (DebuggerEvalBreakpointInfoSegment*)bpInfoSegmentRX;
 
     // This must be non-zero so that the saved opcode is non-zero, and on IA64 we want it to be 0x16
     // so that we can have a breakpoint instruction in any slot in the bundle.
-    m_bpInfoSegment->m_breakpointInstruction[0] = 0x16;
+    bpInfoSegmentRW->m_breakpointInstruction[0] = 0x16;
 #if defined(TARGET_ARM)
     USHORT *bp = (USHORT*)&m_bpInfoSegment->m_breakpointInstruction;
     *bp = CORDbg_BREAK_INSTRUCTION;
@@ -16236,6 +16240,7 @@ void Debugger::ReleaseDebuggerDataLock(Debugger *pDebugger)
 }
 #endif // DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
 /* ------------------------------------------------------------------------ *
  * Functions for DebuggerHeap executable memory allocations
  * ------------------------------------------------------------------------ */
@@ -16301,7 +16306,8 @@ void* DebuggerHeapExecutableMemoryAllocator::Allocate(DWORD numberOfBytes)
         }
     }
 
-    return ChangePageUsage(pageToAllocateOn, chunkToUse, ChangePageUsageAction::ALLOCATE);
+    ASSERT(chunkToUse >= 1 && (uint)chunkToUse < CHUNKS_PER_DEBUGGERHEAP);
+    return GetPointerToChunkWithUsageUpdate(pageToAllocateOn, chunkToUse, ChangePageUsageAction::ALLOCATE);
 }
 
 void DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
@@ -16316,9 +16322,9 @@ void DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
     int chunkNum = static_cast<DebuggerHeapExecutableMemoryChunk*>(addr)->data.chunkNumber;
 
     // Sanity check: assert that the address really represents the start of a chunk.
-    ASSERT(((uint64_t)addr - (uint64_t)pageToFreeIn) % 64 == 0);
+    ASSERT(((uint64_t)addr - (uint64_t)pageToFreeIn) % EXPECTED_CHUNKSIZE == 0);
 
-    ChangePageUsage(pageToFreeIn, chunkNum, ChangePageUsageAction::FREE);
+    GetPointerToChunkWithUsageUpdate(pageToFreeIn, chunkNum, ChangePageUsageAction::FREE);
 }
 
 DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewPage()
@@ -16326,6 +16332,7 @@ DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewP
     void* newPageAddr = VirtualAlloc(NULL, sizeof(DebuggerHeapExecutableMemoryPage), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 
     DebuggerHeapExecutableMemoryPage *newPage = new (newPageAddr) DebuggerHeapExecutableMemoryPage;
+    CrstHolder execMemAllocCrstHolder(&m_execMemAllocMutex);
     newPage->SetNextPage(m_pages);
 
     // Add the new page to the linked list of pages
@@ -16335,8 +16342,9 @@ DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewP
 
 bool DebuggerHeapExecutableMemoryAllocator::CheckPageForAvailability(DebuggerHeapExecutableMemoryPage* page, /* _Out_ */ int* chunkToUse)
 {
+    CrstHolder execMemAllocCrstHolder(&m_execMemAllocMutex);
     uint64_t occupancy = page->GetPageOccupancy();
-    bool available = occupancy != UINT64_MAX;
+    bool available = occupancy != MAX_CHUNK_MASK;
 
     if (!available)
     {
@@ -16350,13 +16358,13 @@ bool DebuggerHeapExecutableMemoryAllocator::CheckPageForAvailability(DebuggerHea
 
     if (chunkToUse)
     {
-        // Start i at 62 because first chunk is reserved
-        for (int i = 62; i >= 0; i--)
+        // skip the first bit, as that's used by the booking chunk.
+        for (int i = CHUNKS_PER_DEBUGGERHEAP - 2; i >= 0; i--)
         {
-            uint64_t mask = ((uint64_t)1 << i);
+            uint64_t mask = (1ull << i);
             if ((mask & occupancy) == 0)
             {
-                *chunkToUse = 64 - i - 1;
+                *chunkToUse = CHUNKS_PER_DEBUGGERHEAP - i - 1;
                 break;
             }
         }
@@ -16365,18 +16373,19 @@ bool DebuggerHeapExecutableMemoryAllocator::CheckPageForAvailability(DebuggerHea
     return true;
 }
 
-void* DebuggerHeapExecutableMemoryAllocator::ChangePageUsage(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action)
+void* DebuggerHeapExecutableMemoryAllocator::GetPointerToChunkWithUsageUpdate(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action)
 {
     ASSERT(action == ChangePageUsageAction::ALLOCATE || action == ChangePageUsageAction::FREE);
+    uint64_t mask = 1ull << (CHUNKS_PER_DEBUGGERHEAP - chunkNumber - 1);
 
-    uint64_t mask = (uint64_t)0x1 << (64 - chunkNumber - 1);
-
+    CrstHolder execMemAllocCrstHolder(&m_execMemAllocMutex);
     uint64_t prevOccupancy = page->GetPageOccupancy();
     uint64_t newOccupancy = (action == ChangePageUsageAction::ALLOCATE) ? (prevOccupancy | mask) : (prevOccupancy ^ mask);
     page->SetPageOccupancy(newOccupancy);
 
     return page->GetPointerToChunk(chunkNumber);
 }
+#endif // DACCESS_COMPILE
 
 /* ------------------------------------------------------------------------ *
  * DebuggerHeap impl
@@ -16411,7 +16420,7 @@ void DebuggerHeap::Destroy()
         m_hHeap = NULL;
     }
 #endif
-#ifndef HOST_WINDOWS
+#if !defined(HOST_WINDOWS) && !defined(DACCESS_COMPILE)
     if (m_execMemAllocator != NULL)
     {
         delete m_execMemAllocator;
@@ -16438,6 +16447,8 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
     }
     CONTRACTL_END;
 
+#ifndef DACCESS_COMPILE
+
     // Have knob catch if we don't want to lazy init the debugger.
     _ASSERTE(!g_DbgShouldntUseDebugger);
     m_fExecutable = fExecutable;
@@ -16461,13 +16472,19 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
 #endif
 
 #ifndef HOST_WINDOWS
-    m_execMemAllocator = new (nothrow) DebuggerHeapExecutableMemoryAllocator();
-    ASSERT(m_execMemAllocator != NULL);
-    if (m_execMemAllocator == NULL)
+    m_execMemAllocator = NULL;
+    if (m_fExecutable)
     {
-        return E_OUTOFMEMORY;
+        m_execMemAllocator = new (nothrow) DebuggerHeapExecutableMemoryAllocator();
+        ASSERT(m_execMemAllocator != NULL);
+        if (m_execMemAllocator == NULL)
+        {
+            return E_OUTOFMEMORY;
+        }
     }
-#endif
+#endif    
+
+#endif // !DACCESS_COMPILE
 
     return S_OK;
 }
@@ -16544,7 +16561,10 @@ void *DebuggerHeap::Alloc(DWORD size)
     size += sizeof(InteropHeapCanary);
 #endif
 
-    void *ret;
+    void *ret = NULL;
+
+#ifndef DACCESS_COMPILE
+
 #ifdef USE_INTEROPSAFE_HEAP
     _ASSERTE(m_hHeap != NULL);
     ret = ::HeapAlloc(m_hHeap, HEAP_ZERO_MEMORY, size);
@@ -16580,7 +16600,7 @@ void *DebuggerHeap::Alloc(DWORD size)
     InteropHeapCanary * pCanary = InteropHeapCanary::GetFromRawAddr(ret);
     ret = pCanary->GetUserAddr();
 #endif
-
+#endif // !DACCESS_COMPILE
     return ret;
 }
 
@@ -16633,6 +16653,8 @@ void DebuggerHeap::Free(void *pMem)
     }
     CONTRACTL_END;
 
+#ifndef DACCESS_COMPILE
+
 #ifdef USE_INTEROPSAFE_CANARY
     // Check for canary
 
@@ -16668,6 +16690,7 @@ void DebuggerHeap::Free(void *pMem)
 #endif // HOST_WINDOWS
     }
 #endif
+#endif // !DACCESS_COMPILE
 }
 
 #ifndef DACCESS_COMPILE

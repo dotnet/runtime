@@ -499,11 +499,13 @@ struct ComMethodTable
     // Accessor for the IDispatch information.
     DispatchInfo* GetDispatchInfo();
 
+#ifndef DACCESS_COMPILE
     LONG AddRef()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return InterlockedIncrement(&m_cbRefCount);
+        ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
+        return InterlockedIncrement(&comMTWriterHolder.GetRW()->m_cbRefCount);
     }
 
     LONG Release()
@@ -517,14 +519,16 @@ struct ComMethodTable
         }
         CONTRACTL_END;
 
+        ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
         // use a different var here becuase cleanup will delete the object
         // so can no longer make member refs
-        LONG cbRef = InterlockedDecrement(&m_cbRefCount);
+        LONG cbRef = InterlockedDecrement(&comMTWriterHolder.GetRW()->m_cbRefCount);
         if (cbRef == 0)
             Cleanup();
 
         return cbRef;
     }
+#endif // DACCESS_COMPILE
 
     CorIfaceAttr GetInterfaceType()
     {
@@ -744,6 +748,7 @@ struct ComMethodTable
     }
 
 
+#ifndef DACCESS_COMPILE
     inline REFIID GetIID()
     {
         // Cannot use a normal CONTRACT since the return type is ref type which
@@ -759,12 +764,14 @@ struct ComMethodTable
         // Generate the IClassX IID if it hasn't been generated yet.
         if (!(m_Flags & enum_GuidGenerated))
         {
-            GenerateClassItfGuid(TypeHandle(m_pMT), &m_IID);
-            m_Flags |= enum_GuidGenerated;
+            ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
+            GenerateClassItfGuid(TypeHandle(m_pMT), &comMTWriterHolder.GetRW()->m_IID);
+            comMTWriterHolder.GetRW()->m_Flags |= enum_GuidGenerated;
         }
 
         return m_IID;
     }
+#endif // DACCESS_COMPILE
 
     void CheckParentComVisibility(BOOL fForIDispatch)
     {

@@ -28,7 +28,6 @@
   <PropertyGroup>
     <!-- Build all .NET Framework configurations when net48 is passed in. This is for convenience. -->
     <AdditionalBuildTargetFrameworks Condition="'$(BuildTargetFramework)' == 'net48'">net461;net462;net47;net471;net472</AdditionalBuildTargetFrameworks>
-    <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
 
   <!-- Define test projects and companions -->
@@ -129,21 +128,9 @@
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <TestArchiveRuntimeRoot>$(TestArchiveRoot)runtime/</TestArchiveRuntimeRoot>
 
-    <!-- Paths to binplace package content -->
-    <NETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\ref</NETCoreAppPackageRefPath>
-    <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\lib</NETCoreAppPackageRuntimePath>
-
-    <ASPNETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\aspnetcoreapp\ref</ASPNETCoreAppPackageRefPath>
-    <ASPNETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\aspnetcoreapp\lib</ASPNETCoreAppPackageRuntimePath>
-
-    <MicrosoftNetCoreAppRefPackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.ref'))</MicrosoftNetCoreAppRefPackDir>
-    <MicrosoftNetCoreAppRefPackRefDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'ref', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRefPackRefDir>
-    <MicrosoftNetCoreAppRefPackDataDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'data'))</MicrosoftNetCoreAppRefPackDataDir>
-
-    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(PackageRID)', '$(Configuration)'))</MicrosoftNetCoreAppRuntimePackDir>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(PackageRID)'))</MicrosoftNetCoreAppRuntimePackRidDir>
-    <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'lib', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
-    <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
+    <ASPNETCoreAppPackageRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'pkg', 'aspnetcoreapp'))</ASPNETCoreAppPackageRootPath>
+    <ASPNETCoreAppPackageRefPath>$([MSBuild]::NormalizeDirectory('$(ASPNETCoreAppPackageRootPath)', 'ref'))</ASPNETCoreAppPackageRefPath>
+    <ASPNETCoreAppPackageRuntimePath>$([MSBuild]::NormalizeDirectory('$(ASPNETCoreAppPackageRootPath)', 'lib'))</ASPNETCoreAppPackageRuntimePath>
 
     <CommonPathRoot>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common'))</CommonPathRoot>
     <CommonPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'src'))</CommonPath>

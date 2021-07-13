@@ -43,6 +43,7 @@ namespace System.Text.Json
                 typedInfo.Options._context?.CanUseSerializationLogic == true)
             {
                 typedInfo.Serialize(writer, value);
+                writer.Flush();
             }
             else
             {

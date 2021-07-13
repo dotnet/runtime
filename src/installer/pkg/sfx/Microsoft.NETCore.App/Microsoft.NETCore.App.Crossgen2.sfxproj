@@ -10,7 +10,8 @@
     <OverridePackageId>$(SharedFrameworkName)$(PgoSuffix).$(RuntimeIdentifier)</OverridePackageId>
     <ArchiveName>dotnet-crossgen2</ArchiveName>
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
-    <RuntimeIdentifiers>linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
+    <!-- Build this pack for any RID if building from source. Otherwise, only build select RIDs. -->
+    <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>
     <GetSharedFrameworkFilesForReadyToRunDependsOn>
         AddRuntimeFilesToPackage;

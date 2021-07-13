@@ -705,7 +705,7 @@ public:
                (m_ModuleCount  >= MAX_MODULES);
     }
 
-    void RecordMethodJit(MethodDesc * pMethod, bool application);
+    void RecordMethodJitOrLoad(MethodDesc * pMethod, bool application);
 
     MulticoreJitCodeInfo RequestMethodCode(MethodDesc * pMethod, MulticoreJitManager * pManager);
 

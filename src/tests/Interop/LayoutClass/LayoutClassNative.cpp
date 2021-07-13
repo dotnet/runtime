@@ -109,6 +109,12 @@ DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleNestedLayoutClassByValue(NestedLayoutCla
 }
 
 extern "C"
+DLL_EXPORT BOOL STDMETHODCALLTYPE PointersEqual(void* ptr, void* ptr2)
+{
+    return ptr == ptr2 ? TRUE : FALSE;
+}
+
+extern "C"
 DLL_EXPORT void __cdecl Invalid(...)
 {
 }

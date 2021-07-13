@@ -193,12 +193,47 @@ namespace System.IO
         {
         }
 
-        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) :
-            this(ValidateArgsAndOpenPath(path, encoding, bufferSize), encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false)
+        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
+            : this(ValidateArgsAndOpenPath(path, encoding, bufferSize), encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false)
         {
         }
 
+        public StreamReader(string path, FileStreamOptions options)
+            : this(path, Encoding.UTF8, true, options)
+        {
+        }
+
+        public StreamReader(string path, Encoding encoding, bool detectEncodingFromByteOrderMarks, FileStreamOptions options)
+            : this(ValidateArgsAndOpenPath(path, encoding, options), encoding, detectEncodingFromByteOrderMarks, DefaultBufferSize)
+        {
+        }
+
+        private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
+        {
+            ValidateArgs(path, encoding);
+
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+            if ((options.Access & FileAccess.Read) == 0)
+            {
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(options));
+            }
+
+            return new FileStream(path, options);
+        }
+
         private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, int bufferSize)
+        {
+            ValidateArgs(path, encoding);
+            if (bufferSize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+
+            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize);
+        }
+
+        private static void ValidateArgs(string path, Encoding encoding)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -206,10 +241,6 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath);
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-
-            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.SequentialScan);
         }
 
         public override void Close()

@@ -97,6 +97,7 @@ namespace System.Data
                 builder.Append("</DataViewSettingCollectionString>");
                 return builder.ToString();
             }
+            [RequiresUnreferencedCode("Members of types used in the RowFilter expression might be trimmed.")]
             set
             {
                 if (string.IsNullOrEmpty(value))
@@ -325,24 +326,24 @@ namespace System.Data
             }
         }
 
-        protected virtual void TableCollectionChanged(object sender, CollectionChangeEventArgs e)
+        protected virtual void TableCollectionChanged(object? sender, CollectionChangeEventArgs e)
         {
             PropertyDescriptor? NullProp = null;
             OnListChanged(
-                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataTablePropertyDescriptor((System.Data.DataTable)e.Element)) :
+                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataTablePropertyDescriptor((System.Data.DataTable)e.Element!)) :
                 e.Action == CollectionChangeAction.Refresh ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorChanged, NullProp) :
-                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataTablePropertyDescriptor((System.Data.DataTable)e.Element)) :
+                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataTablePropertyDescriptor((System.Data.DataTable)e.Element!)) :
                 /*default*/ null! // TODO: This is very likely wrong
             );
         }
 
-        protected virtual void RelationCollectionChanged(object sender, CollectionChangeEventArgs e)
+        protected virtual void RelationCollectionChanged(object? sender, CollectionChangeEventArgs e)
         {
             DataRelationPropertyDescriptor? NullProp = null;
             OnListChanged(
-                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
+                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element!)) :
                 e.Action == CollectionChangeAction.Refresh ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorChanged, NullProp) :
-                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
+                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element!)) :
             /*default*/ null! // TODO: This is very likely wrong
             );
         }

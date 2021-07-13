@@ -558,7 +558,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
 }
 
 #ifdef DEBUG
-void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex assertionIndex /* =0 */)
+void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex assertionIndex /* = 0 */)
 {
     if (curAssertion->op1.kind == O1K_EXACT_TYPE)
     {
@@ -590,10 +590,6 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
         printf("?assertion classification? ");
     }
     printf("Assertion: ");
-    if (!optLocalAssertionProp)
-    {
-        printf("(%d, %d) ", curAssertion->op1.vn, curAssertion->op2.vn);
-    }
 
     if (!optLocalAssertionProp)
     {
@@ -778,12 +774,67 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
 
     if (assertionIndex > 0)
     {
-        printf(" index=#%02u, mask=", assertionIndex);
-        printf("%s", BitVecOps::ToString(apTraits, BitVecOps::MakeSingleton(apTraits, assertionIndex - 1)));
+        printf(", index = ");
+        optPrintAssertionIndex(assertionIndex);
     }
     printf("\n");
 }
+
+void Compiler::optPrintAssertionIndex(AssertionIndex index)
+{
+    if (index == NO_ASSERTION_INDEX)
+    {
+        printf("#NA");
+        return;
+    }
+
+    printf("#%02u", index);
+}
+
+void Compiler::optPrintAssertionIndices(ASSERT_TP assertions)
+{
+    if (BitVecOps::IsEmpty(apTraits, assertions))
+    {
+        optPrintAssertionIndex(NO_ASSERTION_INDEX);
+        return;
+    }
+
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        bitIndex = 0;
+    if (iter.NextElem(&bitIndex))
+    {
+        optPrintAssertionIndex(static_cast<AssertionIndex>(bitIndex + 1));
+        while (iter.NextElem(&bitIndex))
+        {
+            printf(" ");
+            optPrintAssertionIndex(static_cast<AssertionIndex>(bitIndex + 1));
+        }
+    }
+}
 #endif // DEBUG
+
+/* static */
+void Compiler::optDumpAssertionIndices(const char* header, ASSERT_TP assertions, const char* footer /* = nullptr */)
+{
+#ifdef DEBUG
+    Compiler* compiler = JitTls::GetCompiler();
+    if (compiler->verbose)
+    {
+        printf(header);
+        compiler->optPrintAssertionIndices(assertions);
+        if (footer != nullptr)
+        {
+            printf(footer);
+        }
+    }
+#endif // DEBUG
+}
+
+/* static */
+void Compiler::optDumpAssertionIndices(ASSERT_TP assertions, const char* footer /* = nullptr */)
+{
+    optDumpAssertionIndices("", assertions, footer);
+}
 
 /******************************************************************************
  *
@@ -1191,13 +1242,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     goto SUBRANGE_COMMON;
 
                 case GT_CLS_VAR:
-
-                    /* Assigning the result of an indirection into a LCL_VAR, see if we can add a subrange assertion */
-
-                    toType = op2->gtType;
-                    goto SUBRANGE_COMMON;
-
-                case GT_ARR_ELEM:
 
                     /* Assigning the result of an indirection into a LCL_VAR, see if we can add a subrange assertion */
 
@@ -4511,7 +4555,7 @@ void Compiler::optImpliedByConstAssertion(AssertionDsc* constAssertion, ASSERT_T
             if (verbose)
             {
                 AssertionDsc* firstAssertion = optGetAssertion(1);
-                printf("\nCompiler::optImpliedByConstAssertion: constAssertion #%02d , implies assertion #%02d",
+                printf("Compiler::optImpliedByConstAssertion: const assertion #%02d implies assertion #%02d\n",
                        (constAssertion - firstAssertion) + 1, (impAssertion - firstAssertion) + 1);
             }
 #endif
@@ -4721,8 +4765,12 @@ public:
     // At the start of the merge function of the dataflow equations, initialize premerge state (to detect change.)
     void StartMerge(BasicBlock* block)
     {
-        JITDUMP("AssertionPropCallback::StartMerge: " FMT_BB " in -> %s\n", block->bbNum,
-                BitVecOps::ToString(apTraits, block->bbAssertionIn));
+        if (VerboseDataflow())
+        {
+            JITDUMP("StartMerge: " FMT_BB " ", block->bbNum);
+            Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "\n");
+        }
+
         BitVecOps::Assign(apTraits, preMergeOut, block->bbAssertionOut);
         BitVecOps::Assign(apTraits, preMergeJumpDestOut, mJumpDestOut[block->bbNum]);
     }
@@ -4743,11 +4791,14 @@ public:
                 assert(predBlock->bbNext == block);
                 BitVecOps::IntersectionD(apTraits, pAssertionOut, predBlock->bbAssertionOut);
 
-                JITDUMP("AssertionPropCallback::Merge     : Duplicate flow, " FMT_BB " in -> %s, predBlock " FMT_BB
-                        " out1 -> %s, out2 -> %s\n",
-                        block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionIn), predBlock->bbNum,
-                        BitVecOps::ToString(apTraits, mJumpDestOut[predBlock->bbNum]),
-                        BitVecOps::ToString(apTraits, predBlock->bbAssertionOut));
+                if (VerboseDataflow())
+                {
+                    JITDUMP("Merge     : Duplicate flow, " FMT_BB " ", block->bbNum);
+                    Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "; ");
+                    JITDUMP("pred " FMT_BB " ", predBlock->bbNum);
+                    Compiler::optDumpAssertionIndices("out1 -> ", mJumpDestOut[predBlock->bbNum], "; ");
+                    Compiler::optDumpAssertionIndices("out2 -> ", predBlock->bbAssertionOut, "\n");
+                }
             }
         }
         else
@@ -4755,9 +4806,14 @@ public:
             pAssertionOut = predBlock->bbAssertionOut;
         }
 
-        JITDUMP("AssertionPropCallback::Merge     : " FMT_BB " in -> %s, predBlock " FMT_BB " out -> %s\n",
-                block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionIn), predBlock->bbNum,
-                BitVecOps::ToString(apTraits, pAssertionOut));
+        if (VerboseDataflow())
+        {
+            JITDUMP("Merge     : " FMT_BB " ", block->bbNum);
+            Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "; ");
+            JITDUMP("pred " FMT_BB " ", predBlock->bbNum);
+            Compiler::optDumpAssertionIndices("out -> ", pAssertionOut, "\n");
+        }
+
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, pAssertionOut);
     }
 
@@ -4781,8 +4837,11 @@ public:
     // At the end of the merge store results of the dataflow equations, in a postmerge state.
     bool EndMerge(BasicBlock* block)
     {
-        JITDUMP("AssertionPropCallback::EndMerge  : " FMT_BB " in -> %s\n\n", block->bbNum,
-                BitVecOps::ToString(apTraits, block->bbAssertionIn));
+        if (VerboseDataflow())
+        {
+            JITDUMP("EndMerge  : " FMT_BB " ", block->bbNum);
+            Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "\n\n");
+        }
 
         BitVecOps::DataFlowD(apTraits, block->bbAssertionOut, block->bbAssertionGen, block->bbAssertionIn);
         BitVecOps::DataFlowD(apTraits, mJumpDestOut[block->bbNum], mJumpDestGen[block->bbNum], block->bbAssertionIn);
@@ -4790,23 +4849,34 @@ public:
         bool changed = (!BitVecOps::Equal(apTraits, preMergeOut, block->bbAssertionOut) ||
                         !BitVecOps::Equal(apTraits, preMergeJumpDestOut, mJumpDestOut[block->bbNum]));
 
-        if (changed)
+        if (VerboseDataflow())
         {
-            JITDUMP("AssertionPropCallback::Changed   : " FMT_BB " before out -> %s; after out -> %s;\n"
-                    "\t\tjumpDest before out -> %s; jumpDest after out -> %s;\n\n",
-                    block->bbNum, BitVecOps::ToString(apTraits, preMergeOut),
-                    BitVecOps::ToString(apTraits, block->bbAssertionOut),
-                    BitVecOps::ToString(apTraits, preMergeJumpDestOut),
-                    BitVecOps::ToString(apTraits, mJumpDestOut[block->bbNum]));
-        }
-        else
-        {
-            JITDUMP("AssertionPropCallback::Unchanged  : " FMT_BB " out -> %s; \t\tjumpDest out -> %s\n\n",
-                    block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionOut),
-                    BitVecOps::ToString(apTraits, mJumpDestOut[block->bbNum]));
+            if (changed)
+            {
+                JITDUMP("Changed   : " FMT_BB " ", block->bbNum);
+                Compiler::optDumpAssertionIndices("before out -> ", preMergeOut, "; ");
+                Compiler::optDumpAssertionIndices("after out -> ", block->bbAssertionOut, ";\n        ");
+                Compiler::optDumpAssertionIndices("jumpDest before out -> ", preMergeJumpDestOut, "; ");
+                Compiler::optDumpAssertionIndices("jumpDest after out -> ", mJumpDestOut[block->bbNum], ";\n\n");
+            }
+            else
+            {
+                JITDUMP("Unchanged : " FMT_BB " ", block->bbNum);
+                Compiler::optDumpAssertionIndices("out -> ", block->bbAssertionOut, "; ");
+                Compiler::optDumpAssertionIndices("jumpDest out -> ", mJumpDestOut[block->bbNum], "\n\n");
+            }
         }
 
         return changed;
+    }
+
+    // Can be enabled to get detailed debug output about dataflow for assertions.
+    bool VerboseDataflow()
+    {
+#if 0
+        return VERBOSE;
+#endif
+        return false;
     }
 };
 
@@ -4818,15 +4888,15 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 {
     ASSERT_TP* jumpDestGen = fgAllocateTypeForEachBlk<ASSERT_TP>();
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         ASSERT_TP valueGen = BitVecOps::MakeEmpty(apTraits);
         GenTree*  jtrue    = nullptr;
 
         // Walk the statement trees in this basic block.
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (tree->gtOper == GT_JTRUE)
                 {
@@ -4894,16 +4964,28 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 #ifdef DEBUG
         if (verbose)
         {
-            printf(FMT_BB " valueGen = %s", block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionGen));
+            if (block == fgFirstBB)
+            {
+                printf("\n");
+            }
+
+            printf(FMT_BB " valueGen = ", block->bbNum);
+            optPrintAssertionIndices(block->bbAssertionGen);
             if (block->bbJumpKind == BBJ_COND)
             {
-                printf(" => " FMT_BB " valueGen = %s,", block->bbJumpDest->bbNum,
-                       BitVecOps::ToString(apTraits, jumpDestGen[block->bbNum]));
+                printf(" => " FMT_BB " valueGen = ", block->bbJumpDest->bbNum);
+                optPrintAssertionIndices(jumpDestGen[block->bbNum]);
             }
             printf("\n");
+
+            if (block == fgLastBB)
+            {
+                printf("\n");
+            }
         }
 #endif
     }
+
     return jumpDestGen;
 }
 
@@ -4930,7 +5012,7 @@ ASSERT_TP* Compiler::optInitAssertionDataflowFlags()
 
     // Initially estimate the OUT sets to everything except killed expressions
     // Also set the IN sets to 1, so that we can perform the intersection.
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbAssertionIn      = BitVecOps::MakeCopy(apTraits, apValidFull);
         block->bbAssertionGen     = BitVecOps::MakeEmpty(apTraits);
@@ -5338,7 +5420,7 @@ void Compiler::optAssertionPropMain()
     noway_assert(optAssertionCount == 0);
 
     // First discover all value assignments and record them in the table.
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         compCurBB = block;
 
@@ -5375,7 +5457,7 @@ void Compiler::optAssertionPropMain()
             }
 
             // Perform assertion gen for control flow based assertions.
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 optAssertionGen(tree);
             }
@@ -5390,7 +5472,7 @@ void Compiler::optAssertionPropMain()
         // Zero out the bbAssertionIn values, as these can be referenced in RangeCheck::MergeAssertion
         // and this is sharedstate with the CSE phase: bbCseIn
         //
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             block->bbAssertionIn = BitVecOps::MakeEmpty(apTraits);
         }
@@ -5408,9 +5490,13 @@ void Compiler::optAssertionPropMain()
     // Modified dataflow algorithm for available expressions.
     DataFlow                  flow(this);
     AssertionPropFlowCallback ap(this, bbJtrueAssertionOut, jumpDestGen);
+    if (ap.VerboseDataflow())
+    {
+        JITDUMP("AssertionPropFlowCallback:\n\n")
+    }
     flow.ForwardAnalysis(ap);
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Compute any implied non-Null assertions for block->bbAssertionIn
         optImpliedByTypeOfAssertions(block->bbAssertionIn);
@@ -5419,16 +5505,15 @@ void Compiler::optAssertionPropMain()
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\n");
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
-            printf("\n" FMT_BB, block->bbNum);
-            printf(" valueIn  = %s", BitVecOps::ToString(apTraits, block->bbAssertionIn));
-            printf(" valueOut = %s", BitVecOps::ToString(apTraits, block->bbAssertionOut));
+            printf(FMT_BB ":\n", block->bbNum);
+            optDumpAssertionIndices(" in   = ", block->bbAssertionIn, "\n");
+            optDumpAssertionIndices(" out  = ", block->bbAssertionOut, "\n");
             if (block->bbJumpKind == BBJ_COND)
             {
-                printf(" => " FMT_BB, block->bbJumpDest->bbNum);
-                printf(" valueOut= %s", BitVecOps::ToString(apTraits, bbJtrueAssertionOut[block->bbNum]));
+                printf(" " FMT_BB " = ", block->bbJumpDest->bbNum);
+                optDumpAssertionIndices(bbJtrueAssertionOut[block->bbNum], "\n");
             }
         }
         printf("\n");
@@ -5438,7 +5523,7 @@ void Compiler::optAssertionPropMain()
     ASSERT_TP assertions = BitVecOps::MakeEmpty(apTraits);
 
     // Perform assertion propagation (and constant folding)
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         BitVecOps::Assign(apTraits, assertions, block->bbAssertionIn);
 
@@ -5473,9 +5558,11 @@ void Compiler::optAssertionPropMain()
                                                        // and thus we must morph, set order, re-link
             for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
             {
-                JITDUMP("Propagating %s assertions for " FMT_BB ", stmt " FMT_STMT ", tree [%06d], tree -> %d\n",
-                        BitVecOps::ToString(apTraits, assertions), block->bbNum, stmt->GetID(), dspTreeID(tree),
-                        tree->GetAssertionInfo().GetAssertionIndex());
+                optDumpAssertionIndices("Propagating ", assertions, " ");
+                JITDUMP("for " FMT_BB ", stmt " FMT_STMT ", tree [%06d]", block->bbNum, stmt->GetID(), dspTreeID(tree));
+                JITDUMP(", tree -> ");
+                JITDUMPEXEC(optPrintAssertionIndex(tree->GetAssertionInfo().GetAssertionIndex()));
+                JITDUMP("\n");
 
                 GenTree* newTree = optAssertionProp(assertions, tree, stmt, block);
                 if (newTree)

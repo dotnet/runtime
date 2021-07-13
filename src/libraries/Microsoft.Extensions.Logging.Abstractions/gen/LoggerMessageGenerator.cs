@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 var e = new Emitter();
                 string result = e.Emit(logClasses, context.CancellationToken);
     
-                context.AddSource("LoggerMessage", SourceText.From(result, Encoding.UTF8));
+                context.AddSource("LoggerMessage.g.cs", SourceText.From(result, Encoding.UTF8));
             }
         }
 

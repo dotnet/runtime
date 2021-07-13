@@ -50,7 +50,7 @@
 #include "roapi.h"
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL, NULL };
+static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
 TailCallTls::TailCallTls()
     // A new frame will always be allocated before the frame is modified,
@@ -659,11 +659,6 @@ Thread* SetupThread()
     }
 #endif
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    // Initialize new threads to JIT Write disabled
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     // Normally, HasStarted is called from the thread's entrypoint to introduce it to
     // the runtime.  But sometimes that thread is used for DLL_THREAD_ATTACH notifications
     // that call into managed code.  In that case, a call to SetupThread here must
@@ -767,17 +762,17 @@ Thread* SetupThread()
     // thread has been created.
     if (!IsGCSpecialThread())
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackThreads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackThreads());
         {
             GCX_PREEMP();
-            g_profControlBlock.pProfInterface->ThreadCreated(
+            (&g_profControlBlock)->ThreadCreated(
                 (ThreadID)pThread);
         }
 
         DWORD osThreadId = ::GetCurrentThreadId();
-        g_profControlBlock.pProfInterface->ThreadAssignedToOSThread(
+        (&g_profControlBlock)->ThreadAssignedToOSThread(
             (ThreadID)pThread, osThreadId);
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -1083,18 +1078,30 @@ DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
 
-#ifdef FEATURE_WRITEBARRIER_COPY
-
 static void* s_barrierCopy = NULL;
 
 BYTE* GetWriteBarrierCodeLocation(VOID* barrier)
 {
-    return (BYTE*)s_barrierCopy + ((BYTE*)barrier - (BYTE*)JIT_PatchedCodeStart);
+    if (IsWriteBarrierCopyEnabled())
+    {
+        return (BYTE*)PINSTRToPCODE((TADDR)s_barrierCopy + ((TADDR)barrier - (TADDR)JIT_PatchedCodeStart));
+    }
+    else
+    {
+        return (BYTE*)barrier;
+    }
 }
 
 BOOL IsIPInWriteBarrierCodeCopy(PCODE controlPc)
 {
-    return (s_barrierCopy <= (void*)controlPc && (void*)controlPc < ((BYTE*)s_barrierCopy + ((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart)));
+    if (IsWriteBarrierCopyEnabled())
+    {
+        return (s_barrierCopy <= (void*)controlPc && (void*)controlPc < ((BYTE*)s_barrierCopy + ((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart)));
+    }
+    else
+    {
+        return FALSE;
+    }
 }
 
 PCODE AdjustWriteBarrierIP(PCODE controlPc)
@@ -1105,14 +1112,21 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc)
     return (PCODE)JIT_PatchedCodeStart + (controlPc - (PCODE)s_barrierCopy);
 }
 
+#ifdef TARGET_X86
+extern "C" void *JIT_WriteBarrierEAX_Loc;
+#else
 extern "C" void *JIT_WriteBarrier_Loc;
+#endif
+
 #ifdef TARGET_ARM64
 extern "C" void (*JIT_WriteBarrier_Table)();
 extern "C" void *JIT_WriteBarrier_Loc = 0;
 extern "C" void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64
 
-#endif // FEATURE_WRITEBARRIER_COPY
+#ifdef TARGET_ARM
+extern "C" void *JIT_WriteBarrier_Loc = 0;
+#endif // TARGET_ARM
 
 #ifndef TARGET_UNIX
 // g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
@@ -1136,57 +1150,85 @@ void InitThreadManager()
     }
     CONTRACTL_END;
 
-    InitializeYieldProcessorNormalizedCrst();
-
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
     _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
     _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
 
-#ifdef FEATURE_WRITEBARRIER_COPY
-    s_barrierCopy = ClrVirtualAlloc(NULL, g_SystemInfo.dwAllocationGranularity, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-    if (s_barrierCopy == NULL)
+    if (IsWriteBarrierCopyEnabled())
     {
-        _ASSERTE(!"ClrVirtualAlloc of GC barrier code page failed");
-        COMPlusThrowWin32();
-    }
+        s_barrierCopy = ExecutableAllocator::Instance()->Reserve(g_SystemInfo.dwAllocationGranularity);
+        ExecutableAllocator::Instance()->Commit(s_barrierCopy, g_SystemInfo.dwAllocationGranularity, true);
+        if (s_barrierCopy == NULL)
+        {
+            _ASSERTE(!"Allocation of GC barrier code page failed");
+            COMPlusThrowWin32();
+        }
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+        {
+            size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
+            ExecutableWriterHolder<void> barrierWriterHolder(s_barrierCopy, writeBarrierSize);
+            memcpy(barrierWriterHolder.GetRW(), (BYTE*)JIT_PatchedCodeStart, writeBarrierSize);
+        }
 
-    memcpy(s_barrierCopy, (BYTE*)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
+        // Store the JIT_WriteBarrier copy location to a global variable so that helpers
+        // can jump to it.
+#ifdef TARGET_X86
+        JIT_WriteBarrierEAX_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEAX);
 
-    // Store the JIT_WriteBarrier copy location to a global variable so that helpers
-    // can jump to it.
-    JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
+#define X86_WRITE_BARRIER_REGISTER(reg) \
+    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_##reg, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg)); \
+    ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), W("@WriteBarrier" #reg));
 
-    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
+        ENUM_X86_WRITE_BARRIER_REGISTERS()
+
+#undef X86_WRITE_BARRIER_REGISTER
+
+#else // TARGET_X86
+        JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
+#endif // TARGET_X86
+        SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
+        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), W("@WriteBarrier"));
 
 #ifdef TARGET_ARM64
-    // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
-    JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)&JIT_WriteBarrier_Table);
-
-    SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
-    SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
+        // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
+        JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)&JIT_WriteBarrier_Table);
 #endif // TARGET_ARM64
 
-#else // FEATURE_WRITEBARRIER_COPY
+#if defined(TARGET_ARM64) || defined(TARGET_ARM)
+        SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
+        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), W("@CheckedWriteBarrier"));
+        SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
+        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), W("@ByRefWriteBarrier"));
+#endif // TARGET_ARM64 || TARGET_ARM
 
-    // I am using virtual protect to cover the entire range that this code falls in.
-    //
-
-    // We could reset it to non-writeable inbetween GCs and such, but then we'd have to keep on re-writing back and forth,
-    // so instead we'll leave it writable from here forward.
-
-    DWORD oldProt;
-    if (!ClrVirtualProtect((void *)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart,
-                           PAGE_EXECUTE_READWRITE, &oldProt))
-    {
-        _ASSERTE(!"ClrVirtualProtect of code page failed");
-        COMPlusThrowWin32();
     }
-#endif // FEATURE_WRITEBARRIER_COPY
+    else
+    {
+        // I am using virtual protect to cover the entire range that this code falls in.
+        //
+
+        // We could reset it to non-writeable inbetween GCs and such, but then we'd have to keep on re-writing back and forth,
+        // so instead we'll leave it writable from here forward.
+
+        DWORD oldProt;
+        if (!ClrVirtualProtect((void *)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart,
+                            PAGE_EXECUTE_READWRITE, &oldProt))
+        {
+            _ASSERTE(!"ClrVirtualProtect of code page failed");
+            COMPlusThrowWin32();
+        }
+
+#ifdef TARGET_X86
+        JIT_WriteBarrierEAX_Loc = (void*)JIT_WriteBarrierEAX;
+#else
+        JIT_WriteBarrier_Loc = (void*)JIT_WriteBarrier;
+#endif
+#ifdef TARGET_ARM64
+        // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
+        JIT_WriteBarrier_Table_Loc = (void*)&JIT_WriteBarrier_Table;
+#endif // TARGET_ARM64
+    }
 
 #ifndef TARGET_UNIX
     _ASSERTE(GetThreadNULLOk() == NULL);
@@ -1434,9 +1476,6 @@ Thread::Thread()
     m_debuggerFilterContext = NULL;
     m_fInteropDebuggingHijacked = FALSE;
     m_profilerCallbackState = 0;
-#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
-    m_dwProfilerEvacuationCounter = 0;
-#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
     m_pProfilerFilterContext = NULL;
 
@@ -1876,20 +1915,20 @@ BOOL Thread::HasStarted()
     // information
     if (!IsGCSpecial())
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackThreads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackThreads());
         BOOL gcOnTransition = GC_ON_TRANSITIONS(FALSE);     // disable GCStress 2 to avoid the profiler receiving a RuntimeThreadSuspended notification even before the ThreadCreated notification
-
+        
         {
             GCX_PREEMP();
-            g_profControlBlock.pProfInterface->ThreadCreated((ThreadID) this);
+            (&g_profControlBlock)->ThreadCreated((ThreadID) this);
         }
 
         GC_ON_TRANSITIONS(gcOnTransition);
 
         DWORD osThreadId = ::GetCurrentThreadId();
-        g_profControlBlock.pProfInterface->ThreadAssignedToOSThread(
+        (&g_profControlBlock)->ThreadAssignedToOSThread(
             (ThreadID) this, osThreadId);
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -3014,10 +3053,10 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 #ifdef PROFILING_SUPPORTED
         // If a profiler is present, then notify the profiler of thread destroy
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackThreads());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackThreads());
             GCX_PREEMP();
-            g_profControlBlock.pProfInterface->ThreadDestroyed((ThreadID) this);
-            END_PIN_PROFILER();
+            (&g_profControlBlock)->ThreadDestroyed((ThreadID) this);
+            END_PROFILER_CALLBACK();
         }
 #endif // PROFILING_SUPPORTED
 
@@ -7153,6 +7192,7 @@ BOOL Thread::HaveExtraWorkForFinalizer()
         || Thread::CleanupNeededForFinalizedThread()
         || (m_DetachCount > 0)
         || SystemDomain::System()->RequireAppDomainCleanup()
+        || YieldProcessorNormalization::IsMeasurementScheduled()
         || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
 }
 
@@ -7198,6 +7238,12 @@ void Thread::DoExtraWorkForFinalizer()
 
     // If there were any TimerInfos waiting to be released, they'll get flushed now
     ThreadpoolMgr::FlushQueueOfTimerInfos();
+
+    if (YieldProcessorNormalization::IsMeasurementScheduled())
+    {
+        GCX_PREEMP();
+        YieldProcessorNormalization::PerformMeasurement();
+    }
 
     ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();
 }

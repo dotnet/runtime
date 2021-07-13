@@ -7,8 +7,7 @@ parameters:
   testGroup: ''
   liveRuntimeBuildConfig: ''
 
-  # When set to a non-empty value (Debug / Release), it determines libraries
-  # build configuration to use for the tests. Setting this property implies
+  # Determines librariesbuild configuration to use for the tests. Setting this property implies
   # a dependency of this job on the appropriate libraries build and is used
   # to construct the name of the Azure artifact representing libraries build
   # to use for building the tests.
@@ -47,9 +46,13 @@ jobs:
     testGroup: ${{ parameters.testGroup }}
     stagedBuild: ${{ parameters.stagedBuild }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
-    variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    liveRuntimeBuildParams: ${{ format('clr.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
+    ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc'), not(and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64'))), not(eq(parameters.osGroup, 'OSX'))) }}:
+      compilerArg: '-clang9'
+    ${{ if not(and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc'), not(and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64'))), not(eq(parameters.osGroup, 'OSX')))) }}:
+      compilerArg: ''
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -70,21 +73,30 @@ jobs:
     ${{ if ne(parameters.dependsOn[0], '') }}:
       dependsOn: ${{ parameters.dependsOn }}
 
-    # TODO: Build of managed test components currently depends on the corresponding build job
-    # because it needs System.Private.Corelib; we should be able to remove this dependency
-    # by switching over to using reference assembly.
-    ${{ if and(ne(parameters.stagedBuild, true), eq(parameters.dependsOn[0], '')) }}:
-      dependsOn:
-      - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig)) }}
-      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
-
-
     ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       timeoutInMinutes: 90
 
     ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       timeoutInMinutes: 160
+
+    variables:
+      - ${{ each variable in parameters.variables }}:
+        - ${{ variable }}
+      - name: liveRuntimeBuildParams
+        value: ${{ format('clr.corelib+libs.ref+libs.native -rc {0} -c {1} -arch {2} -ci', coalesce(parameters.liveRuntimeBuildConfig, parameters.buildConfig), parameters.liveLibrariesBuildConfig, parameters.archType) }}
+      - name: compilerArg
+        value: ''
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
+        - name: compilerArg
+          value: '-clang9'
+        # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
+      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
+        - name: compilerArg
+          value: ''
+      # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
+      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+        - name: compilerArg
+          value: ''
 
     steps:
 
@@ -97,24 +109,9 @@ jobs:
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
-
-    # Optionally download live-built libraries
-    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(librariesDownloadDir)
-          cleanUnpackFolder: false
-          artifactFileName: '$(librariesBuildArtifactName)$(archiveExtension)'
-          artifactName: '$(librariesBuildArtifactName)'
-          displayName: 'live-built libraries'
-
-    # We need to explictly download CoreCLR, even if building Mono because the CoreCLR tests depend on it
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: $(coreClrProductRootFolderPath)
-        artifactFileName: '$(coreClrProductArtifactName)$(archiveExtension)'
-        artifactName: '$(coreClrProductArtifactName)'
-        displayName: 'CoreCLR product build'
+    # Build core/libraries dependencies of test build
+    - script: $(Build.SourcesDirectory)/build$(scriptExt) $(liveRuntimeBuildParams) $(compilerArg)
+      displayName: Build coreclr/libs components needed by test build
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |

@@ -557,18 +557,22 @@ struct Agnostic_GetSystemVAmd64PassStructInRegisterDescriptor
 
 struct Agnostic_ResolveVirtualMethodKey
 {
-    DWORDLONG virtualMethod;
-    DWORDLONG objClass;
-    DWORDLONG context;
+    DWORDLONG                       virtualMethod;
+    DWORDLONG                       objClass;
+    DWORDLONG                       context;
+    DWORD                           pResolvedTokenVirtualMethodNonNull;
+    Agnostic_CORINFO_RESOLVED_TOKEN pResolvedTokenVirtualMethod;
 };
 
 struct Agnostic_ResolveVirtualMethodResult
 {
-    bool      returnValue;
-    DWORDLONG devirtualizedMethod;
-    bool      requiresInstMethodTableArg;
-    DWORDLONG exactContext;
-    DWORD     detail;
+    bool                            returnValue;
+    DWORDLONG                       devirtualizedMethod;
+    bool                            requiresInstMethodTableArg;
+    DWORDLONG                       exactContext;
+    DWORD                           detail;
+    Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
+    Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
 };
 
 struct ResolveTokenValue

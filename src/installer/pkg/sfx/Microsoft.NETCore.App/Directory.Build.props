@@ -68,7 +68,6 @@
   <ItemGroup>
     <!-- Public libraries and shims -->
     <PlatformManifestFileEntry Include="@(NetCoreAppLibrary->'%(Identity).dll')" />
-    <PlatformManifestFileEntry Include="@(NetCoreAppLibraryNoReference->'%(Identity).dll')" />
     <PlatformManifestFileEntry Include="@(NetFxReference->'%(Identity).dll')" />
     <PlatformManifestFileEntry Include="netstandard.dll" />
     <!-- Private libraries -->
@@ -194,6 +193,13 @@
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-stub-static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-stub-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.lib" IsNative="true" />
     <!-- Mono WASM-specific files -->
     <PlatformManifestFileEntry Include="libmono-ee-interp.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />
@@ -256,5 +262,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm64' AND '$(BuildArchitecture)' != 'arm64'">
     <_hostArch>amd64</_hostArch>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <WorkloadTasksAssemblyPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)'))WorkloadBuildTasks.dll</WorkloadTasksAssemblyPath>
   </PropertyGroup>
 </Project>

@@ -21,6 +21,8 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(LambdaExpressionProxy))]
     public abstract class LambdaExpression : Expression, IParameterProvider
     {
+        private static readonly MethodInfo s_expressionCompileMethodInfo = typeof(Expression<>).GetMethod("Compile", Type.EmptyTypes)!;
+
         private readonly Expression _body;
 
         internal LambdaExpression(Expression body)
@@ -119,20 +121,7 @@ namespace System.Linq.Expressions
                 return typeof(LambdaExpression).GetMethod("Compile", Type.EmptyTypes)!;
             }
 
-            return GetDerivedCompileMethod(lambdaExpressionType);
-        }
-
-        [DynamicDependency("Compile()", typeof(Expression<>))]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The 'Compile' method will be preserved by the DynamicDependency.")]
-        private static MethodInfo GetDerivedCompileMethod(Type lambdaExpressionType)
-        {
-            Debug.Assert(lambdaExpressionType.IsAssignableTo(typeof(LambdaExpression)) && lambdaExpressionType != typeof(LambdaExpression));
-
-            MethodInfo result = lambdaExpressionType.GetMethod("Compile", Type.EmptyTypes)!;
-            Debug.Assert(result.DeclaringType!.IsGenericType && result.DeclaringType.GetGenericTypeDefinition() == typeof(Expression<>));
-
-            return result;
+            return (MethodInfo)lambdaExpressionType.GetMemberWithSameMetadataDefinitionAs(s_expressionCompileMethodInfo);
         }
 
         /// <summary>
@@ -338,7 +327,7 @@ namespace System.Linq.Expressions
 
 #if !FEATURE_COMPILE
     // Separate expression creation class to hide the CreateExpressionFunc function from users reflecting on Expression<T>
-    public class ExpressionCreator<TDelegate>
+    internal static class ExpressionCreator<TDelegate>
     {
         public static Expression<TDelegate> CreateExpressionFunc(Expression body, string? name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
         {

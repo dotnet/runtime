@@ -450,6 +450,7 @@ namespace System.Threading
         private static extern unsafe bool PostQueuedCompletionStatus(NativeOverlapped* overlapped);
 
         [CLSCompliant(false)]
+        [SupportedOSPlatform("windows")]
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
             PostQueuedCompletionStatus(overlapped);
 
@@ -522,6 +523,15 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void NotifyWorkItemProgressNative();
 
+        internal static bool NotifyThreadBlocked() =>
+            UsePortableThreadPool && PortableThreadPool.ThreadPoolInstance.NotifyThreadBlocked();
+
+        internal static void NotifyThreadUnblocked()
+        {
+            Debug.Assert(UsePortableThreadPool);
+            PortableThreadPool.ThreadPoolInstance.NotifyThreadUnblocked();
+        }
+
         internal static object? GetOrCreateThreadLocalCompletionCountObject() =>
             UsePortableThreadPool ? PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject() : null;
 
@@ -538,6 +548,7 @@ namespace System.Threading
              );
 
         [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated.  Please use ThreadPool.BindHandle(SafeHandle) instead.", false)]
+        [SupportedOSPlatform("windows")]
         public static bool BindHandle(IntPtr osHandle)
         {
             return BindIOCompletionCallbackNative(osHandle);

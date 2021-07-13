@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net.Cache;
-using System.Net.Http;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -502,7 +501,7 @@ namespace System.Net
             {
                 if (needsHeaderAndBoundary)
                 {
-                    string boundary = "---------------------" + DateTime.Now.Ticks.ToString("x", NumberFormatInfo.InvariantInfo);
+                    string boundary = $"---------------------{DateTime.Now.Ticks:x}";
 
                     headers[HttpKnownHeaderNames.ContentType] = UploadFileContentType + "; boundary=" + boundary;
 

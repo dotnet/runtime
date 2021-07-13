@@ -36,6 +36,10 @@ namespace Microsoft.Extensions.DependencyInjection
         TContainerBuilder CreateBuilder(Microsoft.Extensions.DependencyInjection.IServiceCollection services);
         System.IServiceProvider CreateServiceProvider(TContainerBuilder containerBuilder);
     }
+    public partial interface IServiceProviderIsService
+    {
+        bool IsService(System.Type serviceType);
+    }
     public partial interface IServiceScope : System.IDisposable
     {
         System.IServiceProvider ServiceProvider { get; }

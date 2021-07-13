@@ -99,30 +99,28 @@ PhaseStatus Compiler::fgInline()
                                                                         &info.compMethodInfo->args);
 #endif // DEBUG
 
-    BasicBlock* block       = fgFirstBB;
-    bool        madeChanges = false;
-    noway_assert(block != nullptr);
+    noway_assert(fgFirstBB != nullptr);
 
     // Set the root inline context on all statements
     InlineContext* rootContext = m_inlineStrategy->GetRootContext();
 
-    for (; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             stmt->SetInlineContext(rootContext);
         }
     }
 
-    // Reset block back to start for inlining
-    block = fgFirstBB;
+    BasicBlock* block       = fgFirstBB;
+    bool        madeChanges = false;
 
     do
     {
         // Make the current basic block address available globally
         compCurBB = block;
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
 
 #ifdef DEBUG
@@ -212,7 +210,7 @@ PhaseStatus Compiler::fgInline()
 
     do
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             // Call Compiler::fgDebugCheckInlineCandidates on each node
             fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckInlineCandidates);
@@ -731,7 +729,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             CORINFO_CONTEXT_HANDLE context                = nullptr;
             const bool             isLateDevirtualization = true;
             bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
-            comp->impDevirtualizeCall(call, &method, &methodFlags, &context, nullptr, isLateDevirtualization,
+            comp->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &context, nullptr, isLateDevirtualization,
                                       explicitTailCall);
         }
     }
@@ -1095,7 +1093,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     GenTreeCall* iciCall  = pInlineInfo->iciCall;
     Statement*   iciStmt  = pInlineInfo->iciStmt;
     BasicBlock*  iciBlock = pInlineInfo->iciBlock;
-    BasicBlock*  block;
 
     noway_assert(iciBlock->bbStmtList != nullptr);
     noway_assert(iciStmt->GetRootNode() != nullptr);
@@ -1118,9 +1115,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     // Create a new inline context and mark the inlined statements with it
     InlineContext* calleeContext = m_inlineStrategy->NewSuccess(pInlineInfo);
 
-    for (block = InlineeCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : InlineeCompiler->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             stmt->SetInlineContext(calleeContext);
         }
@@ -1272,7 +1269,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     //
     // Set the try and handler index and fix the jump types of inlinee's blocks.
     //
-    for (block = InlineeCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : InlineeCompiler->Blocks())
     {
         noway_assert(!block->hasTryIndex());
         noway_assert(!block->hasHndIndex());
@@ -1626,8 +1623,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 if (argInfo.argHasSideEff)
                 {
                     noway_assert(argInfo.argIsUsed == false);
-                    newStmt     = nullptr;
-                    bool append = true;
+                    newStmt = nullptr;
 
                     if (argNode->gtOper == GT_OBJ || argNode->gtOper == GT_MKREFANY)
                     {
@@ -1636,92 +1632,22 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                         // Just hang the address here in case there are side-effect.
                         newStmt = gtNewStmt(gtUnusedValNode(argNode->AsOp()->gtOp1), callILOffset);
                     }
-                    else
+
+                    // If we don't have something custom to append,
+                    // just append the arg node as an unused value.
+                    if (newStmt == nullptr)
                     {
-                        // In some special cases, unused args with side effects can
-                        // trigger further changes.
-                        //
-                        // (1) If the arg is a static field access and the field access
-                        // was produced by a call to EqualityComparer<T>.get_Default, the
-                        // helper call to ensure the field has a value can be suppressed.
-                        // This helper call is marked as a "Special DCE" helper during
-                        // importation, over in fgGetStaticsCCtorHelper.
-                        //
-                        // (2) NYI. If, after tunneling through GT_RET_VALs, we find that
-                        // the actual arg expression has no side effects, we can skip
-                        // appending all together. This will help jit TP a bit.
-                        //
-                        // Chase through any GT_RET_EXPRs to find the actual argument
-                        // expression.
-                        GenTree* actualArgNode = argNode->gtRetExprVal(&bbFlags);
-
-                        // For case (1)
-                        //
-                        // Look for the following tree shapes
-                        // prejit: (IND (ADD (CONST, CALL(special dce helper...))))
-                        // jit   : (COMMA (CALL(special dce helper...), (FIELD ...)))
-                        if (actualArgNode->gtOper == GT_COMMA)
-                        {
-                            // Look for (COMMA (CALL(special dce helper...), (FIELD ...)))
-                            GenTree* op1 = actualArgNode->AsOp()->gtOp1;
-                            GenTree* op2 = actualArgNode->AsOp()->gtOp2;
-                            if (op1->IsCall() &&
-                                ((op1->AsCall()->gtCallMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) != 0) &&
-                                (op2->gtOper == GT_FIELD) && ((op2->gtFlags & GTF_EXCEPT) == 0))
-                            {
-                                JITDUMP("\nPerforming special dce on unused arg [%06u]:"
-                                        " actual arg [%06u] helper call [%06u]\n",
-                                        argNode->gtTreeID, actualArgNode->gtTreeID, op1->gtTreeID);
-                                // Drop the whole tree
-                                append = false;
-                            }
-                        }
-                        else if (actualArgNode->gtOper == GT_IND)
-                        {
-                            // Look for (IND (ADD (CONST, CALL(special dce helper...))))
-                            GenTree* addr = actualArgNode->AsOp()->gtOp1;
-
-                            if (addr->gtOper == GT_ADD)
-                            {
-                                GenTree* op1 = addr->AsOp()->gtOp1;
-                                GenTree* op2 = addr->AsOp()->gtOp2;
-                                if (op1->IsCall() &&
-                                    ((op1->AsCall()->gtCallMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) != 0) &&
-                                    op2->IsCnsIntOrI())
-                                {
-                                    // Drop the whole tree
-                                    JITDUMP("\nPerforming special dce on unused arg [%06u]:"
-                                            " actual arg [%06u] helper call [%06u]\n",
-                                            argNode->gtTreeID, actualArgNode->gtTreeID, op1->gtTreeID);
-                                    append = false;
-                                }
-                            }
-                        }
+                        newStmt = gtNewStmt(gtUnusedValNode(argNode), callILOffset);
                     }
 
-                    if (!append)
-                    {
-                        assert(newStmt == nullptr);
-                        JITDUMP("Arg tree side effects were discardable, not appending anything for arg\n");
-                    }
-                    else
-                    {
-                        // If we don't have something custom to append,
-                        // just append the arg node as an unused value.
-                        if (newStmt == nullptr)
-                        {
-                            newStmt = gtNewStmt(gtUnusedValNode(argNode), callILOffset);
-                        }
-
-                        fgInsertStmtAfter(block, afterStmt, newStmt);
-                        afterStmt = newStmt;
+                    fgInsertStmtAfter(block, afterStmt, newStmt);
+                    afterStmt = newStmt;
 #ifdef DEBUG
-                        if (verbose)
-                        {
-                            gtDispStmt(afterStmt);
-                        }
-#endif // DEBUG
+                    if (verbose)
+                    {
+                        gtDispStmt(afterStmt);
                     }
+#endif // DEBUG
                 }
                 else if (argNode->IsBoxedValue())
                 {

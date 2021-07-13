@@ -1,8 +1,0 @@
-<Project>
-  <ItemGroup Condition="'$(RuntimeIdentifier)' != ''">
-    <!-- NETCoreApp2.0 had experimental versions of Span and ReadOnlySpan 
-         which we don't match the final API nor were they ship-quality -->
-    <IgnoredTypes Include="System.ReadOnlySpan`1" />
-    <IgnoredTypes Include="System.Span`1" />
-  </ItemGroup>
-</Project>

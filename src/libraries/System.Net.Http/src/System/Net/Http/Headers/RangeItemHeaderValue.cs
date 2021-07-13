@@ -56,17 +56,20 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
+            Span<char> stackBuffer = stackalloc char[128];
+
             if (!_from.HasValue)
             {
                 Debug.Assert(_to != null);
-                return "-" + _to.Value.ToString(NumberFormatInfo.InvariantInfo);
+                return string.Create(CultureInfo.InvariantCulture, stackBuffer, $"-{_to.Value}");
             }
-            else if (!_to.HasValue)
+
+            if (!_to.HasValue)
             {
-                return _from.Value.ToString(NumberFormatInfo.InvariantInfo) + "-";
+                return string.Create(CultureInfo.InvariantCulture, stackBuffer, $"{_from.Value}-"); ;
             }
-            return _from.Value.ToString(NumberFormatInfo.InvariantInfo) + "-" +
-                _to.Value.ToString(NumberFormatInfo.InvariantInfo);
+
+            return string.Create(CultureInfo.InvariantCulture, stackBuffer, $"{_from.Value}-{_to.Value}");
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)

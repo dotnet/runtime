@@ -469,8 +469,12 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        public static byte[] HashData(byte[] key, byte[] source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         protected override byte[] HashFinal() { throw null; }
         public override void Initialize() { }
+        public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -479,13 +483,18 @@ namespace System.Security.Cryptography
         public HMACSHA1() { }
         public HMACSHA1(byte[] key) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("HMACSHA1 always uses the algorithm implementation provided by the platform. Use a constructor without the useManagedSha1 parameter.", DiagnosticId = "SYSLIB0030", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public HMACSHA1(byte[] key, bool useManagedSha1) { }
         public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        public static byte[] HashData(byte[] key, byte[] source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         protected override byte[] HashFinal() { throw null; }
         public override void Initialize() { }
+        public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -497,8 +506,12 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        public static byte[] HashData(byte[] key, byte[] source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         protected override byte[] HashFinal() { throw null; }
         public override void Initialize() { }
+        public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -507,12 +520,17 @@ namespace System.Security.Cryptography
         public HMACSHA384() { }
         public HMACSHA384(byte[] key) { }
         public override byte[] Key { get { throw null; } set { } }
+        [System.ObsoleteAttribute("ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is no longer supported.", DiagnosticId = "SYSLIB0029", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public bool ProduceLegacyHmacValues { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        public static byte[] HashData(byte[] key, byte[] source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         protected override byte[] HashFinal() { throw null; }
         public override void Initialize() { }
+        public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -521,12 +539,17 @@ namespace System.Security.Cryptography
         public HMACSHA512() { }
         public HMACSHA512(byte[] key) { }
         public override byte[] Key { get { throw null; } set { } }
+        [System.ObsoleteAttribute("ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is no longer supported.", DiagnosticId = "SYSLIB0029", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public bool ProduceLegacyHmacValues { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
+        public static byte[] HashData(byte[] key, byte[] source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         protected override byte[] HashFinal() { throw null; }
         public override void Initialize() { }
+        public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         protected override bool TryHashFinal(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public sealed partial class IncrementalHash : System.IDisposable

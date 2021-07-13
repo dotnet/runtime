@@ -3012,7 +3012,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
         case TYP_FLOAT:
         {
             float arg0Val = GetConstantSingle(arg0VN);
-            assert(!checkedCast || !CheckedOps::CastFromFloatOverflows(arg0Val, castToType));
+            assert(!CheckedOps::CastFromFloatOverflows(arg0Val, castToType));
 
             switch (castToType)
             {
@@ -3054,7 +3054,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
         case TYP_DOUBLE:
         {
             double arg0Val = GetConstantDouble(arg0VN);
-            assert(!checkedCast || !CheckedOps::CastFromDoubleOverflows(arg0Val, castToType));
+            assert(!CheckedOps::CastFromDoubleOverflows(arg0Val, castToType));
 
             switch (castToType)
             {
@@ -3322,26 +3322,32 @@ bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN
         }
     }
 
-    // Is this a checked cast that will always throw an exception?
-    if (func == VNF_CastOvf)
+    // Is this a checked cast that will always throw an exception or one with an implementation-defined result?
+    if (VNFuncIsNumericCast(func))
     {
-        var_types castToType;
-        bool      fromUnsigned;
-        GetCastOperFromVN(arg1VN, &castToType, &fromUnsigned);
         var_types castFromType = TypeOfVN(arg0VN);
 
-        switch (castFromType)
+        // By policy, we do not fold conversions from floating-point types that result in
+        // overflow, as the value the C++ compiler gives us does not always match our own codegen.
+        if ((func == VNF_CastOvf) || varTypeIsFloating(castFromType))
         {
-            case TYP_INT:
-                return !CheckedOps::CastFromIntOverflows(GetConstantInt32(arg0VN), castToType, fromUnsigned);
-            case TYP_LONG:
-                return !CheckedOps::CastFromLongOverflows(GetConstantInt64(arg0VN), castToType, fromUnsigned);
-            case TYP_FLOAT:
-                return !CheckedOps::CastFromFloatOverflows(GetConstantSingle(arg0VN), castToType);
-            case TYP_DOUBLE:
-                return !CheckedOps::CastFromDoubleOverflows(GetConstantDouble(arg0VN), castToType);
-            default:
-                return false;
+            var_types castToType;
+            bool      fromUnsigned;
+            GetCastOperFromVN(arg1VN, &castToType, &fromUnsigned);
+
+            switch (castFromType)
+            {
+                case TYP_INT:
+                    return !CheckedOps::CastFromIntOverflows(GetConstantInt32(arg0VN), castToType, fromUnsigned);
+                case TYP_LONG:
+                    return !CheckedOps::CastFromLongOverflows(GetConstantInt64(arg0VN), castToType, fromUnsigned);
+                case TYP_FLOAT:
+                    return !CheckedOps::CastFromFloatOverflows(GetConstantSingle(arg0VN), castToType);
+                case TYP_DOUBLE:
+                    return !CheckedOps::CastFromDoubleOverflows(GetConstantDouble(arg0VN), castToType);
+                default:
+                    return false;
+            }
         }
     }
 
@@ -3787,27 +3793,43 @@ ValueNum ValueNumStore::VNApplySelectorsTypeCheck(ValueNum elem, var_types indTy
     return elem;
 }
 
-ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum elem, var_types indType, BasicBlock* block)
+//------------------------------------------------------------------------
+// VNApplySelectorsAssignTypeCoerce: Compute the value number corresponding to `srcVN`
+//    being written using an indirection of 'dstIndType'.
+//
+// Arguments:
+//    srcVN - value number for the value being stored;
+//    dstIndType - type of the indirection storing the value to the memory;
+//    block - block where the assignment occurs
+//
+// Return Value:
+//    The value number corresponding to memory after the assignment.
+//
+// Notes: It may insert a cast to dstIndType or return a unique value number for an incompatible indType.
+//
+ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum srcVN, var_types dstIndType, BasicBlock* block)
 {
-    var_types elemTyp = TypeOfVN(elem);
+    var_types srcType = TypeOfVN(srcVN);
 
-    // Check if the elemTyp is matching/compatible
+    ValueNum dstVN;
 
-    if (indType != elemTyp)
+    // Check if the elemTyp is matching/compatible.
+    if (dstIndType != srcType)
     {
-        bool isConstant = IsVNConstant(elem);
-        if (isConstant && (elemTyp == genActualType(indType)))
+        bool isConstant = IsVNConstant(srcVN);
+        if (isConstant && (srcType == genActualType(dstIndType)))
         {
             // (i.e. We recorded a constant of TYP_INT for a TYP_BYTE field)
+            dstVN = srcVN;
         }
         else
         {
             // We are trying to write an 'elem' of type 'elemType' using 'indType' store
 
-            if (varTypeIsStruct(indType))
+            if (varTypeIsStruct(dstIndType))
             {
                 // return a new unique value number
-                elem = VNMakeNormalUnique(elem);
+                dstVN = VNMakeNormalUnique(srcVN);
 
                 JITDUMP("    *** Mismatched types in VNApplySelectorsAssignTypeCoerce (indType is TYP_STRUCT)\n");
             }
@@ -3816,14 +3838,18 @@ ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum elem, var_type
                 // We are trying to write an 'elem' of type 'elemType' using 'indType' store
 
                 // insert a cast of elem to 'indType'
-                elem = VNForCast(elem, indType, elemTyp);
+                dstVN = VNForCast(srcVN, dstIndType, srcType);
 
                 JITDUMP("    Cast to %s inserted in VNApplySelectorsAssignTypeCoerce (elemTyp is %s)\n",
-                        varTypeName(indType), varTypeName(elemTyp));
+                        varTypeName(dstIndType), varTypeName(srcType));
             }
         }
     }
-    return elem;
+    else
+    {
+        dstVN = srcVN;
+    }
+    return dstVN;
 }
 
 //------------------------------------------------------------------------
@@ -6191,12 +6217,11 @@ void Compiler::fgValueNumber()
         {
             lvMemoryPerSsaData.GetSsaDefByIndex(i)->m_vnPair = noVnp;
         }
-        for (BasicBlock* blk = fgFirstBB; blk != nullptr; blk = blk->bbNext)
+        for (BasicBlock* const blk : Blocks())
         {
-            // Now iterate over the block's statements, and their trees.
-            for (Statement* stmt : StatementList(blk->FirstNonPhiDef()))
+            for (Statement* const stmt : blk->NonPhiStatements())
             {
-                for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+                for (GenTree* const tree : stmt->TreeList())
                 {
                     tree->gtVNPair.SetBoth(ValueNumStore::NoVN);
                 }
@@ -6542,7 +6567,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         }
 #endif
 
-        for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+        for (GenTree* const tree : stmt->TreeList())
         {
             fgValueNumberTree(tree);
         }
@@ -7410,18 +7435,26 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         //
                         if (lcl->gtVNPair.GetLiberal() == ValueNumStore::NoVN)
                         {
-                            // So far, we know about two of these cases:
+#ifdef DEBUG
+
+                            // So far, we know about three of these cases:
                             // Case 1) We have a local var who has never been defined but it's seen as a use.
                             //         This is the case of storeIndir(addr(lclvar)) = expr.  In this case since we only
                             //         take the address of the variable, this doesn't mean it's a use nor we have to
-                            //         initialize it, so in this very rare case, we fabricate a value number.
-                            // Case 2) Local variables that represent structs which are assigned using CpBlk.
+                            //         initialize it, so in this very rare case, we fabricate a value number;
+                            // Case 2) Local variables that represent structs which are assigned using CpBlk;
+                            // Case 3) Local variable was written using a partial write,
+                            //         for example, BLK<1>(ADDR(LCL_VAR int)) = 1, it will change only the first byte.
+                            //         Check that there was ld-addr-op on the local.
                             //
-                            // Make sure we have either case 1 or case 2
+                            // Make sure we have one of these cases.
                             //
-                            GenTree* nextNode = lcl->gtNext;
+                            const GenTree*   nextNode = lcl->gtNext;
+                            const LclVarDsc* varDsc   = lvaGetDesc(lcl);
+
                             assert((nextNode->gtOper == GT_ADDR && nextNode->AsOp()->gtOp1 == lcl) ||
-                                   varTypeIsStruct(lcl->TypeGet()));
+                                   varTypeIsStruct(lcl->TypeGet()) || varDsc->lvHasLdAddrOp);
+#endif // DEBUG
 
                             // We will assign a unique value number for these
                             //
@@ -7888,8 +7921,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                                     if (fieldSeq == FieldSeqStore::NotAField())
                                     {
+                                        assert(!isEntire && "did not expect an entire NotAField write.");
                                         // We don't know where we're storing, so give the local a new, unique VN.
                                         // Do this by considering it an "entire" assignment, with an unknown RHS.
+                                        isEntire = true;
+                                        rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
+                                    }
+                                    else if ((fieldSeq == nullptr) && !isEntire)
+                                    {
+                                        // It is a partial store of a LCL_VAR without using LCL_FLD.
+                                        // Generate a unique VN.
                                         isEntire = true;
                                         rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
                                     }
@@ -9588,6 +9629,34 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     }
     else
     {
+        if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+        {
+            NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
+            if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
+                (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
+            {
+                bool                 isExact   = false;
+                bool                 isNotNull = false;
+                CORINFO_CLASS_HANDLE cls       = gtGetClassHandle(call, &isExact, &isNotNull);
+                if ((cls != nullptr) && isExact && isNotNull)
+                {
+                    ValueNum clsVN = vnStore->VNForHandle(ssize_t(cls), GTF_ICON_CLASS_HDL);
+                    ValueNum funcVN;
+                    if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
+                    {
+                        funcVN = vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultEqualityComparer, clsVN);
+                    }
+                    else
+                    {
+                        assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
+                        funcVN = vnStore->VNForFunc(call->TypeGet(), VNF_GetDefaultComparer, clsVN);
+                    }
+                    call->gtVNPair.SetBoth(funcVN);
+                    return;
+                }
+            }
+        }
+
         if (call->TypeGet() == TYP_VOID)
         {
             call->gtVNPair.SetBoth(ValueNumStore::VNForVoid());

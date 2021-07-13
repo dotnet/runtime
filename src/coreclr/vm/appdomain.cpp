@@ -47,9 +47,12 @@
 #include "runtimecallablewrapper.h"
 #include "mngstdinterfaces.h"
 #include "olevariant.h"
-#include "rcwrefcache.h"
 #include "olecontexthelpers.h"
 #endif // FEATURE_COMINTEROP
+
+#if defined(FEATURE_COMWRAPPERS)
+#include "rcwrefcache.h"
+#endif // FEATURE_COMWRAPPERS
 
 #include "typeequivalencehash.hpp"
 
@@ -1502,7 +1505,14 @@ void SystemDomain::LoadBaseSystemClasses()
     g_pThreadClass = CoreLibBinder::GetClass(CLASS__THREAD);
 
 #ifdef FEATURE_COMINTEROP
-    g_pBaseCOMObject = CoreLibBinder::GetClass(CLASS__COM_OBJECT);
+    if (g_pConfig->IsBuiltInCOMSupported())
+    {
+        g_pBaseCOMObject = CoreLibBinder::GetClass(CLASS__COM_OBJECT);
+    }
+    else
+    {
+        g_pBaseCOMObject = NULL;
+    }
 #endif
 
     g_pIDynamicInterfaceCastableInterface = CoreLibBinder::GetClass(CLASS__IDYNAMICINTERFACECASTABLE);
@@ -2024,31 +2034,31 @@ void SystemDomain::NotifyProfilerStartup()
     CONTRACTL_END;
 
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
         _ASSERTE(System());
-        g_profControlBlock.pProfInterface->AppDomainCreationStarted((AppDomainID) System());
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AppDomainCreationStarted((AppDomainID) System());
+        END_PROFILER_CALLBACK();
     }
 
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
         _ASSERTE(System());
-        g_profControlBlock.pProfInterface->AppDomainCreationFinished((AppDomainID) System(), S_OK);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AppDomainCreationFinished((AppDomainID) System(), S_OK);
+        END_PROFILER_CALLBACK();
     }
 
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
         _ASSERTE(System()->DefaultDomain());
-        g_profControlBlock.pProfInterface->AppDomainCreationStarted((AppDomainID) System()->DefaultDomain());
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AppDomainCreationStarted((AppDomainID) System()->DefaultDomain());
+        END_PROFILER_CALLBACK();
     }
 
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
         _ASSERTE(System()->DefaultDomain());
-        g_profControlBlock.pProfInterface->AppDomainCreationFinished((AppDomainID) System()->DefaultDomain(), S_OK);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AppDomainCreationFinished((AppDomainID) System()->DefaultDomain(), S_OK);
+        END_PROFILER_CALLBACK();
     }
 }
 
@@ -2063,31 +2073,31 @@ HRESULT SystemDomain::NotifyProfilerShutdown()
     CONTRACTL_END;
 
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
         _ASSERTE(System());
-        g_profControlBlock.pProfInterface->AppDomainShutdownStarted((AppDomainID) System());
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AppDomainShutdownStarted((AppDomainID) System());
+        END_PROFILER_CALLBACK();
     }
 
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
         _ASSERTE(System());
-        g_profControlBlock.pProfInterface->AppDomainShutdownFinished((AppDomainID) System(), S_OK);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AppDomainShutdownFinished((AppDomainID) System(), S_OK);
+        END_PROFILER_CALLBACK();
     }
 
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
         _ASSERTE(System()->DefaultDomain());
-        g_profControlBlock.pProfInterface->AppDomainShutdownStarted((AppDomainID) System()->DefaultDomain());
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AppDomainShutdownStarted((AppDomainID) System()->DefaultDomain());
+        END_PROFILER_CALLBACK();
     }
 
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
         _ASSERTE(System()->DefaultDomain());
-        g_profControlBlock.pProfInterface->AppDomainShutdownFinished((AppDomainID) System()->DefaultDomain(), S_OK);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AppDomainShutdownFinished((AppDomainID) System()->DefaultDomain(), S_OK);
+        END_PROFILER_CALLBACK();
     }
     return (S_OK);
 }
@@ -2113,8 +2123,10 @@ AppDomain::AppDomain()
     m_dwFlags = 0;
 #ifdef FEATURE_COMINTEROP
     m_pRCWCache = NULL;
+#endif //FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
     m_pRCWRefCache = NULL;
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 
     m_handleStore = NULL;
 
@@ -4418,7 +4430,7 @@ void AppDomain::NotifyDebuggerUnload()
 
 #ifndef CROSSGEN_COMPILE
 
-#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
 
 RCWRefCache *AppDomain::GetRCWRefCache()
 {
@@ -4440,6 +4452,9 @@ RCWRefCache *AppDomain::GetRCWRefCache()
     }
     RETURN m_pRCWRefCache;
 }
+#endif // FEATURE_COMWRAPPERS
+
+#ifdef FEATURE_COMINTEROP
 
 RCWCache *AppDomain::CreateRCWCache()
 {

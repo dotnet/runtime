@@ -122,7 +122,7 @@ namespace System.IO
             => new FileStream(NormalizedPath, mode, access, share);
 
         public FileStream OpenRead()
-            => new FileStream(NormalizedPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, false);
+            => new FileStream(NormalizedPath, FileMode.Open, FileAccess.Read, FileShare.Read, File.DefaultBufferSize, false);
 
         public FileStream OpenWrite()
             => new FileStream(NormalizedPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);

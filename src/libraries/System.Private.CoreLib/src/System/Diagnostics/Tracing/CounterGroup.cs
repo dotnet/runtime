@@ -251,10 +251,9 @@ namespace System.Diagnostics.Tracing
                 lock (s_counterGroupLock)
                 {
                     _timeStampSinceCollectionStarted = now;
-                    do
-                    {
-                        _nextPollingTimeStamp += new TimeSpan(0, 0, 0, 0, _pollingIntervalInMilliseconds);
-                    } while (_nextPollingTimeStamp <= now);
+                    TimeSpan delta = now - _nextPollingTimeStamp;
+                    if (delta > TimeSpan.Zero && _pollingIntervalInMilliseconds > 0)
+                        _nextPollingTimeStamp += TimeSpan.FromMilliseconds(_pollingIntervalInMilliseconds * Math.Ceiling(delta.TotalMilliseconds / _pollingIntervalInMilliseconds));
                 }
             }
         }

@@ -20,9 +20,12 @@
 #include <mono/utils/mono-rand.h>
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/w32api.h>
+#include <mono/metadata/assembly.h>
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/environment-internals.h>
+#include <mono/metadata/metadata-internals.h>
+#include <runtime_version.h>
 #include <mono/metadata/profiler.h>
 
 #undef EP_ARRAY_SIZE
@@ -522,6 +525,15 @@ ep_rt_mono_thread_setup (bool background_thread)
 {
 	extern void * ep_rt_mono_thread_attach (bool background_thread);
 	ep_rt_mono_thread_attach (background_thread);
+}
+
+static
+inline
+void
+ep_rt_mono_thread_setup_2 (bool background_thread, EventPipeThreadType thread_type)
+{
+	extern void * ep_rt_mono_thread_attach_2 (bool background_thread, EventPipeThreadType thread_type);
+	ep_rt_mono_thread_attach_2 (background_thread, thread_type);
 }
 
 static
@@ -1230,7 +1242,7 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_mono_start_func)
 {
 	rt_mono_thread_params_internal_t *thread_params = (rt_mono_thread_params_internal_t *)data;
 
-	ep_rt_mono_thread_setup (thread_params->background_thread);
+	ep_rt_mono_thread_setup_2 (thread_params->background_thread, thread_params->thread_params.thread_type);
 
 	thread_params->thread_params.thread = ep_rt_thread_get_handle ();
 	mono_thread_start_return_t result = thread_params->thread_params.thread_func (thread_params);
@@ -1824,6 +1836,22 @@ ep_rt_diagnostics_command_line_get (void)
 	return cmd_line;
 }
 
+static
+inline
+const ep_char8_t *
+ep_rt_entrypoint_assembly_name_get_utf8 (void)
+{
+	return (const ep_char8_t *)m_image_get_assembly_name (mono_assembly_get_main ()->image);
+}
+
+static
+inline
+const ep_char8_t *
+ep_rt_runtime_version_get_utf8 (void)
+{
+	return (const ep_char8_t *)EGLIB_TOSTRING (RuntimeProductVersion);
+}
+
 /*
  * Thread.
  */
@@ -2308,6 +2336,16 @@ EventPipeEtwCallbackDotNETRuntimePrivate (
 
 void
 EventPipeEtwCallbackDotNETRuntimeStress (
+	const uint8_t *source_id,
+	unsigned long is_enabled,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_data);
+
+void
+EventPipeEtwCallbackDotNETRuntimeMonoProfiler (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
 	uint8_t level,
