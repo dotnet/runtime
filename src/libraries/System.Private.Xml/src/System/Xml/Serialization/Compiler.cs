@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 
 namespace System.Xml.Serialization
 {
@@ -89,7 +90,14 @@ namespace System.Xml.Serialization
 
         internal static string GetTempAssemblyName(AssemblyName parent, string? ns)
         {
-            return parent.Name + ".XmlSerializers" + (ns == null || ns.Length == 0 ? "" : "." + ns.GetHashCode());
+            return parent.Name + ".XmlSerializers" + (string.IsNullOrEmpty(ns) ? "" : $".{GetPersistentHashCode(ns)}");
+        }
+
+        private static uint GetPersistentHashCode(string value)
+        {
+            byte[] valueBytes = System.Text.Encoding.UTF8.GetBytes(value);
+            byte[] hash = SHA512.HashData(valueBytes);
+            return (uint)(hash[0] << 24 | hash[1] << 16 | hash[2] << 8 | hash[3]);
         }
     }
 }
