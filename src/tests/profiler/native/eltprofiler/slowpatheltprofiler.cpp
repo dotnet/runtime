@@ -145,17 +145,27 @@ HRESULT SlowPathELTProfiler::Shutdown()
               && _sawMixedStructFuncLeave
               && _sawLargeStructFuncLeave
               && _sawIntegerStructFuncLeave
-              && _sawFloatingPointStructFuncLeave
+              && _sawFp32x2StructFuncLeave
+              && _sawFp32x3StructFuncLeave
+              && _sawFp32x4StructFuncLeave
+              && _sawFp64x2StructFuncLeave
+              && _sawFp64x3StructFuncLeave
+              && _sawFp64x4StructFuncLeave
               && _sawDoubleRetFuncLeave)
         {
             wcout << L"PROFILER TEST PASSES" << endl;
         }
         else
         {
-            wcout << L"TEST FAILED _failures=" << _failures.load() << L", _sawSimpleFuncLeave=" << _sawSimpleFuncLeave 
-                    << L", _sawMixedStructFuncLeave=" << _sawMixedStructFuncLeave << L", _sawLargeStructFuncLeave=" 
-                    << _sawLargeStructFuncLeave << L"_sawIntegerStructFuncLeave=" << _sawIntegerStructFuncLeave 
-                    << L"_sawFloatingPointStructFuncLeave=" << _sawFloatingPointStructFuncLeave 
+            wcout << L"TEST FAILED _failures=" << _failures.load() << L", _sawSimpleFuncLeave=" << _sawSimpleFuncLeave
+                    << L", _sawMixedStructFuncLeave=" << _sawMixedStructFuncLeave << L", _sawLargeStructFuncLeave="
+                    << _sawLargeStructFuncLeave << L", _sawIntegerStructFuncLeave=" << _sawIntegerStructFuncLeave
+                    << L", _sawFp32x2StructFuncLeave=" << _sawFp32x2StructFuncLeave
+                    << L", _sawFp32x3StructFuncLeave=" << _sawFp32x3StructFuncLeave
+                    << L", _sawFp32x4StructFuncLeave=" << _sawFp32x4StructFuncLeave
+                    << L", _sawFp64x2StructFuncLeave=" << _sawFp64x2StructFuncLeave
+                    << L", _sawFp64x3StructFuncLeave=" << _sawFp64x3StructFuncLeave
+                    << L", _sawFp64x4StructFuncLeave=" << _sawFp64x4StructFuncLeave
                     << L"_sawDoubleRetFuncLeave=" << _sawDoubleRetFuncLeave << endl;
         }
     }
@@ -285,12 +295,52 @@ HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::LeaveCallback(FunctionIDOrClientI
         ExpectedArgValue integerStructRetValue = { sizeof(IntegerStruct), (void *)&is, [&](UINT_PTR ptr){ return ValidateIntegerStruct(ptr, is); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, integerStructRetValue);
     }
-    else if (functionName == WCHAR("FloatingPointStructFunc"))
+    else if (functionName == WCHAR("Fp32x2StructFunc"))
     {
-        _sawFloatingPointStructFuncLeave = true;
+        _sawFp32x2StructFuncLeave = true;
 
-        FloatingPointStruct fps = { 13.0, 256.8 };
-        ExpectedArgValue floatingPointStructRetValue = { sizeof(FloatingPointStruct), (void *)&fps, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fps); } };
+        Fp32x2Struct fps = { 13.0f, 256.8f };
+        ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp32x2Struct), (void *)&fps, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fps); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+    }
+    else if (functionName == WCHAR("Fp32x3StructFunc"))
+    {
+        _sawFp32x3StructFuncLeave = true;
+
+        Fp32x3Struct fps = { 13.0f, 145.2f, 256.8f };
+        ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp32x3Struct), (void *)&fps, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fps); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+    }
+    else if (functionName == WCHAR("Fp32x4StructFunc"))
+    {
+        _sawFp32x4StructFuncLeave = true;
+
+        Fp32x4Struct fps = { 13.0f, 145.2f, 321.98f, 256.8f };
+        ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp32x4Struct), (void *)&fps, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fps); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+    }
+    else if (functionName == WCHAR("Fp64x2StructFunc"))
+    {
+        _sawFp64x2StructFuncLeave = true;
+
+        Fp64x2Struct fps = { 13.0, 256.8 };
+        ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp64x2Struct), (void *)&fps, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fps); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+    }
+    else if (functionName == WCHAR("Fp64x3StructFunc"))
+    {
+        _sawFp64x3StructFuncLeave = true;
+
+        Fp64x3Struct fps = { 13.0, 145.2, 256.8 };
+        ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp64x3Struct), (void *)&fps, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fps); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+    }
+    else if (functionName == WCHAR("Fp64x4StructFunc"))
+    {
+        _sawFp64x4StructFuncLeave = true;
+
+        Fp64x4Struct fps = { 13.0, 145.2, 321.98, 256.8 };
+        ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp64x4Struct), (void *)&fps, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fps); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
     }
     else if (functionName == WCHAR("DoubleRetFunc"))
@@ -423,15 +473,76 @@ bool SlowPathELTProfiler::ValidateLargeStruct(UINT_PTR ptr, LargeStruct expected
             && lhs.d3 == expected.d3;
 }
 
-bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, FloatingPointStruct expected)
+bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x2Struct expected)
 {
     if (ptr == NULL)
     {
         return false;
     }
 
-    FloatingPointStruct lhs = *(FloatingPointStruct *)ptr;
-    return lhs.d1 == expected.d1 && lhs.d2 == expected.d2;
+    Fp32x2Struct lhs = *(Fp32x2Struct *)ptr;
+    return lhs.x == expected.x && lhs.y == expected.y;
+}
+
+bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x3Struct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    Fp32x3Struct lhs = *(Fp32x3Struct *)ptr;
+    return lhs.x == expected.x && lhs.y == expected.y && lhs.z == expected.z;
+}
+
+bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x4Struct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    Fp32x4Struct lhs = *(Fp32x4Struct *)ptr;
+    return lhs.x == expected.x
+        && lhs.y == expected.y
+        && lhs.z == expected.z
+        && lhs.w == expected.w;
+}
+
+bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x2Struct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    Fp64x2Struct lhs = *(Fp64x2Struct *)ptr;
+    return lhs.x == expected.x && lhs.y == expected.y;
+}
+
+bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x3Struct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    Fp64x3Struct lhs = *(Fp64x3Struct *)ptr;
+    return lhs.x == expected.x && lhs.y == expected.y && lhs.z == expected.z;
+}
+
+bool SlowPathELTProfiler::ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x4Struct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    Fp64x4Struct lhs = *(Fp64x4Struct *)ptr;
+    return lhs.x == expected.x
+        && lhs.y == expected.y
+        && lhs.z == expected.z
+        && lhs.w == expected.w;
 }
 
 bool SlowPathELTProfiler::ValidateIntegerStruct(UINT_PTR ptr, IntegerStruct expected)

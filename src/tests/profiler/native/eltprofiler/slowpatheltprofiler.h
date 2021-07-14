@@ -43,9 +43,45 @@ typedef struct
 
 typedef struct
 {
-    double d1;
-    double d2;
-} FloatingPointStruct;
+    float x;
+    float y;
+} Fp32x2Struct;
+
+typedef struct
+{
+    float x;
+    float y;
+    float z;
+} Fp32x3Struct;
+
+typedef struct
+{
+    float x;
+    float y;
+    float z;
+    float w;
+} Fp32x4Struct;
+
+typedef struct
+{
+    double x;
+    double y;
+} Fp64x2Struct;
+
+typedef struct
+{
+    double x;
+    double y;
+    double z;
+} Fp64x3Struct;
+
+typedef struct
+{
+    double x;
+    double y;
+    double z;
+    double w;
+} Fp64x4Struct;
 
 class SlowPathELTProfiler : public Profiler
 {
@@ -60,6 +96,14 @@ public:
         _sawSimpleFuncLeave(false),
         _sawMixedStructFuncLeave(false),
         _sawLargeStructFuncLeave(false),
+        _sawIntegerStructFuncLeave(false),
+        _sawFp32x2StructFuncLeave(false),
+        _sawFp32x3StructFuncLeave(false),
+        _sawFp32x4StructFuncLeave(false),
+        _sawFp64x2StructFuncLeave(false),
+        _sawFp64x3StructFuncLeave(false),
+        _sawFp64x4StructFuncLeave(false),
+        _sawDoubleRetFuncLeave(false),
         _testType(TestType::Unknown)
     {}
 
@@ -88,7 +132,12 @@ private:
     bool _sawMixedStructFuncLeave;
     bool _sawLargeStructFuncLeave;
     bool _sawIntegerStructFuncLeave;
-    bool _sawFloatingPointStructFuncLeave;
+    bool _sawFp32x2StructFuncLeave;
+    bool _sawFp32x3StructFuncLeave;
+    bool _sawFp32x4StructFuncLeave;
+    bool _sawFp64x2StructFuncLeave;
+    bool _sawFp64x3StructFuncLeave;
+    bool _sawFp64x4StructFuncLeave;
     bool _sawDoubleRetFuncLeave;
 
     TestType _testType;
@@ -101,7 +150,12 @@ private:
     bool ValidateString(UINT_PTR ptr, const WCHAR *expected);
     bool ValidateMixedStruct(UINT_PTR ptr, MixedStruct expected);
     bool ValidateLargeStruct(UINT_PTR ptr, LargeStruct expected);
-    bool ValidateFloatingPointStruct(UINT_PTR ptr, FloatingPointStruct expected);
+    bool ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x2Struct expected);
+    bool ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x3Struct expected);
+    bool ValidateFloatingPointStruct(UINT_PTR ptr, Fp32x4Struct expected);
+    bool ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x2Struct expected);
+    bool ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x3Struct expected);
+    bool ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x4Struct expected);
     bool ValidateIntegerStruct(UINT_PTR ptr, IntegerStruct expected);
 
     HRESULT ValidateOneArgument(COR_PRF_FUNCTION_ARGUMENT_RANGE *pArgRange,

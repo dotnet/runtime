@@ -56,9 +56,9 @@ class ProfileArgIterator
 private:
     void        *m_handle;
     ArgIterator  m_argIterator;
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
+#if defined(UNIX_AMD64_ABI)
     UINT64       m_bufferPos;
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
+#endif // defined(UNIX_AMD64_ABI)
 
 public:
     ProfileArgIterator(MetaSig * pMetaSig, void* platformSpecificHandle);
