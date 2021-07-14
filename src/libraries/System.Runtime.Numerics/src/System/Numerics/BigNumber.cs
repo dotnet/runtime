@@ -274,6 +274,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Globalization.Buffers;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -288,21 +289,6 @@ namespace System.Numerics
                                                            | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier);
 
         private static readonly uint[] s_uint32PowersOfTen = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
-
-        private struct BigNumberBuffer
-        {
-            public StringBuilder digits;
-            public int precision;
-            public int scale;
-            public bool sign;  // negative sign exists
-
-            public static BigNumberBuffer Create()
-            {
-                BigNumberBuffer number = default;
-                number.digits = new StringBuilder();
-                return number;
-            }
-        }
 
 
         internal static bool TryValidateParseStyleInteger(NumberStyles style, [NotNullWhen(false)] out ArgumentException? e)
@@ -343,8 +329,9 @@ namespace System.Numerics
                 throw e; // TryParse still throws ArgumentException on invalid NumberStyles
             }
 
-            BigNumberBuffer bigNumber = BigNumberBuffer.Create();
-            if (!FormatProvider.TryStringToBigInteger(value, style, info, bigNumber.digits, out bigNumber.precision, out bigNumber.scale, out bigNumber.sign))
+            NumberBuffer numberBuffer = new NumberBuffer();
+            StringBuilder? parsedNumber;
+            if (!FormatProvider.TryStringToBigInteger(value, style, info, numberBuffer, out parsedNumber))
             {
                 result = default;
                 return false;
@@ -352,11 +339,11 @@ namespace System.Numerics
 
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             {
-                return HexNumberToBigInteger(ref bigNumber, out result);
+                return TryHexNumberToBigInteger(numberBuffer, parsedNumber, out result);
             }
             else
             {
-                return NumberToBigInteger(ref bigNumber, out result);
+                return TryNumberToBigInteger(numberBuffer, parsedNumber, out result);
             }
         }
 
@@ -383,9 +370,11 @@ namespace System.Numerics
             return result;
         }
 
-        private static bool HexNumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
+        private static bool TryHexNumberToBigInteger(NumberBuffer number,
+            StringBuilder parsedNumber,
+            out BigInteger result)
         {
-            if (number.digits == null || number.digits.Length == 0)
+            if (parsedNumber.Length == 0)
             {
                 result = default;
                 return false;
@@ -393,7 +382,7 @@ namespace System.Numerics
 
             const int DigitsPerBlock = 8;
 
-            int totalDigitCount = number.digits.Length - 1;   // Ignore trailing '\0'
+            int totalDigitCount = parsedNumber.Length - 1;   // Ignore trailing '\0'
             int blockCount, partialDigitCount;
 
             blockCount = Math.DivRem(totalDigitCount, DigitsPerBlock, out int remainder);
@@ -407,7 +396,7 @@ namespace System.Numerics
                 partialDigitCount = DigitsPerBlock - remainder;
             }
 
-            bool isNegative = HexConverter.FromChar(number.digits[0]) >= 8;
+            bool isNegative = HexConverter.FromChar(parsedNumber[0]) >= 8;
             uint partialValue = (isNegative && partialDigitCount > 0) ? 0xFFFFFFFFu : 0;
 
             int[]? arrayFromPool = null;
@@ -420,7 +409,7 @@ namespace System.Numerics
 
             try
             {
-                foreach (ReadOnlyMemory<char> digitsChunkMem in number.digits.GetChunks())
+                foreach (ReadOnlyMemory<char> digitsChunkMem in parsedNumber.GetChunks())
                 {
                     ReadOnlySpan<char> chunkDigits = digitsChunkMem.Span;
                     for (int i = 0; i < chunkDigits.Length; i++)
@@ -494,7 +483,9 @@ namespace System.Numerics
             }
         }
 
-        private static bool NumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
+        private static bool TryNumberToBigInteger(NumberBuffer number,
+            StringBuilder parsedNumber,
+            out BigInteger result)
         {
             Span<uint> stackBuffer = stackalloc uint[BigInteger.StackallocUInt32Limit];
             Span<uint> currentBuffer = stackBuffer;
@@ -504,14 +495,14 @@ namespace System.Numerics
             uint partialValue = 0;
             int partialDigitCount = 0;
             int totalDigitCount = 0;
-            int numberScale = number.scale;
+            int numberScale = number.Scale;
 
             const int MaxPartialDigits = 9;
             const uint TenPowMaxPartial = 1000000000;
 
             try
             {
-                foreach (ReadOnlyMemory<char> digitsChunk in number.digits.GetChunks())
+                foreach (ReadOnlyMemory<char> digitsChunk in parsedNumber.GetChunks())
                 {
                     if (!ProcessChunk(digitsChunk.Span, ref currentBuffer))
                     {
@@ -548,12 +539,12 @@ namespace System.Numerics
                 }
                 else if (currentBufferSize == 1 && currentBuffer[0] <= int.MaxValue)
                 {
-                    sign = (int)(number.sign ? -currentBuffer[0] : currentBuffer[0]);
+                    sign = (int)(number.IsNegativeSignExists ? -currentBuffer[0] : currentBuffer[0]);
                     bits = null;
                 }
                 else
                 {
-                    sign = number.sign ? -1 : 1;
+                    sign = number.IsNegativeSignExists ? -1 : 1;
                     bits = currentBuffer.Slice(0, currentBufferSize).ToArray();
                 }
 

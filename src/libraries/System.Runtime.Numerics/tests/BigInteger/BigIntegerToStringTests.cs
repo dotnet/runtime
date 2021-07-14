@@ -439,6 +439,25 @@ namespace System.Numerics.Tests
             RunCustomFormatToStringTests(s_random, "#\u2030000000", CultureInfo.CurrentCulture.NumberFormat.NegativeSign, 6, PerMilleSymbolFormatter);
         }
 
+        public static IEnumerable<object[]> RunFormatScientificNotationToBigIntegerAndViceVersaData()
+        {
+            yield return new object[] { "1E+1000", "1E+1000" };
+            yield return new object[] { "1E+1001", "1E+1001" };
+        }
+
+        [Theory]
+        [MemberData(nameof(RunFormatScientificNotationToBigIntegerAndViceVersaData))]
+        public static void RunFormatScientificNotationToBigIntegerAndViceVersa(string testingValue, string expectedResult)
+        {
+            BigInteger parsedValue;
+            string actualResult;
+
+            parsedValue = BigInteger.Parse(testingValue, NumberStyles.AllowExponent);
+            actualResult = parsedValue.ToString("E0");
+
+            Assert.Equal(expectedResult, actualResult);
+        }
+
         private static void RunSimpleProviderToStringTests(Random random, string format, NumberFormatInfo provider, int precision, StringFormatter formatter)
         {
             string test;
