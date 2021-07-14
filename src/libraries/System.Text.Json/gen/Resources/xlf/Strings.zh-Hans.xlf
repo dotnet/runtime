@@ -4,12 +4,12 @@
     <body>
       <trans-unit id="ContextClassesMustBePartialMessageFormat">
         <source>Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</source>
-        <target state="new">Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</target>
+        <target state="translated">派生的 “JsonSerializerContext” 类型“{0}”指定 JSON-serializable 类型。该类型和所有包含类型必须设为部分，以启动源生成。</target>
         <note />
       </trans-unit>
       <trans-unit id="ContextClassesMustBePartialTitle">
         <source>Derived 'JsonSerializerContext' types and all containing types must be partial.</source>
-        <target state="new">Derived 'JsonSerializerContext' types and all containing types must be partial.</target>
+        <target state="translated">派生的 “JsonSerializerContext” 类型以及所有包含类型必须是部分。</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
