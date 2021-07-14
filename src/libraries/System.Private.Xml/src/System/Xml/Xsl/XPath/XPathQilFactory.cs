@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Xml.Schema;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
@@ -197,7 +198,7 @@ namespace System.Xml.Xsl.XPath
                     );
                 case XmlTypeCode.Double:
                     return (n.NodeType == QilNodeType.LiteralDouble
-                        ? (QilNode)String(XPathConvert.DoubleToString((double)(QilLiteral)n))
+                        ? (QilNode)String(((double)(QilLiteral)n).ToString(CultureInfo.InvariantCulture))
                         : (QilNode)XsltConvert(n, T.StringX)
                     );
                 case XmlTypeCode.String:
