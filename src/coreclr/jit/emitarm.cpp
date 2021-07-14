@@ -638,6 +638,7 @@ bool emitter::emitInsMayWriteMultipleRegs(instrDesc* id)
 	    {
 		    return true;
 	    }
+	    return false;
         default:
             return false;
     }
