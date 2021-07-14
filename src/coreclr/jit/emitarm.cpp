@@ -621,18 +621,23 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 bool emitter::emitInsMayWriteMultipleRegs(instrDesc* id)
 {
     instruction ins = id->idIns();
+    insFormat   fmt = id->idInsFmt();
 
     switch (ins)
     {
         case INS_ldm:
         case INS_ldmdb:
-        case INS_pop:
         case INS_smlal:
         case INS_smull:
         case INS_umlal:
         case INS_umull:
         case INS_vmov_d2i:
             return true;
+	case INS_pop:
+	    if (fmt != IF_T2_E2) //T2_E2 is pop single register encoding
+	    {
+		    return true;
+	    }
         default:
             return false;
     }
