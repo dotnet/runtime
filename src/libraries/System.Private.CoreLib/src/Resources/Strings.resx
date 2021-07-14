@@ -3805,4 +3805,7 @@
   <data name="InvalidOperation_BadIndexLength" xml:space="preserve">
     <value>Length in index file less than AndroidTzDataHeader</value>
   </data>
+  <data name="TimeZoneNotFound_ValidTimeZoneFileMissing" xml:space="preserve">
+    <value>Unable to properly load any time zone data files.</value>
+  </data>
 </root>

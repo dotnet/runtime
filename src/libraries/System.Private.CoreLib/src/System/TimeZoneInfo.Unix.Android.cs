@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -21,7 +22,10 @@ namespace System
         {
             get
             {
-                Interlocked.CompareExchange(ref s_tzData, new AndroidTzData(), null);
+                if (s_tzData == null)
+                {
+                    Interlocked.CompareExchange(ref s_tzData, new AndroidTzData(), null);
+                }
 
                 return s_tzData;
             }
@@ -138,61 +142,14 @@ namespace System
             return Utc;
         }
 
-        private static string GetApexTimeDataRoot()
-        {
-            string? ret = Environment.GetEnvironmentVariable("ANDROID_TZDATA_ROOT");
-            if (!string.IsNullOrEmpty(ret))
-            {
-                return ret;
-            }
-
-            return "/apex/com.android.tzdata";
-        }
-
-        private static string GetApexRuntimeRoot()
-        {
-            string? ret = Environment.GetEnvironmentVariable("ANDROID_RUNTIME_ROOT");
-            if (!string.IsNullOrEmpty(ret))
-            {
-                return ret;
-            }
-
-            return "/apex/com.android.runtime";
-        }
-
-        // On Android, time zone data is found in tzdata
-        // Based on https://github.com/mono/mono/blob/main/mcs/class/corlib/System/TimeZoneInfo.Android.cs
-        // Also follows the locations found at the bottom of https://github.com/aosp-mirror/platform_bionic/blob/master/libc/tzcode/bionic.cpp
-        private static string GetTimeZoneDirectory()
-        {
-            string apexTzDataFileDir = GetApexTimeDataRoot() + "/etc/tz/";
-            // Android 10+, TimeData module where the updates land
-            if (File.Exists(Path.Combine(apexTzDataFileDir, TimeZoneFileName)))
-            {
-                return apexTzDataFileDir;
-            }
-            string apexRuntimeFileDir = GetApexRuntimeRoot() + "/etc/tz/";
-            // Android 10+, Fallback location if the above isn't found or corrupted
-            if (File.Exists(Path.Combine(apexRuntimeFileDir, TimeZoneFileName)))
-            {
-                return apexRuntimeFileDir;
-            }
-            string androidDataFileDir = Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/";
-            if (File.Exists(Path.Combine(androidDataFileDir, TimeZoneFileName)))
-            {
-                return androidDataFileDir;
-            }
-
-            return Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory;
-        }
-
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
+
             value = id == LocalId ? GetLocalTimeZoneCore() : GetTimeZone(id, id);
 
             if (value == null)
             {
-                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, GetTimeZoneDirectory() + TimeZoneFileName));
+                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, AndroidTzDataInstance.GetTimeZoneDirectory() + TimeZoneFileName));
                 return TimeZoneInfoResult.TimeZoneNotFoundException;
             }
 
@@ -238,94 +195,140 @@ namespace System
                 public int unused; // Was raw GMT offset; always 0 since tzdata2014f (L).
             }
 
-            private string[] _ids;
-            private int[] _byteOffsets;
-            private int[] _lengths;
+            private string[]? _ids;
+            private int[]? _byteOffsets;
+            private int[]? _lengths;
+            private string _tzFileDir;
+            private string _tzFilePath;
+
+            private static string GetApexTimeDataRoot()
+            {
+                string? ret = Environment.GetEnvironmentVariable("ANDROID_TZDATA_ROOT");
+                if (!string.IsNullOrEmpty(ret))
+                {
+                    return ret;
+                }
+
+                return "/apex/com.android.tzdata";
+            }
+
+            private static string GetApexRuntimeRoot()
+            {
+                string? ret = Environment.GetEnvironmentVariable("ANDROID_RUNTIME_ROOT");
+                if (!string.IsNullOrEmpty(ret))
+                {
+                    return ret;
+                }
+
+                return "/apex/com.android.runtime";
+            }
 
             public AndroidTzData()
             {
-                string tzFilePath = GetTimeZoneDirectory() + TimeZoneFileName;
-                using (FileStream fs = File.OpenRead(tzFilePath))
+
+                string[] tzFileDirList = new string[] {GetApexTimeDataRoot() + "/etc/tz/", // Android 10+, TimeData module where the updates land
+                                                       GetApexRuntimeRoot() + "/etc/tz/", // Android 10+, Fallback location if the above isn't found or corrupted
+                                                       Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/",
+                                                       Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory};
+                foreach (var tzFileDir in tzFileDirList)
                 {
-                    ReadHeader(tzFilePath, fs);
-                }
-            }
-
-            [MemberNotNull(nameof(_ids))]
-            [MemberNotNull(nameof(_byteOffsets))]
-            [MemberNotNull(nameof(_lengths))]
-            private unsafe void ReadHeader(string tzFilePath, Stream fs)
-            {
-                int size = Math.Max(sizeof(AndroidTzDataHeader)), sizeof(AndroidTzDataEntry)));
-                Span<byte> buffer = stackalloc byte[size];
-                AndroidTzDataHeader header = ReadAt<AndroidTzDataHeader>(tzFilePath, fs, 0, buffer);
-
-                header.indexOffset = NetworkToHostOrder(header.indexOffset);
-                header.dataOffset = NetworkToHostOrder(header.dataOffset);
-
-                // tzdata files are expected to start with the form of "tzdata2012f\0" depending on the year of the tzdata used which is 2012 in this example
-                if (header.signature[0] != (byte)'t' || header.signature[1] != (byte)'z' || header.signature[2] != (byte)'d' || header.signature[3] != (byte)'a' || header.signature[4] != (byte)'t' || header.signature[5] != (byte)'a' || header.signature[11] != 0)
-                {
-                    var b = new StringBuilder(buffer.Length);
-                    for (int i = 0; i < 12; ++i) {
-                        b.Append(' ').Append(HexConverter.ToCharLower(buffer[i]));
+                    string tzFilePath = Path.Combine(tzFileDir, TimeZoneFileName);
+                    if (LoadData(tzFilePath))
+                    {
+                        _tzFileDir = tzFileDir;
+                        _tzFilePath = tzFilePath;
+                        return;
                     }
-
-                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadTZHeader, tzFilePath, b.ToString()));
                 }
 
-                ReadIndex(tzFilePath, fs, header.indexOffset, header.dataOffset, buffer);
+                throw new TimeZoneNotFoundException(SR.TimeZoneNotFound_ValidTimeZoneFileMissing);
             }
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2087:UnrecognizedReflectionPattern",
-                Justification = "Implementation detail of Android TimeZone")]
-            private unsafe T ReadAt<T>(string tzFilePath, Stream fs, long position, Span<byte> buffer)
-                where T : struct
+            private bool LoadData(string path)
             {
-                int size = sizeof(T));
-                Debug.Assert(buffer.Length >= size);
-
-                fs.Position = position;
-                int numBytesRead;
-                if ((numBytesRead = fs.Read(buffer)) < size)
+                if (!File.Exists(path))
                 {
-                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ReadTZError, tzFilePath, position, size, numBytesRead, size));
+                    return false;
                 }
-
-                fixed (byte* b = buffer)
-                {
-                    return (T)Marshal.PtrToStructure((IntPtr)b, typeof(T))!;
+                try {
+                    using (FileStream fs = File.OpenRead(path))
+                    {
+                        LoadTzFile(fs);
+                    }
+                    return true;
                 }
+                catch (IOException) {}
+
+                return false;
             }
 
-            private static int NetworkToHostOrder(int value)
+            private unsafe void LoadTzFile(Stream fs)
             {
-                if (!BitConverter.IsLittleEndian)
-                    return value;
+                int headerSize = 24;
+                Span<byte> buffer = stackalloc byte[headerSize];
+                int bytesRead = 0;
+                int bytesLeft = headerSize;
 
-                return (((value >> 24) & 0xFF) | ((value >> 08) & 0xFF00) | ((value << 08) & 0xFF0000) | ((value << 24)));
-            }
-
-            private static unsafe int GetStringLength(sbyte* s, int maxLength)
-            {
-                int len;
-                for (len = 0; len < maxLength; len++, s++)
+                while (bytesLeft > 0)
                 {
-                    if (*s == 0)
+                    int b = fs.Read(buffer);
+                    if (b == 0)
                     {
                         break;
                     }
+
+                    bytesRead += b;
+                    bytesLeft -= b;
                 }
-                return len;
+
+                AndroidTzDataHeader header = LoadHeader(buffer);
+                ReadIndex(fs, header.indexOffset, header.dataOffset);
             }
 
-            [MemberNotNull(nameof(_ids))]
-            [MemberNotNull(nameof(_byteOffsets))]
-            [MemberNotNull(nameof(_lengths))]
-            private unsafe void ReadIndex(string tzFilePath, Stream fs, int indexOffset, int dataOffset, Span<byte> buffer)
+            private unsafe AndroidTzDataHeader LoadHeader(Span<byte> buffer)
+            {
+                // tzdata files are expected to start with the form of "tzdata2012f\0" depending on the year of the tzdata used which is 2012 in this example
+                // since we're not differntiating on year, check for tzdata and the ending \0
+                Span<byte> signature = buffer.Slice(0, 12);
+                Span<byte> tzDataSignature = stackalloc byte[8];
+                tzDataSignature.Clear();
+
+                signature.Slice(0, 6).CopyTo(tzDataSignature);
+                ulong tzdata = (ulong)TZif_ToInt64(tzDataSignature);
+
+                char[] cbits = Encoding.Default.GetChars(tzDataSignature.ToArray());
+
+                string sigBits = "";
+                for (int i = 0; i < signature.Length; i++)
+                {
+                    sigBits += signature[i].ToString() + " ";
+                }
+
+                if (tzdata != 0x747A646174610000 || signature[11] != 0)
+                {
+                    // 0x747A646174640000 = {0x74, 0x7A, 0x64, 0x61, 0x74, 0x64, 0x00, 0x00} = "tzdata[NUL][NUL]"
+                    var b = new StringBuilder(signature.Length);
+                    for (int i = 0; i < signature.Length; ++i)
+                    {
+                        b.Append(' ').Append(HexConverter.ToCharLower(signature[i]));
+                    }
+
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadTZHeader, TimeZoneFileName, b.ToString()));
+                }
+
+                AndroidTzDataHeader header;
+
+                header.indexOffset = TZif_ToInt32(buffer.Slice(12, 4));
+                header.dataOffset = TZif_ToInt32(buffer.Slice(16, 4));
+                header.finalOffset = TZif_ToInt32(buffer.Slice(20, 4));
+
+                return header;
+            }
+
+            private unsafe void ReadIndex(Stream fs, int indexOffset, int dataOffset)
             {
                 int indexSize = dataOffset - indexOffset;
-                int entrySize = sizeof(AndroidTzDataEntry));
+                int entrySize = sizeof(AndroidTzDataEntry);
                 int entryCount = indexSize / entrySize;
 
                 _byteOffsets = new int[entryCount];
@@ -334,23 +337,70 @@ namespace System
 
                 for (int i = 0; i < entryCount; ++i)
                 {
-                    AndroidTzDataEntry entry = ReadAt<AndroidTzDataEntry>(tzFilePath, fs, indexOffset + (entrySize*i), buffer);
+                    AndroidTzDataEntry entry = LoadEntryAt(fs, indexOffset + (entrySize*i));
                     var p = (sbyte*)entry.id;
 
-                    _byteOffsets![i] = NetworkToHostOrder(entry.byteOffset) + dataOffset;
-                    _ids![i] = new string(p, 0, GetStringLength(p, 40), Encoding.ASCII);
-                    _lengths![i] = NetworkToHostOrder(entry.length);
+                    _byteOffsets![i] = entry.byteOffset + dataOffset;
+                    _ids![i] = new string(p);
+                    _lengths![i] = entry.length;
 
-                    if (_lengths![i] < sizeof(AndroidTzDataHeader)))
+                    if (_lengths![i] < sizeof(AndroidTzDataHeader))
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_BadIndexLength);
                     }
                 }
             }
 
+            private unsafe AndroidTzDataEntry LoadEntryAt(Stream fs, long position)
+            {
+                int size = sizeof(AndroidTzDataEntry);
+                Span<byte> entryBuffer = stackalloc byte[size];
+
+                fs.Position = position;
+
+                int bytesRead = 0;
+                int bytesLeft = size;
+
+                while (bytesLeft > 0)
+                {
+                    int b = fs.Read(entryBuffer);
+                    if (b == 0)
+                    {
+                        break;
+                    }
+
+                    bytesRead += b;
+                    bytesLeft -= b;
+                }
+
+                if (bytesLeft != 0)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ReadTZError, _tzFilePath, position, size, bytesRead, size));
+                }
+
+                AndroidTzDataEntry entry;
+                for (int i = 0; i < 40; i++)
+                {
+                    entry.id[i] = entryBuffer[i];
+                }
+                entry.byteOffset = TZif_ToInt32(entryBuffer.Slice(40, 4));
+                entry.length = TZif_ToInt32(entryBuffer.Slice(44, 4));
+                entry.unused = TZif_ToInt32(entryBuffer.Slice(48));
+
+                return entry;
+            }
+
             public string[] GetTimeZoneIds()
             {
                 return _ids!;
+            }
+
+            // On Android, time zone data is found in tzdata
+            // Based on https://github.com/mono/mono/blob/main/mcs/class/corlib/System/TimeZoneInfo.Android.cs
+            // Also follows the locations found at the bottom of https://github.com/aosp-mirror/platform_bionic/blob/master/libc/tzcode/bionic.cpp
+            public string GetTimeZoneDirectory()
+            {
+                return _tzFilePath!;
             }
 
             public byte[] GetTimeZoneData(string id)
@@ -364,14 +414,13 @@ namespace System
                 int offset = _byteOffsets![i];
                 int length = _lengths![i];
                 var buffer = new byte[length];
-                string tzFilePath = GetTimeZoneDirectory() + TimeZoneFileName;
-                using (FileStream fs = File.OpenRead(tzFilePath))
+                using (FileStream fs = File.OpenRead(_tzFilePath))
                 {
                     fs.Position = offset;
                     int numBytesRead;
                     if ((numBytesRead = fs.Read(buffer)) < buffer.Length)
                     {
-                        throw new InvalidOperationException(string.Format(SR.InvalidOperation_ReadTZError, tzFilePath, offset, length, numBytesRead, buffer.Length));
+                        throw new InvalidOperationException(string.Format(SR.InvalidOperation_ReadTZError, _tzFilePath, offset, length, numBytesRead, buffer.Length));
                     }
                 }
 
