@@ -34,6 +34,9 @@ ThreadSuspend::SUSPEND_REASON ThreadSuspend::m_suspendReason;
 extern "C" void             RedirectedHandledJITCaseForGCThreadControl_Stub(void);
 extern "C" void             RedirectedHandledJITCaseForDbgThreadControl_Stub(void);
 extern "C" void             RedirectedHandledJITCaseForUserSuspend_Stub(void);
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+extern "C" void NTAPI       ApcActivationCallbackStub(ULONG_PTR Parameter);
+#endif
 
 #define GetRedirectHandlerForGCThreadControl()      \
                 ((PFN_REDIRECTTARGET) GetEEFuncEntryPoint(RedirectedHandledJITCaseForGCThreadControl_Stub))
@@ -41,6 +44,10 @@ extern "C" void             RedirectedHandledJITCaseForUserSuspend_Stub(void);
                 ((PFN_REDIRECTTARGET) GetEEFuncEntryPoint(RedirectedHandledJITCaseForDbgThreadControl_Stub))
 #define GetRedirectHandlerForUserSuspend()          \
                 ((PFN_REDIRECTTARGET) GetEEFuncEntryPoint(RedirectedHandledJITCaseForUserSuspend_Stub))
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+#define GetRedirectHandlerForApcActivation()        \
+                ((PAPCFUNC) GetEEFuncEntryPoint(ApcActivationCallbackStub))
+#endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64)
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
@@ -49,10 +56,6 @@ extern "C" void             RedirectedHandledJITCaseForGCStress_Stub(void);
                 ((PFN_REDIRECTTARGET) GetEEFuncEntryPoint(RedirectedHandledJITCaseForGCStress_Stub))
 #endif // HAVE_GCCOVER && USE_REDIRECT_FOR_GCSTRESS
 #endif // TARGET_AMD64 || TARGET_ARM
-
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-extern "C" void NTAPI ApcActivationCallbackStub(ULONG_PTR Parameter);
-#endif
 
 // Every PING_JIT_TIMEOUT ms, check to see if a thread in JITted code has wandered
 // into some fully interruptible code (or should have a different hijack to improve
@@ -2490,10 +2493,14 @@ void RedirectedThreadFrame::ExceptionUnwind()
 
     STRESS_LOG1(LF_SYNC, LL_INFO1000, "In RedirectedThreadFrame::ExceptionUnwind pFrame = %p\n", this);
 
-    Thread* pThread = GetThread();
+    if (Thread::UseContextBasedThreadRedirection())
+    {
+        Thread* pThread = GetThread();
 
-    // Allow future use to avoid repeatedly new'ing
-    pThread->UnmarkRedirectContextInUse(m_Regs);
+        // Allow future use to avoid repeatedly new'ing
+        pThread->UnmarkRedirectContextInUse(m_Regs);
+    }
+
     m_Regs = NULL;
 }
 
@@ -3049,11 +3056,21 @@ BOOL Thread::IsAddrOfRedirectFunc(void * pFuncAddr)
         return TRUE;
 #endif // HAVE_GCCOVER && USE_REDIRECT_FOR_GCSTRESS
 
-    return
-        (pFuncAddr == GetRedirectHandlerForGCThreadControl()) ||
+    if ((pFuncAddr == GetRedirectHandlerForGCThreadControl()) ||
         (pFuncAddr == GetRedirectHandlerForDbgThreadControl()) ||
-        (pFuncAddr == GetRedirectHandlerForUserSuspend()) ||
-        (pFuncAddr == ApcActivationCallbackStub);
+        (pFuncAddr == GetRedirectHandlerForUserSuspend()))
+    {
+        return TRUE;
+    }
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    if (pFuncAddr == GetRedirectHandlerForApcActivation())
+    {
+        return TRUE;
+    }
+#endif
+
+    return FALSE;
 }
 
 //************************************************************************
@@ -5933,7 +5950,11 @@ bool Thread::InjectActivation(ActivationReason reason)
 
     m_hasPendingActivation = true;
     BOOL success =
-        (*s_pfnQueueUserAPC2Proc)(ApcActivationCallback, hThread, (ULONG_PTR)reason, SpecialUserModeApcWithContextFlags);
+        (*s_pfnQueueUserAPC2Proc)(
+            GetRedirectHandlerForApcActivation(),
+            hThread,
+            (ULONG_PTR)reason,
+            SpecialUserModeApcWithContextFlags);
     _ASSERTE(success);
     return true;
 #elif defined(TARGET_UNIX)
