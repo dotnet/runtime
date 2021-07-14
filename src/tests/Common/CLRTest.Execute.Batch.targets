@@ -312,7 +312,7 @@ if defined RunCrossGen (
 )
 $(BatchLinkerTestCleanupCmds)
       ]]></BatchCLRTestLaunchCmds>
-      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
+      <BatchCLRTestLaunchCmds Condition=" '$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
     <![CDATA[
 REM run Android app
 IF NOT "%__TestDotNetCmd%"=="" (
