@@ -36736,8 +36736,10 @@ static size_t linear_allocation_model (float allocation_fraction, size_t new_all
         float decay_factor = (decay_time <= time_since_previous_collection_secs) ?
                                 0 :
                                 ((decay_time - time_since_previous_collection_secs) / decay_time);
-        dprintf (2, ("allocation fraction: %d", (int)(allocation_fraction/100.0)));
-        new_allocation = (size_t)(allocation_fraction*new_allocation + (1.0-allocation_fraction)*decay_factor*previous_desired_allocation);
+        float previous_allocation_factor = (1.0f - allocation_fraction) * decay_factor;
+        dprintf (2, ("allocation fraction: %d, decay factor: %d, previous allocation factor: %d",
+            (int)(allocation_fraction*100.0), (int)(decay_factor*100.0), (int)(previous_allocation_factor*100.0)));
+        new_allocation = (size_t)((1.0 - previous_allocation_factor)*new_allocation + previous_allocation_factor * previous_desired_allocation);
     }
     return new_allocation;
 }
