@@ -1858,6 +1858,8 @@ namespace System.Reflection.Emit
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Linker thinks Type.GetConstructor(ConstructorInfo) is one of the public APIs because it doesn't analyze method signatures. We already have ConstructorInfo.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "Type.MakeGenericType is used to create a typical instantiation")]
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
             if (!IsValidGetMethodType(type))
@@ -1914,6 +1916,8 @@ namespace System.Reflection.Emit
             return res;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "Type.MakeGenericType is used to create a typical instantiation")]
         public static FieldInfo GetField(Type type, FieldInfo field)
         {
             if (!IsValidGetMethodType(type))
