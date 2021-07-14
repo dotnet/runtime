@@ -305,11 +305,6 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static uint ToLower(uint codePoint)
         {
-            if (UnicodeUtility.IsBmpCodePoint(codePoint))
-            {
-                return ToLower((char) codePoint);
-            }
-
             if (!UnicodeUtility.IsValidCodePoint(codePoint))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.codePoint);
