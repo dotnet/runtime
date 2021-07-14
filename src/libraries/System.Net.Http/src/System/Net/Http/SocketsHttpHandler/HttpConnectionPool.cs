@@ -1651,12 +1651,12 @@ namespace System.Net.Http
         /// Called when an HttpConnection from this pool is no longer usable.
         /// Note, this is always called from HttpConnection.Dispose, which is a bit different than how HTTP2 works.
         /// </summary>
-        public void InvalidateHttp11Connection(HttpConnection connection)
+        public void InvalidateHttp11Connection(HttpConnection connection, bool disposing = true)
         {
             lock (SyncObj)
             {
                 Debug.Assert(_associatedHttp11ConnectionCount > 0);
-                Debug.Assert(!_availableHttp11Connections.Contains(connection));
+                Debug.Assert(!disposing || !_availableHttp11Connections.Contains(connection));
 
                 _associatedHttp11ConnectionCount--;
 

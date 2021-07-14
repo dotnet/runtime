@@ -124,7 +124,7 @@ namespace System.Net.Http
 
                 if (!_detachedFromPool)
                 {
-                    _pool.InvalidateHttp11Connection(this);
+                    _pool.InvalidateHttp11Connection(this, disposing);
                 }
 
                 if (disposing)
@@ -718,14 +718,24 @@ namespace System.Net.Http
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
                     responseStream = new RawConnectionStream(this);
+
                     // Don't put connection back to the pool if we upgraded to tunnel.
                     // We cannot use it for normal HTTP requests any more.
                     _connectionClose = true;
 
+                    _pool.InvalidateHttp11Connection(this);
+                    _detachedFromPool = true;
                 }
                 else if (response.StatusCode == HttpStatusCode.SwitchingProtocols)
                 {
                     responseStream = new RawConnectionStream(this);
+
+                    // Don't put connection back to the pool if we switched protocols.
+                    // We cannot use it for normal HTTP requests any more.
+                    _connectionClose = true;
+
+                    _pool.InvalidateHttp11Connection(this);
+                    _detachedFromPool = true;
                 }
                 else if (response.Content.Headers.ContentLength != null)
                 {
