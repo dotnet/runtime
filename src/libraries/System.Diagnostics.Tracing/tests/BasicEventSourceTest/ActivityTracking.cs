@@ -13,36 +13,39 @@ namespace BasicEventSourceTests
 {
     public class ActivityTracking
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void StartStopCreatesActivity()
         {
             using ActivityEventListener l = new ActivityEventListener();
+            using ActivityEventSource es = new ActivityEventSource();
 
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
-            ActivityEventSource.Log.ExampleStart();
+            es.ExampleStart();
             Assert.NotEqual(Guid.Empty, EventSource.CurrentThreadActivityId);
-            ActivityEventSource.Log.ExampleStop();
+            es.ExampleStop();
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public async Task ActivityFlowsAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();
+            using ActivityEventSource es = new ActivityEventSource();
 
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
-            ActivityEventSource.Log.ExampleStart();
+            es.ExampleStart();
             Assert.NotEqual(Guid.Empty, EventSource.CurrentThreadActivityId);
             await Task.Yield();
             Assert.NotEqual(Guid.Empty, EventSource.CurrentThreadActivityId);
-            ActivityEventSource.Log.ExampleStop();
+            es.ExampleStop();
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public async Task ActivityIdIsZeroedOnThreadSwitchOut()
         {
             using ActivityEventListener l = new ActivityEventListener();
+            using ActivityEventSource es = new ActivityEventSource();
 
             // Run tasks on many threads. If an activity id leaks it is likely
             // that the thread will be sheduled to run one of our other tasks
@@ -50,20 +53,20 @@ namespace BasicEventSourceTests
             List<Task> tasks = new List<Task>();
             for (int i = 0; i < 100; i++)
             {
-                tasks.Add(Task.Run(YieldTwoActivitiesDeep));
+                tasks.Add(Task.Run(() => YieldTwoActivitiesDeep(es)));
             }
 
             await Task.WhenAll(tasks.ToArray());
         }
 
-        private async Task YieldTwoActivitiesDeep()
+        private async Task YieldTwoActivitiesDeep(ActivityEventSource es)
         {
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
-            ActivityEventSource.Log.ExampleStart();
-            ActivityEventSource.Log.Example2Start();
+            es.ExampleStart();
+            es.Example2Start();
             await Task.Yield();
-            ActivityEventSource.Log.Example2Stop();
-            ActivityEventSource.Log.ExampleStop();
+            es.Example2Stop();
+            es.ExampleStop();
             Assert.Equal(Guid.Empty, EventSource.CurrentThreadActivityId);
         }
 
@@ -71,18 +74,19 @@ namespace BasicEventSourceTests
         // I am attempting to preserve it to lower back compat risk, but in
         // the future we might decide it wasn't even desirable to begin with.
         // Compare with SetCurrentActivityIdAfterEventDoesNotFlowAsync below.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public async Task SetCurrentActivityIdBeforeEventFlowsAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();
+            using ActivityEventSource es = new ActivityEventSource();
             try
             {
                 Guid g = Guid.NewGuid();
                 EventSource.SetCurrentThreadActivityId(g);
                 Assert.Equal(g, EventSource.CurrentThreadActivityId);
-                ActivityEventSource.Log.ExampleStart();
+                es.ExampleStart();
                 await Task.Yield();
-                ActivityEventSource.Log.ExampleStop();
+                es.ExampleStop();
                 Assert.Equal(g, EventSource.CurrentThreadActivityId);
             }
             finally
@@ -95,19 +99,20 @@ namespace BasicEventSourceTests
         // I am attempting to preserve it to lower back compat risk, but in
         // the future we might decide it wasn't even desirable to begin with.
         // Compare with SetCurrentActivityIdBeforeEventFlowsAsync above.
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public async Task SetCurrentActivityIdAfterEventDoesNotFlowAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();
+            using ActivityEventSource es = new ActivityEventSource();
             try
             {
-                ActivityEventSource.Log.ExampleStart();
+                es.ExampleStart();
                 Guid g = Guid.NewGuid();
                 EventSource.SetCurrentThreadActivityId(g);
                 Assert.Equal(g, EventSource.CurrentThreadActivityId);
                 await Task.Yield();
                 Assert.NotEqual(g, EventSource.CurrentThreadActivityId);
-                ActivityEventSource.Log.ExampleStop();
+                es.ExampleStop();
             }
             finally
             {
@@ -119,8 +124,6 @@ namespace BasicEventSourceTests
     [EventSource(Name = "ActivityEventSource")]
     class ActivityEventSource : EventSource
     {
-        public static ActivityEventSource Log = new ActivityEventSource();
-
         [Event(1)]
         public void ExampleStart() => WriteEvent(1);
 
