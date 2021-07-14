@@ -159,8 +159,6 @@ namespace System.Net.Quic.Tests
 
             options.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
             {
-                //Assert.Equal(expectedCertificate.Subject, cert.Subject);
-                //Assert.Equal(expectedCertificate.Issuer, cert.Issuer);
                 receivedCertificate = cert;
                 return true;
             };
@@ -177,6 +175,15 @@ namespace System.Net.Quic.Tests
             clientConnection.Dispose();
             serverConnection.Dispose();
 
+            // This should fail when callback return null.
+            options.ClientAuthenticationOptions.TargetHost = "foobar3";
+            clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
+            clientTask = clientConnection.ConnectAsync(cts.Token);
+
+            await Assert.ThrowsAsync<QuicException>(() => clientTask.AsTask());
+            Assert.Equal(options.ClientAuthenticationOptions.TargetHost, receivedHostName);
+
+            // Do this last to make sure Listener is still functional.
             options.ClientAuthenticationOptions.TargetHost = "foobar2";
             expectedCertificate = c2;
 
@@ -189,13 +196,6 @@ namespace System.Net.Quic.Tests
             Assert.Equal(c2, receivedCertificate);
             clientConnection.Dispose();
             serverConnection.Dispose();
-
-            // This should fail when callback return null.
-            options.ClientAuthenticationOptions.TargetHost = "foobar3";
-            clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
-            clientTask = clientConnection.ConnectAsync(cts.Token);
-            await Assert.ThrowsAsync<QuicException>(() => clientTask.AsTask());
-            Assert.Equal(options.ClientAuthenticationOptions.TargetHost, receivedHostName);
         }
 
         [Fact]

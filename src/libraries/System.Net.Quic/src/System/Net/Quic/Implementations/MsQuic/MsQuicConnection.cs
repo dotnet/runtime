@@ -583,11 +583,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                     targetHost = ((IPEndPoint)_remoteEndPoint).Address.ToString();
                 }
             }
-            else if (targetHost == null)
+            else
             {
+                // We don't have way how to set separate SNI and name for connection at this moment.
                 targetHost = ((DnsEndPoint)_remoteEndPoint).Host;
             }
-
 
             try
             {

@@ -230,6 +230,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             var state = (State)gcHandle.Target;
 
             SafeMsQuicConnectionHandle? connectionHandle = null;
+            MsQuicConnection? msQuicConnection = null;
 
             try
             {
@@ -242,39 +243,48 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     // TBD We should figure out what to do with international names.
                     targetHost = Marshal.PtrToStringAnsi(connectionInfo.ServerName, connectionInfo.ServerNameLength);
-                    //Console.WriteLine("Listener got connected to {0}", targetHost);
                 }
 
                 SafeMsQuicConfigurationHandle? connectionConfiguration = state.ConnectionConfiguration;
 
-                if (state.AuthenticationOptions.ServerCertificateSelectionCallback != null)
-                {
-                    // ServerCertificateSelectionCallback is synchronous. We will call it as needed when building configuration
-                    connectionConfiguration = SafeMsQuicConfigurationHandle.Create(state.ConnectionOptions, state.AuthenticationOptions, targetHost);
-                }
-
                 if (connectionConfiguration == null)
                 {
-                    return MsQuicStatusCodes.InternalError;
+                    Debug.Assert(state.AuthenticationOptions.ServerCertificateSelectionCallback != null);
+                    try
+                    {
+                        // ServerCertificateSelectionCallback is synchronous. We will call it as needed when building configuration
+                        connectionConfiguration = SafeMsQuicConfigurationHandle.Create(state.ConnectionOptions, state.AuthenticationOptions, targetHost);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Error(state, $"[Listener#{state.GetHashCode()}] Exception occurred during creating configuration in connection callback: {ex}");
+                        }
+                    }
+
+                    if (connectionConfiguration == null)
+                    {
+                        // We don't have safe handle yet so MsQuic will cleanup new connection.
+                        return MsQuicStatusCodes.InternalError;
+                    }
                 }
 
                 connectionHandle = new SafeMsQuicConnectionHandle(evt.Data.NewConnection.Connection);
 
                 uint status = MsQuicApi.Api.ConnectionSetConfigurationDelegate(connectionHandle, connectionConfiguration);
-                QuicExceptionHelpers.ThrowIfFailed(status, "ConnectionSetConfiguration failed.");
-
-                var msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, connectionHandle, state.AuthenticationOptions.ClientCertificateRequired, state.AuthenticationOptions.CertificateRevocationCheckMode, state.AuthenticationOptions.RemoteCertificateValidationCallback);
-                msQuicConnection.SetNegotiatedAlpn(connectionInfo.NegotiatedAlpn, connectionInfo.NegotiatedAlpnLength);
-
-                if (!state.AcceptConnectionQueue.Writer.TryWrite(msQuicConnection))
+                if (MsQuicStatusHelper.SuccessfulStatusCode(status))
                 {
-                    // This handle will be cleaned up by MsQuic.
-                    connectionHandle.SetHandleAsInvalid();
-                    msQuicConnection.Dispose();
-                    return MsQuicStatusCodes.InternalError;
+                    msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, connectionHandle, state.AuthenticationOptions.ClientCertificateRequired, state.AuthenticationOptions.CertificateRevocationCheckMode, state.AuthenticationOptions.RemoteCertificateValidationCallback);
+                    msQuicConnection.SetNegotiatedAlpn(connectionInfo.NegotiatedAlpn, connectionInfo.NegotiatedAlpnLength);
+
+                    if (state.AcceptConnectionQueue.Writer.TryWrite(msQuicConnection))
+                    {
+                        return MsQuicStatusCodes.Success;
+                    }
                 }
 
-                return MsQuicStatusCodes.Success;
+                // If we fall-through here something wrong happened.
             }
             catch (Exception ex)
             {
@@ -282,12 +292,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     NetEventSource.Error(state, $"[Listener#{state.GetHashCode()}] Exception occurred during handling {(QUIC_LISTENER_EVENT)evt.Type} connection callback: {ex}");
                 }
-
-                // This handle will be cleaned up by MsQuic by returning InternalError.
-                connectionHandle?.SetHandleAsInvalid();
-                state.AcceptConnectionQueue.Writer.TryComplete(ex);
-                return MsQuicStatusCodes.InternalError;
             }
+
+            // This handle will be cleaned up by MsQuic by returning InternalError.
+            connectionHandle?.SetHandleAsInvalid();
+            msQuicConnection?.Dispose();
+            return MsQuicStatusCodes.InternalError;
         }
 
         private void ThrowIfDisposed()
