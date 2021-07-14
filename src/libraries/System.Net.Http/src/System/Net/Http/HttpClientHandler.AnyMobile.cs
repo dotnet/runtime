@@ -45,7 +45,7 @@ namespace System.Net.Http
 
             if (DiagnosticsHandler.IsGloballyEnabled())
             {
-                _diagnosticsHandler = new DiagnosticsHandler(handler);
+                _diagnosticsHandler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
             }
         }
 
