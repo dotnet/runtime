@@ -178,8 +178,6 @@ namespace System.Security.Cryptography
             int feedbackSizeInBits,
             out int bytesWritten)
         {
-            ValidateCFBFeedbackSize(feedbackSizeInBits);
-
             UniversalCryptoTransform transform = _core.CreateCryptoTransform(
                 iv: iv.ToArray(),
                 encrypting: false,
@@ -201,8 +199,6 @@ namespace System.Security.Cryptography
             int feedbackSizeInBits,
             out int bytesWritten)
         {
-            ValidateCFBFeedbackSize(feedbackSizeInBits);
-
             UniversalCryptoTransform transform = _core.CreateCryptoTransform(
                 iv: iv.ToArray(),
                 encrypting: true,
@@ -213,26 +209,6 @@ namespace System.Security.Cryptography
             using (transform)
             {
                 return transform.TransformOneShot(plaintext, destination, out bytesWritten);
-            }
-        }
-
-        private void ValidateCFBFeedbackSize(int feedback)
-        {
-            if (_core.KeyInPlainText)
-            {
-                // CFB8 and CFB128 are valid for bcrypt keys.
-                if (feedback != 8 && feedback != 128)
-                {
-                    throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
-                }
-            }
-            else
-            {
-                // only CFB8 is supported for ncrypt keys.
-                if (feedback != 8)
-                {
-                    throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
-                }
             }
         }
 
@@ -274,6 +250,11 @@ namespace System.Security.Cryptography
         byte[] ICngSymmetricAlgorithm.PreprocessKey(byte[] key)
         {
             return key;
+        }
+
+        bool ICngSymmetricAlgorithm.IsValidEphemeralFeedbackSize(int feedbackSizeInBits)
+        {
+            return feedbackSizeInBits == 8 || feedbackSizeInBits == 128;
         }
 
         private CngSymmetricAlgorithmCore _core;
