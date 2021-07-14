@@ -421,6 +421,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                                                                 string.Join(" ", processArgs),
                                                                 envVariables,
                                                                 assemblyDir,
+                                                                logger: Log,
                                                                 silent: false,
                                                                 debugMessageImportance: MessageImportance.High);
             if (exitCode != 0)

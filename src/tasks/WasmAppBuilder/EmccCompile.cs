@@ -119,7 +119,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     foreach (var key in envVarsDict.Keys)
                         envStr.Append($"{key}={envVarsDict[key]} ");
                     Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}{command}");
-                    (int exitCode, string output) = Utils.RunShellCommand(command, envVarsDict, workingDir: Environment.CurrentDirectory, debugMessageImportance: MessageImportance.High);
+                    (int exitCode, string output) = Utils.RunShellCommand(command, envVarsDict, workingDir: Environment.CurrentDirectory, logger: Log, debugMessageImportance: MessageImportance.High);
 
                     if (exitCode != 0)
                     {

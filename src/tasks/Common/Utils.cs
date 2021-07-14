@@ -25,8 +25,10 @@ internal static class Utils
     public static (int exitCode, string output) RunShellCommand(string command,
                                         IDictionary<string, string> envVars,
                                         string workingDir,
+                                        TaskLoggingHelper logger,
                                         MessageImportance debugMessageImportance=MessageImportance.Low)
     {
+        Logger = logger;
         string scriptFileName = CreateTemporaryBatchFile(command);
         (string shell, string args) = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                                                     ? ("cmd", $"/c \"{scriptFileName}\"")
@@ -40,6 +42,7 @@ internal static class Utils
                              envVars,
                              workingDir,
                              silent: false,
+                             logger: logger,
                              debugMessageImportance);
 
         static string CreateTemporaryBatchFile(string command)
@@ -80,6 +83,7 @@ internal static class Utils
                                             envVars,
                                             workingDir,
                                             silent,
+                                            logger: Logger,
                                             debugMessageImportance);
 
         if (exitCode != 0 && !ignoreErrors)
@@ -94,8 +98,12 @@ internal static class Utils
         IDictionary<string, string>? envVars = null,
         string? workingDir = null,
         bool silent = true,
+        TaskLoggingHelper? logger = null,
         MessageImportance debugMessageImportance=MessageImportance.High)
     {
+        if (logger != null)
+            Logger = logger;
+
         Logger?.LogMessage(debugMessageImportance, $"Running: {path} {args}");
         var outputBuilder = new StringBuilder();
         var processStartInfo = new ProcessStartInfo
