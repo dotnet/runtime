@@ -4,6 +4,7 @@
     <_SerializerDllIntermediateFolder>$(IntermediateOutputPath)$(_SerializationAssemblyName).dll</_SerializerDllIntermediateFolder>
     <_SerializerPdbIntermediateFolder>$(IntermediateOutputPath)$(_SerializationAssemblyName).pdb</_SerializerPdbIntermediateFolder>
     <_SerializerCsIntermediateFolder>$(IntermediateOutputPath)$(_SerializationAssemblyName).cs</_SerializerCsIntermediateFolder>
+    <_SerializerCsAssemblyInfoIntermediateFolder>$(IntermediateOutputPath)SgenAssemblyInfo.cs</_SerializerCsAssemblyInfoIntermediateFolder>
     <_SGenWarningText>SGEN: Failed to generate the serializer for $(AssemblyName)$(TargetExt). Please follow the instructions at https://go.microsoft.com/fwlink/?linkid=858594 and try again.</_SGenWarningText>
     <_SGenRspWarningText>Failed to generate response file for Microsoft.XmlSerializer.Generator, serializer is generating with default settings.</_SGenRspWarningText>
     <_SerializationAssemblyDisabledWarnings>$(NoWarn);219;162;$(SerializationAssemblyDisabledWarnings)</_SerializationAssemblyDisabledWarnings>
@@ -29,6 +30,19 @@
     <WriteLinesToFile Condition="'@(CscRspFile)'!=''" File="$(_CscRspFilePath)" Lines="@(CscRspFile, '%0A')" Overwrite="true" ContinueOnError="true" />
   </Target>
 
+  <Target Name="GenerateAssemblyVersionInfo" BeforeTargets="GenerateSerializationAssembly">  
+    <GetAssemblyIdentity AssemblyFiles="$(IntermediateOutputPath)$(AssemblyName)$(TargetExt)" > 
+      <Output TaskParameter="Assemblies" ItemName="SerializationAssemblyVersionInfo" />
+    </GetAssemblyIdentity>
+    <WriteLinesToFile File="$(_SerializerCsAssemblyInfoIntermediateFolder)" 
+      Lines="using System.Reflection%3B
+
+      [assembly: AssemblyVersion( &quot;%(SerializationAssemblyVersionInfo.Version)&quot; )]
+      [assembly: AssemblyFileVersion( &quot;%(SerializationAssemblyVersionInfo.Version)&quot; )]"
+      Overwrite="true"
+      Encoding="Unicode"/>      
+  </Target> 
+
   <Target Name="GenerateSerializationAssembly" AfterTargets="Build">
     <Delete Condition="Exists('$(_SerializerDllIntermediateFolder)') == 'true'" Files="$(_SerializerDllIntermediateFolder)" ContinueOnError="true"/>
     <Delete Condition="Exists('$(_SerializerPdbIntermediateFolder)') == 'true'" Files="$(_SerializerPdbIntermediateFolder)" ContinueOnError="true"/>
@@ -36,8 +50,8 @@
     <Message Text="Running Serialization Tool" Importance="normal" />
     <Exec Command="dotnet Microsoft.XmlSerializer.Generator &quot;$(IntermediateOutputPath)$(AssemblyName)$(TargetExt)&quot; --force --quiet $(_SgenRspFilePath)" ContinueOnError="true"/>
     <Warning Condition="Exists('$(_SerializerCsIntermediateFolder)') != 'true'" Text="$(_SGenWarningText)" />
-    <Csc Condition="Exists('$(_SerializerCsIntermediateFolder)') and !Exists('$(_CscRspFilePath)')" ContinueOnError="true" OutputAssembly="$(_SerializerDllIntermediateFolder)" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" Sources="$(_SerializerCsIntermediateFolder)" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" DisabledWarnings="$(_SerializationAssemblyDisabledWarnings)"/>
-    <Csc Condition="Exists('$(_SerializerCsIntermediateFolder)') and Exists('$(_CscRspFilePath)')" ContinueOnError="true" OutputAssembly="$(_SerializerDllIntermediateFolder)" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" Sources="$(_SerializerCsIntermediateFolder)" TargetType="Library" ResponseFiles="$(_CscRspFilePath)"  ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" DisabledWarnings="$(_SerializationAssemblyDisabledWarnings)"/>
+    <Csc Condition="Exists('$(_SerializerCsIntermediateFolder)') and !Exists('$(_CscRspFilePath)')" ContinueOnError="true" OutputAssembly="$(_SerializerDllIntermediateFolder)" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" Sources="$(_SerializerCsIntermediateFolder);$(_SerializerCsAssemblyInfoIntermediateFolder)" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" DisabledWarnings="$(_SerializationAssemblyDisabledWarnings)"/>
+    <Csc Condition="Exists('$(_SerializerCsIntermediateFolder)') and Exists('$(_CscRspFilePath)')" ContinueOnError="true" OutputAssembly="$(_SerializerDllIntermediateFolder)" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" Sources="$(_SerializerCsIntermediateFolder);$(_SerializerCsAssemblyInfoIntermediateFolder)" TargetType="Library" ResponseFiles="$(_CscRspFilePath)"  ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" DisabledWarnings="$(_SerializationAssemblyDisabledWarnings)"/>
     <Warning Condition="Exists('$(_SerializerDllIntermediateFolder)') != 'true' And Exists('$(_SerializerCsIntermediateFolder)') == 'true'" Text="$(_SGenWarningText)"/>
     <Copy Condition="Exists('$(_SerializerDllIntermediateFolder)') == 'true'" SourceFiles="$(_SerializerDllIntermediateFolder)" DestinationFolder="$(OutputPath)" />
     <Delete Condition="Exists('$(_SgenRspFilePath)')" Files="$(_SgenRspFilePath)" />
@@ -70,7 +84,7 @@
     <Message Text="Running Serialization Tool for Reference Assembly" Importance="normal" />
     <Exec Command="dotnet Microsoft.XmlSerializer.Generator --force --quiet --reference &quot;@(ReferencePath)&quot; --assembly &quot;%(_TargetSerializationAssembly.Identity)&quot; --type %(_TargetSerializationAssembly.SerializationTypes) --out &quot;$(IntermediateOutputPath)&quot;" ContinueOnError="true" />
     <Warning Condition="Exists('$(IntermediateOutputPath)%(_ReferenceSerializationAssemblyName.Identity).cs') != 'true'" Text="SGEN: Fail to generate %(_ReferenceSerializationAssemblyName.Identity)'. Please follow the instructions at https://go.microsoft.com/fwlink/?linkid=858594 and try again." />
-    <Csc Condition="Exists('$(IntermediateOutputPath)%(_ReferenceSerializationAssemblyName.Identity).cs') == 'true'" ContinueOnError="true" OutputAssembly="$(IntermediateOutputPath)%(_ReferenceSerializationAssemblyName.Identity).dll" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" Sources="$(IntermediateOutputPath)%(_ReferenceSerializationAssemblyName.Identity).cs" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" DisabledWarnings="$(_SerializationAssemblyDisabledWarnings)"/>
+    <Csc Condition="Exists('$(IntermediateOutputPath)%(_ReferenceSerializationAssemblyName.Identity).cs') == 'true'" ContinueOnError="true" OutputAssembly="$(IntermediateOutputPath)%(_ReferenceSerializationAssemblyName.Identity).dll" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" Sources="$(IntermediateOutputPath)%(_ReferenceSerializationAssemblyName.Identity).cs" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" DisabledWarnings="$(_SerializationAssemblyDisabledWarnings)" NoStandardLib="true" NoConfig="true"/>
     <Warning Condition="Exists('$(IntermediateOutputPath)%(_ReferenceSerializationAssemblyName.Identity).dll') != 'true' And Exists('$(IntermediateOutputPath)%(_ReferenceSerializationAssemblyName.Identity).cs') == 'true'" Text="SGEN: Fail to compile %(_ReferenceSerializationAssemblyName.Identity).cs. Please follow the instructions at https://go.microsoft.com/fwlink/?linkid=858594 and try again." />
     <Copy Condition="Exists('%(_ReferenceSerializerIntermediateFolder.Identity).dll') == 'true'" SourceFiles="%(_ReferenceSerializerIntermediateFolder.Identity).dll" DestinationFolder="$(OutputPath)" />
   </Target>

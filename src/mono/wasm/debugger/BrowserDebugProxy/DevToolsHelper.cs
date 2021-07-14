@@ -301,13 +301,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public PerScopeCache GetCacheForScope(int scope_id)
+        public PerScopeCache GetCacheForScope(int scopeId)
         {
-            if (perScopeCaches.TryGetValue(scope_id, out PerScopeCache cache))
+            if (perScopeCaches.TryGetValue(scopeId, out PerScopeCache cache))
                 return cache;
 
             cache = new PerScopeCache();
-            perScopeCaches[scope_id] = cache;
+            perScopeCaches[scopeId] = cache;
             return cache;
         }
 

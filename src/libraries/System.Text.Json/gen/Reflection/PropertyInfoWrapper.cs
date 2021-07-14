@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
     internal class PropertyInfoWrapper : PropertyInfo
     {

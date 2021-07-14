@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using System.Diagnostics.Tracing;
 
 namespace System.Net.Quic.Tests
 {
@@ -114,22 +115,19 @@ namespace System.Net.Quic.Tests
         {
             using QuicListener listener = CreateQuicListener();
 
-            var serverFinished = new ManualResetEventSlim();
-            var clientFinished = new ManualResetEventSlim();
+            using var serverFinished = new SemaphoreSlim(0);
+            using var clientFinished = new SemaphoreSlim(0);
 
             for (int i = 0; i < iterations; ++i)
             {
-                serverFinished.Reset();
-                clientFinished.Reset();
-
                 await new[]
                 {
                     Task.Run(async () =>
                     {
                         using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
                         await serverFunction(serverConnection);
-                        serverFinished.Set();
-                        clientFinished.Wait();
+                        serverFinished.Release();
+                        await clientFinished.WaitAsync();
                         await serverConnection.CloseAsync(0);
                     }),
                     Task.Run(async () =>
@@ -137,13 +135,51 @@ namespace System.Net.Quic.Tests
                         using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
                         await clientConnection.ConnectAsync();
                         await clientFunction(clientConnection);
-                        clientFinished.Set();
-                        serverFinished.Wait();
+                        clientFinished.Release();
+                        await serverFinished.WaitAsync();
                         await clientConnection.CloseAsync(0);
                     })
                 }.WhenAllOrAnyFailed(millisecondsTimeout);
             }
         }
+
+        internal async Task RunStreamClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, bool bidi, int iterations, int millisecondsTimeout)
+        {
+            byte[] buffer = new byte[1] { 42 };
+
+            await RunClientServer(
+                clientFunction: async connection =>
+                {
+                    await using QuicStream stream = bidi ? connection.OpenBidirectionalStream() : connection.OpenUnidirectionalStream();
+                    // Open(Bi|Uni)directionalStream only allocates ID. We will force stream opening
+                    // by Writing there and receiving data on the other side.
+                    await stream.WriteAsync(buffer);
+
+                    await clientFunction(stream);
+
+                    stream.Shutdown();
+                    await stream.ShutdownCompleted();
+                },
+                serverFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    Assert.Equal(1, await stream.ReadAsync(buffer));
+
+                    await serverFunction(stream);
+
+                    stream.Shutdown();
+                    await stream.ShutdownCompleted();
+                },
+                iterations,
+                millisecondsTimeout
+            );
+        }
+
+        internal Task RunBidirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
+            => RunStreamClientServer(clientFunction, serverFunction, bidi: true, iterations, millisecondsTimeout);
+
+        internal Task RunUnirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
+            => RunStreamClientServer(clientFunction, serverFunction, bidi: false, iterations, millisecondsTimeout);
 
         internal static async Task<int> ReadAll(QuicStream stream, byte[] buffer)
         {
@@ -170,40 +206,6 @@ namespace System.Net.Quic.Tests
             {
                 await stream.WriteAsync(buffer);
             }
-        }
-
-        internal static void AssertArrayEqual(byte[] expected, byte[] actual)
-        {
-            for (int i = 0; i < expected.Length; ++i)
-            {
-                if (expected[i] == actual[i])
-                {
-                    continue;
-                }
-
-                var message = $"Wrong data starting from idx={i}\n" +
-                    $"Expected: {ToStringAroundIndex(expected, i)}\n" +
-                    $"Actual:   {ToStringAroundIndex(actual, i)}";
-
-                Assert.True(expected[i] == actual[i], message);
-            }
-        }
-
-        private static string ToStringAroundIndex(byte[] arr, int idx, int dl = 3, int dr = 7)
-        {
-            var sb = new StringBuilder(idx - (dl+1) >= 0 ? "[..., " : "[");
-
-            for (int i = idx - dl; i <= idx + dr; ++i)
-            {
-                if (i >= 0 && i < arr.Length)
-                {
-                    sb.Append($"{arr[i]}, ");
-                }
-            }
-
-            sb.Append(idx + (dr+1) < arr.Length ? "...]" : "]");
-
-            return sb.ToString();
         }
     }
 

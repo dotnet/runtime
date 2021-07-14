@@ -86,7 +86,7 @@ public:
     UINT64 QCALLTYPE GetProcessDefaultStackSize();
 
     static FCDECL1(INT32,   GetManagedThreadId, ThreadBaseObject* th);
-    static INT32 QCALLTYPE GetOptimalMaxSpinWaitsPerSpinIteration();
+    static FCDECL0(INT32,   GetOptimalMaxSpinWaitsPerSpinIteration);
     static FCDECL1(void,    SpinWait,                       int iterations);
     static BOOL QCALLTYPE YieldThread();
     static FCDECL0(Object*, GetCurrentThread);

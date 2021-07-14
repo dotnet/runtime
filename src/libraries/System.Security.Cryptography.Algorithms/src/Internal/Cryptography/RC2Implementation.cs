@@ -190,6 +190,28 @@ namespace Internal.Cryptography
             }
         }
 
+        protected override bool TryDecryptCfbCore(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            int feedbackSizeInBits,
+            out int bytesWritten)
+        {
+            throw new CryptographicException(SR.Format(SR.Cryptography_CipherModeNotSupported, CipherMode.CFB));
+        }
+
+        protected override bool TryEncryptCfbCore(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            int feedbackSizeInBits,
+            out int bytesWritten)
+        {
+            throw new CryptographicException(SR.Format(SR.Cryptography_CipherModeNotSupported, CipherMode.CFB));
+        }
+
         private static void ValidateCFBFeedbackSize(int feedback)
         {
             // CFB not supported at all

@@ -206,13 +206,27 @@ namespace Microsoft.Win32.SafeHandles
             {
                 default:
                 case FileMode.Open: // Open maps to the default behavior for open(...).  No flags needed.
-                case FileMode.Truncate: // We truncate the file after getting the lock
+                    break;
+                case FileMode.Truncate:
+                    if (DisableFileLocking)
+                    {
+                        // if we don't lock the file, we can truncate it when opening
+                        // otherwise we truncate the file after getting the lock
+                        flags |= Interop.Sys.OpenFlags.O_TRUNC;
+                    }
                     break;
 
                 case FileMode.Append: // Append is the same as OpenOrCreate, except that we'll also separately jump to the end later
                 case FileMode.OpenOrCreate:
-                case FileMode.Create: // We truncate the file after getting the lock
                     flags |= Interop.Sys.OpenFlags.O_CREAT;
+                    break;
+
+                case FileMode.Create:
+                    flags |= Interop.Sys.OpenFlags.O_CREAT;
+                    if (DisableFileLocking)
+                    {
+                        flags |= Interop.Sys.OpenFlags.O_TRUNC;
+                    }
                     break;
 
                 case FileMode.CreateNew:
@@ -292,7 +306,7 @@ namespace Microsoft.Win32.SafeHandles
                     ignoreNotSupported: true); // just a hint.
             }
 
-            if (mode == FileMode.Create || mode == FileMode.Truncate)
+            if ((mode == FileMode.Create || mode == FileMode.Truncate) && !DisableFileLocking)
             {
                 // Truncate the file now if the file mode requires it. This ensures that the file only will be truncated
                 // if opened successfully.

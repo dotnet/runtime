@@ -18,6 +18,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <typeparam name="T">The type that the converter for the property returns or accepts when converting JSON data.</typeparam>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> to initialize the metadata with.</param>
         /// <param name="isProperty">Whether the CLR member is a property or field.</param>
+        /// <param name="isPublic">Whether the CLR member is public.</param>
+        /// <param name="isVirtual">Whether the CLR member is a virtual property.</param>
         /// <param name="declaringType">The declaring type of the property or field.</param>
         /// <param name="propertyTypeInfo">The <see cref="JsonTypeInfo"/> info for the property or field's type.</param>
         /// <param name="converter">A <see cref="JsonConverter"/> for the property or field, specified by <see cref="JsonConverterAttribute"/>.</param>
@@ -25,19 +27,23 @@ namespace System.Text.Json.Serialization.Metadata
         /// <param name="setter">Provides a mechanism to set the property or field's value.</param>
         /// <param name="ignoreCondition">Specifies a condition for the property to be ignored.</param>
         /// <param name="numberHandling">If the property or field is a number, specifies how it should processed when serializing and deserializing.</param>
+        /// <param name="hasJsonInclude">Whether the property was annotated with <see cref="JsonIncludeAttribute"/>.</param>
         /// <param name="propertyName">The CLR name of the property or field.</param>
         /// <param name="jsonPropertyName">The name to be used when processing the property or field, specified by <see cref="JsonPropertyNameAttribute"/>.</param>
         /// <returns>A <see cref="JsonPropertyInfo"/> instance intialized with the provided metadata.</returns>
         public static JsonPropertyInfo CreatePropertyInfo<T>(
             JsonSerializerOptions options,
             bool isProperty,
+            bool isPublic,
+            bool isVirtual,
             Type declaringType,
             JsonTypeInfo propertyTypeInfo,
             JsonConverter<T>? converter,
             Func<object, T>? getter,
             Action<object, T>? setter,
-            JsonIgnoreCondition ignoreCondition,
-            JsonNumberHandling numberHandling,
+            JsonIgnoreCondition? ignoreCondition,
+            bool hasJsonInclude,
+            JsonNumberHandling? numberHandling,
             string propertyName,
             string? jsonPropertyName)
         {
@@ -70,16 +76,23 @@ namespace System.Text.Json.Serialization.Metadata
                 }
             }
 
+            if (!isProperty && isVirtual)
+            {
+                throw new InvalidOperationException(SR.Format(SR.FieldCannotBeVirtual, nameof(isProperty), nameof(isVirtual)));
+            }
+
             JsonPropertyInfo<T> jsonPropertyInfo = new JsonPropertyInfo<T>();
             jsonPropertyInfo.InitializeForSourceGen(
                 options,
                 isProperty,
+                isPublic,
                 declaringType,
                 propertyTypeInfo,
                 converter,
                 getter,
                 setter,
                 ignoreCondition,
+                hasJsonInclude,
                 numberHandling,
                 propertyName,
                 jsonPropertyName);

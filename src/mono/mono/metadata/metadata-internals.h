@@ -805,11 +805,14 @@ mono_metadata_has_updates (void)
 void
 mono_image_effective_table_slow (const MonoTableInfo **t, int *idx);
 
+gboolean
+mono_metadata_update_has_modified_rows (const MonoTableInfo *t);
+
 static inline void
 mono_image_effective_table (const MonoTableInfo **t, int *idx)
 {
 	if (G_UNLIKELY (mono_metadata_has_updates ())) {
-		if (G_UNLIKELY (*idx >= table_info_get_rows ((*t)))) {
+		if (G_UNLIKELY (*idx >= table_info_get_rows ((*t)) || mono_metadata_update_has_modified_rows (*t))) {
 			mono_image_effective_table_slow (t, idx);
 		}
 	}
@@ -819,7 +822,7 @@ int
 mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
 
 MONO_COMPONENT_API void
-mono_image_load_enc_delta (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
+mono_image_load_enc_delta (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb, uint32_t dpdb_len, MonoError *error);
 
 gboolean
 mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo);

@@ -14646,6 +14646,7 @@ BOOL gc_heap::short_on_end_of_seg (heap_segment* seg)
     BOOL sufficient_p = sufficient_space_regions (end_gen0_region_space, end_space_after_gc());
 #else
     BOOL sufficient_p = sufficient_space_end_seg (allocated,
+                                                  heap_segment_committed (seg),
                                                   heap_segment_reserved (seg),
                                                   end_space_after_gc());
 #endif //USE_REGIONS
@@ -37875,13 +37876,18 @@ bool gc_heap::sufficient_space_regions (size_t end_space, size_t end_space_requi
         return false;
 }
 #else //USE_REGIONS
-BOOL gc_heap::sufficient_space_end_seg (uint8_t* start, uint8_t* seg_end, size_t end_space_required)
+BOOL gc_heap::sufficient_space_end_seg (uint8_t* start, uint8_t* committed, uint8_t* reserved, size_t end_space_required)
 {
     BOOL can_fit = FALSE;
-    size_t end_seg_space = (size_t)(seg_end - start);
-    if (end_seg_space > end_space_required)
+    size_t committed_space = (size_t)(committed - start);
+    size_t end_seg_space = (size_t)(reserved - start);
+    if (committed_space > end_space_required)
     {
-        return check_against_hard_limit (end_space_required);
+        return true;
+    }
+    else if (end_seg_space > end_space_required)
+    {
+        return check_against_hard_limit (end_space_required - committed_space);
     }
     else
         return false;
@@ -38045,7 +38051,7 @@ BOOL gc_heap::ephemeral_gen_fit_p (gc_tuning_point tp)
         size_t gen0_end_space = get_gen0_end_space();
         BOOL can_fit = sufficient_space_regions (gen0_end_space, end_space);
 #else //USE_REGIONS
-        BOOL can_fit = sufficient_space_end_seg (start, heap_segment_reserved (ephemeral_heap_segment), end_space);
+        BOOL can_fit = sufficient_space_end_seg (start, heap_segment_committed (ephemeral_heap_segment), heap_segment_reserved (ephemeral_heap_segment), end_space);
 #endif //USE_REGIONS
         return can_fit;
     }

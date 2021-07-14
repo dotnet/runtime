@@ -122,7 +122,7 @@ namespace System.Globalization.Tests
 
         private static string ErrorMessage(char ch, object expected, object actual)
         {
-            return $"CodeValue: {((int)ch).ToString("X")}; Expected: {expected}; Actual: {actual}";
+            return $"CodeValue: {(int)ch:X}; Expected: {expected}; Actual: {actual}";
         }
 
         public static string s_numericsCodepoints =

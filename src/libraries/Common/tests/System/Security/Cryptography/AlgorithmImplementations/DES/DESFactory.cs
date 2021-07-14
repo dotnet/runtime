@@ -6,13 +6,12 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
     public interface IDESProvider
     {
         DES Create();
+        bool OneShotSupported { get; }
     }
 
     public static partial class DESFactory
     {
-        public static DES Create()
-        {
-            return s_provider.Create();
-        }
+        public static DES Create() => s_provider.Create();
+        public static bool OneShotSupported => s_provider.OneShotSupported;
     }
 }

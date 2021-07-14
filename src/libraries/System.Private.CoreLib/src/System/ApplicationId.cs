@@ -42,13 +42,9 @@ namespace System
             sb.Append(Name);
             if (Culture != null)
             {
-                sb.Append(", culture=\"");
-                sb.Append(Culture);
-                sb.Append('"');
+                sb.Append($", culture=\"{Culture}\"");
             }
-            sb.Append(", version=\"");
-            sb.Append(Version.ToString());
-            sb.Append('"');
+            sb.Append($", version=\"{Version}\"");
             if (_publicKeyToken != null)
             {
                 sb.Append(", publicKeyToken=\"");
@@ -57,9 +53,7 @@ namespace System
             }
             if (ProcessorArchitecture != null)
             {
-                sb.Append(", processorArchitecture =\"");
-                sb.Append(ProcessorArchitecture);
-                sb.Append('"');
+                sb.Append($", processorArchitecture =\"{ProcessorArchitecture}\"");
             }
             return sb.ToString();
         }

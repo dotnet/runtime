@@ -9,7 +9,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     {
         public override bool IsInvalid => handle == IntPtr.Zero;
 
-        private SafeMsQuicListenerHandle()
+        public SafeMsQuicListenerHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         { }
 

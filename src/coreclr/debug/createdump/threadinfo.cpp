@@ -107,7 +107,7 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
 }
 
 bool
-ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess)
+ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess, ISOSDacInterface* pSos)
 {
     TRACE("Unwind: thread %04x\n", Tid());
 
@@ -152,7 +152,15 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess)
                     if (SUCCEEDED(pExceptionValue->GetAddress(&exceptionObject)))
                     {
                         m_exceptionObject = exceptionObject;
-                        TRACE("Unwind: exception object %p\n", (void*)exceptionObject);
+                        if (pSos != nullptr)
+                        {
+                            DacpExceptionObjectData exceptionData;
+                            if (SUCCEEDED(exceptionData.Request(pSos, exceptionObject)))
+                            {
+                                m_exceptionHResult = exceptionData.HResult;
+                            }
+                        }
+                        TRACE("Unwind: exception object %p exception hresult %08x\n", (void*)m_exceptionObject, m_exceptionHResult);
                     }
                     ReleaseHolder<IXCLRDataTypeInstance> pExceptionType;
                     if (SUCCEEDED(pExceptionValue->GetType(&pExceptionType)))
@@ -202,6 +210,7 @@ ThreadInfo::GatherStackFrames(CONTEXT* pContext, IXCLRDataStackWalk* pStackwalk)
     mdMethodDef token = 0;
     uint32_t nativeOffset = 0;
     uint32_t ilOffset = 0;
+    ReleaseHolder<IXCLRDataMethodInstance> pMethod;
 
     ReleaseHolder<IXCLRDataFrame> pFrame;
     if (SUCCEEDED(pStackwalk->GetFrame(&pFrame)))
@@ -212,7 +221,6 @@ ThreadInfo::GatherStackFrames(CONTEXT* pContext, IXCLRDataStackWalk* pStackwalk)
 
         if ((simpleType & (CLRDATA_SIMPFRAME_MANAGED_METHOD | CLRDATA_SIMPFRAME_RUNTIME_MANAGED_CODE)) != 0)
         {
-            ReleaseHolder<IXCLRDataMethodInstance> pMethod;
             if (SUCCEEDED(pFrame->GetMethodInstance(&pMethod)))
             {
                 ReleaseHolder<IXCLRDataModule> pModule;
@@ -258,7 +266,7 @@ ThreadInfo::GatherStackFrames(CONTEXT* pContext, IXCLRDataStackWalk* pStackwalk)
     }
 
     // Add managed stack frame for the crash info notes
-    StackFrame frame(moduleAddress, ip, sp, nativeOffset, token, ilOffset);
+    StackFrame frame(moduleAddress, ip, sp, pMethod.Detach(), nativeOffset, token, ilOffset);
     AddStackFrame(frame);
 }
 
@@ -270,7 +278,7 @@ ThreadInfo::AddStackFrame(const StackFrame& frame)
     {
         TRACE("Unwind: sp %p ip %p off %08x mod %p%c\n",
             (void*)frame.StackPointer(),
-            (void*)frame.ReturnAddress(),
+            (void*)frame.InstructionPointer(),
             frame.NativeOffset(),
             (void*)frame.ModuleAddress(),
             frame.IsManaged() ? '*' : ' ');

@@ -502,6 +502,105 @@ namespace DebuggerTests
                     AssertEqual(arg.class_name, res.Error["result"]?["className"]?.Value<string>(), $"Error className did not match for expression '{arg.expression}'");
             }
         }
+
+
+        [Fact]
+        public async Task EvaluateSimpleMethodCallsError() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethodWrong()", expect_ok: false );
+                AssertEqual("Method 'MyMethodWrong' not found in type 'DebuggerTests.EvaluateMethodTestsClass.ParmToTest'", res.Error["message"]?.Value<string>(), "wrong error message");
+
+                (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false );
+                AssertEqual("Unable to evaluate method 'MyMethod'", res.Error["message"]?.Value<string>(), "wrong error message");
+
+                (_, res) = await EvaluateOnCallFrame(id, "this.CallMethodWithParm(\"1\")", expect_ok: false );
+                AssertEqual("Unable to evaluate method 'CallMethodWithParm'", res.Error["message"]?.Value<string>(), "wrong error message");
+
+                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjNull.MyMethod()", expect_ok: false );
+                AssertEqual("Object reference not set to an instance of an object.", res.Error["message"]?.Value<string>(), "wrong error message");
+
+                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false );
+                AssertEqual("Object reference not set to an instance of an object.", res.Error["message"]?.Value<string>(), "wrong error message");
+           });
+
+        [Fact]
+        public async Task EvaluateSimpleMethodCallsWithoutParms() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("this.CallMethod()", TNumber(1)),
+                   ("this.CallMethod()", TNumber(1)),
+                   ("this.ParmToTestObj.MyMethod()", TString("methodOK")),
+                   ("this.objToTest.MyMethod()", TString("methodOK")));
+           });
+
+
+        [Fact]
+        public async Task EvaluateSimpleMethodCallsWithConstParms() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                    ("this.CallMethodWithParm(10)", TNumber(11)),
+                    ("this.CallMethodWithMultipleParms(10, 10)", TNumber(21)),
+                    ("this.CallMethodWithParmBool(true)", TString("TRUE")),
+                    ("this.CallMethodWithParmBool(false)", TString("FALSE")),
+                    ("this.CallMethodWithParmString(\"concat\")", TString("str_const_concat")),
+                    ("this.CallMethodWithParm(10) + this.a", TNumber(12)),
+                    ("this.CallMethodWithObj(null)", TNumber(-1)),
+                    ("this.CallMethodWithChar('a')", TString("str_const_a")));
+           });
+
+        [Fact]
+        public async Task EvaluateSimpleMethodCallsWithVariableParms() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                    ("this.CallMethodWithParm(this.a)", TNumber(2)),
+                    ("this.CallMethodWithMultipleParms(this.a, 10)", TNumber(12)),
+                    ("this.CallMethodWithParmString(this.str)", TString("str_const_str_const_")),
+                    ("this.CallMethodWithParmBool(this.t)", TString("TRUE")),
+                    ("this.CallMethodWithParmBool(this.f)", TString("FALSE")),
+                    ("this.CallMethodWithParm(this.a) + this.a", TNumber(3)),
+                    ("this.CallMethodWithObj(this.objToTest)", TNumber(10)));
+           });
+
+
+        [Fact]
+        public async Task EvaluateSimpleMethodCallsCheckChangedValue() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var frame = pause_location["callFrames"][0];
+                var props = await GetObjectOnFrame(frame, "this");
+                CheckNumber(props, "a", 1);
+
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("this.CallMethodChangeValue()", TObject("object", is_null : true)));
+
+                frame = pause_location["callFrames"][0];
+                props = await GetObjectOnFrame(frame, "this");
+                CheckNumber(props, "a", 11);
+           });
     }
 
 }

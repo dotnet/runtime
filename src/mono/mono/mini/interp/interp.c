@@ -1173,12 +1173,16 @@ compute_arg_offset (MonoMethodSignature *sig, int index, int prev_offset)
 }
 
 static guint32*
-initialize_arg_offsets (InterpMethod *imethod)
+initialize_arg_offsets (InterpMethod *imethod, MonoMethodSignature *csig)
 {
 	if (imethod->arg_offsets)
 		return imethod->arg_offsets;
 
-	MonoMethodSignature *sig = mono_method_signature_internal (imethod->method);
+	// For pinvokes, csig represents the real signature with marshalled args. If an explicit
+	// marshalled signature was not provided, we use the managed signature of the method.
+	MonoMethodSignature *sig = csig;
+	if (!sig)
+		sig = mono_method_signature_internal (imethod->method);
 	int arg_count = sig->hasthis + sig->param_count;
 	g_assert (arg_count);
 	guint32 *arg_offsets = (guint32*) g_malloc ((sig->hasthis + sig->param_count) * sizeof (int));
@@ -1201,13 +1205,13 @@ initialize_arg_offsets (InterpMethod *imethod)
 }
 
 static guint32
-get_arg_offset_fast (InterpMethod *imethod, int index)
+get_arg_offset_fast (InterpMethod *imethod, MonoMethodSignature *sig, int index)
 {
 	guint32 *arg_offsets = imethod->arg_offsets;
 	if (arg_offsets)
 		return arg_offsets [index];
 
-	arg_offsets = initialize_arg_offsets (imethod);
+	arg_offsets = initialize_arg_offsets (imethod, sig);
 	g_assert (arg_offsets);
 	return arg_offsets [index];
 }
@@ -1216,7 +1220,7 @@ static guint32
 get_arg_offset (InterpMethod *imethod, MonoMethodSignature *sig, int index)
 {
 	if (imethod) {
-		return get_arg_offset_fast (imethod, index);
+		return get_arg_offset_fast (imethod, sig, index);
 	} else {
 		g_assert (!sig->hasthis);
 		return compute_arg_offset (sig, index, -1);
@@ -2385,7 +2389,7 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 	if (cinfo->ret_mt != -1)
 		args [pindex ++] = ret_sp;
 	for (int i = 0; i < rmethod->param_count; ++i) {
-		stackval *sval = STACK_ADD_BYTES (sp, get_arg_offset_fast (rmethod, stack_index + i));
+		stackval *sval = STACK_ADD_BYTES (sp, get_arg_offset_fast (rmethod, NULL, stack_index + i));
 		if (cinfo->arginfo [i] == JIT_ARG_BYVAL)
 			args [pindex ++] = sval->data.p;
 		else
@@ -3433,7 +3437,7 @@ main_loop:
 						del_imethod = mono_interp_get_imethod (mono_marshal_get_native_wrapper (del_imethod->method, FALSE, FALSE), error);
 						mono_error_assert_ok (error);
 						del->interp_invoke_impl = del_imethod;
-					} else if (del_imethod->method->flags & METHOD_ATTRIBUTE_VIRTUAL && !del->target) {
+					} else if (del_imethod->method->flags & METHOD_ATTRIBUTE_VIRTUAL && !del->target && !m_class_is_valuetype (del_imethod->method->klass)) {
 						// 'this' is passed dynamically, we need to recompute the target method
 						// with each call
 						del_imethod = get_virtual_method (del_imethod, LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, MonoObject*)->vtable);
@@ -7199,7 +7203,7 @@ interp_frame_get_arg (MonoInterpFrameHandle frame, int pos)
 
 	g_assert (iframe->imethod);
 
-	return (char*)iframe->stack + get_arg_offset_fast (iframe->imethod, pos + iframe->imethod->hasthis);
+	return (char*)iframe->stack + get_arg_offset_fast (iframe->imethod, NULL, pos + iframe->imethod->hasthis);
 }
 
 static gpointer

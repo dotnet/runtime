@@ -26,6 +26,7 @@
 #include <mono/metadata/debug-mono-ppdb.h>
 #include <mono/metadata/exception-internals.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/metadata-update.h>
 #include <string.h>
 
 #if NO_UNALIGNED_ACCESS
@@ -1115,6 +1116,15 @@ mono_debug_enabled (void)
 void
 mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points)
 {
+	MonoImage* img = m_class_get_image (minfo->method->klass);
+	if (img->has_updates) {
+		int idx = mono_metadata_token_index (minfo->method->token);
+		gpointer ptr = mono_metadata_update_get_updated_method_ppdb (img, idx);
+		if (ptr != NULL) {
+			mono_ppdb_get_seq_points_enc (ptr, seq_points, n_seq_points);
+			return;
+		}
+	} 
 	if (minfo->handle->ppdb)
 		mono_ppdb_get_seq_points (minfo, source_file, source_file_list, source_files, seq_points, n_seq_points);
 	else
