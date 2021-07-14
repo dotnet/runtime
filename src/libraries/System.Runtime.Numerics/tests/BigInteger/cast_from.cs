@@ -386,10 +386,8 @@ namespace System.Numerics.Tests
             {
                 yield return new object[] { new BigInteger(float.MinValue), float.MinValue };
                 yield return new object[] { new BigInteger(float.MaxValue), float.MaxValue };
-#if false
-                yield return new object[] { new BigInteger(float.MinValue) - BigInteger.One, float.NegativeInfinity };
-                yield return new object[] { new BigInteger(float.MaxValue) + BigInteger.One, float.PositiveInfinity };
-#endif
+                yield return new object[] { new BigInteger(float.MinValue) - BigInteger.One, float.MinValue };
+                yield return new object[] { new BigInteger(float.MaxValue) + BigInteger.One, float.MaxValue };
                 yield return new object[] { new BigInteger(-1f), -1f };
                 yield return new object[] { new BigInteger(0f), 0f };
                 yield return new object[] { new BigInteger(1f), 1f };
@@ -423,10 +421,8 @@ namespace System.Numerics.Tests
             {
                 yield return new object[] { new BigInteger(double.MinValue), double.MinValue };
                 yield return new object[] { new BigInteger(double.MaxValue), double.MaxValue };
-#if false
-                yield return new object[] { new BigInteger(double.MinValue) - BigInteger.One, double.NegativeInfinity };
-                yield return new object[] { new BigInteger(double.MaxValue) + BigInteger.One, double.PositiveInfinity };
-#endif
+                yield return new object[] { new BigInteger(double.MinValue) - BigInteger.One, double.MinValue };
+                yield return new object[] { new BigInteger(double.MaxValue) + BigInteger.One, double.MaxValue };
                 yield return new object[] { new BigInteger(-1.0), -1.0 };
                 yield return new object[] { new BigInteger(0.0), 0.0 };
                 yield return new object[] { new BigInteger(1.0), 1.0 };
