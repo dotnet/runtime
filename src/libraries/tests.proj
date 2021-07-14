@@ -329,7 +329,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory\tests\System.Memory.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Writers\XmlWriterApi\System.Xml.RW.XmlWriterApi.Tests.csproj" />
-    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser\Wasm.Browser.Sample.csproj" />
     <ProjectExclusions Include="$(RepoRoot)\src\tests\BuildWasmApps\Wasm.Build.Tests\Wasm.Build.Tests.csproj" />
   </ItemGroup>
 
