@@ -9,7 +9,7 @@
         <FeaturePerfTracing>true</FeaturePerfTracing>
         <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
         <FeatureBasicFreeze>true</FeatureBasicFreeze>
-        <FeatureGenericMath>true</FeatureGenericMath>
+        <FeatureGenericMath>false</FeatureGenericMath>
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
     </PropertyGroup>
 
