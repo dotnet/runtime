@@ -27,8 +27,6 @@ namespace Wasm.Build.Tests
         public void SimpleNativeBuild(BuildArgs buildArgs, RunHost host, string id)
             => NativeBuild("simple_native_build", s_mainReturns42, buildArgs, host, id);
 
-
-
         private void NativeBuild(string projectNamePrefix, string projectContents, BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"{projectNamePrefix}_{buildArgs.Config}_{buildArgs.AOT}";
