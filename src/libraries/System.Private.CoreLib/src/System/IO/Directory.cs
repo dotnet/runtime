@@ -288,7 +288,7 @@ namespace System.IO
             if (!FileSystem.DirectoryExists(fullsourceDirName) && !FileSystem.FileExists(fullsourceDirName))
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, fullsourceDirName));
 
-            if (!sameDirectoryDifferentCase // This check is to allowing renaming of directories
+            if (!sameDirectoryDifferentCase // This check is to allow renaming of directories
                 && FileSystem.DirectoryExists(fulldestDirName))
                 throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, fulldestDirName));
 
