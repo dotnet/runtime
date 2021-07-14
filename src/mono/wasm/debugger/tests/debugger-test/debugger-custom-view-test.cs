@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace DebuggerTests
 {
-    [DebuggerDisplay ("Some {Val1} Value {Val2} End")]
+    [DebuggerDisplay("Some {Val1} Value {Val2} End")]
     class WithDisplayString
     {
         internal string Val1 = "one";
@@ -24,7 +24,7 @@ namespace DebuggerTests
         }
     }
 
-    [DebuggerTypeProxy (typeof(TheProxy))]
+    [DebuggerTypeProxy(typeof(TheProxy))]
     class WithProxy
     {
         public string Val1 {
@@ -46,7 +46,7 @@ namespace DebuggerTests
         }
     }
 
-    [DebuggerDisplay ("{GetDebuggerDisplay(), nq}")]
+    [DebuggerDisplay("{GetDebuggerDisplay(), nq}")]
     class DebuggerDisplayMethodTest
     {
         int someInt = 32;

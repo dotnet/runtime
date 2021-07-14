@@ -27,7 +27,7 @@ namespace DebuggerTests
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckObject(locals, "a", "DebuggerTests.WithDisplayString", description:"Some one Value 2 End");
-			CheckObject(locals, "c", "DebuggerTests.DebuggerDisplayMethodTest", description: "First Int:32 Second Int:43");
+			  CheckObject(locals, "c", "DebuggerTests.DebuggerDisplayMethodTest", description: "First Int:32 Second Int:43");
         }
     }
 }
