@@ -304,7 +304,7 @@ namespace System.Runtime.InteropServices.Tests
         {
             // This test is the same as the one for GetValueRefOrNullRef, but it uses
             // GetValueRefOrAddDefault instead, and also checks for incorrect additions.
-            // The two APIs should behave the same when values are already existing.
+            // The two APIs should behave the same when values already exist.
             var dict = new Dictionary<int, Struct>
             {
                 {  1, default },

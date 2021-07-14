@@ -497,6 +497,9 @@ namespace System.Collections.Generic
 
         private bool TryInsert(TKey key, TValue value, InsertionBehavior behavior)
         {
+            // NOTE: this method is mirrored in CollectionsMarshal.GetValueRefOrAddDefault below.
+            // If you make any changes here, make sure to keep that version in sync as well.
+
             if (key == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
@@ -691,6 +694,9 @@ namespace System.Collections.Generic
             /// <inheritdoc cref="Runtime.InteropServices.CollectionsMarshal.GetValueRefOrAddDefault{TKey, TValue}(Dictionary{TKey, TValue}, TKey, out bool)"/>
             public static ref TValue? GetValueRefOrAddDefault(Dictionary<TKey, TValue> dictionary, TKey key, out bool exists)
             {
+                // NOTE: this method is mirrored by Dictionary<TKey, TValue>.TryInsert above.
+                // If you make any changes here, make sure to keep that version in sync as well.
+
                 if (key == null)
                 {
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
