@@ -15,6 +15,9 @@ let getOptionalElementInputs() = seq {
     wrap (3,2)
     wrap {| Name = "Mary" ; Age = 32 |}
     wrap struct {| Name = "Mary" ; Age = 32 |}
+    wrap [false; true; false; false]
+    wrap (Set.ofSeq [1 .. 5])
+    wrap (Map.ofSeq [("key1", "value1"); ("key2", "value2")])
 }
 
 [<Theory>]
