@@ -244,21 +244,21 @@ jobs:
       platforms:
       - Linux_x64
 
-  ## run mono android scenarios
-  #- template: /eng/pipelines/common/platform-matrix.yml
-  #  parameters:
-  #    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-  #    buildConfig: release
-  #    runtimeFlavor: mono
-  #    platforms:
-  #      - Windows_x64
-  #    jobParameters:
-  #      testGroup: perf
-  #      runtimeType: AndroidMono
-  #      projectFile: android_scenarios.proj
-  #      runKind: android_scenarios
-  #      runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-  #      logicalmachine: 'perfpixel4a'
+  # run mono android scenarios
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - Windows_x64
+      jobParameters:
+        testGroup: perf
+        runtimeType: AndroidMono
+        projectFile: android_scenarios.proj
+        runKind: android_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfpixel4a'
 
   # run mono microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
