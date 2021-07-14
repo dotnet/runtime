@@ -229,6 +229,8 @@ namespace Internal.Cryptography
             }
             else if (feedbackSizeInBits != 8)
             {
+                // Persisted CNG keys in CFB mode always use CFB8 when in CFB mode,
+                // so require the feedback size to be set to 8.
                 throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedbackSizeInBits, CipherMode.CFB));
             }
         }
