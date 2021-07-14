@@ -26,6 +26,8 @@ internal static class Utils
                                         IDictionary<string, string> envVars,
                                         string workingDir,
                                         TaskLoggingHelper logger,
+                                        bool silent=false,
+                                        bool logStdErrAsMessage=false,
                                         MessageImportance debugMessageImportance=MessageImportance.Low)
     {
         Logger = logger;
@@ -41,7 +43,8 @@ internal static class Utils
                              args,
                              envVars,
                              workingDir,
-                             silent: false,
+                             silent: silent,
+                             logStdErrAsMessage: logStdErrAsMessage,
                              logger: logger,
                              debugMessageImportance);
 
@@ -82,9 +85,9 @@ internal static class Utils
                                             args,
                                             envVars,
                                             workingDir,
-                                            silent,
+                                            silent: silent,
                                             logger: Logger,
-                                            debugMessageImportance);
+                                            debugMessageImportance: debugMessageImportance);
 
         if (exitCode != 0 && !ignoreErrors)
             throw new Exception("Error: Process returned non-zero exit code: " + output);
@@ -98,11 +101,11 @@ internal static class Utils
         IDictionary<string, string>? envVars = null,
         string? workingDir = null,
         bool silent = true,
+        bool logStdErrAsMessage = false,
         TaskLoggingHelper? logger = null,
         MessageImportance debugMessageImportance=MessageImportance.High)
     {
-        if (logger != null)
-            Logger = logger;
+        Logger = logger;
 
         Logger?.LogMessage(debugMessageImportance, $"Running: {path} {args}");
         var outputBuilder = new StringBuilder();
@@ -145,7 +148,12 @@ internal static class Utils
                     return;
 
                 if (!silent)
-                    LogWarning(e.Data);
+                {
+                    if (logStdErrAsMessage)
+                        LogMessage(debugMessageImportance, e.Data);
+                    else
+                        LogWarning(e.Data);
+                }
                 outputBuilder.AppendLine(e.Data);
             }
         };
@@ -225,9 +233,9 @@ internal static class Utils
             Logger?.LogWarning(msg);
     }
 
-    public static void LogError(string? msg)
+    public static void LogMessage(MessageImportance importance, string? msg)
     {
         if (msg != null)
-            Logger?.LogError(msg);
+            Logger?.LogMessage(importance, msg);
     }
 }
