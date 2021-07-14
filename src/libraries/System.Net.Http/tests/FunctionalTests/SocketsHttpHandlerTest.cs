@@ -2119,6 +2119,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45204")]
         public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemaningRequestsAreHandledByNewConnection()
         {
             const int MaxConcurrentStreams = 2;
@@ -3204,5 +3205,101 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_HttpClientHandler_Finalization_Http3_Mock(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public abstract class SocketsHttpHandler_RequestValidationTest
+    {
+        protected abstract bool TestAsync { get; }
+
+        [Fact]
+        public void Send_NullRequest_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("request", () =>
+            {
+                var invoker = new HttpMessageInvoker(new SocketsHttpHandler());
+                if (TestAsync)
+                {
+                    invoker.SendAsync(null, CancellationToken.None);
+                }
+                else
+                {
+                    invoker.Send(null, CancellationToken.None);
+                }
+            });
+        }
+
+        [Fact]
+        public void Send_NullRequestUri_ThrowsInvalidOperationException()
+        {
+            Throws<InvalidOperationException>(new HttpRequestMessage());
+        }
+
+        [Fact]
+        public void Send_RelativeRequestUri_ThrowsInvalidOperationException()
+        {
+            Throws<InvalidOperationException>(new HttpRequestMessage(HttpMethod.Get, new Uri("/relative", UriKind.Relative)));
+        }
+
+        [Fact]
+        public void Send_UnsupportedRequestUriScheme_ThrowsNotSupportedException()
+        {
+            Throws<NotSupportedException>(new HttpRequestMessage(HttpMethod.Get, "foo://foo.bar"));
+        }
+
+        [Fact]
+        public void Send_MajorVersionZero_ThrowsNotSupportedException()
+        {
+            Throws<NotSupportedException>(new HttpRequestMessage { Version = new Version(0, 42) });
+        }
+
+        [Fact]
+        public void Send_TransferEncodingChunkedWithNoContent_ThrowsHttpRequestException()
+        {
+            var request = new HttpRequestMessage();
+            request.Headers.TransferEncodingChunked = true;
+
+            HttpRequestException exception = Throws<HttpRequestException>(request);
+            Assert.IsType<InvalidOperationException>(exception.InnerException);
+        }
+
+        [Fact]
+        public void Send_Http10WithTransferEncodingChunked_ThrowsNotSupportedException()
+        {
+            var request = new HttpRequestMessage
+            {
+                Content = new StringContent("foo"),
+                Version = new Version(1, 0)
+            };
+            request.Headers.TransferEncodingChunked = true;
+
+            Throws<NotSupportedException>(request);
+        }
+
+        private TException Throws<TException>(HttpRequestMessage request)
+            where TException : Exception
+        {
+            var invoker = new HttpMessageInvoker(new SocketsHttpHandler());
+            if (TestAsync)
+            {
+                Task<HttpResponseMessage> task = invoker.SendAsync(request, CancellationToken.None);
+                Assert.Equal(TaskStatus.Faulted, task.Status);
+                return Assert.IsType<TException>(task.Exception.InnerException);
+            }
+            else
+            {
+                return Assert.Throws<TException>(() => invoker.Send(request, CancellationToken.None));
+            }
+        }
+    }
+
+    public sealed class SocketsHttpHandler_RequestValidationTest_Async : SocketsHttpHandler_RequestValidationTest
+    {
+        protected override bool TestAsync => true;
+    }
+
+    public sealed class SocketsHttpHandler_RequestValidationTest_Sync : SocketsHttpHandler_RequestValidationTest
+    {
+        protected override bool TestAsync => false;
     }
 }

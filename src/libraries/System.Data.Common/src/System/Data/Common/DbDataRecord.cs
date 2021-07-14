@@ -101,6 +101,6 @@ namespace System.Data.Common
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes) =>
             new PropertyDescriptorCollection(null);
 
-        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd) => this;
+        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd) => this;
     }
 }

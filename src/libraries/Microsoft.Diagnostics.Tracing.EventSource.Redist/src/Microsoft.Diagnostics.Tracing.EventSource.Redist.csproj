@@ -52,7 +52,6 @@
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\EventFieldFormat.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\EventIgnoreAttribute.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\EventPayload.cs" />
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\EventSourceActivity.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\EventSourceOptions.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\FieldMetadata.cs" />
     <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\Tracing\TraceLogging\InvokeTypeInfo.cs" />

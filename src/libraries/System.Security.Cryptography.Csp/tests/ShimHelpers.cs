@@ -82,6 +82,8 @@ namespace System.Security.Cryptography.Csp.Tests
                 "TryDecryptEcbCore",
                 "TryEncryptCbcCore",
                 "TryDecryptCbcCore",
+                "TryEncryptCfbCore",
+                "TryDecryptCfbCore",
             };
 
             IEnumerable<MethodInfo> baseMethods = shimType.

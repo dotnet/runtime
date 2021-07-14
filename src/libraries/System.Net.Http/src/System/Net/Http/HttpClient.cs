@@ -26,8 +26,8 @@ namespace System.Net.Http
 
         private CancellationTokenSource _pendingRequestsCts;
         private HttpRequestHeaders? _defaultRequestHeaders;
-        private Version _defaultRequestVersion = HttpUtilities.DefaultRequestVersion;
-        private HttpVersionPolicy _defaultVersionPolicy = HttpUtilities.DefaultVersionPolicy;
+        private Version _defaultRequestVersion = HttpRequestMessage.DefaultRequestVersion;
+        private HttpVersionPolicy _defaultVersionPolicy = HttpRequestMessage.DefaultVersionPolicy;
 
         private Uri? _baseAddress;
         private TimeSpan _timeout;
@@ -78,7 +78,12 @@ namespace System.Net.Http
             get => _baseAddress;
             set
             {
-                CheckBaseAddress(value, nameof(value));
+                // It's OK to not have a base address specified, but if one is, it needs to be absolute.
+                if (value is not null && !value.IsAbsoluteUri)
+                {
+                    throw new ArgumentException(SR.net_http_client_absolute_baseaddress_required, nameof(value));
+                }
+
                 CheckDisposedOrStarted();
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.UriBaseAddress(this, value);
@@ -621,7 +626,7 @@ namespace System.Net.Http
 
         private static bool StartSend(HttpRequestMessage request)
         {
-            if (HttpTelemetry.Log.IsEnabled() && request.RequestUri != null)
+            if (HttpTelemetry.Log.IsEnabled())
             {
                 HttpTelemetry.Log.RequestStart(request);
                 return true;
@@ -808,24 +813,6 @@ namespace System.Net.Http
             }
 
             return (pendingRequestsCts, DisposeTokenSource: false, pendingRequestsCts);
-        }
-
-        private static void CheckBaseAddress(Uri? baseAddress, string parameterName)
-        {
-            if (baseAddress == null)
-            {
-                return; // It's OK to not have a base address specified.
-            }
-
-            if (!baseAddress.IsAbsoluteUri)
-            {
-                throw new ArgumentException(SR.net_http_client_absolute_baseaddress_required, parameterName);
-            }
-
-            if (!HttpUtilities.IsHttpUri(baseAddress))
-            {
-                throw new ArgumentException(HttpUtilities.InvalidUriMessage, parameterName);
-            }
         }
 
         private static bool IsNativeHandlerEnabled()

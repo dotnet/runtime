@@ -152,6 +152,9 @@ namespace System.Text.RegularExpressions.Tests
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return new object[] { @"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzza", RegexOptions.None, 0, 18, false, string.Empty };
 
+            // Anchors and multiline
+            yield return new object[] { @"^A$", "ABC\n", RegexOptions.Multiline, 0, 2, false, string.Empty };
+
             // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
             yield return new object[] { @"\A(line2\n)line3\Z", "line2\nline3\n", RegexOptions.Multiline, 0, 12, true, "line2\nline3" };
 
@@ -813,7 +816,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line2$\n)line3", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
@@ -824,7 +827,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line2\n^)line3", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
@@ -835,7 +838,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line3\n$\n)line4", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
@@ -846,7 +849,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line3\n^\n)line4", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,
@@ -857,7 +860,7 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            // Mutliline
+            // Multiline
             yield return new object[]
             {
                 "(line2$\n^)line3", "line1\nline2\nline3\n\nline4", RegexOptions.Multiline, 0, 24,

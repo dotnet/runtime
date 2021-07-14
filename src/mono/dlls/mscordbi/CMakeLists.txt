@@ -123,6 +123,8 @@ add_subdirectory(${CLR_DIR}/md/compiler md/compiler)
 include(${CLR_DIR}/clrdefinitions.cmake)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/../../)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/../../inc/)
+include_directories(${CLR_DIR}/minipal)
+
 add_subdirectory(${CLR_DIR}/md/enc md/enc)
 add_subdirectory(${CLR_DIR}/utilcode utilcode)
 if (CLR_CMAKE_HOST_UNIX)

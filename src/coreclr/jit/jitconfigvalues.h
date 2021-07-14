@@ -68,6 +68,9 @@ CONFIG_INTEGER(JitAlignLoopAdaptive,
                W("JitAlignLoopAdaptive"),
                1) // If set, perform adaptive loop alignment that limits number of padding based on loop size.
 
+// Print the alignment boundaries in disassembly.
+CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
+
 CONFIG_INTEGER(JitDirectAlloc, W("JitDirectAlloc"), 0)
 CONFIG_INTEGER(JitDoubleAlign, W("JitDoubleAlign"), 1)
 CONFIG_INTEGER(JitDumpASCII, W("JitDumpASCII"), 1)               // Uses only ASCII characters in tree dumps
@@ -460,7 +463,8 @@ CONFIG_STRING(JitInlineReplayFile, W("JitInlineReplayFile"))
 // Extended version of DefaultPolicy that includes a more precise IL scan,
 // relies on PGO if it exists and generally is more aggressive.
 CONFIG_INTEGER(JitExtDefaultPolicy, W("JitExtDefaultPolicy"), 1)
-CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, W("JitExtDefaultPolicyMaxIL"), 0x64)
+CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, W("JitExtDefaultPolicyMaxIL"), 0x80)
+CONFIG_INTEGER(JitExtDefaultPolicyMaxILProf, W("JitExtDefaultPolicyMaxILProf"), 0x400)
 CONFIG_INTEGER(JitExtDefaultPolicyMaxBB, W("JitExtDefaultPolicyMaxBB"), 7)
 
 // Inliner uses the following formula for PGO-driven decisions:
@@ -552,8 +556,12 @@ CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSave
 #endif // defined(TARGET_ARM64)
 #endif // DEBUG
 
-// Allow to enregister locals with struct type.
-CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 0)
+#if defined(TARGET_WINDOWS) && defined(TARGET_XARCH)
+CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 1) // Allow to enregister locals with struct type.
+#else
+CONFIG_INTEGER(JitEnregStructLocals, W("JitEnregStructLocals"), 0) // Don't allow to enregister locals with struct type
+                                                                   // yet.
+#endif
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING

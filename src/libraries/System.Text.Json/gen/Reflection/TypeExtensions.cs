@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Linq;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
     internal static class TypeExtensions
     {

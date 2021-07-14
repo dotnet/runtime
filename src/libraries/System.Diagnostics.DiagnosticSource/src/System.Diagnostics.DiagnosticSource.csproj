@@ -39,6 +39,10 @@
     <Compile Include="System\Diagnostics\ActivitySource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
     <Compile Include="System\Diagnostics\DiagLinkedList.cs" />
+    <Compile Include="System\Diagnostics\DistributedContextPropagator.cs" />
+    <Compile Include="System\Diagnostics\LegacyPropagator.cs" />
+    <Compile Include="System\Diagnostics\NoOutputPropagator.cs" />
+    <Compile Include="System\Diagnostics\PassThroughPropagator.cs" />
     <Compile Include="System\Diagnostics\RandomNumberGenerator.cs" />
     <Compile Include="System\Diagnostics\Metrics\AggregationManager.cs" />
     <Compile Include="System\Diagnostics\Metrics\Aggregator.cs" />

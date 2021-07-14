@@ -13,6 +13,10 @@ private:
     bool m_comma;
     CrashInfo& m_crashInfo;
 
+    // no public copy constructor
+    CrashReportWriter(const CrashReportWriter&) = delete;
+    void operator=(const CrashReportWriter&) = delete;
+
 public:
     CrashReportWriter(CrashInfo& crashInfo);
     virtual ~CrashReportWriter();
@@ -21,9 +25,9 @@ public:
 private:
     void WriteCrashReport();
 #ifdef __APPLE__
-    void WriteStackFrame(const StackFrame& frame);
     void WriteSysctl(const char* sysctlname, const char* valueName);
 #endif
+    void WriteStackFrame(const StackFrame& frame);
     void Write(const std::string& text);
     void Write(const char* buffer);
     void Indent(std::string& text);

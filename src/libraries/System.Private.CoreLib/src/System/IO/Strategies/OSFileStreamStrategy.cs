@@ -53,8 +53,6 @@ namespace System.IO.Strategies
 
             try
             {
-                FileStreamHelpers.ValidateFileTypeForNonExtendedPaths(_fileHandle, path);
-
                 if (mode == FileMode.Append && CanSeek)
                 {
                     _appendStart = _filePosition = Length;
@@ -292,10 +290,17 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
-            int r = RandomAccess.WriteAtOffset(_fileHandle, buffer, _filePosition);
-            Debug.Assert(r >= 0, $"RandomAccess.WriteAtOffset returned {r}.");
-            _filePosition += r;
+            try
+            {
+                RandomAccess.WriteAtOffset(_fileHandle, buffer, _filePosition);
+            }
+            catch
+            {
+                _length = -1; // invalidate cached length
+                throw;
+            }
 
+            _filePosition += buffer.Length;
             UpdateLengthOnChangePosition();
         }
     }

@@ -7,6 +7,7 @@
 
   <PropertyGroup>
     <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
+    <WindowsShell Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">true</WindowsShell>
 
     <!-- Set Helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
@@ -28,7 +29,7 @@
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'Android')">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">00:45:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">01:00:00</_workItemTimeout>
-    <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">01:00:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">01:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == 'true'">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and '$(Outerloop)' == 'true'">00:20:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == ''">00:15:00</_workItemTimeout>
@@ -53,6 +54,11 @@
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
     <NeedsToBuildWasmAppsOnHelix Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == '' and '$(Scenario)' == 'BuildWasmApps'">true</NeedsToBuildWasmAppsOnHelix>
+    <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
+
+    <NeedsWorkload Condition="'$(TestUsingWorkloads)' == 'true'">true</NeedsWorkload>
+    <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' and '$(NeedsWorkload)' != 'true'">true</NeedsEMSDK>
+    <NeedsToRunOnBrowser Condition="'$(TargetOS)' == 'Browser' and ('$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps')">true</NeedsToRunOnBrowser>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">
@@ -97,19 +103,29 @@
     <InstallDevCerts Condition="'$(Scenario)' != 'BuildWasmApps'">true</InstallDevCerts>
 
     <!-- Install SDK so that, we could use `dotnet dev-certs https` -->
-    <NeedsDotNetSdk>true</NeedsDotNetSdk>
+    <NeedsDotNetSdk Condition="'$(NeedsWorkload)' != 'true'">true</NeedsDotNetSdk>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">
+  <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(WindowsShell)' != 'true'">
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">
-    <NeedsDotNetSdk>true</NeedsDotNetSdk>
-    <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
-    <IncludeXHarnessCli>true</IncludeXHarnessCli>
-  </PropertyGroup>
+  <Choose>
+    <When Condition="'$(NeedsWorkload)' == 'true'">
+      <PropertyGroup>
+        <NeedsDotNetSdk>false</NeedsDotNetSdk>
+        <IncludeXHarnessCli>true</IncludeXHarnessCli>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(NeedsEMSDK)' == 'true'">
+      <PropertyGroup>
+        <NeedsDotNetSdk>true</NeedsDotNetSdk>
+        <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
+        <IncludeXHarnessCli>true</IncludeXHarnessCli>
+      </PropertyGroup>
+    </When>
+  </Choose>
 
   <!-- HelixPreCommands is a set of commands run before the work item command. We use it here to inject
        setting up the per-scenario environment.
@@ -140,10 +156,22 @@
     <HelixPreCommand Include="printenv | grep COMPlus" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
-    <IncludeHelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' != '' and '$(TargetOS)' != 'Browser'">true</IncludeHelixCorrelationPayload>
-  </PropertyGroup>
+  <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="PATH=$HELIX_CORRELATION_PAYLOAD/dotnet-workload:$PATH" />
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="PATH=%HELIX_CORRELATION_PAYLOAD%\dotnet-workload%3B%PATH%" />
+
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_CLI_HOME=$HELIX_CORRELATION_PAYLOAD/dotnet-workload" />
+    <!--<HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_CLI_HOME=%HELIX_CORRELATION_PAYLOAD%\dotnet-workload" />-->
+
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_ROOT=$HELIX_CORRELATION_PAYLOAD/dotnet-workload" />
+    <!--<HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_ROOT=%HELIX_CORRELATION_PAYLOAD%\dotnet-workload" />-->
+
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%24{HELIX_CORRELATION_PAYLOAD}/dotnet-workload" />
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="SDK_FOR_WORKLOAD_TESTING_PATH=%HELIX_CORRELATION_PAYLOAD%\dotnet-workload" />
+
+    <HelixCommandPrefixItem Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
+    <HelixCommandPrefixItem Include="TEST_USING_WORKLOADS=true" />
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(NeedsDotNetSdk)' == 'true'">
     <IncludeDotNetCli>true</IncludeDotNetCli>
@@ -153,24 +181,6 @@
   <PropertyGroup Condition="'$(UseDotNetCliVersionFromGlobalJson)' == 'true'">
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(HelixCommand)' == ''">
-    <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(BrowserHost)' != 'windows'">dotnet dev-certs https &amp;&amp; </HelixCommand>
-
-    <!-- on windows `dotnet dev-certs https shows a dialog, so instead install the certificate with powershell -->
-    <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(BrowserHost)' == 'windows'">powershell -command &quot;New-SelfSignedCertificate -FriendlyName &#39;ASP.NET Core HTTPS development certificate&#39; -DnsName @(&#39;localhost&#39;) -Subject &#39;CN = localhost&#39; -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm sha256 -CertStoreLocation &#39;Cert:\CurrentUser\My&#39; -TextExtension @(&#39;2.5.29.37={text}1.3.6.1.5.5.7.3.1&#39;,&#39;1.3.6.1.4.1.311.84.1.1={hex}02&#39;,&#39;2.5.29.19={text}&#39;) -KeyUsage DigitalSignature,KeyEncipherment&quot; &amp;&amp; </HelixCommand>
-
-    <!--
-      For Windows we need to use "call", since the command is going to be called from a batch script created by Helix.
-      We "exit /b" at the end of RunTests.cmd. Helix runs some other commands after ours within the batch script,
-      so if we don't use "call", then we cause the parent script to exit, and anything after will not be executed.
-    -->
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">$(HelixCommand)call RunTests.cmd</HelixCommand>
-    <HelixCommand Condition="('$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows') and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
-
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'">$(HelixCommand)./RunTests.sh</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
 
   <ItemGroup>
@@ -224,6 +234,34 @@
 
   <Target Name="BuildHelixWorkItems" DependsOnTargets="StageEmSdkForHelix">
 
+    <PropertyGroup>
+      <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
+      <HelixCommandPrefix Condition="'$(WindowsShell)' == 'true' and @(HelixCommandPrefixItem->Count()) > 0" >$(HelixCommandPrefix) @(HelixCommandPrefixItem -> 'set &quot;%(Identity)&quot;', ' &amp; ')</HelixCommandPrefix>
+      <HelixCommandPrefix Condition="'$(WindowsShell)' != 'true' and @(HelixCommandPrefixItem->Count()) > 0 ">$(HelixCommandPrefix) @(HelixCommandPrefixItem, ' ')</HelixCommandPrefix>
+      <IncludeHelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' != '' and '$(TargetOS)' != 'Browser'">true</IncludeHelixCorrelationPayload>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(HelixCommand)' == ''">
+      <HelixCommand Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' != 'true'">$(HelixCommandPrefix) </HelixCommand>
+      <HelixCommand Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' == 'true'">$(HelixCommandPrefix) &amp; </HelixCommand>
+
+      <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(BrowserHost)' != 'windows'">$(HelixCommand) dotnet dev-certs https &amp;&amp; </HelixCommand>
+
+      <!-- on windows `dotnet dev-certs https shows a dialog, so instead install the certificate with powershell -->
+      <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(BrowserHost)' == 'windows'">$(HelixCommand) powershell -command &quot;New-SelfSignedCertificate -FriendlyName &#39;ASP.NET Core HTTPS development certificate&#39; -DnsName @(&#39;localhost&#39;) -Subject &#39;CN = localhost&#39; -KeyAlgorithm RSA -KeyLength 2048 -HashAlgorithm sha256 -CertStoreLocation &#39;Cert:\CurrentUser\My&#39; -TextExtension @(&#39;2.5.29.37={text}1.3.6.1.5.5.7.3.1&#39;,&#39;1.3.6.1.4.1.311.84.1.1={hex}02&#39;,&#39;2.5.29.19={text}&#39;) -KeyUsage DigitalSignature,KeyEncipherment&quot; &amp;&amp; </HelixCommand>
+
+      <!--
+        For Windows we need to use "call", since the command is going to be called from a batch script created by Helix.
+        We "exit /b" at the end of RunTests.cmd. Helix runs some other commands after ours within the batch script,
+        so if we don't use "call", then we cause the parent script to exit, and anything after will not be executed.
+      -->
+      <HelixCommand Condition="'$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows'">$(HelixCommand)call RunTests.cmd</HelixCommand>
+      <HelixCommand Condition="('$(TargetsWindows)' == 'true' or '$(BrowserHost)' == 'windows') and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+
+      <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows'">$(HelixCommand)./RunTests.sh</HelixCommand>
+      <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(BrowserHost)' != 'windows' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+    </PropertyGroup>
+
     <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Building Helix work items" />
     <Message Condition="'$(Scenario)' != ''" Importance="High" Text="Building Helix work items for scenario $(Scenario)" />
     <Message Importance="High" Text="Using TestRunNamePrefix: $(TestRunNamePrefix)" />
@@ -274,11 +312,13 @@
       <!-- 84.0.4147.105 is 768962 for example -->
       <ChromiumRevision>768968</ChromiumRevision>
       <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chrome-linux.zip</ChromiumUrl>
-      <SeleniumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</SeleniumUrl>
+      <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</ChromeDriverUrl>
       <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
       <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
       <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(NetCoreAppCurrent)-$(Configuration)'))</TestEchoMiddleware>
       <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(NetCoreAppCurrent)-$(Configuration)'))</RemoteLoopMiddleware>
+      <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' == 'true'">Workloads/</WorkItemPrefix>
+      <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true'">EMSDK/</WorkItemPrefix>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
@@ -289,7 +329,7 @@
       <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
     </ItemGroup>
 
-    <Message Condition="'$(TargetOS)' == 'Browser'" Importance="High" Text="Using emsdk: $(EmSdkDir)" />
+    <Message Condition="'$(NeedsEMSDK)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDir)" />
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(BUILD_BUILDID)' != ''">
       <HelixPostCommands Condition="'$(TargetsWindows)' == 'true'">
@@ -302,13 +342,22 @@
       </HelixPostCommands>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">
+    <Error Condition="'$(TestUsingWorkloads)' == 'true' and ('$(SdkPathForWorkloadTesting)' == '' or !Exists($(SdkPathForWorkloadTesting)))"
+           Text="Could not find workload at %24(SdkPathForWorkloadTesting)=$(SdkPathForWorkloadTesting)" />
+
+    <ItemGroup Condition="'$(NeedsWorkload)' == 'true'">
+      <HelixCorrelationPayload Include="$(SdkPathForWorkloadTesting)"     Destination="dotnet-workload" />
+      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRefPackDir)" Destination="microsoft.netcore.app.ref" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
       <HelixCorrelationPayload Include="$(EmSdkDir)"                             Destination="build/emsdk" />
       <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"                    Destination="build/WasmAppBuilder" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
+      <HelixCorrelationPayload Include="$(JsonToItemsTaskFactoryDir)"            Destination="build/JsonToItemsTaskFactory" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'BuildWasmApps'">
@@ -320,15 +369,15 @@
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'"
                                AsArchive="$(HelixCorrelationPayload.EndsWith('.zip'))" />
-      <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
-      <HelixCorrelationPayload Include="chromedriver" Uri="$(SeleniumUrl)" Condition="'$(TargetOS)' == 'Browser'" />
+      <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)"         Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(BrowserHost)' != 'windows'" />
+      <HelixCorrelationPayload Include="chromedriver" Uri="$(ChromeDriverUrl)" Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(BrowserHost)' != 'windows'" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Console.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Browser.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
       <_WorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' == 'WasmTestOnBrowser'" />
 
-      <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
+      <HelixWorkItem Include="@(_WorkItem -> '%(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
@@ -375,7 +424,7 @@
   <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
        attempt to write a .payload file, we cannot use $(EMSDK_PATH) to package emsdk as a helix correlation
        payload. Instead, we copy over the files to a new directory `src/mono/wasm/emsdk` and use that. -->
-  <Target Name="StageEmSdkForHelix" Condition="'$(TargetOS)' == 'Browser' and '$(NeedsToBuildWasmAppsOnHelix)' == 'true' and !Exists($(EmSdkDirForHelixPayload))">
+  <Target Name="StageEmSdkForHelix" Condition="'$(NeedsEMSDK)' == 'true' and !Exists($(EmSdkDirForHelixPayload))">
     <Error Condition="'$(EMSDK_PATH)' == '' or !Exists($(EMSDK_PATH))"
            Text="Could not find emscripten sdk in EMSDK_PATH=$(EMSDK_PATH), needed to provision for running tests on helix" />
 
@@ -393,6 +442,8 @@
 
   <Target Name="PrintHelixQueues">
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
+    <Message Condition="'$(Scenario)' == 'BuildWasmApps'" Importance="High"
+             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads)" />
   </Target>
 
   <Target Name="PrintBuildTargetFramework">

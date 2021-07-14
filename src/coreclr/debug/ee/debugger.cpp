@@ -1317,13 +1317,19 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
 
     // Allocate the breakpoint instruction info in executable memory.
     void *bpInfoSegmentRX = g_pDebugger->GetInteropSafeExecutableHeap()->Alloc(sizeof(DebuggerEvalBreakpointInfoSegment));
+
+#if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE) && defined(HOST_OSX) && defined(HOST_ARM64)
     ExecutableWriterHolder<DebuggerEvalBreakpointInfoSegment> bpInfoSegmentWriterHolder((DebuggerEvalBreakpointInfoSegment*)bpInfoSegmentRX, sizeof(DebuggerEvalBreakpointInfoSegment));
-    new (bpInfoSegmentWriterHolder.GetRW()) DebuggerEvalBreakpointInfoSegment(this);
+    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = bpInfoSegmentWriterHolder.GetRW();
+#else // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
+    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = (DebuggerEvalBreakpointInfoSegment*)bpInfoSegmentRX;
+#endif // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
+    new (bpInfoSegmentRW) DebuggerEvalBreakpointInfoSegment(this);
     m_bpInfoSegment = (DebuggerEvalBreakpointInfoSegment*)bpInfoSegmentRX;
 
     // This must be non-zero so that the saved opcode is non-zero, and on IA64 we want it to be 0x16
     // so that we can have a breakpoint instruction in any slot in the bundle.
-    bpInfoSegmentWriterHolder.GetRW()->m_breakpointInstruction[0] = 0x16;
+    bpInfoSegmentRW->m_breakpointInstruction[0] = 0x16;
 #if defined(TARGET_ARM)
     USHORT *bp = (USHORT*)&m_bpInfoSegment->m_breakpointInstruction;
     *bp = CORDbg_BREAK_INSTRUCTION;
@@ -16234,6 +16240,7 @@ void Debugger::ReleaseDebuggerDataLock(Debugger *pDebugger)
 }
 #endif // DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
 /* ------------------------------------------------------------------------ *
  * Functions for DebuggerHeap executable memory allocations
  * ------------------------------------------------------------------------ */
@@ -16378,6 +16385,7 @@ void* DebuggerHeapExecutableMemoryAllocator::GetPointerToChunkWithUsageUpdate(De
 
     return page->GetPointerToChunk(chunkNumber);
 }
+#endif // DACCESS_COMPILE
 
 /* ------------------------------------------------------------------------ *
  * DebuggerHeap impl
@@ -16412,7 +16420,7 @@ void DebuggerHeap::Destroy()
         m_hHeap = NULL;
     }
 #endif
-#ifndef HOST_WINDOWS
+#if !defined(HOST_WINDOWS) && !defined(DACCESS_COMPILE)
     if (m_execMemAllocator != NULL)
     {
         delete m_execMemAllocator;
@@ -16438,6 +16446,8 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+
+#ifndef DACCESS_COMPILE
 
     // Have knob catch if we don't want to lazy init the debugger.
     _ASSERTE(!g_DbgShouldntUseDebugger);
@@ -16472,7 +16482,9 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
             return E_OUTOFMEMORY;
         }
     }
-#endif
+#endif    
+
+#endif // !DACCESS_COMPILE
 
     return S_OK;
 }
@@ -16549,7 +16561,10 @@ void *DebuggerHeap::Alloc(DWORD size)
     size += sizeof(InteropHeapCanary);
 #endif
 
-    void *ret;
+    void *ret = NULL;
+
+#ifndef DACCESS_COMPILE
+
 #ifdef USE_INTEROPSAFE_HEAP
     _ASSERTE(m_hHeap != NULL);
     ret = ::HeapAlloc(m_hHeap, HEAP_ZERO_MEMORY, size);
@@ -16585,7 +16600,7 @@ void *DebuggerHeap::Alloc(DWORD size)
     InteropHeapCanary * pCanary = InteropHeapCanary::GetFromRawAddr(ret);
     ret = pCanary->GetUserAddr();
 #endif
-
+#endif // !DACCESS_COMPILE
     return ret;
 }
 
@@ -16638,6 +16653,8 @@ void DebuggerHeap::Free(void *pMem)
     }
     CONTRACTL_END;
 
+#ifndef DACCESS_COMPILE
+
 #ifdef USE_INTEROPSAFE_CANARY
     // Check for canary
 
@@ -16673,6 +16690,7 @@ void DebuggerHeap::Free(void *pMem)
 #endif // HOST_WINDOWS
     }
 #endif
+#endif // !DACCESS_COMPILE
 }
 
 #ifndef DACCESS_COMPILE

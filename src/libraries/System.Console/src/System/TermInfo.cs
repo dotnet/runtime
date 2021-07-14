@@ -245,9 +245,10 @@ namespace System
                     return null;
                 }
 
+                Span<char> stackBuffer = stackalloc char[256];
                 SafeFileHandle? fd;
-                if (!TryOpen(directoryPath + "/" + term[0].ToString() + "/" + term, out fd) &&          // /directory/termFirstLetter/term      (Linux)
-                    !TryOpen(directoryPath + "/" + ((int)term[0]).ToString("X") + "/" + term, out fd))  // /directory/termFirstLetterAsHex/term (Mac)
+                if (!TryOpen(string.Create(null, stackBuffer, $"{directoryPath}/{term[0]}/{term}"), out fd) &&       // /directory/termFirstLetter/term      (Linux)
+                    !TryOpen(string.Create(null, stackBuffer, $"{directoryPath}/{(int)term[0]:X}/{term}"), out fd))  // /directory/termFirstLetterAsHex/term (Mac)
                 {
                     return null;
                 }

@@ -81,6 +81,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_Access)
     DllImportEntry(SystemNative_LSeek)
     DllImportEntry(SystemNative_Link)
+    DllImportEntry(SystemNative_SymLink)
     DllImportEntry(SystemNative_MksTemps)
     DllImportEntry(SystemNative_MMap)
     DllImportEntry(SystemNative_MUnmap)
@@ -103,6 +104,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_INotifyRemoveWatch)
     DllImportEntry(SystemNative_RealPath)
     DllImportEntry(SystemNative_GetPeerID)
+    DllImportEntry(SystemNative_GetFileSystemType)
     DllImportEntry(SystemNative_LockFileRegion)
     DllImportEntry(SystemNative_LChflags)
     DllImportEntry(SystemNative_LChflagsCanSetHiddenFlag)
@@ -254,6 +256,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_HandleNonCanceledPosixSignal)
     DllImportEntry(SystemNative_SetPosixSignalHandler)
     DllImportEntry(SystemNative_GetPlatformSignalNumber)
+    DllImportEntry(SystemNative_GetGroups)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);

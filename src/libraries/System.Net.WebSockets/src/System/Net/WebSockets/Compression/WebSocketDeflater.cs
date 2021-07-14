@@ -46,15 +46,11 @@ namespace System.Net.WebSockets.Compression
         {
             Debug.Assert(_buffer is null, "Invalid state, ReleaseBuffer not called.");
 
-            // Do not try to rent more than 1MB initially, because it will actually allocate
-            // instead of renting. Be optimistic that what we're sending is actually going to fit.
-            const int MaxInitialBufferLength = 1024 * 1024;
-
             // For small payloads there might actually be overhead in the compression and the resulting
             // output might be larger than the payload. This is why we rent at least 4KB initially.
             const int MinInitialBufferLength = 4 * 1024;
 
-            _buffer = ArrayPool<byte>.Shared.Rent(Math.Clamp(payload.Length, MinInitialBufferLength, MaxInitialBufferLength));
+            _buffer = ArrayPool<byte>.Shared.Rent(Math.Max(payload.Length, MinInitialBufferLength));
             int position = 0;
 
             while (true)

@@ -13075,27 +13075,36 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
 
-#ifdef TARGET_64BIT
-                if (varTypeIsI(op1->TypeGet()) && (genActualType(op2->TypeGet()) == TYP_INT))
+                // Recognize the IL idiom of CGT_UN(op1, 0) and normalize
+                // it so that downstream optimizations don't have to.
+                if ((opcode == CEE_CGT_UN) && op2->IsIntegralConst(0))
                 {
-                    op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
+                    oper = GT_NE;
+                    uns  = false;
                 }
-                else if (varTypeIsI(op2->TypeGet()) && (genActualType(op1->TypeGet()) == TYP_INT))
+
+#ifdef TARGET_64BIT
+                // TODO-Casts: create a helper that upcasts int32 -> native int when necessary.
+                // See also identical code in impGetByRefResultType and STSFLD import.
+                if (varTypeIsI(op1) && (genActualType(op2) == TYP_INT))
                 {
-                    op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
+                    op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, TYP_I_IMPL);
+                }
+                else if (varTypeIsI(op2) && (genActualType(op1) == TYP_INT))
+                {
+                    op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, TYP_I_IMPL);
                 }
 #endif // TARGET_64BIT
 
-                assertImp(genActualType(op1->TypeGet()) == genActualType(op2->TypeGet()) ||
-                          (varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet())) ||
-                          (varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType)));
+                assertImp(genActualType(op1) == genActualType(op2) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
+                          (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
 
-                /* Create the comparison node */
+                // Create the comparison node.
 
                 op1 = gtNewOperNode(oper, TYP_INT, op1, op2);
 
-                /* TODO: setting both flags when only one is appropriate */
-                if (opcode == CEE_CGT_UN || opcode == CEE_CLT_UN)
+                // TODO: setting both flags when only one is appropriate.
+                if (uns)
                 {
                     op1->gtFlags |= GTF_RELOP_NAN_UN | GTF_UNSIGNED;
                 }
@@ -13258,8 +13267,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto COND_JUMP;
 
             case CEE_SWITCH:
-                assert(!compIsForInlining());
-
                 if (tiVerificationNeeded)
                 {
                     Verify(impStackTop().seTypeInfo.IsType(TI_INT), "Bad switch val");
@@ -19071,33 +19078,30 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     inlineResult->NoteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
     inlineResult->NoteInt(InlineObservation::CALLSITE_WEIGHT, (int)(weight));
 
+    bool   hasProfile  = false;
+    double profileFreq = 0.0;
+
     // If the call site has profile data, report the relative frequency of the site.
     //
-    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveProfileData() && pInlineInfo->iciBlock->hasProfileWeight())
+    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveSufficientProfileData())
     {
-        BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
-        BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
-        BasicBlock::weight_t profileFreq    = entryWeight == 0.0f ? 0.0f : callSiteWeight / entryWeight;
+        const BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
+        const BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
+        profileFreq                               = entryWeight == 0.0f ? 0.0 : callSiteWeight / entryWeight;
+        hasProfile                                = true;
 
         assert(callSiteWeight >= 0);
         assert(entryWeight >= 0);
-
-        BasicBlock::weight_t sufficientSamples = 1000.0f;
-
-        if (!rootCompiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) ||
-            ((callSiteWeight + entryWeight) > sufficientSamples))
-        {
-            // Let's not report profiles for methods with insufficient samples during prejitting.
-            inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
-            inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, profileFreq);
-        }
     }
-    else if ((pInlineInfo == nullptr) && rootCompiler->fgHaveProfileData())
+    else if (pInlineInfo == nullptr)
     {
         // Simulate a hot callsite for PrejitRoot mode.
-        inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
-        inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, 1.0);
+        hasProfile  = true;
+        profileFreq = 1.0;
     }
+
+    inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, hasProfile);
+    inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, profileFreq);
 }
 
 /*****************************************************************************
@@ -19242,6 +19246,10 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 pParam->result->NoteFatal(InlineObservation::CALLEE_NO_METHOD_INFO);
                 goto _exit;
             }
+
+            // Profile data allows us to avoid early "too many IL bytes" outs.
+            pParam->result->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE,
+                                     pParam->pThis->fgHaveSufficientProfileData());
 
             bool forceInline;
             forceInline = !!(pParam->methAttr & CORINFO_FLG_FORCEINLINE);
@@ -19464,6 +19472,10 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
             return;
         }
     }
+
+    bool isExact              = false;
+    bool isNonNull            = false;
+    inlCurArgInfo->argIsExact = (gtGetClassHandle(curArgVal, &isExact, &isNonNull) != NO_CLASS_HANDLE) && isExact;
 
     // If the arg is a local that is address-taken, we can't safely
     // directly substitute it into the inlinee.

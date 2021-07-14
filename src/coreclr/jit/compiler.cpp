@@ -2988,6 +2988,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disAsmSpilled   = false;
     opts.disDiffable     = false;
     opts.disAddr         = false;
+    opts.disAlignment    = false;
     opts.dspCode         = false;
     opts.dspEHTable      = false;
     opts.dspDebugInfo    = false;
@@ -3134,6 +3135,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitDasmWithAddress() != 0)
         {
             opts.disAddr = true;
+        }
+
+        if (JitConfig.JitDasmWithAlignmentBoundaries() != 0)
+        {
+            opts.disAlignment = true;
         }
 
         if (JitConfig.JitLongAddress() != 0)
@@ -6265,6 +6271,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         // We're prejitting the root method. We also will analyze it as
         // a potential inline candidate.
         InlineResult prejitResult(this, methodHnd, "prejit");
+
+        // Profile data allows us to avoid early "too many IL bytes" outs.
+        prejitResult.NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, fgHaveSufficientProfileData());
 
         // Do the initial inline screen.
         impCanInlineIL(methodHnd, methodInfo, forceInline, &prejitResult);

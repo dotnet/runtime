@@ -242,7 +242,7 @@ namespace System.Data.Common
                 {
                     keylist.MoveNext();
                     values[i] = this[keylist.Current];
-                    Debug.Assert(null != values[i], "null value " + keylist.Current);
+                    Debug.Assert(null != values[i], $"null value {keylist.Current}");
                 }
                 return new ReadOnlyCollection<object>(values);
             }
@@ -637,7 +637,7 @@ namespace System.Data.Common
         {
             return TypeDescriptor.GetEvents(this, attributes, true);
         }
-        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
+        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd)
         {
             return this;
         }

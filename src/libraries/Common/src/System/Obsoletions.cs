@@ -101,5 +101,8 @@ namespace System
 
         internal const string UseManagedSha1Message = "HMACSHA1 always uses the algorithm implementation provided by the platform. Use a constructor without the useManagedSha1 parameter.";
         internal const string UseManagedSha1DiagId = "SYSLIB0030";
+
+        internal const string CryptoConfigEncodeOIDMessage = "EncodeOID is obsolete. Use the ASN.1 functionality provided in System.Formats.Asn1.";
+        internal const string CryptoConfigEncodeOIDDiagId = "SYSLIB0031";
     }
 }

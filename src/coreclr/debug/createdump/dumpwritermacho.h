@@ -30,6 +30,10 @@ private:
     std::vector<ThreadCommand> m_threadLoadCommands;
     BYTE m_tempBuffer[0x4000];
 
+    // no public copy constructor
+    DumpWriter(const DumpWriter&) = delete;
+    void operator=(const DumpWriter&) = delete;
+
 public:
     DumpWriter(CrashInfo& crashInfo);
     virtual ~DumpWriter();

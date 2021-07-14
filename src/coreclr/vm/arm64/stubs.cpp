@@ -1067,8 +1067,14 @@ extern "C" void STDCALL JIT_PatchedCodeLast();
 static void UpdateWriteBarrierState(bool skipEphemeralCheck)
 {
     BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
-    ExecutableWriterHolder<BYTE> writeBarrierWriterHolder(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap(), writeBarrierWriterHolder.GetRW() - writeBarrierCodeStart);
+    BYTE *writeBarrierCodeStartRW = writeBarrierCodeStart;
+    ExecutableWriterHolder<BYTE> writeBarrierWriterHolder;
+    if (IsWriteBarrierCopyEnabled())
+    {
+        writeBarrierWriterHolder = ExecutableWriterHolder<BYTE>(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
+        writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
+    }
+    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap(), writeBarrierCodeStartRW - writeBarrierCodeStart);
 }
 
 void InitJITHelpers1()

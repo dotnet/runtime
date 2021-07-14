@@ -270,13 +270,9 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     ldr  x7, [x12]
 
     // Update wbs state
-#ifdef FEATURE_WRITEBARRIER_COPY
     PREPARE_EXTERNAL_VAR JIT_WriteBarrier_Table_Loc, x12
     ldr  x12, [x12]
     add  x12, x12, x9
-#else // FEATURE_WRITEBARRIER_COPY
-    adr  x12, LOCAL_LABEL(wbs_begin)
-#endif // FEATURE_WRITEBARRIER_COPY
 
     stp  x0, x1, [x12], 16
     stp  x2, x3, [x12], 16
@@ -295,16 +291,10 @@ LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
     mov     x14, x0                     // x14 = dst
     mov     x15, x1                     // x15 = val
 
-#ifdef FEATURE_WRITEBARRIER_COPY
-LOCAL_LABEL(Branch_JIT_WriteBarrier_Copy):
     // Branch to the write barrier
     PREPARE_EXTERNAL_VAR JIT_WriteBarrier_Loc, x17
     ldr     x17, [x17]
     br      x17
-#else // FEATURE_WRITEBARRIER_COPY
-    // Branch to the write barrier
-    b       C_FUNC(JIT_WriteBarrier)
-#endif // FEATURE_WRITEBARRIER_COPY
 LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
 .balign 64  // Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line

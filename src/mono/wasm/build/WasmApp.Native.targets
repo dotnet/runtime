@@ -30,19 +30,9 @@
 
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
-
-    <_WasmRuntimePackIncludeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include'))</_WasmRuntimePackIncludeDir>
-    <_WasmRuntimePackSrcDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src'))</_WasmRuntimePackSrcDir>
-    <_EmccPropsPath>$(_WasmRuntimePackSrcDir)Emcc.props</_EmccPropsPath>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
-
-  <!-- Always import it. $(WasmBuildNative) can change when running the targets, eg. when native
-       references are present but the default value for WasmBuildNative was false.
-       So, at evaluation time, it will be false, and we'll end up skipping this import. Instead, always
-       import it. -->
-  <Import Project="$(_EmccPropsPath)" />
 
   <!-- "public" target meant for use outside the regular wasm app generation process FIXME: rename please! -->
   <Target Name="WasmBuildNativeOnly" DependsOnTargets="$(WasmBuildNativeOnlyDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
@@ -218,6 +208,7 @@
       <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
       <_EmccCFlags Include="-DCORE_BINDINGS" />
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
+      <_EmccCFlags Include="-emit-llvm" />
 
       <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
       <_EmccCFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
@@ -323,6 +314,14 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
   <Target Name="_CheckEmccIsExpectedVersion">
     <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
+
+    <ReadEmccProps JsonFilePath="$(_WasmRuntimePackSrcDir)emcc-props.json">
+      <Output TaskParameter="EmccProperties" ItemName="_EmccPropItems" />
+    </ReadEmccProps>
+
+    <CreateProperty Value="%(_EmccPropItems.Value)">
+      <Output TaskParameter="Value" PropertyName="%(_EmccPropItems.Identity)" />
+    </CreateProperty>
 
     <Error Condition="'$(RuntimeEmccVersionRaw)' == ''"
            Text="%24(RuntimeEmccVersionRaw) is not set. '$(_EmccPropsPath)' should have set that."/>
@@ -467,5 +466,12 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <_WasmAssembliesInternal Include="@(_WasmStrippedAssemblies);@(_WasmInterpOnlyAssembly)" />
     </ItemGroup>
   </Target>
+
+  <UsingTask TaskName="ReadEmccProps" AssemblyFile="$(JsonToItemsTaskFactoryTasksAssemblyPath)"
+             TaskFactory="JsonToItemsTaskFactory.JsonToItemsTaskFactory">
+    <ParameterGroup>
+      <EmccProperties ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
+    </ParameterGroup>
+ </UsingTask>
 
 </Project>

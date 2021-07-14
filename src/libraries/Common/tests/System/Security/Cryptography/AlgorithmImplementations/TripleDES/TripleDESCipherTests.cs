@@ -499,6 +499,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             {
                 tdes.Mode = cipherMode;
                 tdes.Padding = paddingMode;
+                tdes.Key = key;
 
                 if (feedbackSize.HasValue)
                 {
@@ -510,15 +511,18 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 
                 if (cipherMode == CipherMode.ECB)
                 {
-                    tdes.Key = key;
                     liveOneShotDecryptBytes = tdes.DecryptEcb(cipherBytes, paddingMode);
                     liveOneShotEncryptBytes = tdes.EncryptEcb(plainBytes, paddingMode);
                 }
                 else if (cipherMode == CipherMode.CBC)
                 {
-                    tdes.Key = key;
                     liveOneShotDecryptBytes = tdes.DecryptCbc(cipherBytes, iv, paddingMode);
                     liveOneShotEncryptBytes = tdes.EncryptCbc(plainBytes, iv, paddingMode);
+                }
+                else if (cipherMode == CipherMode.CFB)
+                {
+                    liveOneShotDecryptBytes = tdes.DecryptCfb(cipherBytes, iv, paddingMode, feedbackSizeInBits: feedbackSize.Value);
+                    liveOneShotEncryptBytes = tdes.EncryptCfb(plainBytes, iv, paddingMode, feedbackSizeInBits: feedbackSize.Value);
                 }
 
                 if (liveOneShotDecryptBytes is not null)
