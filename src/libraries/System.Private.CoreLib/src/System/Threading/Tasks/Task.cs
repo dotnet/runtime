@@ -6305,8 +6305,14 @@ namespace System.Threading.Tasks
                     return WhenAny(taskArray);
                 }
 
+                int count = taskCollection.Count;
+                if (count <= 0)
+                {
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);
+                }
+
                 int index = 0;
-                taskArray = new Task[taskCollection.Count];
+                taskArray = new Task[count];
                 foreach (Task task in tasks)
                 {
                     if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
