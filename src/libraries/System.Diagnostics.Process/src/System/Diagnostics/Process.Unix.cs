@@ -502,8 +502,8 @@ namespace System.Diagnostics
         {
             if (string.IsNullOrEmpty(resolvedFilename))
             {
-                int errno = Interop.Error.ENOENT.Info().RawErrno;
-                throw CreateExceptionForErrorStartingProcess(GetErrorMessage(errno), errno, startInfo.FileName, cwd);
+                Interop.ErrorInfo errno = Interop.Error.ENOENT.Info();
+                throw CreateExceptionForErrorStartingProcess(errno.GetErrorMessage(), errno.RawErrno, startInfo.FileName, cwd);
             }
 
             // Lock to avoid races with OnSigChild
@@ -550,7 +550,7 @@ namespace System.Diagnostics
                         return false;
                     }
 
-                    throw CreateExceptionForErrorStartingProcess(GetErrorMessage(errno), errno, resolvedFilename, cwd);
+                    throw CreateExceptionForErrorStartingProcess(new ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
                 }
             }
             finally
@@ -1106,7 +1106,5 @@ namespace System.Diagnostics
                 s_processStartLock.ExitWriteLock();
             }
         }
-
-        private static string GetErrorMessage(int error) => Interop.Sys.StrError(error);
     }
 }
