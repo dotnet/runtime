@@ -240,7 +240,7 @@
     <MakeDir Directories="$(WasmCachePath)" />
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
-    <EmccCompile SourceFiles="@(_WasmSourceFileToCompile)" Arguments='"@$(_EmccDefaultFlagsRsp)" $(EmccVerbose) "@$(_EmccCompileRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <EmccCompile SourceFiles="@(_WasmSourceFileToCompile)" Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
   </Target>
 
   <Target Name="_WasmLinkDotNet">
