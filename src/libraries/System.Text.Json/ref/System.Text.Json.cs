@@ -832,6 +832,12 @@ namespace System.Text.Json.Serialization
         public JsonPropertyNameAttribute(string name) { }
         public string Name { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false)]
+    public sealed partial class JsonPropertyOrderAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonPropertyOrderAttribute(int order) { }
+        public int Order { get { throw null; } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=true)]
     public sealed partial class JsonSerializableAttribute : System.Text.Json.Serialization.JsonAttribute
     {

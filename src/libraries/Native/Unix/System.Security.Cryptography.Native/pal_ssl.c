@@ -5,7 +5,6 @@
 #include "openssl.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_rsa.h"
-#include "pal_rsa.h"
 #include "pal_x509.h"
 
 #include <assert.h>
@@ -689,7 +688,7 @@ static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
 
     if (rsa != NULL)
     {
-        if (CryptoNative_EvpPkeySetRsa(evp, rsa) == 1)
+        if (EVP_PKEY_set1_RSA(evp, rsa) == 1)
         {
             rsa = NULL;
         }
