@@ -218,6 +218,7 @@
       <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
       <_EmccCFlags Include="-DCORE_BINDINGS" />
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
+      <_EmccCFlags Include="-emit-llvm" />
 
       <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
       <_EmccCFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
