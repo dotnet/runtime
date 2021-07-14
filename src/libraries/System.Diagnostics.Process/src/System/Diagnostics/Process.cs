@@ -1686,10 +1686,10 @@ namespace System.Diagnostics
             }
         }
 
-        private static Win32Exception CreateExceptionForFailedToStartFileDirectory(string nativeErrorMessage, int errorCode, string fileName, string? workingDirectory)
+        private static Win32Exception CreateExceptionForErrorStartingProcess(string errorMessage, int errorCode, string fileName, string? workingDirectory)
         {
             string directoryForException = string.IsNullOrEmpty(workingDirectory) ? Directory.GetCurrentDirectory() : workingDirectory;
-            string msg = SR.Format(SR.FailedToStartFileDirectory, nativeErrorMessage, fileName, directoryForException);
+            string msg = SR.Format(SR.ErrorStartingProcess, fileName, directoryForException, errorMessage);
             return new Win32Exception(errorCode, msg);
         }
 

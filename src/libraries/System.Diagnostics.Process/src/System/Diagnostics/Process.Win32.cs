@@ -95,7 +95,7 @@ namespace System.Diagnostics
                                 ? SR.InvalidApplication
                                 : GetErrorMessage(errorCode);
 
-                            throw CreateExceptionForFailedToStartFileDirectory(nativeErrorMessage, errorCode, startInfo.FileName, startInfo.WorkingDirectory);
+                            throw CreateExceptionForErrorStartingProcess(nativeErrorMessage, errorCode, startInfo.FileName, startInfo.WorkingDirectory);
                     }
                 }
 

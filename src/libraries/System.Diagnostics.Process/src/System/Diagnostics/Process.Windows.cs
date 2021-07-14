@@ -623,7 +623,7 @@ namespace System.Diagnostics
                             ? SR.InvalidApplication
                             : GetErrorMessage(errorCode);
 
-                        throw CreateExceptionForFailedToStartFileDirectory(nativeErrorMessage, errorCode, startInfo.FileName, workingDirectory);
+                        throw CreateExceptionForErrorStartingProcess(nativeErrorMessage, errorCode, startInfo.FileName, workingDirectory);
                     }
                 }
                 finally

@@ -409,8 +409,6 @@ namespace System.Diagnostics
                                   startInfo.RedirectStandardOutput &&
                                   startInfo.RedirectStandardError);
 
-            string? originalFilename = startInfo.FileName;
-
             if (startInfo.UseShellExecute)
             {
                 string verb = startInfo.Verb;
@@ -431,8 +429,8 @@ namespace System.Diagnostics
                 {
                     argv = ParseArgv(startInfo);
 
-                    isExecuting = ForkAndExecProcess(originalFilename, filename, argv, envp, cwd,
-                        startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                    isExecuting = ForkAndExecProcess(
+                        startInfo, filename, argv, envp, cwd,
                         setCredentials, userId, groupId, groups,
                         out stdinFd, out stdoutFd, out stderrFd, usesTerminal,
                         throwOnNoExec: false); // return false instead of throwing on ENOEXEC
@@ -444,8 +442,8 @@ namespace System.Diagnostics
                     filename = GetPathToOpenFile();
                     argv = ParseArgv(startInfo, filename, ignoreArguments: true);
 
-                    ForkAndExecProcess(originalFilename, filename, argv, envp, cwd,
-                        startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                    ForkAndExecProcess(
+                        startInfo, filename, argv, envp, cwd,
                         setCredentials, userId, groupId, groups,
                         out stdinFd, out stdoutFd, out stderrFd, usesTerminal);
                 }
@@ -459,8 +457,8 @@ namespace System.Diagnostics
                     throw new Win32Exception(SR.DirectoryNotValidAsInput);
                 }
 
-                ForkAndExecProcess(originalFilename, filename, argv, envp, cwd,
-                    startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                ForkAndExecProcess(
+                    startInfo, filename, argv, envp, cwd,
                     setCredentials, userId, groupId, groups,
                     out stdinFd, out stdoutFd, out stderrFd, usesTerminal);
             }
@@ -493,17 +491,16 @@ namespace System.Diagnostics
         }
 
         private bool ForkAndExecProcess(
-            string originalFilename,
-            string? filename, string[] argv, string[] envp, string? cwd,
-            bool redirectStdin, bool redirectStdout, bool redirectStderr,
-            bool setCredentials, uint userId, uint groupId, uint[]? groups,
+            ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
+            string[] envp, string? cwd, bool setCredentials, uint userId,
+            uint groupId, uint[]? groups,
             out int stdinFd, out int stdoutFd, out int stderrFd,
             bool usesTerminal, bool throwOnNoExec = true)
         {
-            if (string.IsNullOrEmpty(filename))
+            if (string.IsNullOrEmpty(resolvedFilename))
             {
                 int errno = Interop.Error.ENOENT.Info().RawErrno;
-                throw CreateExceptionForFailedToStartFileDirectory(GetErrorMessage(errno), errno, originalFilename, cwd);
+                throw CreateExceptionForErrorStartingProcess(GetErrorMessage(errno), errno, startInfo.FileName, cwd);
             }
 
             // Lock to avoid races with OnSigChild
@@ -524,11 +521,10 @@ namespace System.Diagnostics
                 // is used to fork/execve as executing managed code in a forked process is not safe (only
                 // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
                 int errno = Interop.Sys.ForkAndExecProcess(
-                    filename, argv, envp, cwd,
-                    redirectStdin, redirectStdout, redirectStderr,
+                    resolvedFilename, argv, envp, cwd,
+                    startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
                     setCredentials, userId, groupId, groups,
-                    out childPid,
-                    out stdinFd, out stdoutFd, out stderrFd);
+                    out childPid, out stdinFd, out stdoutFd, out stderrFd);
 
                 if (errno == 0)
                 {
@@ -551,7 +547,7 @@ namespace System.Diagnostics
                         return false;
                     }
 
-                    throw CreateExceptionForFailedToStartFileDirectory(GetErrorMessage(errno), errno, filename, cwd);
+                    throw CreateExceptionForErrorStartingProcess(GetErrorMessage(errno), errno, resolvedFilename, cwd);
                 }
             }
             finally
