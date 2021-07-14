@@ -330,7 +330,7 @@
     <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
       <ChromiumRevision>768983</ChromiumRevision>
       <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chrome-win.zip</ChromiumUrl>
-      <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chromedriver_win32.zip</SeleniumUrl>
+      <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chromedriver_win32.zip</ChromeDriverUrl>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
