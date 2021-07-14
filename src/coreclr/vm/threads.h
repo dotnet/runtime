@@ -4660,7 +4660,7 @@ private:
 public:
     static void StaticInitialize();
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
     static bool AreCetShadowStacksEnabled()
     {
         LIMITED_METHOD_CONTRACT;

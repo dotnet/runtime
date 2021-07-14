@@ -4136,7 +4136,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
 #if !defined(DISABLE_THREADSUSPEND) && defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
         DWORD dwSwitchCount = 0;
     RetrySuspension:
-#endif !DISABLE_THREADSUSPEND && FEATURE_HIJACK && !TARGET_UNIX
+#endif // !DISABLE_THREADSUSPEND && FEATURE_HIJACK && !TARGET_UNIX
 
         SuspendThreadResult str = STR_Success;
         if (!UseContextBasedThreadRedirection())
@@ -4182,7 +4182,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
                     }
                 }
             }
-#endif !DISABLE_THREADSUSPEND && FEATURE_HIJACK && !TARGET_UNIX
+#endif // !DISABLE_THREADSUSPEND && FEATURE_HIJACK && !TARGET_UNIX
 
             // Remember that this thread will be running to a safe point
             FastInterlockIncrement(&m_DebugWillSyncCount);
