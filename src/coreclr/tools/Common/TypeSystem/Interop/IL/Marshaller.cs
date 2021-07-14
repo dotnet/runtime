@@ -1483,8 +1483,12 @@ namespace Internal.TypeSystem.Interop
 
         internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
         {
+#if READYTORUN
+            throw new NotSupportedException();
+#else
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+#endif
         }
 
         protected override void TransformManagedToNative(ILCodeStream codeStream)
@@ -1536,12 +1540,16 @@ namespace Internal.TypeSystem.Interop
             }
             else
             {
+#if READYTORUN
+                throw new NotSupportedException();
+#else
                 var helper = Context.GetHelperEntryPoint("InteropHelpers", "StringToUnicodeBuffer");
                 LoadManagedValue(codeStream);
 
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
 
                 StoreNativeValue(codeStream);
+#endif
             }
         }
 
