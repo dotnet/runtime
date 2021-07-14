@@ -1605,8 +1605,12 @@ namespace Internal.TypeSystem.Interop
 
         internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
         {
+#if READYTORUN
+            throw new NotSupportedException();
+#else
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
                                 Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+#endif
         }
 
         protected override void TransformManagedToNative(ILCodeStream codeStream)
@@ -1760,6 +1764,7 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
+#if !READYTORUN
     class UTF8StringMarshaller : Marshaller
     {
         internal override bool CleanupRequired
@@ -1814,6 +1819,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLabel(lNullCheck);
         }
     }
+#endif
 
     class SafeHandleMarshaller : Marshaller
     {
