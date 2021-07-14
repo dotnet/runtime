@@ -64,6 +64,11 @@ namespace System.Text.Json.SourceGeneration
         public JsonNumberHandling? NumberHandling { get; init; }
 
         /// <summary>
+        /// The serialization order of the property.
+        /// </summary>
+        public int Order { get; init; }
+
+        /// <summary>
         /// Whether the property has the JsonIncludeAttribute. If so, non-public accessors can be used for (de)serialziation.
         /// </summary>
         public bool HasJsonInclude { get; init; }
