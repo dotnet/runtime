@@ -18,4 +18,16 @@
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.cs" />
   </ItemGroup>
+  <Target Name="_ExperimentalUpdateFileVersion"
+          AfterTargets="_InitializeAssemblyVersion">
+    <PropertyGroup>
+      <_FileVersionMaj>$(FileVersion.Split('.')[0])</_FileVersionMaj>
+      <_FileVersionMin>$(FileVersion.Split('.')[1])</_FileVersionMin>
+      <_FileVersionBld>$(FileVersion.Split('.')[2])</_FileVersionBld>
+      <_FileVersionRev>$(FileVersion.Split('.')[3])</_FileVersionRev>
+    </PropertyGroup>
+    <CreateProperty Value="$(_FileVersionMaj).$(_FileVersionMin).$([MSBuild]::Add($(_FileVersionBld), 100)).$(_FileVersionRev)">
+      <Output TaskParameter="Value" PropertyName="FileVersion" />
+    </CreateProperty>
+  </Target>
 </Project>

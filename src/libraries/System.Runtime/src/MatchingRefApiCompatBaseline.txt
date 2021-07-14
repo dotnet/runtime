@@ -24,25 +24,3 @@ CannotMakeMemberAbstract : Member 'public System.Boolean System.IO.FileSystemInf
 CannotMakeMemberAbstract : Member 'public System.String System.IO.FileSystemInfo.Name.get()' is abstract in the reference but is not abstract in the implementation.
 # C# generates backing fields for fixed buffers as public.
 TypesMustExist : Type 'System.IO.Enumeration.FileSystemEntry.<_fileNameBuffer>e__FixedBuffer' does not exist in the reference but it does exist in the implementation.
-# Experimental generic math feature
-CannotRemoveBaseTypeOrInterface : Type 'System.Byte' does not implement interface 'System.IBinaryInteger<System.Byte>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Char' does not implement interface 'System.IBinaryInteger<System.Char>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.DateOnly' does not implement interface 'System.IComparisonOperators<System.DateOnly, System.DateOnly>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.DateTime' does not implement interface 'System.IAdditionOperators<System.DateTime, System.TimeSpan, System.DateTime>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.DateTimeOffset' does not implement interface 'System.IAdditionOperators<System.DateTimeOffset, System.TimeSpan, System.DateTimeOffset>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Decimal' does not implement interface 'System.IMinMaxValue<System.Decimal>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Double' does not implement interface 'System.IBinaryFloatingPoint<System.Double>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Guid' does not implement interface 'System.IComparisonOperators<System.Guid, System.Guid>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Half' does not implement interface 'System.IBinaryFloatingPoint<System.Half>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Int16' does not implement interface 'System.IBinaryInteger<System.Int16>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Int32' does not implement interface 'System.IBinaryInteger<System.Int32>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Int64' does not implement interface 'System.IBinaryInteger<System.Int64>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.IntPtr' does not implement interface 'System.IBinaryInteger<System.IntPtr>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.SByte' does not implement interface 'System.IBinaryInteger<System.SByte>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Single' does not implement interface 'System.IBinaryFloatingPoint<System.Single>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.TimeOnly' does not implement interface 'System.IComparisonOperators<System.TimeOnly, System.TimeOnly>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.TimeSpan' does not implement interface 'System.IAdditionOperators<System.TimeSpan, System.TimeSpan, System.TimeSpan>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.UInt16' does not implement interface 'System.IBinaryInteger<System.UInt16>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.UInt32' does not implement interface 'System.IBinaryInteger<System.UInt32>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.UInt64' does not implement interface 'System.IBinaryInteger<System.UInt64>' in the reference but it does in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.UIntPtr' does not implement interface 'System.IBinaryInteger<System.UIntPtr>' in the reference but it does in the implementation.
