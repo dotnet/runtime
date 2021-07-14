@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
+    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'">true</SkipBuild>
     <GenerateInstallers>true</GenerateInstallers>
     <ArchiveName>dotnet-hostfxr-internal</ArchiveName>
     <InstallerName>dotnet-hostfxr</InstallerName>

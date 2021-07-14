@@ -2,7 +2,7 @@
   <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
-    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
+    <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'">true</SkipBuild>
     <PlatformPackageType>AppHostPack</PlatformPackageType>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <ArchiveName>dotnet-apphost-pack</ArchiveName>
@@ -21,12 +21,14 @@
 
   <ItemGroup>
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/apphost$(ExeSuffix)" />
-    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(LibSuffix)" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(StaticLibSuffix)" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/nethost.h" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/hostfxr.h" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/comhost.dll" />

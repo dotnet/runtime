@@ -11,7 +11,7 @@
 
   <!-- Packages opt-in to automatic RID-specific builds by placing a *.RID.props next to their project
        that defines the OfficialBuildRID item: all RIDs targeted by the package -->
-  <Import Project="$(MSBuildProjectDirectory)\*.rids.props" Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' or '$(RuntimeFlavor)' != 'Mono'"/>
+  <Import Project="$(MSBuildProjectDirectory)\*.rids.props" Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' or '$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'"/>
 
   <!-- create the "BuildRID" item which is the set of all supported RIDs, with metadata.
        We'll add a RID for the current platform even if it isn't in the officially supported set -->
