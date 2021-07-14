@@ -1045,8 +1045,8 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
 {
     // Record this loop in the table, if there's room.
 
-    assert(optLoopCount <= MAX_LOOP_NUM);
-    if (optLoopCount == MAX_LOOP_NUM)
+    assert(optLoopCount <= BasicBlock::MAX_LOOP_NUM);
+    if (optLoopCount == BasicBlock::MAX_LOOP_NUM)
     {
 #if COUNT_LOOPS
         loopOverflowThisMethod = true;
@@ -1065,7 +1065,7 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
     if (optLoopTable == nullptr)
     {
         assert(loopInd == 0);
-        optLoopTable = getAllocator(CMK_LoopOpt).allocate<LoopDsc>(MAX_LOOP_NUM);
+        optLoopTable = getAllocator(CMK_LoopOpt).allocate<LoopDsc>(BasicBlock::MAX_LOOP_NUM);
     }
     else
     {
@@ -2391,13 +2391,13 @@ void Compiler::optFindNaturalLoops()
                 loopExitCountTable.record(static_cast<unsigned>(search.GetExitCount()));
 
                 // Note that we continue to look for loops even if
-                // (optLoopCount == MAX_LOOP_NUM), in contrast to the !COUNT_LOOPS code below.
+                // (optLoopCount == BasicBlock::MAX_LOOP_NUM), in contrast to the !COUNT_LOOPS code below.
                 // This gives us a better count and stats. Hopefully it doesn't affect actual codegen.
                 CLANG_FORMAT_COMMENT_ANCHOR;
 
 #else  // COUNT_LOOPS
                 assert(recordedLoop);
-                if (optLoopCount == MAX_LOOP_NUM)
+                if (optLoopCount == BasicBlock::MAX_LOOP_NUM)
                 {
                     // We won't be able to record any more loops, so stop looking.
                     goto NO_MORE_LOOPS;
@@ -6588,7 +6588,7 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNToBoolMap* loo
         // their definition occurs.
         BasicBlock::loopNumber vnLoopNum = vnStore->LoopOfVN(vn);
 
-        if (vnLoopNum == MAX_LOOP_NUM)
+        if (vnLoopNum == BasicBlock::MAX_LOOP_NUM)
         {
             res = false;
         }
