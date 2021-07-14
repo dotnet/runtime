@@ -4279,7 +4279,7 @@ namespace System.Text.RegularExpressions
                                 Ldloc(_maxBacktrackPositionLocal!);
                                 Ldc(-1);
                                 BeqFar(_backtrack);
-                                Ldloc(_runtextposLocal);
+                                Ldloc(_runtextposLocal!);
                                 Ldloc(_maxBacktrackPositionLocal!);
                                 BleFar(_backtrack);
                                 // runtextpos = _maxBacktrackPosition;
@@ -4661,7 +4661,7 @@ namespace System.Text.RegularExpressions
                         using RentedLocalBuilder lenLocal = RentInt32Local();
                         using RentedLocalBuilder iLocal = RentInt32Local();
                         using RentedLocalBuilder tempMaxBacktrackPositionLocal = RentInt32Local();
-                        Ldloc(_runtextposLocal);
+                        Ldloc(_runtextposLocal!);
                         Stloc(tempMaxBacktrackPositionLocal);
 
                         if (!IsRightToLeft())
