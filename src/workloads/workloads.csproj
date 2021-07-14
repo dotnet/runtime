@@ -51,12 +51,12 @@
     <ItemGroup>
       <!-- Overrides for Visual Studio setup generation. If the workload definition IDs change,
            these must be updated. -->
-      <ComponentResources Include="microsoft-net-sdk-blazorwebassembly-aot" Title=".NET WebAssembly Build Tools"
+      <ComponentResources Include="wasm-tools" Title=".NET WebAssembly Build Tools"
                           Description="Build tools for WebAssembly ahead-of-time (AoT) compilation and native linking."/>
 
       <!-- Visual Studio components must be versioned. Build tasks will fall back to cobbling a version number from
            the manifest information unless it's overridden. -->
-      <ComponentVersions Include="microsoft-net-sdk-blazorwebassembly-aot" Version="$(FileVersion)" />
+      <ComponentVersions Include="wasm-tools" Version="$(FileVersion)" />
     </ItemGroup>
 
     <!-- BAR requires having version information in blobs -->
