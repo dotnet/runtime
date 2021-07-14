@@ -162,8 +162,7 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
-                IntPtr namePtr = NativeMemoryHelper.AllocStringUnicode(hashAlgorithmName);
-                try
+                fixed (char* namePtr = hashAlgorithmName)
                 {
                     switch (padding.Mode)
                     {
@@ -178,10 +177,6 @@ namespace System.Security.Cryptography
                         default:
                             throw new CryptographicException(SR.Cryptography_UnsupportedPaddingMode);
                     }
-                }
-                finally
-                {
-                    NativeMemoryHelper.Free(namePtr);
                 }
             }
         }

@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 namespace System.Diagnostics.Eventing.Reader
 {
     /// <summary>
-    /// A SafeHandle implementation over native memory allocated via <see cref="NativeMemoryHelper.Alloc"/>.
+    /// A SafeHandle implementation over native memory allocated via <see cref="NativeMemory.Alloc(nuint)"/>.
     /// </summary>
     internal sealed class NativeMemorySafeHandle : SafeHandle
     {
@@ -33,9 +33,9 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        protected override bool ReleaseHandle()
+        protected override unsafe bool ReleaseHandle()
         {
-            NativeMemoryHelper.Free(handle);
+            NativeMemory.Free((void*)(nint)handle);
             handle = IntPtr.Zero;
             return true;
         }

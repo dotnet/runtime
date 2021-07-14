@@ -18,7 +18,7 @@ using System.Threading;
 
 namespace Microsoft.Win32
 {
-    internal static partial class UnsafeNativeMethods
+    internal static unsafe partial class UnsafeNativeMethods
     {
         internal const string WEVTAPI = "wevtapi.dll";
 
@@ -474,7 +474,7 @@ namespace Microsoft.Win32
                             // int propertyId
                             [MarshalAs(UnmanagedType.I4)]EvtEventPropertyId propertyId,
                             int bufferSize,
-                            IntPtr bufferPtr,
+                            void* bufferPtr,
                             out int bufferUsed
                                             );
 
@@ -483,7 +483,7 @@ namespace Microsoft.Win32
                             EventLogHandle queryHandle,
                             [MarshalAs(UnmanagedType.I4)]EvtQueryPropertyId propertyId,
                             int bufferSize,
-                            IntPtr buffer,
+                            void* buffer,
                             ref int bufferRequired
                                             );
 
@@ -503,7 +503,7 @@ namespace Microsoft.Win32
                             [MarshalAs(UnmanagedType.I4)] EvtPublisherMetadataPropertyId propertyId,
                             int flags,
                             int publisherMetadataPropertyBufferSize,
-                            IntPtr publisherMetadataPropertyBuffer,
+                            void* publisherMetadataPropertyBuffer,
                             out int publisherMetadataPropertyBufferUsed
                                     );
 
@@ -522,7 +522,7 @@ namespace Microsoft.Win32
                             int arrayIndex,
                             int flags,
                             int propertyValueBufferSize,
-                            IntPtr propertyValueBuffer,
+                            void* propertyValueBuffer,
                             out int propertyValueBufferUsed
                                             );
 
@@ -546,7 +546,7 @@ namespace Microsoft.Win32
                             [MarshalAs(UnmanagedType.I4)]  EvtEventMetadataPropertyId propertyId,
                             int flags,
                             int eventMetadataPropertyBufferSize,
-                            IntPtr eventMetadataPropertyBuffer,
+                            void* eventMetadataPropertyBuffer,
                             out int eventMetadataPropertyBufferUsed
                                    );
 
@@ -608,7 +608,7 @@ namespace Microsoft.Win32
                             [MarshalAs(UnmanagedType.I4)]EvtChannelConfigPropertyId propertyId,
                             int flags,
                             int propertyValueBufferSize,
-                            IntPtr propertyValueBuffer,
+                            void* propertyValueBuffer,
                             out int propertyValueBufferUsed
                                    );
 
@@ -626,7 +626,7 @@ namespace Microsoft.Win32
                             EventLogHandle log,
                             [MarshalAs(UnmanagedType.I4)]EvtLogPropertyId propertyId,
                             int propertyValueBufferSize,
-                            IntPtr propertyValueBuffer,
+                            void* propertyValueBuffer,
                             out int propertyValueBufferUsed
                                     );
 
@@ -668,14 +668,14 @@ namespace Microsoft.Win32
 
         [DllImport(WEVTAPI, CallingConvention = CallingConvention.Winapi, SetLastError = true)]
         internal static extern bool EvtRender(
-                            EventLogHandle context,
-                            EventLogHandle eventHandle,
-                            EvtRenderFlags flags,
-                            int buffSize,
-                            [Out, MarshalAs(UnmanagedType.LPWStr)]StringBuilder buffer,
-                            out int buffUsed,
-                            out int propCount
-                                        );
+                    EventLogHandle context,
+                    EventLogHandle eventHandle,
+                    EvtRenderFlags flags,
+                    int buffSize,
+                    [Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder buffer,
+                    out int buffUsed,
+                    out int propCount
+                                );
 
         [DllImport(WEVTAPI, EntryPoint = "EvtRender", CallingConvention = CallingConvention.Winapi, SetLastError = true)]
         internal static extern bool EvtRender(
@@ -683,7 +683,7 @@ namespace Microsoft.Win32
                             EventLogHandle eventHandle,
                             EvtRenderFlags flags,
                             int buffSize,
-                            IntPtr buffer,
+                            void* buffer,
                             out int buffUsed,
                             out int propCount
                                         );
@@ -721,7 +721,7 @@ namespace Microsoft.Win32
                              IntPtr values,
                              [MarshalAs(UnmanagedType.I4)]EvtFormatMessageFlags flags,
                              int bufferSize,
-                             IntPtr buffer,
+                             void* buffer,
                              out int bufferUsed
                                         );
 

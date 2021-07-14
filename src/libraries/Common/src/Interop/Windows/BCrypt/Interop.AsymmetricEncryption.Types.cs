@@ -46,7 +46,7 @@ internal static partial class Interop
             /// <summary>
             ///     Null-terminated Unicode string that identifies the hashing algorithm used to create the padding.
             /// </summary>
-            internal IntPtr pszAlgId;
+            internal char* pszAlgId;
 
             /// <summary>
             ///     The size, in bytes, of the random salt to use for the padding.
