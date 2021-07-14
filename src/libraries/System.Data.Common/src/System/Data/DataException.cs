@@ -649,7 +649,7 @@ namespace System.Data
         public static Exception RangeArgument(int min, int max) => _Argument(SR.Format(SR.Range_Argument, (min).ToString(CultureInfo.InvariantCulture), (max).ToString(CultureInfo.InvariantCulture)));
         public static Exception NullRange() => _Data(SR.Range_NullRange);
         public static Exception NegativeMinimumCapacity() => _Argument(SR.RecordManager_MinimumCapacity);
-        public static Exception ProblematicChars(char charValue) => _Argument(SR.Format(SR.DataStorage_ProblematicChars, "0x" + ((ushort)charValue).ToString("X", CultureInfo.InvariantCulture)));
+        public static Exception ProblematicChars(char charValue) => _Argument(SR.Format(SR.DataStorage_ProblematicChars, $"0x{(ushort)charValue:X}"));
         public static Exception StorageSetFailed() => _Argument(SR.DataStorage_SetInvalidDataType);
 
 

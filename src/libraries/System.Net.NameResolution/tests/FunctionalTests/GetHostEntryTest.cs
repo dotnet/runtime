@@ -28,7 +28,9 @@ namespace System.Net.NameResolution.Tests
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
             PlatformDetection.IsNotOSX &&
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-            !PlatformDetection.IsiOS && !PlatformDetection.IstvOS && !PlatformDetection.IsMacCatalyst;
+            !PlatformDetection.IsiOS && !PlatformDetection.IstvOS && !PlatformDetection.IsMacCatalyst &&
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/55271")]
+            !PlatformDetection.IsSLES;
 
         [ConditionalTheory(nameof(GetHostEntryWorks))]
         [InlineData("")]

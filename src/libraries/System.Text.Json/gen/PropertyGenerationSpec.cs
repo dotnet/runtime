@@ -9,9 +9,6 @@ namespace System.Text.Json.SourceGeneration
     [DebuggerDisplay("Name={Name}, Type={TypeMetadata}")]
     internal sealed class PropertyGenerationSpec
     {
-        /// <summary>
-        /// The CLR name of the property.
-        /// </summary>
         public string ClrName { get; init; }
 
         /// <summary>
@@ -19,10 +16,21 @@ namespace System.Text.Json.SourceGeneration
         /// </summary>
         public bool IsProperty { get; init; }
 
+        public bool IsPublic { get; init; }
+
+        public bool IsVirtual { get; init; }
+
         /// <summary>
         /// The property name specified via JsonPropertyNameAttribute, if available.
         /// </summary>
         public string? JsonPropertyName { get; init; }
+
+        /// <summary>
+        /// The pre-determined JSON property name, accounting for <see cref="JsonNamingPolicy"/>
+        /// specified ahead-of-time via <see cref="JsonSourceGenerationOptionsAttribute"/>.
+        /// Only used in fast-path serialization logic.
+        /// </summary>
+        public string RuntimePropertyName { get; init; }
 
         /// <summary>
         /// Whether the property has a set method.

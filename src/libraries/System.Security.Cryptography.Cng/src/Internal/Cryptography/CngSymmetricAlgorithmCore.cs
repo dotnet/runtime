@@ -111,35 +111,35 @@ namespace Internal.Cryptography
 
         public ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV)
         {
-            return CreateCryptoTransform(rgbKey, rgbIV, encrypting: true, _outer.Padding, _outer.Mode);
+            return CreateCryptoTransform(rgbKey, rgbIV, encrypting: true, _outer.Padding, _outer.Mode, _outer.FeedbackSize);
         }
 
         public ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV)
         {
-            return CreateCryptoTransform(rgbKey, rgbIV, encrypting: false, _outer.Padding, _outer.Mode);
+            return CreateCryptoTransform(rgbKey, rgbIV, encrypting: false, _outer.Padding, _outer.Mode, _outer.FeedbackSize);
         }
 
         private ICryptoTransform CreateCryptoTransform(bool encrypting)
         {
             if (KeyInPlainText)
             {
-                return CreateCryptoTransform(_outer.BaseKey, _outer.IV, encrypting, _outer.Padding, _outer.Mode);
+                return CreateCryptoTransform(_outer.BaseKey, _outer.IV, encrypting, _outer.Padding, _outer.Mode, _outer.FeedbackSize);
             }
 
-            return CreatePersistedCryptoTransformCore(ProduceCngKey, _outer.IV, encrypting, _outer.Padding, _outer.Mode);
+            return CreatePersistedCryptoTransformCore(ProduceCngKey, _outer.IV, encrypting, _outer.Padding, _outer.Mode, _outer.FeedbackSize);
         }
 
-        public UniversalCryptoTransform CreateCryptoTransform(byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode)
+        public UniversalCryptoTransform CreateCryptoTransform(byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
         {
             if (KeyInPlainText)
             {
-                return CreateCryptoTransform(_outer.BaseKey, iv, encrypting, padding, mode);
+                return CreateCryptoTransform(_outer.BaseKey, iv, encrypting, padding, mode, feedbackSizeInBits);
             }
 
-            return CreatePersistedCryptoTransformCore(ProduceCngKey, iv, encrypting, padding, mode);
+            return CreatePersistedCryptoTransformCore(ProduceCngKey, iv, encrypting, padding, mode, feedbackSizeInBits);
         }
 
-        private UniversalCryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting, PaddingMode padding, CipherMode mode)
+        private UniversalCryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
         {
             if (rgbKey == null)
                 throw new ArgumentNullException(nameof(rgbKey));
@@ -162,19 +162,19 @@ namespace Internal.Cryptography
 
             key = _outer.PreprocessKey(key);
 
-            return CreateEphemeralCryptoTransformCore(key, iv, encrypting, padding, mode);
+            return CreateEphemeralCryptoTransformCore(key, iv, encrypting, padding, mode, feedbackSizeInBits);
         }
 
-        private UniversalCryptoTransform CreateEphemeralCryptoTransformCore(byte[] key, byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode)
+        private UniversalCryptoTransform CreateEphemeralCryptoTransformCore(byte[] key, byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
         {
             int blockSizeInBytes = _outer.BlockSize.BitSizeToByteSize();
-            SafeAlgorithmHandle algorithmModeHandle = _outer.GetEphemeralModeHandle(mode);
+            SafeAlgorithmHandle algorithmModeHandle = _outer.GetEphemeralModeHandle(mode, feedbackSizeInBits);
 
             BasicSymmetricCipher cipher = new BasicSymmetricCipherBCrypt(
                 algorithmModeHandle,
                 mode,
                 blockSizeInBytes,
-                _outer.GetPaddingSize(mode, _outer.FeedbackSize),
+                _outer.GetPaddingSize(mode, feedbackSizeInBits),
                 key,
                 ownsParentHandle: false,
                 iv,
@@ -183,20 +183,19 @@ namespace Internal.Cryptography
             return UniversalCryptoTransform.Create(padding, cipher, encrypting);
         }
 
-        private UniversalCryptoTransform CreatePersistedCryptoTransformCore(Func<CngKey> cngKeyFactory, byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode)
+        private UniversalCryptoTransform CreatePersistedCryptoTransformCore(Func<CngKey> cngKeyFactory, byte[]? iv, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
         {
             // note: iv is guaranteed to be cloned before this method, so no need to clone it again
 
             int blockSizeInBytes = _outer.BlockSize.BitSizeToByteSize();
-            int feedbackSizeInBytes = _outer.FeedbackSize;
             BasicSymmetricCipher cipher = new BasicSymmetricCipherNCrypt(
                 cngKeyFactory,
                 mode,
                 blockSizeInBytes,
                 iv,
                 encrypting,
-                feedbackSizeInBytes,
-                _outer.GetPaddingSize(mode, _outer.FeedbackSize));
+                feedbackSizeInBits,
+                _outer.GetPaddingSize(mode, feedbackSizeInBits));
             return UniversalCryptoTransform.Create(padding, cipher, encrypting);
         }
 
@@ -207,7 +206,7 @@ namespace Internal.Cryptography
             return CngKey.Open(_keyName!, _provider!, _optionOptions);
         }
 
-        private bool KeyInPlainText
+        public bool KeyInPlainText
         {
             get { return _keyName == null; }
         }

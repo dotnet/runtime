@@ -103,6 +103,8 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(password != null);
 
+            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
+
             if (contentType == X509ContentType.Pkcs7)
             {
                 throw new CryptographicException(
@@ -116,7 +118,7 @@ namespace Internal.Cryptography.Pal
                 // We ignore keyStorageFlags which is tracked in https://github.com/dotnet/runtime/issues/52434.
                 // The keys are always imported as ephemeral and never persisted. Exportability is ignored for
                 // the moment and it needs to be investigated how to map it to iOS keychain primitives.
-                return ImportPkcs12(rawData, password);
+                return ImportPkcs12(rawData, password, ephemeralSpecified);
             }
 
             SafeSecIdentityHandle identityHandle;

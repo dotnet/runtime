@@ -102,7 +102,8 @@ namespace System.Security.Cryptography
                 iv: null,
                 encrypting: false,
                 paddingMode,
-                CipherMode.ECB);
+                CipherMode.ECB,
+                feedbackSizeInBits: 0);
 
             using (transform)
             {
@@ -120,7 +121,8 @@ namespace System.Security.Cryptography
                 iv: null,
                 encrypting: true,
                 paddingMode,
-                CipherMode.ECB);
+                CipherMode.ECB,
+                feedbackSizeInBits: 0);
 
             using (transform)
             {
@@ -139,7 +141,8 @@ namespace System.Security.Cryptography
                 iv: iv.ToArray(),
                 encrypting: true,
                 paddingMode,
-                CipherMode.CBC);
+                CipherMode.CBC,
+                feedbackSizeInBits: 0);
 
             using (transform)
             {
@@ -158,11 +161,78 @@ namespace System.Security.Cryptography
                 iv: iv.ToArray(),
                 encrypting: false,
                 paddingMode,
-                CipherMode.CBC);
+                CipherMode.CBC,
+                feedbackSizeInBits: 0);
 
             using (transform)
             {
                 return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryDecryptCfbCore(
+            ReadOnlySpan<byte> ciphertext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            int feedbackSizeInBits,
+            out int bytesWritten)
+        {
+            ValidateCFBFeedbackSize(feedbackSizeInBits);
+
+            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
+                iv: iv.ToArray(),
+                encrypting: false,
+                paddingMode,
+                CipherMode.CFB,
+                feedbackSizeInBits);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(ciphertext, destination, out bytesWritten);
+            }
+        }
+
+        protected override bool TryEncryptCfbCore(
+            ReadOnlySpan<byte> plaintext,
+            ReadOnlySpan<byte> iv,
+            Span<byte> destination,
+            PaddingMode paddingMode,
+            int feedbackSizeInBits,
+            out int bytesWritten)
+        {
+            ValidateCFBFeedbackSize(feedbackSizeInBits);
+
+            UniversalCryptoTransform transform = _core.CreateCryptoTransform(
+                iv: iv.ToArray(),
+                encrypting: true,
+                paddingMode,
+                CipherMode.CFB,
+                feedbackSizeInBits);
+
+            using (transform)
+            {
+                return transform.TransformOneShot(plaintext, destination, out bytesWritten);
+            }
+        }
+
+        private void ValidateCFBFeedbackSize(int feedback)
+        {
+            if (_core.KeyInPlainText)
+            {
+                // CFB8 and CFB128 are valid for bcrypt keys.
+                if (feedback != 8 && feedback != 128)
+                {
+                    throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+                }
+            }
+            else
+            {
+                // only CFB8 is supported for ncrypt keys.
+                if (feedback != 8)
+                {
+                    throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedback, CipherMode.CFB));
+                }
             }
         }
 
@@ -184,11 +254,11 @@ namespace System.Security.Cryptography
             return this.GetPaddingSize(mode, feedbackSizeBits);
         }
 
-        SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle(CipherMode mode)
+        SafeAlgorithmHandle ICngSymmetricAlgorithm.GetEphemeralModeHandle(CipherMode mode, int feedbackSizeInBits)
         {
             try
             {
-                return AesBCryptModes.GetSharedHandle(mode, FeedbackSize / 8);
+                return AesBCryptModes.GetSharedHandle(mode, feedbackSizeInBits / 8);
             }
             catch (NotSupportedException)
             {

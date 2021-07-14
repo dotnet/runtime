@@ -354,7 +354,7 @@ namespace System.Xml.Schema
 #if DEBUG
         public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions)
         {
-            bb.Append("\"" + symbols.NameOf(positions[_pos].symbol) + "\"");
+            bb.Append($"\"{symbols.NameOf(positions[_pos].symbol)}\"");
         }
 #endif
     }
@@ -427,7 +427,7 @@ namespace System.Xml.Schema
 #if DEBUG
         public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions)
         {
-            bb.Append("[" + namespaceList.ToString() + "]");
+            bb.Append($"[{namespaceList}]");
         }
 #endif
     }
@@ -876,7 +876,7 @@ namespace System.Xml.Schema
 
         public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions) {
             LeftChild.Dump(bb, symbols, positions);
-            bb.Append("{" + Convert.ToString(min, NumberFormatInfo.InvariantInfo) + ", " + Convert.ToString(max, NumberFormatInfo.InvariantInfo) + "}");
+            bb.Append($"{{{Convert.ToString(min, NumberFormatInfo.InvariantInfo)}, {Convert.ToString(max, NumberFormatInfo.InvariantInfo)}}}");
         }
 
     }

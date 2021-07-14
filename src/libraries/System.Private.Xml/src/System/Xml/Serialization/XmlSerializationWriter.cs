@@ -1241,7 +1241,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    _w.WriteAttributeString("arrayType", Soap.Encoding, GetQualifiedName(typeName, typeNs) + "[" + arrayLength.ToString(CultureInfo.InvariantCulture) + "]");
+                    _w.WriteAttributeString("arrayType", Soap.Encoding, $"{GetQualifiedName(typeName, typeNs)}[{arrayLength}]");
                 }
                 for (int i = 0; i < arrayLength; i++)
                 {
@@ -2605,7 +2605,7 @@ namespace System.Xml.Serialization
                 int xmlnsMember = FindXmlnsIndex(mapping.Members!);
                 if (xmlnsMember >= 0)
                 {
-                    string source = "((" + typeof(System.Xml.Serialization.XmlSerializerNamespaces).FullName + ")p[" + xmlnsMember.ToString(CultureInfo.InvariantCulture) + "])";
+                    string source = $"(({typeof(System.Xml.Serialization.XmlSerializerNamespaces).FullName})p[{xmlnsMember}])";
 
                     Writer.Write("if (pLength > ");
                     Writer.Write(xmlnsMember.ToString(CultureInfo.InvariantCulture));
@@ -2623,7 +2623,7 @@ namespace System.Xml.Serialization
                     if (member.Attribute != null && !member.Ignore)
                     {
                         string index = i.ToString(CultureInfo.InvariantCulture);
-                        string source = "p[" + index + "]";
+                        string source = $"p[{index}]";
 
                         string? specifiedSource = null;
                         int specifiedPosition = 0;
@@ -2634,7 +2634,7 @@ namespace System.Xml.Serialization
                             {
                                 if (mapping.Members[j].Name == memberNameSpecified)
                                 {
-                                    specifiedSource = "((bool) p[" + j.ToString(CultureInfo.InvariantCulture) + "])";
+                                    specifiedSource = $"((bool) p[{j}])";
                                     specifiedPosition = j;
                                     break;
                                 }
@@ -2688,7 +2688,7 @@ namespace System.Xml.Serialization
                     {
                         if (mapping.Members[j].Name == memberNameSpecified)
                         {
-                            specifiedSource = "((bool) p[" + j.ToString(CultureInfo.InvariantCulture) + "])";
+                            specifiedSource = $"((bool) p[{j}])";
                             specifiedPosition = j;
                             break;
                         }
@@ -2720,9 +2720,9 @@ namespace System.Xml.Serialization
                         if (mapping.Members[j].Name == member.ChoiceIdentifier.MemberName)
                         {
                             if (member.ChoiceIdentifier.Mapping!.TypeDesc!.UseReflection)
-                                enumSource = "p[" + j.ToString(CultureInfo.InvariantCulture) + "]";
+                                enumSource = $"p[{j}]";
                             else
-                                enumSource = "((" + mapping.Members[j].TypeDesc!.CSharpName + ")p[" + j.ToString(CultureInfo.InvariantCulture) + "]" + ")";
+                                enumSource = $"(({mapping.Members[j].TypeDesc!.CSharpName })p[{j}])";
                             break;
                         }
                     }
@@ -4427,12 +4427,12 @@ namespace System.Xml.Serialization
                     continue;
                 }
                 int colon = xmlName.LastIndexOf(':');
-                string? choiceNs = colon < 0 ? choiceMapping.Namespace : xmlName.Substring(0, colon);
-                string choiceName = colon < 0 ? xmlName : xmlName.Substring(colon + 1);
+                ReadOnlySpan<char> choiceNs = colon < 0 ? choiceMapping.Namespace : xmlName.AsSpan(0, colon);
+                ReadOnlySpan<char> choiceName = colon < 0 ? xmlName : xmlName.AsSpan(colon + 1);
 
-                if (element.Name == choiceName)
+                if (choiceName.SequenceEqual(element.Name))
                 {
-                    if ((element.Form == XmlSchemaForm.Unqualified && string.IsNullOrEmpty(choiceNs)) || element.Namespace == choiceNs)
+                    if ((element.Form == XmlSchemaForm.Unqualified && choiceNs.IsEmpty) || choiceNs.SequenceEqual(element.Namespace))
                     {
                         if (useReflection)
                             enumValue = choiceMapping.Constants[i].Value.ToString(CultureInfo.InvariantCulture);
