@@ -39,11 +39,11 @@ namespace System.Speech.Internal
             {
                 if (_bufferSize == 0)
                 {
-                    SetHandle(NativeMemoryHelper.Alloc(size));
+                    SetHandle((nint)NativeMemory.Alloc((uint)size));
                 }
                 else
                 {
-                    SetHandle(NativeMemoryHelper.Realloc(handle, size));
+                    SetHandle((nint)NativeMemory.Realloc((void*)(nint)handle, (uint)size));
                 }
 
                 GC.AddMemoryPressure(size - _bufferSize);
@@ -60,7 +60,7 @@ namespace System.Speech.Internal
         {
             get
             {
-                return handle == IntPtr.Zero;
+                return (nint)handle == 0;
             }
         }
 
@@ -73,7 +73,7 @@ namespace System.Speech.Internal
         /// </summary>
         protected override unsafe bool ReleaseHandle()
         {
-            if (handle != IntPtr.Zero)
+            if ((nint)handle != 0)
             {
                 // Reset the extra information given to the GC
                 if (_bufferSize > 0)
@@ -81,8 +81,8 @@ namespace System.Speech.Internal
                     GC.RemoveMemoryPressure(_bufferSize);
                     _bufferSize = 0;
                 }
-                
-                NativeMemoryHelper.Free(handle);
+
+                NativeMemory.Free((void*)(nint)handle);
                 handle = IntPtr.Zero;
                 return true;
             }
