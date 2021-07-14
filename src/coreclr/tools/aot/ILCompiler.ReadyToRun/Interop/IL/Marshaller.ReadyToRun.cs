@@ -25,12 +25,15 @@ namespace Internal.TypeSystem.Interop
                     return new BooleanMarshaller();
                 case MarshallerKind.AnsiString:
                     return new AnsiStringMarshaller();
+#if !READYTORUN
+                // UTF8 and Unicode Strings are not supported in R2R
                 case MarshallerKind.UTF8String:
                     return new UTF8StringMarshaller();
-                case MarshallerKind.SafeHandle:
-                    return new SafeHandleMarshaller();
                 case MarshallerKind.UnicodeString:
                     return new UnicodeStringMarshaller();
+#endif
+                case MarshallerKind.SafeHandle:
+                    return new SafeHandleMarshaller();
                 case MarshallerKind.VoidReturn:
                     return new VoidReturnMarshaller();
                 case MarshallerKind.FunctionPointer:
