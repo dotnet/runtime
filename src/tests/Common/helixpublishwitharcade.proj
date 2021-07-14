@@ -45,7 +45,8 @@
         IncludeDotNetCli=$(IncludeDotNetCli);
         DotNetCliRuntime=$(DotNetCliRuntime);
         DotNetCliPackageType=$(DotNetCliPackageType);
-        DotNetCliVersion=$(DotNetCliVersion)
+        DotNetCliVersion=$(DotNetCliVersion);
+        ForNode=$(ForNode)
       </_PropertiesToPass>
     </PropertyGroup>
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
