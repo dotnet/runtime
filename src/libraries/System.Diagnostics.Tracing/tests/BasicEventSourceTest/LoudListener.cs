@@ -18,7 +18,7 @@ namespace BasicEventSourceTests
 
         public LoudListener(EventSource eventSource)
         {
-            EnableEvents(eventSource, EventLevel.LogAlways, (EventKeywords)0xffffffff);
+            EnableEvents(eventSource, EventLevel.Verbose, (EventKeywords)0xffffffff);
         }
 
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
