@@ -63,11 +63,6 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Provides some interesting information about the PaperSource in String form.
         /// </summary>
-        public override string ToString()
-        {
-            return "[PaperSource " + SourceName
-                + " Kind=" + Kind.ToString()
-                + "]";
-        }
+        public override string ToString() => $"[PaperSource {SourceName} Kind={Kind}]";
     }
 }

@@ -91,7 +91,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="literalLength">The number of constant characters outside of interpolation expressions in the interpolated string.</param>
         /// <param name="formattedCount">The number of interpolation expressions in the interpolated string.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // becomes a constant when inputs are constant
-        private static int GetDefaultLength(int literalLength, int formattedCount) =>
+        internal static int GetDefaultLength(int literalLength, int formattedCount) =>
             Math.Max(MinimumArrayPoolLength, literalLength + (formattedCount * GuessedLengthPerHole));
 
         /// <summary>Gets the built <see cref="string"/>.</summary>

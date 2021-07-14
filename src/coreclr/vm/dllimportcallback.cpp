@@ -41,7 +41,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        m_crst.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
+        m_crst.Init(CrstUMEntryThunkFreeListLock, CRST_UNSAFE_ANYMODE);
     }
 
     UMEntryThunk *GetUMEntryThunk()

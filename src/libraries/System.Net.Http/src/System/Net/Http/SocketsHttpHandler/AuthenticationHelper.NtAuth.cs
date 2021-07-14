@@ -108,7 +108,7 @@ namespace System.Net.Http
 
                             if (!isProxyAuth && !authUri.IsDefaultPort)
                             {
-                                hostName = $"{hostName}:{authUri.Port}";
+                                hostName = string.Create(null, stackalloc char[128], $"{hostName}:{authUri.Port}");
                             }
                         }
 

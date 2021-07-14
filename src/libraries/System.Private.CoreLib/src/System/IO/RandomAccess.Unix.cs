@@ -3,7 +3,9 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO.Strategies;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -79,41 +81,116 @@ namespace System.IO
             long fileOffset, CancellationToken cancellationToken)
             => ScheduleSyncReadScatterAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
 
-        internal static unsafe int WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
+        internal static unsafe void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
         {
-            fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
+            while (!buffer.IsEmpty)
             {
-                // The Windows implementation uses WriteFile, which ignores the offset if the handle
-                // isn't seekable.  We do the same manually with PWrite vs Write, in order to enable
-                // the function to be used by FileStream for all the same situations.
-                int result = handle.CanSeek ?
-                    Interop.Sys.PWrite(handle, bufPtr, buffer.Length, fileOffset) :
-                    Interop.Sys.Write(handle, bufPtr, buffer.Length);
-                FileStreamHelpers.CheckFileCall(result, handle.Path);
-                return result;
+                fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))
+                {
+                    // The Windows implementation uses WriteFile, which ignores the offset if the handle
+                    // isn't seekable.  We do the same manually with PWrite vs Write, in order to enable
+                    // the function to be used by FileStream for all the same situations.
+                    int bytesWritten = handle.CanSeek ?
+                        Interop.Sys.PWrite(handle, bufPtr, GetNumberOfBytesToWrite(buffer.Length), fileOffset) :
+                        Interop.Sys.Write(handle, bufPtr, GetNumberOfBytesToWrite(buffer.Length));
+
+                    FileStreamHelpers.CheckFileCall(bytesWritten, handle.Path);
+                    if (bytesWritten == buffer.Length)
+                    {
+                        break;
+                    }
+
+                    // The write completed successfully but for fewer bytes than requested.
+                    // We need to try again for the remainder.
+                    buffer = buffer.Slice(bytesWritten);
+                    fileOffset += bytesWritten;
+                }
             }
         }
 
-        internal static unsafe long WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetNumberOfBytesToWrite(int byteCount)
         {
-            MemoryHandle[] handles = new MemoryHandle[buffers.Count];
-            Span<Interop.Sys.IOVector> vectors = buffers.Count <= IovStackThreshold ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffers.Count ];
+#if DEBUG
+            // In debug only, to assist with testing, simulate writing fewer than the requested number of bytes.
+            if (byteCount > 1 &&  // ensure we don't turn the read into a zero-byte read
+                byteCount < 512)  // avoid on larger buffers that might have a length used to meet an alignment requirement
+            {
+                byteCount /= 2;
+            }
+#endif
+            return byteCount;
+        }
 
-            long result;
+        internal static unsafe void WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
+        {
+            int buffersCount = buffers.Count;
+            if (buffersCount == 0)
+            {
+                return;
+            }
+
+            var handles = new MemoryHandle[buffersCount];
+            Span<Interop.Sys.IOVector> vectors = buffersCount <= IovStackThreshold ?
+                stackalloc Interop.Sys.IOVector[IovStackThreshold] :
+                new Interop.Sys.IOVector[buffersCount];
+
             try
             {
-                int buffersCount = buffers.Count;
-                for (int i = 0; i < buffersCount; i++)
+                int buffersOffset = 0, firstBufferOffset = 0;
+                while (true)
                 {
-                    ReadOnlyMemory<byte> buffer = buffers[i];
-                    MemoryHandle memoryHandle = buffer.Pin();
-                    vectors[i] = new Interop.Sys.IOVector { Base = (byte*)memoryHandle.Pointer, Count = (UIntPtr)buffer.Length };
-                    handles[i] = memoryHandle;
-                }
+                    long totalBytesToWrite = 0;
 
-                fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
-                {
-                    result = Interop.Sys.PWriteV(handle, pinnedVectors, buffers.Count, fileOffset);
+                    for (int i = buffersOffset; i < buffersCount; i++)
+                    {
+                        ReadOnlyMemory<byte> buffer = buffers[i];
+                        totalBytesToWrite += buffer.Length;
+
+                        MemoryHandle memoryHandle = buffer.Pin();
+                        vectors[i] = new Interop.Sys.IOVector { Base = firstBufferOffset + (byte*)memoryHandle.Pointer, Count = (UIntPtr)buffer.Length };
+                        handles[i] = memoryHandle;
+
+                        firstBufferOffset = 0;
+                    }
+
+                    if (totalBytesToWrite == 0)
+                    {
+                        break;
+                    }
+
+                    long bytesWritten;
+                    fixed (Interop.Sys.IOVector* pinnedVectors = &MemoryMarshal.GetReference(vectors))
+                    {
+                        bytesWritten = Interop.Sys.PWriteV(handle, pinnedVectors, buffersCount, fileOffset);
+                    }
+
+                    FileStreamHelpers.CheckFileCall(bytesWritten, handle.Path);
+                    if (bytesWritten == totalBytesToWrite)
+                    {
+                        break;
+                    }
+
+                    // The write completed successfully but for fewer bytes than requested.
+                    // We need to try again for the remainder.
+                    for (int i = 0; i < buffersCount; i++)
+                    {
+                        int n = buffers[i].Length;
+                        if (n <= bytesWritten)
+                        {
+                            buffersOffset++;
+                            bytesWritten -= n;
+                            if (bytesWritten == 0)
+                            {
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            firstBufferOffset = (int)(bytesWritten - n);
+                            break;
+                        }
+                    }
                 }
             }
             finally
@@ -123,14 +200,12 @@ namespace System.IO
                     memoryHandle.Dispose();
                 }
             }
-
-            return FileStreamHelpers.CheckFileCall(result, handle.Path);
         }
 
-        internal static ValueTask<int> WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        internal static ValueTask WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
             => ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
 
-        private static ValueTask<long> WriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
+        private static ValueTask WriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
             => ScheduleSyncWriteGatherAtOffsetAsync(handle, buffers, fileOffset, cancellationToken);
     }

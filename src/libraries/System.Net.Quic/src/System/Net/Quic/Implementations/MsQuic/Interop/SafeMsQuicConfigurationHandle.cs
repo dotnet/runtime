@@ -21,7 +21,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         public override bool IsInvalid => handle == IntPtr.Zero;
 
-        private SafeMsQuicConfigurationHandle()
+        public SafeMsQuicConfigurationHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         { }
 

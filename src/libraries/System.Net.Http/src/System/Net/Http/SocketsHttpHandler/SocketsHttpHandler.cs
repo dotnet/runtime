@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Diagnostics;
 
 namespace System.Net.Http
 {
@@ -448,6 +449,22 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Gets or sets the <see cref="DistributedContextPropagator"/> to use when propagating the distributed trace and context.
+        /// Use <see langword="null"/> to disable propagation.
+        /// Defaults to <see cref="DistributedContextPropagator.Current"/>.
+        /// </summary>
+        [CLSCompliant(false)]
+        public DistributedContextPropagator? ActivityHeadersPropagator
+        {
+            get => _settings._activityHeadersPropagator;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._activityHeadersPropagator = value;
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing && !_disposed)
@@ -476,6 +493,12 @@ namespace System.Net.Http
             else
             {
                 handler = new HttpAuthenticatedConnectionHandler(poolManager);
+            }
+
+            // DiagnosticsHandler is inserted before RedirectHandler so that trace propagation is done on redirects as well
+            if (DiagnosticsHandler.IsGloballyEnabled() && settings._activityHeadersPropagator is DistributedContextPropagator propagator)
+            {
+                handler = new DiagnosticsHandler(handler, propagator, settings._allowAutoRedirect);
             }
 
             if (settings._allowAutoRedirect)

@@ -7,9 +7,9 @@ using System.Collections.ObjectModel;
 
 namespace System.Diagnostics
 {
-    internal sealed class LegacyPropagator : TextMapPropagator
+    internal sealed class LegacyPropagator : DistributedContextPropagator
     {
-        internal static TextMapPropagator Instance { get; } = new LegacyPropagator();
+        internal static DistributedContextPropagator Instance { get; } = new LegacyPropagator();
 
         public override IReadOnlyCollection<string> Fields { get; } = new ReadOnlyCollection<string>(new[] { TraceParent, RequestId, TraceState, Baggage, CorrelationContext });
 

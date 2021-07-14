@@ -185,12 +185,12 @@ internal static class Utils
     }
 
 #if NETCOREAPP
-    public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool> predicate)
+    public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool>? predicate=null)
     {
         string[] files = Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories);
         foreach (string file in files)
         {
-            if (!predicate(file))
+            if (predicate != null && !predicate(file))
                 continue;
 
             string relativePath = Path.GetRelativePath(sourceDir, file);

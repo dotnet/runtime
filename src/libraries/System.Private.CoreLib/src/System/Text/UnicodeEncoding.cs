@@ -1740,9 +1740,7 @@ namespace System.Text
             if (decoder != null)
             {
                 Debug.Assert(!decoder.MustFlush || ((lastChar == (char)0) && (lastByte == -1)),
-                    "[UnicodeEncoding.GetChars] Expected no left over chars or bytes if flushing"
-                    // + " " + ((int)lastChar).ToString("X4") + " " + lastByte.ToString("X2")
-                    );
+                    "[UnicodeEncoding.GetChars] Expected no left over chars or bytes if flushing");
 
                 decoder._bytesUsed = (int)(bytes - byteStart);
                 decoder.lastChar = lastChar;

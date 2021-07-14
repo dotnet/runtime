@@ -295,12 +295,12 @@ namespace System
             => BitOperations.PopCount((ulong)value);
 
         [RequiresPreviewFeatures]
-        static long IBinaryInteger<long>.RotateLeft(long value, long rotateAmount)
-            => (long)BitOperations.RotateLeft((ulong)value, (int)rotateAmount);
+        static long IBinaryInteger<long>.RotateLeft(long value, int rotateAmount)
+            => (long)BitOperations.RotateLeft((ulong)value, rotateAmount);
 
         [RequiresPreviewFeatures]
-        static long IBinaryInteger<long>.RotateRight(long value, long rotateAmount)
-            => (long)BitOperations.RotateRight((ulong)value, (int)rotateAmount);
+        static long IBinaryInteger<long>.RotateRight(long value, int rotateAmount)
+            => (long)BitOperations.RotateRight((ulong)value, rotateAmount);
 
         [RequiresPreviewFeatures]
         static long IBinaryInteger<long>.TrailingZeroCount(long value)
@@ -370,11 +370,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static long IDecrementOperators<long>.operator --(long value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked long IDecrementOperators<long>.operator --(long value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -406,11 +406,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static long IIncrementOperators<long>.operator ++(long value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked long IIncrementOperators<long>.operator ++(long value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue

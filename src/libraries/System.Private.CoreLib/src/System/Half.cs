@@ -802,7 +802,7 @@ namespace System
         static Half IDecrementOperators<Half>.operator --(Half value)
         {
             var tmp = (float)value;
-            tmp--;
+            --tmp;
             return (Half)tmp;
         }
 
@@ -810,7 +810,7 @@ namespace System
         // static checked Half IDecrementOperators<Half>.operator --(Half value)
         // {
         //     var tmp = (float)value;
-        //     tmp--;
+        //     --tmp;
         //     return (Half)tmp;
         // }
 
@@ -1132,7 +1132,7 @@ namespace System
         static Half IIncrementOperators<Half>.operator ++(Half value)
         {
             var tmp = (float)value;
-            tmp++;
+            ++tmp;
             return (Half)tmp;
         }
 
@@ -1140,7 +1140,7 @@ namespace System
         // static checked Half IIncrementOperators<Half>.operator ++(Half value)
         // {
         //     var tmp = (float)value;
-        //     tmp++;
+        //     ++tmp;
         //     return (Half)tmp;
         // }
 

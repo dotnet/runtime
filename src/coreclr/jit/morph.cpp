@@ -12071,10 +12071,11 @@ DONE_MORPHING_CHILDREN:
                 tree->AsOp()->gtOp1 = op1;
             }
 
-            /* If we are storing a small type, we might be able to omit a cast */
-            if ((effectiveOp1->gtOper == GT_IND) && varTypeIsSmall(effectiveOp1->TypeGet()))
+            // If we are storing a small type, we might be able to omit a cast.
+            if (effectiveOp1->OperIs(GT_IND) && varTypeIsSmall(effectiveOp1))
             {
-                if (!gtIsActiveCSE_Candidate(op2) && (op2->gtOper == GT_CAST) && !op2->gtOverflow())
+                if (!gtIsActiveCSE_Candidate(op2) && op2->OperIs(GT_CAST) &&
+                    varTypeIsIntegral(op2->AsCast()->CastOp()) && !op2->gtOverflow())
                 {
                     var_types castType = op2->CastToType();
 
@@ -12082,28 +12083,13 @@ DONE_MORPHING_CHILDREN:
                     // castType is larger or the same as op1's type
                     // then we can discard the cast.
 
-                    if (varTypeIsSmall(castType) && (genTypeSize(castType) >= genTypeSize(effectiveOp1->TypeGet())))
+                    if (varTypeIsSmall(castType) && (genTypeSize(castType) >= genTypeSize(effectiveOp1)))
                     {
                         tree->AsOp()->gtOp2 = op2 = op2->AsCast()->CastOp();
                     }
                 }
-                else if (op2->OperIsCompare() && varTypeIsByte(effectiveOp1->TypeGet()))
-                {
-                    /* We don't need to zero extend the setcc instruction */
-                    op2->gtType = TYP_BYTE;
-                }
             }
-            // If we introduced a CSE we may need to undo the optimization above
-            // (i.e. " op2->gtType = TYP_BYTE;" which depends upon op1 being a GT_IND of a byte type)
-            // When we introduce the CSE we remove the GT_IND and subsitute a GT_LCL_VAR in it place.
-            else if (op2->OperIsCompare() && (op2->gtType == TYP_BYTE) && (op1->gtOper == GT_LCL_VAR))
-            {
-                unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
-                LclVarDsc* varDsc = &lvaTable[varNum];
 
-                /* We again need to zero extend the setcc instruction */
-                op2->gtType = varDsc->TypeGet();
-            }
             fgAssignSetVarDef(tree);
 
             /* We can't CSE the LHS of an assignment */
@@ -12345,9 +12331,6 @@ DONE_MORPHING_CHILDREN:
                         gtReverseCond(op1);
                     }
 
-                    /* Propagate gtType of tree into op1 in case it is TYP_BYTE for setcc optimization */
-                    op1->gtType = tree->gtType;
-
                     noway_assert((op1->gtFlags & GTF_RELOP_JMP_USED) == 0);
                     op1->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
 
@@ -12482,44 +12465,54 @@ DONE_MORPHING_CHILDREN:
 
             noway_assert(op1->TypeGet() == TYP_LONG && op1->OperGet() == GT_AND);
 
-            /* Is the result of the mask effectively an INT ? */
-
-            GenTree* andMask;
-            andMask = op1->AsOp()->gtOp2;
-            if (andMask->gtOper != GT_CNS_NATIVELONG)
+            // The transform below cannot preserve VNs.
+            if (fgGlobalMorph)
             {
-                goto COMPARE;
+                // Is the result of the mask effectively an INT ?
+
+                GenTree* andMask = op1->AsOp()->gtOp2;
+
+                if (andMask->gtOper != GT_CNS_NATIVELONG)
+                {
+                    goto COMPARE;
+                }
+                if ((andMask->AsIntConCommon()->LngValue() >> 32) != 0)
+                {
+                    goto COMPARE;
+                }
+
+                // Now we narrow AsOp()->gtOp1 of AND to int.
+                if (optNarrowTree(op1->AsOp()->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), false))
+                {
+                    optNarrowTree(op1->AsOp()->gtGetOp1(), TYP_LONG, TYP_INT, ValueNumPair(), true);
+                }
+                else
+                {
+                    op1->AsOp()->gtOp1 = gtNewCastNode(TYP_INT, op1->AsOp()->gtGetOp1(), false, TYP_INT);
+                }
+
+                // now replace the mask node (AsOp()->gtOp2 of AND node).
+
+                noway_assert(andMask == op1->AsOp()->gtOp2);
+
+                ival1 = (int)andMask->AsIntConCommon()->LngValue();
+                andMask->SetOper(GT_CNS_INT);
+                andMask->gtType                = TYP_INT;
+                andMask->AsIntCon()->gtIconVal = ival1;
+
+                // now change the type of the AND node.
+
+                op1->gtType = TYP_INT;
+
+                // finally we replace the comparand.
+
+                ival2 = (int)cns2->AsIntConCommon()->LngValue();
+                cns2->SetOper(GT_CNS_INT);
+                cns2->gtType = TYP_INT;
+
+                noway_assert(cns2 == op2);
+                cns2->AsIntCon()->gtIconVal = ival2;
             }
-            if ((andMask->AsIntConCommon()->LngValue() >> 32) != 0)
-            {
-                goto COMPARE;
-            }
-
-            /* Now we know that we can cast AsOp()->gtOp1 of AND to int */
-
-            op1->AsOp()->gtOp1 = gtNewCastNode(TYP_INT, op1->AsOp()->gtOp1, false, TYP_INT);
-
-            /* now replace the mask node (AsOp()->gtOp2 of AND node) */
-
-            noway_assert(andMask == op1->AsOp()->gtOp2);
-
-            ival1 = (int)andMask->AsIntConCommon()->LngValue();
-            andMask->SetOper(GT_CNS_INT);
-            andMask->gtType                = TYP_INT;
-            andMask->AsIntCon()->gtIconVal = ival1;
-
-            /* now change the type of the AND node */
-
-            op1->gtType = TYP_INT;
-
-            /* finally we replace the comparand */
-
-            ival2 = (int)cns2->AsIntConCommon()->LngValue();
-            cns2->SetOper(GT_CNS_INT);
-            cns2->gtType = TYP_INT;
-
-            noway_assert(cns2 == op2);
-            cns2->AsIntCon()->gtIconVal = ival2;
 
             goto COMPARE;
 

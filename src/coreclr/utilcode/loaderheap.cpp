@@ -695,14 +695,20 @@ size_t AllocMem_TotalSize(size_t dwRequestedSize, UnlockedLoaderHeap *pHeap);
 struct LoaderHeapFreeBlock
 {
     public:
-        LoaderHeapFreeBlock   *m_pNext;    // Pointer to next block on free list
-        size_t                 m_dwSize;   // Total size of this block (including this header)
-//! Try not to grow the size of this structure. It places a minimum size on LoaderHeap allocations.
+        LoaderHeapFreeBlock   *m_pNext;         // Pointer to next block on free list
+        size_t                 m_dwSize;        // Total size of this block
+        void                  *m_pBlockAddress; // Virtual address of the block
 
+#ifndef DACCESS_COMPILE
         static void InsertFreeBlock(LoaderHeapFreeBlock **ppHead, void *pMem, size_t dwTotalSize, UnlockedLoaderHeap *pHeap)
         {
             STATIC_CONTRACT_NOTHROW;
             STATIC_CONTRACT_GC_NOTRIGGER;
+
+            // The new "nothrow" below failure is handled in a non-fault way, so
+            // make sure that callers with FORBID_FAULT can call this method without
+            // firing the contract violation assert.
+            PERMANENT_CONTRACT_VIOLATION(FaultViolation, ReasonContractInfrastructure);
 
             LOADER_HEAP_BEGIN_TRAP_FAULT
 
@@ -722,19 +728,30 @@ struct LoaderHeapFreeBlock
             }
 #endif
 
-            INDEBUG(memset(pMem, 0xcc, dwTotalSize);)
-            LoaderHeapFreeBlock *pNewBlock = (LoaderHeapFreeBlock*)pMem;
-            pNewBlock->m_pNext  = *ppHead;
-            pNewBlock->m_dwSize = dwTotalSize;
-            *ppHead = pNewBlock;
+            void* pMemRW = pMem;
+            ExecutableWriterHolder<void> memWriterHolder;
+            if (pHeap->IsExecutable())
+            {
+                memWriterHolder = ExecutableWriterHolder<void>(pMem, dwTotalSize);
+                pMemRW = memWriterHolder.GetRW();
+            }
 
-            MergeBlock(pNewBlock, pHeap);
+            INDEBUG(memset(pMemRW, 0xcc, dwTotalSize);)
+            LoaderHeapFreeBlock *pNewBlock = new (nothrow) LoaderHeapFreeBlock;
+            // If we fail allocating the LoaderHeapFreeBlock, ignore the failure and don't insert the free block at all.
+            if (pNewBlock != NULL)
+            {
+                pNewBlock->m_pNext  = *ppHead;
+                pNewBlock->m_dwSize = dwTotalSize;
+                pNewBlock->m_pBlockAddress = pMem;
+                *ppHead = pNewBlock;
+                MergeBlock(pNewBlock, pHeap);
+            }
 
             LOADER_HEAP_END_TRAP_FAULT
         }
 
-
-        static void *AllocFromFreeList(LoaderHeapFreeBlock **ppHead, size_t dwSize, BOOL fRemoveFromFreeList, UnlockedLoaderHeap *pHeap)
+        static void *AllocFromFreeList(LoaderHeapFreeBlock **ppHead, size_t dwSize, UnlockedLoaderHeap *pHeap)
         {
             STATIC_CONTRACT_NOTHROW;
             STATIC_CONTRACT_GC_NOTRIGGER;
@@ -751,23 +768,19 @@ struct LoaderHeapFreeBlock
                 size_t dwCurSize = pCur->m_dwSize;
                 if (dwCurSize == dwSize)
                 {
-                    pResult = pCur;
+                    pResult = pCur->m_pBlockAddress;
                     // Exact match. Hooray!
-                    if (fRemoveFromFreeList)
-                    {
-                        *ppWalk = pCur->m_pNext;
-                    }
+                    *ppWalk = pCur->m_pNext;
+                    delete pCur;
                     break;
                 }
                 else if (dwCurSize > dwSize && (dwCurSize - dwSize) >= AllocMem_TotalSize(1, pHeap))
                 {
                     // Partial match. Ok...
-                    pResult = pCur;
-                    if (fRemoveFromFreeList)
-                    {
-                        *ppWalk = pCur->m_pNext;
-                        InsertFreeBlock(ppWalk, ((BYTE*)pCur) + dwSize, dwCurSize - dwSize, pHeap );
-                    }
+                    pResult = pCur->m_pBlockAddress;
+                    *ppWalk = pCur->m_pNext;
+                    InsertFreeBlock(ppWalk, ((BYTE*)pCur->m_pBlockAddress) + dwSize, dwCurSize - dwSize, pHeap );
+                    delete pCur;
                     break;
                 }
 
@@ -777,18 +790,21 @@ struct LoaderHeapFreeBlock
                 ppWalk = &( pCur->m_pNext );
             }
 
-            if (pResult && fRemoveFromFreeList)
+            if (pResult)
             {
+                void *pResultRW = pResult;
+                ExecutableWriterHolder<void> resultWriterHolder;
+                if (pHeap->IsExecutable())
+                {
+                    resultWriterHolder = ExecutableWriterHolder<void>(pResult, dwSize);
+                    pResultRW = resultWriterHolder.GetRW();
+                }
                 // Callers of loaderheap assume allocated memory is zero-inited so we must preserve this invariant!
-                memset(pResult, 0, dwSize);
+                memset(pResultRW, 0, dwSize);
             }
             LOADER_HEAP_END_TRAP_FAULT
             return pResult;
-
-
-
         }
-
 
     private:
         // Try to merge pFreeBlock with its immediate successor. Return TRUE if a merge happened. FALSE if no merge happened.
@@ -803,7 +819,7 @@ struct LoaderHeapFreeBlock
             LoaderHeapFreeBlock *pNextBlock = pFreeBlock->m_pNext;
             size_t               dwSize     = pFreeBlock->m_dwSize;
 
-            if (pNextBlock == NULL || ((BYTE*)pNextBlock) != (((BYTE*)pFreeBlock) + dwSize))
+            if (pNextBlock == NULL || ((BYTE*)pNextBlock->m_pBlockAddress) != (((BYTE*)pFreeBlock->m_pBlockAddress) + dwSize))
             {
                 result = FALSE;
             }
@@ -811,9 +827,17 @@ struct LoaderHeapFreeBlock
             {
                 size_t dwCombinedSize = dwSize + pNextBlock->m_dwSize;
                 LoaderHeapFreeBlock *pNextNextBlock = pNextBlock->m_pNext;
-                INDEBUG(memset(pFreeBlock, 0xcc, dwCombinedSize);)
+                void *pMemRW = pFreeBlock->m_pBlockAddress;
+                ExecutableWriterHolder<void> memWriterHolder;
+                if (pHeap->IsExecutable())
+                {
+                    memWriterHolder = ExecutableWriterHolder<void>(pFreeBlock->m_pBlockAddress, dwCombinedSize);
+                    pMemRW = memWriterHolder.GetRW();
+                }
+                INDEBUG(memset(pMemRW, 0xcc, dwCombinedSize);)
                 pFreeBlock->m_pNext  = pNextNextBlock;
                 pFreeBlock->m_dwSize = dwCombinedSize;
+                delete pNextBlock;
 
                 result = TRUE;
             }
@@ -822,7 +846,7 @@ struct LoaderHeapFreeBlock
             return result;
 
         }
-
+#endif // DACCESS_COMPILE
 };
 
 
@@ -840,8 +864,7 @@ struct LoaderHeapFreeBlock
 //   - z  bytes of pad  (DEBUG-ONLY) (where "z" is just enough to pointer-align the following byte)
 //   - a  bytes of tag  (DEBUG-ONLY) (where "a" is sizeof(LoaderHeapValidationTag)
 //
-//   - b  bytes of pad               (if total size after all this < sizeof(LoaderHeapFreeBlock), pad enough to make it the size of LoaderHeapFreeBlock)
-//   - c  bytes of pad               (where "c" is just enough to pointer-align the following byte)
+//   - b  bytes of pad               (where "b" is just enough to pointer-align the following byte)
 //
 // ==> Following address is always pointer-aligned
 //=====================================================================================
@@ -862,10 +885,6 @@ inline size_t AllocMem_TotalSize(size_t dwRequestedSize, UnlockedLoaderHeap *pHe
 #ifdef _DEBUG
         dwSize += sizeof(LoaderHeapValidationTag);
 #endif
-        if (dwSize < sizeof(LoaderHeapFreeBlock))
-        {
-            dwSize = sizeof(LoaderHeapFreeBlock);
-        }
     }
     dwSize = ((dwSize + ALLOC_ALIGN_CONSTANT) & (~ALLOC_ALIGN_CONSTANT));
 
@@ -977,9 +996,7 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
 
         if (fReleaseMemory)
         {
-            BOOL fSuccess;
-            fSuccess = ClrVirtualFree(pVirtualAddress, 0, MEM_RELEASE);
-            _ASSERTE(fSuccess);
+            ExecutableAllocator::Instance()->Release(pVirtualAddress);
         }
 
         delete pSearch;
@@ -987,9 +1004,7 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
 
     if (m_reservedBlock.m_fReleaseMemory)
     {
-        BOOL fSuccess;
-        fSuccess = ClrVirtualFree(m_reservedBlock.pVirtualAddress, 0, MEM_RELEASE);
-        _ASSERTE(fSuccess);
+        ExecutableAllocator::Instance()->Release(m_reservedBlock.pVirtualAddress);
     }
 
     INDEBUG(s_dwNumInstancesOfLoaderHeaps --;)
@@ -1058,7 +1073,7 @@ void ReleaseReservedMemory(BYTE* value)
 {
     if (value)
     {
-        ClrVirtualFree(value, 0, MEM_RELEASE);
+        ExecutableAllocator::Instance()->Release(value);
     }
 }
 
@@ -1114,7 +1129,9 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         // Reserve pages
         //
 
-        pData = ClrVirtualAllocExecutable(dwSizeToReserve, MEM_RESERVE, PAGE_NOACCESS);
+        // Reserve the memory for even non-executable stuff close to the executable code, as it has profound effect
+        // on e.g. a static variable access performance.
+        pData = (BYTE *)ExecutableAllocator::Instance()->Reserve(dwSizeToReserve);
         if (pData == NULL)
         {
             return FALSE;
@@ -1140,7 +1157,7 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     }
 
     // Commit first set of pages, since it will contain the LoaderHeapBlock
-    void *pTemp = ClrVirtualAlloc(pData, dwSizeToCommit, MEM_COMMIT, (m_Options & LHF_EXECUTABLE) ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+    void *pTemp = ExecutableAllocator::Instance()->Commit(pData, dwSizeToCommit, (m_Options & LHF_EXECUTABLE));
     if (pTemp == NULL)
     {
         //_ASSERTE(!"Unable to ClrVirtualAlloc commit in a loaderheap");
@@ -1213,7 +1230,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
 
         // Yes, so commit the desired number of reserved pages
-        void *pData = ClrVirtualAlloc(m_pPtrToEndOfCommittedRegion, dwSizeToCommit, MEM_COMMIT, (m_Options & LHF_EXECUTABLE) ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+        void *pData = ExecutableAllocator::Instance()->Commit(m_pPtrToEndOfCommittedRegion, dwSizeToCommit, (m_Options & LHF_EXECUTABLE));
         if (pData == NULL)
             return FALSE;
 
@@ -1316,7 +1333,7 @@ again:
 
     {
         // Any memory available on the free list?
-        void *pData = LoaderHeapFreeBlock::AllocFromFreeList(&m_pFirstFreeBlock, dwSize, TRUE /*fRemoveFromFreeList*/, this);
+        void *pData = LoaderHeapFreeBlock::AllocFromFreeList(&m_pFirstFreeBlock, dwSize, this);
         if (!pData)
         {
             // Enough bytes available in committed region?
@@ -1518,8 +1535,6 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
 
     if (m_pAllocPtr == ( ((BYTE*)pMem) + dwSize ))
     {
-        // Cool. This was the last block allocated. We can just undo the allocation instead
-        // of going to the freelist.
         void *pMemRW = pMem;
         ExecutableWriterHolder<void> memWriterHolder;
         if (m_Options & LHF_EXECUTABLE)
@@ -1527,6 +1542,9 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
             memWriterHolder = ExecutableWriterHolder<void>(pMem, dwSize);
             pMemRW = memWriterHolder.GetRW();
         }
+
+        // Cool. This was the last block allocated. We can just undo the allocation instead
+        // of going to the freelist.
         memset(pMemRW, 0x00, dwSize); // Fill freed region with 0
         m_pAllocPtr = (BYTE*)pMem;
     }
@@ -1534,7 +1552,6 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
     {
         LoaderHeapFreeBlock::InsertFreeBlock(&m_pFirstFreeBlock, pMem, dwSize, this);
     }
-
 }
 
 

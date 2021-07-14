@@ -378,6 +378,10 @@
           TargetDir="MonoAOTCompiler/"/>
 
         <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\JsonToItemsTaskFactory\Debug\$(NetCoreAppToolCurrent)\**"
+          TargetDir="JsonToItemsTaskFactory/"/>
+
+        <RunTimeDependencyCopyLocal
           Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
           TargetDir="wasm-test-runner/"/>
 

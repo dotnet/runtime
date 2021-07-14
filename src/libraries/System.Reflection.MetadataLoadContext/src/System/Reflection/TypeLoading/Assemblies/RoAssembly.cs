@@ -44,12 +44,12 @@ namespace System.Reflection.TypeLoading
         public abstract override string Location { get; }
 #if NET5_0_OR_GREATER
         [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [RequiresAssemblyFiles(Message = "The code will throw for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
 #endif
         public sealed override string CodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
 #if NET5_0_OR_GREATER
         [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [RequiresAssemblyFiles(Message = "The code will throw for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
 #endif
         public sealed override string EscapedCodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
 

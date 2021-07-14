@@ -6180,10 +6180,21 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
     }
     else
     {
-        // Create the new node, with "tree" as its only child.
-        var_types treeType = tree->TypeGet();
+        var_types regType = tree->TypeGet();
+        if ((regType == TYP_STRUCT) && !tree->IsMultiRegNode())
+        {
+            assert(compiler->compEnregStructLocals());
+            assert(tree->IsLocal());
+            const GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
+            const LclVarDsc*           varDsc = compiler->lvaGetDesc(lcl);
+            // We create struct copies with a primitive type so we don't bother copy node with parsing structHndl.
+            // Note that for multiReg node we keep each regType in the tree and don't need this.
+            regType = varDsc->GetRegisterType(lcl);
+            assert(regType != TYP_UNDEF);
+        }
 
-        GenTreeCopyOrReload* newNode = new (compiler, oper) GenTreeCopyOrReload(oper, treeType, tree);
+        // Create the new node, with "tree" as its only child.
+        GenTreeCopyOrReload* newNode = new (compiler, oper) GenTreeCopyOrReload(oper, regType, tree);
         assert(refPosition->registerAssignment != RBM_NONE);
         SetLsraAdded(newNode);
         newNode->SetRegNumByIdx(refPosition->assignedReg(), multiRegIdx);

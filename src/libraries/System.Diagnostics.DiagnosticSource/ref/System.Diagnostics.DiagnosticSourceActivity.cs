@@ -254,7 +254,7 @@ namespace System.Diagnostics
         public System.Diagnostics.SampleActivity<ActivityContext>? Sample { get { throw null; } set { throw null; } }
         public void Dispose() { throw null; }
     }
-    public abstract class TextMapPropagator
+    public abstract class DistributedContextPropagator
     {
       public delegate void PropagatorGetterCallback(object? carrier, string fieldName, out string? fieldValue, out System.Collections.Generic.IEnumerable<string>? fieldValues);
       public delegate void PropagatorSetterCallback(object? carrier, string fieldName, string fieldValue);
@@ -262,10 +262,10 @@ namespace System.Diagnostics
       public abstract void Inject(Activity? activity, object? carrier, PropagatorSetterCallback? setter);
       public abstract void ExtractTraceIdAndState(object? carrier, PropagatorGetterCallback? getter, out string? traceId, out string? traceState);
       public abstract System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>? ExtractBaggage(object? carrier, PropagatorGetterCallback? getter);
-      public static TextMapPropagator Current { get; set; }
-      public static TextMapPropagator CreateDefaultPropagator() { throw null; }
-      public static TextMapPropagator CreatePassThroughPropagator() { throw null; }
-      public static TextMapPropagator CreateNoOutputPropagator() { throw null; }
+      public static DistributedContextPropagator Current { get; set; }
+      public static DistributedContextPropagator CreateDefaultPropagator() { throw null; }
+      public static DistributedContextPropagator CreatePassThroughPropagator() { throw null; }
+      public static DistributedContextPropagator CreateNoOutputPropagator() { throw null; }
     }
 }
 

@@ -235,7 +235,7 @@ namespace System.Data.OleDb
                             break;
 
                         default: // have to assume everything is okay
-                            Debug.Assert(false, "Unknown 'Connection Status' value " + connectionStatus.ToString("G", CultureInfo.InvariantCulture));
+                            Debug.Assert(false, $"Unknown 'Connection Status' value {connectionStatus.ToString("G", CultureInfo.InvariantCulture)}");
                             break;
                     }
                 }

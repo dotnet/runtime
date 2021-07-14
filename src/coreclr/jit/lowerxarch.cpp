@@ -110,11 +110,11 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 // Return Value:
 //    None.
 //
-void Lowering::LowerStoreIndir(GenTreeIndir* node)
+void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
     // Mark all GT_STOREIND nodes to indicate that it is not known
     // whether it represents a RMW memory op.
-    node->AsStoreInd()->SetRMWStatusDefault();
+    node->SetRMWStatusDefault();
 
     if (!varTypeIsFloating(node))
     {
@@ -130,10 +130,10 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
             return;
         }
     }
-    else if (node->AsStoreInd()->Data()->OperIs(GT_CNS_DBL))
+    else if (node->Data()->IsCnsFltOrDbl())
     {
         // Optimize *x = DCON to *x = ICON which is slightly faster on xarch
-        GenTree*  data   = node->AsStoreInd()->Data();
+        GenTree*  data   = node->Data();
         double    dblCns = data->AsDblCon()->gtDconVal;
         ssize_t   intCns = 0;
         var_types type   = TYP_UNKNOWN;
@@ -162,6 +162,13 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
             node->ChangeType(type);
         }
     }
+
+    // Optimization: do not unnecessarily zero-extend the result of setcc.
+    if (varTypeIsByte(node) && (node->Data()->OperIsCompare() || node->Data()->OperIs(GT_SETCC)))
+    {
+        node->Data()->ChangeType(TYP_BYTE);
+    }
+
     ContainCheckStoreIndir(node);
 }
 
@@ -4588,17 +4595,18 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckStoreIndir(GenTreeIndir* node)
+void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 {
     // If the source is a containable immediate, make it contained, unless it is
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
-    GenTree* src = node->AsOp()->gtOp2;
+    GenTree* src = node->Data();
     if (IsContainableImmed(node, src) &&
-        (!src->IsIntegralConst(0) || varTypeIsSmall(node) || node->gtGetOp1()->OperGet() == GT_CLS_VAR_ADDR))
+        (!src->IsIntegralConst(0) || varTypeIsSmall(node) || node->Addr()->OperIs(GT_CLS_VAR_ADDR)))
     {
         MakeSrcContained(node, src);
     }
+
     ContainCheckIndir(node);
 }
 
