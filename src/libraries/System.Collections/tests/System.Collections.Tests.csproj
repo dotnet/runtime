@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <WasmXHarnessArgs>$(WasmXHarnessArgs) --timeout=3600</WasmXHarnessArgs>
   </PropertyGroup>
   <ItemGroup>
     <!-- Common Collections tests -->
