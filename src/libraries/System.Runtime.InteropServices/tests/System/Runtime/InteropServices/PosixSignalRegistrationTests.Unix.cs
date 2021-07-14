@@ -14,19 +14,13 @@ namespace System.Tests
     {
         public static IEnumerable<object[]> UninstallableSignals()
         {
-            if (PlatformDetection.IsNotMobile)
-            {
-                yield return new object[] { (PosixSignal)9 };
-            }
+            yield return new object[] { (PosixSignal)9 };
         }
 
         public static IEnumerable<object[]> SupportedSignals()
         {
-            if (PlatformDetection.IsNotMobile)
-            {
-                foreach (PosixSignal value in Enum.GetValues(typeof(PosixSignal)))
-                    yield return new object[] { value };
-            }
+            foreach (PosixSignal value in Enum.GetValues(typeof(PosixSignal)))
+                yield return new object[] { value };
         }
 
         public static IEnumerable<object[]> UnsupportedSignals()
