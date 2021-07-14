@@ -550,7 +550,7 @@ namespace System.Diagnostics
                         return false;
                     }
 
-                    throw CreateExceptionForErrorStartingProcess(new ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
+                    throw CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
                 }
             }
             finally
