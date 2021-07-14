@@ -470,7 +470,7 @@ namespace System.Net.Http.Functional.Tests
 
                 HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
 
-                int contentLength = 2*1024;
+                int contentLength = 2*1024*1024;
                 var headers = new List<HttpHeaderData>();
                 headers.Append(new HttpHeaderData("Content-Length", contentLength.ToString(CultureInfo.InvariantCulture)));
 
@@ -479,9 +479,22 @@ namespace System.Net.Http.Functional.Tests
 
                 await clientDone.WaitAsync();
 
-                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => stream.SendDataFrameAsync(new byte[1024]));
+                // There exist a rare situation, where PEER_RECEIVE_ABORTED event will arrive with a significant delay after peer calls AbortReceive
+                // In that case even with syncronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
+                // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
 
-                await stream.ShutdownSendAsync().ConfigureAwait(false);
+                async Task SendForever()
+                {
+                    var buf = new byte[100];
+                    while (true)
+                    {
+                        await stream.SendDataFrameAsync(buf);
+                    }
+                }
+
+                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendForever().WaitAsync(TimeSpan.FromSeconds(10)));
+                Assert.Equal((type == CancellationType.CancellationToken ? 268 : 0xffffffff), ex.ErrorCode);
+
                 serverDone.Release();
                 });
 
