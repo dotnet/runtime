@@ -7417,8 +7417,10 @@ GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("After optRemoveRangeCheck:\n");
-        gtDispTree(tree);
+        // gtUpdateSideEffects can update the side effects for ancestors in the tree, so display the whole statement
+        // tree, not just the sub-tree.
+        printf("After optRemoveRangeCheck for [%06u]:\n", dspTreeID(tree));
+        gtDispTree(stmt->GetRootNode());
     }
 #endif
 
