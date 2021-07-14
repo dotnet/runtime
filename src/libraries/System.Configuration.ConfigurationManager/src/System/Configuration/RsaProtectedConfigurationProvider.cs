@@ -13,9 +13,9 @@ namespace System.Configuration
     public sealed class RsaProtectedConfigurationProvider : ProtectedConfigurationProvider
     {
         // Note: this name has to match the name used in RegiisUtility
-        const string DefaultRsaKeyContainerName = "NetFrameworkConfigurationKey";
-        const uint PROV_Rsa_FULL = 1;
-        const uint CRYPT_MACHINE_KEYSET = 0x00000020;
+        private string DefaultRsaKeyContainerName = "NetFrameworkConfigurationKey";
+        private const uint PROV_Rsa_FULL = 1;
+        private const uint CRYPT_MACHINE_KEYSET = 0x00000020;
 
         private string _keyName;
         private string _keyContainerName;

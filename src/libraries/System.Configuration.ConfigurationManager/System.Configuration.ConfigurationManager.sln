@@ -23,6 +23,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptograph
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.ProtectedData", "..\System.Security.Cryptography.ProtectedData\src\System.Security.Cryptography.ProtectedData.csproj", "{7B2CA04A-9DFB-471E-B4CB-1937D0049B96}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Xml", "..\System.Security.Cryptography.Xml\ref\System.Security.Cryptography.Xml.csproj", "{A3C9F01C-6D4D-413B-BADE-A8B9046F985F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Xml", "..\System.Security.Cryptography.Xml\src\System.Security.Cryptography.Xml.csproj", "{8CBDDA63-8388-42AF-934E-7C60832A9B1C}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Permissions", "..\System.Security.Permissions\ref\System.Security.Permissions.csproj", "{CFF7519C-4D41-4713-991D-27777DA2DB21}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Permissions", "..\System.Security.Permissions\src\System.Security.Permissions.csproj", "{2BE20C4A-C20B-4A0C-8E4A-31B681B6967D}"
@@ -30,10 +34,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Principal.Windows", "..\System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj", "{949E8FCF-79C3-48BA-92AE-B937ADDB7221}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Principal.Windows", "..\System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj", "{1818C2C7-ABF4-46D6-AA56-BB114D82F31C}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Xml", "..\System.Security.Cryptography.Xml\ref\System.Security.Cryptography.Xml.csproj", "{A3C9F01C-6D4D-413B-BADE-A8B9046F985F}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Xml", "..\System.Security.Cryptography.Xml\src\System.Security.Cryptography.Xml.csproj", "{8CBDDA63-8388-42AF-934E-7C60832A9B1C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Windows.Extensions", "..\System.Windows.Extensions\ref\System.Windows.Extensions.csproj", "{3278A0F9-8E0A-42E1-8FE3-1A01851A6248}"
 EndProject
