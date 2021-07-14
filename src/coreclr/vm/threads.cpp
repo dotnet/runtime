@@ -8335,14 +8335,10 @@ void Thread::InitializeSpecialUserModeApc()
     WRAPPER_NO_CONTRACT;
     static_assert_no_msg(OFFSETOF__APC_CALLBACK_DATA__ContextRecord == offsetof(CLONE_APC_CALLBACK_DATA, ContextRecord));
 
-    HMODULE hKernel32 = WszGetModuleHandle(W("kernel32.dll"));
+    HMODULE hKernel32 = WszLoadLibrary(W("kernel32.dll"));
     if (hKernel32 == nullptr)
     {
-        hKernel32 = WszLoadLibrary(W("kernel32.dll"));
-        if (hKernel32 == nullptr)
-        {
-            return;
-        }
+        return;
     }
 
     // See if QueueUserAPC2 exists
