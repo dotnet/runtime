@@ -64,7 +64,7 @@ namespace System.IO.Strategies
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => WriteAsyncInternal(buffer, cancellationToken);
 
-        private unsafe ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+        private unsafe ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             if (!CanWrite)
             {
