@@ -442,6 +442,95 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        public enum CancellationType
+        {
+            Dispose,
+            CancellationToken
+        }
+
+        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [InlineData(CancellationType.Dispose)]
+        [InlineData(CancellationType.CancellationToken)]
+        public async Task ResponseCancellation_ServerReceivesCancellation(CancellationType type)
+        {
+            if (UseQuicImplementationProvider != QuicImplementationProviders.MsQuic)
+            {
+                return;
+            }
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            using var clientDone = new SemaphoreSlim(0);
+            using var serverDone = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+
+                int contentLength = 2*1024;
+                var headers = new List<HttpHeaderData>();
+                headers.Append(new HttpHeaderData("Content-Length", contentLength.ToString(CultureInfo.InvariantCulture)));
+
+                await stream.SendResponseHeadersAsync(HttpStatusCode.OK, headers).ConfigureAwait(false);
+                await stream.SendDataFrameAsync(new byte[1024]).ConfigureAwait(false);
+
+                await clientDone.WaitAsync();
+
+                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => stream.SendDataFrameAsync(new byte[1024]));
+
+                await stream.ShutdownSendAsync().ConfigureAwait(false);
+                serverDone.Release();
+                });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
+
+                Stream stream = await response.Content.ReadAsStreamAsync();
+
+                int bytesRead = await stream.ReadAsync(new byte[1024]);
+                Assert.Equal(1024, bytesRead);
+
+                var cts = new CancellationTokenSource(200);
+
+                if (type == CancellationType.Dispose)
+                {
+                    cts.Token.Register(() => response.Dispose());
+                }
+                CancellationToken readCt = type == CancellationType.CancellationToken ? cts.Token : default;
+
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => stream.ReadAsync(new byte[1024], cancellationToken: readCt).AsTask());
+
+                if (type == CancellationType.CancellationToken)
+                {
+                    Assert.IsType<OperationCanceledException>(ex);
+                }
+                else
+                {
+                    var ioe = Assert.IsType<IOException>(ex);
+                    var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
+                    Assert.IsType<QuicOperationAbortedException>(hre.InnerException);
+                }
+
+                clientDone.Release();
+                await serverDone.WaitAsync();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
         /// <summary>
         /// These are public interop test servers for various QUIC and HTTP/3 implementations,
         /// taken from https://github.com/quicwg/base-drafts/wiki/Implementations
