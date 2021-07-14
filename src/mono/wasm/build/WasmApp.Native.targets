@@ -205,7 +205,7 @@
 
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />
-      <_EmccCFlags Include="--cache $(WasmCachePath)" />
+      <_EmccCFlags Include="--cache &quot;$(WasmCachePath)&quot;" />
       <_EmccCFlags Include="@(_EmccCommonFlags)" />
 
       <_EmccCFlags Include="-DENABLE_AOT=1"                    Condition="'$(RunAOTCompilation)' == 'true'" />
@@ -247,7 +247,7 @@
     <ItemGroup>
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
-      <_EmccLDFlags Include="--cache $(WasmCachePath)" />
+      <_EmccLDFlags Include="--cache &quot;$(WasmCachePath)&quot;" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
 
       <_EmccLDFlags Include="-s TOTAL_MEMORY=536870912" />
@@ -334,7 +334,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
            Text="%24(RuntimeEmccVersionRaw) is not set. '$(_EmccPropsPath)' should have set that."/>
     <Exec Command="set" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
-    <Exec Command="emcc --version --cache $(WasmCachePath)" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low">
+    <Exec Command="emcc --version --cache &quot;$(WasmCachePath)&quot;" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
     </Exec>
 
