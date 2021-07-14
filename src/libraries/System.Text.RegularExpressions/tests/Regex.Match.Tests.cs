@@ -1181,31 +1181,5 @@ namespace System.Text.RegularExpressions.Tests
 
             AssertExtensions.Throws<ArgumentNullException>("inner", () => System.Text.RegularExpressions.Match.Synchronized(null));
         }
-
-        [Fact]
-        public void Test()
-        {
-
-            // Continue from here. AFAICT the code is complete. Need to start testing it.
-            Debugger.Launch();
-            Regex.CompileToAssembly(new[]
-                {
-                new RegexCompilationInfo("hi.*foo", RegexOptions.None, "hifooabc", "", false),
-                }, new AssemblyName("testregex"));
-
-            var regex = new Regex(@"hi.*foo", RegexOptions.Compiled);
-            var match = regex.Match("hifooabout");
-            Assert.True(match.Success);
-            Assert.Equal("hifoo", match.Value);
-        }
-
-        [Fact]
-        public void TestI()
-        {
-            Debugger.Launch();
-            var regex = new Regex(".*[abc]string");
-            var match1 = regex.Match("fooastring");
-            var match2 = regex.Match("foostring");
-        }
     }
 }
