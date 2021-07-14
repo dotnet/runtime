@@ -250,10 +250,9 @@ namespace Wasm.Build.Tests
         protected static BuildArgs ExpandBuildArgs(BuildArgs buildArgs, string extraProperties="", string extraItems="", string insertAtEnd="", string projectTemplate=SimpleProjectTemplate)
         {
             if (buildArgs.AOT)
-            {
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
-            }
-            extraProperties += $"\n<EmccVerbose>true</EmccVerbose>\n";
+
+            extraProperties += $"\n<EmccVerbose>{RuntimeInformation.IsOSPlatform(OSPlatform.Windows)}</EmccVerbose>\n";
 
             string projectContents = projectTemplate
                                         .Replace("##EXTRA_PROPERTIES##", extraProperties)
@@ -534,11 +533,19 @@ namespace Wasm.Build.Tests
                 {
                     // process didn't exit
                     process.Kill(entireProcessTree: true);
-                    var lastLines = outputBuilder.ToString().Split('\r', '\n').TakeLast(20);
-                    throw new XunitException($"Process timed out, output: {string.Join(Environment.NewLine, lastLines)}");
+                    lock (syncObj)
+                    {
+                        var lastLines = outputBuilder.ToString().Split('\r', '\n').TakeLast(20);
+                        throw new XunitException($"Process timed out, output: {string.Join(Environment.NewLine, lastLines)}");
+                    }
 
                 }
-                return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
+
+                lock (syncObj)
+                {
+                    var exitCode = process.ExitCode;
+                    return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
+                }
             }
             catch (Exception ex)
             {

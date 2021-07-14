@@ -122,8 +122,6 @@ namespace Microsoft.Workload.Build.Tasks
             if (!PackageInstaller.Install(new[]{ pkgRef }, nugetConfigContents, Log, stopOnMissing))
                 return false;
 
-            Log.LogMessage(MessageImportance.High, $"\t=> {pkgRef.OutputDir}");
-
             string manifestDir = pkgRef.OutputDir;
             string jsonPath = Path.Combine(manifestDir, "WorkloadManifest.json");
             if (!File.Exists(jsonPath))
