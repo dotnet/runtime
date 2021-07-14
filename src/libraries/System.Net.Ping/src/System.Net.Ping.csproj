@@ -21,6 +21,8 @@
              Link="Common\System\Net\IPAddressParserStatics.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddress.cs"
              Link="Common\System\Net\SocketAddress.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.cs"
+             Link="Common\System\Net\SocketProtocolSupportPal.cs" />
     <!-- Logging -->
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />

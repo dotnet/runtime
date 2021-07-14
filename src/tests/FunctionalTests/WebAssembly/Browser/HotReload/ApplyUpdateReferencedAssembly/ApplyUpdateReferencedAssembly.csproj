@@ -11,7 +11,6 @@
     <!-- hot reload is not compatible with trimming -->
     <EnableAggressiveTrimming>false</EnableAggressiveTrimming>
     <PublishTrimmed>false</PublishTrimmed>
-    <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

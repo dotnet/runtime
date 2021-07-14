@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text.Json.SourceGeneration.Reflection;
+using System.Text.Json.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -37,6 +37,12 @@ namespace System.Text.Json.SourceGeneration
         /// <param name="executionContext"></param>
         public void Execute(GeneratorExecutionContext executionContext)
         {
+#if LAUNCH_DEBUGGER
+            if (!Diagnostics.Debugger.IsAttached)
+            {
+                Diagnostics.Debugger.Launch();
+            }
+#endif
             SyntaxReceiver receiver = (SyntaxReceiver)executionContext.SyntaxReceiver;
             List<ClassDeclarationSyntax>? contextClasses = receiver.ClassDeclarationSyntaxList;
             if (contextClasses == null)
@@ -55,12 +61,6 @@ namespace System.Text.Json.SourceGeneration
             }
         }
 
-        /// <summary>
-        /// Helper for unit tests.
-        /// </summary>
-        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Type.FullName, p => p.Type);
-        private List<TypeGenerationSpec>? _rootTypes;
-
         private sealed class SyntaxReceiver : ISyntaxReceiver
         {
             public List<ClassDeclarationSyntax>? ClassDeclarationSyntaxList { get; private set; }
@@ -73,5 +73,11 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
         }
+
+        /// <summary>
+        /// Helper for unit tests.
+        /// </summary>
+        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Type.FullName, p => p.Type);
+        private List<TypeGenerationSpec>? _rootTypes;
     }
 }

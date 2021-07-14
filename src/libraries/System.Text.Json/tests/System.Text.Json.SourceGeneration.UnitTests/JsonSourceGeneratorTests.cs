@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Xunit;
 
@@ -395,8 +396,10 @@ namespace System.Text.Json.Serialization
 
         private void CheckFieldsPropertiesMethods(Type type, string[] expectedFields, string[] expectedProperties, string[] expectedMethods)
         {
-            string[] receivedFields = type.GetFields().Select(field => field.Name).OrderBy(s => s).ToArray();
-            string[] receivedProperties = type.GetProperties().Select(property => property.Name).OrderBy(s => s).ToArray();
+            BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance;
+
+            string[] receivedFields = type.GetFields(bindingFlags).Select(field => field.Name).OrderBy(s => s).ToArray();
+            string[] receivedProperties = type.GetProperties(bindingFlags).Select(property => property.Name).OrderBy(s => s).ToArray();
             string[] receivedMethods = type.GetMethods().Select(method => method.Name).OrderBy(s => s).ToArray();
 
             Assert.Equal(expectedFields, receivedFields);

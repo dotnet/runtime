@@ -85,6 +85,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0028`__ | X509Certificate2.PrivateKey is obsolete. Use the appropriate method to get the private key, such as GetRSAPrivateKey, or use the CopyWithPrivateKey method to create a new instance with a private key. |
 |  __`SYSLIB0029`__ | ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is no longer supported. |
 |  __`SYSLIB0030`__ | HMACSHA1 always uses the algorithm implementation provided by the platform. Use a constructor without the useManagedSha1 parameter. |
+|  __`SYSLIB0031`__ | EncodeOID is obsolete. Use the ASN.1 functionality provided in System.Formats.Asn1. |
 
 ## Analyzer Warnings
 

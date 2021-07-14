@@ -9,13 +9,13 @@ using System.Collections.Generic;
 namespace System.Diagnostics
 {
     /// <summary>
-    /// An implementation of TextMapPropagator determines if and how distributed context information is encoded and decoded as it traverses the network.
+    /// An implementation of DistributedContextPropagator determines if and how distributed context information is encoded and decoded as it traverses the network.
     /// The encoding can be transported over any network protocol that supports string key-value pairs. For example when using HTTP, each key value pair is an HTTP header.
-    /// TextMapPropagator inject values into and extracts values from carriers as string key/value pairs.
+    /// DistributedContextPropagator inject values into and extracts values from carriers as string key/value pairs.
     /// </summary>
-    public abstract class TextMapPropagator
+    public abstract class DistributedContextPropagator
     {
-        private static TextMapPropagator s_current = CreateDefaultPropagator();
+        private static DistributedContextPropagator s_current = CreateDefaultPropagator();
 
         /// <summary>
         /// The callback that is used in propagators' extract methods. The callback is invoked to lookup the value of a named field.
@@ -38,7 +38,7 @@ namespace System.Diagnostics
         /// <summary>
         /// The set of field names this propagator is likely to read or write.
         /// </summary>
-        /// <returns>Returns list of fields that will be used by the TextMapPropagator.</returns>
+        /// <returns>Returns list of fields that will be used by the DistributedContextPropagator.</returns>
         public abstract IReadOnlyCollection<string> Fields { get; }
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Get or set the process wide propagator object which used as the current selected propagator.
         /// </summary>
-        public static TextMapPropagator Current
+        public static DistributedContextPropagator Current
         {
             get
             {
@@ -91,18 +91,18 @@ namespace System.Diagnostics
         /// "traceparent" of the identifiers which are formatted as W3C trace parent, "Request-Id" of the identifiers which are formatted as a hierarchical identifier.
         /// The returned propagator can inject the baggage key-value pair list with header name "Correlation-Context" and it can extract the baggage values mapped to header names "Correlation-Context" and "baggage".
         /// </remarks>
-        public static TextMapPropagator CreateDefaultPropagator() => LegacyPropagator.Instance;
+        public static DistributedContextPropagator CreateDefaultPropagator() => LegacyPropagator.Instance;
 
         /// <summary>
         /// Returns a propagator which attempts to act transparently, emitting the same data on outbound network requests that was received on the in-bound request.
         /// When encoding the outbound message, this propagator uses information from the request's root Activity, ignoring any intermediate Activities that may have been created while processing the request.
         /// </summary>
-        public static TextMapPropagator CreatePassThroughPropagator() => PassThroughPropagator.Instance;
+        public static DistributedContextPropagator CreatePassThroughPropagator() => PassThroughPropagator.Instance;
 
         /// <summary>
         /// Returns a propagator which does not transmit any distributed context information in outbound network messages.
         /// </summary>
-        public static TextMapPropagator CreateNoOutputPropagator() => NoOutputPropagator.Instance;
+        public static DistributedContextPropagator CreateNoOutputPropagator() => NoOutputPropagator.Instance;
 
         // internal stuff
 
