@@ -22,9 +22,9 @@ namespace Wasm.Build.Tests
         [BuildAndRun(host: RunHost.V8, aot: false, parameters: false)]
         [BuildAndRun(host: RunHost.V8, aot: false, parameters: true)]
         [BuildAndRun(host: RunHost.V8, aot: true,  parameters: false)]
-        // [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: false)] // TODO currently this breaks the tests since it is built for node and run on node but some caches from the v8 build break it 
-        // [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: true)]
-        // [BuildAndRun(host: RunHost.NodeJS, aot: true,  parameters: false)]
+        [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: false)]
+        [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: true)]
+        [BuildAndRun(host: RunHost.NodeJS, aot: true,  parameters: false)]
         public void NoOpRebuild(BuildArgs buildArgs, bool nativeRelink, RunHost host, string id)
         {
             string projectName = $"rebuild_{buildArgs.Config}_{buildArgs.AOT}";
@@ -34,11 +34,11 @@ namespace Wasm.Build.Tests
             
             string buildNative = $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>";
 
-            // string nodeArgs = "";
-            // if (host == RunHost.NodeJS) {
-            //     nodeArgs = $"\n<ForNode>true</ForNode>\n<JSEngine>NodeJS</JSEngine>";
-            // }
-            // buildArgs = ExpandBuildArgs(buildArgs, $"{buildNative}{nodeArgs}");
+            string nodeArgs = "";
+            if (host == RunHost.NodeJS) {
+                nodeArgs = $"\n<ForNode>true</ForNode>\n<JSEngine>NodeJS</JSEngine>";
+            }
+            buildArgs = ExpandBuildArgs(buildArgs, $"{buildNative}{nodeArgs}");
             buildArgs = ExpandBuildArgs(buildArgs, $"{buildNative}");
 
             BuildProject(buildArgs,

@@ -306,6 +306,10 @@ var Module = {
 	 * @type {() => void}
 	 */
 	onRuntimeInitialized: function () {
+		if (!Module.config) {
+			console.error("Could not find ./mono-config.json. Cancelling run");
+			test_exit (1);
+		}
 		// Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
 		for (let variable in setenv) {
 			Module.MONO.mono_wasm_setenv (variable, setenv [variable]);
