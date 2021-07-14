@@ -339,7 +339,8 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <ActualEmccVersionRaw>%(_ReversedVersionLines.Identity)</ActualEmccVersionRaw>
     </PropertyGroup>
 
-    <Error Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersionRaw)', got '$(ActualEmccVersionRaw)'"/>
+    <Warning Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)'"
+             Text="Emscripten version mismatch. The runtime pack in $(MicrosoftNetCoreAppRuntimePackDir) expects '$(RuntimeEmccVersionRaw)', but emcc being used has version '$(ActualEmccVersionRaw)'. This might cause build failures." />
   </Target>
 
   <!--
