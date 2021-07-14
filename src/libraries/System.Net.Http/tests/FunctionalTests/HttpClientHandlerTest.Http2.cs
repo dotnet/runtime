@@ -244,10 +244,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(nameof(SupportsAlpn))]
-        [InlineData(SettingId.MaxFrameSize, 16383, ProtocolErrors.PROTOCOL_ERROR)]
-        [InlineData(SettingId.MaxFrameSize, 162777216, ProtocolErrors.PROTOCOL_ERROR)]
-        [InlineData(SettingId.InitialWindowSize, 0x80000000, ProtocolErrors.FLOW_CONTROL_ERROR)]
-        public async Task Http2_ServerSendsInvalidSettingsValue_Error(SettingId settingId, uint value, ProtocolErrors expectedError)
+        [InlineData(SettingId.MaxFrameSize, 16383)]
+        [InlineData(SettingId.MaxFrameSize, 162777216)]
+        [InlineData(SettingId.InitialWindowSize, 0x80000000)]
+        public async Task Http2_ServerSendsInvalidSettingsValue_Error(SettingId settingId, uint value)
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
@@ -257,7 +257,7 @@ namespace System.Net.Http.Functional.Tests
                 // Send invalid initial SETTINGS value
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = settingId, Value = value });
 
-                await AssertProtocolErrorAsync(sendTask, expectedError);
+                await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
 
                 connection.Dispose();
             }
