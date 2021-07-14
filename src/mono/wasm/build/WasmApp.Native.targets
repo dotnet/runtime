@@ -103,6 +103,8 @@
       -->
       <EmscriptenEnvVars Include="PYTHONUTF8=1" />
 
+      <EmscriptenEnvVars Include="FROZEN_CACHE=" />
+
       <!--<EmscriptenEnvVars Include="PYTHONPATH=$(_EmscriptenPython)$(_PathSeparator)$([MSBuild]::Escape($(PYTHONPATH)))" />-->
     </ItemGroup>
 
