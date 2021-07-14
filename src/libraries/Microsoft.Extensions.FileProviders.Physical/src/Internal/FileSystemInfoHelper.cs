@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace Microsoft.Extensions.FileProviders.Physical
@@ -26,6 +27,29 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             return false;
+        }
+
+        public static FileInfo ResolveFileLinkTarget(string filePath)
+#if NETCOREAPP
+            => ResolveFileLinkTarget(new FileInfo(filePath));
+#else
+            => null;
+#endif
+
+        public static FileInfo ResolveFileLinkTarget(FileInfo fileInfo)
+        {
+#if NETCOREAPP
+            if (fileInfo.Exists && fileInfo.LinkTarget != null)
+            {
+                FileSystemInfo targetInfo = fileInfo.ResolveLinkTarget(returnFinalTarget: true);
+                if (targetInfo.Exists)
+                {
+                    return (FileInfo)targetInfo;
+                }
+            }
+#endif
+
+            return null;
         }
     }
 }

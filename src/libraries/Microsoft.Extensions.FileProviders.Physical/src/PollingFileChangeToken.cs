@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <param name="fileInfo">The <see cref="System.IO.FileInfo"/> to poll</param>
         public PollingFileChangeToken(FileInfo fileInfo)
         {
-            _fileInfo = fileInfo;
+            _fileInfo = FileSystemInfoHelper.ResolveFileLinkTarget(fileInfo) ?? fileInfo;
             _previousWriteTimeUtc = GetLastWriteTimeUtc();
         }
 
