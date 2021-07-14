@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <UseMonoRuntime>true</UseMonoRuntime>
+    <UseMonoRuntime Condition="'$(RuntimeIdentifier)' == 'Browser-wasm'">true</UseMonoRuntime>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\RuntimeConfigParserTask.props" />

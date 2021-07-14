@@ -129,7 +129,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
                     if (exitCode != 0)
                     {
-                        Log.LogError($"Failed to compile {srcFile} -> {objFile}:{Environment.NewLine}{output}");
+                        Log.LogError($"Failed to compile {srcFile} -> {objFile}{Environment.NewLine}{output}");
                         return false;
                     }
 
