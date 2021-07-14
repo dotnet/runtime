@@ -2307,7 +2307,7 @@ namespace System.Diagnostics.Tracing
             if (!enabled)
                 return false;
 
-            // does is pass the level test?
+            // does it pass the level test?
             if (currentLevel < eventLevel)
                 return false;
 
