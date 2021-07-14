@@ -633,12 +633,12 @@ bool emitter::emitInsMayWriteMultipleRegs(instrDesc* id)
         case INS_umull:
         case INS_vmov_d2i:
             return true;
-	case INS_pop:
-	    if (fmt != IF_T2_E2) //T2_E2 is pop single register encoding
-	    {
-		    return true;
-	    }
-	    return false;
+        case INS_pop:
+            if (fmt != IF_T2_E2) //T2_E2 is pop single register encoding
+            {
+                return true;
+            }
+            return false;
         default:
             return false;
     }
@@ -1564,9 +1564,9 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm)
 
             if (((imm - 1) & imm) == 0) // Is only one or zero bits set in imm?
             {
-		if (imm != 0)
+                if (imm != 0)
                 {
-		      isSingleBit = true; // only one bits set in imm
+                    isSingleBit = true; // only one bits set in imm
                 }
             }
 
@@ -1574,21 +1574,21 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm)
 
             if (((imm & 0x00ff) == imm) && !useT2)
             {
-		// for push {LR,} <reglist8> and pop  {PC,} <regist8> encoding
+                // for push {LR,} <reglist8> and pop  {PC,} <regist8> encoding
                 fmt = IF_T1_L1;
             }
             else if (!isSingleBit)
             {
-		// for other push and pop multiple registers encoding
+                // for other push and pop multiple registers encoding
                 fmt = IF_T2_I1;
             }
             else
             {
                 // We have to use the Thumb-2 push/pop single register encoding
-		if (hasLR)
-		{
-		      imm |= 0x4000;
-		}
+                if (hasLR)
+                {
+                    imm |= 0x4000;
+                }
                 regNumber reg = genRegNumFromMask(imm);
                 emitIns_R(ins, attr, reg);
                 return;
