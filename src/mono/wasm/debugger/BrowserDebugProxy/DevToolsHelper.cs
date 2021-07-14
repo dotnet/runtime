@@ -322,5 +322,16 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         public Dictionary<string, JObject> Locals { get; } = new Dictionary<string, JObject>();
         public Dictionary<string, JObject> MemberReferences { get; } = new Dictionary<string, JObject>();
+        public Dictionary<string, JObject> ObjectFields { get; } = new Dictionary<string, JObject>();
+        public PerScopeCache(JArray objectValues)
+        {
+            foreach (var objectValue in objectValues)
+            {
+                ObjectFields[objectValue["name"].Value<string>()] = objectValue.Value<JObject>();
+            }
+        }
+        public PerScopeCache()
+        {
+        }
     }
 }
