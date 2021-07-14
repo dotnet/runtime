@@ -1638,8 +1638,8 @@ var BindingSupportLib = {
 					obj.__mono_jshandle__ = undefined;
 
 					// If we are unregistering a delegate then mark it as not being alive
-					// this will be checked in the delegate invoke and throw an appropriate
-					// error.
+					//  so that attempts will not be made to invoke it even if a JS-side
+					//  reference to it remains (registered as an event handler, etc)
 					if (typeof obj.__mono_delegate_alive__ !== "undefined")
 						obj.__mono_delegate_alive__ = false;
 
@@ -1715,10 +1715,10 @@ var BindingSupportLib = {
 				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 			}
 
-			var js_name = BINDING._unbox_mono_obj_root (nameRoot);
+			var js_name = BINDING.conv_string (nameRoot.value);
 			if (!js_name || (typeof(js_name) !== "string")) {
 				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("Invalid method name object '" + method_name + "'");
+				return BINDING.js_string_to_mono_string ("Invalid method name object '" + nameRoot.value + "'");
 			}
 
 			var js_args = BINDING.mono_wasm_parse_args_root(argsRoot);
@@ -1747,35 +1747,40 @@ var BindingSupportLib = {
 	mono_wasm_get_object_property: function(js_handle, property_name, is_exception) {
 		BINDING.bindings_lazy_init ();
 
-		var obj = BINDING.mono_wasm_require_handle (js_handle);
-		if (!obj) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
-		}
-
-		var js_name = BINDING.conv_string (property_name);
-		if (!js_name) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Invalid property name object '" + js_name + "'");
-		}
-
-		var res;
+		var nameRoot = MONO.mono_wasm_new_root (property_name);
 		try {
-			var m = obj [js_name];
-			if (m === Object(m) && obj.__is_mono_proxied__)
-				m.__is_mono_proxied__ = true;
+			var obj = BINDING.mono_wasm_require_handle (js_handle);
+			if (!obj) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
+			}
 
-			return BINDING.js_to_mono_obj (m);
-		} catch (e) {
-			var res = e.toString ();
-			setValue (is_exception, 1, "i32");
-			if (res === null || typeof res === "undefined")
-				res = "unknown exception";
-			return BINDING.js_string_to_mono_string (res);
+			var js_name = BINDING.conv_string (nameRoot.value);
+			if (!js_name) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("Invalid property name object '" + nameRoot.value + "'");
+			}
+
+			var res;
+			try {
+				var m = obj [js_name];
+				if (m === Object(m) && obj.__is_mono_proxied__)
+					m.__is_mono_proxied__ = true;
+
+				return BINDING.js_to_mono_obj (m);
+			} catch (e) {
+				var res = e.toString ();
+				setValue (is_exception, 1, "i32");
+				if (res === null || typeof res === "undefined")
+					res = "unknown exception";
+				return BINDING.js_string_to_mono_string (res);
+			}
+		} finally {
+			nameRoot.release();
 		}
 	},
     mono_wasm_set_object_property: function (js_handle, property_name, value, createIfNotExist, hasOwnProperty, is_exception) {
-		var valueRoot = MONO.mono_wasm_new_root (value);
+		var valueRoot = MONO.mono_wasm_new_root (value), nameRoot = MONO.mono_wasm_new_root (property_name);
 		try {
 			BINDING.bindings_lazy_init ();
 			var requireObject = BINDING.mono_wasm_require_handle (js_handle);
@@ -1784,7 +1789,7 @@ var BindingSupportLib = {
 				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 			}
 
-			var property = BINDING.conv_string (property_name);
+			var property = BINDING.conv_string (nameRoot.value);
 			if (!property) {
 				setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Invalid property name object '" + property_name + "'");
@@ -1821,6 +1826,7 @@ var BindingSupportLib = {
 			BINDING.mono_wasm_unwind_LMF();
 			return BINDING._box_js_bool (result);
 		} finally {
+			nameRoot.release();
 			valueRoot.release();
 		}
 	},
@@ -1874,25 +1880,30 @@ var BindingSupportLib = {
 		}
 	},
 	mono_wasm_get_global_object: function(global_name, is_exception) {
-		BINDING.bindings_lazy_init ();
+		var nameRoot = MONO.mono_wasm_new_root (global_name);
+		try {
+			BINDING.bindings_lazy_init ();
 
-		var js_name = BINDING.conv_string (global_name);
+			var js_name = BINDING.conv_string (nameRoot.value);
 
-		var globalObj;
+			var globalObj;
 
-		if (!js_name) {
-			globalObj = globalThis;
+			if (!js_name) {
+				globalObj = globalThis;
+			}
+			else {
+				globalObj = globalThis[js_name];
+			}
+
+			if (globalObj === null || typeof globalObj === undefined) {
+				setValue (is_exception, 1, "i32");
+				return BINDING.js_string_to_mono_string ("Global object '" + js_name + "' not found.");
+			}
+
+			return BINDING.js_to_mono_obj (globalObj);
+		} finally {
+			nameRoot.release();
 		}
-		else {
-			globalObj = globalThis[js_name];
-		}
-
-		if (globalObj === null || typeof globalObj === undefined) {
-			setValue (is_exception, 1, "i32");
-			return BINDING.js_string_to_mono_string ("Global object '" + js_name + "' not found.");
-		}
-
-		return BINDING.js_to_mono_obj (globalObj);
 	},
 	mono_wasm_release_handle: function(js_handle, is_exception) {
 		BINDING.bindings_lazy_init ();
@@ -1932,15 +1943,15 @@ var BindingSupportLib = {
 		return gc_handle;
 	},
 	mono_wasm_new: function (core_name, args, is_exception) {
-		var argsRoot = MONO.mono_wasm_new_root (args);
+		var argsRoot = MONO.mono_wasm_new_root (args), nameRoot = MONO.mono_wasm_new_root (core_name);
 		try {
 			BINDING.bindings_lazy_init ();
 
-			var js_name = BINDING.conv_string (core_name);
+			var js_name = BINDING.conv_string (nameRoot.value);
 
 			if (!js_name) {
 				setValue (is_exception, 1, "i32");
-				return BINDING.js_string_to_mono_string ("Core object '" + js_name + "' not found.");
+				return BINDING.js_string_to_mono_string ("Invalid name @" + nameRoot.value);
 			}
 
 			var coreObj = globalThis[js_name];
@@ -1979,6 +1990,7 @@ var BindingSupportLib = {
 			}
 		} finally {
 			argsRoot.release();
+			nameRoot.release();
 		}
 	},
 
