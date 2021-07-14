@@ -242,7 +242,7 @@ namespace System.Data.Common
                 {
                     keylist.MoveNext();
                     values[i] = this[keylist.Current];
-                    Debug.Assert(null != values[i], "null value " + keylist.Current);
+                    Debug.Assert(null != values[i], $"null value {keylist.Current}");
                 }
                 return new ReadOnlyCollection<object>(values);
             }

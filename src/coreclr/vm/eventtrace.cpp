@@ -4417,6 +4417,12 @@ VOID EtwCallbackCommon(
     {
         ETW::TypeSystemLog::OnKeywordsChanged();
     }
+
+    if (g_fEEStarted && !g_fEEShutDown)
+    {
+        // Emit the YieldProcessor measured values at the beginning of the trace
+        YieldProcessorNormalization::FireMeasurementEvents();
+    }
 }
 
 // Individual callbacks for each EventPipe provider.

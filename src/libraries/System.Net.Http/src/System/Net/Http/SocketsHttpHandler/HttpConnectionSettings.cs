@@ -8,6 +8,7 @@ using System.Net.Quic.Implementations;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace System.Net.Http
 {
@@ -46,6 +47,8 @@ namespace System.Net.Http
 
         internal HeaderEncodingSelector<HttpRequestMessage>? _requestHeaderEncodingSelector;
         internal HeaderEncodingSelector<HttpRequestMessage>? _responseHeaderEncodingSelector;
+
+        internal DistributedContextPropagator? _activityHeadersPropagator = DistributedContextPropagator.Current;
 
         internal Version _maxHttpVersion;
 
@@ -119,6 +122,7 @@ namespace System.Net.Http
                 _connectCallback = _connectCallback,
                 _plaintextStreamFilter = _plaintextStreamFilter,
                 _initialHttp2StreamWindowSize = _initialHttp2StreamWindowSize,
+                _activityHeadersPropagator = _activityHeadersPropagator,
             };
 
             // TODO: Remove if/when QuicImplementationProvider is removed from System.Net.Quic.

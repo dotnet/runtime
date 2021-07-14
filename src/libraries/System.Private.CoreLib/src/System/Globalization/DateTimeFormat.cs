@@ -680,7 +680,7 @@ namespace System
                             }
                             else
                             {
-                                result.Append(year.ToString("D" + tokenLen.ToString(), CultureInfo.InvariantCulture));
+                                result.Append(year.ToString("D" + tokenLen.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture));
                             }
                         }
                         bTimeOnly = false;
