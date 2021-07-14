@@ -64,7 +64,6 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_spanStartsWith = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string) })!;
-        private static readonly MethodInfo s_stringAsSpanWithStartMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int) })!;
         private static readonly MethodInfo s_spanLastIndexOfMethod = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_stringAsSpanIntIntMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
@@ -4283,12 +4282,15 @@ namespace System.Text.RegularExpressions
                                 // runtextpos = _maxBacktrackPosition;
                                 Ldloc(_maxBacktrackPositionLocal!);
                                 Stloc(_runtextposLocal!);
-                                // ReadOnlySpan<char> runtextSpan = runtext.AsSpan(_maxBacktrackPosition);
+                                // ReadOnlySpan<char> runtextSpan = runtext.AsSpan(_maxBacktrackPosition, runtextend - _maxBacktractPosition);
                                 Ldloc(_runtextLocal!);
                                 Ldloc(_maxBacktrackPositionLocal!);
+                                Ldloc(_runtextendLocal!);
+                                Ldloc(_maxBacktrackPositionLocal!);
+                                Sub();
                                 using (RentedLocalBuilder textSpanLocal = RentReadOnlySpanCharLocal())
                                 {
-                                    Call(s_stringAsSpanWithStartMethod);
+                                    Call(s_stringAsSpanIntIntMethod);
                                     Stloc(textSpanLocal);
                                     using (RentedLocalBuilder lastIndexOf = RentInt32Local())
                                     {

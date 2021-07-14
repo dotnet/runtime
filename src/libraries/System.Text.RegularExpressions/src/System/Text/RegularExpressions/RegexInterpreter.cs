@@ -229,7 +229,7 @@ namespace System.Text.RegularExpressions
                     {
                         // If lastIndexOf is -1, we backtrack to the max extent possible.
                         runtextpos = _maxBacktrackPosition;
-                        ReadOnlySpan<char> runtextSpan = runtext.AsSpan(_maxBacktrackPosition);
+                        ReadOnlySpan<char> runtextSpan = runtext.AsSpan(_maxBacktrackPosition, runtextend - _maxBacktrackPosition);
                         int lastIndexOf = runtextSpan.LastIndexOf(str);
                         if (lastIndexOf > -1)
                         {
