@@ -126,6 +126,9 @@
   <data name="Cryptography_ArgRSARequiresRSAKey" xml:space="preserve">
     <value>Keys used with the RSACng algorithm must have an algorithm group of RSA.</value>
   </data>
+  <data name="Cryptography_CipherModeFeedbackNotSupported" xml:space="preserve">
+    <value>The specified feedback size '{0}' for CipherMode '{1}' is not supported.</value>
+  </data>
   <data name="Cryptography_CngKeyWrongAlgorithm" xml:space="preserve">
     <value>This key is for algorithm '{0}'. Expected '{1}'.</value>
   </data>

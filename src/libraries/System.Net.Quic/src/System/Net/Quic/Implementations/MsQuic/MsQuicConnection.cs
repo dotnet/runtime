@@ -418,6 +418,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (connection._remoteCertificateValidationCallback != null)
                 {
                     bool success = connection._remoteCertificateValidationCallback(connection, certificate, chain, sslPolicyErrors);
+                    // Unset the callback to prevent multiple invocations of the callback per a single connection.
+                    // Return the same value as the custom callback just did.
+                    connection._remoteCertificateValidationCallback = (_, _, _, _) => success;
+
                     if (!success && NetEventSource.Log.IsEnabled())
                         NetEventSource.Error(state, $"{state.TraceId} Remote certificate rejected by verification callback");
                     return success ? MsQuicStatusCodes.Success : MsQuicStatusCodes.HandshakeFailure;
