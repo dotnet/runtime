@@ -72,7 +72,6 @@ mono_gc_wait_for_bridge_processing_internal (void)
 	sgen_gc_unlock ();
 }
 
-
 /**
  * mono_gc_register_bridge_callbacks:
  */
