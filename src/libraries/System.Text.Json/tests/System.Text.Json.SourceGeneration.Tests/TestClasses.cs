@@ -117,6 +117,18 @@ namespace System.Text.Json.SourceGeneration.Tests
         void IJsonOnSerialized.OnSerialized() => MyProperty = "After";
     }
 
+    public class MyTypeWithPropertyOrdering
+    {
+        public int B { get; set; }
+
+        [JsonPropertyOrder(1)]
+        public int A { get; set; }
+
+        [JsonPropertyOrder(-1)]
+        [JsonInclude]
+        public int C = 0;
+    }
+
     public class JsonMessage
     {
         public string Message { get; set; }
