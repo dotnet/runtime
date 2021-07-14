@@ -724,7 +724,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     abortRead = true;
                     completeRead = _state.ReadState == ReadState.PendingRead;
-                    _state.RootedReceiveStream = null;
+                    _state.Stream = null;
                     _state.ReadState = ReadState.Aborted;
                 }
 
