@@ -6,5 +6,5 @@ namespace System.ComponentModel.Design
     /// <summary>
     /// Represents the method that will handle a <see cref='System.ComponentModel.Design.IComponentChangeService.ComponentRename'/> event.
     /// </summary>
-    public delegate void ComponentRenameEventHandler(object sender, ComponentRenameEventArgs e);
+    public delegate void ComponentRenameEventHandler(object? sender, ComponentRenameEventArgs e);
 }

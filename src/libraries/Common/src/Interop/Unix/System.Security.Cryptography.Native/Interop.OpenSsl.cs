@@ -2,19 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Net.Http;
+using System.Net;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -226,6 +224,19 @@ internal static partial class Interop
             return context;
         }
 
+        internal static SecurityStatusPal SslRenegotiate(SafeSslHandle sslContext, out byte[]? outputBuffer)
+        {
+            int ret = Interop.Ssl.SslRenegotiate(sslContext);
+
+            outputBuffer = Array.Empty<byte>();
+            if (ret != 1)
+            {
+                GetSslError(sslContext, ret, out Exception? exception);
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exception);
+            }
+            return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+        }
+
         internal static bool DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, out byte[]? sendBuf, out int sendCount)
         {
             sendBuf = null;
@@ -298,7 +309,7 @@ internal static partial class Interop
         {
 #if DEBUG
             ulong assertNoError = Crypto.ErrPeekError();
-            Debug.Assert(assertNoError == 0, "OpenSsl error queue is not empty, run: 'openssl errstr " + assertNoError.ToString("X") + "' for original error.");
+            Debug.Assert(assertNoError == 0, $"OpenSsl error queue is not empty, run: 'openssl errstr {assertNoError:X}' for original error.");
 #endif
             errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
 
@@ -352,7 +363,7 @@ internal static partial class Interop
         {
 #if DEBUG
             ulong assertNoError = Crypto.ErrPeekError();
-            Debug.Assert(assertNoError == 0, "OpenSsl error queue is not empty, run: 'openssl errstr " + assertNoError.ToString("X") + "' for original error.");
+            Debug.Assert(assertNoError == 0, $"OpenSsl error queue is not empty, run: 'openssl errstr {assertNoError:X}' for original error.");
 #endif
             errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
 

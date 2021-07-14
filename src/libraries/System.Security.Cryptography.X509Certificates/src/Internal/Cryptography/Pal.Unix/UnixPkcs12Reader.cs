@@ -26,6 +26,7 @@ namespace Internal.Cryptography.Pal
         private CertAndKey[]? _certs;
         private int _certCount;
         private PointerMemoryManager<byte>? _tmpManager;
+        private bool _allowDoubleBind;
 
         protected abstract ICertificatePalCore ReadX509Der(ReadOnlyMemory<byte> data);
         protected abstract AsymmetricAlgorithm LoadKey(ReadOnlyMemory<byte> safeBagBagValue);
@@ -180,10 +181,12 @@ namespace Internal.Cryptography.Pal
             ArrayPool<ContentInfoAsn>.Shared.Return(rentedContents, clearArray: true);
         }
 
-        public void Decrypt(SafePasswordHandle password)
+        public void Decrypt(SafePasswordHandle password, bool ephemeralSpecified)
         {
             ReadOnlyMemory<byte> authSafeContents =
                 Helpers.DecodeOctetStringAsMemory(_pfxAsn.AuthSafe.Content);
+
+            _allowDoubleBind = !ephemeralSpecified;
 
             bool hasRef = false;
             password.DangerousAddRef(ref hasRef);
@@ -314,6 +317,7 @@ namespace Internal.Cryptography.Pal
                 ExtractPrivateKeys(password, keyBags, keyBagIdx, keys, publicKeyInfos);
 
                 BuildCertsWithKeys(
+                    password,
                     certBags,
                     certBagAttrs,
                     certs,
@@ -497,6 +501,7 @@ namespace Internal.Cryptography.Pal
         }
 
         private void BuildCertsWithKeys(
+            ReadOnlySpan<char> password,
             CertBagAsn[] certBags,
             AttributeAsn[]?[] certBagAttrs,
             CertAndKey[] certs,
@@ -550,13 +555,26 @@ namespace Internal.Cryptography.Pal
 
                 if (matchingKeyIdx != -1)
                 {
+                    // Windows compat:
+                    // If the PFX is loaded with EphemeralKeySet, don't allow double-bind.
+                    // Otherwise, reload the key so a second instance is bound (avoiding one
+                    // cert Dispose removing the key of another).
                     if (keys[matchingKeyIdx] == null)
                     {
-                        throw new CryptographicException(SR.Cryptography_Pfx_BadKeyReference);
+                        if (_allowDoubleBind)
+                        {
+                            certs[certBagIdx].Key = LoadKey(keyBags[matchingKeyIdx], password);
+                        }
+                        else
+                        {
+                            throw new CryptographicException(SR.Cryptography_Pfx_BadKeyReference);
+                        }
                     }
-
-                    certs[certBagIdx].Key = keys[matchingKeyIdx];
-                    keys[matchingKeyIdx] = null;
+                    else
+                    {
+                        certs[certBagIdx].Key = keys[matchingKeyIdx];
+                        keys[matchingKeyIdx] = null;
+                    }
                 }
             }
         }

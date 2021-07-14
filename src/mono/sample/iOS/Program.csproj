@@ -5,7 +5,6 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <TargetOS Condition="'$(TargetOS)' == ''">iOS</TargetOS>
     <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iOSSimulator</TargetOS>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture)\$(Configuration)\</MicrosoftNetCoreAppRuntimePackDir>
     <RuntimeIdentifier>$(TargetOS.ToLower())-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
   </PropertyGroup>

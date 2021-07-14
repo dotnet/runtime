@@ -218,7 +218,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 // Return Value:
 //    None.
 //
-void Lowering::LowerStoreIndir(GenTreeIndir* node)
+void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
     ContainCheckStoreIndir(node);
 }
@@ -1376,11 +1376,11 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckStoreIndir(GenTreeIndir* node)
+void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 {
 #ifdef TARGET_ARM64
-    GenTree* src = node->AsOp()->gtOp2;
-    if (!varTypeIsFloating(src->TypeGet()) && src->IsIntegralConst(0))
+    GenTree* src = node->Data();
+    if (src->IsIntegralConst(0))
     {
         // an integer zero for 'src' can be contained.
         MakeSrcContained(node, src);
@@ -1549,6 +1549,9 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
+#if 0
+    // TODO-ARMARCH-CQ: support contained bitcast under STORE_LCL_VAR/FLD,
+    // currently codegen does not expect it.
     if (op1->OperIs(GT_BITCAST))
     {
         // If we know that the source of the bitcast will be in a register, then we can make
@@ -1561,6 +1564,7 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
             return;
         }
     }
+#endif
 
     const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
 

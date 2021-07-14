@@ -21,6 +21,6 @@ namespace System.ComponentModel.Design
         /// Retrieves the parent designer for this designer. This may return null if
         /// there is no parent.
         /// </summary>
-        IDesigner Parent { get; }
+        IDesigner? Parent { get; }
     }
 }

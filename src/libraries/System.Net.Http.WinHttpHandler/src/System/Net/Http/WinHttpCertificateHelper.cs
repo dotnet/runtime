@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -20,7 +21,6 @@ namespace System.Net.Http
             out X509Chain chain,
             out SslPolicyErrors sslPolicyErrors)
         {
-            chain = null;
             sslPolicyErrors = SslPolicyErrors.None;
 
             // Build the chain.
@@ -68,6 +68,8 @@ namespace System.Net.Http
                     cppStruct.dwFlags =
                         Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_ALL &
                         ~Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG;
+
+                    Debug.Assert(chain.SafeHandle != null);
 
                     Interop.Crypt32.CERT_CHAIN_POLICY_STATUS status = default;
                     status.cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_STATUS);

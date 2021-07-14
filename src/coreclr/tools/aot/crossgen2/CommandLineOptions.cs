@@ -12,6 +12,8 @@ namespace ILCompiler
 {
     internal class CommandLineOptions
     {
+        public const int DefaultPerfMapFormatVersion = 0;
+
         public bool Help;
         public string HelpText;
 
@@ -56,6 +58,7 @@ namespace ILCompiler
         public string PdbPath;
         public bool PerfMap;
         public string PerfMapPath;
+        public int PerfMapFormatVersion;
         public int Parallelism;
         public int CustomPESectionAlignment;
         public string MethodLayout;
@@ -81,6 +84,7 @@ namespace ILCompiler
             MibcFilePaths = Array.Empty<string>();
             CodegenOptions = Array.Empty<string>();
 
+            PerfMapFormatVersion = DefaultPerfMapFormatVersion;
             Parallelism = Environment.ProcessorCount;
             SingleMethodGenericArg = null;
 
@@ -139,6 +143,7 @@ namespace ILCompiler
                 syntax.DefineOption("pdb-path", ref PdbPath, SR.PdbFilePathOption);
                 syntax.DefineOption("perfmap", ref PerfMap, SR.PerfMapFileOption);
                 syntax.DefineOption("perfmap-path", ref PerfMapPath, SR.PerfMapFilePathOption);
+                syntax.DefineOption("perfmap-format-version", ref PerfMapFormatVersion, SR.PerfMapFormatVersionOption);
 
                 syntax.DefineOption("method-layout", ref MethodLayout, SR.MethodLayoutOption);
                 syntax.DefineOption("file-layout", ref FileLayout, SR.FileLayoutOption);

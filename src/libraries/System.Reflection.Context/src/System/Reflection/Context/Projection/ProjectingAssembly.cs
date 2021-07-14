@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Context.Delegation;
 
@@ -45,7 +46,7 @@ namespace System.Reflection.Context.Projection
             return base.IsDefined(attributeType, inherit);
         }
 
-        public override MethodInfo EntryPoint
+        public override MethodInfo? EntryPoint
         {
             get { return Projector.ProjectMethod(base.EntryPoint); }
         }
@@ -60,12 +61,12 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetLoadedModules(getResourceModules), Projector.ProjectModule);
         }
 
-        public override ManifestResourceInfo GetManifestResourceInfo(string resourceName)
+        public override ManifestResourceInfo? GetManifestResourceInfo(string resourceName)
         {
             return Projector.ProjectManifestResource(base.GetManifestResourceInfo(resourceName));
         }
 
-        public override Module GetModule(string name)
+        public override Module? GetModule(string name)
         {
             return Projector.ProjectModule(base.GetModule(name));
         }
@@ -80,12 +81,12 @@ namespace System.Reflection.Context.Projection
             return Projector.ProjectAssembly(base.GetSatelliteAssembly(culture));
         }
 
-        public override Assembly GetSatelliteAssembly(CultureInfo culture, Version version)
+        public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
         {
             return Projector.ProjectAssembly(base.GetSatelliteAssembly(culture, version));
         }
 
-        public override Type GetType(string name, bool throwOnError, bool ignoreCase)
+        public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
             return Projector.ProjectType(base.GetType(name, throwOnError, ignoreCase));
         }
@@ -95,16 +96,14 @@ namespace System.Reflection.Context.Projection
             return Projector.Project(base.GetTypes(), Projector.ProjectType);
         }
 
-        public override Module LoadModule(string moduleName, byte[] rawModule, byte[] rawSymbolStore)
+        public override Module LoadModule(string moduleName, byte[]? rawModule, byte[]? rawSymbolStore)
         {
             return Projector.ProjectModule(base.LoadModule(moduleName, rawModule, rawSymbolStore));
         }
 
-        public override bool Equals(object o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
-            var other = o as ProjectingAssembly;
-
-            return other != null &&
+            return o is ProjectingAssembly other &&
                    Projector == other.Projector &&
                    UnderlyingAssembly == other.UnderlyingAssembly;
         }

@@ -37,6 +37,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type? runtimePropertyType,
             ConverterStrategy runtimeClassType,
             MemberInfo? memberInfo,
+            bool isVirtual,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
             JsonNumberHandling? parentTypeNumberHandling,
@@ -48,6 +49,7 @@ namespace System.Text.Json.Serialization.Metadata
                 runtimePropertyType,
                 runtimeClassType,
                 memberInfo,
+                isVirtual,
                 converter,
                 ignoreCondition,
                 parentTypeNumberHandling,
@@ -116,13 +118,15 @@ namespace System.Text.Json.Serialization.Metadata
         internal void InitializeForSourceGen(
             JsonSerializerOptions options,
             bool isProperty,
+            bool isPublic,
             Type declaringType,
             JsonTypeInfo typeInfo,
             JsonConverter<T> converter,
             Func<object, T>? getter,
             Action<object, T>? setter,
-            JsonIgnoreCondition ignoreCondition,
-            JsonNumberHandling numberHandling,
+            JsonIgnoreCondition? ignoreCondition,
+            bool hasJsonInclude,
+            JsonNumberHandling? numberHandling,
             string propertyName,
             string? jsonPropertyName)
         {
@@ -149,6 +153,9 @@ namespace System.Text.Json.Serialization.Metadata
 
             NameAsUtf8Bytes ??= Encoding.UTF8.GetBytes(NameAsString!);
             EscapedNameSection ??= JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
+
+            SrcGen_IsPublic = isPublic;
+            SrcGen_HasJsonInclude = hasJsonInclude;
 
             if (ignoreCondition == JsonIgnoreCondition.Always)
             {
@@ -235,7 +242,7 @@ namespace System.Text.Json.Serialization.Metadata
             T value = Get!(obj);
 
             if (
-#if NET6_0_OR_GREATER
+#if NET5_0_OR_GREATER
                 !typeof(T).IsValueType && // treated as a constant by recent versions of the JIT.
 #else
                 !Converter.IsValueType &&

@@ -91,7 +91,7 @@ namespace System.Security.Cryptography.Xml
 
             if (IsInNodeSet)
             {
-                strBuilder.Append("</" + Name + ">");
+                strBuilder.Append($"</{Name}>");
             }
         }
 
