@@ -37,9 +37,11 @@
     <Message Importance="High" Text="TestBinDir: $(TestBinDir)" />
     <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
 
-    <_RunEnvironment Condition="'$(TargetOS) == 'Browser' and '$(ForNode)' == 'true'">NodeJS</_RunEnvironment>
-    <_RunEnvironment Condition="'$(TargetOS) == 'Browser' and '$(ForNode)' != 'true'">V8</_RunEnvironment> 
-    <Message Importance="High" Text="Environment: $(_RunEnvironment)" Condition="'$(_RunEnvironment) != ''"/>
+    <PropertyGroup>
+      <_RunEnvironment Condition="'$(TargetOS)' == 'Browser' and '$(ForNode)' == 'true'">NodeJS</_RunEnvironment>
+      <_RunEnvironment Condition="'$(TargetOS)' == 'Browser' and '$(ForNode)' != 'true'">V8</_RunEnvironment> 
+    </PropertyGroup>
+    <Message Importance="High" Text="Environment: $(_RunEnvironment)" Condition="'$(_RunEnvironment)' != ''"/>
   </Target>
 
   <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.targets" />

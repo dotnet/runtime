@@ -18,7 +18,6 @@
       <DisabledProjects Include="$(TestRoot)Performance\Scenario\JitBench\unofficial_dotnet\JitBench.csproj" /> <!-- no official build support for SDK-style netcoreapp2.0 projects -->
       <DisabledProjects Include="$(TestRoot)reflection\GenericAttribute\GenericAttributeTests.csproj" />
       <DisabledProjects Include="$(TestRoot)TestWrappers*\**\*.csproj" />
-      <DisabledProjects Include="$(TestRoot)JIT*\**\*.csproj" Condition="'$(ForNode)' == 'true'"/> <!--Disabling temporarily to get green pipeline TODO renable -->
     </ItemGroup>
 
     <ItemGroup>
