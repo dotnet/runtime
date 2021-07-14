@@ -41,7 +41,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct BCRYPT_PSS_PADDING_INFO
+        internal unsafe struct BCRYPT_PSS_PADDING_INFO
         {
             /// <summary>
             ///     Null-terminated Unicode string that identifies the hashing algorithm used to create the padding.
