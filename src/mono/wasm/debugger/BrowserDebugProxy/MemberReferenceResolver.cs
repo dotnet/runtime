@@ -22,7 +22,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private ExecutionContext ctx;
         private PerScopeCache scopeCache;
         private ILogger logger;
-        private bool locals_fetched;
+        private bool localsFetched;
 
         public MemberReferenceResolver(MonoProxy proxy, ExecutionContext ctx, SessionId sessionId, int scopeId, ILogger logger)
         {
@@ -34,15 +34,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             scopeCache = ctx.GetCacheForScope(scopeId);
         }
 
-        public MemberReferenceResolver(MonoProxy proxy, ExecutionContext ctx, SessionId session_id, JArray object_values, ILogger logger)
+        public MemberReferenceResolver(MonoProxy proxy, ExecutionContext ctx, SessionId sessionId, JArray objectValues, ILogger logger)
         {
-            sessionId = session_id;
+            this.sessionId = sessionId;
             scopeId = -1;
             this.proxy = proxy;
             this.ctx = ctx;
             this.logger = logger;
-            scopeCache = new PerScopeCache(object_values);
-            locals_fetched = true;
+            scopeCache = new PerScopeCache(objectValues);
+            localsFetched = true;
         }
 
         public async Task<JObject> GetValueFromObject(JToken objRet, CancellationToken token)
@@ -113,12 +113,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     continue;
                 }
-                if (scopeCache.Locals.Count == 0 && !locals_fetched)
+                if (scopeCache.Locals.Count == 0 && !localsFetched)
                 {
                     Result scope_res = await proxy.GetScopeProperties(sessionId, scopeId, token);
                     if (scope_res.IsErr)
                         throw new Exception($"BUG: Unable to get properties for scope: {scopeId}. {scope_res}");
-                    locals_fetched = true;
+                    localsFetched = true;
                 }
                 if (scopeCache.Locals.TryGetValue(partTrimmed, out JObject obj))
                 {
