@@ -74,7 +74,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Set once stream have been shutdown.
             public readonly TaskCompletionSource ShutdownCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            public void Cleanup()
+            public unsafe void Cleanup()
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{TraceId} releasing handles.");
 
