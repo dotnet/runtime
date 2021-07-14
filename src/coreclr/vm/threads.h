@@ -4045,9 +4045,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 #ifdef _DEBUG
-        _ASSERTE(m_RedirectContextInUse);
-        _ASSERTE(pCtx == m_pSavedRedirectContext);
-        m_RedirectContextInUse = false;
+        _ASSERTE(!UseContextBasedThreadRedirection() || m_RedirectContextInUse);
+        if (m_RedirectContextInUse)
+        {
+            _ASSERTE(pCtx == m_pSavedRedirectContext);
+            m_RedirectContextInUse = false;
+        }
 #endif
     }
 #endif //DACCESS_COMPILE

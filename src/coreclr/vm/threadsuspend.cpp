@@ -2493,14 +2493,10 @@ void RedirectedThreadFrame::ExceptionUnwind()
 
     STRESS_LOG1(LF_SYNC, LL_INFO1000, "In RedirectedThreadFrame::ExceptionUnwind pFrame = %p\n", this);
 
-    if (Thread::UseContextBasedThreadRedirection())
-    {
-        Thread* pThread = GetThread();
+    Thread* pThread = GetThread();
 
-        // Allow future use to avoid repeatedly new'ing
-        pThread->UnmarkRedirectContextInUse(m_Regs);
-    }
-
+    // Allow future use to avoid repeatedly new'ing
+    pThread->UnmarkRedirectContextInUse(m_Regs);
     m_Regs = NULL;
 }
 
