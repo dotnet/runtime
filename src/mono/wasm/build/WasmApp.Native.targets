@@ -238,7 +238,7 @@
   </Target>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <_MonoComponent Include="hot_reload;diagnostics_tracing;debugger" />
+    <_MonoComponent Include="hot_reload;debugger" />
   </ItemGroup>
 
   <Target Name="_WasmLinkDotNet" DependsOnTargets="_MonoSelectRuntimeComponents ">
