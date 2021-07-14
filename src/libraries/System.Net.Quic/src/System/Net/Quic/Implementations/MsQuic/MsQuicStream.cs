@@ -81,7 +81,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 ShutdownState = ShutdownState.Finished;
                 CleanupSendState(this);
                 Handle?.Dispose();
-                Marshal.FreeHGlobal(SendQuicBuffers);
+                NativeMemory.Free((void*)(nint)SendQuicBuffers);
                 SendQuicBuffers = IntPtr.Zero;
                 if (StateGCHandle.IsAllocated) StateGCHandle.Free();
                 ConnectionState?.RemoveStream(null);
@@ -694,12 +694,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return;
             }
 
-            _disposed = true;
-            _state.Handle.Dispose();
-            NativeMemory.Free((void*)(nint)_state.SendQuicBuffers);
-            if (_stateHandle.IsAllocated) _stateHandle.Free();
-            CleanupSendState(_state);
-            _state.ConnectionState?.RemoveStream(this);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Stream disposing {disposing}");
 
