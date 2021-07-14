@@ -1099,7 +1099,7 @@ namespace System.Diagnostics
             {
                 TransformSpec? newSerializableArgs = null;
                 TypeInfo curTypeInfo = type.GetTypeInfo();
-                foreach (PropertyInfo property in curTypeInfo.DeclaredProperties)
+                foreach (PropertyInfo property in curTypeInfo.GetProperties(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
                 {
                     // prevent TransformSpec from attempting to implicitly transform index properties
                     if (property.GetMethod == null || property.GetMethod!.GetParameters().Length > 0)
@@ -1319,7 +1319,7 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            PropertyInfo? propertyInfo = typeInfo.GetDeclaredProperty(propertyName);
+                            PropertyInfo? propertyInfo = typeInfo.GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
                             if (propertyInfo == null)
                             {
                                 Log.Message($"Property {propertyName} not found on {type}. Ensure the name is spelled correctly. If you published the application with PublishTrimmed=true, ensure the property was not trimmed away.");
