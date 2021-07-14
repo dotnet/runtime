@@ -122,7 +122,7 @@ namespace System.Diagnostics.PerformanceData
                     throw new InvalidOperationException(SR.Format(SR.Perflib_InvalidOperation_NoActiveProvider, _instance._counterSet._providerGuid));
                 }
 
-                _dataBlock = (byte*)NativeMemoryHelper.Alloc(_instance._counterSet._idToCounter.Count * sizeof(long));
+                _dataBlock = (byte*)NativeMemory.Alloc((uint)_instance._counterSet._idToCounter.Count * sizeof(long));
                 if (_dataBlock == null)
                 {
                     throw new InsufficientMemoryException(SR.Format(SR.Perflib_InsufficientMemory_InstanceCounterBlock, _instance._counterSet._counterSet, _instance._instName));
@@ -179,7 +179,7 @@ namespace System.Diagnostics.PerformanceData
                     if (_dataBlock != null)
                     {
                         // Need to free allocated heap memory that is used to store all raw counter data.
-                        NativeMemoryHelper.Free((IntPtr)_dataBlock);
+                        NativeMemory.Free(_dataBlock);
                         _dataBlock = null;
                     }
                 }

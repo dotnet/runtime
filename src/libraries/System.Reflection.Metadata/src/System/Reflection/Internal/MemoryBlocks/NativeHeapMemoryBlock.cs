@@ -29,7 +29,7 @@ namespace System.Reflection.Internal
                 finally
 #endif
                 {
-                    _pointer =  NativeMemoryHelper.Alloc(size);
+                    _pointer = (nint)NativeMemory.Alloc((uint)size);
                 }
             }
 
@@ -44,10 +44,7 @@ namespace System.Reflection.Internal
 #endif
                 {
                     IntPtr ptr = Interlocked.Exchange(ref _pointer, IntPtr.Zero);
-                    if (ptr != IntPtr.Zero)
-                    {
-                        NativeMemoryHelper.Free(ptr);
-                    }
+                    NativeMemory.Free((void*)(nint)ptr);
                 }
             }
 

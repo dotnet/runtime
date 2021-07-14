@@ -316,16 +316,11 @@ namespace Internal.Cryptography.Pal
                 string friendlyName = (value == null) ? string.Empty : value;
                 unsafe
                 {
-                    IntPtr pFriendlyName = NativeMemoryHelper.AllocStringUnicode(friendlyName);
-                    try
+                    fixed (char* pFriendlyName = friendlyName)
                     {
                         CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(checked(2 * (friendlyName.Length + 1)), (byte*)pFriendlyName);
                         if (!Interop.crypt32.CertSetCertificateContextProperty(_certContext, CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, CertSetPropertyFlags.None, &blob))
                             throw Marshal.GetLastWin32Error().ToCryptographicException();
-                    }
-                    finally
-                    {
-                        NativeMemoryHelper.Free(pFriendlyName);
                     }
                 }
             }
