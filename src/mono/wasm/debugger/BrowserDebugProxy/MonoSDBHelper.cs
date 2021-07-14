@@ -642,9 +642,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
-            command_params_writer.Write((byte)eventKind);
-            command_params_writer.Write((byte)SuspendPolicy.None);
-            command_params_writer.Write((byte)0);
+            commandParamsWriter.Write((byte)eventKind);
+            commandParamsWriter.Write((byte)SuspendPolicy.None);
+            commandParamsWriter.Write((byte)0);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdEventRequest>(sessionId, CmdEventRequest.Set, commandParams, token);
             return true;
         }

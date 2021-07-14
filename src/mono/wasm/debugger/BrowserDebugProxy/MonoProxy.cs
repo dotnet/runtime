@@ -690,34 +690,34 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
-        private async Task<bool> ProcessEnC(SessionId sessionId, ExecutionContext context, MonoBinaryReader ret_debugger_cmd_reader, CancellationToken token)
+        private async Task<bool> ProcessEnC(SessionId sessionId, ExecutionContext context, MonoBinaryReader retDebuggerCmdReader, CancellationToken token)
         {
-            int moduleId = ret_debugger_cmd_reader.ReadInt32();
-            int meta_size = ret_debugger_cmd_reader.ReadInt32();
-            byte[] meta_buf = ret_debugger_cmd_reader.ReadBytes(meta_size);
-            int pdb_size = ret_debugger_cmd_reader.ReadInt32();
-            byte[] pdb_buf = ret_debugger_cmd_reader.ReadBytes(pdb_size);
+            int moduleId = retDebuggerCmdReader.ReadInt32();
+            int meta_size = retDebuggerCmdReader.ReadInt32();
+            byte[] meta_buf = retDebuggerCmdReader.ReadBytes(meta_size);
+            int pdb_size = retDebuggerCmdReader.ReadInt32();
+            byte[] pdb_buf = retDebuggerCmdReader.ReadBytes(pdb_size);
 
-            var assembly_name = await sdbHelper.GetAssemblyNameFromModule(sessionId, moduleId, token);
+            var assemblyName = await SdbHelper.GetAssemblyNameFromModule(sessionId, moduleId, token);
             DebugStore store = await LoadStore(sessionId, token);
-            AssemblyInfo asm = store.GetAssemblyByName(assembly_name);
+            AssemblyInfo asm = store.GetAssemblyByName(assemblyName);
             foreach (var method in store.EnC(sessionId, asm, meta_buf, pdb_buf))
                 await ResetBreakpoint(sessionId, method, token);
             return true;
         }
 
-        private async Task<bool> SendBreakpointsOfMethodUpdated(SessionId sessionId, ExecutionContext context, MonoBinaryReader ret_debugger_cmd_reader, CancellationToken token)
+        private async Task<bool> SendBreakpointsOfMethodUpdated(SessionId sessionId, ExecutionContext context, MonoBinaryReader retDebuggerCmdReader, CancellationToken token)
         {
-            var method_id = ret_debugger_cmd_reader.ReadInt32();
-            var method_token = await sdbHelper.GetMethodToken(sessionId, method_id, token);
-            var assembly_id = await sdbHelper.GetAssemblyIdFromMethod(sessionId, method_id, token);
-            var assembly_name = await sdbHelper.GetAssemblyName(sessionId, assembly_id, token);
-            var method_name = await sdbHelper.GetMethodName(sessionId, method_id, token);
+            var method_id = retDebuggerCmdReader.ReadInt32();
+            var method_token = await SdbHelper.GetMethodToken(sessionId, method_id, token);
+            var assembly_id = await SdbHelper.GetAssemblyIdFromMethod(sessionId, method_id, token);
+            var assembly_name = await SdbHelper.GetAssemblyName(sessionId, assembly_id, token);
+            var method_name = await SdbHelper.GetMethodName(sessionId, method_id, token);
             DebugStore store = await LoadStore(sessionId, token);
             AssemblyInfo asm = store.GetAssemblyByName(assembly_name);
             if (asm == null)
             {
-                assembly_name = await sdbHelper.GetAssemblyNameFull(sessionId, assembly_id, token);
+                assembly_name = await SdbHelper.GetAssemblyNameFull(sessionId, assembly_id, token);
                 asm = store.GetAssemblyByName(assembly_name);
                 if (asm == null)
                 {
@@ -896,13 +896,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     case EventKind.MethodUpdate:
                     {
-                        var ret = await SendBreakpointsOfMethodUpdated(sessionId, context, ret_debugger_cmd_reader, token);
+                        var ret = await SendBreakpointsOfMethodUpdated(sessionId, context, retDebuggerCmdReader, token);
                         await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
                         return ret;
                     }
                     case EventKind.EnC:
                     {
-                        var ret = await ProcessEnC(sessionId, context, ret_debugger_cmd_reader, token);
+                        var ret = await ProcessEnC(sessionId, context, retDebuggerCmdReader, token);
                         await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
                         return ret;
                     }
