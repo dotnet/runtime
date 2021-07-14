@@ -89,7 +89,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return ret;
             }
 
-            if (scopeCache.ObjectFields.TryGetValue(var_name, out JObject valueRet)) {
+            if (scopeCache.ObjectFields.TryGetValue(varName, out JObject valueRet)) {
                 return await GetValueFromObject(valueRet, token);
             }
 
@@ -162,6 +162,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     rootObject = await Resolve(memberAccessExpressionSyntax.Expression.ToString(), token);
                     methodName = memberAccessExpressionSyntax.Name.ToString();
                 }
+                else if (expr is IdentifierNameSyntax)
+                    if (scopeCache.ObjectFields.TryGetValue("this", out JObject valueRet)) {
+                        rootObject = await GetValueFromObject(valueRet, token);
+                    methodName = expr.ToString();
+                }
+
                 if (rootObject != null)
                 {
                     DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);

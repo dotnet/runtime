@@ -51,6 +51,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     if (node is IdentifierNameSyntax identifier
                         && !(identifier.Parent is MemberAccessExpressionSyntax)
+                        && !(identifier.Parent is InvocationExpressionSyntax)
                         && !identifiers.Any(x => x.Identifier.Text == identifier.Identifier.Text))
                     {
                         identifiers.Add(identifier);

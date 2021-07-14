@@ -1005,8 +1005,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                     try {
                         ExecutionContext context = proxy.GetContext(sessionId);
                         var objectValues = await GetObjectValues(sessionId, object_id, true, false, false, false, token);
+
+                        var thisObj = CreateJObject<string>("", "object", "", false, objectId:$"dotnet:object:{object_id}");
+                        thisObj["name"] = "this";
+                        objectValues.Add(thisObj);
+
                         var resolver = new MemberReferenceResolver(proxy, context, sessionId, objectValues, logger);
-                        expr = "$\"" + displayAttrValue["value"]?["value"]?.Value<string>() + "\"";
+                        var dispAttrStr = displayAttrValue["value"]?["value"]?.Value<string>();
+                        //bool noQuotes = false;
+                        if (dispAttrStr.Contains(", nq"))
+                        {
+                            //noQuotes = true;
+                            dispAttrStr = dispAttrStr.Replace(", nq", "");
+                        }
+                        expr = "$\"" + dispAttrStr + "\"";
                         JObject retValue = await resolver.Resolve(expr, token);
                         if (retValue == null)
                             retValue = await EvaluateExpression.CompileAndRunTheExpression(expr, resolver, token);
@@ -1117,7 +1129,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
             commandParamsWriter.Write((int)type_id);
             commandParamsWriter.WriteString(method_name);
-            commandParamsWriter.Write((int)(0x10 | 4)); //instance methods
+            commandParamsWriter.Write((int)(0x10 | 4 | 0x20)); //instance methods
             commandParamsWriter.Write((int)1); //case sensitive
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetMethodsByNameFlags, commandParams, token);
             var nMethods = retDebuggerCmdReader.ReadInt32();
