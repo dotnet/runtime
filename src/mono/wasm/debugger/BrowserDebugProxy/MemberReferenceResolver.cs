@@ -24,14 +24,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         private ILogger logger;
         private bool locals_fetched;
 
-        public MemberReferenceResolver(MonoProxy proxy, ExecutionContext ctx, SessionId session_id, int scope_id, ILogger logger)
+        public MemberReferenceResolver(MonoProxy proxy, ExecutionContext ctx, SessionId sessionId, int scopeId, ILogger logger)
         {
-            sessionId = session_id;
-            scopeId = scope_id;
+            this.sessionId = sessionId;
+            this.scopeId = scopeId;
             this.proxy = proxy;
             this.ctx = ctx;
             this.logger = logger;
-            scopeCache = ctx.GetCacheForScope(scope_id);
+            scopeCache = ctx.GetCacheForScope(scopeId);
         }
         public async Task<JObject> GetValueFromObject(JToken objRet, CancellationToken token)
         {
@@ -39,7 +39,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (DotnetObjectId.TryParse(objRet?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                 {
-                    var exceptionObject = await proxy.sdbHelper.GetObjectValues(sessionId, int.Parse(objectId.Value), true, false, false, true, token);
+                    var exceptionObject = await proxy.SdbHelper.GetObjectValues(sessionId, int.Parse(objectId.Value), true, false, false, true, token);
                     var exceptionObjectMessage = exceptionObject.FirstOrDefault(attr => attr["name"].Value<string>().Equals("_message"));
                     exceptionObjectMessage["value"]["value"] = objRet["value"]?["className"]?.Value<string>() + ": " + exceptionObjectMessage["value"]?["value"]?.Value<string>();
                     return exceptionObjectMessage["value"]?.Value<JObject>();
@@ -53,10 +53,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (DotnetObjectId.TryParse(objRet?["get"]?["objectIdValue"]?.Value<string>(), out DotnetObjectId objectId))
                 {
-                    var command_params = new MemoryStream();
-                    var command_params_writer = new MonoBinaryWriter(command_params);
-                    command_params_writer.WriteObj(objectId, proxy.sdbHelper);
-                    var ret = await proxy.sdbHelper.InvokeMethod(sessionId, command_params.ToArray(), objRet["get"]["methodId"].Value<int>(), objRet["name"].Value<string>(), token);
+                    var commandParams = new MemoryStream();
+                    var commandParamsWriter = new MonoBinaryWriter(commandParams);
+                    commandParamsWriter.WriteObj(objectId, proxy.SdbHelper);
+                    var ret = await proxy.SdbHelper.InvokeMethod(sessionId, commandParams.ToArray(), objRet["get"]["methodId"].Value<int>(), objRet["name"].Value<string>(), token);
                     return await GetValueFromObject(ret, token);
                 }
 
@@ -64,16 +64,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
         // Checks Locals, followed by `this`
-        public async Task<JObject> Resolve(string var_name, CancellationToken token)
+        public async Task<JObject> Resolve(string varName, CancellationToken token)
         {
             //has method calls
-            if (var_name.Contains('('))
+            if (varName.Contains('('))
                 return null;
 
-            string[] parts = var_name.Split(".");
+            string[] parts = varName.Split(".");
             JObject rootObject = null;
 
-            if (scopeCache.MemberReferences.TryGetValue(var_name, out JObject ret)) {
+            if (scopeCache.MemberReferences.TryGetValue(varName, out JObject ret)) {
                 return ret;
             }
             foreach (string part in parts)
@@ -87,8 +87,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return null;
                     if (DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     {
-                        var root_res_obj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
-                        var objRet = root_res_obj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == partTrimmed);
+                        var rootResObj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
+                        var objRet = rootResObj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == partTrimmed);
                         if (objRet == null)
                             return null;
 
@@ -115,8 +115,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     else if (DotnetObjectId.TryParse(objThis?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     {
-                        var root_res_obj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
-                        var objRet = root_res_obj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == partTrimmed);
+                        var rootResObj = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
+                        var objRet = rootResObj.FirstOrDefault(objPropAttr => objPropAttr["name"].Value<string>() == partTrimmed);
                         if (objRet != null)
                         {
                             rootObject = await GetValueFromObject(objRet, token);
@@ -128,64 +128,62 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
             }
-            scopeCache.MemberReferences[var_name] = rootObject;
+            scopeCache.MemberReferences[varName] = rootObject;
             return rootObject;
         }
 
         public async Task<JObject> Resolve(InvocationExpressionSyntax method, Dictionary<string, JObject> memberAccessValues, CancellationToken token)
         {
-            JObject rootObject = null;
-
-            var expr = method.Expression;
             var methodName = "";
-            if (expr is MemberAccessExpressionSyntax)
+            try
             {
-                MemberAccessExpressionSyntax memberAccessExpressionSyntax = expr as MemberAccessExpressionSyntax;
-                rootObject = await Resolve(memberAccessExpressionSyntax.Expression.ToString(), token);
-                methodName = memberAccessExpressionSyntax.Name.ToString();
-            }
-            if (rootObject != null)
-            {
-                DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
-                var typeId = await proxy.sdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
-                int method_id = await proxy.sdbHelper.GetMethodIdByName(sessionId, typeId[0], methodName, token);
-                if (method_id == 0) {
-                    var typeName = await proxy.sdbHelper.GetTypeName(sessionId, typeId[0], token);
-                    throw new Exception($"Method '{methodName}' not found in type '{typeName}'");
-                }
-                var command_params_obj = new MemoryStream();
-                var command_params_obj_writer = new MonoBinaryWriter(command_params_obj);
-                command_params_obj_writer.WriteObj(objectId, proxy.sdbHelper);
-                if (method.ArgumentList != null)
+                JObject rootObject = null;
+                var expr = method.Expression;
+                if (expr is MemberAccessExpressionSyntax)
                 {
-                    command_params_obj_writer.Write((int)method.ArgumentList.Arguments.Count);
-                    foreach (var arg in method.ArgumentList.Arguments)
+                    var memberAccessExpressionSyntax = expr as MemberAccessExpressionSyntax;
+                    rootObject = await Resolve(memberAccessExpressionSyntax.Expression.ToString(), token);
+                    methodName = memberAccessExpressionSyntax.Name.ToString();
+                }
+                if (rootObject != null)
+                {
+                    DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
+                    var typeId = await proxy.SdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
+                    int methodId = await proxy.SdbHelper.GetMethodIdByName(sessionId, typeId[0], methodName, token);
+                    if (methodId == 0) {
+                        var typeName = await proxy.SdbHelper.GetTypeName(sessionId, typeId[0], token);
+                        throw new Exception($"Method '{methodName}' not found in type '{typeName}'");
+                    }
+                    var command_params_obj = new MemoryStream();
+                    var commandParamsObjWriter = new MonoBinaryWriter(command_params_obj);
+                    commandParamsObjWriter.WriteObj(objectId, proxy.SdbHelper);
+                    if (method.ArgumentList != null)
                     {
-                        if (arg.Expression is LiteralExpressionSyntax)
+                        commandParamsObjWriter.Write((int)method.ArgumentList.Arguments.Count);
+                        foreach (var arg in method.ArgumentList.Arguments)
                         {
-                            if (!await command_params_obj_writer.WriteConst(sessionId, arg.Expression as LiteralExpressionSyntax, proxy.sdbHelper, token))
-                                return null;
+                            if (arg.Expression is LiteralExpressionSyntax)
+                            {
+                                if (!await commandParamsObjWriter.WriteConst(sessionId, arg.Expression as LiteralExpressionSyntax, proxy.SdbHelper, token))
+                                    return null;
+                            }
+                            if (arg.Expression is IdentifierNameSyntax)
+                            {
+                                var argParm = arg.Expression as IdentifierNameSyntax;
+                                if (!await commandParamsObjWriter.WriteJsonValue(sessionId, memberAccessValues[argParm.Identifier.Text], proxy.SdbHelper, token))
+                                    return null;
+                            }
                         }
-                        if (arg.Expression is IdentifierNameSyntax)
-                        {
-                            var argParm = arg.Expression as IdentifierNameSyntax;
-                            if (!await command_params_obj_writer.WriteJsonValue(sessionId, memberAccessValues[argParm.Identifier.Text], proxy.sdbHelper, token))
-                                return null;
-                        }
+                        var retMethod = await proxy.SdbHelper.InvokeMethod(sessionId, command_params_obj.ToArray(), methodId, "methodRet", token);
+                        return await GetValueFromObject(retMethod, token);
                     }
                 }
-                try
-                {
-                    var retMethod = await proxy.sdbHelper.InvokeMethod(sessionId, command_params_obj.ToArray(), method_id, "methodRet", token);
-                    return await GetValueFromObject(retMethod, token);
-                }
-                catch (Exception)
-                {
-                    throw new Exception($"Unable to evaluate method '{methodName}'");
-                }
+                return null;
             }
-            return null;
+            catch (Exception)
+            {
+                throw new Exception($"Unable to evaluate method '{methodName}'");
+            }
         }
-
     }
 }

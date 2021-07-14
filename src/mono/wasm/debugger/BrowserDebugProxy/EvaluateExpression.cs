@@ -96,14 +96,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                  // 1.1 Replace all this.a() occurrences with this_a_ABDE
                 root = root.ReplaceNodes(methodCall, (m, _) =>
                 {
-                    string ies_str = m.ToString();
-                    if (!methodCallToParamName.TryGetValue(ies_str, out string id_name))
+                    string iesStr = m.ToString();
+                    if (!methodCallToParamName.TryGetValue(iesStr, out string id_name))
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = ies_str.Trim().Replace(".", "_").Replace("(", "_").Replace(")", "_");
+                        string prefix = iesStr.Trim().Replace(".", "_").Replace("(", "_").Replace(")", "_");
                         id_name = $"{prefix}_{suffix}";
-                        methodCallToParamName[ies_str] = id_name;
+                        methodCallToParamName[iesStr] = id_name;
                     }
 
                     return SyntaxFactory.IdentifierName(id_name);
@@ -307,10 +307,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             // and the returned expression from GetExpressionFromSyntaxTree is `a`!
             if (expressionTree.Kind() == SyntaxKind.IdentifierName || expressionTree.Kind() == SyntaxKind.ThisExpression)
             {
-                string var_name = expressionTree.ToString();
-                JObject value = await resolver.Resolve(var_name, token);
+                string varName = expressionTree.ToString();
+                JObject value = await resolver.Resolve(varName, token);
                 if (value == null)
-                    throw new ReturnAsErrorException($"Cannot find member named '{var_name}'.", "ReferenceError");
+                    throw new ReturnAsErrorException($"Cannot find member named '{varName}'.", "ReferenceError");
 
                 return value;
             }
