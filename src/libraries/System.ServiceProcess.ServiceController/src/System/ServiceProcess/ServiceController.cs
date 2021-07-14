@@ -192,7 +192,7 @@ namespace System.ServiceProcess
                         throw new Win32Exception(lastError);
 
                     // allocate the buffer
-                    IntPtr enumBuffer = NativeMemoryHelper.Alloc(bytesNeeded);
+                    IntPtr enumBuffer = Marshal.AllocHGlobal((IntPtr)bytesNeeded);
 
                     try
                     {
@@ -214,7 +214,7 @@ namespace System.ServiceProcess
                     }
                     finally
                     {
-                        NativeMemoryHelper.Free(enumBuffer);
+                        Marshal.FreeHGlobal(enumBuffer);
                     }
                 }
 
@@ -305,7 +305,7 @@ namespace System.ServiceProcess
                     throw new Win32Exception(lastError);
 
                 // get the info
-                IntPtr bufPtr = NativeMemoryHelper.Alloc(bytesNeeded);
+                IntPtr bufPtr = Marshal.AllocHGlobal((IntPtr)bytesNeeded);
                 try
                 {
                     success = Interop.Advapi32.QueryServiceConfig(serviceHandle, bufPtr, bytesNeeded, out bytesNeeded);
@@ -364,7 +364,7 @@ namespace System.ServiceProcess
                 }
                 finally
                 {
-                    NativeMemoryHelper.Free(bufPtr);
+                    Marshal.FreeHGlobal(bufPtr);
                 }
             }
         }
@@ -384,7 +384,7 @@ namespace System.ServiceProcess
                     throw new Win32Exception(lastError);
 
                 // get the info
-                IntPtr bufPtr = NativeMemoryHelper.Alloc(bytesNeeded);
+                IntPtr bufPtr = Marshal.AllocHGlobal((IntPtr)bytesNeeded);
                 try
                 {
                     success = Interop.Advapi32.QueryServiceConfig(serviceHandle, bufPtr, bytesNeeded, out bytesNeeded);
@@ -399,7 +399,7 @@ namespace System.ServiceProcess
                 }
                 finally
                 {
-                    NativeMemoryHelper.Free(bufPtr);
+                    Marshal.FreeHGlobal(bufPtr);
                 }
 
                 return _startType;
@@ -755,7 +755,7 @@ namespace System.ServiceProcess
                 ref resumeHandle,
                 group);
 
-            IntPtr memory = NativeMemoryHelper.Alloc(bytesNeeded);
+            IntPtr memory = Marshal.AllocHGlobal((IntPtr)bytesNeeded);
             try
             {
                 //
@@ -787,7 +787,7 @@ namespace System.ServiceProcess
             }
             finally
             {
-                NativeMemoryHelper.Free(memory);
+                Marshal.FreeHGlobal(memory);
             }
 
             return services;
@@ -877,13 +877,13 @@ namespace System.ServiceProcess
                     if (args[i] == null)
                         throw new ArgumentNullException($"{nameof(args)}[{i}]", SR.ArgsCantBeNull);
 
-                    argPtrs[i] = NativeMemoryHelper.AllocStringUnicode(args[i]);
+                    argPtrs[i] = Marshal.StringToHGlobalUni(args[i]);
                 }
             }
             catch
             {
                 for (int j = 0; j < i; j++)
-                    NativeMemoryHelper.Free(argPtrs[i]);
+                    Marshal.FreeHGlobal(argPtrs[i]);
                 throw;
             }
 
@@ -901,7 +901,7 @@ namespace System.ServiceProcess
             finally
             {
                 for (i = 0; i < args.Length; i++)
-                    NativeMemoryHelper.Free(argPtrs[i]);
+                    Marshal.FreeHGlobal(argPtrs[i]);
                 if (argPtrsHandle.IsAllocated)
                     argPtrsHandle.Free();
             }
