@@ -198,6 +198,7 @@
       <_MonoCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
       <_MonoCMakeArgs Condition="'$(CMakeArgs)' != ''" Include="$(CMakeArgs)"/>
       <_MonoCMakeArgs Condition="'$(MonoEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir.TrimEnd('\/'))" />
+      <_MonoCMakeArgs Condition="'$(BuildDarwinFrameworks)' == 'true'" Include="-DBUILD_DARWIN_FRAMEWORKS=1" />
       <_MonoCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
       <_MonoCMakeArgs Include="-DMONO_LIB_NAME=$(MonoLibName)" />
       <_MonoCMakeArgs Include="-DMONO_SHARED_LIB_NAME=$(MonoSharedLibName)" />
@@ -346,6 +347,7 @@
       <_MonoCMakeArgs Include="-DENABLE_VISIBILITY_HIDDEN=1"/>
       <_MonoCMakeArgs Include="-DENABLE_LAZY_GC_THREAD_CREATION=1"/>
       <_MonoCMakeArgs Include="-DENABLE_SIGALTSTACK=0"/>
+      <_MonoCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoCFLAGS Include="-Werror=partial-availability" />
       <_MonoCFLAGS Condition="'$(TargetstvOS)' == 'true'" Include="-fno-gnu-inline-asm" />
       <_MonoCFLAGS Include="-fexceptions" />
@@ -431,6 +433,9 @@
     <ItemGroup Condition="'$(MonoComponentsStatic)' == 'true'">
       <_MonoCMakeArgs Include="-DSTATIC_COMPONENTS=1" />
     </ItemGroup>
+    <ItemGroup>
+      <_MonoCMakeArgs Include="-DMONO_COMPONENTS_RID=$(TargetOS)-$(TargetArchitecture)" />
+    </ItemGroup>
 
     <PropertyGroup>
       <_MonoCFLAGSOption>-DCMAKE_C_FLAGS="@(_MonoCPPFLAGS, ' ') @(_MonoCFLAGS, ' ')"</_MonoCFLAGSOption>
@@ -505,6 +510,7 @@
     <ItemGroup>
       <FilesToStrip Include="$(_MonoRuntimeFilePath)" />
       <FilesToStrip Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\libmono-component-*$(SharedLibExt)" />
+      <FilesToStrip Include="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\Mono*framework\**\Mono*" Exclude="$([System.IO.Directory]::GetParent($(_MonoRuntimeFilePath)))\Mono*framework\**\*.dwarf" />
     </ItemGroup>
     <Message Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ($([MSBuild]::IsOSPlatform('OSX')) or $([MSBuild]::IsOSPlatform('Linux')))" Text="Stripping debug symbols from %(FilesToStrip.Identity)" Importance="High"/>
     <Exec Condition="!$([System.String]::Copy(%(FilesToStrip.Identity)).EndsWith('.a')) and '$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="dsymutil --flat --minimize %(FilesToStrip.Identity)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjDir)"/>
@@ -770,6 +776,43 @@
         <Destination>$(RuntimeBinDir)cross\$(PackageRID)\opt$(ExeExt)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
+      <_MonoRuntimeArtifacts Condition="'$(MonoComponentsStatic)' != 'true' and Exists('$(MonoObjDir)out\lib\Mono.release.framework')" Include="@(_MonoRuntimeComponentsSharedFilePath)">
+        <Destination>$(RuntimeBinDir)\Mono.release.framework\%(_MonoRuntimeComponentsSharedFilePath.Filename)%(_MonoRuntimeComponentsSharedFilePath.Extension)</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and !Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Mono.release">
+        <Destination>$(RuntimeBinDir)\Mono.release.framework\Mono</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Versions\Current\Mono.release">
+        <Destination>$(RuntimeBinDir)\Mono.release.framework\Mono</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Mono.release.dwarf">
+        <Destination>$(RuntimeBinDir)\Mono.release.framework\Mono.dwarf</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="'$(MonoComponentsStatic)' != 'true' and Exists('$(MonoObjDir)out\lib\Mono.debug.framework')" Include="@(_MonoRuntimeComponentsSharedFilePath)">
+        <Destination>$(RuntimeBinDir)\Mono.debug.framework\%(_MonoRuntimeComponentsSharedFilePath.Filename)%(_MonoRuntimeComponentsSharedFilePath.Extension)</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and !Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Mono.debug">
+        <Destination>$(RuntimeBinDir)\Mono.debug.framework\Mono</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Versions\Current\Mono.debug">
+        <Destination>$(RuntimeBinDir)\Mono.debug.framework\Mono</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Mono.debug.dwarf">
+        <Destination>$(RuntimeBinDir)\Mono.debug.framework\Mono.dwarf</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and !Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Info.plist">
+        <Destination>$(RuntimeBinDir)\Mono.release.framework\Info.plist</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.release.framework') and Exists('$(MonoObjDir)out\lib\Mono.release.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.release.framework\Versions\Current\Resources\Info.plist">
+        <Destination>$(RuntimeBinDir)\Mono.release.framework\Info.plist</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and !Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Info.plist">
+        <Destination>$(RuntimeBinDir)\Mono.debug.framework\Info.plist</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="Exists('$(MonoObjDir)out\lib\Mono.debug.framework') and Exists('$(MonoObjDir)out\lib\Mono.debug.framework\Versions')" Include="$(MonoObjDir)out\lib\Mono.debug.framework\Versions\Current\Resources\Info.plist">
+        <Destination>$(RuntimeBinDir)\Mono.debug.framework\Info.plist</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeBuildArtifacts Include="$(MonoObjDir)\build\**" />
       <_MonoRuntimeArtifacts Condition="'$(_MonoIncludeInterpStaticFiles)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ee-interp.a">
         <Destination>$(RuntimeBinDir)libmono-ee-interp.a</Destination>
       </_MonoRuntimeArtifacts>
@@ -815,6 +858,11 @@
           DestinationFiles="@(_MonoIncludeArtifacts->'$(RuntimeBinDir)include\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true"
           Condition="'$(MonoGenerateOffsetsOSGroups)' == '' and ('$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true')"/>
+
+    <Copy SourceFiles="@(_MonoRuntimeBuildArtifacts)"
+          DestinationFiles="@(_MonoRuntimeBuildArtifacts->'$(RuntimeBinDir)build\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" />
 
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(MonoGenerateOffsetsOSGroups)' == '' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Command="install_name_tool -id @rpath/$(MonoFileName) $(RuntimeBinDir)$(MonoFileName)" />
   </Target>

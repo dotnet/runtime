@@ -80,7 +80,7 @@ namespace NetCoreServer
                         await socket.CloseAsync(
                             closeStatus,
                             replyWithEnhancedCloseMessage ?
-                                $"Server received: {(int)closeStatus} {receiveResult.CloseStatusDescription}" :
+                                ("Server received: " + (int)closeStatus + " " + receiveResult.CloseStatusDescription) :
                                 receiveResult.CloseStatusDescription,
                             CancellationToken.None);
                     }

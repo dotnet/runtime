@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices.Tests
             [FieldOffset(0)] public TypeUnion m_Variant;
             [FieldOffset(0)] public decimal m_decimal;
 
-            public override string ToString() => "0x" + m_Variant.vt.ToString("X");
+            public override string ToString() => $"0x{m_Variant.vt:X}";
         }
 
         // Taken from wtypes.h

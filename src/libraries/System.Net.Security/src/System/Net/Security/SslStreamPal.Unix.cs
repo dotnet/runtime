@@ -36,11 +36,6 @@ namespace System.Net.Security
             return HandshakeInternal(credential!, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
-        public static SecurityStatusPal Renegotiate(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? context, SslAuthenticationOptions sslAuthenticationOptions, out byte[]? outputBuffer)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public static SafeFreeCredentials AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext,
             SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
@@ -120,6 +115,19 @@ namespace System.Net.Security
             return bindingHandle;
         }
 
+        public static SecurityStatusPal Renegotiate(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? securityContext, SslAuthenticationOptions sslAuthenticationOptions, out byte[]? outputBuffer)
+        {
+            var sslContext = ((SafeDeleteSslContext)securityContext!).SslContext;
+            SecurityStatusPal status = Interop.OpenSsl.SslRenegotiate(sslContext, out outputBuffer);
+
+            outputBuffer = Array.Empty<byte>();
+            if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
+            {
+                return status;
+            }
+            return HandshakeInternal(credentialsHandle!, ref securityContext, null, ref outputBuffer, sslAuthenticationOptions);
+        }
+
         public static void QueryContextStreamSizes(SafeDeleteContext? securityContext, out StreamSizes streamSizes)
         {
             streamSizes = StreamSizes.Default;
@@ -150,7 +158,13 @@ namespace System.Net.Security
                     context = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                 }
 
-                bool done = Interop.OpenSsl.DoSslHandshake(context.SslContext, inputBuffer, out output, out outputSize);
+                bool done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer, out output, out outputSize);
+                // sometimes during renegotiation processing messgae does not yield new output.
+                // That seems to be flaw in OpenSSL state machine and we have workaround to peek it and try it again.
+                if (outputSize == 0 && Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)context).SslContext))
+                {
+                    done = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, ReadOnlySpan<byte>.Empty, out output, out outputSize);
+                }
 
                 // When the handshake is done, and the context is server, check if the alpnHandle target was set to null during ALPN.
                 // If it was, then that indicates ALPN failed, send failure.

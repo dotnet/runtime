@@ -1051,9 +1051,6 @@
             <Issue>https://github.com/dotnet/runtime/issues/46174</Issue>
         </ExcludeList>
 
-        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/Runtimelab_578/arr/*">
-            <Issue>https://github.com/dotnet/runtime/issues/47458</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTestWithMcj/*">
             <Issue>Tests features specific to coreclr</Issue>
         </ExcludeList>
@@ -2214,12 +2211,6 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)JIT/IL_Conformance/Old/Base/ckfinite/**">
             <Issue>https://github.com/dotnet/runtime/issues/54376</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128_1/Vector128_1_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54374e</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128_1/Vector128_1_ro/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54374</Issue>
         </ExcludeList>
         <!-- End interpreter issues -->
     </ItemGroup>

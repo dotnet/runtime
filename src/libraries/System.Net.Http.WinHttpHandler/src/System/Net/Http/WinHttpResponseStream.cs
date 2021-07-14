@@ -113,7 +113,7 @@ namespace System.Net.Http
         private async Task CopyToAsyncCore(Stream destination, byte[] buffer, CancellationToken cancellationToken)
         {
             _state.PinReceiveBuffer(buffer);
-            CancellationTokenRegistration ctr = cancellationToken.Register(s => ((WinHttpResponseStream)s).CancelPendingResponseStreamReadOperation(), this);
+            CancellationTokenRegistration ctr = cancellationToken.Register(s => ((WinHttpResponseStream)s!).CancelPendingResponseStreamReadOperation(), this);
             _state.AsyncReadInProgress = true;
             try
             {
@@ -223,7 +223,7 @@ namespace System.Net.Http
             }
 
             _state.PinReceiveBuffer(buffer);
-            var ctr = token.Register(s => ((WinHttpResponseStream)s).CancelPendingResponseStreamReadOperation(), this);
+            var ctr = token.Register(s => ((WinHttpResponseStream)s!).CancelPendingResponseStreamReadOperation(), this);
             _state.AsyncReadInProgress = true;
             try
             {
@@ -330,7 +330,7 @@ namespace System.Net.Http
                     if (_requestHandle != null)
                     {
                         _requestHandle.Dispose();
-                        _requestHandle = null;
+                        _requestHandle = null!;
                     }
                 }
             }

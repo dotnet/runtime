@@ -222,7 +222,7 @@ internal class Xcode
 
         if (!string.IsNullOrEmpty(DiagnosticPorts))
         {
-            defines.AppendLine("\nadd_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")");
+            defines.AppendLine($"\nadd_definitions(-DDIAGNOSTIC_PORTS=\"{DiagnosticPorts}\")");
         }
 
         cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
@@ -272,7 +272,7 @@ internal class Xcode
             .Append("-S.")
             .Append(" -B").Append(projectName)
             .Append(" -GXcode")
-            .Append(" -DCMAKE_SYSTEM_NAME=" + targetName)
+            .Append(" -DCMAKE_SYSTEM_NAME=").Append(targetName)
             .Append(deployTarget);
 
         File.WriteAllText(Path.Combine(binDir, "runtime.h"),
@@ -334,30 +334,30 @@ internal class Xcode
                 case TargetNames.iOS:
                     sdk = "iphoneos";
                     args.Append(" -arch arm64")
-                        .Append(" -sdk " + sdk);
+                        .Append(" -sdk ").Append(sdk);
                     break;
                 case TargetNames.iOSsim:
                     sdk = "iphonesimulator";
                     args.Append(" -arch arm64")
-                        .Append(" -sdk " + sdk);
+                        .Append(" -sdk ").Append(sdk);
                     break;
                 case TargetNames.tvOS:
                     sdk = "appletvos";
                     args.Append(" -arch arm64")
-                        .Append(" -sdk " + sdk);
+                        .Append(" -sdk ").Append(sdk);
                     break;
                 case TargetNames.tvOSsim:
                     sdk = "appletvsimulator";
                     args.Append(" -arch arm64")
-                        .Append(" -sdk " + sdk);
+                        .Append(" -sdk ").Append(sdk);
                     break;
                 default:
                     sdk = "maccatalyst";
-                    args.Append(" -scheme \"" + Path.GetFileNameWithoutExtension(xcodePrjPath) + "\"")
+                    args.Append(" -scheme \"").Append(Path.GetFileNameWithoutExtension(xcodePrjPath)).Append('"')
                         .Append(" -destination \"generic/platform=macOS,name=Any Mac,variant=Mac Catalyst\"")
                         .Append(" -UseModernBuildSystem=YES")
-                        .Append(" -archivePath \"" + Path.GetDirectoryName(xcodePrjPath) + "\"")
-                        .Append(" -derivedDataPath \"" + Path.GetDirectoryName(xcodePrjPath) + "\"")
+                        .Append(" -archivePath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
+                        .Append(" -derivedDataPath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
                         .Append(" IPHONEOS_DEPLOYMENT_TARGET=14.2");
                     break;
             }
@@ -369,20 +369,20 @@ internal class Xcode
                 case TargetNames.iOSsim:
                     sdk = "iphonesimulator";
                     args.Append(" -arch x86_64")
-                        .Append(" -sdk " + sdk);
+                        .Append(" -sdk ").Append(sdk);
                     break;
                 case TargetNames.tvOSsim:
                     sdk = "appletvsimulator";
                     args.Append(" -arch x86_64")
-                        .Append(" -sdk " + sdk);
+                        .Append(" -sdk ").Append(sdk);
                     break;
                 default:
                     sdk = "maccatalyst";
-                    args.Append(" -scheme \"" + Path.GetFileNameWithoutExtension(xcodePrjPath) + "\"")
+                    args.Append(" -scheme \"").Append(Path.GetFileNameWithoutExtension(xcodePrjPath)).Append('"')
                         .Append(" -destination \"generic/platform=macOS,name=Any Mac,variant=Mac Catalyst\"")
                         .Append(" -UseModernBuildSystem=YES")
-                        .Append(" -archivePath \"" + Path.GetDirectoryName(xcodePrjPath) + "\"")
-                        .Append(" -derivedDataPath \"" + Path.GetDirectoryName(xcodePrjPath) + "\"")
+                        .Append(" -archivePath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
+                        .Append(" -derivedDataPath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
                         .Append(" IPHONEOS_DEPLOYMENT_TARGET=13.5");
                     break;
             }

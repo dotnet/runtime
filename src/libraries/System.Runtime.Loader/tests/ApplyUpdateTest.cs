@@ -83,6 +83,35 @@ namespace System.Reflection.Metadata
             });
         }
 
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        public void CustomAttributeUpdates()
+        {
+            // Test that _modifying_ custom attribute constructor/property argumments works as expected.
+            // For this test, we don't change which constructor is called, or how many custom attributes there are.
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeUpdates).Assembly;
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+                // Just check the updated value on one method
+
+                Type attrType = typeof(System.Reflection.Metadata.ApplyUpdate.Test.MyAttribute);
+                Type ty = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeUpdates");
+                Assert.NotNull(ty);
+                MethodInfo mi = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeUpdates.Method1), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi);
+                var cattrs = Attribute.GetCustomAttributes(mi, attrType);
+                Assert.NotNull(cattrs);
+                Assert.Equal(1, cattrs.Length);
+                Assert.NotNull(cattrs[0]);
+                Assert.Equal(attrType, cattrs[0].GetType());
+                string p = (cattrs[0] as System.Reflection.Metadata.ApplyUpdate.Test.MyAttribute).StringValue;
+                Assert.Equal("rstuv", p);
+            });
+        }
+
         class NonRuntimeAssembly : Assembly
         {
         }

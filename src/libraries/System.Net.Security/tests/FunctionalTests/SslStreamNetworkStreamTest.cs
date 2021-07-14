@@ -42,6 +42,8 @@ namespace System.Net.Security.Tests
 
     public class SslStreamNetworkStreamTest : IClassFixture<CertificateSetup>
     {
+        private static bool SupportsRenegotiation => TestConfiguration.SupportsRenegotiation;
+
         readonly ITestOutputHelper _output;
         readonly CertificateSetup certificates;
 
@@ -172,10 +174,10 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [ConditionalTheory(nameof(SupportsRenegotiation))]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsync_Succeeds(bool sendClientCertificate)
         {
             bool negotiateClientCertificateCalled = false;
@@ -214,6 +216,7 @@ namespace System.Net.Security.Tests
                     return true;
                 };
 
+
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                                 client.AuthenticateAsClientAsync(clientOptions, cts.Token),
                                 server.AuthenticateAsServerAsync(serverOptions, cts.Token));
@@ -234,19 +237,21 @@ namespace System.Net.Security.Tests
                 {
                     Assert.Null(server.RemoteCertificate);
                 }
+
                 // Finish the client's read
                 await server.WriteAsync(TestHelper.s_ping, cts.Token);
                 await t;
+
                 // verify that the session is usable with or without client's certificate
                 await TestHelper.PingPong(client, server, cts.Token);
                 await TestHelper.PingPong(server, client, cts.Token);
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [ConditionalTheory(nameof(SupportsRenegotiation))]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsyncNoRenego_Succeeds(bool sendClientCertificate)
         {
             bool negotiateClientCertificateCalled = false;
@@ -316,8 +321,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/dotnet/runtime/pull/54692")]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsync_ClientWriteData()
         {
             using CancellationTokenSource cts = new CancellationTokenSource();
@@ -344,7 +348,6 @@ namespace System.Net.Security.Tests
 
                 Assert.Null(server.RemoteCertificate);
 
-
                 var t = server.NegotiateClientCertificateAsync(cts.Token);
 
                 // Send application data instead of Client hello.
@@ -354,8 +357,8 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(nameof(SupportsRenegotiation))]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsync_ServerDontDrainClientData()
         {
             using CancellationTokenSource cts = new CancellationTokenSource();

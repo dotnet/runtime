@@ -15,7 +15,7 @@ static bool
 hot_reload_stub_available (void);
 
 static void
-hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error);
+hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error);
 
 static MonoComponentHotReload *
 component_hot_reload_stub_init (void);
@@ -59,6 +59,12 @@ hot_reload_stub_table_bounds_check (MonoImage *base_image, int table_index, int 
 static gboolean
 hot_reload_stub_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, uint32_t orig_index, MonoImage **image_out, uint32_t *index_out);
 
+static gpointer
+hot_reload_stub_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx);
+
+static gboolean
+hot_reload_stub_has_modified_rows (const MonoTableInfo *table);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
 	&hot_reload_stub_set_fastpath_data,
@@ -75,6 +81,8 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_get_updated_method_rva,
 	&hot_reload_stub_table_bounds_check,
 	&hot_reload_stub_delta_heap_lookup,
+	&hot_reload_stub_get_updated_method_ppdb,
+	&hot_reload_stub_has_modified_rows,
 };
 
 static bool
@@ -139,7 +147,7 @@ hot_reload_stub_relative_delta_index (MonoImage *image_dmeta, int token)
 }
 
 void
-hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, MonoError *error)
+hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error)
 {
 	mono_error_set_not_supported (error, "Hot reload not supported in this runtime.");
 }
@@ -170,6 +178,18 @@ static gboolean
 hot_reload_stub_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, uint32_t orig_index, MonoImage **image_out, uint32_t *index_out)
 {
 	g_assert_not_reached ();
+}
+
+static gpointer
+hot_reload_stub_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx)
+{
+	g_assert_not_reached ();
+}
+
+static gboolean
+hot_reload_stub_has_modified_rows (const MonoTableInfo *table)
+{
+	return FALSE;
 }
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT

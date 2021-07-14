@@ -85,7 +85,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         KeepAlive = 14,
         UserBreak = 15,
         UserLog = 16,
-        Crash = 17
+        Crash = 17,
+        EnC = 18,
+        MethodUpdate = 19
     }
 
     internal enum ModifierKind {
@@ -635,16 +637,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdVM>(sessionId, CmdVM.SetProtocolVersion, commandParams, token);
             return true;
         }
-        public async Task<bool> EnableReceiveUserBreakRequest(SessionId sessionId, CancellationToken token)
+
+        public async Task<bool> EnableReceiveRequests(SessionId sessionId, EventKind eventKind, CancellationToken token)
         {
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
-            commandParamsWriter.Write((byte)EventKind.UserBreak);
-            commandParamsWriter.Write((byte)SuspendPolicy.None);
-            commandParamsWriter.Write((byte)0);
+            command_params_writer.Write((byte)eventKind);
+            command_params_writer.Write((byte)SuspendPolicy.None);
+            command_params_writer.Write((byte)0);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdEventRequest>(sessionId, CmdEventRequest.Set, commandParams, token);
             return true;
         }
+
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommandInternal(SessionId sessionId, int command_set, int command, MemoryStream parms, CancellationToken token)
         {
             Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(GetId(), command_set, command, Convert.ToBase64String(parms.ToArray())), token);
@@ -745,6 +749,17 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdVM>(sessionId, CmdVM.GetAssemblyByName, commandParams, token);
             return retDebuggerCmdReader.ReadInt32();
+        }
+
+        public async Task<string> GetAssemblyNameFromModule(SessionId sessionId, int moduleId, CancellationToken token)
+        {
+            var command_params = new MemoryStream();
+            var command_params_writer = new MonoBinaryWriter(command_params);
+            command_params_writer.Write(moduleId);
+
+            var ret_debugger_cmd_reader = await SendDebuggerAgentCommand<CmdModule>(sessionId, CmdModule.GetInfo, command_params, token);
+            ret_debugger_cmd_reader.ReadString();
+            return ret_debugger_cmd_reader.ReadString();
         }
 
         public async Task<string> GetAssemblyName(SessionId sessionId, int assembly_id, CancellationToken token)

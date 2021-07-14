@@ -278,7 +278,7 @@ namespace System.Formats.Asn1.Tests.Writer
         [InlineData("FEFDFCFBFAF9F8F7F6F5F4F3F2F1F100")]
         public void VerifyWriteInteger_EncodedBytes(string valueHex)
         {
-            string expectedHex = "02" + (valueHex.Length / 2).ToString("X2") + valueHex;
+            string expectedHex = $"02{valueHex.Length / 2:X2}{valueHex}";
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
             writer.WriteInteger(valueHex.HexToByteArray());
@@ -298,7 +298,7 @@ namespace System.Formats.Asn1.Tests.Writer
         [InlineData("FEFDFCFBFAF9F8F7F6F5F4F3F2F1F100")]
         public void VerifyWriteInteger_Context4_EncodedBytes(string valueHex)
         {
-            string expectedHex = "84" + (valueHex.Length / 2).ToString("X2") + valueHex;
+            string expectedHex = $"84{valueHex.Length / 2:X2}{valueHex}";
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
             writer.WriteInteger(valueHex.HexToByteArray(), new Asn1Tag(TagClass.ContextSpecific, 4));

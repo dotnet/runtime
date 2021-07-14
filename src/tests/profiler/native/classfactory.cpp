@@ -6,6 +6,7 @@
 #include "eventpipeprofiler/eventpipereadingprofiler.h"
 #include "eventpipeprofiler/eventpipewritingprofiler.h"
 #include "getappdomainstaticaddress/getappdomainstaticaddress.h"
+#include "gcallocateprofiler/gcallocateprofiler.h"
 #include "gcbasicprofiler/gcbasicprofiler.h"
 #include "gcprofiler/gcprofiler.h"
 #include "metadatagetdispenser/metadatagetdispenser.h"
@@ -61,6 +62,7 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
 
 	//A little simplistic, we create an instance of every profiler, then return the one whose CLSID matches
 	Profiler* profilers[] = {
+        new GCAllocateProfiler(),
 		new GCBasicProfiler(),
         new ReJITProfiler(),
         new EventPipeReadingProfiler(),

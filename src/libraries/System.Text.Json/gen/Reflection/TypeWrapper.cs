@@ -9,7 +9,7 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
     internal class TypeWrapper : Type
     {
@@ -231,18 +231,32 @@ namespace System.Text.Json.SourceGeneration.Reflection
 
         public override FieldInfo[] GetFields(BindingFlags bindingAttr)
         {
-            var fields = new List<FieldInfo>();
+            List<FieldInfo> fields = new();
+
             foreach (ISymbol item in _typeSymbol.GetMembers())
             {
-                // Associated Symbol checks the field is not a backingfield.
-                if (item is IFieldSymbol field && field.AssociatedSymbol == null && !field.IsReadOnly)
+                if (item is IFieldSymbol fieldSymbol)
                 {
-                    if ((item.DeclaredAccessibility & Accessibility.Public) == Accessibility.Public)
+                    // Skip if:
+                    if (
+                        // this is a backing field
+                        fieldSymbol.AssociatedSymbol != null ||
+                        // we want a static field and this is not static
+                        (BindingFlags.Static & bindingAttr) != 0 && !fieldSymbol.IsStatic ||
+                        // we want an instance field and this is static or a constant
+                        (BindingFlags.Instance & bindingAttr) != 0 && (fieldSymbol.IsStatic || fieldSymbol.IsConst))
                     {
-                        fields.Add(new FieldInfoWrapper(field, _metadataLoadContext));
+                        continue;
+                    }
+
+                    if ((BindingFlags.Public & bindingAttr) != 0 && item.DeclaredAccessibility == Accessibility.Public ||
+                        (BindingFlags.NonPublic & bindingAttr) != 0)
+                    {
+                        fields.Add(new FieldInfoWrapper(fieldSymbol, _metadataLoadContext));
                     }
                 }
             }
+
             return fields.ToArray();
         }
 
@@ -300,18 +314,28 @@ namespace System.Text.Json.SourceGeneration.Reflection
             return nestedTypes.ToArray();
         }
 
-        // TODO: make sure to use bindingAttr for correctness. Current implementation assumes public and non-static.
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
         {
-            var properties = new List<PropertyInfo>();
+            List<PropertyInfo> properties = new();
 
             foreach (ISymbol item in _typeSymbol.GetMembers())
             {
-                if (item is IPropertySymbol property)
+                if (item is IPropertySymbol propertySymbol)
                 {
-                    if ((item.DeclaredAccessibility & Accessibility.Public) == Accessibility.Public)
+                    // Skip if:
+                    if (
+                        // we want a static property and this is not static
+                        (BindingFlags.Static & bindingAttr) != 0 && !propertySymbol.IsStatic ||
+                        // we want an instance property and this is static
+                        (BindingFlags.Instance & bindingAttr) != 0 && propertySymbol.IsStatic)
                     {
-                        properties.Add(new PropertyInfoWrapper(property, _metadataLoadContext));
+                        continue;
+                    }
+
+                    if ((BindingFlags.Public & bindingAttr) != 0 && item.DeclaredAccessibility == Accessibility.Public ||
+                        (BindingFlags.NonPublic & bindingAttr) != 0)
+                    {
+                        properties.Add(new PropertyInfoWrapper(propertySymbol, _metadataLoadContext));
                     }
                 }
             }

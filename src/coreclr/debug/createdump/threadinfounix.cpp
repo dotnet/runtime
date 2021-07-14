@@ -24,7 +24,10 @@ bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name);
 
 ThreadInfo::ThreadInfo(CrashInfo& crashInfo, pid_t tid) :
     m_crashInfo(crashInfo),
-    m_tid(tid)
+    m_tid(tid),
+    m_managed(false),
+    m_exceptionObject(0),
+    m_exceptionHResult(0)
 {
 }
 

@@ -865,16 +865,16 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
         if (pred->bbFallsThrough() && pred->bbNext == block)
         {
             assertions = pred->bbAssertionOut;
-            JITDUMP("Merge assertions from pred " FMT_BB " edge: %s\n", pred->bbNum,
-                    BitVecOps::ToString(m_pCompiler->apTraits, assertions));
+            JITDUMP("Merge assertions from pred " FMT_BB " edge: ", pred->bbNum);
+            Compiler::optDumpAssertionIndices(assertions, "\n");
         }
         else if ((pred->bbJumpKind == BBJ_COND || pred->bbJumpKind == BBJ_ALWAYS) && pred->bbJumpDest == block)
         {
             if (m_pCompiler->bbJtrueAssertionOut != nullptr)
             {
                 assertions = m_pCompiler->bbJtrueAssertionOut[pred->bbNum];
-                JITDUMP("Merge assertions from pred " FMT_BB " JTrue edge: %s\n", pred->bbNum,
-                        BitVecOps::ToString(m_pCompiler->apTraits, assertions));
+                JITDUMP("Merge assertions from pred " FMT_BB " JTrue edge: ", pred->bbNum);
+                Compiler::optDumpAssertionIndices(assertions, "\n");
             }
         }
     }
@@ -1012,9 +1012,10 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
     Range range = GetRange(ssaDef->GetBlock(), ssaDef->GetAssignment()->gtGetOp2(), monIncreasing DEBUGARG(indent));
     if (!BitVecOps::MayBeUninit(block->bbAssertionIn) && (m_pCompiler->GetAssertionCount() > 0))
     {
-        JITDUMP("Merge assertions from " FMT_BB ":%s for assignment about [%06d]\n", block->bbNum,
-                BitVecOps::ToString(m_pCompiler->apTraits, block->bbAssertionIn),
-                Compiler::dspTreeID(ssaDef->GetAssignment()->gtGetOp1()));
+        JITDUMP("Merge assertions from " FMT_BB ": ", block->bbNum);
+        Compiler::optDumpAssertionIndices(block->bbAssertionIn, " ");
+        JITDUMP("for assignment about [%06d]\n", Compiler::dspTreeID(ssaDef->GetAssignment()->gtGetOp1()))
+
         MergeEdgeAssertions(ssaDef->GetAssignment()->gtGetOp1()->AsLclVarCommon(), block->bbAssertionIn, &range);
         JITDUMP("done merging\n");
     }

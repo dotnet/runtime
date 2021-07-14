@@ -5,9 +5,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
-    internal static class ReflectionExtensions
+    internal static partial class ReflectionExtensions
     {
         public static CustomAttributeData GetCustomAttributeData(this MemberInfo memberInfo, Type type)
         {
