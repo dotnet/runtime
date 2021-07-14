@@ -108,7 +108,7 @@ namespace System.Security.Cryptography.Cng.Tests
         [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
         public static void VerifyUnsupportedFeedbackSizeForPersistedCfb()
         {
-            SymmetricCngTestHelpers.VerifyOneShotCfbPersistedUnsupportedFeedbackSize(
+            SymmetricCngTestHelpers.VerifyCfbPersistedUnsupportedFeedbackSize(
                 s_cngAlgorithm,
                 keyName => new TripleDESCng(keyName),
                 notSupportedFeedbackSizeInBits: 64);
