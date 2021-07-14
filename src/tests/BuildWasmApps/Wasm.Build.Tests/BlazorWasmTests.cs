@@ -19,7 +19,8 @@ namespace Wasm.Build.Tests
         [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         public void PublishTemplateProject()
         {
-            InitPaths("id");
+            string id = "blazorwasm";
+            InitPaths(id);
             if (Directory.Exists(_projectDir))
                 Directory.Delete(_projectDir, recursive: true);
             Directory.CreateDirectory(_projectDir);
@@ -29,14 +30,17 @@ namespace Wasm.Build.Tests
             File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
             File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.targets"), Path.Combine(_projectDir, "Directory.Build.targets"));
 
-            new DotNetCommand(s_buildEnv)
+            string logPath = Path.Combine(s_buildEnv.LogRootPath, id);
+
+            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
                     .WithWorkingDirectory(_projectDir)
                     .ExecuteWithCapturedOutput("new blazorwasm")
                     .EnsureSuccessful();
 
+            string publishLogPath = Path.Combine(logPath, $"{id}.publish.binlog");
             new DotNetCommand(s_buildEnv)
                     .WithWorkingDirectory(_projectDir)
-                    .ExecuteWithCapturedOutput("publish -bl -p:RunAOTCompilation=true")
+                    .ExecuteWithCapturedOutput("publish", $"-bl:{publishLogPath}", "-p:RunAOTCompilation=true")
                     .EnsureSuccessful();
 
             //TODO: validate the build somehow?
