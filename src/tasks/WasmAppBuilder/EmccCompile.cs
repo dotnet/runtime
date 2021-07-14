@@ -125,7 +125,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
                                                             workingDir: Environment.CurrentDirectory,
                                                             logger: Log,
                                                             logStdErrAsMessage: true,
-                                                            debugMessageImportance: MessageImportance.High);
+                                                            debugMessageImportance: MessageImportance.High,
+                                                            label: Path.GetFileName(srcFile));
 
                     if (exitCode != 0)
                     {
