@@ -22,7 +22,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private ExecutionContext ctx;
         private PerScopeCache scopeCache;
         private ILogger logger;
-        private bool locals_fetched;
+        private bool localsFetched;
 
         public MemberReferenceResolver(MonoProxy proxy, ExecutionContext ctx, SessionId sessionId, int scopeId, ILogger logger)
         {
@@ -33,6 +33,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.logger = logger;
             scopeCache = ctx.GetCacheForScope(scopeId);
         }
+
+        public MemberReferenceResolver(MonoProxy proxy, ExecutionContext ctx, SessionId sessionId, JArray objectValues, ILogger logger)
+        {
+            this.sessionId = sessionId;
+            scopeId = -1;
+            this.proxy = proxy;
+            this.ctx = ctx;
+            this.logger = logger;
+            scopeCache = new PerScopeCache(objectValues);
+            localsFetched = true;
+        }
+
         public async Task<JObject> GetValueFromObject(JToken objRet, CancellationToken token)
         {
             if (objRet["value"]?["className"]?.Value<string>() == "System.Exception")
@@ -76,6 +88,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (scopeCache.MemberReferences.TryGetValue(varName, out JObject ret)) {
                 return ret;
             }
+
+            if (scopeCache.ObjectFields.TryGetValue(varName, out JObject valueRet)) {
+                return await GetValueFromObject(valueRet, token);
+            }
+
             foreach (string part in parts)
             {
                 string partTrimmed = part.Trim();
@@ -96,12 +113,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     continue;
                 }
-                if (scopeCache.Locals.Count == 0 && !locals_fetched)
+                if (scopeCache.Locals.Count == 0 && !localsFetched)
                 {
                     Result scope_res = await proxy.GetScopeProperties(sessionId, scopeId, token);
                     if (scope_res.IsErr)
                         throw new Exception($"BUG: Unable to get properties for scope: {scopeId}. {scope_res}");
-                    locals_fetched = true;
+                    localsFetched = true;
                 }
                 if (scopeCache.Locals.TryGetValue(partTrimmed, out JObject obj))
                 {
@@ -145,6 +162,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     rootObject = await Resolve(memberAccessExpressionSyntax.Expression.ToString(), token);
                     methodName = memberAccessExpressionSyntax.Name.ToString();
                 }
+                else if (expr is IdentifierNameSyntax)
+                    if (scopeCache.ObjectFields.TryGetValue("this", out JObject valueRet)) {
+                        rootObject = await GetValueFromObject(valueRet, token);
+                    methodName = expr.ToString();
+                }
+
                 if (rootObject != null)
                 {
                     DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
