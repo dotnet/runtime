@@ -1863,6 +1863,9 @@ namespace System.Reflection.Emit
             if (!IsValidGetMethodType(type))
                 throw new ArgumentException("type is not TypeBuilder but " + type.GetType(), nameof(type));
 
+            if (type is TypeBuilder && type.ContainsGenericParameters)
+                type = type.MakeGenericType(type.GetGenericArguments());
+
             if (type == null)
                 throw new ArgumentException("Type is not generic", nameof(type));
 
@@ -1915,6 +1918,9 @@ namespace System.Reflection.Emit
         {
             if (!IsValidGetMethodType(type))
                 throw new ArgumentException("type is not TypeBuilder but " + type.GetType(), nameof(type));
+
+            if (type is TypeBuilder && type.ContainsGenericParameters)
+                type = type.MakeGenericType(type.GetGenericArguments());
 
             if (!type.IsGenericType)
                 throw new ArgumentException("Type is not a generic type", nameof(type));
