@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <!-- opt-out of trimming until it works https://github.com/dotnet/runtime/issues/49062 -->
@@ -289,8 +289,10 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.ProtectedData\src\System.Security.Cryptography.ProtectedData.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Xml\src\System.Security.Cryptography.Xml.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
+    <PackageReference Include="System.Security.Cryptography.Csp" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System.Configuration" />
+    <PackageReference Include="System.Security.Cryptography.Csp" Version="4.3.0" />
   </ItemGroup>
 </Project>
