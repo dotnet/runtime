@@ -86,25 +86,13 @@ free_aot_data (MonoAssembly *assembly, int size, void *user_data, void *handle)
     munmap (handle, size);
 }
 
-static MonoAssembly*
-load_assembly (const char *name, const char *culture)
+static const char *assembly_load_prefix = NULL;
+
+static MonoAssembly *
+load_assembly_aux (const char *filename, const char *culture, const char *bundle)
 {
-    const char *bundle = get_bundle_path ();
-    char filename [1024];
     char path [1024];
     int res;
-
-    os_log_info (OS_LOG_DEFAULT, "assembly_preload_hook: %{public}s %{public}s %{public}s\n", name, culture, bundle);
-
-    int len = strlen (name);
-    int has_extension = len > 3 && name [len - 4] == '.' && (!strcmp ("exe", name + (len - 3)) || !strcmp ("dll", name + (len - 3)));
-
-    // add extensions if required.
-    strlcpy (filename, name, sizeof (filename));
-    if (!has_extension) {
-        strlcat (filename, ".dll", sizeof (filename));
-    }
-
     if (culture && strcmp (culture, ""))
         res = snprintf (path, sizeof (path) - 1, "%s/%s/%s", bundle, culture, filename);
     else
@@ -118,6 +106,33 @@ load_assembly (const char *name, const char *culture)
         return assembly;
     }
     return NULL;
+}
+
+static MonoAssembly *
+load_assembly (const char *name, const char *culture)
+{
+    const char *bundle = get_bundle_path ();
+    char filename [1024];
+
+    os_log_info (OS_LOG_DEFAULT, "assembly_preload_hook: %{public}s %{public}s %{public}s\n", name, culture, bundle);
+
+    int len = strlen (name);
+    int has_extension = len > 3 && name [len - 4] == '.' && (!strcmp ("exe", name + (len - 3)) || !strcmp ("dll", name + (len - 3)));
+
+    // add extensions if required.
+    strlcpy (filename, name, sizeof (filename));
+    if (!has_extension) {
+        strlcat (filename, ".dll", sizeof (filename));
+    }
+
+    if (assembly_load_prefix [0] != '\0') {
+        char prefix_bundle [1024];
+        int res = snprintf (prefix_bundle, sizeof (prefix_bundle) - 1, "%s/%s", bundle, assembly_load_prefix);
+        assert (res > 0);
+        MonoAssembly *ret = load_assembly_aux (filename, culture, prefix_bundle);
+        if (ret) return ret;
+    }
+    return load_assembly_aux (filename, culture, bundle);
 }
 
 static MonoAssembly*
@@ -260,7 +275,7 @@ mono_ios_runtime_init (void)
 
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
     const char *appctx_keys [] = {
-        "RUNTIME_IDENTIFIER", 
+        "RUNTIME_IDENTIFIER",
         "APP_CONTEXT_BASE_DIRECTORY",
 #if !defined(INVARIANT_GLOBALIZATION)
         "ICU_DAT_FILE_PATH"
@@ -289,6 +304,19 @@ mono_ios_runtime_init (void)
         monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
     } else {
         free (file_path);
+    }
+
+    const char* executable = "%EntryPointLibName%";
+    if (executable [0] == '\0') {
+        executable = getenv ("MONO_APPLE_APP_ENTRY_POINT_LIB_NAME");
+    }
+    if (executable == NULL) {
+        executable = "";
+    }
+
+    assembly_load_prefix = getenv ("MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX");
+    if (assembly_load_prefix == NULL) {
+        assembly_load_prefix = "";
     }
 
     monovm_initialize (sizeof (appctx_keys) / sizeof (appctx_keys [0]), appctx_keys, appctx_values);
@@ -334,7 +362,6 @@ mono_ios_runtime_init (void)
     MONO_EXIT_GC_UNSAFE;
 #endif
 
-    const char* executable = "%EntryPointLibName%";
     MonoAssembly *assembly = load_assembly (executable, NULL);
     assert (assembly);
     os_log_info (OS_LOG_DEFAULT, "Executable: %{public}s", executable);

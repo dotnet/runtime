@@ -81,6 +81,11 @@ namespace CoreclrTestLib
                         }
                     }
 
+                    if (platform != "android")
+                    {
+                        cmdStr += " --target ios-simulator-64";
+                    }
+
                     using (Process process = new Process())
                     {
                         if (OperatingSystem.IsWindows())
@@ -97,6 +102,8 @@ namespace CoreclrTestLib
                         process.StartInfo.RedirectStandardOutput = true;
                         process.StartInfo.RedirectStandardError = true;
 
+                        outputWriter.WriteLine("XXXih: cmdStr = {0}", cmdStr);
+                        errorWriter.WriteLine("XXXih: cmdStr = {0}", cmdStr);
                         DateTime startTime = DateTime.Now;
                         process.Start();
 
@@ -125,7 +132,7 @@ namespace CoreclrTestLib
                                     cmdStr, timeout, startTime.ToString(), endTime.ToString());
                             errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}, start: {2}, end: {3})",
                                     cmdStr, timeout, startTime.ToString(), endTime.ToString());
-                            
+
                             process.Kill(entireProcessTree: true);
                         }
                     }
@@ -152,7 +159,7 @@ namespace CoreclrTestLib
             {
                 cmdPrefix = "-c";
             }
-            
+
             return $"{cmdPrefix} \"{cmd}\"";
         }
     }
