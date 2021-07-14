@@ -13,7 +13,6 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Linq.Expressions\ref\System.Linq.Expressions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\ref\System.Memory.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
@@ -21,7 +20,6 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Linq.Expressions" />
     <Reference Include="netstandard" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

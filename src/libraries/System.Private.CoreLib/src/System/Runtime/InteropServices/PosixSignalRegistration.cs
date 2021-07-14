@@ -9,6 +9,13 @@ namespace System.Runtime.InteropServices
     /// <summary>Handles a <see cref="PosixSignal"/>.</summary>
     public sealed partial class PosixSignalRegistration : IDisposable
     {
+        /// <summary>The state associated with this registration.</summary>
+        /// <remarks>
+        /// This is separate from the registration instance so that this token may be stored
+        /// in a statically rooted table, with a finalizer on the registration able to remove it.
+        /// </remarks>
+        private Token? _token;
+
         /// <summary>Registers a <paramref name="handler"/> that is invoked when the <paramref name="signal"/> occurs.</summary>
         /// <param name="signal">The signal to register for.</param>
         /// <param name="handler">The handler that gets invoked.</param>
@@ -28,11 +35,48 @@ namespace System.Runtime.InteropServices
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
-        public static partial PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler);
+        public static PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler)
+        {
+            if (handler is null)
+            {
+                throw new ArgumentNullException(nameof(handler));
+            }
+
+            return Register(signal, handler);
+        }
+
+        /// <summary>Initializes the registration to wrap the specified token.</summary>
+        private PosixSignalRegistration(Token token) => _token = token;
 
         /// <summary>Unregister the handler.</summary>
-        public partial void Dispose();
+        public void Dispose()
+        {
+            Unregister();
+            GC.SuppressFinalize(this);
+        }
 
-        ~PosixSignalRegistration() => Dispose();
+        /// <summary>Unregister the handler.</summary>
+        ~PosixSignalRegistration() => Unregister();
+
+        /// <summary>The state associated with a registration.</summary>
+        private sealed class Token
+        {
+            public Token(PosixSignal signal, Action<PosixSignalContext> handler)
+            {
+                Signal = signal;
+                Handler = handler;
+            }
+
+            public Token(PosixSignal signal, int sigNo, Action<PosixSignalContext> handler)
+            {
+                Signal = signal;
+                Handler = handler;
+                SigNo = sigNo;
+            }
+
+            public PosixSignal Signal { get; }
+            public Action<PosixSignalContext> Handler { get; }
+            public int SigNo { get; }
+        }
     }
 }

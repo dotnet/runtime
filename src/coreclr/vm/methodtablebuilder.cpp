@@ -9101,8 +9101,13 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
     MethodTable **pExactMTs = (MethodTable**) _alloca(sizeof(MethodTable *) * nInterfacesCount);
     BOOL duplicates;
     bool retry = false;
-    bool retryWithExactInterfaces = !pMT->IsValueType() || pMT->IsSharedByGenericInstantiations(); // Always use exact loading behavior with classes or shared generics, as they have to deal with inheritance, and the
-                                                                                          // inexact matching logic for classes would be more complex to write.
+
+    // Always use exact loading behavior with classes or shared generics, as they have to deal with inheritance, and the
+    // inexact matching logic for classes would be more complex to write.
+    // Also always use the exact loading behavior with any generic that contains generic variables, as the open type is used
+    // to represent a type instantiated over its own generic variables, and the special marker type is currently the open type
+    // and we make this case distinguishable by simply disallowing the optimization in those cases.
+    bool retryWithExactInterfaces = !pMT->IsValueType() || pMT->IsSharedByGenericInstantiations() || pMT->ContainsGenericVariables();
     
     DWORD nAssigned = 0;
     do
@@ -9132,7 +9137,7 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                                                                                 (const Substitution*)0,
                                                                                 retryWithExactInterfaces ? NULL : pMT).GetMethodTable();
 
-            bool uninstGenericCase = pNewIntfMT->IsSpecialMarkerTypeForGenericCasting();
+            bool uninstGenericCase = !retryWithExactInterfaces && pNewIntfMT->IsSpecialMarkerTypeForGenericCasting();
 
             duplicates |= InsertMethodTable(pNewIntfMT, pExactMTs, nInterfacesCount, &nAssigned);
 

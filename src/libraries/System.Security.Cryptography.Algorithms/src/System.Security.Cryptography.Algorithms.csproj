@@ -6,14 +6,14 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" />
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <PropertyGroup>
     <UseAndroidCrypto Condition="'$(TargetsAndroid)' == 'true'">true</UseAndroidCrypto>
     <UseAppleCrypto Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</UseAppleCrypto>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.SystemSecurityCryptographyAlgorithms_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <ApiExclusionListPath Condition="'$(TargetsBrowser)' == 'true'">ExcludeApiList.PNSE.Browser.txt</ApiExclusionListPath>
   </PropertyGroup>
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''"/>
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''" />
   <ItemGroup>
     <Compile Include="System\Security\Cryptography\CryptoConfig.Common.cs" />
     <Compile Include="Internal\Cryptography\HashAlgorithmNames.cs" />
@@ -130,6 +130,8 @@
              Link="Common\System\Security\Cryptography\HashOneShotHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\KeyFormatHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\KeyFormatHelper.Encrypted.cs"
+             Link="Common\System\Security\Cryptography\KeyFormatHelper.Encrypted.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeySizeHelpers.cs"
              Link="Common\System\Security\Cryptography\KeySizeHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
@@ -144,6 +146,8 @@
              Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\RSAKeyFormatHelper.Encrypted.cs"
+             Link="Common\System\Security\Cryptography\RSAKeyFormatHelper.Encrypted.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RsaPaddingProcessor.cs"
              Link="Common\System\Security\Cryptography\RsaPaddingProcessor.cs" />
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\AlgorithmIdentifierAsn.xml">
@@ -629,10 +633,6 @@
              Link="Common\System\Security\Cryptography\ECDiffieHellmanOpenSsl.Derive.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanOpenSslPublicKey.cs"
              Link="Common\System\Security\Cryptography\ECDiffieHellmanOpenSslPublicKey.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Rsa.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Rsa.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeRsaHandle.Unix.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\RSAOpenSsl.cs"
              Link="Common\System\Security\Cryptography\RSAOpenSsl.cs" />
     <Compile Include="Internal\Cryptography\RC2Implementation.Unix.cs" />

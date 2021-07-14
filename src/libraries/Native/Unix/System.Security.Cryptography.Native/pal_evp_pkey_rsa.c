@@ -7,6 +7,26 @@
 
 static int HasNoPrivateKey(const RSA* rsa);
 
+EVP_PKEY* CryptoNative_EvpPKeyCreateRsa(RSA* currentKey)
+{
+    assert(currentKey != NULL);
+
+    EVP_PKEY* pkey = EVP_PKEY_new();
+
+    if (pkey == NULL)
+    {
+        return NULL;
+    }
+
+    if (!EVP_PKEY_set1_RSA(pkey, currentKey))
+    {
+        EVP_PKEY_free(pkey);
+        return NULL;
+    }
+
+    return pkey;
+}
+
 EVP_PKEY* CryptoNative_RsaGenerateKey(int keySize)
 {
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
@@ -292,16 +312,6 @@ done:
     }
 
     return ret;
-}
-
-RSA* CryptoNative_EvpPkeyGetRsa(EVP_PKEY* pkey)
-{
-    return EVP_PKEY_get1_RSA(pkey);
-}
-
-int32_t CryptoNative_EvpPkeySetRsa(EVP_PKEY* pkey, RSA* rsa)
-{
-    return EVP_PKEY_set1_RSA(pkey, rsa);
 }
 
 static int HasNoPrivateKey(const RSA* rsa)

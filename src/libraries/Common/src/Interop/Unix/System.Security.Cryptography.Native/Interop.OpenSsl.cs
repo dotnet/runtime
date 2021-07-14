@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -221,6 +222,19 @@ internal static partial class Interop
             }
 
             return context;
+        }
+
+        internal static SecurityStatusPal SslRenegotiate(SafeSslHandle sslContext, out byte[]? outputBuffer)
+        {
+            int ret = Interop.Ssl.SslRenegotiate(sslContext);
+
+            outputBuffer = Array.Empty<byte>();
+            if (ret != 1)
+            {
+                GetSslError(sslContext, ret, out Exception? exception);
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exception);
+            }
+            return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 
         internal static bool DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, out byte[]? sendBuf, out int sendCount)
