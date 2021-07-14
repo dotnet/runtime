@@ -130,10 +130,25 @@ namespace System.Net.Security
         public static bool operator !=(System.Net.Security.SslApplicationProtocol left, System.Net.Security.SslApplicationProtocol right) { throw null; }
         public override string ToString() { throw null; }
     }
+
+    public sealed partial class SslCertificateTrust
+    {
+        public static SslCertificateTrust CreateForX509Store(
+                                                System.Security.Cryptography.X509Certificates.X509Store store,
+                                                bool sendTrustInHandshake = false) { throw null;  }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+        public static SslCertificateTrust CreateForX509Collection(
+                                                System.Security.Cryptography.X509Certificates.X509Certificate2Collection trustList,
+                                                bool sendTrustInHandshake = false) { throw null; }
+        private SslCertificateTrust() { throw null; }
+   }
+
     public sealed partial class SslStreamCertificateContext
     {
         internal SslStreamCertificateContext() { throw null; }
-        public static SslStreamCertificateContext Create(System.Security.Cryptography.X509Certificates.X509Certificate2 target, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? additionalCertificates, bool offline = false) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static SslStreamCertificateContext Create(System.Security.Cryptography.X509Certificates.X509Certificate2 target, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? additionalCertificates, bool offline) { throw null; }
+        public static SslStreamCertificateContext Create(System.Security.Cryptography.X509Certificates.X509Certificate2 target, System.Security.Cryptography.X509Certificates.X509Certificate2Collection? additionalCertificates, bool offline = false, SslCertificateTrust? trust = null) { throw null; }
     }
     public partial class SslClientAuthenticationOptions
     {

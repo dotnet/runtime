@@ -116,7 +116,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_STOREIND:
-            LowerStoreIndirCommon(node->AsIndir());
+            LowerStoreIndirCommon(node->AsStoreInd());
             break;
 
         case GT_ADD:
@@ -3558,7 +3558,7 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
     {
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
-        LowerStoreIndirCommon(store);
+        LowerStoreIndirCommon(store->AsStoreInd());
         return;
     }
     else
@@ -4100,7 +4100,7 @@ void Lowering::InsertPInvokeMethodProlog()
         // The init routine sets InlinedCallFrame's m_pNext, so we just set the thead's top-of-stack
         GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
         firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
+        ContainCheckStoreIndir(frameUpd->AsStoreInd());
         DISPTREERANGE(firstBlockRange, frameUpd);
     }
 #endif // TARGET_64BIT
@@ -4163,7 +4163,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
     {
         GenTree* frameUpd = CreateFrameLinkUpdate(PopFrame);
         returnBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
+        ContainCheckStoreIndir(frameUpd->AsStoreInd());
     }
 }
 
@@ -4325,7 +4325,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         // Stubs do this once per stub, not once per call.
         GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
         BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
+        ContainCheckStoreIndir(frameUpd->AsStoreInd());
     }
 #endif // TARGET_64BIT
 
@@ -4335,7 +4335,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     //  [tcb + offsetOfGcState] = 0
     GenTree* storeGCState = SetGCState(0);
     BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, storeGCState));
-    ContainCheckStoreIndir(storeGCState->AsIndir());
+    ContainCheckStoreIndir(storeGCState->AsStoreInd());
 
     // Indicate that codegen has switched this thread to preemptive GC.
     // This tree node doesn't generate any code, but impacts LSRA and gc reporting.
@@ -4381,7 +4381,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 
     GenTree* tree = SetGCState(1);
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
-    ContainCheckStoreIndir(tree->AsIndir());
+    ContainCheckStoreIndir(tree->AsStoreInd());
 
     tree = CreateReturnTrapSeq();
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
@@ -4396,7 +4396,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     {
         tree = CreateFrameLinkUpdate(PopFrame);
         BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
-        ContainCheckStoreIndir(tree->AsIndir());
+        ContainCheckStoreIndir(tree->AsStoreInd());
     }
 #else
     const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = comp->eeGetEEInfo()->inlinedCallFrameInfo;
@@ -6421,7 +6421,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckReturnTrap(node->AsOp());
             break;
         case GT_STOREIND:
-            ContainCheckStoreIndir(node->AsIndir());
+            ContainCheckStoreIndir(node->AsStoreInd());
             break;
         case GT_IND:
             ContainCheckIndir(node->AsIndir());
@@ -6604,9 +6604,8 @@ void Lowering::ContainCheckBitCast(GenTree* node)
 // Arguments:
 //    ind - the store indirection node we are lowering.
 //
-void Lowering::LowerStoreIndirCommon(GenTreeIndir* ind)
+void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
-    assert(ind->OperIs(GT_STOREIND));
     assert(ind->TypeGet() != TYP_STRUCT);
     TryCreateAddrMode(ind->Addr(), true);
     if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
@@ -6806,6 +6805,6 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     {
         assert(src->TypeIs(regType) || src->IsCnsIntOrI() || src->IsCall());
     }
-    LowerStoreIndirCommon(blkNode);
+    LowerStoreIndirCommon(blkNode->AsStoreInd());
     return true;
 }

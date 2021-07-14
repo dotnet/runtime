@@ -36,6 +36,10 @@ private:
     CrashInfo& m_crashInfo;
     BYTE m_tempBuffer[0x4000];
 
+    // no public copy constructor
+    DumpWriter(const DumpWriter&) = delete;
+    void operator=(const DumpWriter&) = delete;
+
 public:
     DumpWriter(CrashInfo& crashInfo);
     virtual ~DumpWriter();

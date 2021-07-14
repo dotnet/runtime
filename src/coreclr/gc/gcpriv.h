@@ -3182,7 +3182,7 @@ protected:
                                BOOL& should_expand);
 #ifndef USE_REGIONS
     PER_HEAP
-    BOOL sufficient_space_end_seg (uint8_t* start, uint8_t* seg_end,
+    BOOL sufficient_space_end_seg (uint8_t* start, uint8_t* committed, uint8_t* reserved,
                                    size_t end_space_required);
 #endif //!USE_REGIONS
 

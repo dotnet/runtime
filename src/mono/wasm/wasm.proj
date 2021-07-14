@@ -69,7 +69,6 @@
       <_EmccCommonFlags Include="-s &quot;EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction', 'MONO', 'BINDING', 'DOTNET', 'FS']&quot;" />
       <_EmccCommonFlags Include="-s &quot;EXPORTED_FUNCTIONS=['_putchar']&quot;" />
       <_EmccCommonFlags Include="--source-map-base http://example.com" />
-      <_EmccCommonFlags Include="-emit-llvm" />
 
       <_EmccCommonFlags Include="-s MODULARIZE=1" Condition="'$(ForNode)' == 'true' or '$(WasmEnableES6)' != 'false'"/>
 

@@ -314,6 +314,64 @@ namespace System.Net.Http.Functional.Tests
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
         }
 
+        [Fact]
+        public async Task ServerCertificateCustomValidationCallback_Succeeds()
+        {
+            // Mock doesn't make use of cart validation callback.
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
+            HttpRequestMessage? callbackRequest = null;
+            int invocationCount = 0;
+
+            var httpClientHandler = CreateHttpClientHandler();
+            httpClientHandler.ServerCertificateCustomValidationCallback = (request, _, _, _) =>
+            {
+                callbackRequest = request;
+                ++invocationCount;
+                return true;
+            };
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            using HttpClient client = CreateHttpClient(httpClientHandler);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await stream.HandleRequestAsync();
+                using Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
+                await stream2.HandleRequestAsync();
+            });
+
+            var request = new HttpRequestMessage(HttpMethod.Get, server.Address);
+            request.Version = HttpVersion.Version30;
+            request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+            var response = await client.SendAsync(request);
+
+            response.EnsureSuccessStatusCode();
+            Assert.Equal(HttpVersion.Version30, response.Version);
+            Assert.Same(request, callbackRequest);
+            Assert.Equal(1, invocationCount);
+
+            // Second request, the callback shouldn't be hit at all.
+            callbackRequest = null;
+
+            request = new HttpRequestMessage(HttpMethod.Get, server.Address);
+            request.Version = HttpVersion.Version30;
+            request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+            response = await client.SendAsync(request);
+
+            response.EnsureSuccessStatusCode();
+            Assert.Equal(HttpVersion.Version30, response.Version);
+            Assert.Null(callbackRequest);
+            Assert.Equal(1, invocationCount);
+        }
+
         [OuterLoop]
         [ConditionalTheory(nameof(IsMsQuicSupported))]
         [MemberData(nameof(InteropUris))]

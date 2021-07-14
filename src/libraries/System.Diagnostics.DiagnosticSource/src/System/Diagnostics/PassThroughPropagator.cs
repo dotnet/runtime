@@ -5,9 +5,9 @@ using System.Collections.Generic;
 
 namespace System.Diagnostics
 {
-    internal sealed class PassThroughPropagator : TextMapPropagator
+    internal sealed class PassThroughPropagator : DistributedContextPropagator
     {
-        internal static TextMapPropagator Instance { get; } = new PassThroughPropagator();
+        internal static DistributedContextPropagator Instance { get; } = new PassThroughPropagator();
 
         public override IReadOnlyCollection<string> Fields { get; } = LegacyPropagator.Instance.Fields;
 

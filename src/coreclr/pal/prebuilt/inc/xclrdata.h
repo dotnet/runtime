@@ -3300,7 +3300,8 @@ enum __MIDL___MIDL_itf_xclrdata_0000_0008_0001
     {
         CLRDATA_MODULE_DEFAULT	= 0,
         CLRDATA_MODULE_IS_DYNAMIC	= 0x1,
-        CLRDATA_MODULE_IS_MEMORY_STREAM	= 0x2
+        CLRDATA_MODULE_IS_MEMORY_STREAM	= 0x2,
+        CLRDATA_MODULE_IS_MAIN_MODULE = 0x4
     } 	CLRDataModuleFlag;
 
 typedef /* [public][public][public] */ 

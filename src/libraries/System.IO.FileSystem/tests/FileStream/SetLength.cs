@@ -23,6 +23,12 @@ namespace System.IO.Tests
                 Assert.Equal(length, fs.Length);
                 Assert.Throws<IOException>(() => fs.SetLength(0));
                 Assert.Equal(length, fs.Length);
+
+                fs.Write(TestBuffer);
+                Assert.Equal(length + TestBuffer.Length, fs.Length);
+
+                fs.SetLength(length);
+                Assert.Equal(length, fs.Length);
             }
         }
 

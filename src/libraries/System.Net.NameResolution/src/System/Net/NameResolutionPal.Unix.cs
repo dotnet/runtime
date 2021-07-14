@@ -39,7 +39,7 @@ namespace System.Net
                 case (int)Interop.Sys.GetAddrInfoErrorFlags.EAI_MEMORY:
                     throw new OutOfMemoryException();
                 default:
-                    Debug.Fail("Unexpected error: " + error.ToString());
+                    Debug.Fail($"Unexpected error: {error}");
                     return SocketError.SocketError;
             }
         }

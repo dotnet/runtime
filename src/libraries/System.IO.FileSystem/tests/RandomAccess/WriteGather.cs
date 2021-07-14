@@ -12,7 +12,10 @@ namespace System.IO.Tests
     public class RandomAccess_WriteGather : RandomAccess_Base<long>
     {
         protected override long MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset)
-            => RandomAccess.Write(handle, new ReadOnlyMemory<byte>[] { bytes }, fileOffset);
+        {
+            RandomAccess.Write(handle, new ReadOnlyMemory<byte>[] { bytes }, fileOffset);
+            return bytes?.Length ?? 0;
+        }
 
         [Theory]
         [MemberData(nameof(GetSyncAsyncOptions))]
@@ -36,11 +39,11 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(GetSyncAsyncOptions))]
-        public void WriteUsingEmptyBufferReturnsZero(FileOptions options)
+        public void WriteUsingEmptyBufferReturns(FileOptions options)
         {
             using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, options: options))
             {
-                Assert.Equal(0, RandomAccess.Write(handle, new ReadOnlyMemory<byte>[] { Array.Empty<byte>() }, fileOffset: 0));
+                RandomAccess.Write(handle, new ReadOnlyMemory<byte>[] { Array.Empty<byte>() }, fileOffset: 0);
             }
         }
 
@@ -55,7 +58,6 @@ namespace System.IO.Tests
             using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, options))
             {
                 long total = 0;
-                long current = 0;
 
                 while (total != fileSize)
                 {
@@ -63,7 +65,7 @@ namespace System.IO.Tests
                     Memory<byte> buffer_1 = content.AsMemory((int)total, firstBufferLength);
                     Memory<byte> buffer_2 = content.AsMemory((int)total + firstBufferLength);
 
-                    current = RandomAccess.Write(
+                    RandomAccess.Write(
                         handle,
                         new ReadOnlyMemory<byte>[]
                         {
@@ -73,9 +75,7 @@ namespace System.IO.Tests
                         },
                         fileOffset: total);
 
-                    Assert.InRange(current, 0, buffer_1.Length + buffer_2.Length);
-
-                    total += current;
+                    total += buffer_1.Length + buffer_2.Length;
                 }
             }
 
@@ -94,7 +94,7 @@ namespace System.IO.Tests
 
             using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Create, FileAccess.Write, options: options))
             {
-                Assert.Equal(repeatCount, RandomAccess.Write(handle, buffers, fileOffset: 0));
+                RandomAccess.Write(handle, buffers, fileOffset: 0);
             }
 
             byte[] actualContent = File.ReadAllBytes(filePath);

@@ -109,7 +109,7 @@ namespace System
             // These are expected in environments without time zone globalization data
             _standardDisplayName = standardAbbrevName;
             _daylightDisplayName = daylightAbbrevName ?? standardAbbrevName;
-            _displayName = $"(UTC{(_baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{_baseUtcOffset:hh\\:mm}) {_id}";
+            _displayName = string.Create(null, stackalloc char[256], $"(UTC{(_baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{_baseUtcOffset:hh\\:mm}) {_id}");
 
             // Try to populate the display names from the globalization data
             TryPopulateTimeZoneDisplayNamesFromGlobalizationData(_id, _baseUtcOffset, ref _standardDisplayName, ref _daylightDisplayName, ref _displayName);

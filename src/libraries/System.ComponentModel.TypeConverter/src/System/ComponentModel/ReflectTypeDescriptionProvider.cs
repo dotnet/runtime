@@ -1114,7 +1114,7 @@ namespace System.ComponentModel
 #if DEBUG
                     foreach (EventDescriptor dbgEvent in events)
                     {
-                        Debug.Assert(dbgEvent != null, "Holes in event array for type " + type);
+                        Debug.Assert(dbgEvent != null, $"Holes in event array for type {type}");
                     }
 #endif
                     eventCache[type] = events;
