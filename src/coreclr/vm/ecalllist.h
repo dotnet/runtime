@@ -834,6 +834,12 @@ FCFuncStart(gInterlockedFuncs)
     QCFuncElement("_MemoryBarrierProcessWide", COMInterlocked::MemoryBarrierProcessWide)
 FCFuncEnd()
 
+FCFuncStart(gJitInfoFuncs)
+    FCFuncElement("GetCompiledILBytes", GetCompiledILBytes)
+    FCFuncElement("GetCompiledMethodCount", GetCompiledMethodCount)
+    FCFuncElement("GetCompilationTimeInTicks", GetCompilationTimeInTicks)
+FCFuncEnd()
+
 FCFuncStart(gVarArgFuncs)
     FCFuncElementSig(COR_CTOR_METHOD_NAME, &gsig_IM_IntPtr_PtrVoid_RetVoid, VarArgsNative::Init2)
     FCFuncElementSig(COR_CTOR_METHOD_NAME, &gsig_IM_IntPtr_RetVoid, VarArgsNative::Init)
@@ -879,8 +885,6 @@ FCFuncStart(gRuntimeHelpers)
     QCFuncElement("AllocateTypeAssociatedMemory", RuntimeTypeHandle::AllocateTypeAssociatedMemory)
     FCFuncElement("AllocTailCallArgBuffer", TailCallHelp::AllocTailCallArgBuffer)
     FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
-    FCFuncElement("GetILBytesJitted", GetJittedBytes)
-    FCFuncElement("GetMethodsJittedCount", GetJittedMethodsCount)
 FCFuncEnd()
 
 FCFuncStart(gMngdFixedArrayMarshalerFuncs)
@@ -1158,6 +1162,7 @@ FCClassElement("IReflect", "System.Reflection", gStdMngIReflectFuncs)
 FCClassElement("InterfaceMarshaler", "System.StubHelpers", gInterfaceMarshalerFuncs)
 #endif
 FCClassElement("Interlocked", "System.Threading", gInterlockedFuncs)
+FCClassElement("JitInfo", "System.Runtime", gJitInfoFuncs)
 #if TARGET_UNIX
 FCClassElement("Kernel32", "", gPalKernel32Funcs)
 #endif

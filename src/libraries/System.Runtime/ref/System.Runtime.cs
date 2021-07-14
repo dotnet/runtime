@@ -12472,6 +12472,12 @@ namespace System.Runtime
         public static System.Runtime.GCLargeObjectHeapCompactionMode LargeObjectHeapCompactionMode { get { throw null; } set { } }
         public static System.Runtime.GCLatencyMode LatencyMode { get { throw null; } set { } }
     }
+    public static partial class JitInfo
+    {
+        public static long GetCompiledILBytes(bool currentThread=false) { throw null; }
+        public static long GetCompiledMethodCount(bool currentThread=false) { throw null; }
+        public static TimeSpan GetCompilationTime(bool currentThread=false) { throw null; }
+    }
     public sealed partial class MemoryFailPoint : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.IDisposable
     {
         public MemoryFailPoint(int sizeInMegabytes) { }
