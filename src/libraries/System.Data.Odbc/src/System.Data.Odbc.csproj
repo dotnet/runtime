@@ -12,7 +12,8 @@
     <NoWarn Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(NoWarn);SA1121</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">SR.Odbc_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- TODO: Follow-up on nullability errors on netcoreapp3.1-* -->
-    <NoWarn Condition="$(TargetFramework.StartsWith('netcoreapp3.1'))">$(NoWarn);CS8600;CS8601;CS8602;CS8604</NoWarn>  </PropertyGroup>
+    <NoWarn Condition="$(TargetFramework.StartsWith('netcoreapp3.1'))">$(NoWarn);CS8600;CS8601;CS8602;CS8604</NoWarn>
+  </PropertyGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" >
     <Compile Include="System\Data\Odbc\ODBC32.Common.cs"/>
   </ItemGroup>
@@ -61,6 +62,9 @@
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolIdentity.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolOptions.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolProviderInfo.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\NativeMemory.netstandard.cs"
+             Link="System\Runtime\InteropServices\NativeMemory.netstandard.cs"
+             Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
     <Compile Include="System\Data\Odbc\DbDataRecord.cs" />
     <Compile Include="System\Data\Odbc\Odbc32.cs" />
     <Compile Include="System\Data\Odbc\OdbcCommand.cs">

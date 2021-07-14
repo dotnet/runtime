@@ -164,7 +164,7 @@ namespace System.Speech.Internal
 
         #region Private Fields
 
-        private HGlobalSafeHandle _safeHMem = new();
+        private NativeMemorySafeHandle _safeHMem = new();
 
         private Stream _stream;
 

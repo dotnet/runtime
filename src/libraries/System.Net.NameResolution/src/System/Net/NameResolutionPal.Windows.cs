@@ -390,7 +390,7 @@ namespace System.Net
 
             public bool JustAddresses { get; }
 
-            public Task Task => JustAddresses ? (Task)IPAddressArrayBuilder.Task : IPHostEntryBuilder.Task;
+            public Task Task => JustAddresses ? IPAddressArrayBuilder.Task : IPHostEntryBuilder.Task;
 
             public void RegisterForCancellation(CancellationToken cancellationToken)
             {
@@ -500,7 +500,7 @@ namespace System.Net
 
             public static GetAddrInfoExContext* AllocateContext()
             {
-                var context = (GetAddrInfoExContext*)Marshal.AllocHGlobal(sizeof(GetAddrInfoExContext));
+                var context = (GetAddrInfoExContext*)NativeMemory.Alloc((uint)sizeof(GetAddrInfoExContext));
                 *context = default;
                 return context;
             }
@@ -512,7 +512,7 @@ namespace System.Net
                     Interop.Winsock.FreeAddrInfoExW(context->Result);
                 }
 
-                Marshal.FreeHGlobal((IntPtr)context);
+                NativeMemory.Free(context);
             }
         }
     }

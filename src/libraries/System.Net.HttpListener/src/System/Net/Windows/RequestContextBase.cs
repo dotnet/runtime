@@ -49,10 +49,10 @@ namespace System.Net
 
         protected virtual void Dispose(bool disposing)
         {
-            IntPtr backingBuffer = Interlocked.Exchange(ref _backingBuffer, IntPtr.Zero);
-            if (backingBuffer != IntPtr.Zero)
+            nint backingBuffer = Interlocked.Exchange(ref _backingBuffer, IntPtr.Zero);
+            if (backingBuffer != 0)
             {
-                Marshal.FreeHGlobal(backingBuffer);
+                NativeMemory.Free((void*)backingBuffer);
             }
         }
 
@@ -116,10 +116,10 @@ namespace System.Net
         {
             if (_backingBuffer != IntPtr.Zero)
             {
-                Marshal.FreeHGlobal(_backingBuffer);
+                NativeMemory.Free((void*)(nint)_backingBuffer);
             }
 
-            _backingBuffer = size == 0 ? IntPtr.Zero : Marshal.AllocHGlobal(size);
+            _backingBuffer = size == 0 ? IntPtr.Zero : (nint)NativeMemory.Alloc((uint)size);
             _backingBufferLength = size;
 
             // Zero out the contents of the buffer.

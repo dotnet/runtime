@@ -13,7 +13,7 @@ internal static partial class Interop
         internal static extern bool GetTokenInformation(
             SafeAccessTokenHandle TokenHandle,
             uint TokenInformationClass,
-            SafeLocalAllocHandle TokenInformation,
+            SafeNativeMemoryHandle TokenInformation,
             uint TokenInformationLength,
             out uint ReturnLength);
 
@@ -21,7 +21,7 @@ internal static partial class Interop
         internal static extern bool GetTokenInformation(
             IntPtr TokenHandle,
             uint TokenInformationClass,
-            SafeLocalAllocHandle TokenInformation,
+            SafeNativeMemoryHandle TokenInformation,
             uint TokenInformationLength,
             out uint ReturnLength);
 

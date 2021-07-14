@@ -43,10 +43,10 @@ namespace Internal.Cryptography.Pal
 
                 unsafe
                 {
-                    IntPtr tmpPtr = Marshal.AllocHGlobal(encodedData.Length);
-                    Span<byte> tmpSpan = new Span<byte>((byte*)tmpPtr, encodedData.Length);
+                    IntPtr tmpPtr = (nint)NativeMemory.Alloc((uint)encodedData.Length);
+                    Span<byte> tmpSpan = new Span<byte>((byte*)(nint)tmpPtr, encodedData.Length);
                     encodedData.CopyTo(tmpSpan);
-                    _tmpManager = new PointerMemoryManager<byte>((void*)tmpPtr, encodedData.Length);
+                    _tmpManager = new PointerMemoryManager<byte>((void*)(nint)tmpPtr, encodedData.Length);
                 }
 
                 ReadOnlyMemory<byte> tmpMemory = _tmpManager.Memory;
@@ -126,7 +126,7 @@ namespace Internal.Cryptography.Pal
 
                     fixed (byte* ptr = tmp)
                     {
-                        Marshal.FreeHGlobal((IntPtr)ptr);
+                        NativeMemory.Free(ptr);
                     }
                 }
 

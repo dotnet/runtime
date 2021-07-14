@@ -74,14 +74,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Set once stream have been shutdown.
             public readonly TaskCompletionSource ShutdownCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            public void Cleanup()
+            public unsafe void Cleanup()
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{TraceId} releasing handles.");
 
                 ShutdownState = ShutdownState.Finished;
                 CleanupSendState(this);
                 Handle?.Dispose();
-                Marshal.FreeHGlobal(SendQuicBuffers);
+                NativeMemory.Free((void*)(nint)SendQuicBuffers);
                 SendQuicBuffers = IntPtr.Zero;
                 if (StateGCHandle.IsAllocated) StateGCHandle.Free();
                 ConnectionState?.RemoveStream(null);
@@ -686,7 +686,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             Dispose(false);
         }
 
-        private void Dispose(bool disposing)
+        private unsafe void Dispose(bool disposing)
         {
             int disposed = Interlocked.Exchange(ref _disposed, 1);
             if (disposed != 0)
@@ -1151,7 +1151,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             MemoryHandle handle = buffer.Pin();
             if (_state.SendQuicBuffers == IntPtr.Zero)
             {
-                _state.SendQuicBuffers = Marshal.AllocHGlobal(sizeof(QuicBuffer));
+                _state.SendQuicBuffers = (nint)NativeMemory.Alloc((uint)sizeof(QuicBuffer));
                 _state.SendBufferMaxCount = 1;
             }
 
@@ -1212,9 +1212,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_state.SendBufferMaxCount < count)
             {
-                Marshal.FreeHGlobal(_state.SendQuicBuffers);
+                NativeMemory.Free((void*)(nint)_state.SendQuicBuffers);
                 _state.SendQuicBuffers = IntPtr.Zero;
-                _state.SendQuicBuffers = Marshal.AllocHGlobal(sizeof(QuicBuffer) * count);
+                _state.SendQuicBuffers = (nint)NativeMemory.Alloc((uint)(sizeof(QuicBuffer) * count));
                 _state.SendBufferMaxCount = count;
                 _state.BufferArrays = new MemoryHandle[count];
             }
@@ -1278,9 +1278,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (_state.SendBufferMaxCount < array.Length)
             {
-                Marshal.FreeHGlobal(_state.SendQuicBuffers);
+                NativeMemory.Free((void*)(nint)_state.SendQuicBuffers);
                 _state.SendQuicBuffers = IntPtr.Zero;
-                _state.SendQuicBuffers = Marshal.AllocHGlobal(sizeof(QuicBuffer) * array.Length);
+                _state.SendQuicBuffers = (nint)NativeMemory.Alloc((uint)(sizeof(QuicBuffer) * array.Length));
                 _state.SendBufferMaxCount = array.Length;
                 _state.BufferArrays = new MemoryHandle[array.Length];
             }

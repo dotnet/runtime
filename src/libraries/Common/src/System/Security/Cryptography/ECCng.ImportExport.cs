@@ -453,7 +453,7 @@ namespace System.Security.Cryptography
             return curveType;
         }
 
-        internal static SafeNCryptKeyHandle ImportKeyBlob(
+        internal static unsafe SafeNCryptKeyHandle ImportKeyBlob(
             string blobType,
             ReadOnlySpan<byte> keyBlob,
             string curveName,
@@ -467,21 +467,19 @@ namespace System.Security.Cryptography
                 Interop.BCrypt.BCryptBufferDesc desc = default;
                 Interop.BCrypt.BCryptBuffer buff = default;
 
-                IntPtr descPtr = IntPtr.Zero;
-                IntPtr buffPtr = IntPtr.Zero;
+                var descPtr = (Interop.NCrypt.NCryptBufferDesc*)NativeMemory.Alloc((uint)Marshal.SizeOf(desc));
+                var buffPtr = (Interop.BCrypt.BCryptBuffer*)NativeMemory.Alloc((uint)Marshal.SizeOf(buff));
                 try
                 {
-                    descPtr = Marshal.AllocHGlobal(Marshal.SizeOf(desc));
-                    buffPtr = Marshal.AllocHGlobal(Marshal.SizeOf(buff));
                     buff.cbBuffer = (curveName.Length + 1) * 2; // Add 1 for null terminator
                     buff.BufferType = Interop.BCrypt.CngBufferDescriptors.NCRYPTBUFFER_ECC_CURVE_NAME;
                     buff.pvBuffer = safeCurveName.DangerousGetHandle();
-                    Marshal.StructureToPtr(buff, buffPtr, false);
+                    Marshal.StructureToPtr(buff, (nint)buffPtr, false);
 
                     desc.cBuffers = 1;
                     desc.pBuffers = buffPtr;
                     desc.ulVersion = Interop.BCrypt.BCRYPTBUFFER_VERSION;
-                    Marshal.StructureToPtr(desc, descPtr, false);
+                    Marshal.StructureToPtr(desc, (nint)descPtr, false);
 
                     errorCode = Interop.NCrypt.NCryptImportKey(
                         provider,
@@ -495,8 +493,8 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Marshal.FreeHGlobal(descPtr);
-                    Marshal.FreeHGlobal(buffPtr);
+                    NativeMemory.Free(descPtr);
+                    NativeMemory.Free(buffPtr);
                 }
             }
 

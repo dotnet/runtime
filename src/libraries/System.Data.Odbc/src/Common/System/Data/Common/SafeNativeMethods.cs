@@ -7,22 +7,9 @@ namespace System.Data
 {
     internal static partial class SafeNativeMethods
     {
-        internal static IntPtr LocalAlloc(IntPtr initialSize)
+        internal static unsafe void ZeroMemory(IntPtr ptr, int length)
         {
-            var handle = Marshal.AllocHGlobal(initialSize);
-            ZeroMemory(handle, (int)initialSize);
-            return handle;
-        }
-
-        internal static void LocalFree(IntPtr ptr)
-        {
-            Marshal.FreeHGlobal(ptr);
-        }
-
-        internal static void ZeroMemory(IntPtr ptr, int length)
-        {
-            var zeroes = new byte[length];
-            Marshal.Copy(zeroes, 0, ptr, length);
+            new Span<byte>((void*)(nint)ptr, length).Clear();
         }
     }
 }

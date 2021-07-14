@@ -22,7 +22,7 @@ namespace Internal.Cryptography.Pal.Native
             if (oids == null || oids.Count == 0)
             {
                 numOids = 0;
-                return SafeLocalAllocHandle.InvalidHandle;
+                return SafeNativeMemoryHandle.InvalidHandle;
             }
 
             // Copy the oid strings to a local array to prevent a security race condition where
@@ -45,7 +45,7 @@ namespace Internal.Cryptography.Pal.Native
                     }
                 }
 
-                SafeLocalAllocHandle safeLocalAllocHandle = SafeLocalAllocHandle.Create(allocationSize);
+                SafeNativeMemoryHandle safeLocalAllocHandle = SafeNativeMemoryHandle.Create(allocationSize);
                 byte** pOidPointers = (byte**)(safeLocalAllocHandle.DangerousGetHandle());
                 byte* pOidContents = (byte*)(pOidPointers + oidStrings.Length);
 

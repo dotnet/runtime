@@ -8,17 +8,17 @@ namespace System.Speech.Internal
     /// <summary>
     /// Encapsulate SafeHandle for Win32 Memory Handles
     /// </summary>
-    internal sealed class HGlobalSafeHandle : SafeHandle
+    internal sealed class NativeMemorySafeHandle : SafeHandle
     {
         #region Constructors
 
-        public HGlobalSafeHandle() : base(IntPtr.Zero, true)
+        public NativeMemorySafeHandle() : base(IntPtr.Zero, true)
         {
         }
 
         // This destructor will run only if the Dispose method
         // does not get called.
-        ~HGlobalSafeHandle()
+        ~NativeMemorySafeHandle()
         {
             Dispose(false);
         }
@@ -33,17 +33,17 @@ namespace System.Speech.Internal
 
         #region internal Methods
 
-        internal IntPtr Buffer(int size)
+        internal unsafe IntPtr Buffer(int size)
         {
             if (size > _bufferSize)
             {
                 if (_bufferSize == 0)
                 {
-                    SetHandle(Marshal.AllocHGlobal(size));
+                    SetHandle((nint)NativeMemory.Alloc((uint)size));
                 }
                 else
                 {
-                    SetHandle(Marshal.ReAllocHGlobal(handle, (IntPtr)size));
+                    SetHandle((nint)NativeMemory.Realloc((void*)(nint)handle, (uint)size));
                 }
 
                 GC.AddMemoryPressure(size - _bufferSize);
@@ -60,7 +60,7 @@ namespace System.Speech.Internal
         {
             get
             {
-                return handle == IntPtr.Zero;
+                return (nint)handle == 0;
             }
         }
 
@@ -71,9 +71,9 @@ namespace System.Speech.Internal
         /// <summary>
         /// Releases the Win32 Memory handle
         /// </summary>
-        protected override bool ReleaseHandle()
+        protected override unsafe bool ReleaseHandle()
         {
-            if (handle != IntPtr.Zero)
+            if ((nint)handle != 0)
             {
                 // Reset the extra information given to the GC
                 if (_bufferSize > 0)
@@ -82,7 +82,7 @@ namespace System.Speech.Internal
                     _bufferSize = 0;
                 }
 
-                Marshal.FreeHGlobal(handle);
+                NativeMemory.Free((void*)(nint)handle);
                 handle = IntPtr.Zero;
                 return true;
             }
@@ -90,12 +90,12 @@ namespace System.Speech.Internal
             return false;
         }
 
-        #endregion
+#endregion
 
-        #region Private Fields
+#region Private Fields
 
         private int _bufferSize;
 
-        #endregion
+#endregion
     }
 }

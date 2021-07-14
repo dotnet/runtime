@@ -87,7 +87,7 @@ internal static partial class Interop
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_put_boolean", CharSet = CharSet.Ansi)]
         public static extern int ber_put_boolean(SafeBerHandle berElement, int value, nuint tag);
 
-        public static int ber_printf_bytearray(SafeBerHandle berElement, string format, HGlobalMemHandle value, nuint length, nuint tag)
+        public static int ber_printf_bytearray(SafeBerHandle berElement, string format, NativeMemoryHandle value, nuint length, nuint tag)
         {
             if (format == "o")
             {
@@ -105,13 +105,13 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_put_ostring", CharSet = CharSet.Ansi)]
-        private static extern int ber_put_ostring(SafeBerHandle berElement, HGlobalMemHandle value, nuint length, nuint tag);
+        private static extern int ber_put_ostring(SafeBerHandle berElement, NativeMemoryHandle value, nuint length, nuint tag);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_put_string", CharSet = CharSet.Ansi)]
-        private static extern int ber_put_string(SafeBerHandle berElement, HGlobalMemHandle value, nuint tag);
+        private static extern int ber_put_string(SafeBerHandle berElement, NativeMemoryHandle value, nuint tag);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_put_bitstring", CharSet = CharSet.Ansi)]
-        private static extern int ber_put_bitstring(SafeBerHandle berElement, HGlobalMemHandle value, nuint length, nuint tag);
+        private static extern int ber_put_bitstring(SafeBerHandle berElement, NativeMemoryHandle value, nuint length, nuint tag);
 
         [DllImport(Libraries.OpenLdap, EntryPoint = "ber_flatten", CharSet = CharSet.Ansi)]
         public static extern int ber_flatten(SafeBerHandle berElement, ref IntPtr value);

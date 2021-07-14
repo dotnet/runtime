@@ -61,7 +61,7 @@ namespace System.Net
 
             uint statusCode;
             uint dataToWrite = (uint)size;
-            SafeLocalAllocHandle? bufferAsIntPtr = null;
+            SafeNativeMemoryHandle? bufferAsIntPtr = null;
             IntPtr pBufferAsIntPtr = IntPtr.Zero;
             bool sentHeaders = _httpContext.Response.SentHeaders;
             try
@@ -79,7 +79,7 @@ namespace System.Net
                         {
                             string chunkHeader = size.ToString("x", CultureInfo.InvariantCulture);
                             dataToWrite = dataToWrite + (uint)(chunkHeader.Length + 4);
-                            bufferAsIntPtr = SafeLocalAllocHandle.LocalAlloc((int)dataToWrite);
+                            bufferAsIntPtr = SafeNativeMemoryHandle.Alloc((int)dataToWrite);
                             pBufferAsIntPtr = bufferAsIntPtr.DangerousGetHandle();
                             for (int i = 0; i < chunkHeader.Length; i++)
                             {
@@ -113,7 +113,7 @@ namespace System.Net
                                     1,
                                     &dataChunk,
                                     null,
-                                    SafeLocalAllocHandle.Zero,
+                                    SafeNativeMemoryHandle.Zero,
                                     0,
                                     null,
                                     null);
@@ -187,7 +187,7 @@ namespace System.Net
                             asyncResult.dataChunkCount,
                             asyncResult.pDataChunks,
                             &bytesSent,
-                            SafeLocalAllocHandle.Zero,
+                            SafeNativeMemoryHandle.Zero,
                             0,
                             asyncResult._pOverlapped,
                             null);
@@ -331,7 +331,7 @@ namespace System.Net
                                 pDataChunk != null ? (ushort)1 : (ushort)0,
                                 pDataChunk,
                                 null,
-                                SafeLocalAllocHandle.Zero,
+                                SafeNativeMemoryHandle.Zero,
                                 0,
                                 null,
                                 null);

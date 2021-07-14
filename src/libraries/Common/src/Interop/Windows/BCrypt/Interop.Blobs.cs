@@ -271,11 +271,11 @@ internal static partial class Interop
         ///     Contains a set of generic CNG buffers.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        internal struct BCryptBufferDesc
+        internal unsafe struct BCryptBufferDesc
         {
             internal int ulVersion;            // Version number
             internal int cBuffers;             // Number of buffers
-            internal IntPtr pBuffers;          // Pointer to array of BCryptBuffers
+            internal BCryptBuffer* pBuffers;   // Pointer to array of BCryptBuffers
         }
 
         /// <summary>

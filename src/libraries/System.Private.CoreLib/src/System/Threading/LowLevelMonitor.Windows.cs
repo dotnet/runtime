@@ -22,7 +22,7 @@ namespace System.Threading
 
         public void Initialize()
         {
-            _pMonitor = (Monitor*)Marshal.AllocHGlobal(sizeof(Monitor));
+            _pMonitor = (Monitor*)NativeMemory.Alloc((uint)sizeof(Monitor));
 
             Interop.Kernel32.InitializeCriticalSection(&_pMonitor->_criticalSection);
             Interop.Kernel32.InitializeConditionVariable(&_pMonitor->_conditionVariable);
@@ -36,7 +36,7 @@ namespace System.Threading
             }
 
             Interop.Kernel32.DeleteCriticalSection(&_pMonitor->_criticalSection);
-            Marshal.FreeHGlobal((IntPtr)_pMonitor);
+            NativeMemory.Free(_pMonitor);
             _pMonitor = null;
         }
 

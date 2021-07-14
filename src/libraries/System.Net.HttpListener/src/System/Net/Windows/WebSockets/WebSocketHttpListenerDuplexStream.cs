@@ -477,7 +477,7 @@ namespace System.Net.WebSockets
                         eventArgs.EntityChunkCount,
                         (Interop.HttpApi.HTTP_DATA_CHUNK*)eventArgs.EntityChunks,
                         &bytesSent,
-                        SafeLocalAllocHandle.Zero,
+                        SafeNativeMemoryHandle.Zero,
                         0,
                         eventArgs.NativeOverlapped,
                         null);
