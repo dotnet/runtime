@@ -60,6 +60,13 @@
       <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <WorkloadIdForTesting Include="wasm-tools"
+                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+                          Version="$(PackageVersion)"
+                          VersionBand="$(SdkBandVersion)" />
+  </ItemGroup>
+
   <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" />
 
   <UsingTask Condition="'$(BuildAOTTestsOnHelix)' == 'true'"

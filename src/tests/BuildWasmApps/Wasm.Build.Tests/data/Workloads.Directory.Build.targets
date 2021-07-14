@@ -1,12 +1,30 @@
 <Project>
   <PropertyGroup>
+    <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
     <_MicrosoftNetCoreAppRefDir>$(AppRefDir)\</_MicrosoftNetCoreAppRefDir>
     <LocalFrameworkOverrideName>Microsoft.NETCore.App</LocalFrameworkOverrideName>
   </PropertyGroup>
 
+  <Target Name="PrepareForWasmBuild">
+    <ItemGroup>
+      <WasmAssembliesToBundle Include="$(TargetDir)publish\**\*.dll" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="PrintRuntimePackPath" BeforeTargets="Publish">
     <Message Text="** MicrosoftNetCoreAppRuntimePackDir : %(ResolvedRuntimePack.PackageDirectory)" Importance="High" />
   </Target>
+
+  <!-- Add the resolved targeting pack to the assembly search path. -->
+  <!-- <Target Name="UseTargetingPackForAssemblySearchPaths"
+          BeforeTargets="ResolveAssemblyReferences;
+                         DesignTimeResolveAssemblyReferences"
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <PropertyGroup>
+      <AssemblySearchPaths>$(AssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</AssemblySearchPaths>
+      <DesignTimeAssemblySearchPaths>$(DesignTimeAssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</DesignTimeAssemblySearchPaths>
+    </PropertyGroup>
+  </Target> -->
 
   <!-- SDK tries to download runtime packs when RuntimeIdentifier is set, remove them from PackageDownload item. -->
   <Target Name="RemoveRuntimePackFromDownloadItem"

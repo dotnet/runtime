@@ -23,7 +23,7 @@
   </Target>
 
   <Target Name="PrintRuntimePackPath" BeforeTargets="Build">
-    <Message Text="** MicrosoftNetCoreAppRuntimePackDir : $(MicrosoftNetCoreAppRuntimePackDir)" Importance="High" />
+    <Message Text="** MicrosoftNetCoreAppRuntimePackDir : %(ResolvedRuntimePack.PackageDirectory)" Importance="High" />
   </Target>
 
   <Import Project="$(_WasmTargetsDir)WasmApp.LocalBuild.targets" Condition="Exists('$(_WasmTargetsDir)WasmApp.LocalBuild.targets')" />
