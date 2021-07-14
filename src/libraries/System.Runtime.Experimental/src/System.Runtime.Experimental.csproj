@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Runtime</AssemblyName>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Compiler throws error if you try to use System.Void and instructs you to use void keyword instead. So we have manually added a typeforward for this type. -->
+    <GenFacadesOmitType Include="System.Void" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.Typeforwards.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Uri\src\System.Private.Uri.csproj" />
+  </ItemGroup>
+</Project>
