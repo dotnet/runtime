@@ -365,6 +365,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.False(exists);
             Assert.Equal(3, dict.Count);
             Assert.False(Unsafe.IsNullRef(ref entry3Ref));
+            Assert.True(EqualityComparer<Struct>.Default.Equals(entry3Ref, default));
 
             entry3Ref.Property = 42;
             entry3Ref.Value = 12345;
