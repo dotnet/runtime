@@ -84,6 +84,12 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
                 throw new ArgumentNullException(nameof(descriptor));
             }
 
+            if (collection is ServiceCollection serviceCollection)
+            {
+                serviceCollection.TryAdd(descriptor);
+                return;
+            }
+
             int count = collection.Count;
             for (int i = 0; i < count; i++)
             {
@@ -614,6 +620,12 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
                     nameof(descriptor));
             }
 
+            if (services is ServiceCollection serviceCollection)
+            {
+                serviceCollection.TryAddEnumerable(descriptor, implementationType);
+                return;
+            }
+
             int count = services.Count;
             for (int i = 0; i < count; i++)
             {
@@ -687,6 +699,12 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
                 throw new ArgumentNullException(nameof(descriptor));
             }
 
+            if (collection is ServiceCollection serviceCollection)
+            {
+                serviceCollection.TryReplace(descriptor);
+                return collection;
+            }
+
             // Remove existing
             int count = collection.Count;
             for (int i = 0; i < count; i++)
@@ -723,6 +741,12 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
             if (serviceType == null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
+            }
+
+            if (collection is ServiceCollection serviceCollection)
+            {
+                serviceCollection.RemoveAll(serviceType);
+                return collection;
             }
 
             for (int i = collection.Count - 1; i >= 0; i--)
