@@ -1431,6 +1431,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     /* Give the block a number, set the ancestor count and weight */
 
     ++fgBBcount;
+    ++fgBBNumMax;
 
     if (compIsForInlining())
     {
@@ -1438,7 +1439,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     }
     else
     {
-        block->bbNum = ++fgBBNumMax;
+        block->bbNum = fgBBNumMax;
     }
 
     if (compRationalIRForm)
