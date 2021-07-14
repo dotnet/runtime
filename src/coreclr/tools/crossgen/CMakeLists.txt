@@ -38,6 +38,7 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CL
 endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
 
 target_link_libraries(crossgen
+    PUBLIC
     ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
     cee_crossgen
     v3binder_crossgen
@@ -56,12 +57,14 @@ target_link_libraries(crossgen
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(crossgen
+        PUBLIC
         mscorrc
         palrt
         coreclrpal
     )
 else()
     target_link_libraries(crossgen
+        PUBLIC
         advapi32
         ole32
         oleaut32

@@ -38,6 +38,7 @@ add_dependencies(paltest_pal_sxs_test1_dll1
 )
 
 target_link_libraries(paltest_pal_sxs_test1_dll1
+    PUBLIC
     ${COMMON_TEST_LIBRARIES}
     m
     coreclrpal
@@ -69,6 +70,7 @@ add_dependencies(paltest_pal_sxs_test1_dll2
 )
 
 target_link_libraries(paltest_pal_sxs_test1_dll2
+  PUBLIC
    ${COMMON_TEST_LIBRARIES}
 )
 
@@ -84,6 +86,7 @@ add_dependencies(paltest_pal_sxs_test1
 )
 
 target_link_libraries(paltest_pal_sxs_test1
+  PUBLIC
    paltest_pal_sxs_test1_dll1
    paltest_pal_sxs_test1_dll2
 )

@@ -1,7 +1,3 @@
-if(CLR_CMAKE_HOST_WIN32)
-  #use static crt
-  set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
-endif(CLR_CMAKE_HOST_WIN32)
 
 set( ILDBSYMLIB_SOURCES
   symread.cpp

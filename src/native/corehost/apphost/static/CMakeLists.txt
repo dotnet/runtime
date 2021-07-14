@@ -236,9 +236,13 @@ set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 
 target_link_libraries(
     singlefilehost
+    PRIVATE
     ${NATIVE_LIBS}
 
     ${START_WHOLE_ARCHIVE}
     ${RUNTIMEINFO_LIB}
     ${END_WHOLE_ARCHIVE}
 )
+
+target_sources(singlefilehost
+    PRIVATE "$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:${CLR_SRC_NATIVE_DIR}/common/asansupport.cpp>")

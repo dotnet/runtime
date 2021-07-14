@@ -110,6 +110,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_HOST_UNIX)
   target_link_libraries(ilasm
+    PRIVATE
     ${ILASM_LINK_LIBRARIES}
     utilcodestaticnohost
     mscorrc
@@ -119,6 +120,7 @@ if(CLR_CMAKE_HOST_UNIX)
   )
 else()
   target_link_libraries(ilasm
+    PRIVATE
     ${ILASM_LINK_LIBRARIES}
     ole32
     oleaut32

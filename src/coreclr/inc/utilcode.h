@@ -186,6 +186,25 @@ typedef LPSTR   LPUTF8;
 #define sizeofmember(c,m) (sizeof(((c*)0)->m))
 #endif
 
+
+#if defined(_MSC_VER)
+#  if defined(__SANITIZE_ADDRESS__)
+#    define HAS_ADDRESS_SANITIZER
+#    define DISABLE_ASAN __declspec(no_sanitize_address)
+#  else
+#    define DISABLE_ASAN
+#  endif
+#elif defined(__llvm__)
+#  if defined(__has_feature) && __has_feature(address_sanitizer)
+#    define HAS_ADDRESS_SANITIZER 
+#    define DISABLE_ASAN __attribute__((no_sanitize("address")))
+#  else
+#    define DISABLE_ASAN
+#  endif
+#else
+#    define DISABLE_ASAN
+#endif
+
 //=--------------------------------------------------------------------------=
 // Prefast helpers.
 //

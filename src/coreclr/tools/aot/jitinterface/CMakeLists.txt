@@ -1,5 +1,7 @@
 project(jitinterface)
 
+set(CLR_CMAKE_ENABLE_ASAN OFF)
+
 set(NATIVE_SOURCES
     jithost.cpp
     jitinterface.cpp

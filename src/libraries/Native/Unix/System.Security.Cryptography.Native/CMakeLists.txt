@@ -111,6 +111,7 @@ if (GEN_SHARED_LIB)
     endif()
 
     target_link_libraries(System.Security.Cryptography.Native.OpenSsl
+        PRIVATE
         ${NATIVE_LIBS_EXTRA}
     )
 endif()

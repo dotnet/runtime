@@ -82,11 +82,11 @@
       />
   </ItemGroup>
 
-  <!-- On windows we can re-use the clrjit.dll produced in the build for aot compilation. On Linux
+  <!-- On windows we can use the clrjitilc.dll produced in the build for aot compilation. On Linux
        this works at runtime, but makes it difficult to debug the jit.-->
-  <ItemGroup Condition="'$(TargetOS)' == 'windows' and Exists('$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit$(LibSuffix)')">
+  <ItemGroup Condition="'$(TargetOS)' == 'windows' and Exists('$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjitilc$(LibSuffix)')">
     <Content Remove="$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)" />
-    <Content Include="$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit$(LibSuffix)"
+    <Content Include="$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjitilc$(LibSuffix)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)"
