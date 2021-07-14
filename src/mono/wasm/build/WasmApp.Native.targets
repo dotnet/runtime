@@ -241,7 +241,7 @@
     <_MonoComponent Include="hot_reload;debugger" />
   </ItemGroup>
 
-  <Target Name="_WasmLinkDotNet" DependsOnTargets="_MonoSelectRuntimeComponents ">
+  <Target Name="_WasmLinkDotNet" DependsOnTargets="_MonoSelectRuntimeComponents">
     <ItemGroup>
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
