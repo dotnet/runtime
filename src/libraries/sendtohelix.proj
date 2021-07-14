@@ -47,7 +47,8 @@
         Creator=$(Creator);
         HelixAccessToken=$(HelixAccessToken);
         HelixTargetQueues=$(HelixTargetQueues);
-        BuildTargetFramework=$(BuildTargetFramework)
+        BuildTargetFramework=$(BuildTargetFramework);
+        ForNode=$(ForNode)
       </_PropertiesToPass>
     </PropertyGroup>
 
