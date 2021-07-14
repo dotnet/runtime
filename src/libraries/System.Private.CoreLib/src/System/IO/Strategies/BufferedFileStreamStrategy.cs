@@ -985,7 +985,7 @@ namespace System.IO.Strategies
                 _readPos = _readLen = 0;
             }
 
-            Debug.Assert(newPos == Position, "newPos (=" + newPos + ") == Position (=" + Position + ")");
+            Debug.Assert(newPos == Position, $"newPos (={newPos}) == Position (={Position})");
             return newPos;
         }
 
@@ -1023,7 +1023,7 @@ namespace System.IO.Strategies
         /// </summary>
         private void ClearReadBufferBeforeWrite()
         {
-            Debug.Assert(_readPos <= _readLen, "_readPos <= _readLen [" + _readPos + " <= " + _readLen + "]");
+            Debug.Assert(_readPos <= _readLen, $"_readPos <= _readLen [{_readPos} <= {_readLen}]");
 
             // No read data in the buffer:
             if (_readPos == _readLen)

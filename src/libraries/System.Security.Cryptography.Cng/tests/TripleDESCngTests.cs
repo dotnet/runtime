@@ -39,10 +39,13 @@ namespace System.Security.Cryptography.Cng.Tests
         [InlineData(BlockSizeBytes + BlockSizeBytes / 2, CipherMode.CBC, PaddingMode.Zeros)]
         // 3DES192-CBC-PKCS7 at 1.5 blocks
         [InlineData(BlockSizeBytes + BlockSizeBytes / 2, CipherMode.CBC, PaddingMode.PKCS7)]
+        // 3DES192-CFB8-NoPadding at 2 blocks
+        [InlineData(2 * BlockSizeBytes, CipherMode.CFB, PaddingMode.None, 8)]
         public static void VerifyPersistedKey(
             int plainBytesCount,
             CipherMode cipherMode,
-            PaddingMode paddingMode)
+            PaddingMode paddingMode,
+            int feedbackSizeInBits = 0)
         {
             SymmetricCngTestHelpers.VerifyPersistedKey(
                 s_cngAlgorithm,
@@ -51,7 +54,8 @@ namespace System.Security.Cryptography.Cng.Tests
                 keyName => new TripleDESCng(keyName),
                 () => new TripleDESCng(),
                 cipherMode,
-                paddingMode);
+                paddingMode,
+                feedbackSizeInBits);
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
@@ -98,6 +102,16 @@ namespace System.Security.Cryptography.Cng.Tests
                 8 * BlockSizeBytes,
                 keyName => new TripleDESCng(keyName, CngProvider.MicrosoftSoftwareKeyStorageProvider, CngKeyOpenOptions.MachineKey),
                 () => new TripleDESCng());
+        }
+
+        [OuterLoop("Creates/Deletes a persisted key, limit exposure to key leaking")]
+        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        public static void VerifyUnsupportedFeedbackSizeForPersistedCfb()
+        {
+            SymmetricCngTestHelpers.VerifyOneShotCfbPersistedUnsupportedFeedbackSize(
+                s_cngAlgorithm,
+                keyName => new TripleDESCng(keyName),
+                notSupportedFeedbackSizeInBits: 64);
         }
 
         public static bool SupportsPersistedSymmetricKeys

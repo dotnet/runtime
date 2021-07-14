@@ -4824,27 +4824,22 @@ namespace System
                     // For compatibility with V1.0 parser we restrict the compression scope to Unc Share, i.e. \\host\share\
                     if (basePart.IsUnc)
                     {
-                        string share = basePart.GetParts(UriComponents.Path | UriComponents.KeepDelimiter,
-                            UriFormat.Unescaped);
+                        ReadOnlySpan<char> share = basePart.GetParts(UriComponents.Path | UriComponents.KeepDelimiter, UriFormat.Unescaped);
                         for (int i = 1; i < share.Length; ++i)
                         {
                             if (share[i] == '/')
                             {
-                                share = share.Substring(0, i);
+                                share = share.Slice(0, i);
                                 break;
                             }
                         }
+
                         if (basePart.IsImplicitFile)
                         {
-                            return @"\\"
-                                    + basePart.GetParts(UriComponents.Host, UriFormat.Unescaped)
-                                    + share
-                                    + relativePart;
+                            return string.Concat(@"\\", basePart.GetParts(UriComponents.Host, UriFormat.Unescaped), share, relativePart);
                         }
-                        return "file://"
-                                + basePart.GetParts(UriComponents.Host, uriFormat)
-                                + share
-                                + relativePart;
+
+                        return string.Concat("file://", basePart.GetParts(UriComponents.Host, uriFormat), share, relativePart);
                     }
                     // It's not obvious but we've checked (for this relativePart format) that baseUti is nor UNC nor DOS path
                     //

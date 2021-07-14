@@ -1093,11 +1093,11 @@ namespace System
             => (char)BitOperations.PopCount(value);
 
         [RequiresPreviewFeatures]
-        static char IBinaryInteger<char>.RotateLeft(char value, char rotateAmount)
+        static char IBinaryInteger<char>.RotateLeft(char value, int rotateAmount)
             => (char)((value << (rotateAmount & 15)) | (value >> ((16 - rotateAmount) & 15)));
 
         [RequiresPreviewFeatures]
-        static char IBinaryInteger<char>.RotateRight(char value, char rotateAmount)
+        static char IBinaryInteger<char>.RotateRight(char value, int rotateAmount)
             => (char)((value >> (rotateAmount & 15)) | (value << ((16 - rotateAmount) & 15)));
 
         [RequiresPreviewFeatures]
@@ -1162,11 +1162,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static char IDecrementOperators<char>.operator --(char value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked char IDecrementOperators<char>.operator --(char value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -1198,11 +1198,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static char IIncrementOperators<char>.operator ++(char value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked char IIncrementOperators<char>.operator ++(char value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue

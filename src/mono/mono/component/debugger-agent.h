@@ -23,7 +23,7 @@ DebuggerTlsData*
 mono_wasm_get_tls (void);
 
 void 
-mono_init_debugger_agent_for_wasm (int log_level);
+mono_init_debugger_agent_for_wasm (int log_level, MonoProfilerHandle *prof);
 
 void 
 mono_wasm_save_thread_context (void);

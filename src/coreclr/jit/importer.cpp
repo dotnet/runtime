@@ -13075,27 +13075,36 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
 
-#ifdef TARGET_64BIT
-                if (varTypeIsI(op1->TypeGet()) && (genActualType(op2->TypeGet()) == TYP_INT))
+                // Recognize the IL idiom of CGT_UN(op1, 0) and normalize
+                // it so that downstream optimizations don't have to.
+                if ((opcode == CEE_CGT_UN) && op2->IsIntegralConst(0))
                 {
-                    op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
+                    oper = GT_NE;
+                    uns  = false;
                 }
-                else if (varTypeIsI(op2->TypeGet()) && (genActualType(op1->TypeGet()) == TYP_INT))
+
+#ifdef TARGET_64BIT
+                // TODO-Casts: create a helper that upcasts int32 -> native int when necessary.
+                // See also identical code in impGetByRefResultType and STSFLD import.
+                if (varTypeIsI(op1) && (genActualType(op2) == TYP_INT))
                 {
-                    op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
+                    op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, TYP_I_IMPL);
+                }
+                else if (varTypeIsI(op2) && (genActualType(op1) == TYP_INT))
+                {
+                    op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, TYP_I_IMPL);
                 }
 #endif // TARGET_64BIT
 
-                assertImp(genActualType(op1->TypeGet()) == genActualType(op2->TypeGet()) ||
-                          (varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet())) ||
-                          (varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType)));
+                assertImp(genActualType(op1) == genActualType(op2) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
+                          (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
 
-                /* Create the comparison node */
+                // Create the comparison node.
 
                 op1 = gtNewOperNode(oper, TYP_INT, op1, op2);
 
-                /* TODO: setting both flags when only one is appropriate */
-                if (opcode == CEE_CGT_UN || opcode == CEE_CLT_UN)
+                // TODO: setting both flags when only one is appropriate.
+                if (uns)
                 {
                     op1->gtFlags |= GTF_RELOP_NAN_UN | GTF_UNSIGNED;
                 }

@@ -61,8 +61,18 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
             {
-                AssertExtensions.Throws<ArgumentException>("value", () => client.BaseAddress = new Uri("ftp://onlyhttpsupported"));
                 AssertExtensions.Throws<ArgumentException>("value", () => client.BaseAddress = new Uri("/onlyabsolutesupported", UriKind.Relative));
+            }
+        }
+
+        [Fact]
+        public void BaseAddress_UnknownScheme_DoesNotThrow()
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => Task.FromResult(new HttpResponseMessage()))))
+            {
+                client.BaseAddress = new Uri("blob://foo.bar");
+                client.BaseAddress = new Uri("extensions://foo.bar");
+                client.BaseAddress = new Uri("foobar://foo.bar");
             }
         }
 
@@ -375,7 +385,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54270", TestPlatforms.Browser)]
         public async Task GetStringAsync_CanBeCanceled_AlreadyCanceledCts()
         {
             var onClientFinished = new SemaphoreSlim(0, 1);
@@ -400,7 +409,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54270", TestPlatforms.Browser)]
         public async Task GetStringAsync_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -435,7 +443,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1, 0)]
         [InlineData(1, 1)]
         [InlineData(1, 2)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54270", TestPlatforms.Browser)]
         public async Task GetAsync_ContentCanBeCanceled(int getMode, int cancelMode)
         {
             // cancelMode:
@@ -545,7 +552,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54270", TestPlatforms.Browser)]
         public async Task GetByteArrayAsync_CanBeCanceled_AlreadyCanceledCts()
         {
             var onClientFinished = new SemaphoreSlim(0, 1);
@@ -570,7 +576,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54270", TestPlatforms.Browser)]
         public async Task GetByteArrayAsync_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -621,7 +626,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54270", TestPlatforms.Browser)]
         public async Task GetStreamAsync_CanBeCanceled_AlreadyCanceledCts()
         {
             var onClientFinished = new SemaphoreSlim(0, 1);
@@ -646,7 +650,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54270", TestPlatforms.Browser)]
         public async Task GetStreamAsync_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();

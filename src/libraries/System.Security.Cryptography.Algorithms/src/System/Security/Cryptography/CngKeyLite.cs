@@ -724,6 +724,8 @@ namespace Microsoft.Win32.SafeHandles
     {
     }
 
+#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
+
     internal sealed class DuplicateSafeNCryptKeyHandle : SafeNCryptKeyHandle
     {
         public DuplicateSafeNCryptKeyHandle(SafeNCryptKeyHandle original)

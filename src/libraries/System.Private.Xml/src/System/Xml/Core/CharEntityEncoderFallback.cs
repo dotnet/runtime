@@ -102,7 +102,7 @@ namespace System.Xml
             if (_parent.CanReplaceAt(index))
             {
                 // Create the replacement character entity
-                _charEntity = string.Format(CultureInfo.InvariantCulture, "&#x{0:X};", new object[] { (int)charUnknown });
+                _charEntity = string.Create(null, stackalloc char[64], $"&#x{(int)charUnknown:X};");
                 _charEntityIndex = 0;
                 return true;
             }
@@ -131,7 +131,7 @@ namespace System.Xml
             if (_parent.CanReplaceAt(index))
             {
                 // Create the replacement character entity
-                _charEntity = string.Format(CultureInfo.InvariantCulture, "&#x{0:X};", new object[] { SurrogateCharToUtf32(charUnknownHigh, charUnknownLow) });
+                _charEntity = string.Create(null, stackalloc char[64], $"&#x{SurrogateCharToUtf32(charUnknownHigh, charUnknownLow):X};");
                 _charEntityIndex = 0;
                 return true;
             }

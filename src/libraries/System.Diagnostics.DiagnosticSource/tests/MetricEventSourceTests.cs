@@ -16,6 +16,8 @@ namespace System.Diagnostics.Metrics.Tests
     public class MetricEventSourceTests
     {
         ITestOutputHelper _output;
+        const double IntervalSecs = 1;
+        static readonly TimeSpan s_waitForEventTimeout = TimeSpan.FromSeconds(60);
 
         public MetricEventSourceTests(ITestOutputHelper output)
         {
@@ -23,6 +25,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesWithEmptyMetadata()
         {
             using Meter meter = new Meter("TestMeter1");
@@ -34,15 +37,15 @@ namespace System.Diagnostics.Metrics.Tests
             Histogram<int> h = meter.CreateHistogram<int>("histogram1");
 
             EventWrittenEventArgs[] events;
-            double intervalSecs = 0.3;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs, "TestMeter1"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter1"))
             {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 1);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 2);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -52,10 +55,11 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesWithMetadata()
         {
             using Meter meter = new Meter("TestMeter2");
@@ -67,28 +71,29 @@ namespace System.Diagnostics.Metrics.Tests
             Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description");
 
             EventWrittenEventArgs[] events;
-            double intervalSecs = 0.3;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs, "TestMeter2"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter2"))
             {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 1);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 2);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h);
             AssertInitialEnumerationCompleteEventPresent(events);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, "5", "12");
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, "", "7");
-            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18");
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, "", "7", "7");
+            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesForLateMeter()
         {
             // this ensures the MetricsEventSource exists when the listener tries to query
@@ -102,10 +107,9 @@ namespace System.Diagnostics.Metrics.Tests
                 Histogram<int> h;
 
                 EventWrittenEventArgs[] events;
-                double intervalSecs = 0.3;
-                using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs, "TestMeter3"))
+                using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter3"))
                 {
-                    listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 1);
+                    listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
 
                     // the Meter is created after the EventSource was already monitoring
                     meter = new Meter("TestMeter3");
@@ -118,10 +122,10 @@ namespace System.Diagnostics.Metrics.Tests
 
                     c.Add(5);
                     h.Record(19);
-                    listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 2);
+                    listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                     c.Add(12);
                     h.Record(26);
-                    listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 3);
+                    listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                     events = listener.Events.ToArray();
                 }
 
@@ -131,7 +135,7 @@ namespace System.Diagnostics.Metrics.Tests
                 AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
                 AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
                 AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-                AssertCollectStartStopEventsPresent(events, intervalSecs, 3);
+                AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
             }
             finally
             {
@@ -140,6 +144,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesForLateInstruments()
         {
             // this ensures the MetricsEventSource exists when the listener tries to query
@@ -150,10 +155,9 @@ namespace System.Diagnostics.Metrics.Tests
             Histogram<int> h;
 
             EventWrittenEventArgs[] events;
-            double intervalSecs = 0.3;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs, "TestMeter4"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter4"))
             {
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 1);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
 
                 // Instruments are created after the EventSource was already monitoring
                 c = meter.CreateCounter<int>("counter1");
@@ -165,10 +169,10 @@ namespace System.Diagnostics.Metrics.Tests
 
                 c.Add(5);
                 h.Record(19);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 2);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 3);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -178,10 +182,11 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", "", "7");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertCollectStartStopEventsPresent(events, intervalSecs, 3);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesWithTags()
         {
             using Meter meter = new Meter("TestMeter5");
@@ -209,20 +214,21 @@ namespace System.Diagnostics.Metrics.Tests
             Histogram<int> h = meter.CreateHistogram<int>("histogram1");
 
             EventWrittenEventArgs[] events;
-            double intervalSecs = 0.3;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs, "TestMeter5"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter5"))
             {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+
                 c.Add(5, new KeyValuePair<string,object?>("Color", "red"));
                 c.Add(6, new KeyValuePair<string, object?>("Color", "blue"));
                 h.Record(19, new KeyValuePair<string, object?>("Size", 123));
                 h.Record(20, new KeyValuePair<string, object?>("Size", 124));
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 1);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
 
                 c.Add(12, new KeyValuePair<string, object?>("Color", "red"));
                 c.Add(13, new KeyValuePair<string, object?>("Color", "blue"));
                 h.Record(26, new KeyValuePair<string, object?>("Size", 123));
                 h.Record(27, new KeyValuePair<string, object?>("Size", 124));
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 2);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -236,11 +242,12 @@ namespace System.Diagnostics.Metrics.Tests
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "Color=blue,Size=4", "", "18", "36");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "Size=123", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "Size=124", "", "0.5=20;0.95=20;0.99=20", "0.5=27;0.95=27;0.99=27");
-            AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
         public void EventSourceFiltersInstruments()
         {
             using Meter meterA = new Meter("TestMeterA");
@@ -257,10 +264,11 @@ namespace System.Diagnostics.Metrics.Tests
             Counter<int> c3c = meterC.CreateCounter<int>("counter3");
 
             EventWrittenEventArgs[] events;
-            double intervalSecs = 0.3;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs,
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs,
                 "TestMeterA\\counter3;TestMeterB\\counter1;TestMeterC\\counter2;TestMeterB;TestMeterC\\counter3"))
             {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+
                 c1a.Add(1);
                 c2a.Add(1);
                 c3a.Add(1);
@@ -270,7 +278,7 @@ namespace System.Diagnostics.Metrics.Tests
                 c1c.Add(1);
                 c2c.Add(1);
                 c3c.Add(1);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 1);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
 
                 c1a.Add(2);
                 c2a.Add(2);
@@ -281,7 +289,7 @@ namespace System.Diagnostics.Metrics.Tests
                 c1c.Add(2);
                 c2c.Add(2);
                 c3c.Add(2);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 2);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -296,10 +304,11 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsNotPresent(events, meterA.Name, c1a.Name, "");
             AssertCounterEventsNotPresent(events, meterA.Name, c2a.Name, "");
             AssertCounterEventsNotPresent(events, meterC.Name, c1c.Name, "");
-            AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesMissingDataPoints()
         {
             using Meter meter = new Meter("TestMeter6");
@@ -310,7 +319,7 @@ namespace System.Diagnostics.Metrics.Tests
             {
                 counterState += 7;
                 counterCollectInterval++;
-                if ((counterCollectInterval % 2) == 1)
+                if ((counterCollectInterval % 2) == 0)
                 {
                     return new Measurement<int>[] { new Measurement<int>(counterState) };
                 }
@@ -326,7 +335,7 @@ namespace System.Diagnostics.Metrics.Tests
             {
                 gaugeState += 9;
                 gaugeCollectInterval++;
-                if ((gaugeCollectInterval % 2) == 1)
+                if ((gaugeCollectInterval % 2) == 0)
                 {
                     return new Measurement<int>[] { new Measurement<int>(gaugeState) };
                 }
@@ -339,19 +348,20 @@ namespace System.Diagnostics.Metrics.Tests
             Histogram<int> h = meter.CreateHistogram<int>("histogram1");
 
             EventWrittenEventArgs[] events;
-            double intervalSecs = 0.3;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs, "TestMeter6"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter6"))
             {
+                // no measurements in interval 1
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 1);
-                // no measurements in interval 2
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 2);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                // no measurements in interval 3
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 c.Add(12);
                 h.Record(26);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 3);
-                // no measurements in interval 4
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 4);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
+                // no measurements in interval 5
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 5);
                 events = listener.Events.ToArray();
             }
 
@@ -359,12 +369,13 @@ namespace System.Diagnostics.Metrics.Tests
             AssertInitialEnumerationCompleteEventPresent(events);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", "5", "0", "12");
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", "", "0", "14", "0");
-            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "", "27", "");
+            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "18", "", "36", "");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "", "0.5=26;0.95=26;0.99=26", "");
-            AssertCollectStartStopEventsPresent(events, intervalSecs, 4);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 5);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesEndEventsOnNewListener()
         {
             using Meter meter = new Meter("TestMeter7");
@@ -376,32 +387,33 @@ namespace System.Diagnostics.Metrics.Tests
             Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description");
 
             EventWrittenEventArgs[] events;
-            double intervalSecs = 0.3;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs, "TestMeter7"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter7"))
             {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 1);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 2);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
 
                 // some alternate listener starts listening
-                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs, "ADifferentMeter");
-                listener.WaitForEndInstrumentReporting(TimeSpan.FromSeconds(5), 4);
+                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "ADifferentMeter");
+                listener.WaitForEndInstrumentReporting(s_waitForEventTimeout, 4);
                 events = listener.Events.ToArray();
             }
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, "5", "12");
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, "", "7");
-            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18");
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, "", "7", "7");
+            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
             AssertEndInstrumentReportingEventsPresent(events, c, oc, og, h);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesEndEventsOnMeterDispose()
         {
             using Meter meterA = new Meter("TestMeter8");
@@ -414,36 +426,37 @@ namespace System.Diagnostics.Metrics.Tests
             Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description");
 
             EventWrittenEventArgs[] events;
-            double intervalSecs = 0.3;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs, "TestMeter8;TestMeter9"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter8;TestMeter9"))
             {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
                 h.Record(19);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 1);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
                 c.Add(12);
                 h.Record(26);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 2);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
 
                 meterA.Dispose();
-                listener.WaitForEndInstrumentReporting(TimeSpan.FromSeconds(5), 3);
+                listener.WaitForEndInstrumentReporting(s_waitForEventTimeout, 3);
 
                 h.Record(21);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 3);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
                 events = listener.Events.ToArray();
             }
 
             AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h);
             AssertInitialEnumerationCompleteEventPresent(events);
             AssertCounterEventsPresent(events, meterA.Name, c.Name, "", c.Unit, "5", "12");
-            AssertCounterEventsPresent(events, meterA.Name, oc.Name, "", oc.Unit, "", "7");
-            AssertGaugeEventsPresent(events, meterA.Name, og.Name, "", og.Unit, "9", "18");
+            AssertCounterEventsPresent(events, meterA.Name, oc.Name, "", oc.Unit, "", "7", "7");
+            AssertGaugeEventsPresent(events, meterA.Name, og.Name, "", og.Unit, "9", "18", "27");
             AssertHistogramEventsPresent(events, meterB.Name, h.Name, "", h.Unit, "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26", "0.5=21;0.95=21;0.99=21");
-            AssertCollectStartStopEventsPresent(events, intervalSecs, 3);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
             AssertEndInstrumentReportingEventsPresent(events, c, oc, og);
         }
 
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesInstruments()
         {
             using Meter meterA = new Meter("TestMeter10");
@@ -458,7 +471,7 @@ namespace System.Diagnostics.Metrics.Tests
             EventWrittenEventArgs[] events;
             using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.InstrumentPublishing, null, ""))
             {
-                listener.WaitForEnumerationComplete(TimeSpan.FromSeconds(5));
+                listener.WaitForEnumerationComplete(s_waitForEventTimeout);
                 events = listener.Events.ToArray();
             }
 
@@ -467,6 +480,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesAllDataTypes()
         {
             using Meter meter = new Meter("TestMeter12");
@@ -479,25 +493,9 @@ namespace System.Diagnostics.Metrics.Tests
             Counter<double> d = meter.CreateCounter<double>("counterDouble");
 
             EventWrittenEventArgs[] events;
-            double intervalSecs = 0.3;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs, "TestMeter12"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter12"))
             {
-                i.Add(1_234_567);
-                s.Add(21_432);
-                b.Add(1);
-                l.Add(123_456_789_012);
-                dec.Add(123_456_789_012_345);
-                f.Add(123_456.789F);
-                d.Add(87_654_321_987_654.4);
-
-                i.Add(1);
-                s.Add(1);
-                b.Add(1);
-                l.Add(1);
-                dec.Add(1);
-                f.Add(1);
-                d.Add(1);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 1);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
 
                 i.Add(1_234_567);
                 s.Add(21_432);
@@ -514,7 +512,24 @@ namespace System.Diagnostics.Metrics.Tests
                 dec.Add(1);
                 f.Add(1);
                 d.Add(1);
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 2);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+
+                i.Add(1_234_567);
+                s.Add(21_432);
+                b.Add(1);
+                l.Add(123_456_789_012);
+                dec.Add(123_456_789_012_345);
+                f.Add(123_456.789F);
+                d.Add(87_654_321_987_654.4);
+
+                i.Add(1);
+                s.Add(1);
+                b.Add(1);
+                l.Add(1);
+                dec.Add(1);
+                f.Add(1);
+                d.Add(1);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -527,10 +542,11 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, dec.Name, "", "", "123456789012346", "123456789012346");
             AssertCounterEventsPresent(events, meter.Name, f.Name, "", "", "123457.7890625", "123457.7890625");
             AssertCounterEventsPresent(events, meter.Name, d.Name, "", "", "87654321987655.4", "87654321987655.4");
-            AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
         public void EventSourceEnforcesTimeSeriesLimit()
         {
             using Meter meter = new Meter("TestMeter13");
@@ -538,20 +554,21 @@ namespace System.Diagnostics.Metrics.Tests
             
 
             EventWrittenEventArgs[] events;
-            double intervalSecs = 0.3;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs, 2, 50, "TestMeter13"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, 2, 50, "TestMeter13"))
             {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+
                 c.Add(5, new KeyValuePair<string, object?>("Color", "red"));
                 c.Add(6, new KeyValuePair<string, object?>("Color", "blue"));
                 c.Add(7, new KeyValuePair<string, object?>("Color", "green"));
                 c.Add(8, new KeyValuePair<string, object?>("Color", "yellow"));
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 1);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
 
                 c.Add(12, new KeyValuePair<string, object?>("Color", "red"));
                 c.Add(13, new KeyValuePair<string, object?>("Color", "blue"));
                 c.Add(14, new KeyValuePair<string, object?>("Color", "green"));
                 c.Add(15, new KeyValuePair<string, object?>("Color", "yellow"));
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 2);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -562,10 +579,11 @@ namespace System.Diagnostics.Metrics.Tests
             AssertTimeSeriesLimitPresent(events);
             AssertCounterEventsNotPresent(events, meter.Name, c.Name, "Color=green");
             AssertCounterEventsNotPresent(events, meter.Name, c.Name, "Color=yellow");
-            AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
         public void EventSourceEnforcesHistogramLimit()
         {
             using Meter meter = new Meter("TestMeter14");
@@ -573,20 +591,21 @@ namespace System.Diagnostics.Metrics.Tests
 
 
             EventWrittenEventArgs[] events;
-            double intervalSecs = 0.3;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, intervalSecs, 50, 2, "TestMeter14"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, 50, 2, "TestMeter14"))
             {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+
                 h.Record(5, new KeyValuePair<string, object?>("Color", "red"));
                 h.Record(6, new KeyValuePair<string, object?>("Color", "blue"));
                 h.Record(7, new KeyValuePair<string, object?>("Color", "green"));
                 h.Record(8, new KeyValuePair<string, object?>("Color", "yellow"));
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 1);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
 
                 h.Record(12, new KeyValuePair<string, object?>("Color", "red"));
                 h.Record(13, new KeyValuePair<string, object?>("Color", "blue"));
                 h.Record(14, new KeyValuePair<string, object?>("Color", "green"));
                 h.Record(15, new KeyValuePair<string, object?>("Color", "yellow"));
-                listener.WaitForCollectionStop(TimeSpan.FromSeconds(5), 2);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
             }
 
@@ -597,7 +616,34 @@ namespace System.Diagnostics.Metrics.Tests
             AssertHistogramLimitPresent(events);
             AssertHistogramEventsNotPresent(events, meter.Name, h.Name, "Color=green");
             AssertHistogramEventsNotPresent(events, meter.Name, h.Name, "Color=yellow");
-            AssertCollectStartStopEventsPresent(events, intervalSecs, 2);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
+        public void EventSourceHandlesObservableCallbackException()
+        {
+            using Meter meter = new Meter("TestMeter15");
+            Counter<int> c = meter.CreateCounter<int>("counter1");
+            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1",
+                (Func<int>)(() => { throw new Exception("Example user exception"); }));
+
+            EventWrittenEventArgs[] events;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter15"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                c.Add(12);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc);
+            AssertInitialEnumerationCompleteEventPresent(events);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", "5", "12");
+            AssertObservableCallbackErrorPresent(events);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
         private void AssertBeginInstrumentReportingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
@@ -746,8 +792,8 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.True(filteredEvents.Length >= expectedValues.Length);
             for (int i = 0; i < expectedValues.Length; i++)
             {
-                Assert.Equal(filteredEvents[i].Unit, expectedUnit);
-                Assert.Equal(filteredEvents[i].Value, expectedValues[i]);
+                Assert.Equal(expectedUnit, filteredEvents[i].Unit);
+                Assert.Equal(expectedValues[i], filteredEvents[i].Value);
             }
         }
 
@@ -813,6 +859,17 @@ namespace System.Diagnostics.Metrics.Tests
 
             Assert.Equal(expectedPairs, startEventsSeen);
             Assert.Equal(expectedPairs, stopEventsSeen);
+        }
+
+        private void AssertObservableCallbackErrorPresent(EventWrittenEventArgs[] events)
+        {
+            var errorEvents = events.Where(e => e.EventName == "ObservableInstrumentCallbackError").Select(e =>
+                new
+                {
+                    ErrorText = e.Payload[1].ToString(),
+                }).ToArray();
+            Assert.NotEmpty(errorEvents);
+            Assert.Contains("Example user exception", errorEvents[0].ErrorText);
         }
     }
 
@@ -906,7 +963,8 @@ namespace System.Diagnostics.Metrics.Tests
 
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            if(eventData.EventName != "Message" && eventData.EventName != "Error" && eventData.Payload[0].ToString() != _sessionId)
+            string sessionId = eventData.Payload[0].ToString();
+            if(sessionId != "" && sessionId != _sessionId)
             {
                 return;
             }

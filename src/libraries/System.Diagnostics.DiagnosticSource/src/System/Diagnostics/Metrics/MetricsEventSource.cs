@@ -169,6 +169,12 @@ namespace System.Diagnostics.Metrics
             WriteEvent(13, sessionId);
         }
 
+        [Event(14, Keywords = Keywords.TimeSeriesValues)]
+        public void ObservableInstrumentCallbackError(string sessionId, string errorMessage)
+        {
+            WriteEvent(14, sessionId, errorMessage);
+        }
+
         /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
         /// </summary>
@@ -303,7 +309,8 @@ namespace System.Diagnostics.Metrics
                             () => Log.InitialInstrumentEnumerationComplete(sessionId),
                             e => Log.Error(sessionId, e.ToString()),
                             () => Log.TimeSeriesLimitReached(sessionId),
-                            () => Log.HistogramLimitReached(sessionId));
+                            () => Log.HistogramLimitReached(sessionId),
+                            e => Log.ObservableInstrumentCallbackError(sessionId, e.ToString()));
 
                         _aggregationManager.SetCollectionPeriod(TimeSpan.FromSeconds(refreshIntervalSecs));
 

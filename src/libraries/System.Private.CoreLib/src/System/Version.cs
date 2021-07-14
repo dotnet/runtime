@@ -197,55 +197,33 @@ namespace System
 
         public bool TryFormat(Span<char> destination, int fieldCount, out int charsWritten)
         {
-            string? failureUpperBound = (uint)fieldCount switch
+            switch (fieldCount)
             {
-                > 4 => "4",
-                >= 3 when _Build == -1 => "2",
-                4 when _Revision == -1 => "3",
-                _ => null
-            };
-            if (failureUpperBound is not null)
-            {
-                throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", failureUpperBound), nameof(fieldCount));
-            }
-
-            int totalCharsWritten = 0;
-
-            for (int i = 0; i < fieldCount; i++)
-            {
-                if (i != 0)
-                {
-                    if (destination.IsEmpty)
-                    {
-                        charsWritten = 0;
-                        return false;
-                    }
-
-                    destination[0] = '.';
-                    destination = destination.Slice(1);
-                    totalCharsWritten++;
-                }
-
-                int value = i switch
-                {
-                    0 => _Major,
-                    1 => _Minor,
-                    2 => _Build,
-                    _ => _Revision
-                };
-
-                if (!value.TryFormat(destination, out int valueCharsWritten))
-                {
+                case 0:
                     charsWritten = 0;
-                    return false;
-                }
+                    return true;
 
-                totalCharsWritten += valueCharsWritten;
-                destination = destination.Slice(valueCharsWritten);
+                case 1:
+                    return ((uint)_Major).TryFormat(destination, out charsWritten);
+
+                case 2:
+                    return destination.TryWrite($"{(uint)_Major}.{(uint)_Minor}", out charsWritten);
+
+                case 3:
+                    if (_Build == -1) throw CreateBoundException("3");
+                    return destination.TryWrite($"{(uint)_Major}.{(uint)_Minor}.{(uint)_Build}", out charsWritten);
+
+                case 4:
+                    if (_Build == -1) throw CreateBoundException("2");
+                    if (_Revision == -1) throw CreateBoundException("3");
+                    return destination.TryWrite($"{(uint)_Major}.{(uint)_Minor}.{(uint)_Build}.{(uint)_Revision}", out charsWritten);
+
+                default:
+                    throw CreateBoundException("4");
             }
 
-            charsWritten = totalCharsWritten;
-            return true;
+            static Exception CreateBoundException(string failureUpperBound) =>
+                new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", failureUpperBound), nameof(fieldCount));
         }
 
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>

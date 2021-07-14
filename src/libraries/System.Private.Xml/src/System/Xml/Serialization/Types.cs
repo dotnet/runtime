@@ -1219,7 +1219,10 @@ namespace System.Xml.Serialization
                             replacedInfo = info;
                             if (replacedInfo != memberInfoToBeReplaced)
                             {
-                                if (!info.GetMethod!.IsPublic
+                                // The property name is a match. It might be an override, or
+                                // it might be hiding. Either way, check to see if the derived
+                                // property has a getter that is useable for serialization.
+                                if (info.GetMethod != null && !info.GetMethod!.IsPublic
                                     && memberInfoToBeReplaced is PropertyInfo
                                     && ((PropertyInfo)memberInfoToBeReplaced).GetMethod!.IsPublic
                                    )

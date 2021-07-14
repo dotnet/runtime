@@ -352,7 +352,7 @@
     <value>The data extension property '{0}.{1}' does not match the required signature of 'IDictionary&lt;string, JsonElement&gt;', 'IDictionary&lt;string, object&gt;' or 'JsonObject'.</value>
   </data>
   <data name="SerializationDuplicateTypeAttribute" xml:space="preserve">
-    <value>The type '{0}' cannot have more than one property that has the attribute '{1}'.</value>
+    <value>The type '{0}' cannot have more than one member that has the attribute '{1}'.</value>
   </data>
   <data name="SerializationNotSupportedType" xml:space="preserve">
     <value>The type '{0}' is not supported.</value>
@@ -607,5 +607,8 @@
   </data>
   <data name="NoDefaultOptionsForContext" xml:space="preserve">
     <value>To specify a serialization implementation for type '{0}'', context '{0}' must specify default options.</value>
+  </data>
+  <data name="FieldCannotBeVirtual" xml:space="preserve">
+    <value>A 'field' member cannot be 'virtual'. See arguments for the '{0}' and '{1}' parameters. </value>
   </data>
 </root>

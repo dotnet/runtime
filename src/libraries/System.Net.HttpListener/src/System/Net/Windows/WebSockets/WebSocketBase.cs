@@ -63,20 +63,6 @@ namespace System.Net.WebSockets
             HttpWebSocket.ValidateOptions(subProtocol, internalBuffer.ReceiveBufferSize,
                 internalBuffer.SendBufferSize, keepAliveInterval);
 
-            string parameters = string.Empty;
-
-            if (NetEventSource.Log.IsEnabled())
-            {
-                parameters = string.Format(CultureInfo.InvariantCulture,
-                    "ReceiveBufferSize: {0}, SendBufferSize: {1},  Protocols: {2}, KeepAliveInterval: {3}, innerStream: {4}, internalBuffer: {5}",
-                    internalBuffer.ReceiveBufferSize,
-                    internalBuffer.SendBufferSize,
-                    subProtocol,
-                    keepAliveInterval,
-                    NetEventSource.GetHashCode(innerStream),
-                    NetEventSource.GetHashCode(internalBuffer));
-            }
-
             _thisLock = new object();
 
             _innerStream = innerStream;
@@ -251,15 +237,6 @@ namespace System.Net.WebSockets
                 "'messageType' MUST be either 'WebSocketMessageType.Binary' or 'WebSocketMessageType.Text'.");
             Debug.Assert(buffer.Array != null);
 
-            string inputParameter = string.Empty;
-            if (NetEventSource.Log.IsEnabled())
-            {
-                inputParameter = string.Format(CultureInfo.InvariantCulture,
-                    "messageType: {0}, endOfMessage: {1}",
-                    messageType,
-                    endOfMessage);
-            }
-
             ThrowIfPendingException();
             ThrowIfDisposed();
             ThrowOnInvalidState(State, WebSocketState.Open, WebSocketState.CloseReceived);
@@ -421,15 +398,6 @@ namespace System.Net.WebSockets
             string statusDescription,
             CancellationToken cancellationToken)
         {
-            string inputParameter = string.Empty;
-            if (NetEventSource.Log.IsEnabled())
-            {
-                inputParameter = string.Format(CultureInfo.InvariantCulture,
-                    "closeStatus: {0}, statusDescription: {1}",
-                    closeStatus,
-                    statusDescription);
-            }
-
             ThrowIfPendingException();
             if (IsStateTerminal(State))
             {
@@ -648,15 +616,6 @@ namespace System.Net.WebSockets
             string? statusDescription,
             CancellationToken cancellationToken)
         {
-            string inputParameter = string.Empty;
-            if (NetEventSource.Log.IsEnabled())
-            {
-                inputParameter = string.Format(CultureInfo.InvariantCulture,
-                    "closeStatus: {0}, statusDescription: {1}",
-                    closeStatus,
-                    statusDescription);
-            }
-
             ThrowIfPendingException();
             if (IsStateTerminal(State))
             {
@@ -1067,15 +1026,7 @@ namespace System.Net.WebSockets
                     // This indicates a contract violation of the websocket protocol component,
                     // because we currently don't support any WebSocket extensions and would
                     // not accept a Websocket handshake requesting extensions
-                    Debug.Fail(string.Format(CultureInfo.InvariantCulture,
-                        "The value of 'bufferType' ({0}) is invalid. Valid buffer types: {1}, {2}, {3}, {4}, {5}.",
-                        bufferType,
-                        WebSocketProtocolComponent.BufferType.Close,
-                        WebSocketProtocolComponent.BufferType.BinaryFragment,
-                        WebSocketProtocolComponent.BufferType.BinaryMessage,
-                        WebSocketProtocolComponent.BufferType.UTF8Fragment,
-                        WebSocketProtocolComponent.BufferType.UTF8Message));
-
+                    Debug.Fail($"The value of 'bufferType' ({bufferType}) is invalid.");
                     throw new WebSocketException(WebSocketError.NativeError,
                         SR.Format(SR.net_WebSockets_InvalidBufferType,
                             bufferType,
@@ -1337,14 +1288,7 @@ namespace System.Net.WebSockets
             _closeStatus = closeStatus;
             _closeStatusDescription = closeStatusDescription;
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                string parameters = string.Format(CultureInfo.InvariantCulture,
-                    "closeStatus: {0}, closeStatusDescription: {1}, _State: {2}",
-                    closeStatus, closeStatusDescription, _state);
-
-                NetEventSource.Info(this, parameters);
-            }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"closeStatus: {closeStatus}, closeStatusDescription: {closeStatusDescription}, _State: {_state}");
         }
 
         private static async void OnKeepAlive(object? sender)
