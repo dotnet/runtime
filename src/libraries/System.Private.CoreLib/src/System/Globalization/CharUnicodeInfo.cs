@@ -274,8 +274,7 @@ namespace System.Globalization
 
             if (!UnicodeUtility.IsValidCodePoint(codePoint))
             {
-                // We don't throw here even if we are getting invalid codepoint. We just return the same input value at that time.
-                return codePoint;
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.codePoint);
             }
 
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks(codePoint);
@@ -313,8 +312,7 @@ namespace System.Globalization
 
             if (!UnicodeUtility.IsValidCodePoint(codePoint))
             {
-                // We don't throw here even if we are getting invalid codepoint. We just return the same input value at that time.
-                return codePoint;
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.codePoint);
             }
 
             nuint offset = GetCategoryCasingTableOffsetNoBoundsChecks(codePoint);
