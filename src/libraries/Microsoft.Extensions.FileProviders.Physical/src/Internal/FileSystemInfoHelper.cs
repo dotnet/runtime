@@ -30,16 +30,22 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         public static FileInfo ResolveFileLinkTarget(string filePath)
+        {
 #if NETCOREAPP
-            => ResolveFileLinkTarget(new FileInfo(filePath));
-#else
-            => null;
+            var fileInfo = new FileInfo(filePath);
+            if (fileInfo.Exists)
+            {
+                return ResolveFileLinkTarget(fileInfo);
+            }
 #endif
+            return null;
+        }
 
         public static FileInfo ResolveFileLinkTarget(FileInfo fileInfo)
         {
 #if NETCOREAPP
-            if (fileInfo.Exists && fileInfo.LinkTarget != null)
+            Debug.Assert(fileInfo.Exists);
+            if (fileInfo.LinkTarget != null)
             {
                 FileSystemInfo targetInfo = fileInfo.ResolveLinkTarget(returnFinalTarget: true);
                 if (targetInfo.Exists)

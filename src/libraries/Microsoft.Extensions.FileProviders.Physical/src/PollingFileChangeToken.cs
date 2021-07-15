@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <param name="fileInfo">The <see cref="System.IO.FileInfo"/> to poll</param>
         public PollingFileChangeToken(FileInfo fileInfo)
         {
-            _fileInfo = FileSystemInfoHelper.ResolveFileLinkTarget(fileInfo) ?? fileInfo;
+            _fileInfo = fileInfo;
             _previousWriteTimeUtc = GetLastWriteTimeUtc();
         }
 
@@ -48,7 +48,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private DateTime GetLastWriteTimeUtc()
         {
             _fileInfo.Refresh();
-            return _fileInfo.Exists ? _fileInfo.LastWriteTimeUtc : DateTime.MinValue;
+
+            if (!_fileInfo.Exists)
+            {
+                return DateTime.MinValue;
+            }
+
+            return FileSystemInfoHelper.ResolveFileLinkTarget(_fileInfo)?.LastWriteTimeUtc ?? _fileInfo.LastWriteTimeUtc;
         }
 
         /// <summary>
