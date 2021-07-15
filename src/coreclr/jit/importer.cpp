@@ -7704,24 +7704,14 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 void** pFldAddr = nullptr;
                 void*  fldAddr  = info.compCompHnd->getFieldAddress(pResolvedToken->hField, (void**)&pFldAddr);
 
-// We should always be able to access this static's address directly unless this is a field RVA
-// used within a composite image during R2R composite image building.
-//
-#ifdef FEATURE_READYTORUN_COMPILER
-                assert((pFldAddr == nullptr) ||
-                       (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_RVA_ADDRESS && opts.IsReadyToRun()));
-#else
+                // We should always be able to access this static's address directly
+                //
                 assert(pFldAddr == nullptr);
-#endif
 
                 FieldSeqNode* fldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
 
                 /* Create the data member node */
-                op1 = gtNewIconHandleNode(pFldAddr == nullptr ? (size_t)fldAddr : (size_t)pFldAddr,
-#ifdef FEATURE_READYTORUN_COMPILER
-                                          pFldAddr != nullptr ? GTF_ICON_CONST_PTR :
-#endif
-                                                              GTF_ICON_STATIC_HDL,
+                op1 = gtNewIconHandleNode(pFldAddr == nullptr ? (size_t)fldAddr : (size_t)pFldAddr, GTF_ICON_STATIC_HDL,
                                           fldSeq);
 #ifdef DEBUG
                 op1->AsIntCon()->gtTargetHandle = op1->AsIntCon()->gtIconVal;
@@ -7731,17 +7721,6 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 {
                     op1->gtFlags |= GTF_ICON_INITCLASS;
                 }
-
-#ifdef FEATURE_READYTORUN_COMPILER
-                if (pFldAddr != nullptr)
-                {
-                    // Indirection used to get to initial actual field RVA when building a composite image
-                    // where the actual field does not move from the original file
-                    assert(!varTypeIsGC(lclTyp));
-                    op1 = gtNewOperNode(GT_IND, TYP_I_IMPL, op1);
-                    op1->gtFlags |= GTF_IND_INVARIANT | GTF_IND_NONFAULTING;
-                }
-#endif
             }
             else // We need the value of a static field
             {
