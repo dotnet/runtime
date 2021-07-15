@@ -85,6 +85,7 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
+                Debug.Assert(builderName != null);
                 return $"global::{builderName}.{ReflectionExtensions.CreateRangeMethodName}";
             }
         }
