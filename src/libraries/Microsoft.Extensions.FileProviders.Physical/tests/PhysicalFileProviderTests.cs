@@ -15,7 +15,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.FileProviders
 {
-    public class PhysicalFileProviderTests
+    public partial class PhysicalFileProviderTests
     {
         private const int WaitTimeForTokenToFire = 500;
         private const int WaitTimeForTokenCallback = 10000;
@@ -1510,68 +1510,6 @@ namespace Microsoft.Extensions.FileProviders
                     }
                 }
             }
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void UsePollingFileWatcher_UseActivePolling_HasChanged(bool useWildcard)
-        {
-            // Arrange
-            using var root = new DisposableFileSystem();
-            string fileName = Path.GetRandomFileName();
-            string filePath = Path.Combine(root.RootPath, fileName);
-            File.WriteAllText(filePath, "v1.1");
-
-            using var provider = new PhysicalFileProvider(root.RootPath) { UsePollingFileWatcher = true, UseActivePolling = true };
-            IChangeToken token = provider.Watch(useWildcard ? "*" : fileName);
-            Assert.False(token.HasChanged);
-
-            // Act
-            File.WriteAllText(filePath, "v1.2");
-            Thread.Sleep(GetTokenPollingInterval(token));
-
-            // Assert
-            Assert.True(token.HasChanged);
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void UsePollingFileWatcher_UseActivePolling_HasChanged_SymbolicLink(bool useWildcard)
-        {
-            // Arrange
-            using var rootOfFile = new DisposableFileSystem();
-            string filePath = Path.Combine(rootOfFile.RootPath, Path.GetRandomFileName());
-            File.WriteAllText(filePath, "v1.1");
-
-            using var rootOfLink = new DisposableFileSystem();
-            string linkName = Path.GetRandomFileName();
-            string linkPath = Path.Combine(rootOfLink.RootPath, linkName);
-            File.CreateSymbolicLink(linkPath, filePath);
-
-            using var provider = new PhysicalFileProvider(rootOfLink.RootPath) { UsePollingFileWatcher = true, UseActivePolling = true };
-            IChangeToken token = provider.Watch(useWildcard ? "*" : linkName);
-            Assert.False(token.HasChanged);
-
-            // Act
-            File.WriteAllText(filePath, "v1.2");
-            Thread.Sleep(GetTokenPollingInterval(token));
-
-            // Assert
-            Assert.True(token.HasChanged);
-        }
-
-        private int GetTokenPollingInterval(IChangeToken changeToken)
-        {
-            TimeSpan pollingInterval = (changeToken as CompositeChangeToken).ChangeTokens[1] switch
-            {
-                PollingWildCardChangeToken wildcardChangeToken => wildcardChangeToken.PollingInterval,
-                PollingFileChangeToken => PollingFileChangeToken.PollingInterval,
-                _ => throw new InvalidOperationException()
-            };
-
-            return (int)pollingInterval.TotalMilliseconds;
         }
 
         [Fact]
