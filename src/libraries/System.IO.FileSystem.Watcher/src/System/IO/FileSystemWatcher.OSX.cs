@@ -154,7 +154,7 @@ namespace System.IO
             {
                 Debug.Assert(!string.IsNullOrEmpty(directory));
 
-                // Make sure _fullPath doesn't contain a link or alias since the OS will give back the actual,
+                // Make sure _fullDirectory doesn't contain a link or alias since the OS will give back the actual,
                 // non link'd or alias'd paths.
                 _fullDirectory = System.IO.Path.GetFullPath(directory);
                 _fullDirectory = Interop.Sys.RealPath(_fullDirectory);
@@ -446,7 +446,7 @@ namespace System.IO
                     // First, we should check if this event should kick off a re-scan since we can't really rely on anything after this point if that is true
                     if (ShouldRescanOccur(eventFlags[i]))
                     {
-                        watcher.OnError(new ErrorEventArgs(new IOException(SR.FSW_BufferOverflow, (int)eventFlags[i])));
+                        watcher.OnError(new ErrorEventArgs(new IOException(SR.Format(SR.FSW_BufferOverflow, _fullDirectory), (int)eventFlags[i])));
                         break;
                     }
                     else if (handledRenameEvents == i)

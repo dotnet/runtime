@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
 using Xunit;
@@ -34,22 +35,35 @@ namespace System.IO.Tests
         /// Watches the Changed WatcherChangeType and unblocks the returned AutoResetEvent when a
         /// Changed event is thrown by the watcher.
         /// </summary>
-        public static (AutoResetEvent EventOccured, FileSystemEventHandler Handler) WatchChanged(FileSystemWatcher watcher, string[] expectedPaths = null)
+        public static (AutoResetEvent EventOccured, FileSystemEventHandler Handler) WatchChanged(FileSystemWatcher watcher, string[] expectedPaths = null, ITestOutputHelper _output = null)
         {
             AutoResetEvent eventOccurred = new AutoResetEvent(false);
 
-            FileSystemEventHandler changeHandler = (o, e) =>
+            FileSystemEventHandler handler = (o, e) =>
             {
-                Assert.Equal(WatcherChangeTypes.Changed, e.ChangeType);
+                if (e.ChangeType != WatcherChangeTypes.Changed)
+                {
+                    _output?.WriteLine("Unexpected event {0} while waiting for {1}", e.ChangeType, WatcherChangeTypes.Changed);
+                    Assert.Equal(WatcherChangeTypes.Changed, e.ChangeType);
+                }
+
                 if (expectedPaths != null)
                 {
-                    Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
+                    try
+                    {
+                        Assert.Contains(Path.GetFullPath(e.FullPath), expectedPaths);
+                    }
+                    catch (Exception ex)
+                    {
+                        _output?.WriteLine(ex.ToString());
+                        throw;
+                    }
                 }
                 eventOccurred.Set();
             };
 
-            watcher.Changed += changeHandler;
-            return (eventOccurred, changeHandler);
+            watcher.Changed += handler;
+            return (eventOccurred, handler);
         }
 
         /// <summary>
@@ -68,7 +82,6 @@ namespace System.IO.Tests
                     Assert.Equal(WatcherChangeTypes.Created, e.ChangeType);
                 }
 
-                Assert.Equal(WatcherChangeTypes.Created, e.ChangeType);
                 if (expectedPaths != null)
                 {
                     try
@@ -81,7 +94,6 @@ namespace System.IO.Tests
                         throw;
                     }
                 }
-
                 eventOccurred.Set();
             };
 
@@ -90,12 +102,13 @@ namespace System.IO.Tests
         }
 
         /// <summary>
-        /// Watches the Renamed WatcherChangeType and unblocks the returned AutoResetEvent when a
-        /// Renamed event is thrown by the watcher.
+        /// Watches the Deleted WatcherChangeType and unblocks the returned AutoResetEvent when a
+        /// Deleted event is thrown by the watcher.
         /// </summary>
         public static (AutoResetEvent EventOccured, FileSystemEventHandler Handler) WatchDeleted(FileSystemWatcher watcher, string[] expectedPaths = null, ITestOutputHelper _output = null)
         {
             AutoResetEvent eventOccurred = new AutoResetEvent(false);
+
             FileSystemEventHandler handler = (o, e) =>
             {
                 if (e.ChangeType != WatcherChangeTypes.Deleted)
@@ -203,7 +216,7 @@ namespace System.IO.Tests
         /// <param name="expectedEvents">All of the events that are expected to be raised by this action</param>
         /// <param name="action">The Action that will trigger events.</param>
         /// <param name="cleanup">Optional. Undoes the action and cleans up the watcher so the test may be run again if necessary.</param>
-        /// <param name="expectedPath">Optional. Adds path verification to all expected events.</param>
+        /// <param name="expectedPaths">Optional. Adds path verification to all expected events.</param>
         /// <param name="attempts">Optional. Number of times the test should be executed if it's failing.</param>
         public static void ExpectEvent(FileSystemWatcher watcher, WatcherChangeTypes expectedEvents, Action action, Action cleanup = null, string[] expectedPaths = null, int attempts = DefaultAttemptsForExpectedEvent, int timeout = WaitForExpectedEventTimeout)
         {
@@ -273,7 +286,7 @@ namespace System.IO.Tests
         /// <param name="expectedEvents">All of the events that are expected to be raised by this action</param>
         /// <param name="action">The Action that will trigger events.</param>
         /// <param name="assertExpected">True if results should be asserted. Used if there is no retry.</param>
-        /// <param name="expectedPath"> Adds path verification to all expected events.</param>
+        /// <param name="expectedPaths"> Adds path verification to all expected events.</param>
         /// <returns>True if the events raised correctly; else, false.</returns>
         public static bool ExecuteAndVerifyEvents(FileSystemWatcher watcher, WatcherChangeTypes expectedEvents, Action action, bool assertExpected, string[] expectedPaths, int timeout)
         {
@@ -296,45 +309,41 @@ namespace System.IO.Tests
             // Verify Changed
             if (verifyChanged)
             {
-                bool Changed_expected = ((expectedEvents & WatcherChangeTypes.Changed) > 0);
                 bool Changed_actual = changed.EventOccured.WaitOne(timeout);
                 watcher.Changed -= changed.Handler;
-                result = Changed_expected == Changed_actual;
+                result = Changed_actual;
                 if (assertExpected)
-                    Assert.True(Changed_expected == Changed_actual, "Changed event did not occur as expected");
+                    Assert.True(Changed_actual, "Changed event did not occur as expected");
             }
 
             // Verify Created
             if (verifyCreated)
             {
-                bool Created_expected = ((expectedEvents & WatcherChangeTypes.Created) > 0);
                 bool Created_actual = created.EventOccured.WaitOne(verifyChanged ? SubsequentExpectedWait : timeout);
                 watcher.Created -= created.Handler;
-                result = result && Created_expected == Created_actual;
+                result = result && Created_actual;
                 if (assertExpected)
-                    Assert.True(Created_expected == Created_actual, "Created event did not occur as expected");
+                    Assert.True(Created_actual, "Created event did not occur as expected");
             }
 
             // Verify Deleted
             if (verifyDeleted)
             {
-                bool Deleted_expected = ((expectedEvents & WatcherChangeTypes.Deleted) > 0);
                 bool Deleted_actual = deleted.EventOccured.WaitOne(verifyChanged || verifyCreated ? SubsequentExpectedWait : timeout);
                 watcher.Deleted -= deleted.Handler;
-                result = result && Deleted_expected == Deleted_actual;
+                result = result && Deleted_actual;
                 if (assertExpected)
-                    Assert.True(Deleted_expected == Deleted_actual, "Deleted event did not occur as expected");
+                    Assert.True(Deleted_actual, "Deleted event did not occur as expected");
             }
 
             // Verify Renamed
             if (verifyRenamed)
             {
-                bool Renamed_expected = ((expectedEvents & WatcherChangeTypes.Renamed) > 0);
                 bool Renamed_actual = renamed.EventOccured.WaitOne(verifyChanged || verifyCreated || verifyDeleted ? SubsequentExpectedWait : timeout);
                 watcher.Renamed -= renamed.Handler;
-                result = result && Renamed_expected == Renamed_actual;
+                result = result && Renamed_actual;
                 if (assertExpected)
-                    Assert.True(Renamed_expected == Renamed_actual, "Renamed event did not occur as expected");
+                    Assert.True(Renamed_actual, "Renamed event did not occur as expected");
             }
 
             watcher.EnableRaisingEvents = false;
@@ -351,7 +360,7 @@ namespace System.IO.Tests
         public static void ExpectError(FileSystemWatcher watcher, Action action, Action cleanup, int attempts = DefaultAttemptsForExpectedEvent)
         {
             string message = string.Format("Did not observe an error event within {0}ms and {1} attempts.", WaitForExpectedEventTimeout, attempts);
-            Assert.True(TryErrorEvent(watcher, action, cleanup, attempts, expected: true), message);
+            Assert.True(TryErrorEvent(watcher, action, cleanup, attempts), message);
         }
 
         /// <summary>
@@ -363,8 +372,8 @@ namespace System.IO.Tests
         /// <param name="attempts">Optional. Number of times the test should be executed if it's failing.</param>
         public static void ExpectNoError(FileSystemWatcher watcher, Action action, Action cleanup, int attempts = DefaultAttemptsForUnExpectedEvent)
         {
-            string message = string.Format("Should not observe an error event within {0}ms. Attempted {1} times and received the event each time.", WaitForExpectedEventTimeout, attempts);
-            Assert.False(TryErrorEvent(watcher, action, cleanup, attempts, expected: true), message);
+            string message = string.Format("Should not observe an error event within {0}ms. Received the event in one of {1} maximum attempts.", WaitForExpectedEventTimeout, attempts);
+            Assert.False(TryErrorEvent(watcher, action, cleanup, attempts), message);
         }
 
         /// /// <summary>
@@ -374,25 +383,17 @@ namespace System.IO.Tests
         /// <param name="action">The Action to execute.</param>
         /// <param name="cleanup">Undoes the action and cleans up the watcher so the test may be run again if necessary.</param>
         /// <param name="attempts">Number of times the test should be executed if it's failing.</param>
-        /// <param name="expected">Whether it is expected that an error event will be arisen.</param>
         /// <returns>True if an Error event was raised by the watcher when the given action was executed; else, false.</returns>
-        public static bool TryErrorEvent(FileSystemWatcher watcher, Action action, Action cleanup, int attempts, bool expected)
+        public static bool TryErrorEvent(FileSystemWatcher watcher, Action action, Action cleanup, int attempts)
         {
             int attemptsCompleted = 0;
-            bool result = !expected;
-            while (result != expected && attemptsCompleted++ < attempts)
+            bool result = false;
+            while (!result && attemptsCompleted++ < attempts)
             {
                 if (attemptsCompleted > 1)
                 {
                     // Re-create the watcher to get a clean iteration.
-                    watcher = new FileSystemWatcher()
-                    {
-                        IncludeSubdirectories = watcher.IncludeSubdirectories,
-                        NotifyFilter = watcher.NotifyFilter,
-                        Filter = watcher.Filter,
-                        Path = watcher.Path,
-                        InternalBufferSize = watcher.InternalBufferSize
-                    };
+                    watcher = RecreateWatcher(watcher);
                     // Most intermittent failures in FSW are caused by either a shortage of resources (e.g. inotify instances)
                     // or by insufficient time to execute (e.g. CI gets bogged down). Immediately re-running a failed test
                     // won't resolve the first issue, so we wait a little while hoping that things clear up for the next run.
@@ -406,20 +407,13 @@ namespace System.IO.Tests
                 };
 
                 // Enable raising events but be careful with the possibility of the max user inotify instances being reached already.
-                if (attemptsCompleted <= attempts)
-                {
-                    try
-                    {
-                        watcher.EnableRaisingEvents = true;
-                    }
-                    catch (IOException) // Max User INotify instances. Isn't the type of error we're checking for.
-                    {
-                        continue;
-                    }
-                }
-                else
+                try
                 {
                     watcher.EnableRaisingEvents = true;
+                }
+                catch (IOException) // Max User INotify instances. Isn't the type of error we're checking for.
+                {
+                    continue;
                 }
 
                 action();
@@ -464,7 +458,8 @@ namespace System.IO.Tests
                 IncludeSubdirectories = watcher.IncludeSubdirectories,
                 NotifyFilter = watcher.NotifyFilter,
                 Path = watcher.Path,
-                InternalBufferSize = watcher.InternalBufferSize
+                InternalBufferSize = watcher.InternalBufferSize,
+                SynchronizingObject = watcher.SynchronizingObject,
             };
 
             foreach (string filter in watcher.Filters)
@@ -549,6 +544,26 @@ namespace System.IO.Tests
                     eventsOccured.Set();
                 }
             }
+        }
+
+        internal class TestISynchronizeInvoke : ISynchronizeInvoke
+        {
+            public bool BeginInvoke_Called;
+            public Delegate ExpectedDelegate;
+
+            public IAsyncResult BeginInvoke(Delegate method, object[] args)
+            {
+                if (ExpectedDelegate != null)
+                    Assert.Equal(ExpectedDelegate, method);
+
+                BeginInvoke_Called = true;
+                method.DynamicInvoke(args[0], args[1]);
+                return null;
+            }
+
+            public bool InvokeRequired => true;
+            public object EndInvoke(IAsyncResult result) => null;
+            public object Invoke(Delegate method, object[] args) => null;
         }
     }
 }
