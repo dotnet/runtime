@@ -5440,7 +5440,7 @@ BasicBlock* Compiler::fgSetRngChkTargetInner(SpecialCodeKind kind, bool delay)
  *  The orginal GT_INDEX node is bashed into the GT_IND node that accesses
  *  the array element.  We expand the GT_INDEX node into a larger tree that
  *  evaluates the array base and index.  The simplest expansion is a GT_COMMA
- *  with a GT_ARR_BOUND_CHK and a GT_IND with a GTF_INX_RNGCHK flag.
+ *  with a GT_ARR_BOUNDS_CHECK and a GT_IND with a GTF_INX_RNGCHK flag.
  *  For complex array or index expressions one or more GT_COMMA assignments
  *  are inserted so that we only evaluate the array or index expressions once.
  *
@@ -5530,7 +5530,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     //    side-effecting.
     // 2. Evaluate the array index expression and store the result in a temp if the expression is complex or
     //    side-effecting.
-    // 3. Perform an explicit bounds check: GT_ARR_BOUNDS_CHK(index, GT_ARR_LENGTH(array))
+    // 3. Perform an explicit bounds check: GT_ARR_BOUNDS_CHECK(index, GT_ARR_LENGTH(array))
     // 4. Compute the address of the element that will be accessed:
     //    GT_ADD(GT_ADD(array, firstElementOffset), GT_MUL(index, elementSize))
     // 5. Dereference the address with a GT_IND.
@@ -5716,9 +5716,6 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     // play) to create a "partial" byref that doesn't point exactly to the correct object; there is risk that
     // the partial byref will not point within the object, and thus not get updated correctly during a GC.
     // This is mostly a risk in fully-interruptible code regions.
-    //
-    // NOTE: the tree form created here is pattern matched by optExtractArrIndex(), so changes here must
-    // be reflected there.
 
     /* Add the first element's offset */
 
@@ -5798,10 +5795,16 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), arrRefDefn, tree);
     }
 
+    JITDUMP("fgMorphArrayIndex (before remorph):\n");
+    DISPTREE(tree);
+
     // Currently we morph the tree to perform some folding operations prior
     // to attaching fieldSeq info and labeling constant array index contributions
     //
     fgMorphTree(tree);
+
+    JITDUMP("fgMorphArrayIndex (after remorph):\n");
+    DISPTREE(tree);
 
     // Ideally we just want to proceed to attaching fieldSeq info and labeling the
     // constant array index contributions, but the morphing operation may have changed
@@ -11479,7 +11482,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
         case GT_RETURN:
             // normalize small integer return values
-            if (fgGlobalMorph && varTypeIsSmall(info.compRetType) && (op1 != nullptr) && (op1->TypeGet() != TYP_VOID) &&
+            if (fgGlobalMorph && varTypeIsSmall(info.compRetType) && (op1 != nullptr) && !op1->TypeIs(TYP_VOID) &&
                 fgCastNeeded(op1, info.compRetType))
             {
                 // Small-typed return values are normalized by the callee
@@ -11488,11 +11491,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 // Propagate GTF_COLON_COND
                 op1->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
 
-                tree->AsOp()->gtOp1 = fgMorphCast(op1);
+                tree->AsOp()->gtOp1 = fgMorphTree(op1);
 
                 // Propagate side effect flags
-                tree->gtFlags &= ~GTF_ALL_EFFECT;
-                tree->gtFlags |= (tree->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT);
+                tree->SetAllEffectsFlags(tree->AsOp()->gtGetOp1());
 
                 return tree;
             }

@@ -227,6 +227,11 @@ namespace System.Xml.Serialization
                         typeName = "TimeSpan";
                         typeNs = UrtTypes.Namespace;
                     }
+                    else if (type == typeof(DateTimeOffset))
+                    {
+                        typeName = "dateTimeOffset";
+                        typeNs = UrtTypes.Namespace;
+                    }
                     else if (type == typeof(XmlNode[]))
                     {
                         typeName = Soap.UrType;
@@ -343,6 +348,12 @@ namespace System.Xml.Serialization
                     {
                         value = XmlConvert.ToString((TimeSpan)o);
                         type = "TimeSpan";
+                        typeNs = UrtTypes.Namespace;
+                    }
+                    else if (t == typeof(DateTimeOffset))
+                    {
+                        value = XmlConvert.ToString((DateTimeOffset)o);
+                        type = "dateTimeOffset";
                         typeNs = UrtTypes.Namespace;
                     }
                     else if (typeof(XmlNode[]).IsAssignableFrom(t))
@@ -4320,6 +4331,18 @@ namespace System.Xml.Serialization
                     Writer.Write("(");
                     Writer.Write(((DateTime)value).Ticks.ToString(CultureInfo.InvariantCulture));
                     Writer.Write(")");
+                }
+                else if (type == typeof(DateTimeOffset))
+                {
+                    Writer.Write(" new ");
+                    Writer.Write(type.FullName);
+                    Writer.Write("(");
+                    Writer.Write(((DateTimeOffset)value).Ticks.ToString(CultureInfo.InvariantCulture));
+                    Writer.Write(", new ");
+                    Writer.Write(((DateTimeOffset)value).Offset.GetType().FullName);
+                    Writer.Write("(");
+                    Writer.Write(((DateTimeOffset)value).Offset.Ticks.ToString(CultureInfo.InvariantCulture));
+                    Writer.Write("))");
                 }
                 else if (type == typeof(TimeSpan))
                 {

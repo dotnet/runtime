@@ -16,6 +16,24 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="CommonTest\System\IO\WrappedMemoryStream.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.AsyncEnumerable.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.AsyncEnumerable.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Concurrent.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Concurrent.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Dictionary.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Dictionary.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Dictionary.KeyPolicy.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Dictionary.KeyPolicy.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Dictionary.NonStringKey.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Dictionary.NonStringKey.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Generic.Read.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Generic.Read.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Generic.Write.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Generic.Write.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Immutable.Read.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Immutable.Read.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.KeyValuePair.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.KeyValuePair.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.NonGeneric.Read.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.NonGeneric.Read.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.NonGeneric.Write.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.NonGeneric.Write.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.ObjectModel.Read.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.ObjectModel.Read.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.ObjectModel.Write.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.ObjectModel.Write.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Specialized.Read.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Specialized.Read.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Specialized.Write.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Specialized.Write.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Immutable.Write.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Immutable.Write.cs" />
+    <Compile Include="..\Common\JsonSerializerWrapperForStream.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapperForStream.cs" />
     <Compile Include="..\Common\JsonSerializerWrapperForString.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapperForString.cs" />
     <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.cs" />
@@ -77,23 +95,7 @@
     <Compile Include="Serialization\Array.WriteTests.cs" />
     <Compile Include="Serialization\CacheTests.cs" />
     <Compile Include="Serialization\CamelCaseUnitTests.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.AsyncEnumerable.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.Concurrent.Write.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.Concurrent.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.Dictionary.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.Dictionary.KeyPolicy.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.Dictionary.NonStringKey.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.Generic.Read.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.Generic.Write.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.Immutable.Read.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.KeyValuePair.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.NonGeneric.Read.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.NonGeneric.Write.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.ObjectModel.Read.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.ObjectModel.Write.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.Specialized.Read.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.Specialized.Write.cs" />
-    <Compile Include="Serialization\CollectionTests\CollectionTests.Immutable.Write.cs" />
+    <Compile Include="Serialization\CollectionTests.cs" />
     <Compile Include="Serialization\ConstructorTests\ConstructorTests.AttributePresence.cs" />
     <Compile Include="Serialization\ConstructorTests\ConstructorTests.Cache.cs" />
     <Compile Include="Serialization\ConstructorTests\ConstructorTests.Exceptions.cs" />
@@ -139,9 +141,8 @@
     <Compile Include="Serialization\InvalidTypeTests.cs" />
     <Compile Include="Serialization\JsonDocumentTests.cs" />
     <Compile Include="Serialization\JsonElementTests.cs" />
-    <Compile Include="Serialization\JsonSerializerWrapperForString_Dynamic.cs" />
+    <Compile Include="Serialization\JsonSerializerWrapperForStream.cs" />
     <Compile Include="Serialization\JsonSerializerWrapperForString.cs" />
-    <Compile Include="Serialization\JsonSerializationWrapperForStream.cs" />
     <Compile Include="Serialization\MetadataTests\JsonContext\DateTimeOffset.cs" />
     <Compile Include="Serialization\MetadataTests\JsonContext\Dictionary.cs" />
     <Compile Include="Serialization\MetadataTests\JsonContext\HighLowTemps.cs" />

@@ -296,9 +296,6 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (Converter.HandleNullOnWrite)
                 {
-                    // No object, collection, or re-entrancy converter handles null.
-                    Debug.Assert(Converter.ConverterStrategy == ConverterStrategy.Value);
-
                     if (state.Current.PropertyState < StackFramePropertyState.Name)
                     {
                         state.Current.PropertyState = StackFramePropertyState.Name;

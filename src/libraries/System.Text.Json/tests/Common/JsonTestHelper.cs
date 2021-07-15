@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json
@@ -67,5 +69,20 @@ namespace System.Text.Json
                     break;
             }
         }
+
+        public static async Task<List<T>> ToListAsync<T>(this IAsyncEnumerable<T> source)
+        {
+            var list = new List<T>();
+            await foreach (T item in source)
+            {
+                list.Add(item);
+            }
+            return list;
+        }
+
+        private static readonly Regex s_stripWhitespace = new Regex(@"\s+", RegexOptions.Compiled);
+
+        public static string StripWhitespace(this string value)
+            => s_stripWhitespace.Replace(value, string.Empty);
     }
 }

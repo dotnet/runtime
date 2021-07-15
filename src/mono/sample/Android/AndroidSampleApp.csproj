@@ -46,13 +46,33 @@
     <Message Importance="High" Text="Path: $(PublishDir)" />
     <Message Importance="High" Text="SourceDir: $(OutputPath)" />
 
+    <PropertyGroup Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' != 'true'">
+      <_AotOutputType>AsmOnly</_AotOutputType>
+      <_AotModulesTablePath>$(BundleDir)\modules.c</_AotModulesTablePath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' == 'true'">
+      <_AotOutputType>Library</_AotOutputType>
+      <_AotLibraryFormat>So</_AotLibraryFormat>
+      <_PrebuiltOS Condition="$([MSBuild]::IsOSPlatform('Linux'))">linux-x86_64</_PrebuiltOS>
+      <_PrebuiltOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">darwin-x86_64</_PrebuiltOS>
+      <_PrebuiltOS Condition="$([MSBuild]::IsOSPlatform('Windows'))">windows-x86_64</_PrebuiltOS>
+      <_PrebuiltAbi Condition="'$(TargetArchitecture)' == 'arm'">arm-linux-androideabi$</_PrebuiltAbi>
+      <_PrebuiltAbi Condition="'$(TargetArchitecture)' == 'arm64'">aarch64-linux-android</_PrebuiltAbi>
+      <_PrebuiltAbi Condition="'$(TargetArchitecture)' == 'x64'">x86_64-linux-android</_PrebuiltAbi>
+      <_PrebuiltAbi Condition="'$(TargetArchitecture)' == 'x86'">i686-linux-android</_PrebuiltAbi>
+      <_AotToolPrefix>$(ANDROID_NDK_ROOT)\toolchains\llvm\prebuilt\$(_PrebuiltOS)\bin\$(_PrebuiltAbi)-</_AotToolPrefix>
+    </PropertyGroup>
+
     <MonoAOTCompiler Condition="'$(ForceAOT)' == 'true'"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
         OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="Full"
-        OutputType="AsmOnly"
+        OutputType="$(_AotOutputType)"
         Assemblies="@(AotInputAssemblies)"
-        AotModulesTablePath="$(BundleDir)\modules.c"
+        AotModulesTablePath="$(_AotModulesTablePath)"
+        ToolPrefix="$(_AotToolPrefix)"
+        LibraryFormat="$(_AotLibraryFormat)"
         UseLLVM="$(UseLLVM)"
         LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />

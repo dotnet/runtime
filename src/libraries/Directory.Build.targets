@@ -7,6 +7,13 @@
     <StrongNameKeyId Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TestUsingWorkloads)' == 'true'">
+    <!-- for non-ci builds, we install the sdk when tests are run -->
+    <InstallWorkloadForTesting Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(ArchiveTests)' == 'true'">true</InstallWorkloadForTesting>
+
+    <WorkloadStampFile>$(SdkPathForWorkloadTesting)workload.stamp</WorkloadStampFile>
+  </PropertyGroup>
+
   <!-- resources.targets need to be imported before the Arcade SDK. -->
   <Import Project="$(RepositoryEngineeringDir)resources.targets" />
   <Import Project="..\..\Directory.Build.targets" />
@@ -328,4 +335,5 @@
            Text="Analyzers must only target netstandard2.0 since they run in the compiler which targets netstandard2.0. The following files were found to target '%(_AnalyzerPackFile.TargetFramework)': @(_AnalyzerPackFile)" />
   </Target>
 
+  <Import Project="$(MSBuildThisFileDirectory)workloads-testing.targets" />
 </Project>
