@@ -7630,11 +7630,13 @@ public:
 #if defined(TARGET_AMD64)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
+        assert(type != TYP_STRUCT);
         return (type == TYP_SIMD32);
     }
 #elif defined(TARGET_ARM64)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
+        assert(type != TYP_STRUCT);
         // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
         // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
         return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
