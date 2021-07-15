@@ -206,7 +206,7 @@ namespace System.Configuration
             if (UseFIPS)
             {
                 // AesCryptoServiceProvider implementation is FIPS certified
-                symAlg = Aes.Create(typeof(AesManaged).FullName), typeof(AesManaged));
+                symAlg = new AesCryptoServiceProvider();
             }
             else
             {
