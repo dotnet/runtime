@@ -59,19 +59,18 @@ namespace System.Web
                 string?[] keys = AllKeys;
                 for (int i = 0; i < count; i++)
                 {
-                    string[]? values = GetValues(keys[i]);
+                    string? key = keys[i];
+                    string[]? values = GetValues(key);
                     if (values != null)
                     {
                         foreach (string value in values)
                         {
-                            if (string.IsNullOrEmpty(keys[i]))
+                            if (!string.IsNullOrEmpty(key))
                             {
-                                sb.Append(UrlEncode(value)).Append('&');
+                                sb.Append(key).Append('=');
                             }
-                            else
-                            {
-                                sb.AppendFormat($"{keys[i]}={UrlEncode(value)}&");
-                            }
+                            sb.Append(UrlEncode(value));
+                            sb.Append('&');
                         }
                     }
                 }

@@ -91,11 +91,11 @@ namespace System.ComponentModel
                 : NativeErrorCode.ToString(CultureInfo.InvariantCulture);
             if (HResult == E_FAIL)
             {
-                s.AppendFormat($" ({nativeErrorString})");
+                s.Append($" ({nativeErrorString})");
             }
             else
             {
-                s.AppendFormat($" ({HResult:X8}, {nativeErrorString})");
+                s.Append($" ({HResult:X8}, {nativeErrorString})");
             }
 
             if (!(string.IsNullOrEmpty(message)))
