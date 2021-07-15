@@ -8,13 +8,13 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderGetField
     {
         [Fact]
-        public void GetField_DeclaringTypeOfFieldNotGeneric_ThrowsArgumentException()
+        public void GetField_DeclaringTypeOfFieldNotGeneric()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
             GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters("T");
 
             FieldBuilder field = type.DefineField("Field", typeParams[0].AsType(), FieldAttributes.Public);
-            AssertExtensions.Throws<ArgumentException>("type", () => TypeBuilder.GetField(type.AsType(), field));
+            Assert.Equal("Field", TypeBuilder.GetField(type.AsType(), field).Name);
         }
 
         [Fact]
