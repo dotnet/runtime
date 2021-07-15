@@ -380,7 +380,7 @@ HostCodeHeap::~HostCodeHeap()
         delete[] m_pHeapList->pHdrMap;
 
     if (m_pBaseAddr)
-        ClrVirtualFree(m_pBaseAddr, 0, MEM_RELEASE);
+        ExecutableAllocator::Instance()->Release(m_pBaseAddr);
     LOG((LF_BCL, LL_INFO10, "Level1 - CodeHeap destroyed {0x%p}\n", this));
 }
 
