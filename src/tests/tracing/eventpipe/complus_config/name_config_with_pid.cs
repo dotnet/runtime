@@ -11,10 +11,17 @@ class NameConfigWithPid
 {
     static int Main(string[] args)
     {
+        if (args.Length == 0)
+            Console.WriteLine("No Args");
+        else
+            Console.WriteLine($"args[0] = `{args[0]}`");
+
         if (args.Length > 0 && args[0] == "waitforinput")
         {
             Console.Error.WriteLine("WaitingForInput in ErrorStream");
             Console.WriteLine("WaitingForInput");
+            Console.Error.Flush();
+            Console.Out.Flush();
             Console.ReadLine();
             return 100;
         }
@@ -50,13 +57,18 @@ class NameConfigWithPid
             process.StartInfo.Environment.Add("COMPlus_EventPipeConfig", "Microsoft-Windows-DotNETRuntime:4c14fccbd:4");
             process.StartInfo.Environment.Add("COMPlus_EventPipeOutputPath", outputPathPattern);
 
+            Console.WriteLine($"Starting process '{process.StartInfo.FileName}' '{process.StartInfo.Arguments}'");
+            Console.Out.Flush();
             process.Start();
 
             process.StandardError.ReadLine();
+            Console.WriteLine($"After readline'");
+            Console.Out.Flush();
             uint pid = (uint)process.Id;
             string expectedPath = outputPathPattern.Replace("{pid}", pid.ToString());
 
             process.StandardInput.WriteLine("input");
+            process.StandardInput.Flush();
             process.WaitForExit();
             if (!File.Exists(expectedPath))
             {
