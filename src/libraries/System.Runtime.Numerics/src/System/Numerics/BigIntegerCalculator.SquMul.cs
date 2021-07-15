@@ -30,7 +30,7 @@ namespace System.Numerics
         private static int SquareThreshold = 32;
         private static int AllocationThreshold = 256;
 
-        private static unsafe void Square(uint* value, int valueLength,
+        internal static unsafe void Square(uint* value, int valueLength,
                                           uint* bits, int bitsLength)
         {
             Debug.Assert(valueLength >= 0);
@@ -208,7 +208,7 @@ namespace System.Numerics
         // Mutable for unit testing...
         private static int MultiplyThreshold = 32;
 
-        private static unsafe void Multiply(uint* left, int leftLength,
+        internal static unsafe void Multiply(uint* left, int leftLength,
                                             uint* right, int rightLength,
                                             uint* bits, int bitsLength)
         {
