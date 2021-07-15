@@ -1076,7 +1076,7 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        private static void CheckContainsNewLine(string? value)
+        internal static void CheckContainsNewLine(string? value)
         {
             if (value == null)
             {

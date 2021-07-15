@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Globalization;
 using System.Text;
 
 namespace System.Net.Http
@@ -139,20 +138,6 @@ namespace System.Net.Http
                 {
                     current++;
                     continue;
-                }
-
-                if (c == '\r')
-                {
-                    // If we have a #13 char, it must be followed by #10 and then at least one SP or HT.
-                    if ((current + 2 < input.Length) && (input[current + 1] == '\n'))
-                    {
-                        char spaceOrTab = input[current + 2];
-                        if ((spaceOrTab == ' ') || (spaceOrTab == '\t'))
-                        {
-                            current += 3;
-                            continue;
-                        }
-                    }
                 }
 
                 return current - startIndex;
@@ -298,7 +283,7 @@ namespace System.Net.Http
         }
 
         // TEXT = <any OCTET except CTLs, but including LWS>
-        // LWS = [CRLF] 1*( SP | HT )
+        // LWS = SP | HT
         // CTL = <any US-ASCII control character (octets 0 - 31) and DEL (127)>
         //
         // Since we don't really care about the content of a quoted string or comment, we're more tolerant and
@@ -337,8 +322,15 @@ namespace System.Net.Http
                     continue;
                 }
 
+                char c = input[current];
+
+                if (c == '\r' || c == '\n')
+                {
+                    return HttpParseResult.InvalidFormat;
+                }
+
                 // If we support nested expressions and we find an open-char, then parse the nested expressions.
-                if (supportsNesting && (input[current] == openChar))
+                if (supportsNesting && (c == openChar))
                 {
                     // Check if we exceeded the number of nested calls.
                     if (nestedCount > MaxNestedCount)
