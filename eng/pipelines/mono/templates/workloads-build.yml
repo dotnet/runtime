@@ -52,11 +52,12 @@ jobs:
         artifact: 'IntermediateArtifacts'
         path: $(workloadPackagesPath)
         patterns: |
-          IntermediateArtifacts/MonoRuntimePacks/Shipping/*browser-wasm*.nupkg
-          IntermediateArtifacts/MonoRuntimePacks/Shipping/*Manifest*.nupkg
-          IntermediateArtifacts/MonoRuntimePacks/Shipping/*MonoTargets.Sdk*.nupkg
-          IntermediateArtifacts/MonoRuntimePacks/Shipping/*MonoAOTCompiler.Task*.nupkg
-          IntermediateArtifacts/MonoRuntimePacks/Shipping/*WebAssembly.Sdk*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.browser-wasm*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.Manifest*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.MonoTargets.Sdk*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.MonoAOTCompiler.Task*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Sdk*.nupkg
 
     - task: CopyFiles@2
       displayName: Flatten packages
