@@ -8272,10 +8272,9 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
     // void DispatchTailCalls(void* callersRetAddrSlot, void* callTarget, void* retValue)
 
     // Add return value arg.
-    GenTree*     retValArg;
-    GenTree*     retVal           = nullptr;
-    unsigned int newRetLcl        = BAD_VAR_NUM;
-    GenTree*     copyToRetBufNode = nullptr;
+    GenTree* retValArg;
+    GenTree* retVal           = nullptr;
+    GenTree* copyToRetBufNode = nullptr;
 
     if (origCall->HasRetBufArg())
     {
@@ -8326,24 +8325,26 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
     else if (origCall->gtType != TYP_VOID)
     {
         JITDUMP("Creating a new temp for the return value\n");
-        newRetLcl = lvaGrabTemp(false DEBUGARG("Return value for tail call dispatcher"));
+        unsigned int newRetLcl = lvaGrabTemp(false DEBUGARG("Return value for tail call dispatcher"));
         if (varTypeIsStruct(origCall->gtType))
         {
             lvaSetStruct(newRetLcl, origCall->gtRetClsHnd, false);
         }
         else
         {
-            // Since we pass a reference to the return value to the dispatcher
-            // we need to use the real return type so we can normalize it on
-            // load when we return it.
-            lvaTable[newRetLcl].lvType = (var_types)origCall->gtReturnType;
+            // It is the responsibility of the call-tail-call-target stub to
+            // normalize the return value in the same way that we would do it
+            // when it is stored. It is not possible for us to normalize it as
+            // we don't know which eventual tailcaller may have written it, and
+            // the type of that tailcaller could potentially be narrower than
+            // this call. See TailCallHelp::NeedsReturnWidening.
+            lvaTable[newRetLcl].lvType = (var_types)origCall->gtType;
         }
 
         lvaSetVarAddrExposed(newRetLcl);
 
-        retValArg =
-            gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType)));
-        retVal = gtNewLclvNode(newRetLcl, genActualType(lvaTable[newRetLcl].lvType));
+        retValArg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(newRetLcl, lvaTable[newRetLcl].lvType));
+        retVal    = gtNewLclvNode(newRetLcl, lvaTable[newRetLcl].lvType);
 
         if (varTypeIsStruct(origCall->gtType))
         {

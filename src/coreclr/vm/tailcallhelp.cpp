@@ -254,6 +254,26 @@ TypeHandle TailCallHelp::NormalizeSigType(TypeHandle tyHnd)
     return tyHnd;
 }
 
+// The managed calling convention requires that return types are widened up to 4 bytes.
+// This needs to be mirrored when storing the return value.
+bool TailCallHelp::NeedsReturnWidening(TypeHandle tyHnd, bool* isSigned)
+{
+    CorElementType ety = tyHnd.GetSignatureCorElementType();
+    switch (ety)
+    {
+    case ELEMENT_TYPE_I1:
+    case ELEMENT_TYPE_I2:
+        *isSigned = true;
+        return true;
+    case ELEMENT_TYPE_U1:
+    case ELEMENT_TYPE_U2:
+        *isSigned = false;
+        return true;
+    default:
+        return false;
+    }
+}
+
 bool TailCallHelp::GenerateGCDescriptor(
     MethodDesc* pTargetMD, const ArgBufferLayout& layout, GCRefMapBuilder* builder)
 {
@@ -579,7 +599,20 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
 
         pCode->EmitLDARG(ARG_RET_VAL);
         pCode->EmitLDLOC(resultLcl);
-        EmitStoreTyHnd(pCode, info.RetTyHnd);
+        bool isSigned;
+        if (NeedsReturnWidening(info.RetTyHnd, &isSigned))
+        {
+            if (isSigned)
+                pCode->EmitCONV_I4();
+            else
+                pCode->EmitCONV_U4();
+
+            pCode->EmitSTIND_I4();
+        }
+        else
+        {
+            EmitStoreTyHnd(pCode, info.RetTyHnd);
+        }
     }
 
     pCode->EmitRET();
