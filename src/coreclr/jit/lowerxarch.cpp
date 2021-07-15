@@ -4856,11 +4856,14 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
-    if (op1->OperIs(GT_BITCAST))
+    if (op1->OperIs(GT_BITCAST) && !storeLoc->OperIs(GT_STORE_LCL_FLD))
     {
         // If we know that the source of the bitcast will be in a register, then we can make
         // the bitcast itself contained. This will allow us to store directly from the other
         // type if this node doesn't get a register.
+        // 
+        // TODO: Currently, codegen does not handle STORE_LCL_FLD whose src is contained BITCAST.
+        //  In future, support it just how it is done for STORE_LCL_VAR.
         GenTree* bitCastSrc = op1->gtGetOp1();
         if (!bitCastSrc->isContained() && !bitCastSrc->IsRegOptional())
         {
