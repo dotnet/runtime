@@ -51,6 +51,7 @@ namespace System.Text.Json.Serialization
                             Options.IgnoreReadOnlyProperties == _defaultOptions.IgnoreReadOnlyProperties &&
                             Options.IncludeFields == _defaultOptions.IncludeFields &&
                             Options.PropertyNamingPolicy == _defaultOptions.PropertyNamingPolicy &&
+                            Options.DictionaryKeyPolicy == _defaultOptions.DictionaryKeyPolicy &&
                             Options.WriteIndented == _defaultOptions.WriteIndented;
                     }
                 }

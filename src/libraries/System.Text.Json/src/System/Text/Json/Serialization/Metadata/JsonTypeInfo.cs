@@ -303,12 +303,22 @@ namespace System.Text.Json.Serialization.Metadata
                 case ConverterStrategy.Enumerable:
                     {
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
+
+                        if (converter.RequiresDynamicMemberAccessors)
+                        {
+                            converter.Initialize(Options, this);
+                        }
                     }
                     break;
                 case ConverterStrategy.Dictionary:
                     {
                         KeyType = converter.KeyType;
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
+
+                        if (converter.RequiresDynamicMemberAccessors)
+                        {
+                            converter.Initialize(Options, this);
+                        }
                     }
                     break;
                 case ConverterStrategy.Value:

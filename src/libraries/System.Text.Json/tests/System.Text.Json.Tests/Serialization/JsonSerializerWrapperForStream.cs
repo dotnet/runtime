@@ -10,19 +10,12 @@ namespace System.Text.Json.Serialization.Tests
     /// <summary>
     /// Base class for wrapping Stream-based JsonSerializer methods which allows tests to run under different configurations.
     /// </summary>
-    public abstract class JsonSerializationWrapperForStream
+    public abstract partial class JsonSerializerWrapperForStream
     {
-        public static JsonSerializationWrapperForStream AsyncStreamSerializer => new AsyncStreamSerializerWrapper();
-        public static JsonSerializationWrapperForStream SyncStreamSerializer => new SyncStreamSerializerWrapper();
+        public static JsonSerializerWrapperForStream AsyncStreamSerializer => new AsyncStreamSerializerWrapper();
+        public static JsonSerializerWrapperForStream SyncStreamSerializer => new SyncStreamSerializerWrapper();
 
-        protected internal abstract Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions options = null);
-        protected internal abstract Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerOptions options = null);
-        protected internal abstract Task SerializeWrapper<T>(Stream stream, T value, JsonTypeInfo<T> jsonTypeInfo);
-        protected internal abstract Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions options = null);
-        protected internal abstract Task<object> DeserializeWrapper(Stream utf8Json, Type returnType, JsonSerializerOptions options = null);
-        protected internal abstract Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonTypeInfo<T> jsonTypeInfo);
-
-        private class AsyncStreamSerializerWrapper : JsonSerializationWrapperForStream
+        private class AsyncStreamSerializerWrapper : JsonSerializerWrapperForStream
         {
             protected internal override async Task SerializeWrapper<T>(Stream utf8Json, T value, JsonSerializerOptions options = null)
             {
@@ -55,7 +48,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        private class SyncStreamSerializerWrapper : JsonSerializationWrapperForStream
+        private class SyncStreamSerializerWrapper : JsonSerializerWrapperForStream
         {
             protected internal override Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions options = null)
             {
