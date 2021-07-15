@@ -1756,14 +1756,16 @@ namespace Mono.Linker.Steps
 
 			MarkType (type.BaseType, new DependencyInfo (DependencyKind.BaseType, type));
 
+			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
+
 			// The DynamicallyAccessedMembers hiearchy processing must be done after the base type was marked
-			// (to avoid inconsistencies in the cache), but before anything else as work done below
+			// (to avoid inconsistencies in the cache), and after marking custom attributes (in case the attributes have
+			// warning suppressions for the type hierarchy marking) but before anything else as work done below
 			// might need the results of the processing here.
 			_dynamicallyAccessedMembersTypeHierarchy.ProcessMarkedTypeForDynamicallyAccessedMembersHierarchy (type);
 
 			if (type.DeclaringType != null)
 				MarkType (type.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, type));
-			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 			MarkSecurityDeclarations (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 
 			if (type.IsMulticastDelegate ()) {
