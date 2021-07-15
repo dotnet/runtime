@@ -203,8 +203,9 @@ namespace System.Globalization
             {
                 char a = charA;
                 char b = charB;
+                char lowSurrogateA = '\0';
 
-                if (!char.IsHighSurrogate(a) || index >= lengthA - 1 || !char.IsLowSurrogate(Unsafe.Add(ref charA, 1)))
+                if (!char.IsHighSurrogate(a) || index >= lengthA - 1 || !char.IsLowSurrogate(lowSurrogateA = Unsafe.Add(ref charA, 1)))
                 {
                     if (!char.IsHighSurrogate(b) || index >= lengthB - 1 || !char.IsLowSurrogate(Unsafe.Add(ref charB, 1)))
                     {
@@ -245,7 +246,9 @@ namespace System.Globalization
                 // A is Surrogate
                 //
 
-                if (!char.IsHighSurrogate(b) || index >= lengthB - 1 || !char.IsLowSurrogate(Unsafe.Add(ref charB, 1)))
+                char lowSurrogateB = '\0';
+
+                if (!char.IsHighSurrogate(b) || index >= lengthB - 1 || !char.IsLowSurrogate(lowSurrogateB = Unsafe.Add(ref charB, 1)))
                 {
                     //
                     // charB is not surrogate and charA is surrogate
@@ -258,8 +261,8 @@ namespace System.Globalization
                 // charA and charB are surrogates
                 //
 
-                char lowSurrogateA = Unsafe.Add(ref charA, 1);
-                char lowSurrogateB = Unsafe.Add(ref charB, 1);
+                Debug.Assert(lowSurrogateA != '\0');
+                Debug.Assert(lowSurrogateB != '\0');
 
                 if (a == b && lowSurrogateA == lowSurrogateB)
                 {
