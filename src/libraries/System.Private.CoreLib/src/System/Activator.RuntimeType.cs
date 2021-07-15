@@ -127,9 +127,9 @@ namespace System
                 assembly = RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
             }
 
-            Type type = assembly!.GetType(typeName, throwOnError: true, ignoreCase);
+            Type type = assembly.GetType(typeName, throwOnError: true, ignoreCase);
 
-            object? o = CreateInstance(type!, bindingAttr, binder, args, culture, activationAttributes);
+            object? o = CreateInstance(type, bindingAttr, binder, args, culture, activationAttributes);
 
             return o != null ? new ObjectHandle(o) : null;
         }
