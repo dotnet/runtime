@@ -1407,7 +1407,6 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 
 		case ENC_FUNC_ADD_PARAM: {
 			g_assert (token_table == MONO_TABLE_METHOD);
-			/* assert that the token_index is equal to the number of rows in the table.  We only allow adding a param to the newest method def */
 			add_param_method_index = token_index;
 			break;
 		}
@@ -1511,6 +1510,25 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 		case MONO_TABLE_PARAM: {
 			/* ok, pass1 checked for disallowed modifications */
 			/* ALLOW_METHOD_ADD: FIXME: here we would really like to update the method's paramlist column to point to the new params. */
+			/* if there were multiple added methods, this comes in as several method
+			 * additions, followed by the parameter additions.
+			 *
+			 * 10: 0x02000002 (TypeDef)          0x00000001 (AddMethod)
+			 * 11: 0x06000006 (MethodDef)        0
+			 * 12: 0x02000002 (TypeDef)          0x00000001 (AddMethod)
+			 * 13: 0x06000007 (MethodDef)        0
+			 * 14: 0x06000006 (MethodDef)        0x00000003 (AddParameter)
+			 * 15: 0x08000003 (Param)            0
+			 * 16: 0x06000006 (MethodDef)        0x00000003 (AddParameter)
+			 * 17: 0x08000004 (Param)            0
+			 * 18: 0x06000007 (MethodDef)        0x00000003 (AddParameter)
+			 * 19: 0x08000005 (Param)            0
+			 *
+			 * So by the time we see the param additions, the methods are already in.
+			 *
+			 * FIXME: we need a lookaside table (like method_parent) for every place
+			 * that looks at MONO_METHOD_PARAMLIST
+			 */
 			break;
 		}
 		default: {
