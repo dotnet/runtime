@@ -521,7 +521,7 @@ namespace System.IO
 
         public static DateTimeOffset GetCreationTime(string fullPath)
         {
-            return new FileInfo(fullPath, null).CreationTime;
+            return new FileInfo(fullPath, null).CreationTimeUtc;
         }
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -535,7 +535,7 @@ namespace System.IO
 
         public static DateTimeOffset GetLastAccessTime(string fullPath)
         {
-            return new FileInfo(fullPath, null).LastAccessTime;
+            return new FileInfo(fullPath, null).LastAccessTimeUtc;
         }
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -549,7 +549,7 @@ namespace System.IO
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
         {
-            return new FileInfo(fullPath, null).LastWriteTime;
+            return new FileInfo(fullPath, null).LastWriteTimeUtc;
         }
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
