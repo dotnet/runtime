@@ -113,7 +113,7 @@ elseif (CLR_CMAKE_HOST_UNIX)
   # Use uppercase CMAKE_BUILD_TYPE for the string comparisons below
   string(TOUPPER ${CMAKE_BUILD_TYPE} UPPERCASE_CMAKE_BUILD_TYPE)
 
-  if (NOT CLR_CMAKE_HOST_ARCH_S390X)
+  if (NOT CLR_CMAKE_HOST_ARCH_S390X AND NOT CLR_CMAKE_HOST_OSX AND NOT CLR_CMAKE_HOST_FREEBSD)
     add_linker_flag(-fuse-ld=lld)
   endif ()
 
