@@ -487,7 +487,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal((type == CancellationType.CancellationToken ? 268 : 0xffffffff), ex.ErrorCode);
 
                 serverDone.Release();
-                });
+            });
 
             Task clientTask = Task.Run(async () =>
             {
@@ -570,10 +570,10 @@ namespace System.Net.Http.Functional.Tests
 
                 var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(10)));
                 // exact error code depends on who won the race
-                Assert.True(ex.ErrorCode == 268 /* cancellation */ || ex.ErrorCode == 0xffffffff /* disposal */);
+                Assert.True(ex.ErrorCode == 268 /* cancellation */ || ex.ErrorCode == 0xffffffff /* disposal */, $"Expected 268 or 0xffffffff, got {ex.ErrorCode}");
 
                 serverDone.Release();
-                });
+            });
 
             Task clientTask = Task.Run(async () =>
             {
