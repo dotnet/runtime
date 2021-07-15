@@ -543,6 +543,8 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            using var log = new LogEventListener();
+
             using Http3LoopbackServer server = CreateHttp3LoopbackServer();
 
             using var clientDone = new SemaphoreSlim(0);
@@ -552,6 +554,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                 using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                Console.WriteLine($"{GetHttp3LoopbackStreamStateTraceId(stream)} SERVER");
 
                 HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
 
@@ -568,7 +571,8 @@ namespace System.Net.Http.Functional.Tests
                 // In that case even with synchronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
                 // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
 
-                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(10)));
+                Console.WriteLine($"{GetHttp3LoopbackStreamStateTraceId(stream)} SERVER will loop send");
+                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(3)));
                 // exact error code depends on who won the race
                 Assert.True(ex.ErrorCode == 268 /* cancellation */ || ex.ErrorCode == 0xffffffff /* disposal */, $"Expected 268 or 0xffffffff, got {ex.ErrorCode}");
 
@@ -586,9 +590,10 @@ namespace System.Net.Http.Functional.Tests
                         Version = HttpVersion30,
                         VersionPolicy = HttpVersionPolicy.RequestVersionExact
                     };
-                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
+                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(3));
 
                 Stream stream = await response.Content.ReadAsStreamAsync();
+                Console.WriteLine($"{GetHttp3ReadStreamStateTraceId(stream)} CLIENT");
 
                 int bytesRead = await stream.ReadAsync(new byte[1024]);
                 Assert.Equal(1024, bytesRead);
@@ -620,6 +625,94 @@ namespace System.Net.Http.Functional.Tests
             {
                 await stream.SendDataFrameAsync(buf);
             }
+        }
+
+        internal sealed class LogEventListener : EventListener
+        {
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Quic")
+                    EnableEvents(eventSource, EventLevel.LogAlways);
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                var sb = new StringBuilder().Append($"{eventData.TimeStamp:HH:mm:ss.fffffff}[{eventData.EventName}] ");
+                for (int i = 0; i < eventData.Payload?.Count; i++)
+                {
+                    if (i > 0)
+                        sb.Append(", ");
+                    sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
+                }
+                Console.WriteLine(sb.ToString());
+            }
+        }
+
+        private static string GetStreamStateTraceId(QuicStream wrapper)
+        {
+            var wrapperType = typeof(QuicStream);
+            //private readonly QuicStreamProvider _provider;
+            var streamField = wrapperType.GetField("_provider", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            if (streamField is null) throw new Exception("reflection failed: streamField");
+            var stream = streamField.GetValue(wrapper);
+            if (stream is null) throw new Exception("reflection failed: stream");
+
+            var assembly = wrapper.GetType().Assembly;
+            var streamType = stream.GetType();
+            if (streamType is null) throw new Exception("reflection failed: streamType");
+            if (streamType.Name == "MockStream") return "-";
+
+            if (streamType.Name != "MsQuicStream") throw new Exception("reflection failed: streamType=" + streamType.Name);
+            //private readonly State _state = new State();
+            var stateField = streamType.GetField("_state", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            if (stateField is null) throw new Exception("reflection failed: stateField");
+            var state = stateField.GetValue(stream);
+            if (state is null) throw new Exception("reflection failed: state");
+
+            // public string TraceId
+            var traceIdField = state.GetType().GetField("TraceId", Reflection.BindingFlags.Public | Reflection.BindingFlags.Instance);
+            var traceId = traceIdField.GetValue(state);
+            if (traceId is null) throw new Exception("reflection failed: traceId");
+            return (string)traceId;
+        }
+
+        private static string GetHttp3ReadStreamStateTraceId(Stream reader)
+        {
+            var readerType = reader.GetType();
+            if (readerType.Name != "Http3ReadStream") throw new Exception("reflection failed: readerType=" + readerType.Name);
+            //private Http3RequestStream? _stream;
+            var h3rsField = readerType.GetField("_stream", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            if (h3rsField is null) throw new Exception("reflection failed: h3rsField");
+            var h3rStream = h3rsField.GetValue(reader);
+            if (h3rStream is null) throw new Exception("reflection failed: h3rStream");
+
+            var h3rsType = h3rStream.GetType();
+            if (h3rsType.Name != "Http3RequestStream") throw new Exception("reflection failed: h3rsType=" + h3rsType.Name);
+            //private QuicStream _stream;
+            var qsField = h3rsType.GetField("_stream", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            if (qsField is null) throw new Exception("reflection failed: qsField");
+            var qStream = qsField.GetValue(h3rStream);
+            if (qStream is null) throw new Exception("reflection failed: qStream");
+
+            var qsType = qStream.GetType();
+            if (qsType.Name != "QuicStream") throw new Exception("reflection failed: qsType=" + qsType.Name);
+
+            return GetStreamStateTraceId((QuicStream)qStream);
+        }
+
+        private static string GetHttp3LoopbackStreamStateTraceId(Http3LoopbackStream lb)
+        {
+            var lbType = lb.GetType();
+            //private readonly QuicStream _stream;
+            var qsField = lbType.GetField("_stream", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            if (qsField is null) throw new Exception("reflection failed: qsField");
+            var qStream = qsField.GetValue(lb);
+            if (qStream is null) throw new Exception("reflection failed: qStream");
+
+            var qsType = qStream.GetType();
+            if (qsType.Name != "QuicStream") throw new Exception("reflection failed: qsType=" + qsType.Name);
+
+            return GetStreamStateTraceId((QuicStream)qStream);
         }
 
         /// <summary>
