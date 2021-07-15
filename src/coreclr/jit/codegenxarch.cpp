@@ -3078,33 +3078,36 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         return;
     }
 
-    regNumber tempReg = node->GetSingleTempReg(RBM_ALLINT);
-
-    for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += regSize, dstOffset += regSize)
+    if (size > 0)
     {
-        while (regSize > size)
-        {
-            regSize /= 2;
-        }
+        regNumber tempReg = node->GetSingleTempReg(RBM_ALLINT);
 
-        if (srcLclNum != BAD_VAR_NUM)
+        for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += regSize, dstOffset += regSize)
         {
-            emit->emitIns_R_S(INS_mov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
-        }
-        else
-        {
-            emit->emitIns_R_ARX(INS_mov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg, srcAddrIndexScale,
-                                srcOffset);
-        }
+            while (regSize > size)
+            {
+                regSize /= 2;
+            }
 
-        if (dstLclNum != BAD_VAR_NUM)
-        {
-            emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
-        }
-        else
-        {
-            emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg, dstAddrIndexScale,
-                                dstOffset);
+            if (srcLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_R_S(INS_mov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+            }
+            else
+            {
+                emit->emitIns_R_ARX(INS_mov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                    srcAddrIndexScale, srcOffset);
+            }
+
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                    dstAddrIndexScale, dstOffset);
+            }
         }
     }
 }
