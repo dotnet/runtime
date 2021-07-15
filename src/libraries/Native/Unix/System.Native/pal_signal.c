@@ -63,16 +63,21 @@ static bool IsSaSigInfo(struct sigaction* action)
 #pragma clang diagnostic pop
 }
 
-static bool IsSigIgn(struct sigaction* action)
-{
-    assert(action);
-    return !IsSaSigInfo(action) && action->sa_handler == SIG_IGN;
-}
-
 static bool IsSigDfl(struct sigaction* action)
 {
     assert(action);
-    return !IsSaSigInfo(action) && action->sa_handler == SIG_DFL;
+    // macOS can return sigaction with SIG_DFL and SA_SIGINFO.
+    // SA_SIGINFO means we should use sa_sigaction, but here we want to check sa_handler.
+    // So we ignore SA_SIGINFO when sa_sigaction and sa_handler are at the same address.
+    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+            action->sa_handler == SIG_DFL;
+}
+
+static bool IsSigIgn(struct sigaction* action)
+{
+    assert(action);
+    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+            action->sa_handler == SIG_IGN;
 }
 
 static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
@@ -209,15 +214,19 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
     if (!IsCancelableTerminationSignal(sig))
     {
         struct sigaction* origHandler = OrigActionFor(sig);
-        if (IsSaSigInfo(origHandler))
+        if (!IsSigDfl(origHandler) && !IsSigIgn(origHandler))
         {
-            assert(origHandler->sa_sigaction);
-            origHandler->sa_sigaction(sig, siginfo, context);
-        }
-        else if (origHandler->sa_handler != SIG_IGN &&
-                 origHandler->sa_handler != SIG_DFL)
-        {
-            origHandler->sa_handler(sig);
+            if (IsSaSigInfo(origHandler))
+            {
+                assert(origHandler->sa_sigaction);
+                origHandler->sa_sigaction(sig, siginfo, context);
+            }
+            else
+            {
+                assert(origHandler->sa_handler);
+                origHandler->sa_handler(sig);
+            }
+            
         }
     }
 
