@@ -123,18 +123,17 @@ namespace System.IO
             {
                 int errorCode = Marshal.GetLastWin32Error();
 
-                switch (errorCode)
-                {
-                    case Interop.Errors.ERROR_FILE_NOT_FOUND:
-                        throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_PATH_NOT_FOUND, sourceFullPath);
-                    case Interop.Errors.ERROR_ALREADY_EXISTS:
-                        throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_ALREADY_EXISTS, destFullPath);
-                    // This check was originally put in for Win9x (unfortunately without special casing it to be for Win9x only). We can't change the NT codepath now for backcomp reasons.
-                    case Interop.Errors.ERROR_ACCESS_DENIED: // WinNT throws IOException. This check is for Win9x. We can't change it for backcomp.
-                        throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), Win32Marshal.MakeHRFromErrorCode(errorCode));
-                    default:
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
-                }
+                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
+                    throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_PATH_NOT_FOUND, sourceFullPath);
+
+                if (errorCode == Interop.Errors.ERROR_ALREADY_EXISTS)
+                    throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_ALREADY_EXISTS, destFullPath);
+
+                // This check was originally put in for Win9x (unfortunately without special casing it to be for Win9x only). We can't change the NT codepath now for backcomp reasons.
+                if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED) // WinNT throws IOException. This check is for Win9x. We can't change it for backcomp.
+                    throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), Win32Marshal.MakeHRFromErrorCode(errorCode));
+
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
             }
         }
 
