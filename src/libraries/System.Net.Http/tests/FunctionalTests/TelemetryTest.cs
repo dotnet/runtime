@@ -673,7 +673,7 @@ namespace System.Net.Http.Functional.Tests
             DateTime startTime = DateTime.UtcNow;
             int startCount = events.Count;
 
-            while (events.Skip(startCount).Count(e => IsRequestsStartedEventCounter(e.Event)) < 2)
+            while (events.Skip(startCount).Count(e => IsRequestsStartedEventCounter(e.Event)) < 3)
             {
                 if (DateTime.UtcNow.Subtract(startTime) > TimeSpan.FromSeconds(30))
                     throw new TimeoutException($"Timed out waiting for EventCounters");
