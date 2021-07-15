@@ -860,6 +860,17 @@ mono_debug_lookup_locals (MonoMethod *method, mono_bool ignore_pdb)
 {
 	MonoDebugMethodInfo *minfo;
 	MonoDebugLocalsInfo *res;
+	
+	MonoImage* img = m_class_get_image (method->klass);
+	if (img->has_updates) {
+		int idx = mono_metadata_token_index (method->token);
+		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
+		if (mdie != NULL) {
+			res = mono_ppdb_lookup_locals_enc (mdie->image, mdie->idx);
+			if (res != NULL)
+				return res;
+		}
+	}
 
 	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
 		return NULL;
@@ -1117,11 +1128,15 @@ void
 mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points)
 {
 	MonoImage* img = m_class_get_image (minfo->method->klass);
-	if (img->has_updates) {
+	if (img->has_updates && !source_file_list) {
 		int idx = mono_metadata_token_index (minfo->method->token);
-		gpointer ptr = mono_metadata_update_get_updated_method_ppdb (img, idx);
-		mono_ppdb_get_seq_points_enc (ptr, seq_points,  n_seq_points);
-	} else if (minfo->handle->ppdb)
+		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
+		if (mdie != NULL) {
+			if (mono_ppdb_get_seq_points_enc (mdie->image, mdie->idx, seq_points, n_seq_points))
+				return;
+		}
+	} 
+	if (minfo->handle->ppdb)
 		mono_ppdb_get_seq_points (minfo, source_file, source_file_list, source_files, seq_points, n_seq_points);
 	else
 		mono_debug_symfile_get_seq_points (minfo, source_file, source_file_list, source_files, seq_points, n_seq_points);

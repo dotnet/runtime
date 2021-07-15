@@ -866,10 +866,8 @@ protected:
     // Generate code for a GT_BITCAST that is not contained.
     void genCodeForBitCast(GenTreeOp* treeNode);
 
-#if defined(TARGET_XARCH)
     // Generate the instruction to move a value between register files
     void genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg);
-#endif // TARGET_XARCH
 
     struct GenIntCastDesc
     {

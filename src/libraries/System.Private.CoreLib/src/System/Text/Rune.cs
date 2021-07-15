@@ -1402,9 +1402,7 @@ namespace System.Text
 
             if (GlobalizationMode.Invariant)
             {
-                // If the value isn't ASCII and if the globalization tables aren't available,
-                // case changing has no effect.
-                return value;
+                return UnsafeCreate(CharUnicodeInfo.ToLower(value._value));
             }
 
             // Non-ASCII data requires going through the case folding tables.
@@ -1453,9 +1451,7 @@ namespace System.Text
 
             if (GlobalizationMode.Invariant)
             {
-                // If the value isn't ASCII and if the globalization tables aren't available,
-                // case changing has no effect.
-                return value;
+                return UnsafeCreate(CharUnicodeInfo.ToUpper(value._value));
             }
 
             // Non-ASCII data requires going through the case folding tables.

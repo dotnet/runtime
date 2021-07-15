@@ -15,8 +15,14 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal sealed class ObjectConverterFactory : JsonConverterFactory
     {
+        // Need to toggle this behavior when generating converters for F# struct records.
+        private readonly bool _useDefaultConstructorInUnannotatedStructs;
+
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        public ObjectConverterFactory() { }
+        public ObjectConverterFactory(bool useDefaultConstructorInUnannotatedStructs = true)
+        {
+            _useDefaultConstructorInUnannotatedStructs = useDefaultConstructorInUnannotatedStructs;
+        }
 
         public override bool CanConvert(Type typeToConvert)
         {
@@ -164,7 +170,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             // Structs will use default constructor if attribute isn't used.
-            if (type.IsValueType && ctorWithAttribute == null)
+            if (_useDefaultConstructorInUnannotatedStructs && type.IsValueType && ctorWithAttribute == null)
             {
                 return null;
             }

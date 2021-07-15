@@ -46,6 +46,8 @@
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.EnumProcessModules.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.EnumProcessModules.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.FormatMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtQueryInformationProcess.cs"
              Link="Common\Interop\Windows\NtDll\Interop.NtQueryInformationProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs"

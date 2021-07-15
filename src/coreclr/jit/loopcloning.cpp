@@ -2074,9 +2074,15 @@ bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
 //      dimension of [] encountered.
 //
 //  Operation:
-//      Given a "tree" extract the GT_INDEX node in "result" as ArrIndex. In FlowGraph morph
-//      we have converted a GT_INDEX tree into a scaled index base offset expression. We need
-//      to reconstruct this to be able to know if this is an array access.
+//      Given a "tree" extract the GT_INDEX node in "result" as ArrIndex. In morph
+//      we have converted a GT_INDEX tree into a scaled index base offset expression.
+//      However, we don't actually bother to parse the morphed tree. All we care about is
+//      the bounds check node: it contains the array base and element index. The other side
+//      of the COMMA node can vary between array of primitive type and array of struct. There's
+//      no need to parse that, as the array bounds check contains the only thing we care about.
+//      In particular, we are trying to find bounds checks to remove, so only looking at the bounds
+//      check makes sense. We could verify that the bounds check is against the same array base/index
+//      but it isn't necessary.
 //
 //  Assumption:
 //      The method extracts only if the array base and indices are GT_LCL_VAR.
@@ -2115,6 +2121,12 @@ bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
 //          |  \--*  LCL_VAR   int    V03 loc2
 //          \--*  CNS_INT   long   16 Fseq[#FirstElem]
 //
+// The COMMA op2 expression is the array index expression (or SIMD/Span expression). If we've got
+// a "LCL_VAR int" index and "ARR_LENGTH(LCL_VAR ref)", that's good enough for us: we'll assume
+// op2 is an array index expression. We don't need to match it just to ensure the index var is
+// used as an index expression, or array base var is used as the array base. This saves us from parsing
+// all the forms that morph can create, especially for arrays of structs.
+//
 bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum)
 {
     if (tree->gtOper != GT_COMMA)
@@ -2150,72 +2162,6 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
 
     unsigned indLcl = arrBndsChk->gtIndex->AsLclVarCommon()->GetLclNum();
 
-    GenTree* after = tree->gtGetOp2();
-
-    if (after->gtOper != GT_IND)
-    {
-        return false;
-    }
-    // It used to be the case that arrBndsChks for struct types would fail the previous check because
-    // after->gtOper was an address (for a block op).  In order to avoid asmDiffs we will for now
-    // return false if the type of 'after' is a struct type.  (This was causing us to clone loops
-    // that we were not previously cloning.)
-    // TODO-1stClassStructs: Remove this check to enable optimization of array bounds checks for struct
-    // types.
-    if (varTypeIsStruct(after))
-    {
-        return false;
-    }
-
-    GenTree* sibo = after->gtGetOp1(); // sibo = scale*index + base + offset
-    if (sibo->gtOper != GT_ADD)
-    {
-        return false;
-    }
-    GenTree* base = sibo->gtGetOp1();
-    GenTree* sio  = sibo->gtGetOp2(); // sio == scale*index + offset
-    if (base->OperGet() != GT_LCL_VAR || base->AsLclVarCommon()->GetLclNum() != arrLcl)
-    {
-        return false;
-    }
-    if (sio->gtOper != GT_ADD)
-    {
-        return false;
-    }
-    GenTree* ofs = sio->gtGetOp2();
-    GenTree* si  = sio->gtGetOp1(); // si = scale*index
-    if (ofs->gtOper != GT_CNS_INT)
-    {
-        return false;
-    }
-    GenTree* index;
-    if (si->gtOper == GT_LSH)
-    {
-        GenTree* scale = si->gtGetOp2();
-        index          = si->gtGetOp1();
-        if (scale->gtOper != GT_CNS_INT)
-        {
-            return false;
-        }
-    }
-    else
-    {
-        // No scale (e.g., byte array).
-        index = si;
-    }
-#ifdef TARGET_64BIT
-    if (index->gtOper != GT_CAST)
-    {
-        return false;
-    }
-    GenTree* indexVar = index->gtGetOp1();
-#else
-    GenTree* indexVar = index;
-#endif
-    if (indexVar->gtOper != GT_LCL_VAR || indexVar->AsLclVarCommon()->GetLclNum() != indLcl)
-    {
-        return false;
-    }
     if (lhsNum == BAD_VAR_NUM)
     {
         result->arrLcl = arrLcl;
@@ -2241,26 +2187,13 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
 //      "result" contains the array access depth. The "indLcls" fields contain the indices.
 //
 //  Operation:
-//      Recursively look for a list of array indices. In the example below, we encounter,
-//      V03 = ((V05 = V00[V01]), (V05[V02])) which corresponds to access of V00[V01][V02]
-//      The return value would then be:
+//      Recursively look for a list of array indices. For example, if the tree is
+//          V03 = (V05 = V00[V01]), V05[V02]
+//      that corresponds to access of V00[V01][V02]. The return value would then be:
 //      ArrIndex result { arrLcl: V00, indLcls: [V01, V02], rank: 2 }
 //
-//      V00[V01][V02] would be morphed as:
-//
-//      [000000001B366848] ---XG-------                        indir     int
-//      [000000001B36BC50] ------------                                 V05 + (V02 << 2) + 16
-//      [000000001B36C200] ---XG-------                     comma     int
-//      [000000001B36BDB8] ---X--------                        arrBndsChk(V05, V02)
-//      [000000001B36C278] -A-XG-------                  comma     int
-//      [000000001B366730] R--XG-------                           indir     ref
-//      [000000001B36C2F0] ------------                             V00 + (V01 << 3) + 24
-//      [000000001B36C818] ---XG-------                        comma     ref
-//      [000000001B36C458] ---X--------                           arrBndsChk(V00, V01)
-//      [000000001B36BB60] -A-XG-------                     =         ref
-//      [000000001B36BAE8] D------N----                        lclVar    ref    V05 tmp2
-//      [000000001B36A668] -A-XG-------               =         int
-//      [000000001B36A5F0] D------N----                  lclVar    int    V03 tmp0
+//      Note that the array expression is implied by the array bounds check under the COMMA, and the array bounds
+//      checks is what is parsed from the morphed tree; the array addressing expression is not parsed.
 //
 //  Assumption:
 //      The method extracts only if the array base and indices are GT_LCL_VAR.

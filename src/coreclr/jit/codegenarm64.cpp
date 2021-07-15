@@ -4378,9 +4378,11 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
 {
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicUpperSave);
 
-    GenTree* op1 = simdNode->gtGetOp1();
-    assert(op1->IsLocal());
-    assert(emitTypeSize(op1->TypeGet()) == 16);
+    GenTree*       op1     = simdNode->gtGetOp1();
+    GenTreeLclVar* lclNode = op1->AsLclVar();
+    LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
+    assert(emitTypeSize(varDsc->GetRegisterType(lclNode)) == 16);
+
     regNumber targetReg = simdNode->GetRegNum();
     regNumber op1Reg    = genConsumeReg(op1);
     assert(op1Reg != REG_NA);
@@ -4391,8 +4393,7 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
     {
         // This is not a normal spill; we'll spill it to the lclVar location.
         // The localVar must have a stack home.
-        unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+        unsigned varNum = lclNode->GetLclNum();
         assert(varDsc->lvOnFrame);
         // We want to store this to the upper 8 bytes of this localVar's home.
         int offset = 8;
@@ -4429,16 +4430,18 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
 
     GenTree* op1 = simdNode->gtGetOp1();
     assert(op1->IsLocal());
-    assert(emitTypeSize(op1->TypeGet()) == 16);
+    GenTreeLclVar* lclNode = op1->AsLclVar();
+    LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
+    assert(emitTypeSize(varDsc->GetRegisterType(lclNode)) == 16);
+
     regNumber srcReg    = simdNode->GetRegNum();
-    regNumber lclVarReg = genConsumeReg(op1);
-    unsigned  varNum    = op1->AsLclVarCommon()->GetLclNum();
+    regNumber lclVarReg = genConsumeReg(lclNode);
+    unsigned  varNum    = lclNode->GetLclNum();
     assert(lclVarReg != REG_NA);
     assert(srcReg != REG_NA);
     if (simdNode->gtFlags & GTF_SPILLED)
     {
         // The localVar must have a stack home.
-        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
         assert(varDsc->lvOnFrame);
         // We will load this from the upper 8 bytes of this localVar's home.
         int offset = 8;

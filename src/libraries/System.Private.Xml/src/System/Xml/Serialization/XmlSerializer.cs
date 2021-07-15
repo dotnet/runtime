@@ -317,9 +317,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(TextWriter textWriter, object? o, XmlSerializerNamespaces? namespaces)
         {
-            XmlTextWriter xmlWriter = new XmlTextWriter(textWriter);
-            xmlWriter.Formatting = Formatting.Indented;
-            xmlWriter.Indentation = 2;
+            XmlWriter xmlWriter = XmlWriter.Create(textWriter, new XmlWriterSettings() { Indent = true });
             Serialize(xmlWriter, o, namespaces);
         }
 
@@ -332,9 +330,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(Stream stream, object? o, XmlSerializerNamespaces? namespaces)
         {
-            XmlTextWriter xmlWriter = new XmlTextWriter(stream, null);
-            xmlWriter.Formatting = Formatting.Indented;
-            xmlWriter.Indentation = 2;
+            XmlWriter xmlWriter = XmlWriter.Create(stream, new XmlWriterSettings() { Indent = true });
             Serialize(xmlWriter, o, namespaces);
         }
 
@@ -421,10 +417,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimDeserializationWarning)]
         public object? Deserialize(Stream stream)
         {
-            XmlTextReader xmlReader = new XmlTextReader(stream);
-            xmlReader.WhitespaceHandling = WhitespaceHandling.Significant;
-            xmlReader.Normalization = true;
-            xmlReader.XmlResolver = null;
+            XmlReader xmlReader = XmlReader.Create(stream, new XmlReaderSettings() { IgnoreWhitespace = true });
             return Deserialize(xmlReader, null);
         }
 
