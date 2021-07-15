@@ -479,20 +479,11 @@ namespace System.Net.Http.Functional.Tests
 
                 await clientDone.WaitAsync();
 
-                // There exist a rare situation, where PEER_RECEIVE_ABORTED event will arrive with a significant delay after peer calls AbortReceive
-                // In that case even with syncronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
+                // It is possible that PEER_RECEIVE_ABORTED event will arrive with a significant delay after peer calls AbortReceive
+                // In that case even with synchronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
                 // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
 
-                async Task SendForever()
-                {
-                    var buf = new byte[100];
-                    while (true)
-                    {
-                        await stream.SendDataFrameAsync(buf);
-                    }
-                }
-
-                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendForever().WaitAsync(TimeSpan.FromSeconds(10)));
+                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(10)));
                 Assert.Equal((type == CancellationType.CancellationToken ? 268 : 0xffffffff), ex.ErrorCode);
 
                 serverDone.Release();
@@ -542,6 +533,93 @@ namespace System.Net.Http.Functional.Tests
             });
 
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
+        public async Task ResponseCancellation_BothCancellationTokenAndDispose_Success()
+        {
+            if (UseQuicImplementationProvider != QuicImplementationProviders.MsQuic)
+            {
+                return;
+            }
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            using var clientDone = new SemaphoreSlim(0);
+            using var serverDone = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+
+                int contentLength = 2*1024*1024;
+                var headers = new List<HttpHeaderData>();
+                headers.Append(new HttpHeaderData("Content-Length", contentLength.ToString(CultureInfo.InvariantCulture)));
+
+                await stream.SendResponseHeadersAsync(HttpStatusCode.OK, headers).ConfigureAwait(false);
+                await stream.SendDataFrameAsync(new byte[1024]).ConfigureAwait(false);
+
+                await clientDone.WaitAsync();
+
+                // It is possible that PEER_RECEIVE_ABORTED event will arrive with a significant delay after peer calls AbortReceive
+                // In that case even with synchronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
+                // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
+
+                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(10)));
+                // exact error code depends on who won the race
+                Assert.True(ex.ErrorCode == 268 /* cancellation */ || ex.ErrorCode == 0xffffffff /* disposal */);
+
+                serverDone.Release();
+                });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
+
+                Stream stream = await response.Content.ReadAsStreamAsync();
+
+                int bytesRead = await stream.ReadAsync(new byte[1024]);
+                Assert.Equal(1024, bytesRead);
+
+                var cts = new CancellationTokenSource(200);
+                cts.Token.Register(() => response.Dispose());
+
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => stream.ReadAsync(new byte[1024], cancellationToken: cts.Token).AsTask());
+
+                // exact exception depends on who won the race
+                if (ex is not OperationCanceledException and not ObjectDisposedException)
+                {
+                    var ioe = Assert.IsType<IOException>(ex);
+                    var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
+                    Assert.IsType<QuicOperationAbortedException>(hre.InnerException);
+                }
+
+                clientDone.Release();
+                await serverDone.WaitAsync();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        private static async Task SendDataForever(Http3LoopbackStream stream)
+        {
+            var buf = new byte[100];
+            while (true)
+            {
+                await stream.SendDataFrameAsync(buf);
+            }
         }
 
         /// <summary>

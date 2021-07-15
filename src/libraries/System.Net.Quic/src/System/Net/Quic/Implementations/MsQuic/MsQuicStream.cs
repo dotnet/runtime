@@ -720,7 +720,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                     callShutdown = true;
                 }
 
-                if (_state.ReadState < ReadState.ReadsCompleted)
+                // We can enter Aborted state from both AbortRead call (aborts on the wire) and a Cancellation callback (only changes state)
+                // We need to ensure read is aborted on the wire here. We let msquic handle a second call to abort as a no-op
+                if (_state.ReadState < ReadState.ReadsCompleted || _state.ReadState == ReadState.Aborted)
                 {
                     abortRead = true;
                     completeRead = _state.ReadState == ReadState.PendingRead;
