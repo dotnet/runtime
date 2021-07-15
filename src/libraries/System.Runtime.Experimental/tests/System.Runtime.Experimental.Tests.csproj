@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Runtime.Tests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <FeatureGenericMath>true</FeatureGenericMath>
     <NoWarn>$(NoWarn),1718,SYSLIB0013</NoWarn>
