@@ -330,7 +330,7 @@ VARTYPE OleVariant::GetVarTypeForTypeHandle(TypeHandle type)
 
 #ifdef FEATURE_COMINTEROP
     // The wrapper types are only available when built-in COM is supported.
-    if (EEConfig::IsBuiltInCOMSupported())
+    if (g_pConfig->IsBuiltInCOMSupported())
     {
         if (CoreLibBinder::IsClass(pMT, CLASS__DISPATCH_WRAPPER))
             return VT_DISPATCH;
@@ -4861,7 +4861,7 @@ BOOL OleVariant::IsArrayOfWrappers(BASEARRAYREF *pArray, BOOL *pbOfInterfaceWrap
     }
     CONTRACTL_END;
 
-    if (!EEConfig::IsBuiltInComSupported())
+    if (!g_pConfig->IsBuiltInComSupported())
     {
         return FALSE;
     }
