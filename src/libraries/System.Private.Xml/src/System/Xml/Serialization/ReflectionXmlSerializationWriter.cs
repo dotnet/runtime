@@ -1206,6 +1206,7 @@ namespace System.Xml.Serialization
                 "Guid" => XmlConvert.ToString((Guid)o),
                 "Char" => XmlConvert.ToString((char)o),
                 "TimeSpan" => XmlConvert.ToString((TimeSpan)o),
+                "DateTimeOffset" => XmlConvert.ToString((DateTimeOffset)o),
                 _ => o.ToString()!,
             };
             return stringValue;
