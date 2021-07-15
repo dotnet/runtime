@@ -866,7 +866,6 @@ mono_debug_lookup_locals (MonoMethod *method, mono_bool ignore_pdb)
 		int idx = mono_metadata_token_index (method->token);
 		MonoDebugInformationEnc *mdie = (MonoDebugInformationEnc *) mono_metadata_update_get_updated_method_ppdb (img, idx);
 		if (mdie != NULL) {
-			int method_idx = mono_metadata_token_index (method->token);
 			res = mono_ppdb_lookup_locals_enc (mdie->image, mdie->idx);
 			if (res != NULL)
 				return res;
