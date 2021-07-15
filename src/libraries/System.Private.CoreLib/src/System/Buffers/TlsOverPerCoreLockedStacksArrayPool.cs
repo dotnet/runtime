@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -38,19 +37,15 @@ namespace System.Buffers
         /// <summary>A per-thread array of arrays, to cache one array per array size per thread.</summary>
         [ThreadStatic]
         private static T[]?[]? t_tlsBuckets;
+        /// <summary>Used to keep track of all thread local buckets for trimming if needed.</summary>
+        private readonly ConditionalWeakTable<T[]?[], object?> _allTlsBuckets = new ConditionalWeakTable<T[]?[], object?>();
         /// <summary>
         /// An array of per-core array stacks. The slots are lazily initialized to avoid creating
         /// lots of overhead for unused array sizes.
         /// </summary>
         private readonly PerCoreLockedStacks?[] _buckets = new PerCoreLockedStacks[NumBuckets];
-        /// <summary>Whether the GC callback has been created.</summary>
-        private int _callbackCreated;
-
-        /// <summary>
-        /// Used to keep track of all thread local buckets for trimming if needed
-        /// </summary>
-        private static readonly ConditionalWeakTable<T[]?[], object?>? s_allTlsBuckets =
-            Utilities.TrimBuffers ? new ConditionalWeakTable<T[]?[], object?>() : null;
+        /// <summary>Whether the callback to trim arrays in response to memory pressure has been created.</summary>
+        private int _trimCallbackCreated;
 
         /// <summary>Allocate a new PerCoreLockedStacks and try to store it into the <see cref="_buckets"/> array.</summary>
         private PerCoreLockedStacks CreatePerCoreLockedStacks(int bucketIndex)
@@ -111,15 +106,14 @@ namespace System.Buffers
             }
             else if (minimumLength == 0)
             {
-                // No need to log the empty array.  Our pool is effectively infinite
-                // and we'll never allocate for rents and never store for returns.
+                // We allow requesting zero-length arrays (even though pooling such an array isn't valuable)
+                // as it's a valid length array, and we want the pool to be usable in general instead of using
+                // `new`, even for computed lengths. But, there's no need to log the empty array.  Our pool is
+                // effectively infinite for empty arrays and we'll never allocate for rents and never store for returns.
                 return Array.Empty<T>();
             }
             else if (minimumLength < 0)
             {
-                // Arrays can't be smaller than zero.  We allow requesting zero-length arrays (even though
-                // pooling such an array isn't valuable) as it's a valid length array, and we want the pool
-                // to be usable in general instead of using `new`, even for computed lengths.
                 throw new ArgumentOutOfRangeException(nameof(minimumLength));
             }
 
@@ -149,7 +143,7 @@ namespace System.Buffers
             // this if the array being returned is erroneous or too large for the pool, but the
             // former condition is an error we don't need to optimize for, and the latter is incredibly
             // rare, given a max size of 1B elements.
-            T[]?[] tlsBuckets = t_tlsBuckets ?? InitializeTlsBuckets();
+            T[]?[] tlsBuckets = t_tlsBuckets ?? InitializeTlsBucketsAndTrimming();
 
             bool haveBucket = false;
             bool returned = true;
@@ -197,9 +191,6 @@ namespace System.Buffers
 
         public bool Trim()
         {
-            Debug.Assert(Utilities.TrimBuffers);
-            Debug.Assert(s_allTlsBuckets is not null);
-
             int milliseconds = Environment.TickCount;
             Utilities.MemoryPressure pressure = Utilities.GetMemoryPressure();
 
@@ -220,7 +211,7 @@ namespace System.Buffers
                 // Under high pressure, release all thread locals
                 if (log.IsEnabled())
                 {
-                    foreach (KeyValuePair<T[]?[], object?> tlsBuckets in s_allTlsBuckets)
+                    foreach (KeyValuePair<T[]?[], object?> tlsBuckets in _allTlsBuckets)
                     {
                         T[]?[] buckets = tlsBuckets.Key;
                         for (int i = 0; i < buckets.Length; i++)
@@ -237,7 +228,7 @@ namespace System.Buffers
                 }
                 else
                 {
-                    foreach (KeyValuePair<T[]?[], object?> tlsBuckets in s_allTlsBuckets)
+                    foreach (KeyValuePair<T[]?[], object?> tlsBuckets in _allTlsBuckets)
                     {
                         Array.Clear(tlsBuckets.Key);
                     }
@@ -247,51 +238,27 @@ namespace System.Buffers
             return true;
         }
 
-        private T[]?[] InitializeTlsBuckets()
+        private T[]?[] InitializeTlsBucketsAndTrimming()
         {
             Debug.Assert(t_tlsBuckets is null);
 
             T[]?[]? tlsBuckets = new T[NumBuckets][];
             t_tlsBuckets = tlsBuckets;
 
-            if (Utilities.TrimBuffers)
+            _allTlsBuckets.Add(tlsBuckets, null);
+            if (Interlocked.Exchange(ref _trimCallbackCreated, 1) == 0)
             {
-                Debug.Assert(s_allTlsBuckets is not null, "Should be non-null iff TrimBuffers is true");
-                s_allTlsBuckets.Add(tlsBuckets, null);
-                if (Interlocked.Exchange(ref _callbackCreated, 1) == 0)
-                {
-                    Gen2GcCallback.Register(Gen2GcCallbackFunc, this);
-                }
+                Gen2GcCallback.Register(s => ((TlsOverPerCoreLockedStacksArrayPool<T>)s).Trim(), this);
             }
 
             return tlsBuckets;
         }
 
-        /// <summary>
-        /// This is the static function that is called from the gen2 GC callback.
-        /// The input object is the instance we want the callback on.
-        /// </summary>
-        /// <remarks>
-        /// The reason that we make this function static and take the instance as a parameter is that
-        /// we would otherwise root the instance to the Gen2GcCallback object, leaking the instance even when
-        /// the application no longer needs it.
-        /// </remarks>
-        private static bool Gen2GcCallbackFunc(object target)
-        {
-            return ((TlsOverPerCoreLockedStacksArrayPool<T>)target).Trim();
-        }
-
-        /// <summary>
-        /// Stores a set of stacks of arrays, with one stack per core.
-        /// </summary>
+        /// <summary>Stores a set of stacks of arrays, with one stack per core.</summary>
         private sealed class PerCoreLockedStacks
         {
             /// <summary>Number of locked stacks to employ.</summary>
             private static readonly int s_lockedStackCount = Math.Min(Environment.ProcessorCount, MaxPerCorePerArraySizeStacks);
-#if TARGET_64BIT
-            /// <summary>Multiplier used to enable faster % operations on 64-bit.</summary>
-            private static readonly ulong s_fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)s_lockedStackCount);
-#endif
             /// <summary>The stacks.</summary>
             private readonly LockedStack[] _perCoreStacks;
 
@@ -314,12 +281,7 @@ namespace System.Buffers
                 // Try to push on to the associated stack first.  If that fails,
                 // round-robin through the other stacks.
                 LockedStack[] stacks = _perCoreStacks;
-                int index =
-#if TARGET_64BIT
-                    (int)HashHelpers.FastMod((uint)Thread.GetCurrentProcessorId(), (uint)stacks.Length, s_fastModMultiplier);
-#else
-                    Thread.GetCurrentProcessorId() % stacks.Length;
-#endif
+                int index = Thread.GetCurrentProcessorId() % stacks.Length;
                 for (int i = 0; i < stacks.Length; i++)
                 {
                     if (stacks[index].TryPush(array)) return true;
@@ -336,12 +298,7 @@ namespace System.Buffers
                 // Try to pop from the associated stack first.  If that fails, round-robin through the other stacks.
                 T[]? arr;
                 LockedStack[] stacks = _perCoreStacks;
-                int index =
-#if TARGET_64BIT
-                    (int)HashHelpers.FastMod((uint)Thread.GetCurrentProcessorId(), (uint)stacks.Length, s_fastModMultiplier);
-#else
-                    Thread.GetCurrentProcessorId() % stacks.Length;
-#endif
+                int index = Thread.GetCurrentProcessorId() % s_lockedStackCount; // when ProcessorCount is a power of two, the JIT can optimize this in tier 1
                 for (int i = 0; i < stacks.Length; i++)
                 {
                     if ((arr = stacks[index].TryPop()) is not null) return arr;
@@ -360,7 +317,7 @@ namespace System.Buffers
             }
         }
 
-        /// <summary>Provides a simple stack of arrays, protected by a lock.</summary>
+        /// <summary>Provides a simple, bounded stack of arrays, protected by a lock.</summary>
         private sealed class LockedStack
         {
             private readonly T[]?[] _arrays = new T[MaxBuffersPerArraySizePerCore][];
@@ -376,7 +333,7 @@ namespace System.Buffers
                 int count = _count;
                 if ((uint)count < (uint)arrays.Length)
                 {
-                    if (Utilities.TrimBuffers && count == 0)
+                    if (count == 0)
                     {
                         // Stash the time the bottom of the stack was filled
                         _firstStackItemMS = (uint)Environment.TickCount;
@@ -420,7 +377,10 @@ namespace System.Buffers
                 const int StackLargeTypeSize = 32;                              // If T is larger than this we'll trim an extra (additional) when under high pressure
 
                 if (_count == 0)
+                {
                     return;
+                }
+
                 uint trimTicks = pressure == Utilities.MemoryPressure.High ? StackHighTrimAfterMS : StackTrimAfterMS;
 
                 lock (this)

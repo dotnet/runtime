@@ -54,14 +54,5 @@ namespace System.Buffers
 
             return MemoryPressure.Low;
         }
-
-        internal static bool TrimBuffers { get; } =
-#if CORECLR
-            // Environment uses ArrayPool, so we have to hit the API directly.
-            CLRConfig.GetBoolValueWithFallbacks("System.Buffers.ArrayPool.TrimShared", "DOTNET_SYSTEM_BUFFERS_ARRAYPOOL_TRIMSHARED", defaultValue: true);
-#else
-            // P/Invokes are different for CoreCLR/RT- for RT we'll not allow enabling/disabling for now.
-            true;
-#endif
     }
 }
