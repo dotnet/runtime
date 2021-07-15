@@ -233,6 +233,8 @@
       <_EmBuilder Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.bat</_EmBuilder>
       <_EmBuilder Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.py</_EmBuilder>
       <_EmccCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_EmccCompileRsp>
+
+      <EmccDisableParallelCompile Condition="'$(EmccDisableParallelCompile)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">true</EmccDisableParallelCompile>
     </PropertyGroup>
 
     <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
@@ -242,7 +244,7 @@
     <!--<MakeDir Directories="$(WasmCachePath)" />-->
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
-    <EmccCompile SourceFiles="@(_WasmSourceFileToCompile)" Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <EmccCompile SourceFiles="@(_WasmSourceFileToCompile)" Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" DisableParallelCompile="$(EmccDisableParallelCompile)" />
   </Target>
 
   <Target Name="_WasmLinkDotNet">
