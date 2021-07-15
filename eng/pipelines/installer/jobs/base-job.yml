@@ -62,7 +62,6 @@ jobs:
 
   - name: SkipTests
     value: ${{ or(
-      not(in(parameters.archType, 'x64', 'x86')),
       eq(parameters.runtimeFlavor, 'mono'),
       eq(parameters.isOfficialBuild, true),
       eq(parameters.crossBuild, true),
