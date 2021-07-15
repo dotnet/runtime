@@ -4146,15 +4146,29 @@ void CodeGen::genCodeForShift(GenTree* tree)
         emitAttr size = emitTypeSize(tree);
 
         // Optimize "X<<1" to "lea [reg+reg]" or "add reg, reg"
-        if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() && shiftBy->IsIntegralConst(1))
+        // Optimize "X<<2" to "lea [reg*4]"
+        // Optimize "X<<3" to "lea [reg*8]"
+        if (tree->OperIs(GT_LSH) && !tree->gtOverflowEx() && !tree->gtSetFlags() &&
+            (shiftBy->IsIntegralConst(1) || shiftBy->IsIntegralConst(2) || shiftBy->IsIntegralConst(3)))
         {
-            if (tree->GetRegNum() == operandReg)
+            if (shiftBy->IsIntegralConst(1))
             {
-                GetEmitter()->emitIns_R_R(INS_add, size, tree->GetRegNum(), operandReg);
+                if (tree->GetRegNum() == operandReg)
+                {
+                    GetEmitter()->emitIns_R_R(INS_add, size, tree->GetRegNum(), operandReg);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_ARX(INS_lea, size, tree->GetRegNum(), operandReg, operandReg, 1, 0);
+                }
+            }
+            else if (shiftBy->IsIntegralConst(2))
+            {
+                GetEmitter()->emitIns_R_AX(INS_lea, size, tree->GetRegNum(), operandReg, 4, 0);
             }
             else
             {
-                GetEmitter()->emitIns_R_ARX(INS_lea, size, tree->GetRegNum(), operandReg, operandReg, 1, 0);
+                GetEmitter()->emitIns_R_AX(INS_lea, size, tree->GetRegNum(), operandReg, 8, 0);
             }
         }
         else
