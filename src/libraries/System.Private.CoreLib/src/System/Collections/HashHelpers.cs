@@ -15,6 +15,11 @@ namespace System.Collections
 
         public const int HashPrime = 101;
 
+#if SYSTEM_PRIVATE_CORELIB
+        // This field is shared between Dictionary and HashSet for initially empty collections and shouldn't be written to
+        public static readonly int[] SizeOneIntArray = new int[1];
+#endif
+
         // Table of prime numbers to use as hash table sizes.
         // A typical resize algorithm would pick the smallest prime number in this array
         // that is larger than twice the previous capacity.
@@ -87,6 +92,8 @@ namespace System.Collections
 
             return GetPrime(newSize);
         }
+
+        public static readonly ulong FastModMultiplierDivisor1 = GetFastModMultiplier(1);
 
         /// <summary>Returns approximate reciprocal of the divisor: ceil(2**64 / divisor).</summary>
         /// <remarks>This should only be used on 64-bit.</remarks>
