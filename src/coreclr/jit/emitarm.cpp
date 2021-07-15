@@ -1514,7 +1514,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm)
     bool      hasLR       = false;
     bool      hasPC       = false;
     bool      useT2       = false;
-    bool      isSingleBit = false; 
+    bool      isSingleBit = false;
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
