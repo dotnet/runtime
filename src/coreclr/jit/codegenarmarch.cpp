@@ -1125,58 +1125,6 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
     genProduceReg(tree);
 }
 
-//----------------------------------------------------------------------
-// genCodeForBitCast - Generate code for a GT_BITCAST that is not contained
-//
-// Arguments
-//    treeNode - the GT_BITCAST for which we're generating code
-//
-void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
-{
-    regNumber targetReg  = treeNode->GetRegNum();
-    var_types targetType = treeNode->TypeGet();
-    GenTree*  op1        = treeNode->gtGetOp1();
-    genConsumeRegs(op1);
-    if (op1->isContained())
-    {
-        assert(op1->IsLocal() || op1->isIndir());
-        op1->gtType = treeNode->TypeGet();
-        op1->SetRegNum(targetReg);
-        op1->ClearContained();
-        JITDUMP("Changing type of BITCAST source to load directly.");
-        genCodeForTreeNode(op1);
-    }
-    else if (varTypeUsesFloatReg(treeNode) != varTypeUsesFloatReg(op1))
-    {
-        regNumber srcReg = op1->GetRegNum();
-        assert(genTypeSize(op1->TypeGet()) == genTypeSize(targetType));
-#ifdef TARGET_ARM
-        if (genTypeSize(targetType) == 8)
-        {
-            // Converting between long and double on ARM is a special case.
-            if (targetType == TYP_LONG)
-            {
-                regNumber otherReg = treeNode->AsMultiRegOp()->gtOtherReg;
-                assert(otherReg != REG_NA);
-                inst_RV_RV_RV(INS_vmov_d2i, targetReg, otherReg, srcReg, EA_8BYTE);
-            }
-            else
-            {
-                NYI_ARM("Converting from long to double");
-            }
-        }
-        else
-#endif // TARGET_ARM
-        {
-            inst_Mov(targetType, targetReg, srcReg, /* canSkip */ false);
-        }
-    }
-    else
-    {
-        inst_Mov(targetType, targetReg, genConsumeReg(op1), /* canSkip */ false);
-    }
-}
-
 #if FEATURE_ARG_SPLIT
 //---------------------------------------------------------------------
 // genPutArgSplit - generate code for a GT_PUTARG_SPLIT node

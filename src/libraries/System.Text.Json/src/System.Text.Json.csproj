@@ -97,6 +97,7 @@
     <Compile Include="System\Text\Json\Serialization\IJsonOnSerialized.cs" />
     <Compile Include="System\Text\Json\Serialization\IJsonOnSerializing.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerContext.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\FSharpCoreReflectionProxy.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Collections.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Converters.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoInternalOfT.cs" />
@@ -132,6 +133,12 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ListOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\QueueOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOfTConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpListConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpMapConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpSetConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpTypeConverterFactory.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpOptionConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\FSharp\FSharpValueOptionConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonArrayConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonNodeConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonNodeConverterFactory.cs" />

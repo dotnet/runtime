@@ -561,5 +561,13 @@ namespace System.Text.Json.SourceGeneration.Tests
 
             JsonTestHelper.AssertJsonEqual(expectedJson, Encoding.UTF8.GetString(ms.ToArray()));
         }
+
+        [Fact]
+        public void PropertyOrdering()
+        {
+            MyTypeWithPropertyOrdering obj = new();
+            string json = JsonSerializer.Serialize(obj, DefaultContext.MyTypeWithPropertyOrdering);
+            Assert.Equal("{\"C\":0,\"B\":0,\"A\":0}", json);
+        }
     }
 }

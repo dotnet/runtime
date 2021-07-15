@@ -18,10 +18,11 @@ namespace System.Net.Http.Functional.Tests
         private async Task ValidateConnectTimeout(HttpMessageInvoker invoker, Uri uri, int minElapsed, int maxElapsed)
         {
             var sw = Stopwatch.StartNew();
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
                 invoker.SendAsync(TestAsync, new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion }, default));
             sw.Stop();
 
+            Assert.IsType<TimeoutException>(oce.InnerException);
             Assert.InRange(sw.ElapsedMilliseconds, minElapsed, maxElapsed);
         }
 
@@ -51,8 +52,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [Fact]
-        public async Task ConnectTimeout_ConnectCallbackTimesOut_Throws()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectTimeout_ConnectCallbackTimesOut_Throws(bool useSsl)
         {
             if (UseVersion == HttpVersion.Version30)
             {
@@ -71,7 +74,49 @@ namespace System.Net.Http.Functional.Tests
 
                     await ValidateConnectTimeout(invoker, uri, 500, 85_000);
                 }
-            }, server => Task.CompletedTask); // doesn't actually connect to server
+            }, server => Task.CompletedTask, // doesn't actually connect to server
+            options: new GenericLoopbackOptions() { UseSsl = useSsl });
+        }
+
+        [OuterLoop]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectTimeout_PlaintextStreamFilterTimesOut_Throws(bool useSsl)
+        {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                // HTTP3 does not support PlaintextStreamFilter
+                return;
+            }
+
+            var releaseServer = new TaskCompletionSource();
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using (var handler = CreateHttpClientHandler())
+                using (var invoker = new HttpMessageInvoker(handler))
+                {
+                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    var socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
+                    socketsHandler.ConnectTimeout = TimeSpan.FromSeconds(1);
+                    socketsHandler.PlaintextStreamFilter = async (context, token) => { await Task.Delay(-1, token); return null; };
+
+                    await ValidateConnectTimeout(invoker, uri, 500, 85_000);
+
+                    releaseServer.SetResult();
+                }
+            },
+            async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionAsync(async c =>
+                    {
+                        await releaseServer.Task;
+                    });
+                }
+                catch (Exception) { } // Eat exception from client timing out
+            }, options: new GenericLoopbackOptions() { UseSsl = useSsl });
         }
 
         [OuterLoop("Incurs significant delay")]
