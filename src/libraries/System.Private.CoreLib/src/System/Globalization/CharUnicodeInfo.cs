@@ -260,18 +260,13 @@ namespace System.Globalization
 
             ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(UppercaseValues));
             ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
-            nint delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
-            return (char)(delta + (nint)codePoint);
+            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+            return (char)(delta + codePoint);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static uint ToUpper(uint codePoint)
         {
-            if (UnicodeUtility.IsBmpCodePoint(codePoint))
-            {
-                return ToUpper((char)codePoint);
-            }
-
             if (!UnicodeUtility.IsValidCodePoint(codePoint))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.codePoint);
@@ -284,8 +279,8 @@ namespace System.Globalization
 
             ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(UppercaseValues));
             ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
-            nint delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
-            return (uint)(delta + (nint)codePoint);
+            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+            return (uint)delta + codePoint;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -298,8 +293,8 @@ namespace System.Globalization
 
             ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(LowercaseValues));
             ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
-            nint delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
-            return (char)(delta + (nint)codePoint);
+            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+            return (char)(delta + codePoint);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -317,8 +312,8 @@ namespace System.Globalization
 
             ref short rsStart = ref Unsafe.As<byte, short>(ref MemoryMarshal.GetReference(LowercaseValues));
             ref short rsDelta = ref Unsafe.Add(ref rsStart, (nint)offset);
-            nint delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
-            return (uint)(delta + (int)codePoint);
+            int delta = (BitConverter.IsLittleEndian) ? rsDelta : BinaryPrimitives.ReverseEndianness(rsDelta);
+            return (uint)delta + codePoint;
         }
 
         /*

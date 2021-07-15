@@ -176,9 +176,7 @@ namespace System.Globalization
                     if (char.IsLowSurrogate(cl))
                     {
                         // well formed surrogates
-                        SurrogateCasing.ToUpper(c, cl, out char h, out char l);
-                        destination[i]   = h;
-                        destination[i+1] = l;
+                        SurrogateCasing.ToUpper(c, cl, out destination[i], out destination[i+1]);
                         i++; // skip the low surrogate
                         continue;
                     }

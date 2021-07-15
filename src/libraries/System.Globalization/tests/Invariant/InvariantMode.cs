@@ -385,6 +385,14 @@ namespace System.Globalization.Tests
             yield return new object[] { "llegar", "lugar", CompareOptions.None, -1 };
 
             yield return new object[] { "\u3042", "\u30A1", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, -1 };
+
+            // Surrogates
+
+            yield return new object[] { "Hello\uFE6A", "Hello\U0001F601", CompareOptions.IgnoreCase, -1 };
+            yield return new object[] { "Hello\U0001F601", "Hello\uFE6A", CompareOptions.IgnoreCase,  1 };
+            yield return new object[] { "\uDBFF", "\uD800\uDC00", CompareOptions.IgnoreCase,  -1 };
+            yield return new object[] { "\uD800\uDC00", "\uDBFF", CompareOptions.IgnoreCase,   1 };
+            yield return new object[] { "abcdefg\uDBFF", "abcdefg\uD800\uDC00", CompareOptions.IgnoreCase,  -1 };
         }
 
         public static IEnumerable<object[]> ToLower_TestData()

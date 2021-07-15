@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -159,6 +160,23 @@ namespace System.Globalization
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (uint, int) GetScalar(ref char charA, int index, int length)
+        {
+            if (!char.IsHighSurrogate(charA) || index >= length - 1)
+            {
+                return ((uint)charA, 1);
+            }
+
+            ref char charB = ref Unsafe.Add(ref charA, 1);
+            if (!char.IsLowSurrogate(charB))
+            {
+                return ((uint)charA, 1);
+            }
+
+            return (UnicodeUtility.GetScalarFromUtf16SurrogatePair(charA, charB), 2);
+        }
+
         internal static int CompareStringIgnoreCase(ref char strA, int lengthA, ref char strB, int lengthB)
         {
             Debug.Assert(GlobalizationMode.Invariant);
@@ -168,76 +186,35 @@ namespace System.Globalization
             ref char charA = ref strA;
             ref char charB = ref strB;
 
-            while (length != 0)
+            int index = 0;
+
+            while (index < length)
             {
-                if (!char.IsHighSurrogate(charA) || !char.IsHighSurrogate(charB))
+                (uint codePointA, int codePointLengthA) = GetScalar(ref charA, index, lengthA);
+                (uint codePointB, int codePointLengthB) = GetScalar(ref charB, index, lengthB);
+
+                if (codePointA == codePointB)
                 {
-                    if (charA == charB)
-                    {
-                        length--;
-                        charA = ref Unsafe.Add(ref charA, 1);
-                        charB = ref Unsafe.Add(ref charB, 1);
-                        continue;
-                    }
-
-                    char aUpper = ToUpper(charA);
-                    char bUpper = ToUpper(charB);
-
-                    if (aUpper == bUpper)
-                    {
-                        length--;
-                        charA = ref Unsafe.Add(ref charA, 1);
-                        charB = ref Unsafe.Add(ref charB, 1);
-                        continue;
-                    }
-
-                    return aUpper - bUpper;
-                }
-
-                if (length == 1)
-                {
-                    return charA - charB;
-                }
-
-                // We come here only if we have valid high surrogates and length > 1
-
-                char a = charA;
-                char b = charB;
-
-                length--;
-                charA = ref Unsafe.Add(ref charA, 1);
-                charB = ref Unsafe.Add(ref charB, 1);
-
-                if (!char.IsLowSurrogate(charA) || !char.IsLowSurrogate(charB))
-                {
-                    // malformed Surrogates - should be rare cases
-                    if (a != b)
-                    {
-                        return a - b;
-                    }
-
-                    // Should be pointing to the right characters in the string to resume at.
-                    // Just in case we could be pointing at high surrogate now.
+                    Debug.Assert(codePointLengthA == codePointLengthB);
+                    index += codePointLengthA;
+                    charA = ref Unsafe.Add(ref charA, codePointLengthA);
+                    charB = ref Unsafe.Add(ref charB, codePointLengthB);
                     continue;
                 }
 
-                // we come here only if we have valid full surrogates
-                SurrogateCasing.ToUpper(a, charA, out char h1, out char l1);
-                SurrogateCasing.ToUpper(b, charB, out char h2, out char l2);
+                uint aUpper = CharUnicodeInfo.ToUpper(codePointA);
+                uint bUpper = CharUnicodeInfo.ToUpper(codePointB);
 
-                if (h1 != h2)
+                if (aUpper == bUpper)
                 {
-                    return (int)h1 - (int)h2;
+                    Debug.Assert(codePointLengthA == codePointLengthB);
+                    index += codePointLengthA;
+                    charA = ref Unsafe.Add(ref charA, codePointLengthA);
+                    charB = ref Unsafe.Add(ref charB, codePointLengthB);
+                    continue;
                 }
 
-                if (l1 != l2)
-                {
-                    return (int)l1 - (int)l2;
-                }
-
-                length--;
-                charA = ref Unsafe.Add(ref charA, 1);
-                charB = ref Unsafe.Add(ref charB, 1);
+                return (int)codePointA - (int)codePointB;
             }
 
             return lengthA - lengthB;

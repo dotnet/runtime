@@ -1451,7 +1451,7 @@ namespace System.Text
 
             if (GlobalizationMode.Invariant)
             {
-                return UnsafeCreate(value.IsBmp ? CharUnicodeInfo.ToUpper((char) value._value) : CharUnicodeInfo.ToUpper(value._value));
+                return UnsafeCreate(CharUnicodeInfo.ToUpper(value._value));
             }
 
             // Non-ASCII data requires going through the case folding tables.
