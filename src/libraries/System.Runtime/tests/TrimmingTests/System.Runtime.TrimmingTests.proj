@@ -35,6 +35,9 @@
       as this test will ensure exceptions are using Resource keys -->
       <ExtraTrimmerArgs>--feature System.Resources.UseSystemResourceKeys true</ExtraTrimmerArgs>
     </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="TypeBuilderComDisabled.cs">
+      <ExtraTrimmerArgs>--feature System.Runtime.InteropServices.BuiltInComInterop.IsSupported false</ExtraTrimmerArgs>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
