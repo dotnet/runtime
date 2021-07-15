@@ -5195,13 +5195,11 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
                     : dividend->gtGetOp2()->IsCnsIntOrI() ? dividend->gtGetOp2()->AsIntCon()->IconValue() : 0);
             if (maskCns)
             {
-                DWORD index;
-#ifdef TARGET_64BIT
-                _BitScanReverse64(&index, maskCns);
-#else
-                _BitScanReverse(&index, maskCns);
-#endif
-                bits = index + 1;
+                unsigned maskBits = 1;
+                while (maskCns >>= 1)
+                    maskBits++;
+                if (maskBits < bits)
+                    bits = maskBits;
             }
         }
         else if (dividend->OperIs(GT_RSZ) && dividend->gtGetOp2()->IsCnsIntOrI())
