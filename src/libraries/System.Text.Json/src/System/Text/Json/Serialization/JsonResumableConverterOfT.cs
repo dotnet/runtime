@@ -45,6 +45,6 @@ namespace System.Text.Json.Serialization
             }
         }
 
-        public override bool HandleNull => false;
+        public sealed override bool HandleNull => false;
     }
 }

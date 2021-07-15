@@ -35,11 +35,6 @@ namespace System.Text.Json.Serialization
         internal bool CanBePolymorphic { get; set; }
 
         /// <summary>
-        /// When set, indicates a non-value converter that is capable of writing or reading simple JSON values.
-        /// </summary>
-        internal bool CanWriteJsonValues { get; set; }
-
-        /// <summary>
         /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
         /// </summary>
         internal virtual object CreateObject(JsonSerializerOptions options)
