@@ -5190,9 +5190,9 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         if (dividend->OperIs(GT_AND))
         {
             size_t maskCns = static_cast<size_t>(
-                dividend->gtGetOp1()->IsCnsIntOrI()   ? dividend->gtGetOp1()->AsIntCon()->IconValue()
-                : dividend->gtGetOp2()->IsCnsIntOrI() ? dividend->gtGetOp2()->AsIntCon()->IconValue()
-                                                      : 0);
+                dividend->gtGetOp1()->IsCnsIntOrI()
+                    ? dividend->gtGetOp1()->AsIntCon()->IconValue()
+                    : dividend->gtGetOp2()->IsCnsIntOrI() ? dividend->gtGetOp2()->AsIntCon()->IconValue() : 0);
             if (maskCns)
             {
                 DWORD index;
