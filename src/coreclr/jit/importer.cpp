@@ -19631,10 +19631,17 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         }
 
         GenTree* actualArg = use.GetNode();
-        if ((actualArg->OperIsUnary() && actualArg->gtGetOp1()->OperIsConst()) ||
-            (actualArg->OperIsBinary() && actualArg->gtGetOp1()->OperIsConst() && actualArg->gtGetOp2()->OperIsConst()))
+        if (actualArg != nullptr)
         {
-            actualArg = gtFoldExprConst(actualArg);
+            if (actualArg->OperIsUnary() && actualArg->gtGetOp1()->OperIsConst())
+            {
+                actualArg = gtFoldExprConst(actualArg);
+            }
+            else if (actualArg->OperIsBinary() && actualArg->gtGetOp1()->OperIsConst() &&
+                     (actualArg->gtGetOp2IfPresent() != nullptr) && actualArg->gtGetOp2IfPresent()->OperIsConst())
+            {
+                actualArg = gtFoldExprConst(actualArg);
+            }
         }
 
         impInlineRecordArgInfo(pInlineInfo, actualArg, argCnt, inlineResult);
