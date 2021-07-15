@@ -1483,6 +1483,42 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void NumberHandlingIsIgnoredByValueConverter_Enumerable()
+        {
+            var options = new JsonSerializerOptions(s_optionReadAndWriteFromStr)
+            {
+                Converters = { new IntConverter() }
+            };
+            string json = @"[1]";
+            List<int> obj = JsonSerializer.Deserialize<List<int>>(json, options);
+
+            Assert.Collection(obj, v => Assert.Equal(42, v));
+            Assert.Equal(json, JsonSerializer.Serialize(obj, options));
+        }
+
+        [Fact]
+        public static void NumberHandlingIsIgnoredByValueConverter_Dictionary()
+        {
+            var options = new JsonSerializerOptions(s_optionReadAndWriteFromStr)
+            {
+                Converters = { new IntConverter() }
+            };
+            string json = @"{""Key"":1}";
+            Dictionary<string, int> obj = JsonSerializer.Deserialize<Dictionary<string, int>>(json, options);
+
+            Assert.Collection(obj, kvp => Assert.Equal(42, kvp.Value));
+            Assert.Equal(json, JsonSerializer.Serialize(obj, options));
+        }
+
+        private class IntConverter : JsonConverter<int>
+        {
+            public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => 42;
+            public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+                => writer.WriteNumberValue(1);
+        }
+
+        [Fact]
         [ActiveIssue("Need to tweak number handling option registration following code-gen support.")]
         public static void Attribute_NotAllowed_On_NonNumber_NonCollection_Property()
         {

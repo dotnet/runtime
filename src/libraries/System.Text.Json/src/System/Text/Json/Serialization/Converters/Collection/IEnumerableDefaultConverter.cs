@@ -41,6 +41,10 @@ namespace System.Text.Json.Serialization.Converters
             [MaybeNullWhen(false)] out TCollection value)
         {
             JsonTypeInfo elementTypeInfo = state.Current.JsonTypeInfo.ElementTypeInfo!;
+            if (!state.Current.JsonTypeInfo.NumberHandlingIsApplicableToElementType)
+            {
+                state.Current.NumberHandling = null;
+            }
 
             if (state.UseFastPath)
             {
