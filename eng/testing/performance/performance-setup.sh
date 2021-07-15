@@ -275,7 +275,7 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
         # copy wasm build drop to the location that aot build expects
         rsync -a --progress $wasm_dotnet_path/artifacts/BrowserWasm/artifacts/* $wasm_dotnet_path/artifacts
         rm -r $wasm_dotnet_path/artifacts/BrowserWasm/artifacts
-        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --aotcompilermode wasm --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --buildTimeout 3600 --keepfiles --cli \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/dotnet.sh" 
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --aotcompilermode wasm --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --buildTimeout 3600 --keepfiles" 
     else
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --keepfiles"
     fi
