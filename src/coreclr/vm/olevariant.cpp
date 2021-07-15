@@ -4861,7 +4861,7 @@ BOOL OleVariant::IsArrayOfWrappers(BASEARRAYREF *pArray, BOOL *pbOfInterfaceWrap
     }
     CONTRACTL_END;
 
-    if (!g_pConfig->IsBuiltInComSupported())
+    if (!g_pConfig->IsBuiltInCOMSupported())
     {
         return FALSE;
     }
