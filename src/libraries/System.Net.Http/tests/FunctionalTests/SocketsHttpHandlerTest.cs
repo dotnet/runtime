@@ -2089,6 +2089,7 @@ namespace System.Net.Http.Functional.Tests
                 List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
                 List<Http2LoopbackConnection> connections = new List<Http2LoopbackConnection>();
                 List<int> acceptedStreams = new List<int>();
+                
                 for (int i = 0; i < 3; i++)
                 {
                     Http2LoopbackConnection connection = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
