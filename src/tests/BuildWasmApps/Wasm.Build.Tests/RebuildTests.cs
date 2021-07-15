@@ -39,7 +39,6 @@ namespace Wasm.Build.Tests
                 nodeArgs = $"\n<ForNode>true</ForNode>\n<JSEngine>NodeJS</JSEngine>";
             }
             buildArgs = ExpandBuildArgs(buildArgs, $"{buildNative}{nodeArgs}");
-            buildArgs = ExpandBuildArgs(buildArgs, $"{buildNative}");
 
             BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
