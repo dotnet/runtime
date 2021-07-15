@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -45,10 +46,10 @@ namespace System.Runtime.CompilerServices
 
             int hashShift = HashShift(ref tableData);
 #if TARGET_64BIT
-            ulong hash = (((ulong)source << 32) | ((ulong)source >> 32)) ^ (ulong)target;
+            ulong hash = BitOperations.RotateLeft((ulong)source, 32) ^ (ulong)target;
             return (int)((hash * 11400714819323198485ul) >> hashShift);
 #else
-            uint hash = (((uint)source >> 16) | ((uint)source << 16)) ^ (uint)target;
+            uint hash = BitOperations.RotateLeft((uint)source, 16) ^ (uint)target;
             return (int)((hash * 2654435769u) >> hashShift);
 #endif
         }
