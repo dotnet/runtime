@@ -54,7 +54,7 @@ static void
 hot_reload_effective_table_slow (const MonoTableInfo **t, int *idx);
 
 static void
-hot_reload_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error);
+hot_reload_apply_changes (int origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error);
 
 static int
 hot_reload_relative_delta_index (MonoImage *image_dmeta, int token);
@@ -1349,12 +1349,23 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
  * LOCKING: Takes the publish_lock
  */
 void
-hot_reload_apply_changes (MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes_orig, uint32_t dil_length, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error)
+hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_length, gconstpointer dil_bytes_orig, uint32_t dil_length, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error)
 {
 	if (!assembly_update_supported (image_base->assembly)) {
 		mono_error_set_invalid_operation (error, "The assembly can not be edited or changed.");
 		return;
 	}
+
+        static int first_origin = -1;
+
+        if (first_origin < 0) {
+                first_origin = origin;
+        }
+
+        if (first_origin != origin) {
+                mono_error_set_not_supported (error, "Applying deltas through the debugger and System.Reflection.Metadata.MetadataUpdater.ApplyUpdate simultaneously is not supported");
+                return;
+        }
 
 	const char *basename = image_base->filename;
 
