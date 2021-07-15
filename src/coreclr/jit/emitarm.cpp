@@ -634,7 +634,7 @@ bool emitter::emitInsMayWriteMultipleRegs(instrDesc* id)
         case INS_vmov_d2i:
             return true;
         case INS_pop:
-            if (fmt != IF_T2_E2) //T2_E2 is pop single register encoding
+            if (fmt != IF_T2_E2) // T2_E2 is pop single register encoding
             {
                 return true;
             }
@@ -1510,10 +1510,10 @@ void emitter::emitIns(instruction ins)
 
 void emitter::emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm)
 {
-    insFormat fmt    = IF_NONE;
-    bool      hasLR  = false;
-    bool      hasPC  = false;
-    bool      useT2  = false;
+    insFormat fmt         = IF_NONE;
+    bool      hasLR       = false;
+    bool      hasPC       = false;
+    bool      useT2       = false;
     bool      isSingleBit = false; 
     /* Figure out the encoding format of the instruction */
     switch (ins)
