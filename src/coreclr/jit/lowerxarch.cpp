@@ -280,6 +280,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
             const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+            INDEBUG(const LclVarDsc* lvlVar = comp->lvaGetDesc(srcLclNum););
+            assert(comp->lvaVarDoNotEnregister(srcLclNum) || lvlVar->HasGCPtr());
             comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(Compiler::DNER_BlockOp));
         }
 
