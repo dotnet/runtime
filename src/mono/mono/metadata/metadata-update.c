@@ -73,9 +73,9 @@ mono_image_relative_delta_index (MonoImage *image_dmeta, int token)
 }
 
 void
-mono_image_load_enc_delta (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb, uint32_t dpdb_len, MonoError *error)
+mono_image_load_enc_delta (int origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb, uint32_t dpdb_len, MonoError *error)
 {
-	mono_component_hot_reload ()->apply_changes (base_image, dmeta, dmeta_len, dil, dil_len, dpdb, dpdb_len, error);
+	mono_component_hot_reload ()->apply_changes (origin, base_image, dmeta, dmeta_len, dil, dil_len, dpdb, dpdb_len, error);
 	if (is_ok (error)) {
 		mono_component_debugger ()->send_enc_delta (base_image, dmeta, dmeta_len, dpdb, dpdb_len);
 	}
