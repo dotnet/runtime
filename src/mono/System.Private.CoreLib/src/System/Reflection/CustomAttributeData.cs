@@ -152,30 +152,28 @@ namespace System.Reflection
 
         public virtual Type AttributeType
         {
-            get { return ctorInfo.DeclaringType!; }
+            get { return Constructor.DeclaringType!; }
         }
 
         public override string ToString()
         {
-            ResolveArguments();
-
             StringBuilder sb = new StringBuilder();
 
-            sb.Append('[').Append(ctorInfo.DeclaringType!.FullName).Append('(');
-            for (int i = 0; i < ctorArgs.Count; i++)
+            sb.Append('[').Append(Constructor.DeclaringType!.FullName).Append('(');
+            for (int i = 0; i < ConstructorArguments.Count; i++)
             {
-                sb.Append(ctorArgs[i].ToString());
-                if (i + 1 < ctorArgs.Count)
+                sb.Append(ConstructorArguments[i].ToString());
+                if (i + 1 < ConstructorArguments.Count)
                     sb.Append(", ");
             }
 
-            if (namedArgs.Count > 0)
+            if (NamedArguments.Count > 0)
                 sb.Append(", ");
 
-            for (int j = 0; j < namedArgs.Count; j++)
+            for (int j = 0; j < NamedArguments.Count; j++)
             {
-                sb.Append(namedArgs[j].ToString());
-                if (j + 1 < namedArgs.Count)
+                sb.Append(NamedArguments[j].ToString());
+                if (j + 1 < NamedArguments.Count)
                     sb.Append(", ");
             }
             sb.Append(")]");
