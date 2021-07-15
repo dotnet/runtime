@@ -445,7 +445,7 @@ namespace System.Net.Quic.Tests
                 {
                     await clientStream.WriteAsync(new byte[1]);
                     sem.Release();
-                    clientStream.Shutdown();
+                    clientStream.CompleteWrites();
                     sem.Release();
                 },
                 async serverStream =>

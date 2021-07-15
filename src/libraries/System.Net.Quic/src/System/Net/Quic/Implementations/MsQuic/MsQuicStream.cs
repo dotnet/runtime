@@ -567,7 +567,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             await _state.ShutdownCompletionSource.Task.ConfigureAwait(false);
         }
 
-        internal override void Shutdown()
+        internal override void CompleteWrites()
         {
             ThrowIfDisposed();
 

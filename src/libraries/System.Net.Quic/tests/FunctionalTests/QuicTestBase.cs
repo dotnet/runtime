@@ -157,7 +157,7 @@ namespace System.Net.Quic.Tests
 
                     await clientFunction(stream);
 
-                    stream.Shutdown();
+                    stream.CompleteWrites();
                     await stream.ShutdownCompleted();
                 },
                 serverFunction: async connection =>
@@ -167,7 +167,7 @@ namespace System.Net.Quic.Tests
 
                     await serverFunction(stream);
 
-                    stream.Shutdown();
+                    stream.CompleteWrites();
                     await stream.ShutdownCompleted();
                 },
                 iterations,
