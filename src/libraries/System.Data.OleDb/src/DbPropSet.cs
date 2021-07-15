@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Data.OleDb
 {
-    internal sealed class DBPropSet : SafeHandle
+    internal sealed partial class DBPropSet : SafeHandle
     {
         private readonly int propertySetCount;
 
@@ -94,21 +94,6 @@ namespace System.Data.OleDb
                 // remember the last HRESULT. Note we do not want to raise exception now to avoid breaking change from Orcas RTM/SP1
                 SetLastErrorInfo(hr);
             }
-        }
-
-        private void SetLastErrorInfo(OleDbHResult lastErrorHr)
-        {
-            // note: OleDbHResult is actually a simple wrapper over HRESULT with OLEDB-specific codes
-            UnsafeNativeMethods.IErrorInfo? errorInfo = null;
-            string message = string.Empty;
-
-            OleDbHResult errorInfoHr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
-            if ((errorInfoHr == OleDbHResult.S_OK) && (errorInfo != null))
-            {
-                ODB.GetErrorDescription(errorInfo, lastErrorHr, out message);
-                // note that either GetErrorInfo or GetErrorDescription might fail in which case we will have only the HRESULT value in exception message
-            }
-            lastErrorFromProvider = new COMException(message, (int)lastErrorHr);
         }
 
         public override bool IsInvalid

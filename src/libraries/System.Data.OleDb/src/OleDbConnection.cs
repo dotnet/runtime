@@ -488,30 +488,6 @@ namespace System.Data.OleDb
             return result;
         }
 
-        internal void OnInfoMessage(UnsafeNativeMethods.IErrorInfo errorInfo, OleDbHResult errorCode)
-        {
-            OleDbInfoMessageEventHandler? handler = (OleDbInfoMessageEventHandler?)Events[EventInfoMessage];
-            if (null != handler)
-            {
-                try
-                {
-                    OleDbException exception = OleDbException.CreateException(errorInfo, errorCode, null);
-                    OleDbInfoMessageEventArgs e = new OleDbInfoMessageEventArgs(exception);
-                    handler(this, e);
-                }
-                catch (Exception e)
-                { // eat the exception
-                    // UNDONE - should not be catching all exceptions!!!
-                    if (!ADP.IsCatchableOrSecurityExceptionType(e))
-                    {
-                        throw;
-                    }
-
-                    ADP.TraceExceptionWithoutRethrow(e);
-                }
-            }
-        }
-
         public override void Open()
         {
             InnerConnection.OpenConnection(this, ConnectionFactory);
@@ -571,64 +547,6 @@ namespace System.Data.OleDb
         internal OleDbTransaction? ValidateTransaction(OleDbTransaction? transaction, string method)
         {
             return GetOpenConnection().ValidateTransaction(transaction, method);
-        }
-
-        internal static Exception? ProcessResults(OleDbHResult hresult, OleDbConnection? connection, object? src)
-        {
-            if ((0 <= (int)hresult) && ((null == connection) || (null == connection.Events[EventInfoMessage])))
-            {
-                SafeNativeMethods.Wrapper.ClearErrorInfo();
-                return null;
-            }
-
-            // ErrorInfo object is to be checked regardless the hresult returned by the function called
-            Exception? e = null;
-            UnsafeNativeMethods.IErrorInfo? errorInfo = null;
-            OleDbHResult hr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
-            if ((OleDbHResult.S_OK == hr) && (null != errorInfo))
-            {
-                if (hresult < 0)
-                {
-                    // UNDONE: if authentication failed - throw a unique exception object type
-                    //if (/*OLEDB_Error.DB_SEC_E_AUTH_FAILED*/unchecked((int)0x80040E4D) == hr) {
-                    //}
-                    //else if (/*OLEDB_Error.DB_E_CANCELED*/unchecked((int)0x80040E4E) == hr) {
-                    //}
-                    // else {
-                    e = OleDbException.CreateException(errorInfo, hresult, null);
-                    //}
-
-                    if (OleDbHResult.DB_E_OBJECTOPEN == hresult)
-                    {
-                        e = ADP.OpenReaderExists(e);
-                    }
-
-                    ResetState(connection);
-                }
-                else if (null != connection)
-                {
-                    connection.OnInfoMessage(errorInfo, hresult);
-                }
-                else
-                {
-                }
-                Marshal.ReleaseComObject(errorInfo);
-            }
-            else if (0 < hresult)
-            {
-                // @devnote: OnInfoMessage with no ErrorInfo
-            }
-            else if ((int)hresult < 0)
-            {
-                e = ODB.NoErrorInformation((null != connection) ? connection.Provider : null, hresult, null); // OleDbException
-
-                ResetState(connection);
-            }
-            if (null != e)
-            {
-                ADP.TraceExceptionAsReturnValue(e);
-            }
-            return e;
         }
 
         // @devnote: should be multithread safe
