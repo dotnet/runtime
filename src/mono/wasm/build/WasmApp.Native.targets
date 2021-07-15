@@ -102,7 +102,14 @@
         See https://github.com/dotnet/runtime/issues/53367 for the motivating issue
       -->
       <EmscriptenEnvVars Include="PYTHONUTF8=1" />
+
+      <EmscriptenEnvVars Include="FROZEN_CACHE=" />
+
+      <!--<EmscriptenEnvVars Include="PYTHONPATH=$(_EmscriptenPython)$(_PathSeparator)$([MSBuild]::Escape($(PYTHONPATH)))" />-->
     </ItemGroup>
+
+    <Exec Command="python3 --version; which python3; python --version; which python" IgnoreExitCode="true" />
+    <Exec Command="python3 --version; where python3; python --version; where python" IgnoreExitCode="true" />
   </Target>
 
   <Target Name="_SetWasmBuildNativeDefaults">
@@ -226,15 +233,18 @@
       <_EmBuilder Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.bat</_EmBuilder>
       <_EmBuilder Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.py</_EmBuilder>
       <_EmccCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_EmccCompileRsp>
+
+      <EmccDisableParallelCompile Condition="'$(EmccDisableParallelCompile)' == '' and $([MSBuild]::IsOSPlatform('WINDOWS'))">true</EmccDisableParallelCompile>
     </PropertyGroup>
 
     <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
     <!-- warm up the cache -->
-    <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
+    <!--<Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />-->
+    <!--<MakeDir Directories="$(WasmCachePath)" />-->
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
-    <EmccCompile SourceFiles="@(_WasmSourceFileToCompile)" Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <EmccCompile SourceFiles="@(_WasmSourceFileToCompile)" Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" DisableParallelCompile="$(EmccDisableParallelCompile)" />
   </Target>
 
   <Target Name="_WasmLinkDotNet">
@@ -325,6 +335,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
 
     <Error Condition="'$(RuntimeEmccVersionRaw)' == ''"
            Text="%24(RuntimeEmccVersionRaw) is not set. '$(_EmccPropsPath)' should have set that."/>
+    <Exec Command="set" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <Exec Command="emcc --version" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
@@ -339,7 +350,8 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <ActualEmccVersionRaw>%(_ReversedVersionLines.Identity)</ActualEmccVersionRaw>
     </PropertyGroup>
 
-    <Error Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersionRaw)', got '$(ActualEmccVersionRaw)'"/>
+    <Warning Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)'"
+             Text="Emscripten version mismatch. The runtime pack in $(MicrosoftNetCoreAppRuntimePackDir) expects '$(RuntimeEmccVersionRaw)', but emcc being used has version '$(ActualEmccVersionRaw)'. This might cause build failures." />
   </Target>
 
   <!--

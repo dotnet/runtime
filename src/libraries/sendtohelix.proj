@@ -68,7 +68,9 @@
 
     <ItemGroup>
       <_Scenarios Include="$(_Scenarios.Split(','))" />
+    </ItemGroup>
 
+    <ItemGroup>
       <!-- MSBuild creates a new instance of the project for each %(_Scenarios.Identity) and can build them in parallel. -->
       <_BaseProjectsToBuild Include="$(PerScenarioProjectFile)" Condition="'%(_Scenarios.Identity)' != 'buildwasmapps'">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=%(_Scenarios.Identity);TestArchiveRuntimeFile=$(TestArchiveRuntimeFile)</AdditionalProperties>
@@ -78,7 +80,8 @@
 
     <!-- For BuildWasmApps we want to build the project twice, with: TestUsingWorkloads=true, and TestUsingWorkloads=false -->
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
-      <_TestUsingWorkloadsValues Include="true;false" />
+      <!--<_TestUsingWorkloadsValues Include="true;false" />-->
+      <_TestUsingWorkloadsValues Include="true" />
 
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingWorkloadsValues.Identity)</AdditionalProperties>

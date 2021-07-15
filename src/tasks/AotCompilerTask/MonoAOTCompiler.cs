@@ -421,8 +421,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                                                                 string.Join(" ", processArgs),
                                                                 envVariables,
                                                                 assemblyDir,
+                                                                logger: Log,
                                                                 silent: false,
-                                                                debugMessageImportance: MessageImportance.Low);
+                                                                debugMessageImportance: MessageImportance.High);
             if (exitCode != 0)
             {
                 Log.LogError($"Precompiling failed for {assembly}: {output}");
