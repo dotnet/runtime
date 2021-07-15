@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Pull type forwards from the experimental ref assembly so we only need to maintain a single src project -->
     <ContractProject>$(LibrariesProjectRoot)System.Runtime.Experimental\ref\System.Runtime.Experimental.csproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>

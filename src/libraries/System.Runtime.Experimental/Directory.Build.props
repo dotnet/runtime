@@ -1,8 +1,7 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <IsNETCoreAppRef>false</IsNETCoreAppRef>
-    <IsNETCoreAppSrc>false</IsNETCoreAppSrc>
+    <EnableBinPlacing>false</EnableBinPlacing>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
   </PropertyGroup>
 </Project>
