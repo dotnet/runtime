@@ -6575,7 +6575,7 @@ module_apply_changes (MonoImage *image, MonoArray *dmeta, MonoArray *dil, MonoAr
 	int32_t dil_len = mono_array_length_internal (dil);
 	gpointer dpdb_bytes = !dpdb ? NULL : (gpointer)mono_array_addr_internal (dpdb, char, 0);
 	int32_t dpdb_len = !dpdb ? 0 : mono_array_length_internal (dpdb);
-	mono_image_load_enc_delta (image, dmeta_bytes, dmeta_len, dil_bytes, dil_len, dpdb_bytes, dpdb_len, error);
+	mono_image_load_enc_delta (MONO_ENC_DELTA_DBG, image, dmeta_bytes, dmeta_len, dil_bytes, dil_len, dpdb_bytes, dpdb_len, error);
 	return is_ok (error);
 }
 	
@@ -10203,6 +10203,18 @@ debugger_thread (void *arg)
 		mono_set_is_debugger_attached (TRUE);
 	}
 	
+#ifndef HOST_WASM
+        if (!attach_failed) {
+                if (mono_metadata_has_updates_api ()) {
+                        PRINT_DEBUG_MSG (1, "[dbg] Cannot attach after System.Reflection.Metadata.MetadataUpdater.ApplyChanges has been called.\n");
+                        attach_failed = TRUE;
+                        command_set = (CommandSet)0;
+                        command = 0;
+                        dispose_vm ();
+                }
+        }
+#endif
+
 	while (!attach_failed) {
 		res = transport_recv (header, HEADER_LENGTH);
 

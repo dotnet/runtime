@@ -3,29 +3,31 @@
 
 using System.Collections.Generic;
 using System.Text.Encodings.Web;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class CollectionTests
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+    public abstract partial class CollectionTests
     {
         [Fact]
-        public static void ReadSimpleKeyValuePairFail()
+        public async Task ReadSimpleKeyValuePairFail()
         {
             // Invalid form: no Value
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, int>>(@"{""Key"": 123}"));
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(@"{""Key"": 123}"));
 
             // Invalid form: extra property
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, int>>(@"{""Key"": ""Key"", ""Value"": 123, ""Value2"": 456}"));
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(@"{""Key"": ""Key"", ""Value"": 123, ""Value2"": 456}"));
 
             // Invalid form: does not contain both Key and Value properties
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, int>>(@"{""Key"": ""Key"", ""Val"": 123"));
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(@"{""Key"": ""Key"", ""Val"": 123"));
         }
 
         [Fact]
-        public static void ReadListOfKeyValuePair()
+        public async Task ReadListOfKeyValuePair()
         {
-            List<KeyValuePair<string, int>> input = JsonSerializer.Deserialize<List<KeyValuePair<string, int>>>(@"[{""Key"": ""123"", ""Value"": 123},{""Key"": ""456"", ""Value"": 456}]");
+            List<KeyValuePair<string, int>> input = await JsonSerializerWrapperForString.DeserializeWrapper<List<KeyValuePair<string, int>>>(@"[{""Key"": ""123"", ""Value"": 123},{""Key"": ""456"", ""Value"": 456}]");
 
             Assert.Equal(2, input.Count);
             Assert.Equal("123", input[0].Key);
@@ -35,9 +37,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadKeyValuePairOfList()
+        public async Task ReadKeyValuePairOfList()
         {
-            KeyValuePair<string, List<int>> input = JsonSerializer.Deserialize<KeyValuePair<string, List<int>>>(@"{""Key"":""Key"", ""Value"":[1, 2, 3]}");
+            KeyValuePair<string, List<int>> input = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, List<int>>>(@"{""Key"":""Key"", ""Value"":[1, 2, 3]}");
 
             Assert.Equal("Key", input.Key);
             Assert.Equal(3, input.Value.Count);
@@ -51,9 +53,9 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(@"{""Key"":""Key"", ""Value"":{""Value"":2, ""Key"":1}}")]
         [InlineData(@"{""Value"":{""Key"":1, ""Value"":2}, ""Key"":""Key""}")]
         [InlineData(@"{""Value"":{""Value"":2, ""Key"":1}, ""Key"":""Key""}")]
-        public static void ReadKeyValuePairOfKeyValuePair(string json)
+        public async Task ReadKeyValuePairOfKeyValuePair(string json)
         {
-            KeyValuePair<string, KeyValuePair<int, int>> input = JsonSerializer.Deserialize<KeyValuePair<string, KeyValuePair<int, int>>>(json);
+            KeyValuePair<string, KeyValuePair<int, int>> input = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, KeyValuePair<int, int>>>(json);
 
             Assert.Equal("Key", input.Key);
             Assert.Equal(1, input.Value.Key);
@@ -61,42 +63,42 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadKeyValuePairWithNullValues()
+        public async Task ReadKeyValuePairWithNullValues()
         {
             {
-                KeyValuePair<string, string> kvp = JsonSerializer.Deserialize<KeyValuePair<string, string>>(@"{""Key"":""key"",""Value"":null}");
+                KeyValuePair<string, string> kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, string>>(@"{""Key"":""key"",""Value"":null}");
                 Assert.Equal("key", kvp.Key);
                 Assert.Null(kvp.Value);
             }
 
             {
-                KeyValuePair<string, object> kvp = JsonSerializer.Deserialize<KeyValuePair<string, object>>(@"{""Key"":""key"",""Value"":null}");
+                KeyValuePair<string, object> kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, object>>(@"{""Key"":""key"",""Value"":null}");
                 Assert.Equal("key", kvp.Key);
                 Assert.Null(kvp.Value);
             }
 
             {
-                KeyValuePair<string, SimpleClassWithKeyValuePairs> kvp = JsonSerializer.Deserialize<KeyValuePair<string, SimpleClassWithKeyValuePairs>>(@"{""Key"":""key"",""Value"":null}");
+                KeyValuePair<string, SimpleClassWithKeyValuePairs> kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, SimpleClassWithKeyValuePairs>>(@"{""Key"":""key"",""Value"":null}");
                 Assert.Equal("key", kvp.Key);
                 Assert.Null(kvp.Value);
             }
 
             {
-                KeyValuePair<string, KeyValuePair<string, string>> kvp = JsonSerializer.Deserialize<KeyValuePair<string, KeyValuePair<string, string>>>(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}");
+                KeyValuePair<string, KeyValuePair<string, string>> kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, KeyValuePair<string, string>>>(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}");
                 Assert.Equal("key", kvp.Key);
                 Assert.Equal("key", kvp.Value.Key);
                 Assert.Null(kvp.Value.Value);
             }
 
             {
-                KeyValuePair<string, KeyValuePair<string, object>> kvp = JsonSerializer.Deserialize<KeyValuePair<string, KeyValuePair<string, object>>>(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}");
+                KeyValuePair<string, KeyValuePair<string, object>> kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, KeyValuePair<string, object>>>(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}");
                 Assert.Equal("key", kvp.Key);
                 Assert.Equal("key", kvp.Value.Key);
                 Assert.Null(kvp.Value.Value);
             }
 
             {
-                KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>> kvp = JsonSerializer.Deserialize<KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>>>(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}");
+                KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>> kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>>>(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}");
                 Assert.Equal("key", kvp.Key);
                 Assert.Equal("key", kvp.Value.Key);
                 Assert.Null(kvp.Value.Value);
@@ -104,7 +106,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadClassWithNullKeyValuePairValues()
+        public async Task ReadClassWithNullKeyValuePairValues()
         {
             string json =
                     @"{" +
@@ -142,7 +144,7 @@ namespace System.Text.Json.Serialization.Tests
                             @"}" +
                         @"}" +
                     @"}";
-            SimpleClassWithKeyValuePairs obj = JsonSerializer.Deserialize<SimpleClassWithKeyValuePairs>(json);
+            SimpleClassWithKeyValuePairs obj = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleClassWithKeyValuePairs>(json);
 
             Assert.Equal("key", obj.KvpWStrVal.Key);
             Assert.Equal("key", obj.KvpWObjVal.Key);
@@ -163,24 +165,24 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void Kvp_NullKeyIsFine()
+        public async Task Kvp_NullKeyIsFine()
         {
-            KeyValuePair<string, string> kvp = JsonSerializer.Deserialize<KeyValuePair<string, string>>(@"{""Key"":null,""Value"":null}");
+            KeyValuePair<string, string> kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, string>>(@"{""Key"":null,""Value"":null}");
             Assert.Null(kvp.Key);
             Assert.Null(kvp.Value);
         }
 
         [Fact]
-        public static void WritePrimitiveKeyValuePair()
+        public async Task WritePrimitiveKeyValuePair()
         {
             KeyValuePair<string, int> input = new KeyValuePair<string, int>("Key", 123);
 
-            string json = JsonSerializer.Serialize(input);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(input);
             Assert.Equal(@"{""Key"":""Key"",""Value"":123}", json);
         }
 
         [Fact]
-        public static void WriteListOfKeyValuePair()
+        public async Task WriteListOfKeyValuePair()
         {
             List<KeyValuePair<string, int>> input = new List<KeyValuePair<string, int>>
             {
@@ -188,65 +190,65 @@ namespace System.Text.Json.Serialization.Tests
                 new KeyValuePair<string, int>("456", 456)
             };
 
-            string json = JsonSerializer.Serialize(input);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(input);
             Assert.Equal(@"[{""Key"":""123"",""Value"":123},{""Key"":""456"",""Value"":456}]", json);
         }
 
         [Fact]
-        public static void WriteKeyValuePairOfList()
+        public async Task WriteKeyValuePairOfList()
         {
             KeyValuePair<string, List<int>> input = new KeyValuePair<string, List<int>>("Key", new List<int> { 1, 2, 3 });
 
-            string json = JsonSerializer.Serialize(input);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(input);
             Assert.Equal(@"{""Key"":""Key"",""Value"":[1,2,3]}", json);
         }
 
         [Fact]
-        public static void WriteKeyValuePairOfKeyValuePair()
+        public async Task WriteKeyValuePairOfKeyValuePair()
         {
             KeyValuePair<string, KeyValuePair<string, int>> input = new KeyValuePair<string, KeyValuePair<string, int>>(
                 "Key", new KeyValuePair<string, int>("Key", 1));
 
-            string json = JsonSerializer.Serialize(input);
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(input);
             Assert.Equal(@"{""Key"":""Key"",""Value"":{""Key"":""Key"",""Value"":1}}", json);
         }
 
         [Fact]
-        public static void WriteKeyValuePairWithNullValues()
+        public async Task WriteKeyValuePairWithNullValues()
         {
             {
                 KeyValuePair<string, string> kvp = new KeyValuePair<string, string>("key", null);
-                Assert.Equal(@"{""Key"":""key"",""Value"":null}", JsonSerializer.Serialize(kvp));
+                Assert.Equal(@"{""Key"":""key"",""Value"":null}", await JsonSerializerWrapperForString.SerializeWrapper(kvp));
             }
 
             {
                 KeyValuePair<string, object> kvp = new KeyValuePair<string, object>("key", null);
-                Assert.Equal(@"{""Key"":""key"",""Value"":null}", JsonSerializer.Serialize(kvp));
+                Assert.Equal(@"{""Key"":""key"",""Value"":null}", await JsonSerializerWrapperForString.SerializeWrapper(kvp));
             }
 
             {
                 KeyValuePair<string, SimpleClassWithKeyValuePairs> kvp = new KeyValuePair<string, SimpleClassWithKeyValuePairs>("key", null);
-                Assert.Equal(@"{""Key"":""key"",""Value"":null}", JsonSerializer.Serialize(kvp));
+                Assert.Equal(@"{""Key"":""key"",""Value"":null}", await JsonSerializerWrapperForString.SerializeWrapper(kvp));
             }
 
             {
                 KeyValuePair<string, KeyValuePair<string, string>> kvp = new KeyValuePair<string, KeyValuePair<string, string>>("key", new KeyValuePair<string, string>("key", null));
-                Assert.Equal(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}", JsonSerializer.Serialize(kvp));
+                Assert.Equal(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}", await JsonSerializerWrapperForString.SerializeWrapper(kvp));
             }
 
             {
                 KeyValuePair<string, KeyValuePair<string, object>> kvp = new KeyValuePair<string, KeyValuePair<string, object>>("key", new KeyValuePair<string, object>("key", null));
-                Assert.Equal(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}", JsonSerializer.Serialize(kvp));
+                Assert.Equal(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}", await JsonSerializerWrapperForString.SerializeWrapper(kvp));
             }
 
             {
                 KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>> kvp = new KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>>("key", new KeyValuePair<string, SimpleClassWithKeyValuePairs>("key", null));
-                Assert.Equal(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}", JsonSerializer.Serialize(kvp));
+                Assert.Equal(@"{""Key"":""key"",""Value"":{""Key"":""key"",""Value"":null}}", await JsonSerializerWrapperForString.SerializeWrapper(kvp));
             }
         }
 
         [Fact]
-        public static void WriteClassWithNullKeyValuePairValues_NullWrittenAsEmptyObject()
+        public async Task WriteClassWithNullKeyValuePairValues_NullWrittenAsEmptyObject()
         {
             var value = new SimpleClassWithKeyValuePairs()
             {
@@ -258,10 +260,10 @@ namespace System.Text.Json.Serialization.Tests
                 KvpWClassKvpVal = new KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>>("key", new KeyValuePair<string, SimpleClassWithKeyValuePairs>("key", null)),
             };
 
-            string result = JsonSerializer.Serialize(value);
+            string result = await JsonSerializerWrapperForString.SerializeWrapper(value);
 
             // Roundtrip to ensure serialize was correct.
-            value = JsonSerializer.Deserialize<SimpleClassWithKeyValuePairs>(result);
+            value = await JsonSerializerWrapperForString.DeserializeWrapper<SimpleClassWithKeyValuePairs>(result);
             Assert.Equal("key", value.KvpWStrVal.Key);
             Assert.Equal("key", value.KvpWObjVal.Key);
             Assert.Equal("key", value.KvpWClassVal.Key);
@@ -281,7 +283,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void HonorNamingPolicy()
+        public async Task HonorNamingPolicy()
         {
             var kvp = new KeyValuePair<string, int>("Hello, World!", 1);
 
@@ -290,22 +292,22 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNamingPolicy = new LeadingUnderscorePolicy()
             };
 
-            string serialized = JsonSerializer.Serialize(kvp, options);
+            string serialized = await JsonSerializerWrapperForString.SerializeWrapper(kvp, options);
             // We know serializer writes the key first.
             Assert.Equal(@"{""_Key"":""Hello, World!"",""_Value"":1}", serialized);
 
-            kvp = JsonSerializer.Deserialize<KeyValuePair<string, int>>(serialized, options);
+            kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(serialized, options);
             Assert.Equal("Hello, World!", kvp.Key);
             Assert.Equal(1, kvp.Value);
         }
 
         [Fact]
-        public static void HonorNamingPolicy_CaseInsensitive()
+        public async Task HonorNamingPolicy_CaseInsensitive()
         {
             const string json = @"{""key"":""Hello, World!"",""value"":1}";
 
             // Baseline - with case-sensitive matching, the payload doesn't have mapping properties.
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, int>>(json));
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(json));
 
             // Test - with case-insensitivity on, we have property matches.
             var options = new JsonSerializerOptions
@@ -313,13 +315,13 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNameCaseInsensitive = true
             };
 
-            KeyValuePair<string, int> kvp = JsonSerializer.Deserialize<KeyValuePair<string, int>>(json, options);
+            KeyValuePair<string, int> kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(json, options);
             Assert.Equal("Hello, World!", kvp.Key);
             Assert.Equal(1, kvp.Value);
         }
 
         [Fact]
-        public static void HonorCLRProperties()
+        public async Task HonorCLRProperties()
         {
             var options = new JsonSerializerOptions
             {
@@ -330,13 +332,13 @@ namespace System.Text.Json.Serialization.Tests
             // "Key" and "Value" are special cased to accomodate content serialized with previous
             // versions of the serializer (.NET Core 3.x/System.Text.Json 4.7.x).
             string json = @"{""Key"":""Hello, World!"",""Value"":1}";
-            KeyValuePair<string, int> kvp = JsonSerializer.Deserialize<KeyValuePair<string, int>>(json, options);
+            KeyValuePair<string, int> kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(json, options);
             Assert.Equal("Hello, World!", kvp.Key);
             Assert.Equal(1, kvp.Value);
 
             // "Key" and "Value" matching is case sensitive.
             json = @"{""key"":""Hello, World!"",""value"":1}";
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, int>>(json, options));
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(json, options));
 
             // "Key" and "Value" matching is case sensitive, even when case insensitivity is on.
             // Case sensitivity only applies to the result of converting the CLR property names
@@ -347,7 +349,7 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNameCaseInsensitive = true
             };
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, int>>(json, options));
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(json, options));
         }
 
         private class LeadingUnderscorePolicy : JsonNamingPolicy
@@ -356,7 +358,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void HonorCustomEncoder()
+        public async Task HonorCustomEncoder()
         {
             var kvp = new KeyValuePair<int, int>(1, 2);
 
@@ -368,7 +370,7 @@ namespace System.Text.Json.Serialization.Tests
                 PropertyNamingPolicy = namingPolicy,
             };
 
-            Assert.Equal(@"{""Key\u003C"":1,""Value\u003C"":2}", JsonSerializer.Serialize(kvp, options));
+            Assert.Equal(@"{""Key\u003C"":1,""Value\u003C"":2}", await JsonSerializerWrapperForString.SerializeWrapper(kvp, options));
 
             // Test - serializer honors custom encoder.
             options = new JsonSerializerOptions
@@ -377,7 +379,7 @@ namespace System.Text.Json.Serialization.Tests
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             };
 
-            Assert.Equal(@"{""Key<"":1,""Value<"":2}", JsonSerializer.Serialize(kvp, options));
+            Assert.Equal(@"{""Key<"":1,""Value<"":2}", await JsonSerializerWrapperForString.SerializeWrapper(kvp, options));
         }
 
         private class TrailingAngleBracketPolicy : JsonNamingPolicy
@@ -388,18 +390,18 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(KeyNameNullPolicy), "Key")]
         [InlineData(typeof(ValueNameNullPolicy), "Value")]
-        public static void InvalidPropertyNameFail(Type policyType, string offendingProperty)
+        public async Task InvalidPropertyNameFail(Type policyType, string offendingProperty)
         {
             var options = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = (JsonNamingPolicy)Activator.CreateInstance(policyType)
             };
 
-            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<KeyValuePair<string, string>>("", options));
+            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, string>>("", options));
             string exAsStr = ex.ToString();
             Assert.Contains(offendingProperty, exAsStr);
 
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new KeyValuePair<string, string>("", ""), options));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(new KeyValuePair<string, string>("", ""), options));
         }
 
         private class KeyNameNullPolicy : JsonNamingPolicy
@@ -432,9 +434,9 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(@"{""Value"":1,""Value"":1}")]
         [InlineData(@"{""Value"":1,null:1}")]
         [InlineData(@"{""Value"":1,""Value"":2}")]
-        public static void InvalidJsonFail(string json)
+        public async Task InvalidJsonFail(string json)
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<int, int>>(json));
+            await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<int, int>>(json));
         }
 
         [Theory]
@@ -445,34 +447,35 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(@"{""Extra"":3,""Key"":1,""Value"":2}", "$.Extra")]
         [InlineData(@"{""Key"":1,""Extra"":3,""Value"":2}", "$.Extra")]
         [InlineData(@"{""Key"":1,""Value"":2,""Extra"":3}", "$.Extra")]
-        public static void JsonPathIsAccurate(string json, string expectedPath)
+        public async Task JsonPathIsAccurate(string json, string expectedPath)
         {
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<int, int>>(json));
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<int, int>>(json));
             Assert.Contains(expectedPath, ex.ToString());
 
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<int, int>>(json));
+            ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<int, int>>(json));
             Assert.Contains(expectedPath, ex.ToString());
         }
 
         [Theory]
         [InlineData(@"{""kEy"":""1"",""vAlUe"":2}", "$.kEy")]
         [InlineData(@"{""kEy"":1,""vAlUe"":""2""}", "$.vAlUe")]
-        public static void JsonPathIsAccurate_CaseInsensitive(string json, string expectedPath)
+        public async Task JsonPathIsAccurate_CaseInsensitive(string json, string expectedPath)
         {
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<int, int>>(json, options));
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<int, int>>(json, options));
             Assert.Contains(expectedPath, ex.ToString());
         }
 
         [Theory]
         [InlineData(@"{""_Key"":""1"",""_Value"":2}", "$._Key")]
         [InlineData(@"{""_Key"":1,""_Value"":""2""}", "$._Value")]
-        public static void JsonPathIsAccurate_PropertyNamingPolicy(string json, string expectedPath)
+        public async Task JsonPathIsAccurate_PropertyNamingPolicy(string json, string expectedPath)
         {
             var options = new JsonSerializerOptions { PropertyNamingPolicy = new LeadingUnderscorePolicy() };
-            JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<int, int>>(json, options));
+            JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<int, int>>(json, options));
             Assert.Contains(expectedPath, ex.ToString());
         }
     }
+#endif
 }

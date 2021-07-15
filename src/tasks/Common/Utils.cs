@@ -25,22 +25,30 @@ internal static class Utils
     public static (int exitCode, string output) RunShellCommand(string command,
                                         IDictionary<string, string> envVars,
                                         string workingDir,
-                                        MessageImportance debugMessageImportance=MessageImportance.Low)
+                                        TaskLoggingHelper logger,
+                                        bool silent=false,
+                                        bool logStdErrAsMessage=false,
+                                        MessageImportance debugMessageImportance=MessageImportance.Low,
+                                        string? label=null)
     {
         string scriptFileName = CreateTemporaryBatchFile(command);
         (string shell, string args) = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                                                     ? ("cmd", $"/c \"{scriptFileName}\"")
                                                     : ("/bin/sh", $"\"{scriptFileName}\"");
 
-        Logger?.LogMessage(debugMessageImportance, $"Running {command} via script {scriptFileName}:");
-        Logger?.LogMessage(debugMessageImportance, File.ReadAllText(scriptFileName));
+        string msgPrefix = label == null ? string.Empty : $"[{label}] ";
+        LogMessage(debugMessageImportance, $"Running {command} via script {scriptFileName}:", msgPrefix);
+        LogMessage(debugMessageImportance, File.ReadAllText(scriptFileName), msgPrefix);
 
         return TryRunProcess(shell,
                              args,
                              envVars,
                              workingDir,
-                             silent: false,
-                             debugMessageImportance);
+                             silent: silent,
+                             logStdErrAsMessage: logStdErrAsMessage,
+                             logger: logger,
+                             label: label,
+                             debugMessageImportance: debugMessageImportance);
 
         static string CreateTemporaryBatchFile(string command)
         {
@@ -79,8 +87,9 @@ internal static class Utils
                                             args,
                                             envVars,
                                             workingDir,
-                                            silent,
-                                            debugMessageImportance);
+                                            silent: silent,
+                                            logger: Logger,
+                                            debugMessageImportance: debugMessageImportance);
 
         if (exitCode != 0 && !ignoreErrors)
             throw new Exception("Error: Process returned non-zero exit code: " + output);
@@ -94,9 +103,15 @@ internal static class Utils
         IDictionary<string, string>? envVars = null,
         string? workingDir = null,
         bool silent = true,
-        MessageImportance debugMessageImportance=MessageImportance.High)
+        bool logStdErrAsMessage = false,
+        TaskLoggingHelper? logger = null,
+        MessageImportance debugMessageImportance=MessageImportance.High,
+        string? label=null)
     {
-        Logger?.LogMessage(debugMessageImportance, $"Running: {path} {args}");
+        Logger = logger;
+
+        string msgPrefix = label == null ? string.Empty : $"[{label}] ";
+        LogMessage(debugMessageImportance, $"Running: {path} {args}", msgPrefix);
         var outputBuilder = new StringBuilder();
         var processStartInfo = new ProcessStartInfo
         {
@@ -111,23 +126,23 @@ internal static class Utils
         if (workingDir != null)
             processStartInfo.WorkingDirectory = workingDir;
 
-        Logger?.LogMessage(debugMessageImportance, $"Using working directory: {workingDir ?? Environment.CurrentDirectory}");
+        LogMessage(debugMessageImportance, $"Using working directory: {workingDir ?? Environment.CurrentDirectory}", msgPrefix);
 
         if (envVars != null)
         {
             if (envVars.Count > 0)
-                Logger?.LogMessage(MessageImportance.Low, "Setting environment variables for execution:");
+                LogMessage(MessageImportance.Low, $"Setting environment variables for execution:", msgPrefix);
 
             foreach (KeyValuePair<string, string> envVar in envVars)
             {
                 processStartInfo.EnvironmentVariables[envVar.Key] = envVar.Value;
-                Logger?.LogMessage(MessageImportance.Low, $"\t{envVar.Key} = {envVar.Value}");
+                Logger?.LogMessage(MessageImportance.Low, $"{msgPrefix}\t{envVar.Key} = {envVar.Value}");
             }
         }
 
         Process? process = Process.Start(processStartInfo);
         if (process == null)
-            throw new ArgumentException($"Process.Start({path} {args}) returned null process");
+            throw new ArgumentException($"{msgPrefix}Process.Start({path} {args}) returned null process");
 
         process.ErrorDataReceived += (sender, e) =>
         {
@@ -136,8 +151,14 @@ internal static class Utils
                 if (string.IsNullOrEmpty(e.Data))
                     return;
 
+                string msg = $"{msgPrefix}{e.Data}";
                 if (!silent)
-                    LogWarning(e.Data);
+                {
+                    if (logStdErrAsMessage)
+                        LogMessage(debugMessageImportance, e.Data, msgPrefix);
+                    else
+                        Logger?.LogWarning(msg);
+                }
                 outputBuilder.AppendLine(e.Data);
             }
         };
@@ -149,7 +170,7 @@ internal static class Utils
                     return;
 
                 if (!silent)
-                    Logger?.LogMessage(debugMessageImportance, e.Data);
+                    LogMessage(debugMessageImportance, e.Data, msgPrefix);
                 outputBuilder.AppendLine(e.Data);
             }
         };
@@ -157,7 +178,7 @@ internal static class Utils
         process.BeginErrorReadLine();
         process.WaitForExit();
 
-        Logger?.LogMessage(debugMessageImportance, $"Exit code: {process.ExitCode}");
+        Logger?.LogMessage(debugMessageImportance, $"{msgPrefix}Exit code: {process.ExitCode}");
         return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
     }
 
@@ -205,21 +226,21 @@ internal static class Utils
 
     public static TaskLoggingHelper? Logger { get; set; }
 
-    public static void LogInfo(string? msg, MessageImportance importance=MessageImportance.High)
-    {
-        if (msg != null)
-            Logger?.LogMessage(importance, msg);
-    }
-
     public static void LogWarning(string? msg)
     {
         if (msg != null)
             Logger?.LogWarning(msg);
     }
 
-    public static void LogError(string? msg)
+    public static void LogInfo(string? msg, MessageImportance importance=MessageImportance.High)
     {
         if (msg != null)
-            Logger?.LogError(msg);
+            Logger?.LogMessage(importance, msg);
+    }
+
+    public static void LogMessage(MessageImportance importance, string? msg, string prefix="")
+    {
+        if (msg != null)
+            Logger?.LogMessage(importance, $"{prefix}{msg}");
     }
 }

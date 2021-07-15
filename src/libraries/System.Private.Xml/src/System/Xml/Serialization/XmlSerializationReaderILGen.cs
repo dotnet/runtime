@@ -3096,7 +3096,7 @@ namespace System.Xml.Serialization
                 {
                 }
 
-                if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan))
+                if ((element.Mapping.TypeDesc!.Type == typeof(TimeSpan)) || element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset))
                 {
                     MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                        "get_Reader",
@@ -3121,14 +3121,10 @@ namespace System.Xml.Serialization
                     ilg.Ldarg(0);
                     ilg.Call(XmlSerializationReader_get_Reader);
                     ilg.Call(XmlReader_Skip);
-                    ConstructorInfo TimeSpan_ctor = typeof(TimeSpan).GetConstructor(
-                        CodeGenerator.InstanceBindingFlags,
-                        null,
-                        new Type[] { typeof(long) },
-                        null
-                        )!;
-                    ilg.Ldc(default(TimeSpan).Ticks);
-                    ilg.New(TimeSpan_ctor);
+                    LocalBuilder tmpLoc = ilg.GetTempLocal(element.Mapping.TypeDesc!.Type);
+                    ilg.Ldloca(tmpLoc);
+                    ilg.InitObj(element.Mapping.TypeDesc!.Type);
+                    ilg.Ldloc(tmpLoc);
                     WriteSourceEnd(source, element.Mapping.TypeDesc.Type);
                     ilg.Else();
                     WriteSourceBegin(source);

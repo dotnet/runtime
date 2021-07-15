@@ -452,22 +452,25 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOf(char c, int start, int count)
         {
-            int offset = Offset + start;
+            int index = -1;
 
-            if (!HasValue || start < 0 || (uint)offset > (uint)Buffer.Length)
+            if (HasValue)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-            }
+                if ((uint)start > (uint)Length)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                }
 
-            if (count < 0)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
-            }
+                if ((uint)count > (uint)(Length - start))
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
+                }
 
-            int index = AsSpan().Slice(start, count).IndexOf(c);
-            if (index >= 0)
-            {
-                index += start;
+                index = AsSpan(start, count).IndexOf(c);
+                if (index >= 0)
+                {
+                    index += start;
+                }
             }
 
             return index;
@@ -516,12 +519,12 @@ namespace Microsoft.Extensions.Primitives
 
             if (HasValue)
             {
-                if (startIndex < 0 || Offset + startIndex > Buffer.Length)
+                if ((uint)startIndex > (uint)Length)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
                 }
 
-                if (count < 0 || Offset + startIndex + count > Buffer.Length)
+                if ((uint)count > (uint)(Length - startIndex))
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
                 }
