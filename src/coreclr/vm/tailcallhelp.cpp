@@ -265,6 +265,8 @@ bool TailCallHelp::NeedsReturnWidening(TypeHandle tyHnd, bool* isSigned)
     case ELEMENT_TYPE_I2:
         *isSigned = true;
         return true;
+    case ELEMENT_TYPE_BOOLEAN:
+    case ELEMENT_TYPE_CHAR:
     case ELEMENT_TYPE_U1:
     case ELEMENT_TYPE_U2:
         *isSigned = false;
