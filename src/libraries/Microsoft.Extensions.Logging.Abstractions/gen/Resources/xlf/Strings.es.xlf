@@ -149,7 +149,7 @@
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
         <source>Template '{0}' is not provided as argument to the logging method</source>
-        <target state="new">Template '{0}' is not provided as argument to the logging method</target>
+        <target state="translated">La plantilla "{0}" no se proporciona como argumento para el método de registro</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
