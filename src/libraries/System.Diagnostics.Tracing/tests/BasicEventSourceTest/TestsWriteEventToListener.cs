@@ -257,6 +257,7 @@ namespace BasicEventSourceTests
                 using (var el = new LoudListener(log))
                 {
                     log.WriteTooManyArgs("Hello");
+                    Assert.NotNull(LoudListener.t_lastEvent);
                     Assert.Equal(2, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);           // Faked count (compat)
                     Assert.Equal("Hello", LoudListener.t_lastEvent.Payload[0]);
