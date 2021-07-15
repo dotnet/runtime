@@ -15,7 +15,7 @@ static bool
 hot_reload_stub_available (void);
 
 static void
-hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error);
+hot_reload_stub_apply_changes (int origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error);
 
 static MonoComponentHotReload *
 component_hot_reload_stub_init (void);
@@ -147,7 +147,7 @@ hot_reload_stub_relative_delta_index (MonoImage *image_dmeta, int token)
 }
 
 void
-hot_reload_stub_apply_changes (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error)
+hot_reload_stub_apply_changes (int origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb_bytes_orig, uint32_t dpdb_length, MonoError *error)
 {
 	mono_error_set_not_supported (error, "Hot reload not supported in this runtime.");
 }
