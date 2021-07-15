@@ -34,7 +34,7 @@ using System.Text;
 
 namespace System.Reflection
 {
-    public class CustomAttributeData
+    public partial class CustomAttributeData
     {
         private sealed class LazyCAttrData
         {
@@ -125,62 +125,49 @@ namespace System.Reflection
             }
         }
 
-        public static IList<CustomAttributeData> GetCustomAttributes(Assembly target)
-        {
-            return CustomAttribute.GetCustomAttributesData(target);
-        }
-
-        public static IList<CustomAttributeData> GetCustomAttributes(MemberInfo target)
-        {
-            return CustomAttribute.GetCustomAttributesData(target);
-        }
-
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeType target)
         {
             return CustomAttribute.GetCustomAttributesData(target);
         }
 
-        public static IList<CustomAttributeData> GetCustomAttributes(Module target)
+        internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeFieldInfo target)
         {
             return CustomAttribute.GetCustomAttributesData(target);
         }
 
-        public static IList<CustomAttributeData> GetCustomAttributes(ParameterInfo target)
+        internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeMethodInfo target)
         {
             return CustomAttribute.GetCustomAttributesData(target);
         }
 
-        public virtual Type AttributeType
+        internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeConstructorInfo target)
         {
-            get { return ctorInfo.DeclaringType!; }
+            return CustomAttribute.GetCustomAttributesData(target);
         }
 
-        public override string ToString()
+        internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeEventInfo target)
         {
-            ResolveArguments();
+            return CustomAttribute.GetCustomAttributesData(target);
+        }
 
-            StringBuilder sb = new StringBuilder();
+        internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimePropertyInfo target)
+        {
+            return CustomAttribute.GetCustomAttributesData(target);
+        }
 
-            sb.Append('[').Append(ctorInfo.DeclaringType!.FullName).Append('(');
-            for (int i = 0; i < ctorArgs.Count; i++)
-            {
-                sb.Append(ctorArgs[i].ToString());
-                if (i + 1 < ctorArgs.Count)
-                    sb.Append(", ");
-            }
+        internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeModule target)
+        {
+            return CustomAttribute.GetCustomAttributesData(target);
+        }
 
-            if (namedArgs.Count > 0)
-                sb.Append(", ");
+        internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeAssembly target)
+        {
+            return CustomAttribute.GetCustomAttributesData(target);
+        }
 
-            for (int j = 0; j < namedArgs.Count; j++)
-            {
-                sb.Append(namedArgs[j].ToString());
-                if (j + 1 < namedArgs.Count)
-                    sb.Append(", ");
-            }
-            sb.Append(")]");
-
-            return sb.ToString();
+        internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeParameterInfo target)
+        {
+            return CustomAttribute.GetCustomAttributesData(target);
         }
 
         private static T[] UnboxValues<T>(object[] values)
@@ -190,13 +177,6 @@ namespace System.Reflection
                 retval[i] = (T)values[i];
 
             return retval;
-        }
-
-        public override int GetHashCode() => base.GetHashCode();
-
-        public override bool Equals(object? obj)
-        {
-            return obj == (object)this;
         }
     }
 
