@@ -135,3 +135,9 @@ mono_metadata_update_has_modified_rows (const MonoTableInfo *table)
 {
 	return mono_component_hot_reload ()->has_modified_rows (table);
 }
+
+gboolean
+mono_metadata_has_updates_api (void)
+{
+        return mono_metadata_has_updates ();
+}

@@ -802,6 +802,11 @@ mono_metadata_has_updates (void)
 	return mono_metadata_update_data_private.has_updates != 0;
 }
 
+/* components can't call the inline function directly since the private data isn't exported */
+MONO_COMPONENT_API
+gboolean
+mono_metadata_has_updates_api (void);
+
 void
 mono_image_effective_table_slow (const MonoTableInfo **t, int *idx);
 

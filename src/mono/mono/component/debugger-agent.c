@@ -10199,6 +10199,18 @@ debugger_thread (void *arg)
 		mono_set_is_debugger_attached (TRUE);
 	}
 	
+#ifndef HOST_WASM
+        if (!attach_failed) {
+                if (mono_metadata_has_updates_api ()) {
+                        PRINT_DEBUG_MSG (1, "[dbg] Cannot attach after System.Reflection.Metadata.MetadataUpdater.ApplyChanges has been called.\n");
+                        attach_failed = TRUE;
+                        command_set = (CommandSet)0;
+                        command = 0;
+                        dispose_vm ();
+                }
+        }
+#endif
+
 	while (!attach_failed) {
 		res = transport_recv (header, HEADER_LENGTH);
 
