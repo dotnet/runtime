@@ -46,13 +46,13 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>55262f114b0c1b82f0b081bca0d919b657ba24c5</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="6.0.0-beta.21359.3">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="6.0.0-beta.21364.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>55262f114b0c1b82f0b081bca0d919b657ba24c5</Sha>
+      <Sha>16140a192ea2ffd8bcc3af09f6e531b3f5a7522b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="6.0.0-beta.21359.3">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="6.0.0-beta.21364.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>55262f114b0c1b82f0b081bca0d919b657ba24c5</Sha>
+      <Sha>16140a192ea2ffd8bcc3af09f6e531b3f5a7522b</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="6.0.0-beta.21364.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
