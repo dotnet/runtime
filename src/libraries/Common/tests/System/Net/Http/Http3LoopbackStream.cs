@@ -267,7 +267,7 @@ namespace System.Net.Test.Common
 
             if (isFinal)
             {
-                _stream.Shutdown();
+                _stream.CompleteWrites();
                 await _stream.ShutdownCompleted().ConfigureAwait(false);
                 Dispose();
             }
