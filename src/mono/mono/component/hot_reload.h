@@ -32,6 +32,8 @@ typedef struct _MonoComponentHotReload {
 	gpointer (*get_updated_method_ppdb) (MonoImage *base_image, uint32_t idx);
 	gboolean (*has_modified_rows) (const MonoTableInfo *table);
 	gboolean (*table_num_rows_slow) (MonoImage *base_image, int table_index);
+	GArray* (*get_added_methods) (MonoClass *klass);
+	uint32_t (*method_parent) (MonoImage *base_image, uint32_t method_index);
 } MonoComponentHotReload;
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT

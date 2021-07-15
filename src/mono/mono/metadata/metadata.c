@@ -4835,7 +4835,12 @@ mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
 	if (meta->uncompressed_metadata)
 		loc.idx = search_ptr_table (meta, MONO_TABLE_METHOD_POINTER, loc.idx);
 
-	/* FIXME: metadata-update */
+	/* if it's not in the base image, look in the hot reload table */
+	gboolean added = (loc.idx > table_info_get_rows (&meta->tables [MONO_TABLE_METHOD]));
+	if (added) {
+		uint32_t res = mono_component_hot_reload ()->method_parent (meta, loc.idx);
+		return res; /* 0 if not found, otherwise 1-based */
+	}
 
 	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, typedef_locator))
 		return 0;

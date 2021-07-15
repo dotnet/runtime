@@ -88,6 +88,13 @@ hot_reload_has_modified_rows (const MonoTableInfo *table);
 static int
 hot_reload_table_num_rows_slow (MonoImage *image, int table_index);
 
+static GArray*
+hot_reload_get_added_methods (MonoClass *klass);
+
+static uint32_t
+hot_reload_method_parent  (MonoImage *base, uint32_t method_token);
+
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_available },
 	&hot_reload_set_fastpath_data,
@@ -107,6 +114,8 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_get_updated_method_ppdb,
 	&hot_reload_has_modified_rows,
 	&hot_reload_table_num_rows_slow,
+	&hot_reload_get_added_methods,
+	&hot_reload_method_parent,
 };
 
 MonoComponentHotReload *
@@ -187,6 +196,9 @@ typedef struct _BaselineInfo {
 
 	/* TRUE if any published update modified an existing row */
 	gboolean any_modified_rows [MONO_TABLE_NUM];
+
+	GHashTable *added_methods; /* maps each MonoClass to a GArray of added method tokens */
+	GHashTable *method_parent; /* maps added methoddef tokens to typedef tokens */
 } BaselineInfo;
 
 #define DOTNET_MODIFIABLE_ASSEMBLIES "DOTNET_MODIFIABLE_ASSEMBLIES"
@@ -213,7 +225,8 @@ hot_reload_update_enabled (int *modifiable_assemblies_out)
 		char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
 		if (val && !g_strcasecmp (val, "debug")) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Metadata update enabled for debuggable assemblies");
-			modifiable = MONO_MODIFIABLE_ASSM_DEBUG;
+			modifiable
+				= MONO_MODIFIABLE_ASSM_DEBUG;
 		}
 		g_free (val);
 		inited = TRUE;
@@ -486,6 +499,9 @@ image_append_delta (MonoImage *base, BaselineInfo *base_info, MonoImage *delta, 
 
 static int
 metadata_update_local_generation (MonoImage *base, BaselineInfo *base_info, MonoImage *delta);
+
+static void
+add_method_to_baseline (BaselineInfo *base_info, MonoClass *klass, uint32_t method_token);
 
 void
 hot_reload_init (void)
@@ -1447,6 +1463,7 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 					g_error ("EnC: new method added but I don't know the class, should be caught by pass1");
 				g_assert (add_method_klass);
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new method 0x%08x to class %s.%s", token_index, m_class_get_name_space (add_method_klass), m_class_get_name (add_method_klass));
+				add_method_to_baseline (base_info, add_method_klass, token_index);
 				add_method_klass = NULL;
 			}
 #endif
@@ -1838,4 +1855,52 @@ hot_reload_table_num_rows_slow (MonoImage *base, int table_index)
 		rows = delta_info->count [table_index].prev_gen_rows + delta_info->count [table_index].inserted_rows;
 	}
 	return rows;
+}
+
+static void
+add_method_to_baseline (BaselineInfo *base_info, MonoClass *klass, uint32_t method_token)
+{
+	if (!base_info->added_methods) {
+		base_info->added_methods = g_hash_table_new (g_direct_hash, g_direct_equal);
+	}
+	if (!base_info->method_parent) {
+		base_info->method_parent = g_hash_table_new (g_direct_hash, g_direct_equal);
+	}
+	/* FIXME: locking for readers/writers of the GArray */
+	GArray *arr = g_hash_table_lookup (base_info->added_methods, klass);
+	if (!arr) {
+		arr = g_array_new (FALSE, FALSE, sizeof(uint32_t));
+		g_hash_table_insert (base_info->added_methods, klass, arr);
+	}
+	g_array_append_val (arr, method_token);
+	g_hash_table_insert (base_info->method_parent, GUINT_TO_POINTER (method_token), GUINT_TO_POINTER (m_class_get_type_token (klass)));
+}
+
+static GArray*
+hot_reload_get_added_methods (MonoClass *klass)
+{
+	/* FIXME: locking for the GArray? */
+	MonoImage *image = m_class_get_image (klass);
+	if (!image->has_updates)
+		return NULL;
+	BaselineInfo *base_info = baseline_info_lookup (image);
+	if (!base_info || base_info->added_methods == NULL)
+		return NULL;
+
+	return g_hash_table_lookup (base_info->added_methods, klass);
+}
+
+static uint32_t
+hot_reload_method_parent  (MonoImage *base_image, uint32_t method_token)
+{
+	if (!base_image->has_updates)
+		return 0;
+	BaselineInfo *base_info = baseline_info_lookup (base_image);
+	if (!base_info || base_info->method_parent == NULL)
+		return 0;
+
+	uint32_t res = GPOINTER_TO_UINT (g_hash_table_lookup (base_info->method_parent, GUINT_TO_POINTER (method_token)));
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "method_parent lookup: 0x%08x returned 0x%08x\n", method_token, res);
+
+	return res;
 }
