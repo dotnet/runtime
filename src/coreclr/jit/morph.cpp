@@ -8338,7 +8338,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
             // we don't know which eventual tailcaller may have written it, and
             // the type of that tailcaller could potentially be narrower than
             // this call. See TailCallHelp::NeedsReturnWidening.
-            lvaTable[newRetLcl].lvType = (var_types)origCall->gtType;
+            lvaTable[newRetLcl].lvType = origCall->gtType;
         }
 
         lvaSetVarAddrExposed(newRetLcl);
