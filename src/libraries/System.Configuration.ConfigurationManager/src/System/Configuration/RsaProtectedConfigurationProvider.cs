@@ -14,8 +14,6 @@ namespace System.Configuration
     {
         // Note: this name has to match the name used in RegiisUtility
         private string DefaultRsaKeyContainerName = "NetFrameworkConfigurationKey";
-        private const uint PROV_Rsa_FULL = 1;
-        private const uint CRYPT_MACHINE_KEYSET = 0x00000020;
 
         private string _keyName;
         private string _keyContainerName;
@@ -208,7 +206,7 @@ namespace System.Configuration
             if (UseFIPS)
             {
                 // AesCryptoServiceProvider implementation is FIPS certified
-                symAlg = new AesCryptoServiceProvider();
+                symAlg = Aes.Create(typeof(AesManaged).FullName), typeof(AesManaged));
             }
             else
             {
