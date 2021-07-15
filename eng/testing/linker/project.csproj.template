@@ -14,6 +14,7 @@
     <TargetingPackDir>{TargetingPackDir}</TargetingPackDir>
     <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
     <MicrosoftNETCoreAppVersion>{MicrosoftNETCoreAppVersion}</MicrosoftNETCoreAppVersion>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 
     <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
   </PropertyGroup>
