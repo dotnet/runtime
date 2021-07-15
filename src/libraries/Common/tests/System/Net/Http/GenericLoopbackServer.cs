@@ -32,21 +32,8 @@ namespace System.Net.Test.Common
         {
             return CreateServerAsync(async (server, uri) =>
             {
-                using var clientDone = new SemaphoreSlim(0);
-                using var serverDone = new SemaphoreSlim(0);
-
-                Task clientTask = Task.Run(async () =>
-                    {
-                        await clientFunc(uri);
-                        clientDone.Release();
-                        await serverDone.WaitAsync();
-                    });
-                Task serverTask = Task.Run(async () =>
-                    {
-                        await serverFunc(server);
-                        serverDone.Release();
-                        await clientDone.WaitAsync();
-                    });
+                Task clientTask = clientFunc(uri);
+                Task serverTask = serverFunc(server);
 
                 await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed().ConfigureAwait(false);
             }, options: options).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
