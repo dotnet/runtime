@@ -426,6 +426,7 @@ namespace System.Numerics.Tests
                 yield return new object[] { new BigInteger(-1.0), -1.0 };
                 yield return new object[] { new BigInteger(0.0), 0.0 };
                 yield return new object[] { new BigInteger(1.0), 1.0 };
+                yield return new object[] { new BigInteger(4611686018427387903), 4611686018427387903 };
                 for (int i = 0; i < NumberOfRandomIterations; i++)
                 {
                     double currentValue = double.MinValue * s_random.NextDouble();
