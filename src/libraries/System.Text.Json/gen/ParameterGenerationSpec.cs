@@ -3,19 +3,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 
 namespace System.Text.Json.SourceGeneration
 {
-    internal enum ClassType
+    internal class ParameterGenerationSpec
     {
-        TypeUnsupportedBySourceGen = 0,
-        Object = 1,
-        KnownType = 2,
-        TypeWithDesignTimeProvidedCustomConverter = 3,
-        Enumerable = 4,
-        Dictionary = 5,
-        Nullable = 6,
-        Enum = 7
+        public TypeGenerationSpec TypeGenerationSpec { get; init; }
+
+        public ParameterInfo ParameterInfo { get; init; }
     }
 }

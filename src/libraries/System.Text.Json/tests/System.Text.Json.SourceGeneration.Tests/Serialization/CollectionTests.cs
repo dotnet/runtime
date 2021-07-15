@@ -9,6 +9,8 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Tests;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
 {
@@ -20,8 +22,79 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         protected CollectionTests_Metadata(JsonSerializerWrapperForString serializerWrapper)
-            : base(serializerWrapper, new StreamSerializerWrapper())
+            : base(serializerWrapper, null)
         {
+        }
+
+        [Fact]
+        public override async Task ReadSimpleKeyValuePairPartialData()
+        {
+            KeyValuePair<string, int> kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(@"{""Key"": ""123""}");
+            Assert.Equal("123", kvp.Key);
+            Assert.Equal(0, kvp.Value);
+
+            kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(@"{""Key"": ""Key"", ""Value"": 123, ""Value2"": 456}");
+            Assert.Equal("Key", kvp.Key);
+            Assert.Equal(123, kvp.Value);
+
+            kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(@"{""Key"": ""Key"", ""Val"": 123}");
+            Assert.Equal("Key", kvp.Key);
+            Assert.Equal(0, kvp.Value);
+        }
+
+        [Fact]
+        public override async Task HonorCLRProperties()
+        {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = new LeadingUnderscorePolicy() // Key -> _Key, Value -> _Value
+            };
+
+            // Since object converter (not KVP converter) is used, payloads not compliant with naming policy won't yield matches.
+            string json = @"{""Key"":""Hello, World!"",""Value"":1}";
+            KeyValuePair<string, int> kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(json, options);
+            Assert.Null(kvp.Key);
+            Assert.Equal(0, kvp.Value);
+
+            // "Key" and "Value" matching is case sensitive.
+            json = @"{""key"":""Hello, World!"",""value"":1}";
+            kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(json, options);
+            Assert.Null(kvp.Key);
+            Assert.Equal(0, kvp.Value);
+
+            // "Key" and "Value" matching is case sensitive, even when case insensitivity is on.
+            // Case sensitivity only applies to the result of converting the CLR property names
+            // (Key -> _Key, Value -> _Value) with the naming policy.
+            options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = new LeadingUnderscorePolicy(),
+                PropertyNameCaseInsensitive = true
+            };
+
+            kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(json, options);
+            Assert.Null(kvp.Key);
+            Assert.Equal(0, kvp.Value);
+        }
+
+        [Fact]
+        public override async Task HonorNamingPolicy_CaseInsensitive()
+        {
+            const string json = @"{""key"":""Hello, World!"",""value"":1}";
+
+            // Baseline - with case-sensitive matching, the payload doesn't have mapping properties.
+            KeyValuePair<string, int> kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(json);
+            Assert.Null(kvp.Key);
+            Assert.Equal(0, kvp.Value);
+
+            // Test - with case-insensitivity on, we have property matches.
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            kvp = await JsonSerializerWrapperForString.DeserializeWrapper<KeyValuePair<string, int>>(json, options);
+            Assert.Equal("Hello, World!", kvp.Key);
+            Assert.Equal(1, kvp.Value);
         }
 
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -373,6 +446,22 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ReadOnlyWrapperForIDictionary))]
         [JsonSerializable(typeof(ReadOnlyStringToStringIDictionaryWrapper))]
         [JsonSerializable(typeof(Dictionary<string, int?>[]))]
+        [JsonSerializable(typeof(KeyValuePair<string, int>))]
+        [JsonSerializable(typeof(List<KeyValuePair<string, int>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, List<int>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<int, int>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, string>))]
+        [JsonSerializable(typeof(KeyValuePair<string, object>))]
+        [JsonSerializable(typeof(KeyValuePair<string, SimpleClassWithKeyValuePairs>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, string>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, object>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>>))]
+        [JsonSerializable(typeof(SimpleClassWithKeyValuePairs))]
+        [JsonSerializable(typeof(KeyNameNullPolicy))]
+        [JsonSerializable(typeof(ValueNameNullPolicy))]
+        [JsonSerializable(typeof(KeyValuePair<int, int>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, int>>))]
+        [JsonSerializable(typeof(StackWrapper))]
         internal sealed partial class CollectionTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -733,6 +822,22 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ReadOnlyWrapperForIDictionary))]
         [JsonSerializable(typeof(ReadOnlyStringToStringIDictionaryWrapper))]
         [JsonSerializable(typeof(Dictionary<string, int?>[]))]
+        [JsonSerializable(typeof(KeyValuePair<string, int>))]
+        [JsonSerializable(typeof(List<KeyValuePair<string, int>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, List<int>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<int, int>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, string>))]
+        [JsonSerializable(typeof(KeyValuePair<string, object>))]
+        [JsonSerializable(typeof(KeyValuePair<string, SimpleClassWithKeyValuePairs>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, string>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, object>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>>))]
+        [JsonSerializable(typeof(SimpleClassWithKeyValuePairs))]
+        [JsonSerializable(typeof(KeyNameNullPolicy))]
+        [JsonSerializable(typeof(ValueNameNullPolicy))]
+        [JsonSerializable(typeof(KeyValuePair<int, int>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, int>>))]
+        [JsonSerializable(typeof(StackWrapper))]
         internal sealed partial class CollectionTestsContext_Default : JsonSerializerContext
         {
         }

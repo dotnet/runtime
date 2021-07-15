@@ -491,8 +491,9 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Contains(@"""High"":1", json);
             Assert.Contains(@"""Low"":2", json);
 
-            // Deserialization not supported for now.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize(json, DefaultContext.HighLowTempsImmutable));
+            HighLowTempsImmutable obj = JsonSerializer.Deserialize(json, DefaultContext.HighLowTempsImmutable);
+            Assert.Equal(1, obj.High);
+            Assert.Equal(2, obj.Low);
         }
 
         [Fact]

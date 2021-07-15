@@ -36,9 +36,9 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowNotSupportedException_ConstructorMaxOf64Parameters(ConstructorInfo constructorInfo, Type type)
+        public static void ThrowNotSupportedException_ConstructorMaxOf64Parameters(Type type)
         {
-            throw new NotSupportedException(SR.Format(SR.ConstructorMaxOf64Parameters, constructorInfo, type));
+            throw new NotSupportedException(SR.Format(SR.ConstructorMaxOf64Parameters, type));
         }
 
         [DoesNotReturn]
@@ -212,8 +212,7 @@ namespace System.Text.Json
             Type parentType,
             string parameterName,
             string firstMatchName,
-            string secondMatchName,
-            ConstructorInfo constructorInfo)
+            string secondMatchName)
         {
             throw new InvalidOperationException(
                 SR.Format(
@@ -221,25 +220,21 @@ namespace System.Text.Json
                     firstMatchName,
                     secondMatchName,
                     parentType,
-                    parameterName,
-                    constructorInfo));
+                    parameterName));
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(ConstructorInfo constructorInfo, Type parentType)
+        public static void ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(Type parentType)
         {
-            throw new InvalidOperationException(SR.Format(SR.ConstructorParamIncompleteBinding, constructorInfo, parentType));
+            throw new InvalidOperationException(SR.Format(SR.ConstructorParamIncompleteBinding, parentType));
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(
-            MemberInfo memberInfo,
-            Type classType,
-            ConstructorInfo constructorInfo)
+        public static void ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(MemberInfo memberInfo, Type classType)
         {
-            throw new InvalidOperationException(SR.Format(SR.ExtensionDataCannotBindToCtorParam, memberInfo, classType, constructorInfo));
+            throw new InvalidOperationException(SR.Format(SR.ExtensionDataCannotBindToCtorParam, memberInfo, classType));
         }
 
         [DoesNotReturn]
@@ -702,14 +697,19 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_PropInitAndSerializeFuncsNull()
+        public static void ThrowInvalidOperationException_MetadatInitFuncsNull()
         {
-            throw new InvalidOperationException(SR.Format(SR.PropInitAndSerializeFuncsNull));
+            throw new InvalidOperationException(SR.Format(SR.MetadataInitFuncsNull));
         }
 
         public static void ThrowInvalidOperationException_NoMetadataForTypeProperties(JsonSerializerContext context, Type type)
         {
             throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeProperties, context.GetType(), type));
+        }
+
+        public static void ThrowInvalidOperationException_NoMetadataForTypeCtorParams(JsonSerializerContext context, Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.NoMetadataForTypeCtorParams, context.GetType(), type));
         }
 
         public static void ThrowInvalidOperationException_NoDefaultOptionsForContext(JsonSerializerContext context, Type type)

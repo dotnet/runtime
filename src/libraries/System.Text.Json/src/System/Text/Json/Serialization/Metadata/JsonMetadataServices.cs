@@ -1,8 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -104,7 +104,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// Creates metadata for a complex class or struct.
         /// </summary>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> to initialize the metadata with.</param>
-        /// <param name="createObjectFunc">Provides a mechanism to create an instance of the class or struct when deserializing.</param>
+        /// <param name="createObjectFunc">Provides a mechanism to create an instance of the class or struct when deserializing, using a parameterless constructor.</param>
         /// <param name="propInitFunc">Provides a mechanism to initialize metadata for properties and fields of the class or struct.</param>
         /// <param name="serializeFunc">Provides a serialization implementation for instances of the class or struct which assumes options specified by <see cref="JsonSourceGenerationOptionsAttribute"/>.</param>
         /// <param name="numberHandling">Specifies how number properties and fields should be processed when serializing and deserializing.</param>
@@ -116,8 +116,42 @@ namespace System.Text.Json.Serialization.Metadata
             Func<T>? createObjectFunc,
             Func<JsonSerializerContext, JsonPropertyInfo[]>? propInitFunc,
             JsonNumberHandling numberHandling,
-            Action<Utf8JsonWriter, T>? serializeFunc) where T : notnull
-            => new JsonTypeInfoInternal<T>(options, createObjectFunc, propInitFunc, numberHandling, serializeFunc);
+            Action<Utf8JsonWriter, T>? serializeFunc)
+            where T : notnull
+            => new JsonTypeInfoInternal<T>(
+                options,
+                createObjectFunc,
+                propInitFunc,
+                numberHandling,
+                serializeFunc);
+
+        /// <summary>
+        /// Creates metadata for a complex class or struct.
+        /// </summary>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> to initialize the metadata with.</param>
+        /// <param name="createObjectWithArgsFunc">Provides a mechanism to create an instance of the class or struct when deserializing, using a parameterized constructor.</param>
+        /// <param name="propInitFunc">Provides a mechanism to initialize metadata for properties and fields of the class or struct.</param>
+        /// <param name="ctorParamInitFunc">Provides a mechanism to initialize metadata for a parameterized constructor of the class or struct to be used when deserializing.</param>
+        /// <param name="serializeFunc">Provides a serialization implementation for instances of the class or struct which assumes options specified by <see cref="JsonSourceGenerationOptionsAttribute"/>.</param>
+        /// <param name="numberHandling">Specifies how number properties and fields should be processed when serializing and deserializing.</param>
+        /// <typeparam name="T">The type of the class or struct.</typeparam>
+        /// <exception cref="InvalidOperationException">Thrown when <paramref name="options"/> and <paramref name="propInitFunc"/> are both null.</exception>
+        /// <returns>A <see cref="JsonTypeInfo{T}"/> instance representing the class or struct.</returns>
+        public static JsonTypeInfo<T> CreateObjectInfo<T>(
+            JsonSerializerOptions options,
+            Func<object[], T>? createObjectWithArgsFunc,
+            Func<JsonSerializerContext, JsonPropertyInfo[]>? propInitFunc,
+            Func<JsonParameterClrInfo[]>? ctorParamInitFunc,
+            JsonNumberHandling numberHandling,
+            Action<Utf8JsonWriter, T>? serializeFunc)
+            where T : notnull
+            => new JsonTypeInfoInternal<T>(
+                options,
+                createObjectWithArgsFunc,
+                propInitFunc,
+                ctorParamInitFunc,
+                numberHandling,
+                serializeFunc);
 
         /// <summary>
         /// Creates metadata for a primitive or a type with a custom converter.
