@@ -253,6 +253,11 @@ namespace System.IO.Tests
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
         {
             string name = FileSystemTest.GetNamedPipeServerStreamName();
+            // https://github.com/dotnet/runtime/issues/55689
+            if (PlatformDetection.IsAndroid)
+            {
+                name = name.Substring(0, (name.Length - 10));
+            }
 
             var server = new NamedPipeServerStream(name, PipeDirection.In);
             var client = new NamedPipeClientStream(".", name, PipeDirection.Out);
