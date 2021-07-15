@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Converters
     /// Converter for JsonNode-derived types. The {T} value must be Object and not JsonNode
     /// since we allow Object-declared members\variables to deserialize as {JsonNode}.
     /// </summary>
-    internal sealed class JsonNodeConverter : JsonConverter<object?>
+    internal sealed class JsonNodeConverter : JsonConverter<JsonNode?>
     {
         private static JsonNodeConverter? s_nodeConverter;
         private static JsonArrayConverter? s_arrayConverter;
@@ -23,7 +23,7 @@ namespace System.Text.Json.Serialization.Converters
         public static JsonObjectConverter ObjectConverter => s_objectConverter ??= new JsonObjectConverter();
         public static JsonValueConverter ValueConverter => s_valueConverter ??= new JsonValueConverter();
 
-        public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, JsonNode? value, JsonSerializerOptions options)
         {
             if (value == null)
             {
@@ -47,7 +47,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override JsonNode? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             switch (reader.TokenType)
             {

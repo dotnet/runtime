@@ -25,21 +25,21 @@ namespace System.Tests
             Assert.Throws<PlatformNotSupportedException>(() => PosixSignalRegistration.Create(signal, ctx => { }));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         [MemberData(nameof(UninstallableSignals))]
         public void Create_UninstallableSignal_Throws(PosixSignal signal)
         {
             Assert.Throws<IOException>(() => PosixSignalRegistration.Create(signal, ctx => { }));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         [MemberData(nameof(SupportedSignals))]
         public void Create_ValidSignal_Success(PosixSignal signal)
         {
             PosixSignalRegistration.Create(signal, ctx => { }).Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         [MemberData(nameof(SupportedSignals))]
         public void Dispose_Idempotent(PosixSignal signal)
         {
@@ -48,26 +48,21 @@ namespace System.Tests
             registration.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         public void Create_RegisterForMultipleSignalsMultipletimes_Success()
         {
             var registrations = new List<PosixSignalRegistration>();
-            for (int i = 0; i < 3; i++)
+            for (int iter = 0; iter < 3; iter++)
             {
-                foreach (object[] signal in SupportedSignals())
+                for (int i = 0; i < 2; i++)
                 {
-                    registrations.Add(PosixSignalRegistration.Create((PosixSignal)signal[0], _ => { }));
+                    foreach (object[] signal in SupportedSignals())
+                    {
+                        registrations.Add(PosixSignalRegistration.Create((PosixSignal)signal[0], _ => { }));
+                    }
                 }
 
-                foreach (object[] signal in SupportedSignals())
-                {
-                    registrations.Add(PosixSignalRegistration.Create((PosixSignal)signal[0], _ => { }));
-                }
-
-                foreach (PosixSignalRegistration registration in registrations)
-                {
-                    registration.Dispose();
-                }
+                registrations.ForEach(r => r.Dispose());
             }
         }
     }

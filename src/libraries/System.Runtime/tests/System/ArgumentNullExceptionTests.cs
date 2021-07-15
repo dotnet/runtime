@@ -47,5 +47,32 @@ namespace System.Tests
             Assert.Contains(message, exception.Message);
             Assert.Contains(argumentName, exception.Message);
         }
+
+        [Fact]
+        public static void ThrowIfNull_NonNull_DoesntThrow()
+        {
+            foreach (object o in new[] { new object(), "", "argument" })
+            {
+                ArgumentNullException.ThrowIfNull(o);
+                ArgumentNullException.ThrowIfNull(o, "paramName");
+            }
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("name")]
+        public static void ThrowIfNull_Null_ThrowsArgumentNullException(string paramName)
+        {
+            AssertExtensions.Throws<ArgumentNullException>(paramName, () => ArgumentNullException.ThrowIfNull(null, paramName));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/csharplang/issues/287")]
+        public static void ThrowIfNull_UsesArgumentExpression()
+        {
+            object something = null;
+            AssertExtensions.Throws<ArgumentNullException>(nameof(something), () => ArgumentNullException.ThrowIfNull(something));
+        }
     }
 }

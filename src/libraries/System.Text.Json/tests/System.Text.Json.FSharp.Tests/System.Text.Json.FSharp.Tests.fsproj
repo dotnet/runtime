@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Helpers.fs" />
+    <Compile Include="OptionTests.fs" />
+    <Compile Include="ValueOptionTests.fs" />
+    <Compile Include="CollectionTests.fs" />
+    <Compile Include="RecordTests.fs" />
+    <Compile Include="UnionTests.fs" />
+  </ItemGroup>
+
+</Project>

@@ -26,6 +26,7 @@
   <PropertyGroup>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>link</TrimMode>
+    <UseMonoRuntime>true</UseMonoRuntime>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
@@ -37,14 +38,14 @@
     <DebuggerSupport>false</DebuggerSupport>
   </PropertyGroup>
 
-  <Target Name="UpdateTargetingAndRuntimePack" AfterTargets="ResolveFrameworkReferences" DependsOnTargets="_PrepareAndValidateWasmInputs">
+  <!-- Use local runtime pack -->
+  <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences" DependsOnTargets="_PrepareAndValidateWasmInputs">
     <ItemGroup>
-      <RuntimePack>
-        <PackageDirectory>$(MicrosoftNetCoreAppRuntimePackLocationToUse)</PackageDirectory>
-      </RuntimePack>
-      <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackLocationToUse)" />
+      <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackLocationToUse)"
+                           Condition="'$(MicrosoftNetCoreAppRuntimePackLocationToUse)' != '' and
+                                      '%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
     </ItemGroup>
-    <Message Text="Using Runtime pack from: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
+    <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
   <!-- the actual properties need to get set in the props, so because UsingTasks depend on those. -->
@@ -59,10 +60,12 @@
            Text="%24(RuntimeSrcDir) is set, but %24(RuntimeConfig) is not" />
 
     <PropertyGroup>
-      <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse), 'runtimes', 'browser-wasm'))</MicrosoftNetCoreAppRuntimePackRidDir>
+      <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse)))</MicrosoftNetCoreAppRuntimePackDir>
+      <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackDir), 'runtimes', 'browser-wasm'))</MicrosoftNetCoreAppRuntimePackRidDir>
       <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
       <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
       <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
+      <JsonToItemsTaskFactoryTasksAssemblyPath>$([MSBuild]::NormalizePath('$(JsonToItemsTaskFactoryDir)', 'JsonToItemsTaskFactory.dll'))</JsonToItemsTaskFactoryTasksAssemblyPath>
     </PropertyGroup>
 
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')"

@@ -34,6 +34,8 @@ namespace System.Text.Json.SourceGeneration
 
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
 
+            private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
+
             private readonly GeneratorExecutionContext _executionContext;
 
             private readonly MetadataLoadContextInternal _metadataLoadContext;
@@ -606,6 +608,8 @@ namespace System.Text.Json.SourceGeneration
                         BindingFlags.NonPublic |
                         BindingFlags.DeclaredOnly;
 
+                    bool propertyOrderSpecified = false;
+
                     for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                     {
                         foreach (PropertyInfo propertyInfo in currentType.GetProperties(bindingFlags))
@@ -620,6 +624,7 @@ namespace System.Text.Json.SourceGeneration
 
                             PropertyGenerationSpec spec = GetPropertyGenerationSpec(propertyInfo, isVirtual, generationMode);
                             CacheMember(spec, ref propGenSpecList, ref ignoredMembers);
+                            propertyOrderSpecified |= spec.Order != 0;
                         }
 
                         foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
@@ -631,7 +636,13 @@ namespace System.Text.Json.SourceGeneration
 
                             PropertyGenerationSpec spec = GetPropertyGenerationSpec(fieldInfo, isVirtual: false, generationMode);
                             CacheMember(spec, ref propGenSpecList, ref ignoredMembers);
+                            propertyOrderSpecified |= spec.Order != 0;
                         }
+                    }
+
+                    if (propertyOrderSpecified)
+                    {
+                        propGenSpecList.Sort((p1, p2) => p1.Order.CompareTo(p2.Order));
                     }
                 }
 
@@ -697,6 +708,7 @@ namespace System.Text.Json.SourceGeneration
 
                 bool foundDesignTimeCustomConverter = false;
                 string? converterInstantiationLogic = null;
+                int order = 0;
 
                 foreach (CustomAttributeData attributeData in attributeDataList)
                 {
@@ -743,6 +755,12 @@ namespace System.Text.Json.SourceGeneration
                                     IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
                                     jsonPropertyName = (string)ctorArgs[0].Value;
                                     // Null check here is done at runtime within JsonSerializer.
+                                }
+                                break;
+                            case JsonPropertyOrderAttributeFullName:
+                                {
+                                    IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
+                                    order = (int)ctorArgs[0].Value;
                                 }
                                 break;
                             default:
@@ -839,6 +857,7 @@ namespace System.Text.Json.SourceGeneration
                     SetterIsVirtual = setterIsVirtual,
                     DefaultIgnoreCondition = ignoreCondition,
                     NumberHandling = numberHandling,
+                    Order = order,
                     HasJsonInclude = hasJsonInclude,
                     TypeGenerationSpec = GetOrAddTypeGenerationSpec(memberCLRType, generationMode),
                     DeclaringTypeRef = $"global::{memberInfo.DeclaringType.GetUniqueCompilableTypeName()}",

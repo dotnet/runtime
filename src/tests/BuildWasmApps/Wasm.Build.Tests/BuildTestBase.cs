@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Xunit;
@@ -17,12 +17,12 @@ using Xunit.Sdk;
 
 #nullable enable
 
+// [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
+
 namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        protected const string SkipProjectCleanupEnvVar = "SKIP_PROJECT_CLEANUP";
-        protected const string XHarnessRunnerCommandEnvVar = "XHARNESS_CLI_PATH";
         protected const string s_targetFramework = "net6.0";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
@@ -32,6 +32,8 @@ namespace Wasm.Build.Tests
         protected bool _enablePerTestCleanup = false;
         protected SharedBuildPerTestClassFixture _buildContext;
 
+        // FIXME: use an envvar to override this
+        protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30*60*1000 : 15*60*1000;
         protected static BuildEnvironment s_buildEnv;
         private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : ([^ ]*)";
         private static Regex s_runtimePackPathRegex;
@@ -44,27 +46,18 @@ namespace Wasm.Build.Tests
             s_buildEnv = new BuildEnvironment();
             s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
 
-            string? cleanupVar = Environment.GetEnvironmentVariable(SkipProjectCleanupEnvVar);
-            s_skipProjectCleanup = !string.IsNullOrEmpty(cleanupVar) && cleanupVar == "1";
+            s_skipProjectCleanup = !string.IsNullOrEmpty(EnvironmentVariables.SkipProjectCleanup) && EnvironmentVariables.SkipProjectCleanup == "1";
 
-            s_xharnessRunnerCommand = GetEnvironmentVariableOrDefault(XHarnessRunnerCommandEnvVar, "xharness");
+            if (string.IsNullOrEmpty(EnvironmentVariables.XHarnessCliPath))
+                s_xharnessRunnerCommand = "xharness";
+            else
+                s_xharnessRunnerCommand = EnvironmentVariables.XHarnessCliPath;
 
             string? nugetPackagesPath = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
             if (!string.IsNullOrEmpty(nugetPackagesPath))
             {
                 if (!Directory.Exists(nugetPackagesPath))
-                {
                     Directory.CreateDirectory(nugetPackagesPath);
-                    Console.WriteLine ($"-- Created {nugetPackagesPath}");
-                }
-                else
-                {
-                    Console.WriteLine ($"-- already exists {nugetPackagesPath}");
-                }
-            }
-            else
-            {
-                Console.WriteLine ($"-- NUGET_PACKAGES envvar was empty");
             }
 
             Console.WriteLine ("");
@@ -205,7 +198,8 @@ namespace Wasm.Build.Tests
                                         args: args.ToString(),
                                         workingDir: bundleDir,
                                         envVars: envVars,
-                                        label: testCommand);
+                                        label: testCommand,
+                                        timeoutMs: s_defaultPerTestTimeoutMs);
 
             File.WriteAllText(Path.Combine(testLogPath, $"xharness.log"), output);
 
@@ -256,7 +250,10 @@ namespace Wasm.Build.Tests
         protected static BuildArgs ExpandBuildArgs(BuildArgs buildArgs, string extraProperties="", string extraItems="", string insertAtEnd="", string projectTemplate=SimpleProjectTemplate)
         {
             if (buildArgs.AOT)
-                extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>\n<EmccVerbose>false</EmccVerbose>\n";
+            {
+                extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
+                extraProperties += $"\n<EmccVerbose>{RuntimeInformation.IsOSPlatform(OSPlatform.Windows)}</EmccVerbose>\n";
+            }
 
             string projectContents = projectTemplate
                                         .Replace("##EXTRA_PROPERTIES##", extraProperties)
@@ -310,7 +307,8 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"-------- Building ---------");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
             Console.WriteLine($"Binlog path: {logFilePath}");
-            sb.Append($" /bl:\"{logFilePath}\" /v:minimal /nologo");
+            sb.Append($" /bl:\"{logFilePath}\" /nologo");
+            sb.Append($" /v:diag /fl /flp:\"v:diag,LogFile={logFilePath}.log\" /v:minimal");
             if (buildArgs.ExtraBuildArgs != null)
                 sb.Append($" {buildArgs.ExtraBuildArgs} ");
 
@@ -451,9 +449,9 @@ namespace Wasm.Build.Tests
                 Assert.True(finfo0.Length != finfo1.Length, $"{label}: File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
         }
 
-        protected (int exitCode, string buildOutput) AssertBuild(string args, string label="build", bool expectSuccess=true, IDictionary<string, string>? envVars=null)
+        protected (int exitCode, string buildOutput) AssertBuild(string args, string label="build", bool expectSuccess=true, IDictionary<string, string>? envVars=null, int? timeoutMs=null)
         {
-            var result = RunProcess(s_buildEnv.DotNet, _testOutput, args, workingDir: _projectDir, label: label, envVars: envVars);
+            var result = RunProcess(s_buildEnv.DotNet, _testOutput, args, workingDir: _projectDir, label: label, envVars: envVars, timeoutMs: timeoutMs ?? s_defaultPerTestTimeoutMs);
             if (expectSuccess)
                 Assert.True(0 == result.exitCode, $"Build process exited with non-zero exit code: {result.exitCode}");
             else
@@ -475,13 +473,16 @@ namespace Wasm.Build.Tests
                                          IDictionary<string, string>? envVars = null,
                                          string? workingDir = null,
                                          string? label = null,
-                                         bool logToXUnit = true)
+                                         bool logToXUnit = true,
+                                         int? timeoutMs = null)
         {
             _testOutput.WriteLine($"Running {path} {args}");
             Console.WriteLine($"Running: {path}: {args}");
             Console.WriteLine($"WorkingDirectory: {workingDir}");
             _testOutput.WriteLine($"WorkingDirectory: {workingDir}");
             StringBuilder outputBuilder = new ();
+            object syncObj = new();
+
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = path,
@@ -529,8 +530,23 @@ namespace Wasm.Build.Tests
 
                 // process.WaitForExit doesn't work if the process exits too quickly?
                 // resetEvent.WaitOne();
-                process.WaitForExit();
-                return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
+                if (!process.WaitForExit(timeoutMs ?? s_defaultPerTestTimeoutMs))
+                {
+                    // process didn't exit
+                    process.Kill(entireProcessTree: true);
+                    lock (syncObj)
+                    {
+                        var lastLines = outputBuilder.ToString().Split('\r', '\n').TakeLast(20);
+                        throw new XunitException($"Process timed out, output: {string.Join(Environment.NewLine, lastLines)}");
+                    }
+
+                }
+
+                lock (syncObj)
+                {
+                    var exitCode = process.ExitCode;
+                    return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
+                }
             }
             catch (Exception ex)
             {
@@ -540,12 +556,15 @@ namespace Wasm.Build.Tests
 
             void LogData(string label, string? message)
             {
-                if (logToXUnit && message != null)
+                lock (syncObj)
                 {
-                    _testOutput.WriteLine($"{label} {message}");
-                    Console.WriteLine($"{label} {message}");
+                    if (logToXUnit && message != null)
+                    {
+                        _testOutput.WriteLine($"{label} {message}");
+                        Console.WriteLine($"{label} {message}");
+                    }
+                    outputBuilder.AppendLine($"{label} {message}");
                 }
-                outputBuilder.AppendLine($"{label} {message}");
             }
         }
 
