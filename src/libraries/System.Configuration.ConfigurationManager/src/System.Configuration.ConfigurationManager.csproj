@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <!-- opt-out of trimming until it works https://github.com/dotnet/runtime/issues/49062 -->
@@ -243,15 +243,18 @@
     <Compile Include="System\Configuration\XmlUtil.cs" />
     <Compile Include="System\Configuration\XmlUtilWriter.cs" />
     <Compile Include="System\Drawing\Configuration\SystemDrawingSection.cs" />
-    <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs" Link="Common\System\Security\IdentityHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs"
+             Link="Common\System\Security\IdentityHelper.cs" />
     <Compile Include="System\Configuration\SettingsProperty.cs" />
     <Compile Include="System\Configuration\SettingsPropertyValue.cs" />
     <Compile Include="System\Configuration\SettingsSerializeAs.cs" />
     <Compile Include="System\Configuration\NoSettingsVersionUpgradeAttribute.cs" />
     <Compile Include="System\UriIdnScope.cs" />
-    <Compile Include="$(CommonPath)System\IO\TempFileCollection.cs" Link="Common\System\IO\TempFileCollection.cs" />
+    <Compile Include="$(CommonPath)System\IO\TempFileCollection.cs"
+             Link="Common\System\IO\TempFileCollection.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
+             Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net5.0'))" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Reference Include="System.Collections" />
@@ -273,7 +276,6 @@
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Primitives" />
-    <Reference Include="System.Security.Cryptography.Xml" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
