@@ -34,7 +34,8 @@ all: build-native icu-files source-files header-files
 
 EMSCRIPTEN_VERSION := $(shell cat $(TOP)/src/mono/wasm/emscripten-version.txt)
 EMSDK_LOCAL_PATH=emsdk
-EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
+EMCC_LOCAL_FLAGS=--cache $(NATIVE_BIN_DIR)/emscripten-cache
+EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc $(EMCC_LOCAL_FLAGS)
 
 .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION):
 	rm -rf $(EMSDK_LOCAL_PATH)
