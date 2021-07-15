@@ -31,4 +31,14 @@ namespace ApplyUpdateReferencedAssembly
             return "NEW STRING";
         }
     }
+
+
+
+    public class MethodBody4 {
+        public static void StaticMethod4 () {
+            int a = 10;
+            int b = 20;
+            Console.WriteLine(a + b);
+        }
+    }
 }
