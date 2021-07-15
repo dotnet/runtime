@@ -3253,14 +3253,13 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 }
 
 //------------------------------------------------------------------------------
-// fgDebugCheckDispFlags:
-//    Wrapper function that displays two GTF_IND_ flags
-//      and then calls ftDispFlags to display the rest.
+// fgDebugCheckDispFlags: Wrapper function that displays GTF_IND_ flags
+// and then calls gtDispFlags to display the rest.
 //
 // Arguments:
 //    tree       - Tree whose flags are being checked
-//    dispFlags  - the first argument for gtDispFlags
-//                 ands hold GTF_IND_INVARIANT and GTF_IND_NONFLUALTING
+//    dispFlags  - the first argument for gtDispFlags (flags to display),
+//                 including GTF_IND_INVARIANT, GTF_IND_NONFAULTING, GTF_IND_NONNULL
 //    debugFlags - the second argument to gtDispFlags
 //
 void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags)
@@ -3277,15 +3276,14 @@ void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenT
 //------------------------------------------------------------------------------
 // fgDebugCheckFlagsHelper : Check if all bits that are set in chkFlags are also set in treeFlags.
 //
-//
 // Arguments:
-//    tree  - Tree whose flags are being checked
+//    tree      - Tree whose flags are being checked
 //    treeFlags - Actual flags on the tree
-//    chkFlags - Expected flags
+//    chkFlags  - Expected flags
 //
 // Note:
 //    Checking that all bits that are set in treeFlags are also set in chkFlags is currently disabled.
-
+//
 void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags treeFlags, GenTreeFlags chkFlags)
 {
     if (chkFlags & ~treeFlags)
