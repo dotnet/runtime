@@ -27,7 +27,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         // TODO: remove this.
         // This is only used for client-initiated connections, and isn't needed even then once Connect() has been called.
-        private readonly SafeMsQuicConfigurationHandle? _configuration;
+        private SafeMsQuicConfigurationHandle? _configuration;
 
         private readonly State _state = new State();
         private int _disposed;
@@ -574,7 +574,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");
 
                 // this handle is ref counted by MsQuic, so safe to dispose here.
-                _configuration.Dipose();
+                _configuration.Dispose();
                 _configuration = null;
             }
             catch
