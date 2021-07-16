@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- <TargetFramework>{s_targetFramework}</TargetFramework> -->
+    <TargetFramework>net6.0</TargetFramework>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <OutputType>Exe</OutputType>
+    <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    <WasmMainJSPath>runtime-test.js</WasmMainJSPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="2.80.3" />
+    <PackageReference Include="SkiaSharp.NativeAssets.WebAssembly" Version="2.80.3" />
+
+    <NativeReference Include="$(SkiaSharpStaticLibraryPath)\2.0.9\*.a" />
+    <WasmFilesToIncludeInFileSystem Include="$(MSBuildThisFileDirectory)mono.png" />
+  </ItemGroup>
+</Project>
