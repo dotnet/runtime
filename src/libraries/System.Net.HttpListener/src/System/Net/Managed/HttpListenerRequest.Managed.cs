@@ -139,12 +139,12 @@ namespace System.Net
             if (p >= 10)
                 return false;
 
-            return IsPredefinedScheme(s.Substring(0, p));
+            return IsPredefinedScheme(s.AsSpan(0, p));
         }
 
-        private static bool IsPredefinedScheme(string scheme)
+        private static bool IsPredefinedScheme(ReadOnlySpan<char> scheme)
         {
-            if (scheme == null || scheme.Length < 3)
+            if (scheme.Length < 3)
                 return false;
 
             char c = scheme[0];
