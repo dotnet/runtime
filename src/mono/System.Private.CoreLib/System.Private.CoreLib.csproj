@@ -195,7 +195,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeData.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeData.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeTypedArgument.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Mono.cs" />
