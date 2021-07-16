@@ -4851,7 +4851,7 @@ void OleVariant::TransposeArrayData(BYTE *pDestData, BYTE *pSrcData, SIZE_T dwNu
     }
 }
 
-BOOL OleVariant::IsArrayOfWrappers(BASEARRAYREF *pArray, BOOL *pbOfInterfaceWrappers)
+BOOL OleVariant::IsArrayOfWrappers(_In_ BASEARRAYREF *pArray, _Out_opt_ BOOL *pbOfInterfaceWrappers)
 {
     CONTRACTL
     {
@@ -4892,7 +4892,9 @@ BOOL OleVariant::IsArrayOfWrappers(BASEARRAYREF *pArray, BOOL *pbOfInterfaceWrap
         }
     }
 
-    *pbOfInterfaceWrappers = FALSE;
+    if (pbOfInterfaceWrappers)
+        *pbOfInterfaceWrappers = FALSE;
+
     return FALSE;
 }
 
