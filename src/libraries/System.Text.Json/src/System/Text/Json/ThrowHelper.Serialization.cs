@@ -716,5 +716,12 @@ namespace System.Text.Json
         {
             throw new InvalidOperationException(SR.Format(SR.NoDefaultOptionsForContext, context.GetType(), type));
         }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowMissingMemberException_MissingFSharpCoreMember(string missingFsharpCoreMember)
+        {
+            throw new MissingMemberException(SR.Format(SR.MissingFSharpCoreMember, missingFsharpCoreMember));
+        }
     }
 }

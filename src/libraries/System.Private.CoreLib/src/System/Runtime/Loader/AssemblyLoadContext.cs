@@ -259,7 +259,7 @@ namespace System.Runtime.Loader
 
         public string? Name => _name;
 
-        public override string ToString() => "\"" + Name + "\" " + GetType().ToString() + " #" + _id;
+        public override string ToString() => $"\"{Name}\" {GetType()} #{_id}";
 
         public static IEnumerable<AssemblyLoadContext> All
         {

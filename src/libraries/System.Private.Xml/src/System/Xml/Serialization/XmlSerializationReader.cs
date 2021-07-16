@@ -105,6 +105,7 @@ namespace System.Xml.Serialization
         private string _charID = null!;
         private string _guidID = null!;
         private string _timeSpanID = null!;
+        private string _dateTimeOffsetID = null!;
 
         protected abstract void InitIDs();
 
@@ -214,6 +215,7 @@ namespace System.Xml.Serialization
             _charID = _r.NameTable.Add("char");
             _guidID = _r.NameTable.Add("guid");
             _timeSpanID = _r.NameTable.Add("TimeSpan");
+            _dateTimeOffsetID = _r.NameTable.Add("dateTimeOffset");
             _base64ID = _r.NameTable.Add("base64");
 
             _anyURIID = _r.NameTable.Add("anyURI");
@@ -667,6 +669,8 @@ namespace System.Xml.Serialization
                     value = new Guid(CollapseWhitespace(ReadStringValue()));
                 else if ((object)type.Name == (object)_timeSpanID)
                     value = XmlConvert.ToTimeSpan(ReadStringValue());
+                else if ((object)type.Name == (object)_dateTimeOffsetID)
+                    value = XmlConvert.ToDateTimeOffset(ReadStringValue());
                 else
                     value = ReadXmlNodes(elementCanBeType);
             }
@@ -764,6 +768,8 @@ namespace System.Xml.Serialization
                     value = default(Nullable<Guid>);
                 else if ((object)type.Name == (object)_timeSpanID)
                     value = default(Nullable<TimeSpan>);
+                else if ((object)type.Name == (object)_dateTimeOffsetID)
+                    value = default(Nullable<DateTimeOffset>);
                 else
                     value = null;
             }
@@ -4700,13 +4706,20 @@ namespace System.Xml.Serialization
                 }
                 Writer.Indent++;
 
-                if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan))
+                if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan) || element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset))
                 {
                     Writer.WriteLine("if (Reader.IsEmptyElement) {");
                     Writer.Indent++;
                     Writer.WriteLine("Reader.Skip();");
                     WriteSourceBegin(source);
-                    Writer.Write("default(System.TimeSpan)");
+                    if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan))
+                    {
+                        Writer.Write("default(System.TimeSpan)");
+                    }
+                    else if (element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset))
+                    {
+                        Writer.Write("default(System.DateTimeOffset)");
+                    }
                     WriteSourceEnd(source);
                     Writer.WriteLine(";");
                     Writer.Indent--;

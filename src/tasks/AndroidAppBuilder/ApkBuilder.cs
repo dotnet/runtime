@@ -125,11 +125,13 @@ public class ApkBuilder
 
         var assemblerFiles = new StringBuilder();
         var assemblerFilesToLink = new StringBuilder();
+        var aotLibraryFiles = new List<string>();
         foreach (ITaskItem file in Assemblies)
         {
             // use AOT files if available
             var obj = file.GetMetadata("AssemblerFile");
             var llvmObj = file.GetMetadata("LlvmObjectFile");
+            var lib = file.GetMetadata("LibraryFile");
 
             if (!string.IsNullOrEmpty(obj))
             {
@@ -143,9 +145,14 @@ public class ApkBuilder
                 var name = Path.GetFileNameWithoutExtension(llvmObj);
                 assemblerFilesToLink.AppendLine($"    {llvmObj}");
             }
+
+            if (!string.IsNullOrEmpty(lib))
+            {
+                aotLibraryFiles.Add(lib);
+            }
         }
 
-        if (ForceAOT && assemblerFiles.Length == 0)
+        if (ForceAOT && assemblerFiles.Length == 0 && aotLibraryFiles.Count == 0)
         {
             throw new InvalidOperationException("Need list of AOT files.");
         }
@@ -165,7 +172,8 @@ public class ApkBuilder
 
         // Copy sourceDir to OutputDir/assets-tozip (ignore native files)
         // these files then will be zipped and copied to apk/assets/assets.zip
-        Utils.DirectoryCopy(AppDir, Path.Combine(OutputDir, "assets-tozip"), file =>
+        var assetsToZipDirectory = Path.Combine(OutputDir, "assets-tozip");
+        Utils.DirectoryCopy(AppDir, assetsToZipDirectory, file =>
         {
             string fileName = Path.GetFileName(file);
             string extension = Path.GetExtension(file);
@@ -184,6 +192,12 @@ public class ApkBuilder
             return true;
         });
 
+        // add AOT .so libraries
+        foreach (var aotlib in aotLibraryFiles)
+        {
+            File.Copy(aotlib, Path.Combine(assetsToZipDirectory, Path.GetFileName(aotlib)));
+        }
+
         // tools:
         string dx = Path.Combine(buildToolsFolder, "dx");
         string aapt = Path.Combine(buildToolsFolder, "aapt");
@@ -195,8 +209,8 @@ public class ApkBuilder
         string cmake = "cmake";
         string zip = "zip";
 
-        Utils.RunProcess(zip, workingDir: Path.Combine(OutputDir, "assets-tozip"), args: "-q -r ../assets/assets.zip .");
-        Directory.Delete(Path.Combine(OutputDir, "assets-tozip"), true);
+        Utils.RunProcess(zip, workingDir: assetsToZipDirectory, args: "-q -r ../assets/assets.zip .");
+        Directory.Delete(assetsToZipDirectory, true);
 
         if (!File.Exists(androidJar))
             throw new ArgumentException($"API level={BuildApiLevel} is not downloaded in Android SDK");
@@ -283,22 +297,26 @@ public class ApkBuilder
             .Replace("%AotSources%", aotSources)
             .Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.c");
 
-        string defines = "";
+        var defines = new StringBuilder();
         if (ForceInterpreter)
         {
-            defines = "add_definitions(-DFORCE_INTERPRETER=1)";
+            defines.AppendLine("add_definitions(-DFORCE_INTERPRETER=1)");
         }
         else if (ForceAOT)
         {
-            defines = "add_definitions(-DFORCE_AOT=1)";
+            defines.AppendLine("add_definitions(-DFORCE_AOT=1)");
+            if (aotLibraryFiles.Count == 0)
+            {
+                defines.AppendLine("add_definitions(-DSTATIC_AOT=1)");
+            }
         }
 
         if (!string.IsNullOrEmpty(DiagnosticPorts))
         {
-            defines += "\nadd_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")";
+            defines.AppendLine("add_definitions(-DDIAGNOSTIC_PORTS=\"" + DiagnosticPorts + "\")");
         }
 
-        cmakeLists = cmakeLists.Replace("%Defines%", defines);
+        cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
 
         File.WriteAllText(Path.Combine(OutputDir, "CMakeLists.txt"), cmakeLists);
 

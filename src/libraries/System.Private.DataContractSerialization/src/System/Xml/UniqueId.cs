@@ -198,7 +198,7 @@ namespace System.Xml
             }
         }
 
-        public unsafe int ToCharArray(char[] chars, int offset)
+        public int ToCharArray(char[] chars, int offset)
         {
             int count = CharArrayLength;
 
@@ -213,9 +213,15 @@ namespace System.Xml
             if (count > chars.Length - offset)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(chars), SR.Format(SR.XmlArrayTooSmallOutput, count)));
 
+            ToSpan(chars.AsSpan(offset, count));
+            return count;
+        }
+
+        private unsafe void ToSpan(Span<char> chars)
+        {
             if (_s != null)
             {
-                _s.CopyTo(0, chars, offset, count);
+                _s.CopyTo(chars);
             }
             else
             {
@@ -223,7 +229,7 @@ namespace System.Xml
                 UnsafeSetInt64(_idLow, bytes);
                 UnsafeSetInt64(_idHigh, &bytes[8]);
 
-                fixed (char* _pch = &chars[offset])
+                fixed (char* _pch = &chars[0])
                 {
                     char* pch = _pch;
                     pch[0] = 'u';
@@ -258,8 +264,6 @@ namespace System.Xml
                     UnsafeEncode(bytes[15], &pch[43]);
                 }
             }
-
-            return count;
         }
 
         public bool TryGetGuid(out Guid guid)
@@ -300,17 +304,8 @@ namespace System.Xml
             return true;
         }
 
-        public unsafe override string ToString()
-        {
-            if (_s == null)
-            {
-                int length = CharArrayLength;
-                char[] chars = new char[length];
-                ToCharArray(chars, 0);
-                _s = new string(chars, 0, length);
-            }
-            return _s;
-        }
+        public override string ToString() =>
+            _s ??= string.Create(CharArrayLength, this, (destination, thisRef) => thisRef.ToSpan(destination));
 
         public static bool operator ==(UniqueId? id1, UniqueId? id2)
         {

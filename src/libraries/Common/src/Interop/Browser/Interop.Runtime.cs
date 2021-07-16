@@ -70,6 +70,7 @@ internal static partial class Interop
             object res = CompileFunction(snippet, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
+            ReleaseInFlight(res);
             return res as System.Runtime.InteropServices.JavaScript.Function;
         }
 
@@ -97,6 +98,7 @@ internal static partial class Interop
             if (exception != 0)
                 throw new JSException($"Error obtaining a handle to global {str}");
 
+            ReleaseInFlight(globalHandle);
             return globalHandle;
         }
 
@@ -120,6 +122,12 @@ internal static partial class Interop
                 var module = (JSObject)Runtime.GetGlobalObject("Module");
                 module.SetObjectProperty("aot_profile_data", Uint8Array.From(span));
             }
+        }
+
+        public static void ReleaseInFlight(object? obj)
+        {
+            JSObject? jsObj = obj as JSObject;
+            jsObj?.ReleaseInFlight();
         }
     }
 }

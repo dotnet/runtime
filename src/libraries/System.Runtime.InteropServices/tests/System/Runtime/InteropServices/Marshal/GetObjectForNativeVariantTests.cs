@@ -351,8 +351,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { 128 };
             yield return new object[] { 4094 };
             yield return new object[] { VT_BSTR_BLOB };
-            yield return new object[] { VT_ILLEGALMASKED };
-            yield return new object[] { VT_TYPEMASK };
+            Assert.Equal(VT_BSTR_BLOB, VT_ILLEGALMASKED);
+            Assert.Equal(VT_BSTR_BLOB, VT_TYPEMASK);
             yield return new object[] { VT_VECTOR };
             yield return new object[] { 4097 };
             yield return new object[] { 8191 };

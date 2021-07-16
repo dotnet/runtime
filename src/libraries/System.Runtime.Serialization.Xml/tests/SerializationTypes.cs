@@ -900,6 +900,22 @@ public class TypeWithBinaryProperty
     public byte[] Base64Content { get; set; }
 }
 
+public class TypeWithDateTimeOffsetProperties
+{
+    public DateTimeOffset DTO { get; set; }
+    public DateTimeOffset DTO2 { get; set; }
+
+    [XmlElement(ElementName = "DefaultDTO")]
+    [DefaultValue(typeof(DateTimeOffset), "1/1/0001 0:00:00 AM +00:00")]
+    public DateTimeOffset DTOWithDefault { get; set; }
+
+    public DateTimeOffset? NullableDTO { get; set; }
+
+    [XmlElement(ElementName = "NullableDefaultDTO")]
+    [DefaultValue(typeof(DateTimeOffset), "1/1/0001 0:00:00 AM +00:00")]
+    public DateTimeOffset? NullableDTOWithDefault { get; set; }
+}
+
 public class TypeWithTimeSpanProperty
 {
     public TimeSpan TimeSpanProperty;

@@ -484,6 +484,10 @@ typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;
 #define DISABLE_THREADSUSPEND
 #endif
 
+#if defined(FEATURE_HIJACK) && (defined(TARGET_UNIX) || defined(FEATURE_SPECIAL_USER_MODE_APC))
+#define FEATURE_THREAD_ACTIVATION
+#endif
+
 // NT thread priorities range from -15 to +15.
 #define INVALID_THREAD_PRIORITY  ((DWORD)0x80000000)
 
@@ -529,6 +533,41 @@ struct HijackArgs;
 
 // manifest constant for waiting in the exposed classlibs
 const INT32 INFINITE_TIMEOUT = -1;
+
+/***************************************************************************/
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+
+// These declarations are for a new special user-mode APC feature introduced in Windows. These are not yet available in Windows
+// SDK headers, so some names below are prefixed with "CLONE_" to avoid conflicts in the future. Once the prefixed declarations
+// become available in the Windows SDK headers, the prefixed declarations below can be removed in favor of the SDK ones.
+
+enum CLONE_QUEUE_USER_APC_FLAGS
+{
+    CLONE_QUEUE_USER_APC_FLAGS_NONE = 0x0,
+    CLONE_QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC = 0x1,
+
+    CLONE_QUEUE_USER_APC_CALLBACK_DATA_CONTEXT = 0x10000
+};
+
+struct CLONE_APC_CALLBACK_DATA
+{
+    ULONG_PTR Parameter;
+    PCONTEXT ContextRecord;
+    ULONG_PTR Reserved0;
+    ULONG_PTR Reserved1;
+};
+typedef CLONE_APC_CALLBACK_DATA *CLONE_PAPC_CALLBACK_DATA;
+
+typedef BOOL (WINAPI *QueueUserAPC2Proc)(PAPCFUNC ApcRoutine, HANDLE Thread, ULONG_PTR Data, CLONE_QUEUE_USER_APC_FLAGS Flags);
+
+const CLONE_QUEUE_USER_APC_FLAGS SpecialUserModeApcWithContextFlags =
+    (CLONE_QUEUE_USER_APC_FLAGS)
+    (
+        CLONE_QUEUE_USER_APC_FLAGS_SPECIAL_USER_APC |   // this will be a special user-mode APC
+        CLONE_QUEUE_USER_APC_CALLBACK_DATA_CONTEXT      // the callback's parameter will be a PAPC_CALLBACK_DATA
+    );
+
+#endif // FEATURE_SPECIAL_USER_MODE_APC
 
 /***************************************************************************/
 // Public enum shared between thread and threadpool
@@ -1022,9 +1061,9 @@ class Thread
     // MapWin32FaultToCOMPlusException needs access to Thread::IsAddrOfRedirectFunc()
     friend DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
     friend void STDCALL OnHijackWorker(HijackArgs * pArgs);
-#ifdef TARGET_UNIX
-    friend void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext);
-#endif // TARGET_UNIX
+#ifdef FEATURE_THREAD_ACTIVATION
+    friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext);
+#endif // FEATURE_THREAD_ACTIVATION
 
 #endif // FEATURE_HIJACK
 
@@ -2388,9 +2427,15 @@ public:
         STR_NoStressLog,
     };
 
-#if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
-    bool InjectGcSuspension();
-#endif // FEATURE_HIJACK && TARGET_UNIX
+#ifdef FEATURE_THREAD_ACTIVATION
+    enum class ActivationReason
+    {
+        SuspendForGC,
+        SuspendForDebugger,
+    };
+
+    bool InjectActivation(ActivationReason reason);
+#endif // FEATURE_THREAD_ACTIVATION
 
 #ifndef DISABLE_THREADSUSPEND
     // SuspendThread
@@ -4000,9 +4045,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 #ifdef _DEBUG
-        _ASSERTE(m_RedirectContextInUse);
-        _ASSERTE(pCtx == m_pSavedRedirectContext);
-        m_RedirectContextInUse = false;
+        _ASSERTE(!UseContextBasedThreadRedirection() || m_RedirectContextInUse);
+        if (m_RedirectContextInUse)
+        {
+            _ASSERTE(pCtx == m_pSavedRedirectContext);
+            m_RedirectContextInUse = false;
+        }
 #endif
     }
 #endif //DACCESS_COMPILE
@@ -4610,6 +4658,60 @@ public:
 
 private:
     bool m_isInForbidSuspendForDebuggerRegion;
+
+#ifndef DACCESS_COMPILE
+public:
+    static void StaticInitialize();
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    static bool AreCetShadowStacksEnabled()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        // The SSP is null when CET shadow stacks are not enabled. On processors that don't support shadow stacks, this is a
+        // no-op and the intrinsic returns 0. CET shadow stacks are enabled or disabled for all threads, so the result is the
+        // same from any thread.
+        return _rdsspq() != 0;
+    }
+#endif
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+private:
+    static void InitializeSpecialUserModeApc();
+    static void ApcActivationCallback(ULONG_PTR Parameter);
+#endif
+
+public:
+    static bool UseSpecialUserModeApc()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+    #ifdef FEATURE_SPECIAL_USER_MODE_APC
+        return s_pfnQueueUserAPC2Proc != nullptr;
+    #else
+        return false;
+    #endif
+    }
+
+    static bool UseContextBasedThreadRedirection()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+    #ifndef DISABLE_THREADSUSPEND
+        return !UseSpecialUserModeApc();
+    #else
+        return false;
+    #endif
+    }
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+private:
+    static QueueUserAPC2Proc s_pfnQueueUserAPC2Proc;
+#endif
+#endif // !DACCESS_COMPILE
+
+private:
+    bool m_hasPendingActivation;
 };
 
 // End of class Thread
