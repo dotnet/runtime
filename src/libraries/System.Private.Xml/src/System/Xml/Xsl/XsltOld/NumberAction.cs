@@ -130,7 +130,7 @@ namespace System.Xml.Xsl.XsltOld
                     str = val.ToString(CultureInfo.InvariantCulture);
                 }
 
-                return str.PadLeft('0', minLength);
+                return str.PadLeft(minLength, '0');
             }
         }
 
