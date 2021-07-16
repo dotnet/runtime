@@ -3,38 +3,27 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class ImmutableEnumerableOfTConverter<TCollection, TElement>
+    internal class ImmutableEnumerableOfTConverter<TCollection, TElement>
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : IEnumerable<TElement>
     {
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
-        public ImmutableEnumerableOfTConverter()
-        {
-        }
-
-        // Used by source-gen initialization for reflection-free serialization.
-        public ImmutableEnumerableOfTConverter(bool dummy) { }
-
-        protected override void Add(in TElement value, ref ReadStack state)
+        protected sealed override void Add(in TElement value, ref ReadStack state)
         {
             ((List<TElement>)state.Current.ReturnValue!).Add(value);
         }
 
-        internal override bool CanHaveIdMetadata => false;
+        internal sealed override bool CanHaveIdMetadata => false;
 
-        internal override bool RequiresDynamicMemberAccessors => true;
-
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        protected sealed override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             state.Current.ReturnValue = new List<TElement>();
         }
 
-        protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
+        protected sealed override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
@@ -43,7 +32,7 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ReturnValue = creator((List<TElement>)state.Current.ReturnValue!);
         }
 
-        protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
+        protected sealed override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
         {
             IEnumerator<TElement> enumerator;
             if (state.Current.CollectionEnumerator == null)
@@ -79,14 +68,6 @@ namespace System.Text.Json.Serialization.Converters
 
             enumerator.Dispose();
             return true;
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked RequiresUnreferencedCode.")]
-        internal override void Initialize(JsonSerializerOptions options, JsonTypeInfo? jsonTypeInfo = null)
-        {
-            Debug.Assert(jsonTypeInfo != null);
-            jsonTypeInfo.CreateObjectWithArgs = options.MemberAccessorStrategy.CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>();
         }
     }
 }
