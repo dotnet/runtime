@@ -66,11 +66,6 @@
 #include <dlfcn.h>
 #include <AvailabilityMacros.h>
 
-/* This is #define'd by Boehm GC to _GC_dlopen. */
-#undef dlopen
-
-void* dlopen(const char* path, int mode);
-
 void
 mono_runtime_install_handlers (void)
 {
