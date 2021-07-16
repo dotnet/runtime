@@ -1596,10 +1596,10 @@ namespace Mono.Linker.Dataflow
 								var requiredMemberTypes = GetDynamicallyAccessedMemberTypesFromBindingFlagsForConstructors (bindingFlags);
 
 								// Special case the public parameterless constructor if we know that there are 0 args passed in
-								if (ctorParameterCount == 0 &&
-									requiredMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors) &&
-									!requiredMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.NonPublicConstructors))
-									requiredMemberTypes = DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+								if (ctorParameterCount == 0 && requiredMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors)) {
+									requiredMemberTypes &= ~DynamicallyAccessedMemberTypes.PublicConstructors;
+									requiredMemberTypes |= DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+								}
 
 								RequireDynamicallyAccessedMembers (ref reflectionContext, requiredMemberTypes, value, calledMethod.Parameters[0]);
 							}

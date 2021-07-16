@@ -55,6 +55,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestNullArgsOnKnownType ();
 			TestNullArgsOnAnnotatedType (typeof (TestType));
 			TestNullArgsNonPublicOnly (typeof (TestType));
+			TestNullArgsNonPublicWithNonPublicAnnotation (typeof (TestType));
 
 			CreateInstanceWithGetTypeFromHierarchy.Test ();
 		}
@@ -530,6 +531,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))] Type type)
 		{
 			Activator.CreateInstance (type, BindingFlags.NonPublic | BindingFlags.Instance, null, null, CultureInfo.InvariantCulture);
+		}
+
+		[Kept]
+		[ExpectedNoWarnings]
+		private static void TestNullArgsNonPublicWithNonPublicAnnotation (
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors),
+			KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))] Type type)
+		{
+			Activator.CreateInstance (type, nonPublic: true);
 		}
 
 		[Kept]
