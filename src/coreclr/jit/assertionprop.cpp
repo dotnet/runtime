@@ -1271,6 +1271,19 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     }
 
                     toType = op2->CastToType();
+
+                    // Casts to TYP_UINT produce the same ranges as casts to TYP_INT,
+                    // except in overflow cases which we do not yet handle. To avoid
+                    // issues with the propagation code dropping, e. g., CAST_OVF(uint <- int)
+                    // based on an assertion created from CAST(uint <- ulong), normalize the
+                    // type for the range here. Note that TYP_ULONG theoretically has the same
+                    // problem, but we do not create assertions for it.
+                    // TODO-Cleanup: this assertion is not useful - this code exists to preserve
+                    // previous behavior. Refactor it to stop generating such assertions.
+                    if (toType == TYP_UINT)
+                    {
+                        toType = TYP_INT;
+                    }
                 SUBRANGE_COMMON:
                     if ((assertionKind != OAK_SUBRANGE) && (assertionKind != OAK_EQUAL))
                     {

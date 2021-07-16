@@ -576,22 +576,6 @@ namespace System.Text.Json.Serialization.Tests
         public int MyObject { get; set; }
     }
 
-    public class UppercaseNamingPolicy : JsonNamingPolicy
-    {
-        public override string ConvertName(string name)
-        {
-            return name.ToUpperInvariant();
-        }
-    }
-
-    public class NullNamingPolicy : JsonNamingPolicy
-    {
-        public override string ConvertName(string name)
-        {
-            return null;
-        }
-    }
-
     public class EmptyClassWithExtensionProperty
     {
         [JsonExtensionData]

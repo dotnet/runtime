@@ -221,7 +221,7 @@ namespace System.Net.Http.Headers
         internal bool Contains(HeaderDescriptor descriptor)
         {
             // We can't just call headerStore.ContainsKey() since after parsing the value the header may not exist
-            // anymore (if the value contains invalid newline chars, we remove the header). So try to parse the
+            // anymore (if the value contains newline chars, we remove the header). So try to parse the
             // header value.
             return _headerStore != null && TryGetAndParseHeaderInfo(descriptor, out _);
         }
@@ -318,7 +318,7 @@ namespace System.Net.Http.Headers
                 // values.
                 if (!ParseRawHeaderValues(descriptor, info, removeEmptyHeader: false))
                 {
-                    // We have an invalid header value (contains invalid newline chars). Delete it.
+                    // We have an invalid header value (contains newline chars). Delete it.
                     _headerStore.Remove(descriptor);
                 }
                 else
@@ -726,18 +726,17 @@ namespace System.Net.Http.Headers
                 }
 
                 // At this point all values are either in info.ParsedValue, info.InvalidValue, or were removed since they
-                // contain invalid newline chars. Reset RawValue.
+                // contain newline chars. Reset RawValue.
                 info.RawValue = null;
 
-                // During parsing, we removed the value since it contains invalid newline chars. Return false to indicate that
+                // During parsing, we removed the value since it contains newline chars. Return false to indicate that
                 // this is an empty header. If the caller specified to remove empty headers, we'll remove the header before
                 // returning.
                 if ((info.InvalidValue == null) && (info.ParsedValue == null))
                 {
                     if (removeEmptyHeader)
                     {
-                        // After parsing the raw value, no value is left because all values contain invalid newline
-                        // chars.
+                        // After parsing the raw value, no value is left because all values contain newline chars.
                         Debug.Assert(_headerStore != null);
                         _headerStore.Remove(descriptor);
                     }
@@ -754,7 +753,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (string rawValue in rawValues)
                 {
-                    if (!ContainsInvalidNewLine(rawValue, descriptor.Name))
+                    if (!ContainsNewLine(rawValue, descriptor.Name))
                     {
                         AddParsedValue(info, rawValue);
                     }
@@ -779,7 +778,7 @@ namespace System.Net.Http.Headers
 
             if (descriptor.Parser == null)
             {
-                if (!ContainsInvalidNewLine(rawValue, descriptor.Name))
+                if (!ContainsNewLine(rawValue, descriptor.Name))
                 {
                     AddParsedValue(info, rawValue);
                 }
@@ -868,7 +867,7 @@ namespace System.Net.Http.Headers
                     }
                     else
                     {
-                        if (!ContainsInvalidNewLine(value, descriptor.Name) && addWhenInvalid)
+                        if (!ContainsNewLine(value, descriptor.Name) && addWhenInvalid)
                         {
                             AddInvalidValue(info, value);
                         }
@@ -885,7 +884,7 @@ namespace System.Net.Http.Headers
             }
 
             Debug.Assert(value != null);
-            if (!ContainsInvalidNewLine(value, descriptor.Name) && addWhenInvalid)
+            if (!ContainsNewLine(value, descriptor.Name) && addWhenInvalid)
             {
                 AddInvalidValue(info, value ?? string.Empty);
             }
@@ -973,8 +972,8 @@ namespace System.Net.Http.Headers
             if (descriptor.Parser == null)
             {
                 // If we don't have a parser for the header, we consider the value valid if it doesn't contains
-                // invalid newline characters. We add the values as "parsed value". Note that we allow empty values.
-                CheckInvalidNewLine(value);
+                // newline characters. We add the values as "parsed value". Note that we allow empty values.
+                CheckContainsNewLine(value);
                 AddParsedValue(info, value ?? string.Empty);
                 return;
             }
@@ -1077,22 +1076,22 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        private static void CheckInvalidNewLine(string? value)
+        internal static void CheckContainsNewLine(string? value)
         {
             if (value == null)
             {
                 return;
             }
 
-            if (HttpRuleParser.ContainsInvalidNewLine(value))
+            if (HttpRuleParser.ContainsNewLine(value))
             {
                 throw new FormatException(SR.net_http_headers_no_newlines);
             }
         }
 
-        private static bool ContainsInvalidNewLine(string value, string name)
+        private static bool ContainsNewLine(string value, string name)
         {
-            if (HttpRuleParser.ContainsInvalidNewLine(value))
+            if (HttpRuleParser.ContainsNewLine(value))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_no_newlines, name, value));
                 return true;

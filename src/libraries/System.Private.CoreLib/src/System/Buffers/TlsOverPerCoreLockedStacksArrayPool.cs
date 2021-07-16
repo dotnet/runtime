@@ -24,12 +24,11 @@ namespace System.Buffers
         // TODO https://github.com/dotnet/coreclr/pull/7747: "Investigate optimizing ArrayPool heuristics"
         // - Explore caching in TLS more than one array per size per thread, and moving stale buffers to the global queue.
         // - Explore changing the size of each per-core bucket, potentially dynamically or based on other factors like array size.
-        // - Explore changing number of buckets and what sizes of arrays are cached.
         // - Investigate whether false sharing is causing any issues, in particular on LockedStack's count and the contents of its array.
         // ...
 
         /// <summary>The number of buckets (array sizes) in the pool, one for each array length, starting from length 16.</summary>
-        private const int NumBuckets = 17; // Utilities.SelectBucketIndex(2*1024*1024)
+        private const int NumBuckets = 27; // Utilities.SelectBucketIndex(1024 * 1024 * 1024 + 1)
         /// <summary>Maximum number of per-core stacks to use per array size.</summary>
         private const int MaxPerCorePerArraySizeStacks = 64; // selected to avoid needing to worry about processor groups
         /// <summary>The maximum number of buffers to store in a bucket's global queue.</summary>

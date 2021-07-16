@@ -432,8 +432,8 @@ namespace System.Diagnostics
                 {
                     argv = ParseArgv(startInfo);
 
-                    isExecuting = ForkAndExecProcess(filename, argv, envp, cwd,
-                        startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                    isExecuting = ForkAndExecProcess(
+                        startInfo, filename, argv, envp, cwd,
                         setCredentials, userId, groupId, groups,
                         out stdinFd, out stdoutFd, out stderrFd, usesTerminal,
                         throwOnNoExec: false); // return false instead of throwing on ENOEXEC
@@ -445,8 +445,8 @@ namespace System.Diagnostics
                     filename = GetPathToOpenFile();
                     argv = ParseArgv(startInfo, filename, ignoreArguments: true);
 
-                    ForkAndExecProcess(filename, argv, envp, cwd,
-                        startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                    ForkAndExecProcess(
+                        startInfo, filename, argv, envp, cwd,
                         setCredentials, userId, groupId, groups,
                         out stdinFd, out stdoutFd, out stderrFd, usesTerminal);
                 }
@@ -460,8 +460,8 @@ namespace System.Diagnostics
                     throw new Win32Exception(SR.DirectoryNotValidAsInput);
                 }
 
-                ForkAndExecProcess(filename, argv, envp, cwd,
-                    startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                ForkAndExecProcess(
+                    startInfo, filename, argv, envp, cwd,
                     setCredentials, userId, groupId, groups,
                     out stdinFd, out stdoutFd, out stderrFd, usesTerminal);
             }
@@ -494,15 +494,16 @@ namespace System.Diagnostics
         }
 
         private bool ForkAndExecProcess(
-            string? filename, string[] argv, string[] envp, string? cwd,
-            bool redirectStdin, bool redirectStdout, bool redirectStderr,
-            bool setCredentials, uint userId, uint groupId, uint[]? groups,
+            ProcessStartInfo startInfo, string? resolvedFilename, string[] argv,
+            string[] envp, string? cwd, bool setCredentials, uint userId,
+            uint groupId, uint[]? groups,
             out int stdinFd, out int stdoutFd, out int stderrFd,
             bool usesTerminal, bool throwOnNoExec = true)
         {
-            if (string.IsNullOrEmpty(filename))
+            if (string.IsNullOrEmpty(resolvedFilename))
             {
-                throw new Win32Exception(Interop.Error.ENOENT.Info().RawErrno);
+                Interop.ErrorInfo errno = Interop.Error.ENOENT.Info();
+                throw CreateExceptionForErrorStartingProcess(errno.GetErrorMessage(), errno.RawErrno, startInfo.FileName, cwd);
             }
 
             // Lock to avoid races with OnSigChild
@@ -523,11 +524,10 @@ namespace System.Diagnostics
                 // is used to fork/execve as executing managed code in a forked process is not safe (only
                 // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
                 int errno = Interop.Sys.ForkAndExecProcess(
-                    filename, argv, envp, cwd,
-                    redirectStdin, redirectStdout, redirectStderr,
+                    resolvedFilename, argv, envp, cwd,
+                    startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
                     setCredentials, userId, groupId, groups,
-                    out childPid,
-                    out stdinFd, out stdoutFd, out stderrFd);
+                    out childPid, out stdinFd, out stdoutFd, out stderrFd);
 
                 if (errno == 0)
                 {
@@ -550,7 +550,7 @@ namespace System.Diagnostics
                         return false;
                     }
 
-                    throw new Win32Exception(errno);
+                    throw CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
                 }
             }
             finally

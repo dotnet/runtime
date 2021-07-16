@@ -119,11 +119,18 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     foreach (var key in envVarsDict.Keys)
                         envStr.Append($"{key}={envVarsDict[key]} ");
                     Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}{command}");
-                    (int exitCode, string output) = Utils.RunShellCommand(command, envVarsDict, workingDir: Environment.CurrentDirectory);
+                    (int exitCode, string output) = Utils.RunShellCommand(
+                                                            command,
+                                                            envVarsDict,
+                                                            workingDir: Environment.CurrentDirectory,
+                                                            logger: Log,
+                                                            logStdErrAsMessage: true,
+                                                            debugMessageImportance: MessageImportance.High,
+                                                            label: Path.GetFileName(srcFile));
 
                     if (exitCode != 0)
                     {
-                        Log.LogError($"Failed to compile {srcFile} -> {objFile}{Environment.NewLine}{output}");
+                        Log.LogError($"Failed to compile {srcFile} -> {objFile}");
                         return false;
                     }
 
@@ -131,7 +138,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     newItem.SetMetadata("SourceFile", srcFile);
                     outputItems.Add(newItem);
 
-                    return true;
+                    return !Log.HasLoggedErrors;
                 }
                 catch (Exception ex)
                 {

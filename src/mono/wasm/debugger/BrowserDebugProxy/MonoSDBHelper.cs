@@ -615,9 +615,12 @@ namespace Microsoft.WebAssembly.Diagnostics
         private MonoProxy proxy;
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
-        public MonoSDBHelper(MonoProxy proxy)
+        private readonly ILogger logger;
+
+        public MonoSDBHelper(MonoProxy proxy, ILogger logger)
         {
             this.proxy = proxy;
+            this.logger = logger;
         }
 
         public void ClearCache()
@@ -946,6 +949,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return ret;
         }
+
         public string ReplaceCommonClassNames(string className)
         {
             className = className.Replace("System.String", "string");
@@ -957,6 +961,88 @@ namespace Microsoft.WebAssembly.Diagnostics
             className = className.Replace("System.Byte", "byte");
             return className;
         }
+
+        public async Task<string> GetDebuggerDisplayAttribute(SessionId sessionId, int objectId, int typeId, CancellationToken token)
+        {
+            string expr = "";
+            var invokeParams = new MemoryStream();
+            var invokeParamsWriter = new MonoBinaryWriter(invokeParams);
+            var commandParams = new MemoryStream();
+            var commandParamsWriter = new MonoBinaryWriter(commandParams);
+            commandParamsWriter.Write(typeId);
+            commandParamsWriter.Write(0);
+            var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetCattrs, commandParams, token);
+            var count = retDebuggerCmdReader.ReadInt32();
+            if (count == 0)
+                return null;
+            for (int i = 0 ; i < count; i++)
+            {
+                var methodId = retDebuggerCmdReader.ReadInt32();
+                if (methodId == 0)
+                    continue;
+                commandParams = new MemoryStream();
+                commandParamsWriter = new MonoBinaryWriter(commandParams);
+                commandParamsWriter.Write(methodId);
+                var retDebuggerCmdReader2 = await SendDebuggerAgentCommand<CmdMethod>(sessionId, CmdMethod.GetDeclaringType, commandParams, token);
+                var customAttributeTypeId = retDebuggerCmdReader2.ReadInt32();
+                var customAttributeName = await GetTypeName(sessionId, customAttributeTypeId, token);
+                if (customAttributeName == "System.Diagnostics.DebuggerDisplayAttribute")
+                {
+                    invokeParamsWriter.Write((byte)ValueTypeId.Null);
+                    invokeParamsWriter.Write((byte)0); //not used
+                    invokeParamsWriter.Write(0); //not used
+                    var parmCount = retDebuggerCmdReader.ReadInt32();
+                    invokeParamsWriter.Write((int)1);
+                    for (int j = 0; j < parmCount; j++)
+                    {
+                        invokeParamsWriter.Write((byte)retDebuggerCmdReader.ReadByte());
+                        invokeParamsWriter.Write(retDebuggerCmdReader.ReadInt32());
+                    }
+                    var retMethod = await InvokeMethod(sessionId, invokeParams.ToArray(), methodId, "methodRet", token);
+                    DotnetObjectId.TryParse(retMethod?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId);
+                    var displayAttrs = await GetObjectValues(sessionId, int.Parse(dotnetObjectId.Value), true, false, false, false, token);
+                    var displayAttrValue = displayAttrs.FirstOrDefault(attr => attr["name"].Value<string>().Equals("Value"));
+                    try {
+                        ExecutionContext context = proxy.GetContext(sessionId);
+                        var objectValues = await GetObjectValues(sessionId, objectId, true, false, false, false, token);
+
+                        var thisObj = CreateJObject<string>("", "object", "", false, objectId:$"dotnet:object:{objectId}");
+                        thisObj["name"] = "this";
+                        objectValues.Add(thisObj);
+
+                        var resolver = new MemberReferenceResolver(proxy, context, sessionId, objectValues, logger);
+                        var dispAttrStr = displayAttrValue["value"]?["value"]?.Value<string>();
+                        //bool noQuotes = false;
+                        if (dispAttrStr.Contains(", nq"))
+                        {
+                            //noQuotes = true;
+                            dispAttrStr = dispAttrStr.Replace(", nq", "");
+                        }
+                        expr = "$\"" + dispAttrStr + "\"";
+                        JObject retValue = await resolver.Resolve(expr, token);
+                        if (retValue == null)
+                            retValue = await EvaluateExpression.CompileAndRunTheExpression(expr, resolver, token);
+                        return retValue?["value"]?.Value<string>();
+                    }
+                    catch (Exception)
+                    {
+                        logger.LogDebug($"Could not evaluate DebuggerDisplayAttribute - {expr}");
+                        return null;
+                    }
+                }
+                else
+                {
+                    var parmCount = retDebuggerCmdReader.ReadInt32();
+                    for (int j = 0; j < parmCount; j++)
+                    {
+                        //to read parameters
+                        await CreateJObjectForVariableValue(sessionId, retDebuggerCmdReader, "varName", false, -1, token);
+                    }
+                }
+            }
+            return null;
+        }
+
         public async Task<string> GetTypeName(SessionId sessionId, int type_id, CancellationToken token)
         {
             var commandParams = new MemoryStream();
@@ -1043,7 +1129,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
             commandParamsWriter.Write((int)type_id);
             commandParamsWriter.WriteString(method_name);
-            commandParamsWriter.Write((int)(0x10 | 4)); //instance methods
+            commandParamsWriter.Write((int)(0x10 | 4 | 0x20)); //instance methods
             commandParamsWriter.Write((int)1); //case sensitive
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetMethodsByNameFlags, commandParams, token);
             var nMethods = retDebuggerCmdReader.ReadInt32();
@@ -1299,7 +1385,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             var className = "";
             var type_id = await GetTypeIdFromObject(sessionId, objectId, false, token);
             className = await GetTypeName(sessionId, type_id[0], token);
+            var debuggerDisplayAttribute = await GetDebuggerDisplayAttribute(sessionId, objectId, type_id[0], token);
             var description = className.ToString();
+
+            if (debuggerDisplayAttribute != null)
+                description = debuggerDisplayAttribute;
+
             if (await IsDelegate(sessionId, objectId, token))
             {
                 if (typeIdFromAttribute != -1)

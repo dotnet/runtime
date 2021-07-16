@@ -32,5 +32,6 @@ namespace Internal.Cryptography
         string GetNCryptAlgorithmIdentifier();
         byte[] PreprocessKey(byte[] key);
         int GetPaddingSize(CipherMode mode, int feedbackSizeBits);
+        bool IsValidEphemeralFeedbackSize(int feedbackSizeInBits);
     }
 }

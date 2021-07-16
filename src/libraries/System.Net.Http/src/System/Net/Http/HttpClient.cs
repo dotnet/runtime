@@ -132,7 +132,7 @@ namespace System.Net.Http
 
         #region Constructors
 
-        public HttpClient() : this(CreateDefaultHandler())
+        public HttpClient() : this(new HttpClientHandler())
         {
         }
 

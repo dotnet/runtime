@@ -49,9 +49,6 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 if (_elementTypeInfo == null && ElementType != null)
                 {
-                    Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Enumerable ||
-                        PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Dictionary);
-
                     _elementTypeInfo = Options.GetOrAddClass(ElementType);
                 }
 
@@ -181,6 +178,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             PropertyInfoForTypeInfo = CreatePropertyInfoForTypeInfo(Type, runtimeType, converter, typeNumberHandling, Options);
 
+            ElementType = converter.ElementType;
+
             switch (PropertyInfoForTypeInfo.ConverterStrategy)
             {
                 case ConverterStrategy.Object:
@@ -303,15 +302,23 @@ namespace System.Text.Json.Serialization.Metadata
                     break;
                 case ConverterStrategy.Enumerable:
                     {
-                        ElementType = converter.ElementType;
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
+
+                        if (converter.RequiresDynamicMemberAccessors)
+                        {
+                            converter.Initialize(Options, this);
+                        }
                     }
                     break;
                 case ConverterStrategy.Dictionary:
                     {
                         KeyType = converter.KeyType;
-                        ElementType = converter.ElementType;
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
+
+                        if (converter.RequiresDynamicMemberAccessors)
+                        {
+                            converter.Initialize(Options, this);
+                        }
                     }
                     break;
                 case ConverterStrategy.Value:
