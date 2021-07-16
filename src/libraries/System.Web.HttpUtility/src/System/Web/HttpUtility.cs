@@ -3,7 +3,7 @@
 
 // Authors:
 //   Patrik Torstensson (Patrik.Torstensson@labs2.com)
-//   Wictor Wilén (decode/encode functions) (wictor@ibizkit.se)
+//   Wictor WilÃ©n (decode/encode functions) (wictor@ibizkit.se)
 //   Tim Coleman (tim@timcoleman.com)
 //   Gonzalo Paniagua Javier (gonzalo@ximian.com)
 //
@@ -69,8 +69,7 @@ namespace System.Web
                             {
                                 sb.Append(key).Append('=');
                             }
-                            sb.Append(UrlEncode(value));
-                            sb.Append('&');
+                            sb.Append(UrlEncode(value)).Append('&');
                         }
                     }
                 }

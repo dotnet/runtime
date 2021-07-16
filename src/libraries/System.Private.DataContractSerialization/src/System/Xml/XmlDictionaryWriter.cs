@@ -122,7 +122,6 @@ namespace System.Xml
             {
                 if (LookupPrefix(namespaceUri) != null)
                     return;
-#pragma warning suppress 56506 // Microsoft, namespaceUri is already checked
                 prefix = namespaceUri.Length == 0 ? string.Empty : $"d{namespaceUri.Length}";
             }
             WriteAttributeString("xmlns", prefix, null, namespaceUri);

@@ -37,11 +37,11 @@ namespace System.Linq.Expressions.Tests
             int length = offsets.Length;
             for (int i = 0; i < length; i++)
             {
-                if (i == 0) sb.Append("(");
+                if (i == 0) sb.Append('(');
                 else sb.Append(", ");
                 sb.Append(Label(offsets[i]));
             }
-            sb.Append(")");
+            sb.Append(')');
             return sb.ToString();
         }
 
