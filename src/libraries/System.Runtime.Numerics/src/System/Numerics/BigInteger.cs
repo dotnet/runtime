@@ -1799,35 +1799,26 @@ namespace System.Numerics
 
             int sign = value._sign;
             uint[]? bits = value._bits;
+            double returnValue;
 
-            if (bits == null)
-                return sign;
-
-            int length = bits.Length;
-
-            // The maximum exponent for doubles is 1023, which corresponds to a uint bit length of 32.
-            // All BigIntegers with bits[] longer than 32 evaluate to Double.Infinity (or NegativeInfinity).
-            // Cases where the exponent is between 1024 and 1035 are handled in NumericsHelpers.GetDoubleFromParts.
-            const int InfinityLength = 1024 / kcbitUint;
-
-            if (length > InfinityLength)
+            if (IsEmpty(bits))
             {
-                if (sign == 1)
-                    return double.PositiveInfinity;
+                returnValue = sign;
+            }
+            else
+            {
+                int length = bits.Length;
+                if (!TryGetInfinity(length, sign, out double? rawValue))
+                {
+                    returnValue = ConvertToDouble(bits, length, sign);
+                }
                 else
-                    return double.NegativeInfinity;
+                {
+                    returnValue = rawValue.Value;
+                }
             }
 
-            ulong h = bits[length - 1];
-            ulong m = length > 1 ? bits[length - 2] : 0;
-            ulong l = length > 2 ? bits[length - 3] : 0;
-
-            int z = NumericsHelpers.CbitHighZero((uint)h);
-
-            int exp = (length - 2) * 32 - z;
-            ulong man = (h << 32 + z) | (m << z) | (l >> 32 - z);
-
-            return NumericsHelpers.GetDoubleFromParts(sign, exp, man);
+            return returnValue;
         }
 
         public static explicit operator decimal(BigInteger value)
@@ -2433,6 +2424,27 @@ namespace System.Numerics
             return bitLength - 1;
         }
 
+        private static double ConvertToDouble(uint[] bits,
+            int length,
+            int sign)
+        {
+            ulong highBit, middleBit, lowBit;
+            double returnValue;
+
+            highBit = bits[length - 1];
+            middleBit = length > 1 ? bits[length - 2] : 0;
+            lowBit = length > 2 ? bits[length - 3] : 0;
+
+            int z = NumericsHelpers.CbitHighZero((uint)highBit);
+
+            int exp = (length - 2) * 32 - z;
+            ulong man = (highBit << 32 + z) | (middleBit << z) | (lowBit >> 32 - z);
+
+            returnValue = NumericsHelpers.GetDoubleFromParts(sign, exp, man);
+
+            return returnValue;
+        }
+
         /// <summary>
         /// Encapsulate the logic of normalizing the "small" and "large" forms of BigInteger
         /// into the "large" form so that Bit Manipulation algorithms can be simplified.
@@ -2459,6 +2471,54 @@ namespace System.Numerics
             }
 
             return x._sign < 0;
+        }
+
+        private static bool IsEmpty([NotNullWhen(false)] uint[]? bits)
+        {
+            bool returnValue;
+
+            if (bits == null)
+            {
+                returnValue = true;
+            }
+            else
+            {
+                returnValue = false;
+            }
+
+            return returnValue;
+        }
+
+        private static bool TryGetInfinity(int length,
+            int sign,
+            [NotNullWhen(true)] out double? infinityValue)
+        {
+            bool returnValue;
+
+            // The maximum exponent for doubles is 1023, which corresponds to a uint bit length of 32.
+            // All BigIntegers with bits[] longer than 32 evaluate to Double.Infinity (or NegativeInfinity).
+            // Cases where the exponent is between 1024 and 1035 are handled in NumericsHelpers.GetDoubleFromParts.
+            const int InfinityLength = 1024 / kcbitUint;
+
+            if (length > InfinityLength)
+            {
+                if (sign == 1)
+                {
+                    infinityValue = double.PositiveInfinity;
+                }
+                else
+                {
+                    infinityValue = double.NegativeInfinity;
+                }
+                returnValue = true;
+            }
+            else
+            {
+                infinityValue = null;
+                returnValue = false;
+            }
+
+            return returnValue;
         }
 
         internal static int GetDiffLength(uint[] rgu1, uint[] rgu2, int cu)
