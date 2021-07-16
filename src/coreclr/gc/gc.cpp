@@ -8936,22 +8936,8 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         uint32_t* saved_g_card_bundle_table = g_gc_card_bundle_table;
 #endif
-
-        uint32_t* ct = 0;
-        uint32_t* translated_ct = 0;
-        short* bt = 0;
-
-        size_t cs = size_card_of (saved_g_lowest_address, saved_g_highest_address);
-        size_t bs = size_brick_of (saved_g_lowest_address, saved_g_highest_address);
-
-#ifdef BACKGROUND_GC
-        size_t ms = (gc_heap::gc_can_use_concurrent ?
-                    size_mark_array_of (saved_g_lowest_address, saved_g_highest_address) :
-                    0);
-#else
-        size_t ms = 0;
-#endif //BACKGROUND_GC
-
+        get_card_table_element_layout(start, end, card_table_element_layout);
+        size_t alloc_size = card_table_element_layout[total_bookkeeping_elements];
         size_t cb = 0;
 
 #ifdef CARD_BUNDLE
@@ -8967,31 +8953,6 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         }
 #endif //CARD_BUNDLE
 
-        size_t wws = 0;
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        size_t sw_ww_table_offset = 0;
-        if (gc_can_use_concurrent)
-        {
-            size_t sw_ww_size_before_table = sizeof(card_table_info) + cs + bs + cb;
-            sw_ww_table_offset = SoftwareWriteWatch::GetTableStartByteOffset(sw_ww_size_before_table);
-            wws =
-                sw_ww_table_offset -
-                sw_ww_size_before_table +
-                SoftwareWriteWatch::GetTableByteSize(saved_g_lowest_address, saved_g_highest_address);
-        }
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
-        size_t st = size_seg_mapping_table_of (saved_g_lowest_address, saved_g_highest_address);
-        size_t st_table_offset = sizeof(card_table_info) + cs + bs + cb + wws;
-        size_t st_table_offset_aligned = align_for_seg_mapping_table (st_table_offset);
-        st += (st_table_offset_aligned - st_table_offset);
-
-        // it is impossible for alloc_size to overflow due bounds on each of
-        // its components.
-        size_t alloc_size = sizeof (uint8_t)*(sizeof(card_table_info) + cs + bs + cb + wws + st + ms);
-        dprintf (GC_TABLE_LOG, ("card table: %Id; brick table: %Id; card bundle: %Id; sw ww table: %Id; seg table: %Id; mark array: %Id",
-                                  cs, bs, cb, wws, st, ms));
-
         uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (alloc_size, 0, virtual_reserve_flags);
 
         if (!mem)
@@ -9005,7 +8966,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 
         {
             // mark array will be committed separately (per segment).
-            size_t commit_size = alloc_size - ms;
+            size_t commit_size = card_table_element_layout[mark_array_element];
 
             if (!virtual_commit (mem, commit_size, gc_oh_num::none))
             {
@@ -9015,7 +8976,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             }
         }
 
-        ct = (uint32_t*)(mem + sizeof (card_table_info));
+        uint32_t* ct = (uint32_t*)(mem + card_table_element_layout[card_table_element]);
         card_table_refcount (ct) = 0;
         card_table_lowest_address (ct) = saved_g_lowest_address;
         card_table_highest_address (ct) = saved_g_highest_address;
@@ -9028,20 +8989,17 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
                   (card_size * card_word_width))
                  + sizeof (uint32_t)));
 */
-
-        bt = (short*)((uint8_t*)ct + cs);
-
         // No initialization needed, will be done in copy_brick_card
 
-        card_table_brick_table (ct) = bt;
+        card_table_brick_table (ct) = (short*)(mem + card_table_element_layout[brick_table_element]);
 
 #ifdef CARD_BUNDLE
-        card_table_card_bundle_table (ct) = (uint32_t*)((uint8_t*)card_table_brick_table (ct) + bs);
+        card_table_card_bundle_table (ct) = (uint32_t*)(mem + card_table_element_layout[card_bundle_table_element]);
         //set all bundle to look at all of the cards
         memset(card_table_card_bundle_table (ct), 0xFF, cb);
 #endif //CARD_BUNDLE
 
-        new_seg_mapping_table = (seg_mapping*)(mem + st_table_offset_aligned);
+        new_seg_mapping_table = (seg_mapping*)(mem + card_table_element_layout[seg_mapping_table_element]);
         new_seg_mapping_table = (seg_mapping*)((uint8_t*)new_seg_mapping_table -
                                             size_seg_mapping_table_of (0, (align_lower_segment (saved_g_lowest_address))));
         memcpy(&new_seg_mapping_table[seg_mapping_word_of(g_gc_lowest_address)],
@@ -9056,12 +9014,12 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 
 #ifdef BACKGROUND_GC
         if(gc_can_use_concurrent)
-            card_table_mark_array (ct) = (uint32_t*)((uint8_t*)card_table_brick_table (ct) + bs + cb + wws + st);
+            card_table_mark_array (ct) = (uint32_t*)(mem + card_table_element_layout[mark_array_element]);
         else
             card_table_mark_array (ct) = NULL;
 #endif //BACKGROUND_GC
 
-        translated_ct = translate_card_table (ct);
+        uint32_t* translated_ct = translate_card_table (ct);
 
         dprintf (GC_TABLE_LOG, ("card table: %Ix(translated: %Ix), seg map: %Ix, mark array: %Ix",
             (size_t)ct, (size_t)translated_ct, (size_t)new_seg_mapping_table, (size_t)card_table_mark_array (ct)));
@@ -9122,7 +9080,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 #endif
 
             SoftwareWriteWatch::SetResizedUntranslatedTable(
-                mem + sw_ww_table_offset,
+                mem + card_table_element_layout[software_write_watch_table_element],
                 saved_g_lowest_address,
                 saved_g_highest_address);
 
