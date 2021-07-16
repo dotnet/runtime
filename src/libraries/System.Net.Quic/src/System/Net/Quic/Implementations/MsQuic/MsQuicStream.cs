@@ -16,8 +16,10 @@ namespace System.Net.Quic.Implementations.MsQuic
     internal sealed class MsQuicStream : QuicStreamProvider
     {
         // Delegate that wraps the static function that will be called when receiving an event.
+        // CR: callback calls for a single instance of a stream are serialized by msquic, happpen on a msquic thread and shouldn't take too long to not to block msquic.
         internal static readonly StreamCallbackDelegate s_streamDelegate = new StreamCallbackDelegate(NativeCallbackHandler);
 
+        // CR: passed to msquic and returned in msquic callback.
         private readonly State _state = new State();
 
         private readonly bool _canRead;
@@ -30,7 +32,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private sealed class State
         {
+            // CR: We could laverage DangerousAddRef to handle relation between connection and stream and properly order calls to close.
+            // CR: SHUTDOWN event on connection will not happen while there are still any streams associated, we could laverage this instead of SafeHandle ref counting.
             public SafeMsQuicStreamHandle Handle = null!; // set in ctor.
+            // CR: roots the state in GC and it won't get collected while this exist.
+            // CR: must be kept alive until we receive SHUTDOWN_COMPLETE event
             public GCHandle StateGCHandle;
 
             public MsQuicStream? Stream; // roots the stream in the pinned state to prevent GC during an async read I/O.
@@ -50,6 +56,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             // set when ReadState.PendingRead:
             public Memory<byte> ReceiveUserBuffer;
             public CancellationTokenRegistration ReceiveCancellationRegistration;
+            // CR: Potentially we could get rid of back reference to the parent object since we don't care about keeping them alive while async msquic call is happening.
             // Resettable completions to be used for multiple calls to receive.
             public readonly ResettableCompletionSource<int> ReceiveResettableCompletionSource = new ResettableCompletionSource<int>();
 
@@ -65,12 +72,16 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Resettable completions to be used for multiple calls to send.
             public readonly ResettableCompletionSource<uint> SendResettableCompletionSource = new ResettableCompletionSource<uint>();
 
+            // CR: We should get rid off it, we're not interested in it.
             public ShutdownWriteState ShutdownWriteState;
 
             // Set once writes have been shutdown.
+            // CR: We should get rid of this
             public readonly TaskCompletionSource ShutdownWriteCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
+            // CR: Shutdown should be merged into CloseAsync.
             public ShutdownState ShutdownState;
+            // CR: To make sure that we release the handles only once.
             public int ShutdownDone;
 
             // Set once stream have been shutdown.
@@ -113,16 +124,21 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
             catch
             {
+                // CR: we should release the handle here as well as we do in outbound. Does int interfere with this being run on msquic thread? Ask NICK.
+                // Should we return a specific error code in MsQuicConnection to clean the handle for us?
                 _state.StateGCHandle.Free();
                 throw;
             }
 
+            // CR: We should move this before callback handler registration.
             if (!connectionState.TryAddStream(this))
             {
                 _state.StateGCHandle.Free();
                 throw new ObjectDisposedException(nameof(QuicConnection));
             }
 
+            // CR: We should set it before SetCallbackHandlerDelegate since we can get CONNETCION_CLOSED event and that needs this.
+            // If we want to prevent decrementing stream count, we should explicitely unset here.
             _state.ConnectionState = connectionState;
 
             _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
@@ -170,6 +186,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
+            // CR: The same as with the inbound.
             if (!connectionState.TryAddStream(this))
             {
                 _state.Handle?.Dispose();
@@ -191,6 +208,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override bool CanRead => _disposed == 0 && _canRead;
 
+        // CR: Might be useful to introduce Is(Uni|Bi)Directional to distinguish the type of the stream instead of using Can*.
         internal override bool CanWrite => _disposed == 0 && _canWrite;
 
         internal override long StreamId
@@ -220,6 +238,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override async ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default)
         {
+            // CR: we should propagate exceptions up here for write state.
             ThrowIfDisposed();
 
             using CancellationTokenRegistration registration = HandleWriteStartState(cancellationToken);
@@ -258,6 +277,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private CancellationTokenRegistration HandleWriteStartState(CancellationToken cancellationToken)
         {
+            // CR: we should make the flow as we do in Read, where we check the state and make transition in a lock as a first thing
+            // and throw exceptions afterwards.
             if (_state.SendState == SendState.Closed)
             {
                 throw new InvalidOperationException(SR.net_quic_writing_notallowed);
@@ -286,6 +307,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             // if token was already cancelled, this would execute synchronously
+            // CR: we need to track the registration and dispose it even in case of exception thrown outside of this method.
+            // https://github.com/dotnet/runtime/issues/55437
             CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
                 var state = (State)s!;
@@ -318,6 +341,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                         throw new QuicStreamAbortedException(_state.SendErrorCode);
                     }
 
+                    // CR: this should be some other exception, we should throw OCE unless CT has been fired.
                     throw new OperationCanceledException(SR.net_quic_sending_aborted);
                 }
                 else if (_state.SendState == SendState.ConnectionClosed)
@@ -555,6 +579,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamShutdown failed.");
         }
 
+        // CR: We should get rid of this
         internal override async ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
@@ -1146,6 +1171,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // TODO prevent overlapping sends or consider supporting it.
+        // CR: Why do we have 3 version of sending? We should unite as much as possible.
+        // CR: are we even testing all of them?
         private unsafe ValueTask SendReadOnlyMemoryAsync(
            ReadOnlyMemory<byte> buffer,
            QUIC_SEND_FLAGS flags)
@@ -1200,6 +1227,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return _state.SendResettableCompletionSource.GetTypelessValueTask();
         }
 
+        // CR: for kestrel
         private unsafe ValueTask SendReadOnlySequenceAsync(
            ReadOnlySequence<byte> buffers,
            QUIC_SEND_FLAGS flags)
