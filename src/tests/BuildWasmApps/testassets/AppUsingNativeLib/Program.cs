@@ -15,7 +15,7 @@ namespace SimpleConsole
             return 0;
         }
 
-        [DllImport("NativeLib")]
+        [DllImport("native-lib")]
         public static extern int print_line(int x);
     }
 }

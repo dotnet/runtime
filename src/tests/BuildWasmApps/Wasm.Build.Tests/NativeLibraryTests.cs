@@ -22,9 +22,9 @@ namespace Wasm.Build.Tests
         [BuildAndRun(aot: true)]
         public void ProjectWithNativeReference(BuildArgs buildArgs, RunHost host, string id)
         {
-            string projectName = $"AppUsingNativeLib";
+            string projectName = $"AppUsingNativeLib-a";
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, extraItems: "<NativeFileReference Include=\"NativeLib.o\" />");
+            buildArgs = ExpandBuildArgs(buildArgs, extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? _))
             {
@@ -33,7 +33,7 @@ namespace Wasm.Build.Tests
                     Directory.Delete(_projectDir, recursive: true);
 
                 Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir);
-                File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "NativeLib.o"), Path.Combine(_projectDir, "NativeLib.o"));
+                File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o"), Path.Combine(_projectDir, "native-lib.o"));
             }
 
             BuildProject(buildArgs,
