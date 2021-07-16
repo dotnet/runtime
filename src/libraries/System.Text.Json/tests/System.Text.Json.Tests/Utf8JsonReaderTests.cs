@@ -4359,6 +4359,7 @@ namespace System.Text.Json.Tests
                     new object[] {"nul", 0, 3},
                     new object[] {"tru", 0, 3},
                     new object[] {"fals", 0, 4},
+                    new object[] {"falseinvalid", 0, 5},
                     new object[] {"\"a\u6F22\u5B57ge\":", 0, 11},
                     new object[] {"{\"a\u6F22\u5B57ge\":", 0, 13},
                     new object[] {"{\"name\":\"A\u6F22\u5B57hso", 0, 19},

@@ -298,8 +298,8 @@ namespace System.Text.Json
             byte[]? otherUtf8TextArray = null;
 
             int length = checked(otherText.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
-            Span<byte> otherUtf8Text = length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[JsonConstants.StackallocThreshold] :
+            Span<byte> otherUtf8Text = length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (otherUtf8TextArray = ArrayPool<byte>.Shared.Rent(length));
 
             ReadOnlySpan<byte> utf16Text = MemoryMarshal.AsBytes(otherText);
