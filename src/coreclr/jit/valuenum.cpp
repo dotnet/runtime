@@ -454,7 +454,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     // We have no current allocation chunks.
     for (unsigned i = 0; i < TYP_COUNT; i++)
     {
-        for (unsigned j = CEA_None; j <= CEA_Count + MAX_LOOP_NUM; j++)
+        for (unsigned j = CEA_None; j <= CEA_Count + BasicBlock::MAX_LOOP_NUM; j++)
         {
             m_curAllocChunk[i][j] = NoChunk;
         }
@@ -466,7 +466,8 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     }
     // We will reserve chunk 0 to hold some special constants, like the constant NULL, the "exception" value, and the
     // "zero map."
-    Chunk* specialConstChunk = new (m_alloc) Chunk(m_alloc, &m_nextChunkBase, TYP_REF, CEA_Const, MAX_LOOP_NUM);
+    Chunk* specialConstChunk =
+        new (m_alloc) Chunk(m_alloc, &m_nextChunkBase, TYP_REF, CEA_Const, BasicBlock::MAX_LOOP_NUM);
     specialConstChunk->m_numUsed +=
         SRC_NumSpecialRefConsts; // Implicitly allocate 0 ==> NULL, and 1 ==> Exception, 2 ==> ZeroMap.
     ChunkNum cn = m_chunks.Push(specialConstChunk);
@@ -1624,7 +1625,7 @@ ValueNumStore::Chunk* ValueNumStore::GetAllocChunk(var_types              typ,
 {
     Chunk*   res;
     unsigned index;
-    if (loopNum == MAX_LOOP_NUM)
+    if (loopNum == BasicBlock::MAX_LOOP_NUM)
     {
         // Loop nest is unknown/irrelevant for this VN.
         index = attribs;
@@ -1634,8 +1635,8 @@ ValueNumStore::Chunk* ValueNumStore::GetAllocChunk(var_types              typ,
         // Loop nest is interesting.  Since we know this is only true for unique VNs, we know attribs will
         // be CEA_None and can just index based on loop number.
         noway_assert(attribs == CEA_None);
-        // Map NOT_IN_LOOP -> MAX_LOOP_NUM to make the index range contiguous [0..MAX_LOOP_NUM]
-        index = CEA_Count + (loopNum == BasicBlock::NOT_IN_LOOP ? MAX_LOOP_NUM : loopNum);
+        // Map NOT_IN_LOOP -> BasicBlock::MAX_LOOP_NUM to make the index range contiguous [0..BasicBlock::MAX_LOOP_NUM]
+        index = CEA_Count + (loopNum == BasicBlock::NOT_IN_LOOP ? BasicBlock::MAX_LOOP_NUM : loopNum);
     }
     ChunkNum cn = m_curAllocChunk[typ][index];
     if (cn != NoChunk)
@@ -3667,7 +3668,7 @@ ValueNum ValueNumStore::VNForExpr(BasicBlock* block, var_types typ)
     BasicBlock::loopNumber loopNum;
     if (block == nullptr)
     {
-        loopNum = MAX_LOOP_NUM;
+        loopNum = BasicBlock::MAX_LOOP_NUM;
     }
     else
     {
@@ -4344,21 +4345,21 @@ var_types ValueNumStore::TypeOfVN(ValueNum vn)
 //------------------------------------------------------------------------
 // LoopOfVN: If the given value number is an opaque one associated with a particular
 //    expression in the IR, give the loop number where the expression occurs; otherwise,
-//    returns MAX_LOOP_NUM.
+//    returns BasicBlock::MAX_LOOP_NUM.
 //
 // Arguments:
 //    vn - Value number to query
 //
 // Return Value:
 //    The correspondingblock's bbNatLoopNum, which may be BasicBlock::NOT_IN_LOOP.
-//    Returns MAX_LOOP_NUM if this VN is not an opaque value number associated with
+//    Returns BasicBlock::MAX_LOOP_NUM if this VN is not an opaque value number associated with
 //    a particular expression/location in the IR.
 
 BasicBlock::loopNumber ValueNumStore::LoopOfVN(ValueNum vn)
 {
     if (vn == NoVN)
     {
-        return MAX_LOOP_NUM;
+        return BasicBlock::MAX_LOOP_NUM;
     }
 
     Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));

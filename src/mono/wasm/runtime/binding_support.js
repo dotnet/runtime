@@ -126,7 +126,7 @@ var BindingSupportLib = {
 			this._bind_existing_obj = bind_runtime_method ("BindExistingObject", "mi");
 			this._unbind_raw_obj_and_free = bind_runtime_method ("UnBindRawJSObjectAndFree", "ii");
 			this._get_js_id = bind_runtime_method ("GetJSObjectId", "m");
-			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "i!");
+			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "ii!");
 
 			this._is_simple_array = bind_runtime_method ("IsSimpleArray", "m");
 			this.setup_js_cont = get_method ("SetupJSContinuation");
@@ -779,15 +779,21 @@ var BindingSupportLib = {
 			return this._get_js_id (mono_obj);
 		},
 
-		wasm_get_raw_obj: function (gchandle)
+		// when should_add_in_flight === true, the JSObject would be temporarily hold by Normal GCHandle, so that it would not get collected during transition to the managed stack.
+		// its InFlight handle would be freed when the instance arrives to managed side via Interop.Runtime.ReleaseInFlight
+		wasm_get_raw_obj: function (gchandle, should_add_in_flight)
 		{
-			return this._get_raw_mono_obj (gchandle);
+			if(!gchandle){
+				return 0;
+			}
+
+			return this._get_raw_mono_obj (gchandle, should_add_in_flight ? 1 : 0);
 		},
 
 		try_extract_mono_obj:function (js_obj) {
 			if (js_obj === null || typeof js_obj === "undefined" || typeof js_obj.__mono_gchandle__ === "undefined")
 				return 0;
-			return this.wasm_get_raw_obj (js_obj.__mono_gchandle__);
+			return this.wasm_get_raw_obj (js_obj.__mono_gchandle__, true);
 		},
 
 		mono_method_get_call_signature: function(method, mono_obj) {
@@ -810,7 +816,7 @@ var BindingSupportLib = {
 			tcs.is_mono_tcs_task_bound = true;
 			js_obj.__mono_bound_tcs__ = tcs.__mono_gchandle__;
 			tcs.__mono_bound_task__ = js_obj.__mono_gchandle__;
-			return this.wasm_get_raw_obj (js_obj.__mono_gchandle__);
+			return this.wasm_get_raw_obj (js_obj.__mono_gchandle__, true);
 		},
 
 		free_task_completion_source: function (tcs) {
@@ -831,7 +837,7 @@ var BindingSupportLib = {
 			var result = null;
 			var gc_handle = js_obj.__mono_gchandle__;
 			if (gc_handle) {
-				result = this.wasm_get_raw_obj (gc_handle);
+				result = this.wasm_get_raw_obj (gc_handle, true);
 
 				// It's possible the managed object corresponding to this JS object was collected,
 				//  in which case we need to make a new one.
@@ -842,8 +848,8 @@ var BindingSupportLib = {
 			}
 
 			if (!result) {
-				gc_handle = this.mono_wasm_register_obj(js_obj);
-				result = this.wasm_get_raw_obj (gc_handle);
+				var { gc_handle: new_gc_handle, should_add_in_flight } = this.mono_wasm_register_obj(js_obj);
+				result = this.wasm_get_raw_obj (new_gc_handle, should_add_in_flight);
 			}
 
 			return result;
@@ -1613,10 +1619,12 @@ var BindingSupportLib = {
 					js_obj.__owns_handle__ = true;
 					gc_handle = js_obj.__mono_gchandle__ = this.wasm_binding_obj_new(handle + 1, js_obj.__owns_handle__, typeof wasm_type === "undefined" ? -1 : wasm_type);
 					this.mono_wasm_object_registry[handle] = js_obj;
-
+					// as this instance was just created, it was already created with Inflight strong GCHandle, so we do not have to do it again
+					return { gc_handle, should_add_in_flight: false };
 				}
 			}
-			return gc_handle;
+			// this is pre-existing instance, we need to add Inflight strong GCHandle before passing it to managed
+			return { gc_handle, should_add_in_flight: true };
 		},
 		mono_wasm_require_handle: function(handle) {
 			if (handle > 0)

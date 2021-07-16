@@ -91,6 +91,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 
+            target.AddInFlight();
+
             return target.Int32Handle;
         }
 
@@ -236,12 +238,21 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject?.JSHandle ?? -1;
         }
 
-        public static object? GetDotNetObject(int gcHandle)
+        /// <param name="gcHandle"></param>
+        /// <param name="shouldAddInflight">when true, we would create Normal GCHandle to the JSObject, so that it would not get collected before passing it back to managed code</param>
+        public static object? GetDotNetObject(int gcHandle, int shouldAddInflight)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
 
-            return h.Target is JSObject js ?
-                js.GetWrappedObject() ?? h.Target : h.Target;
+            if (h.Target is JSObject jso)
+            {
+                if (shouldAddInflight != 0)
+                {
+                    jso.AddInFlight();
+                }
+                return jso.GetWrappedObject() ?? jso;
+            }
+            return h.Target;
         }
 
         public static bool IsSimpleArray(object a)

@@ -992,10 +992,9 @@ Debugger::~Debugger()
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
-typedef void (*PFN_HIJACK_FUNCTION) (void);
 
 // Given the start address and the end address of a function, return a MemoryRange for the function.
-inline MemoryRange GetMemoryRangeForFunction(PFN_HIJACK_FUNCTION pfnStart, PFN_HIJACK_FUNCTION pfnEnd)
+inline MemoryRange GetMemoryRangeForFunction(void *pfnStart, void *pfnEnd)
 {
     PCODE pfnStartAddress = (PCODE)GetEEFuncEntryPoint(pfnStart);
     PCODE pfnEndAddress   = (PCODE)GetEEFuncEntryPoint(pfnEnd);
@@ -1016,6 +1015,11 @@ MemoryRange Debugger::s_hijackFunction[kMaxHijackFunctions] =
      GetMemoryRangeForFunction(RedirectedHandledJITCaseForGCStress_Stub,
                                RedirectedHandledJITCaseForGCStress_StubEnd)
 #endif // HAVE_GCCOVER && TARGET_AMD64
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+     ,
+     GetMemoryRangeForFunction(ApcActivationCallbackStub,
+                               ApcActivationCallbackStubEnd)
+#endif // FEATURE_SPECIAL_USER_MODE_APC
     };
 #endif // FEATURE_HIJACK && !TARGET_UNIX
 
@@ -15890,7 +15894,7 @@ HRESULT Debugger::UpdateSpecialThreadList(DWORD cThreadArrayLength,
 //
 // 3) If the IP is in the prolog or epilog of a managed function.
 //
-BOOL Debugger::IsThreadContextInvalid(Thread *pThread)
+BOOL Debugger::IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx)
 {
     CONTRACTL
     {
@@ -15902,14 +15906,22 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread)
     BOOL invalid = FALSE;
 
     // Get the thread context.
+    BOOL success = pCtx != NULL;
     CONTEXT ctx;
-    ctx.ContextFlags = CONTEXT_CONTROL;
-    BOOL success = pThread->GetThreadContext(&ctx);
+    if (!success)
+    {
+        ctx.ContextFlags = CONTEXT_CONTROL;
+        BOOL success = pThread->GetThreadContext(&ctx);
+        if (success)
+        {
+            pCtx = &ctx;
+        }
+    }
 
     if (success)
     {
         // Check single-step flag
-        if (IsSSFlagEnabled(reinterpret_cast<DT_CONTEXT *>(&ctx) ARM_ARG(pThread) ARM64_ARG(pThread)))
+        if (IsSSFlagEnabled(reinterpret_cast<DT_CONTEXT *>(pCtx) ARM_ARG(pThread) ARM64_ARG(pThread)))
         {
             // Can't hijack a thread whose SS-flag is set. This could lead to races
             // with the thread taking the SS-exception.
@@ -15923,7 +15935,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread)
     {
 #ifdef TARGET_X86
         // Grab Eip - 1
-        LPVOID address = (((BYTE*)GetIP(&ctx)) - 1);
+        LPVOID address = (((BYTE*)GetIP(pCtx)) - 1);
 
         EX_TRY
         {
@@ -15934,7 +15946,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread)
             if (AddressIsBreakpoint((CORDB_ADDRESS_TYPE*)address))
             {
                 size_t prologSize; // Unused...
-                if (g_pEEInterface->IsInPrologOrEpilog((BYTE*)GetIP(&ctx), &prologSize))
+                if (g_pEEInterface->IsInPrologOrEpilog((BYTE*)GetIP(pCtx), &prologSize))
                 {
                     LOG((LF_CORDB, LL_INFO1000, "D::ITCI: thread is after a BP and in prolog or epilog.\n"));
                     invalid = TRUE;

@@ -134,4 +134,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         public string Message { get; set; }
         public int Length => Message?.Length ?? 0; // Read-only property
     }
+
+    internal struct MyStruct { }
 }

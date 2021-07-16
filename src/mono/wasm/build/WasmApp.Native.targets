@@ -237,7 +237,16 @@
     <EmccCompile SourceFiles="@(_WasmSourceFileToCompile)" Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
   </Target>
 
-  <Target Name="_WasmLinkDotNet">
+  <ItemGroup Condition="'$(Configuration)' == 'Debug' and '@(_MonoComponent->Count())' == 0">
+    <_MonoComponent Include="hot_reload;debugger" />
+  </ItemGroup>
+
+  <Target Name="_WasmLinkDotNetSelectComponents"
+      Condition="'$(WasmNativeWorkload)' == true"
+      DependsOnTargets="_MonoSelectRuntimeComponents">
+  </Target>
+
+  <Target Name="_WasmLinkDotNet" DependsOnTargets="_WasmLinkDotNetSelectComponents">
     <ItemGroup>
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
@@ -258,8 +267,9 @@
       <_WasmNativeFileForLinking Include="%(_BitcodeFile.ObjectFile)" />
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
 
-      <!-- libmono* needs to be at the end, since it is used to resolve references the previous .o files -->
-      <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\*.a" />
+      <_WasmNativeFileForLinking
+          Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\*.a"
+          Exclude="@(_MonoRuntimeComponentDontLink->'$(MicrosoftNetCoreAppRuntimePackRidNativeDir)\%(Identity)')" />
 
       <_EmccLinkStepArgs Include="@(_EmccLDFlags)" />
       <_EmccLinkStepArgs Include="--js-library &quot;%(_DotnetJSSrcFile.Identity)&quot;" />
@@ -339,7 +349,8 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <ActualEmccVersionRaw>%(_ReversedVersionLines.Identity)</ActualEmccVersionRaw>
     </PropertyGroup>
 
-    <Error Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)'" Text="Emscripten version mismatch, expected '$(RuntimeEmccVersionRaw)', got '$(ActualEmccVersionRaw)'"/>
+    <Warning Condition="'$(RuntimeEmccVersionRaw)' != '$(ActualEmccVersionRaw)'"
+             Text="Emscripten version mismatch. The runtime pack in $(MicrosoftNetCoreAppRuntimePackDir) expects '$(RuntimeEmccVersionRaw)', but emcc being used has version '$(ActualEmccVersionRaw)'. This might cause build failures." />
   </Target>
 
   <!--
