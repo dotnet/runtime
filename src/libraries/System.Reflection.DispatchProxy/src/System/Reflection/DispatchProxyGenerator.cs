@@ -833,7 +833,7 @@ namespace System.Reflection
 
                     if (left.Module.Name != right.Module.Name)
                         return false;
-                    
+
                     if (left.MetadataToken != right.MetadataToken)
                         return false;
 
