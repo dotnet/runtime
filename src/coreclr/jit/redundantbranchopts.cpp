@@ -300,7 +300,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // If the block is the first block of try-region, then skip jump threading
     if (bbIsTryBeg(block))
     {
-        JITDUMP(FMT_BB " is first block of try-region; no threading\n");
+        JITDUMP(FMT_BB " is first block of try-region; no threading\n", block->bbNum);
         return false;
     }
 
