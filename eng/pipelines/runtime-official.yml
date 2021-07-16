@@ -384,6 +384,10 @@ stages:
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         dependsOn:
+        - Build_Android_arm_release_AllSubsets_Mono
+        - Build_Android_arm64_release_AllSubsets_Mono
+        - Build_Android_x86_release_AllSubsets_Mono
+        - Build_Android_x64_release_AllSubsets_Mono
         - Build_Browser_wasm_release_AllSubsets_Mono
         - Build_Windows_x64_release_CrossAOT_Mono
 
