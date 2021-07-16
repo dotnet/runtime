@@ -190,12 +190,6 @@ namespace System
         */
         private sealed class AndroidTzData
         {
-            private unsafe struct AndroidTzDataHeader
-            {
-                public int indexOffset;
-                public int dataOffset;
-            }
-
             private unsafe struct AndroidTzDataEntry
             {
                 public fixed byte id[40];
@@ -263,7 +257,8 @@ namespace System
                 {
                     return false;
                 }
-                try {
+                try
+                {
                     using (FileStream fs = File.OpenRead(path))
                     {
                         LoadTzFile(fs);
@@ -285,11 +280,13 @@ namespace System
 
                 ReadTzDataIntoBuffer(fs, 0, buffer);
 
-                AndroidTzDataHeader header = LoadHeader(buffer);
-                ReadIndex(fs, header.indexOffset, header.dataOffset);
+                int indexOffset;
+                int dataOffset;
+                LoadHeader(buffer, out indexOffset, out dataOffset);
+                ReadIndex(fs, indexOffset, dataOffset);
             }
 
-            private AndroidTzDataHeader LoadHeader(Span<byte> buffer)
+            private void LoadHeader(Span<byte> buffer, out int indexOffset, out int dataOffset)
             {
                 // tzdata files are expected to start with the form of "tzdata2012f\0" depending on the year of the tzdata used which is 2012 in this example
                 // since we're not differentiating on year, check for tzdata and the ending \0
@@ -298,7 +295,7 @@ namespace System
 
                 if (tz != 0x747A || data != 0x64617461 || buffer[11] != 0)
                 {
-                    // 0x747A  0x646174640000 = {0x74, 0x7A} {0x64, 0x61, 0x74, 0x64} = "tz" "data"
+                    // 0x747A  0x64617461 = {0x74, 0x7A} {0x64, 0x61, 0x74, 0x61} = "tz" "data"
                     var b = new StringBuilder(buffer.Length);
                     for (int i = 0; i < 12; ++i)
                     {
@@ -308,12 +305,8 @@ namespace System
                     throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadTZHeader, TimeZoneFileName, b.ToString()));
                 }
 
-                AndroidTzDataHeader header;
-
-                header.indexOffset = TZif_ToInt32(buffer.Slice(12, 4));
-                header.dataOffset = TZif_ToInt32(buffer.Slice(16, 4));
-
-                return header;
+                indexOffset = TZif_ToInt32(buffer.Slice(12, 4));
+                dataOffset = TZif_ToInt32(buffer.Slice(16, 4));
             }
 
             [MemberNotNull(nameof(_ids))]
@@ -322,7 +315,7 @@ namespace System
             private unsafe void ReadIndex(Stream fs, int indexOffset, int dataOffset)
             {
                 int indexSize = dataOffset - indexOffset;
-                int entrySize = 52; // AndroidTzDataEntry
+                const int entrySize = 52; // AndroidTzDataEntry
                 int entryCount = indexSize / entrySize;
 
                 _byteOffsets = new int[entryCount];
@@ -334,11 +327,11 @@ namespace System
                     AndroidTzDataEntry entry = LoadEntryAt(fs, indexOffset + (entrySize*i));
                     var p = (sbyte*)entry.id;
 
-                    _byteOffsets![i] = entry.byteOffset + dataOffset;
-                    _ids![i] = new string(p);
-                    _lengths![i] = entry.length;
+                    _byteOffsets[i] = entry.byteOffset + dataOffset;
+                    _ids[i] = new string(p);
+                    _lengths[i] = entry.length;
 
-                    if (_lengths![i] < 24) // AndroidTzDataHeader
+                    if (_lengths[i] < 24) // AndroidTzDataHeader
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_BadIndexLength);
                     }
@@ -390,7 +383,7 @@ namespace System
 
             public string[] GetTimeZoneIds()
             {
-                return _ids!;
+                return _ids;
             }
 
             public string GetTimeZoneDirectory()
@@ -400,20 +393,19 @@ namespace System
 
             public byte[] GetTimeZoneData(string id)
             {
-                int i = Array.BinarySearch(_ids!, id, StringComparer.Ordinal);
+                int i = Array.BinarySearch(_ids, id, StringComparer.Ordinal);
                 if (i < 0)
                 {
                     throw new InvalidOperationException(SR.Format(SR.TimeZoneNotFound_MissingData, id));
                 }
 
-                int offset = _byteOffsets![i];
-                int length = _lengths![i];
+                int offset = _byteOffsets[i];
+                int length = _lengths[i];
 
-                Span<byte> buffer = stackalloc byte[length];
+                byte[] buffer = new byte[length];
                 ReadTzDataIntoBuffer(File.OpenRead(_tzFilePath), offset, buffer);
-                byte[] tzBuffer = buffer.ToArray();
 
-                return tzBuffer;
+                return buffer;
             }
         }
     }
