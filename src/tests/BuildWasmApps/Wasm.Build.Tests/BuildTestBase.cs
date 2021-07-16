@@ -541,7 +541,6 @@ namespace Wasm.Build.Tests
                         var lastLines = outputBuilder.ToString().Split('\r', '\n').TakeLast(20);
                         throw new XunitException($"Process timed out, output: {string.Join(Environment.NewLine, lastLines)}");
                     }
-
                 }
 
                 lock (syncObj)
