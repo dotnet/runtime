@@ -323,7 +323,10 @@ ipc_socket_create_uds (DiagnosticsIpc *ipc)
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	new_socket = socket (ipc->server_address_family, socket_type, 0);
 #ifndef SOCK_CLOEXEC
-	int fcntl_rc = fcntl(new_socket, F_SETFD, FD_CLOEXEC); // best effort; don't validate return value
+#if DEBUG
+	int fcntl_rc =
+#endif // DEBUG
+	fcntl(new_socket, F_SETFD, FD_CLOEXEC); // best effort; don't validate return value
 	EP_ASSERT (fcntl_rc != -1);
 #endif // SOCK_CLOEXEC
 	DS_EXIT_BLOCKING_PAL_SECTION;
@@ -352,7 +355,10 @@ ipc_socket_create_tcp (DiagnosticsIpc *ipc)
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	new_socket = socket (ipc->server_address_family, socket_type, IPPROTO_TCP);
 #ifndef SOCK_CLOEXEC
-	int fcntl_rc = fcntl(new_socket, F_SETFD, FD_CLOEXEC); // best effort; don't validate return value
+#if DEBUG
+	int fcntl_rc =
+#endif // DEBUG
+	fcntl(new_socket, F_SETFD, FD_CLOEXEC); // best effort; don't validate return value
 	EP_ASSERT(fcntl_rc != -1);
 #endif // SOCK_CLOEXEC
 	if (new_socket != DS_IPC_INVALID_SOCKET) {
