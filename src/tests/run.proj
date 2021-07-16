@@ -632,7 +632,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   </Target>
 
   <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity);ForNode=$(ForNode)" />
   </Target>
 
   <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" Condition="'$(RunWithAndroid)'=='true'"/>
@@ -723,13 +723,14 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Target Name="CreateTestOverlay">
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CopyDependencyToCoreRoot"
-             Properties="Language=C#;PackageRID=$(PackageRID);RuntimeIdentifier=$(PackageRID)" />
+             Properties="Language=C#;PackageRID=$(PackageRID);RuntimeIdentifier=$(PackageRID);ForNode=$(ForNode)" />
   </Target>
 
   <Target Name="Build">
 
     <!-- generate project.lock.json file corresponding to above json file -->
     <MSBuild Projects="$(RepoRoot)/src/tests/Common/test_dependencies/test_dependencies.csproj"
+             Properties="ForNode=$(ForNode)"
              Condition=" '$(BuildWrappers)'=='true' " />
 
     <MSBuild Projects="$(MSBuildProjectFile)"
@@ -739,16 +740,19 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <!-- Default for building -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CreateAllWrappers"
-             Properties="_CMDDIR=%(TestDirectories.Identity)"
+             Properties="_CMDDIR=%(TestDirectories.Identity);ForNode=$(ForNode)"
              Condition=" '$(BuildWrappers)'=='true' " />
 
     <!-- Execution -->
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CreateTestOverlay"
+             Properties="ForNode=$(ForNode)"
              Condition=" '$(GenerateRuntimeLayout)'=='true' "/>
 
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="RunTests"
+    <MSBuild Projects="$(MSBuildProjectFile)" 
+             Targets="RunTests"
+             Properties="ForNode=$(ForNode)"
              Condition=" '$(RunTests)'=='true' "/>
   </Target>
 
