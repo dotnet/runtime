@@ -18,7 +18,6 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private CacheEntryTokens _tokens; // might be null if user is not using the tokens or callbacks
         private TimeSpan? _absoluteExpirationRelativeToNow;
-        private TimeSpan? _slidingExpiration;
         private long? _size;
         private CacheEntry _previous; // this field is not null only before the entry is added to the cache
         private object _value;
@@ -35,7 +34,14 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Gets or sets an absolute expiration date for the cache entry.
         /// </summary>
-        public DateTimeOffset? AbsoluteExpiration { get; set; }
+        public DateTimeOffset? AbsoluteExpiration
+        {
+            get => AbsoluteExpirationClockOffset.HasValue ? _cache.ClockQuantizer.ClockOffsetToUtcDateTimeOffset(AbsoluteExpirationClockOffset!.Value) : null;
+            set
+            {
+                AbsoluteExpirationClockOffset = value.HasValue ? _cache.ClockQuantizer.DateTimeOffsetToClockOffset(value!.Value) : null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets an absolute expiration time, relative to now.
@@ -66,18 +72,25 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         public TimeSpan? SlidingExpiration
         {
-            get => _slidingExpiration;
+            get => !SlidingExpirationClockOffsetUnits.HasValue ? null : _cache.ClockQuantizer.ClockOffsetUnitsToTimeSpan(SlidingExpirationClockOffsetUnits!.Value);
             set
             {
-                if (value <= TimeSpan.Zero)
+                if (value.HasValue)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(SlidingExpiration),
-                        value,
-                        "The sliding expiration value must be positive.");
-                }
+                    if (value <= TimeSpan.Zero)
+                    {
+                        throw new ArgumentOutOfRangeException(
+                            nameof(SlidingExpiration),
+                            value,
+                            "The sliding expiration value must be positive.");
+                    }
 
-                _slidingExpiration = value;
+                    SlidingExpirationClockOffsetUnits = _cache.ClockQuantizer.TimeSpanToClockOffsetUnits(value!.Value);
+                }
+                else
+                {
+                    SlidingExpirationClockOffsetUnits = null;
+                }
             }
         }
 
@@ -126,8 +139,6 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        internal DateTimeOffset LastAccessed { get; set; }
-
         internal EvictionReason EvictionReason { get => _state.EvictionReason; private set => _state.EvictionReason = value; }
 
         public void Dispose()
@@ -155,6 +166,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        // This method is merely left for testing purposes; we may get rid of this by adapting the tests
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
         internal bool CheckExpired(in DateTimeOffset now)
             => _state.IsExpired
@@ -171,33 +183,14 @@ namespace Microsoft.Extensions.Caching.Memory
             _tokens?.DetachTokens();
         }
 
+        // This method is merely left for testing purposes; we may get rid of this by adapting the tests
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
         private bool CheckForExpiredTime(in DateTimeOffset now)
         {
-            if (!AbsoluteExpiration.HasValue && !_slidingExpiration.HasValue)
-            {
-                return false;
-            }
+            Internal.ClockQuantization.LazyClockOffsetSerialPosition position = default;
+            Internal.ClockQuantization.LazyClockOffsetSerialPosition.AssignExactClockOffsetSerialPosition(_cache.ClockQuantizer.DateTimeOffsetToClockOffset(now), ref position);
 
-            return FullCheck(now);
-
-            bool FullCheck(in DateTimeOffset offset)
-            {
-                if (AbsoluteExpiration.HasValue && AbsoluteExpiration.Value <= offset)
-                {
-                    SetExpired(EvictionReason.Expired);
-                    return true;
-                }
-
-                if (_slidingExpiration.HasValue
-                    && (offset - LastAccessed) >= _slidingExpiration)
-                {
-                    SetExpired(EvictionReason.Expired);
-                    return true;
-                }
-
-                return false;
-            }
+            return CheckForExpiredTime(ref position);
         }
 
         internal void AttachTokens() => _tokens?.AttachTokens(this);
