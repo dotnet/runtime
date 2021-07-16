@@ -2812,6 +2812,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
 
             if (regSize == YMM_REGSIZE_BYTES) {
+                // Extend the bytes in the lower lanes to the upper lanes
                 emit->emitIns_R_R_R_I(INS_vinsertf128, EA_32BYTE, srcXmmReg, srcXmmReg, srcXmmReg, 1);
             }
 #ifdef TARGET_X86
@@ -2834,6 +2835,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 #endif
             if (regSize == YMM_REGSIZE_BYTES && bytesWritten + regSize > size)
             {
+                // Step down from YMM registers to XMM registers
                 regSize = XMM_REGSIZE_BYTES;
             }
 
