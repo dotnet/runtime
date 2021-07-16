@@ -415,6 +415,7 @@ namespace System.IO.Ports
                 }
                 catch (OperationCanceledException)
                 {
+                    ProcessCancelledIORequests(_readQueue);
                     throw new TimeoutException();
                 }
             }
@@ -506,6 +507,7 @@ namespace System.IO.Ports
                 }
                 catch (OperationCanceledException)
                 {
+                    ProcessCancelledIORequests(_writeQueue);
                     throw new TimeoutException();
                 }
             }
@@ -527,6 +529,8 @@ namespace System.IO.Ports
             }
             catch (OperationCanceledException)
             {
+                ProcessCancelledIORequests(_readQueue);
+                ProcessCancelledIORequests(_writeQueue);
                 throw new TimeoutException();
             }
         }
@@ -805,6 +809,22 @@ namespace System.IO.Ports
             }
 
             return 0;
+        }
+
+        private static void ProcessCancelledIORequests(ConcurrentQueue<SerialStreamIORequest> q)
+        {
+            // assumes dequeue-ing happens on a single thread
+            while (q.TryPeek(out SerialStreamIORequest r))
+            {
+                if (r.Task.IsCanceled)
+                {
+                    q.TryDequeue(out _);
+                }
+                else
+                {
+                    return;
+                }
+            }
         }
 
         private void IOLoop()
