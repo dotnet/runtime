@@ -274,20 +274,8 @@ namespace System
             {
                 const int HeaderSize = 24; // AndroidTzDataHeader 12 bytes signature, 4 bytes index offset, 4 bytes data offset, 4 bytes final offset
                 Span<byte> buffer = stackalloc byte[HeaderSize];
-                int bytesRead = 0;
-                int bytesLeft = HeaderSize;
 
-                while (bytesLeft > 0)
-                {
-                    int b = fs.Read(buffer);
-                    if (b == 0)
-                    {
-                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ReadTZError, _tzFilePath, 0, HeaderSize, bytesRead, HeaderSize));
-                    }
-
-                    bytesRead += b;
-                    bytesLeft -= b;
-                }
+                ReadTzDataIntoBuffer(fs, 0, buffer);
 
                 AndroidTzDataHeader header = LoadHeader(buffer);
                 ReadIndex(fs, header.indexOffset, header.dataOffset);
@@ -349,19 +337,16 @@ namespace System
                 }
             }
 
-            private unsafe AndroidTzDataEntry LoadEntryAt(Stream fs, long position)
+            private void ReadTzDataIntoBuffer(Stream fs, long position, Span<byte> buffer)
             {
-                int size = 52; // AndroidTzDataEntry
-                Span<byte> entryBuffer = stackalloc byte[size];
-
                 fs.Position = position;
 
                 int bytesRead = 0;
-                int bytesLeft = size;
+                int bytesLeft = buffer.Length;
 
                 while (bytesLeft > 0)
                 {
-                    int b = fs.Read(entryBuffer);
+                    int b = fs.Read(buffer);
                     if (b == 0)
                     {
                         break;
@@ -373,8 +358,16 @@ namespace System
 
                 if (bytesLeft != 0)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ReadTZError, _tzFilePath, position, size, bytesRead, size));
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ReadTZError, _tzFilePath, position, buffer.Length, bytesRead, buffer.Length));
                 }
+            }
+
+            private unsafe AndroidTzDataEntry LoadEntryAt(Stream fs, long position)
+            {
+                int size = 52; // AndroidTzDataEntry
+                Span<byte> entryBuffer = stackalloc byte[size];
+
+                ReadTzDataIntoBuffer(fs, position, entryBuffer);
 
                 AndroidTzDataEntry entry;
                 for (int i = 0; i < 40; i++)
@@ -410,18 +403,12 @@ namespace System
 
                 int offset = _byteOffsets![i];
                 int length = _lengths![i];
-                var buffer = new byte[length];
-                using (FileStream fs = File.OpenRead(_tzFilePath))
-                {
-                    fs.Position = offset;
-                    int numBytesRead;
-                    if ((numBytesRead = fs.Read(buffer)) < buffer.Length)
-                    {
-                        throw new InvalidOperationException(string.Format(SR.InvalidOperation_ReadTZError, _tzFilePath, offset, length, numBytesRead, buffer.Length));
-                    }
-                }
 
-                return buffer;
+                Span<byte> buffer = stackalloc byte[length];
+                ReadTzDataIntoBuffer(File.OpenRead(_tzFilePath), offset, buffer);
+                byte[] tzBuffer = buffer.ToArray();
+
+                return tzBuffer;
             }
         }
     }
