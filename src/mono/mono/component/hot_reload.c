@@ -501,7 +501,8 @@ static int
 metadata_update_local_generation (MonoImage *base, BaselineInfo *base_info, MonoImage *delta);
 
 static void
-add_method_to_baseline (BaselineInfo *base_info, MonoClass *klass, uint32_t method_token);
+add_method_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t method_token, MonoDebugInformationEnc* pdb_address);
+
 
 void
 hot_reload_init (void)
@@ -1305,13 +1306,19 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 }
 
 static void
+set_delta_method_debug_info (DeltaInfo *delta_info, uint32_t token_index, MonoDebugInformationEnc *pdb_address)
+{
+	g_hash_table_insert (delta_info->method_ppdb_table_update, GUINT_TO_POINTER (token_index), (gpointer) pdb_address);
+}
+
+static void
 set_update_method (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, DeltaInfo *delta_info, uint32_t token_index, const char* il_address, MonoDebugInformationEnc* pdb_address)
 {
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "setting method 0x%08x in g=%d IL=%p", token_index, generation, (void*)il_address);
 	/* FIXME: this is a race if other threads are doing a lookup. */
 	g_hash_table_insert (base_info->method_table_update, GUINT_TO_POINTER (token_index), GUINT_TO_POINTER (generation));
 	g_hash_table_insert (delta_info->method_table_update, GUINT_TO_POINTER (token_index), (gpointer) il_address);
-	g_hash_table_insert (delta_info->method_ppdb_table_update, GUINT_TO_POINTER (token_index), (gpointer) pdb_address);
+	set_delta_method_debug_info (delta_info, token_index, pdb_address); 
 }
 
 static MonoDebugInformationEnc *
@@ -1462,7 +1469,8 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 					g_error ("EnC: new method added but I don't know the class, should be caught by pass1");
 				g_assert (add_method_klass);
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new method 0x%08x to class %s.%s", token_index, m_class_get_name_space (add_method_klass), m_class_get_name (add_method_klass));
-				add_method_to_baseline (base_info, add_method_klass, token_index);
+				MonoDebugInformationEnc *method_debug_information = hot_reload_get_method_debug_information (delta_info->ppdb_file, token_index);
+				add_method_to_baseline (base_info, delta_info, add_method_klass, token_index, method_debug_information);
 				add_method_klass = NULL;
 			}
 #endif
@@ -1748,6 +1756,10 @@ hot_reload_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx)
 		if (G_UNLIKELY (gen > 0)) {
 			loc = get_method_update_rva (base_image, info, idx, TRUE);
 		}
+		/* Check the method_parent table as a way of checking if the method was added by a later generation. If so, still look for its PPDB info in our update tables */
+		if (G_UNLIKELY (loc == 0 && GPOINTER_TO_UINT (g_hash_table_lookup (info->method_parent, GUINT_TO_POINTER (idx))) > 0)) {
+			loc = get_method_update_rva (base_image, info, idx, TRUE);
+		}
 	}
 	return loc;
 }
@@ -1876,7 +1888,7 @@ hot_reload_table_num_rows_slow (MonoImage *base, int table_index)
 }
 
 static void
-add_method_to_baseline (BaselineInfo *base_info, MonoClass *klass, uint32_t method_token)
+add_method_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t method_token, MonoDebugInformationEnc* pdb_address)
 {
 	if (!base_info->added_methods) {
 		base_info->added_methods = g_hash_table_new (g_direct_hash, g_direct_equal);
@@ -1892,6 +1904,9 @@ add_method_to_baseline (BaselineInfo *base_info, MonoClass *klass, uint32_t meth
 	}
 	g_array_append_val (arr, method_token);
 	g_hash_table_insert (base_info->method_parent, GUINT_TO_POINTER (method_token), GUINT_TO_POINTER (m_class_get_type_token (klass)));
+
+	if (pdb_address)
+		set_delta_method_debug_info (delta_info, method_token, pdb_address);
 }
 
 static GArray*
