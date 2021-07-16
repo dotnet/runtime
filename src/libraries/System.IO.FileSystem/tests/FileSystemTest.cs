@@ -71,7 +71,7 @@ namespace System.IO.Tests
             const int MinAvailableForSufficientRandomness = 5; // we want enough randomness in the name to avoid conflicts between concurrent tests
             string prefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
             int availableLength = MinUdsPathLength  - prefix.Length;
-            Assert.True(availableLength >= MinAvailableForSufficientRandomness, int.MaxValue, $"UDS prefix {prefix} length {prefix.Length} is too long");
+            Assert.True(availableLength >= MinAvailableForSufficientRandomness, $"UDS prefix {prefix} length {prefix.Length} is too long");
             
             return string.Create(availableLength, 0, (span, _) =>
             {
