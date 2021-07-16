@@ -20279,15 +20279,24 @@ BOOL gc_heap::should_proceed_for_no_gc()
         for (int i = 0; i < n_heaps; i++)
         {
             gc_heap* hp = g_heaps[i];
-            if ((size_t)(heap_segment_reserved (hp->ephemeral_heap_segment) - hp->alloc_allocated) < hp->soh_allocation_no_gc)
+#else //MULTIPLE_HEAPS
+            gc_heap* hp = nullptr;
+#endif //MULTIPLE_HEAPS
+#ifdef USE_REGIONS
+            size_t reserved_space = hp->get_gen0_end_space();
+            reserved_space -= (hp->alloc_allocated - heap_segment_allocated (hp->ephemeral_heap_segment));
+#else //USE_REGIONS
+            size_t reserved_space = heap_segment_reserved (hp->ephemeral_heap_segment) - hp->alloc_allocated;
+#endif //USE_REGIONS
+            if (reserved_space < hp->soh_allocation_no_gc)
             {
                 gc_requested = TRUE;
+#ifdef MULTIPLE_HEAPS
                 break;
+#endif //MULTIPLE_HEAPS
             }
+#ifdef MULTIPLE_HEAPS
         }
-#else //MULTIPLE_HEAPS
-        if ((size_t)(heap_segment_reserved (ephemeral_heap_segment) - alloc_allocated) < soh_allocation_no_gc)
-            gc_requested = TRUE;
 #endif //MULTIPLE_HEAPS
 
         if (!gc_requested)
@@ -20296,15 +20305,42 @@ BOOL gc_heap::should_proceed_for_no_gc()
             for (int i = 0; i < n_heaps; i++)
             {
                 gc_heap* hp = g_heaps[i];
+#else //MULTIPLE_HEAPS
+                gc_heap* hp = nullptr;
+#endif //MULTIPLE_HEAPS
+#ifdef USE_REGIONS
+                size_t required = hp->soh_allocation_no_gc;
+                heap_segment* region = hp->ephemeral_heap_segment;
+                while (required > 0)
+                {
+                    assert (region != nullptr);
+                    uint8_t* allocated = (region == hp->ephemeral_heap_segment) ? hp->alloc_allocated : heap_segment_allocated (region);
+                    uint8_t* end = min (heap_segment_reserved(region), allocated + required);
+                    if (!hp->grow_heap_segment (region, end))
+                    {
+                        soh_full_gc_requested = TRUE;
+                        break;
+                    }
+                    required -= (end - allocated);
+                    region = heap_segment_next (region);
+                }
+#ifdef MULTIPLE_HEAPS
+                if (soh_full_gc_requested)
+                {
+                    break;
+                }
+#endif //MULTIPLE_HEAPS                
+#else //USE_REGIONS
                 if (!(hp->grow_heap_segment (hp->ephemeral_heap_segment, (hp->alloc_allocated + hp->soh_allocation_no_gc))))
                 {
                     soh_full_gc_requested = TRUE;
+#ifdef MULTIPLE_HEAPS
                     break;
+#endif //USE_REGIONS
                 }
+#endif //USE_REGIONS
+#ifdef MULTIPLE_HEAPS
             }
-#else //MULTIPLE_HEAPS
-            if (!grow_heap_segment (ephemeral_heap_segment, (alloc_allocated + soh_allocation_no_gc)))
-                soh_full_gc_requested = TRUE;
 #endif //MULTIPLE_HEAPS
         }
     }
@@ -20571,8 +20607,7 @@ void gc_heap::allocate_for_no_gc_after_gc()
             {
                 no_gc_oom_p = true;
             }
-            
-#else
+#else 
             if (((size_t)(heap_segment_reserved (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment)) < soh_allocation_no_gc) ||
                 (!grow_heap_segment (ephemeral_heap_segment, (heap_segment_allocated (ephemeral_heap_segment) + soh_allocation_no_gc))))
             {
