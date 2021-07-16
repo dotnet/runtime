@@ -26,8 +26,7 @@ public class AndroidApkFileReplacerTask : Task
 
     public override bool Execute()
     {
-        Utils.Logger = Log;
-        var apkBuilder = new ApkBuilder();
+        var apkBuilder = new ApkBuilder(Log);
         apkBuilder.OutputDir = OutputDir;
         apkBuilder.AndroidSdk = AndroidSdk;
         apkBuilder.MinApiLevel = MinApiLevel;
