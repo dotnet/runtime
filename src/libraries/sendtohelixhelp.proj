@@ -34,6 +34,7 @@
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and '$(Outerloop)' == 'true'">00:20:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == ''">00:15:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == ''">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' == 'wasmtestonbrowser' and '$(BrowserHost)' == 'windows'">00:45:00</_workItemTimeout>
 
     <!-- The Helix runtime payload and the tests to run -->
     <!-- TestArchiveRuntimeFile will be passed as a property by the calling project -->
@@ -109,6 +110,10 @@
   <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(WindowsShell)' != 'true'">
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(WindowsShell)' == 'true'">
+    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chromedriver_win32%3B%PATH%" />
+    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chrome-win%3B%PATH%" />
   </ItemGroup>
 
   <Choose>
@@ -308,17 +313,24 @@
     </ItemGroup>
 
     <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-      <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ -->
-      <!-- 84.0.4147.105 is 768962 for example -->
-      <ChromiumRevision>768968</ChromiumRevision>
-      <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chrome-linux.zip</ChromiumUrl>
-      <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</ChromeDriverUrl>
       <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
       <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
       <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(NetCoreAppCurrent)-$(Configuration)'))</TestEchoMiddleware>
       <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(NetCoreAppCurrent)-$(Configuration)'))</RemoteLoopMiddleware>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true'">EMSDK-</WorkItemPrefix>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
+      <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ -->
+      <!-- 84.0.4147.105 is 768962 for example -->
+      <ChromiumRevision>768968</ChromiumRevision>
+      <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chrome-linux.zip</ChromiumUrl>
+      <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</ChromeDriverUrl>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows'">
+      <ChromiumRevision>768983</ChromiumRevision>
+      <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chrome-win.zip</ChromiumUrl>
+      <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chromedriver_win32.zip</ChromeDriverUrl>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
@@ -369,8 +381,8 @@
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'"
                                AsArchive="$(HelixCorrelationPayload.EndsWith('.zip'))" />
-      <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)"         Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(BrowserHost)' != 'windows'" />
-      <HelixCorrelationPayload Include="chromedriver" Uri="$(ChromeDriverUrl)" Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(BrowserHost)' != 'windows'" />
+      <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)"         Condition="'$(NeedsToRunOnBrowser)' == 'true'" />
+      <HelixCorrelationPayload Include="chromedriver" Uri="$(ChromeDriverUrl)" Condition="'$(NeedsToRunOnBrowser)' == 'true'" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Console.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'" />
@@ -393,6 +405,7 @@
       <ExecXHarnessCmd>dotnet exec %XHARNESS_CLI_PATH%</ExecXHarnessCmd>
       <XHarnessOutput>%HELIX_WORKITEM_UPLOAD_ROOT%\xharness-output</XHarnessOutput>
       <XHarnessCommand>%XHARNESS_COMMAND%</XHarnessCommand>
+      <XHarnessBrowserPathArg>--browser-path=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe</XHarnessBrowserPathArg>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'">
@@ -411,7 +424,7 @@
       <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
         <PayloadArchive>%(Identity)</PayloadArchive>
         <!-- No RunTests script generated for the sample project so we just use the direct command -->
-        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --browser=Chrome  --html-file=index.html --output-directory=$(XHarnessOutput) -- %(FileName).dll --testing</Command>
+        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- %(FileName).dll --testing</Command>
       </HelixWorkItem>
     </ItemGroup>
 
