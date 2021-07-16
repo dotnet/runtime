@@ -600,6 +600,8 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.macOS.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSAKeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\DSAKeyFormatHelper.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\DSAKeyFormatHelper.Encrypted.cs"
+             Link="Common\System\Security\Cryptography\DSAKeyFormatHelper.Encrypted.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSASecurityTransforms.cs"
              Link="Common\System\Security\Cryptography\DSASecurityTransforms.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSASecurityTransforms.macOS.cs"
