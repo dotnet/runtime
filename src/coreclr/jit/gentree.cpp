@@ -13062,15 +13062,55 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return tree;
     }
 
+    GenTree* const op1 = tree->AsOp()->gtOp1;
+    GenTree* const op2 = tree->AsOp()->gtOp2;
+
+    GenTreeIndir*  ind    = nullptr;
+    GenTreeIntCon* intCns = nullptr;
+    if (op1->OperIs(GT_CNS_INT) && op2->OperIs(GT_IND))
+    {
+        intCns = op1->AsIntCon();
+        ind    = op2->AsIndir();
+    }
+    else if (op2->OperIs(GT_CNS_INT) && op1->OperIs(GT_IND))
+    {
+        intCns = op2->AsIntCon();
+        ind    = op1->AsIndir();
+    }
+
+    // Try to clean up redundant checks after GDV if any
+    if ((ind != nullptr) && (ind->Addr() != nullptr) && ind->Addr()->TypeIs(TYP_REF) && fgGlobalMorph)
+    {
+        bool                 isExact   = false;
+        bool                 isNonNull = false;
+        CORINFO_CLASS_HANDLE cls1      = gtGetClassHandle(ind->Addr(), &isExact, &isNonNull);
+        CORINFO_CLASS_HANDLE cls2      = reinterpret_cast<CORINFO_CLASS_HANDLE>(intCns->IconValue());
+
+        if ((cls1 != nullptr) && (cls1 == cls2) && isExact)
+        {
+            GenTree* newNode     = ind->Addr();
+            GenTree* sideEffList = nullptr;
+            gtExtractSideEffList(ind, &sideEffList);
+            if (sideEffList == nullptr)
+            {
+                newNode = gtNewIconNode(oper == GT_EQ ? 1 : 0);
+            }
+            else
+            {
+                newNode = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffList, gtNewIconNode(oper == GT_EQ ? 1 : 0));
+                newNode->gtFlags |= (sideEffList->gtFlags & GTF_ALL_EFFECT);
+            }
+            return newNode;
+        }
+    }
+
     // Screen for the right kinds of operands
-    GenTree* const         op1     = tree->AsOp()->gtOp1;
     const TypeProducerKind op1Kind = gtGetTypeProducerKind(op1);
     if (op1Kind == TPK_Unknown)
     {
         return tree;
     }
 
-    GenTree* const         op2     = tree->AsOp()->gtOp2;
     const TypeProducerKind op2Kind = gtGetTypeProducerKind(op2);
     if (op2Kind == TPK_Unknown)
     {
@@ -17912,6 +17952,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 {
                     assert(sig.retType == CORINFO_TYPE_CLASS);
                     objClass = sig.retTypeClass;
+                    if ((objClass != NO_CLASS_HANDLE) && impIsClassExact(objClass))
+                    {
+                        *pIsExact = true;
+                    }
                 }
             }
             else if (call->gtCallType == CT_HELPER)
@@ -17953,6 +17997,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         {
             GenTreeIndir* indir = obj->AsIndir();
 
+            if (indir->Addr()->OperIs(GT_CNS_INT) && indir->Addr()->IsIconHandle(GTF_ICON_STR_HDL))
+            {
+                objClass    = impGetStringClass();
+                *pIsExact   = true;
+                *pIsNonNull = true;
+                break;
+            }
             if (indir->HasBase() && !indir->HasIndex())
             {
                 // indir(addr(lcl)) --> lcl
@@ -18048,7 +18099,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             break;
         }
     }
-
     return objClass;
 }
 
@@ -18264,6 +18314,12 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
             {
                 JITDUMP("Field's current class not available\n");
             }
+        }
+
+        if (!(*pIsExact) && (fieldClass != NO_CLASS_HANDLE) && (impIsClassExact(fieldClass)))
+        {
+            JITDUMP("Field is of an exact class: %s\n", eeGetClassName(fieldClass));
+            *pIsExact = true;
         }
     }
 
