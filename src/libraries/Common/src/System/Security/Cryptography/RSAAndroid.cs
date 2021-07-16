@@ -85,7 +85,7 @@ namespace System.Security.Cryptography
 
                 int rsaSize = Interop.AndroidCrypto.RsaSize(key);
                 Span<byte> destination = default;
-                byte[]? buf = CryptoPool.Rent(rsaSize);
+                byte[] buf = CryptoPool.Rent(rsaSize);
 
                 try
                 {
@@ -102,7 +102,7 @@ namespace System.Security.Cryptography
                 finally
                 {
                     CryptographicOperations.ZeroMemory(destination);
-                    CryptoPool.Return(buf!, clearSize: 0);
+                    CryptoPool.Return(buf, clearSize: 0);
                 }
             }
 

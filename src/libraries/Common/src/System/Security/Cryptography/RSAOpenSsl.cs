@@ -88,7 +88,7 @@ namespace System.Security.Cryptography
             SafeEvpPKeyHandle key = GetKey();
             int rsaSize = Interop.Crypto.EvpPKeySize(key);
             Span<byte> destination = default;
-            byte[]? buf = CryptoPool.Rent(rsaSize);
+            byte[] buf = CryptoPool.Rent(rsaSize);
 
             try
             {

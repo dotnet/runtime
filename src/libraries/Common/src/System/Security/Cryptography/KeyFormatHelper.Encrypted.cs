@@ -197,7 +197,7 @@ namespace System.Security.Cryptography
             Span<byte> salt = stackalloc byte[16];
 
             // We need at least one block size beyond the input data size.
-            byte[]? encryptedRent = CryptoPool.Rent(
+            byte[] encryptedRent = CryptoPool.Rent(
                 checked(pkcs8Writer.GetEncodedLength() + (cipher.BlockSize / 8)));
 
             try
