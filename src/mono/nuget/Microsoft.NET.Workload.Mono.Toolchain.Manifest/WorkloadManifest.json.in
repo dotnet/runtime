@@ -94,7 +94,7 @@
         "Microsoft.NETCore.App.Runtime.osx-x64"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling" ],
-      "platforms": [ "win-x64", "osx-arm64", "osx-x64" ]
+      "platforms": [ "osx-arm64", "osx-x64" ]
     },
     "microsoft-net-runtime-tvos": {
       "abstract": true,
@@ -200,7 +200,7 @@
       "kind": "framework",
       "version": "${PackageVersion}",
     },
-    "Microsoft.NETCore.App.Runtime.Mono.maccatalyst-64": {
+    "Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64": {
       "kind": "framework",
       "version": "${PackageVersion}",
     },
