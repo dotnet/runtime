@@ -572,7 +572,7 @@ namespace System.Net.Http.Functional.Tests
                 // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
 
                 Console.WriteLine($"{GetHttp3LoopbackStreamStateTraceId(stream)} SERVER will loop send");
-                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(3)));
+                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(20)));
                 // exact error code depends on who won the race
                 Assert.True(ex.ErrorCode == 268 /* cancellation */ || ex.ErrorCode == 0xffffffff /* disposal */, $"Expected 268 or 0xffffffff, got {ex.ErrorCode}");
 
@@ -590,7 +590,7 @@ namespace System.Net.Http.Functional.Tests
                         Version = HttpVersion30,
                         VersionPolicy = HttpVersionPolicy.RequestVersionExact
                     };
-                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(3));
+                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(20));
 
                 Stream stream = await response.Content.ReadAsStreamAsync();
                 Console.WriteLine($"{GetHttp3ReadStreamStateTraceId(stream)} CLIENT");
@@ -615,7 +615,7 @@ namespace System.Net.Http.Functional.Tests
                 await serverDone.WaitAsync();
             });
 
-            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
         }
 
         private static async Task SendDataForever(Http3LoopbackStream stream)
