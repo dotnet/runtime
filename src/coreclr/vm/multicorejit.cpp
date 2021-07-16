@@ -478,7 +478,6 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
         header.shortCounters[ 7] = m_stats.m_nTotalDelay;
         header.shortCounters[ 8] = m_stats.m_nDelayCount;
         header.shortCounters[ 9] = m_stats.m_nWalkBack;
-        header.shortCounters[10] = m_fAppxMode;
 
         _ASSERTE(HEADER_W_COUNTER >= 14);
 
@@ -692,7 +691,6 @@ void MulticoreJitRecorder::RecordOrUpdateModuleInfo(FileLoadLevel needLevel, uns
 class MulticoreJitRecorderModuleEnumerator : public MulticoreJitModuleEnumerator
 {
     MulticoreJitRecorder * m_pRecorder;
-    bool                   m_fAppxMode;
 
     HRESULT OnModule(Module * pModule)
     {
@@ -705,7 +703,7 @@ class MulticoreJitRecorderModuleEnumerator : public MulticoreJitModuleEnumerator
         }
         CONTRACTL_END;
 
-        if (MulticoreJitManager::IsSupportedModule(pModule, false, m_fAppxMode))
+        if (MulticoreJitManager::IsSupportedModule(pModule, false))
         {
             m_pRecorder->AddModuleDependency(pModule, MulticoreJitManager::GetModuleFileLoadLevel(pModule));
         }
@@ -714,10 +712,9 @@ class MulticoreJitRecorderModuleEnumerator : public MulticoreJitModuleEnumerator
     }
 
 public:
-    MulticoreJitRecorderModuleEnumerator(MulticoreJitRecorder * pRecorder, bool fAppxMode)
+    MulticoreJitRecorderModuleEnumerator(MulticoreJitRecorder * pRecorder)
     {
         m_pRecorder = pRecorder;
-        m_fAppxMode = fAppxMode;
     }
 };
 
@@ -855,19 +852,19 @@ void MulticoreJitRecorder::PreRecordFirstMethod()
     m_fFirstMethod = false;
 
     {
-        MulticoreJitRecorderModuleEnumerator enumerator(this, m_fAppxMode);
+        MulticoreJitRecorderModuleEnumerator enumerator(this);
 
         enumerator.EnumerateLoadedModules(m_pDomain);
     }
 
-    // When running under Appx or CoreCLR for K, AppDomain is normally not shut down properly (CLR in hybrid case, or Alt-F4 shutdown),
+    // When running under CoreCLR for K, AppDomain is normally not shut down properly (CLR in hybrid case, or Alt-F4 shutdown),
     // So we only allow writing out after profileWriteTimeout seconds
     {
         // Get the timeout in seconds.
         int profileWriteTimeout = (int)CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitProfileWriteDelay);
 
 #ifndef TARGET_UNIX
-        // Using the same threadpool timer used by UsageLog to write out profile when running under Appx or CoreCLR.
+        // Using the same threadpool timer used by UsageLog to write out profile when running under CoreCLR.
         MulticoreJitManager & manager = m_pDomain->GetMulticoreJitManager();
         s_delayedWriteTimer = CreateThreadpoolTimer(MulticoreJitRecorder::WriteMulticoreJitProfiler, &manager, NULL);
 
@@ -897,7 +894,7 @@ void MulticoreJitRecorder::RecordMethodJitOrLoad(MethodDesc * pMethod, bool appl
     Module * pModule = pMethod->GetModule_NoLogging();
 
     // Skip methods from non-supported modules
-    if (! MulticoreJitManager::IsSupportedModule(pModule, true, m_fAppxMode))
+    if (! MulticoreJitManager::IsSupportedModule(pModule, true))
     {
         return;
     }
@@ -1040,8 +1037,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
 
         NewHolder<MulticoreJitProfilePlayer> player(new (nothrow) MulticoreJitProfilePlayer(
             m_pBinderContext,
-            nSession,
-            m_fAppxMode));
+            nSession));
 
         if (player == NULL)
         {
@@ -1211,7 +1207,6 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, ICLRPrivBinder *pBin
         MulticoreJitRecorder * pRecorder = new (nothrow) MulticoreJitRecorder(
             pDomain,
             pBinderContext,
-            m_fAppxMode,
             gatherProfile);
 
         if (pRecorder != NULL)
@@ -1224,14 +1219,7 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, ICLRPrivBinder *pBin
 
             MulticoreJitTrace(("MulticoreJitRecorder session %d created: %x", sessionID, hr));
 
-            if (m_fAppxMode) // In Appx mode, recorder is only enabled when file exists, but header is bad (e.g. zero-length)
-            {
-                if (hr == COR_E_BADIMAGEFORMAT)
-                {
-                    m_fRecorderActive = gatherProfile;
-                }
-            }
-            else if ((hr == COR_E_BADIMAGEFORMAT) || SUCCEEDED(hr)) // Otherwise, ignore COR_E_BADIMAGEFORMAT, always record new profile
+            if ((hr == COR_E_BADIMAGEFORMAT) || SUCCEEDED(hr)) // Ignore COR_E_BADIMAGEFORMAT, always record new profile
             {
                 m_fRecorderActive = gatherProfile;
             }
@@ -1373,7 +1361,6 @@ MulticoreJitManager::MulticoreJitManager()
     m_fSetProfileRootCalled = 0;
     m_fAutoStartCalled      = 0;
     m_fRecorderActive       = false;
-    m_fAppxMode             = false;
 
     m_playerLock.Init(CrstMulticoreJitManager, (CrstFlags)(CRST_TAKEN_DURING_SHUTDOWN));
     m_MulticoreJitCodeStorage.Init();
@@ -1406,7 +1393,7 @@ void MulticoreJitManager::RecordModuleLoad(Module * pModule, FileLoadLevel loadL
 
     if (m_fRecorderActive)
     {
-        if(IsSupportedModule(pModule, false, m_fAppxMode)) // Filter out unsupported module
+        if(IsSupportedModule(pModule, false)) // Filter out unsupported module
         {
             CrstHolder hold(& m_playerLock);
 

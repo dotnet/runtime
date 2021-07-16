@@ -212,7 +212,7 @@ public:
 
     ModuleRecord(unsigned lenName = 0, unsigned lenAssemblyName = 0);
 
-    bool MatchWithModule(ModuleVersion & version, bool & gotVersion, Module * pModule, bool & shouldAbort, bool fAppx) const;
+    bool MatchWithModule(ModuleVersion & version, bool & gotVersion, Module * pModule, bool & shouldAbort) const;
 
     unsigned ModuleNameLen() const
     {
@@ -282,7 +282,6 @@ private:
     MulticoreJitPlayerStat           & m_stats;
     MulticoreJitCounter              & m_appdomainSession;
     bool                               m_shouldAbort;
-    bool                               m_fAppxMode;
 
     Thread                           * m_pThread;
 
@@ -320,7 +319,7 @@ private:
 
 public:
 
-    MulticoreJitProfilePlayer(ICLRPrivBinder * pBinderContext, LONG nSession, bool fAppxMode);
+    MulticoreJitProfilePlayer(ICLRPrivBinder * pBinderContext, LONG nSession);
 
     ~MulticoreJitProfilePlayer();
 
@@ -628,7 +627,6 @@ private:
 
     bool                      m_fFirstMethod;
     bool                      m_fAborted;
-    bool                      m_fAppxMode;
 
 #ifndef TARGET_UNIX
     static TP_TIMER         * s_delayedWriteTimer;
@@ -657,7 +655,7 @@ private:
 
 public:
 
-    MulticoreJitRecorder(AppDomain * pDomain, ICLRPrivBinder * pBinderContext, bool fAppxMode, bool fRecorderActive)
+    MulticoreJitRecorder(AppDomain * pDomain, ICLRPrivBinder * pBinderContext, bool fRecorderActive)
         : m_stats(pDomain->GetMulticoreJitManager().GetStats())
         , m_ModuleList(nullptr)
         , m_JitInfoArray(nullptr)
@@ -683,7 +681,6 @@ public:
 
         m_fFirstMethod      = true;
         m_fAborted          = false;
-        m_fAppxMode         = fAppxMode;
 
 
         m_stats.Clear();
