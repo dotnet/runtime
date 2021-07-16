@@ -328,6 +328,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_PKEY_CTX_get0_pkey) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new_id) \
+    FALLBACK_FUNCTION(EVP_PKEY_CTX_set_dsa_paramgen_q_bits) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_keygen_bits) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_oaep_md) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_padding) \
@@ -780,6 +781,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_CTX_get0_pkey EVP_PKEY_CTX_get0_pkey_ptr
 #define EVP_PKEY_CTX_new EVP_PKEY_CTX_new_ptr
 #define EVP_PKEY_CTX_new_id EVP_PKEY_CTX_new_id_ptr
+#define EVP_PKEY_CTX_set_dsa_paramgen_q_bits EVP_PKEY_CTX_set_dsa_paramgen_q_bits_ptr
 #define EVP_PKEY_CTX_set_rsa_keygen_bits EVP_PKEY_CTX_set_rsa_keygen_bits_ptr
 #define EVP_PKEY_CTX_set_rsa_oaep_md EVP_PKEY_CTX_set_rsa_oaep_md_ptr
 #define EVP_PKEY_CTX_set_rsa_padding EVP_PKEY_CTX_set_rsa_padding_ptr

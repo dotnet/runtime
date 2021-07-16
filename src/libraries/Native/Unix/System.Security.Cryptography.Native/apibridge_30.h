@@ -6,6 +6,7 @@
 #pragma once
 #include "pal_types.h"
 
+int local_EVP_PKEY_CTX_set_dsa_paramgen_q_bits(EVP_PKEY_CTX* ctx, int qbits);
 int local_EVP_PKEY_CTX_set_rsa_keygen_bits(EVP_PKEY_CTX* ctx, int bits);
 int local_EVP_PKEY_CTX_set_rsa_oaep_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
 int local_EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX* ctx, int pad_mode);

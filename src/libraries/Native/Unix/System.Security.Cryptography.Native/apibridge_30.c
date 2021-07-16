@@ -45,6 +45,11 @@ c_static_assert(EVP_PKEY_OP_TYPE_SIG == 0xF8);
 
 #endif
 
+int local_EVP_PKEY_CTX_set_dsa_paramgen_q_bits(EVP_PKEY_CTX* ctx, int qbits)
+{
+    return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_DSA, EVP_PKEY_OP_PARAMGEN, EVP_PKEY_CTRL_DSA_PARAMGEN_Q_BITS, qbits, NULL);
+}
+
 int local_EVP_PKEY_CTX_set_rsa_keygen_bits(EVP_PKEY_CTX* ctx, int bits)
 {
     return RSA_pkey_ctx_ctrl(ctx, EVP_PKEY_OP_KEYGEN, EVP_PKEY_CTRL_RSA_KEYGEN_BITS, bits, NULL);

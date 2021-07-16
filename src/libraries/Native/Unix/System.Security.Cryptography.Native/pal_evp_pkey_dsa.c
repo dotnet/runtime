@@ -40,12 +40,10 @@ EVP_PKEY* CryptoNative_DsaGenerateKey(int32_t keySize)
     EVP_PKEY_CTX* keyCtx = NULL;
 
     // FIPS 186-4 4.2
-    // int qbits = keySize > 1024 ? 256 : 160;
+    int qbits = keySize > 1024 ? 256 : 160;
 
     if (EVP_PKEY_paramgen_init(paramCtx) == 1 && EVP_PKEY_CTX_set_dsa_paramgen_bits(paramCtx, keySize) == 1 &&
-        // EVP_PKEY_CTX_set_dsa_paramgen_q_bits(paramCtx, qbits) == 1 &&
-        // EVP_PKEY_CTX_ctrl(paramCtx, EVP_PKEY_DSA, EVP_PKEY_OP_PARAMGEN, EVP_PKEY_CTRL_DSA_PARAMGEN_Q_BITS, qbits,
-        // NULL) == 1 &&
+        EVP_PKEY_CTX_set_dsa_paramgen_q_bits(paramCtx, qbits) == 1 &&
         EVP_PKEY_paramgen(paramCtx, &paramKey) == 1 && (keyCtx = EVP_PKEY_CTX_new(paramKey, NULL)) != NULL &&
         EVP_PKEY_keygen_init(keyCtx) == 1 && EVP_PKEY_keygen(keyCtx, &pkey) == 1)
     {
