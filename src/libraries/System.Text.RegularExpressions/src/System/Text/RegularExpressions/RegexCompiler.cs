@@ -4270,7 +4270,7 @@ namespace System.Text.RegularExpressions
                             Sub();
                             Ldc(str.Length);
                             BgeFar(multiCode);
-                            // if (!_caseInsensitive && _maxBacktrackPosition != -1 && runtextpos > _maxBacktrackPosition)
+                            // if (!caseInsensitive && _maxBacktrackPosition != -1 && runtextpos > _maxBacktrackPosition)
                             if (!IsCaseInsensitive())
                             {
                                 Ldloc(_maxBacktrackPositionLocal!);
@@ -4288,29 +4288,24 @@ namespace System.Text.RegularExpressions
                                 Ldloc(_runtextendLocal!);
                                 Ldloc(_maxBacktrackPositionLocal!);
                                 Sub();
-                                using (RentedLocalBuilder textSpanLocal = RentReadOnlySpanCharLocal())
+                                using (RentedLocalBuilder runtextSpanLocal = RentReadOnlySpanCharLocal())
                                 {
                                     Call(s_stringAsSpanIntIntMethod);
-                                    Stloc(textSpanLocal);
-                                    using (RentedLocalBuilder lastIndexOf = RentInt32Local())
+                                    Stloc(runtextSpanLocal);
+                                    using (RentedLocalBuilder lastIndexOfLocal = RentInt32Local())
                                     {
-                                        using (RentedLocalBuilder strAsSpanLocal = RentReadOnlySpanCharLocal())
-                                        {
-                                            // int lastIndexOf = runtextSpan.LastIndexOf(str.AsSpan());
-                                            Ldstr(str);
-                                            Call(s_stringAsSpanMethod);
-                                            Stloc(strAsSpanLocal);
-                                            Ldloc(textSpanLocal);
-                                            Ldloc(strAsSpanLocal);
-                                            Call(s_spanLastIndexOfMethod);
-                                        }
-                                        Stloc(lastIndexOf);
-                                        Ldloc(lastIndexOf);
-                                        Ldc(-1);
+                                        // int lastIndexOf = runtextSpan.LastIndexOf(str.AsSpan());
+                                        Ldloc(runtextSpanLocal);
+                                        Ldstr(str);
+                                        Call(s_stringAsSpanMethod);
+                                        Call(s_spanLastIndexOfMethod);
+                                        Stloc(lastIndexOfLocal);
                                         // if (lastIndexOf > -1)
+                                        Ldloc(lastIndexOfLocal);
+                                        Ldc(-1);
                                         BleFar(_backtrack);
-                                        // runtextpos = _maxBacktrackPosition + lastIndexOf;
-                                        Ldloc(lastIndexOf);
+                                        // runtextpos = lastIndexOf + _maxBacktrackPosition;
+                                        Ldloc(lastIndexOfLocal);
                                         Ldloc(_maxBacktrackPositionLocal!);
                                         Add();
                                         Stloc(_runtextposLocal!);
@@ -4950,7 +4945,7 @@ namespace System.Text.RegularExpressions
                         using (RentedLocalBuilder iBacktrackLocal = RentInt32Local())
                         {
                             Stloc(iBacktrackLocal);
-                            // if (!_caseInsensitive && maxBacktrackPosition != -1 && pos > maxBacktrackPosition && runtextpos < pos && _operator == (RegexCode.Notoneloop | RegexCode.Back) && !_rightToLeft)
+                            // if (!caseInsensitive && maxBacktrackPosition != -1 && pos > maxBacktrackPosition && runtextpos < pos && _operator == (RegexCode.Notoneloop | RegexCode.Back) && !_rightToLeft)
                             if (!IsCaseInsensitive() && _regexopcode == (RegexCode.Notoneloop | RegexCode.Back) && !IsRightToLeft())
                             {
                                 Ldloc(_maxBacktrackPositionLocal!);
@@ -4969,24 +4964,16 @@ namespace System.Text.RegularExpressions
                                     maxBacktrackPosition = -1;
                                  */
                                 // int difference = pos - maxBacktrackPosition;
+                                Ldloc(iBacktrackLocal);
                                 Ldloc(posLocal);
                                 Ldloc(_maxBacktrackPositionLocal!);
                                 Sub();
-                                using (RentedLocalBuilder differenceLocal = RentInt32Local())
-                                {
-                                    Stloc(differenceLocal);
-                                    // pos = runtextpos;
-                                    Ldloc(_runtextposLocal!);
-                                    Stloc(posLocal);
-                                    // i -= difference;
-                                    Ldloc(iBacktrackLocal);
-                                    Ldloc(differenceLocal);
-                                    Sub();
-                                    Stloc(iBacktrackLocal);
-                                    // maxBacktrackPosition = -1;
-                                    Ldc(-1);
-                                    Stloc(_maxBacktrackPositionLocal!);
-                                }
+                                Sub();
+                                Stloc(iBacktrackLocal);
+                                Ldloc(_runtextposLocal!);
+                                Stloc(posLocal);
+                                Ldc(-1);
+                                Stloc(_maxBacktrackPositionLocal!);
                             }
 
                             MarkLabel(noBacktrackPositionBranch);
