@@ -158,18 +158,21 @@ namespace System.Runtime.InteropServices.Tests
 
         public static IEnumerable<object[]> Equals_TestData()
         {
-            GCHandle handle = GCHandle.Alloc(new object());
-            yield return new object[] { handle, handle, true };
-            yield return new object[] { GCHandle.Alloc(new object()), GCHandle.Alloc(new object()), false };
+            // xunit disposes of any IDisposables passed as row values in a member data.
+            // Avoid GCHandle being disposed of automatically by wrapping it.
 
-            yield return new object[] { GCHandle.Alloc(new object()), new object(), false };
-            yield return new object[] { GCHandle.Alloc(new object()), null, false };
+            GCHandle handle = GCHandle.Alloc(new object());
+            yield return new object[] { new KeyValuePair<GCHandle, object>(handle, handle), true };
+            yield return new object[] { new KeyValuePair<GCHandle, object>(GCHandle.Alloc(new object()), GCHandle.Alloc(new object())), false };
+            yield return new object[] { new KeyValuePair<GCHandle, object>(GCHandle.Alloc(new object()), new object()), false };
+            yield return new object[] { new KeyValuePair<GCHandle, object>(GCHandle.Alloc(new object()), null), false };
         }
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals_Object_ReturnsExpected(GCHandle handle, object other, bool expected)
+        public void Equals_Object_ReturnsExpected(KeyValuePair<GCHandle, object> pair, bool expected)
         {
+            (GCHandle handle, object other) = pair;
             try
             {
                 Assert.Equal(expected, handle.Equals(other));
