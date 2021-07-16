@@ -120,10 +120,10 @@ namespace Microsoft.WebAssembly.Build.Tasks
                         envStr.Append($"{key}={envVarsDict[key]} ");
                     Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}{command}");
                     (int exitCode, string output) = Utils.RunShellCommand(
+                                                            Log,
                                                             command,
                                                             envVarsDict,
                                                             workingDir: Environment.CurrentDirectory,
-                                                            logger: Log,
                                                             logStdErrAsMessage: true,
                                                             debugMessageImportance: MessageImportance.High,
                                                             label: Path.GetFileName(srcFile));

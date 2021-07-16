@@ -60,7 +60,7 @@ namespace Microsoft.Workload.Build.Tasks
             _logger.LogMessage(MessageImportance.Low, $"Restoring packages: {string.Join(", ", references.Select(r => $"{r.Name}/{r.Version}"))}");
 
             string args = $"restore \"{projectPath}\" /p:RestorePackagesPath=\"{_packagesDir}\"";
-            (int exitCode, string output) = Utils.TryRunProcess("dotnet", args, silent: false, debugMessageImportance: MessageImportance.Low);
+            (int exitCode, string output) = Utils.TryRunProcess(_logger, "dotnet", args, silent: false, debugMessageImportance: MessageImportance.Low);
             if (exitCode != 0)
             {
                 LogErrorOrWarning($"Restoring packages failed with exit code: {exitCode}. Output:{Environment.NewLine}{output}", stopOnMissing);
