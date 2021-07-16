@@ -454,39 +454,19 @@ namespace System.Security.Cryptography
                     signature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 }
-                else if (signatureFormat != DSASignatureFormat.Rfc3279DerSequence)
+                else if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
+                {
+                    if (!AsymmetricAlgorithmHelpers.ValidateRfc3279DerSequence(signature))
+                    {
+                        return false;
+                    }
+                }
+                else
                 {
                     Debug.Fail($"Missing internal implementation handler for signature format {signatureFormat}");
                     throw new CryptographicException(
                         SR.Cryptography_UnknownSignatureFormat,
                         signatureFormat.ToString());
-                }
-                else
-                {
-                    // Ensure that the signature is a valid DER SEQUENCE(INTEGER,INTEGER), otherwise
-                    // OpenSSL will return -1 without setting an error.
-                    try
-                    {
-                        AsnValueReader reader = new AsnValueReader(signature, AsnEncodingRules.DER);
-                        AsnValueReader payload = reader.ReadSequence();
-
-                        if (reader.HasData)
-                        {
-                            return false;
-                        }
-
-                        payload.ReadIntegerBytes();
-                        payload.ReadIntegerBytes();
-
-                        if (payload.HasData)
-                        {
-                            return false;
-                        }
-                    }
-                    catch (AsnContentException)
-                    {
-                        return false;
-                    }
                 }
 #endif
                 return Interop.Crypto.SimpleVerifyHash(key, hash, signature);

@@ -13,6 +13,34 @@ namespace Internal.Cryptography
     //
     internal static partial class AsymmetricAlgorithmHelpers
     {
+        internal static bool ValidateRfc3279DerSequence(ReadOnlySpan<byte> signature)
+        {
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(signature, AsnEncodingRules.DER);
+                AsnValueReader payload = reader.ReadSequence();
+
+                if (reader.HasData)
+                {
+                    return false;
+                }
+
+                payload.ReadIntegerBytes();
+                payload.ReadIntegerBytes();
+
+                if (payload.HasData)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+            catch (AsnContentException)
+            {
+                return false;
+            }
+        }
+
         /// <summary>
         /// Convert Ieee1363 format of (r, s) to Der format
         /// </summary>
