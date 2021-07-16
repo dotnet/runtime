@@ -308,6 +308,7 @@ asm_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the ba
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
 asm_diff_parser.add_argument("-temp_dir", help="Specify a temporary directory used for a previous ASM diffs run (for which --skip_cleanup was used) to view the results. The replay command is skipped.")
 asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump/COMPlus_NgenGCDump; requires instructions to be prefixed by offsets).")
+asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets COMPlus_JitDebugDump/COMPlus_NgenDebugDump).")
 asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
@@ -1717,6 +1718,11 @@ class SuperPMIReplayAsmDiffs:
             asm_complus_vars.update({
                 "COMPlus_JitGCDump": "*",
                 "COMPlus_NgenGCDump": "*" })
+
+        if self.coreclr_args.debuginfo:
+            asm_complus_vars.update({
+                "COMPlus_JitDebugDump": "*",
+                "COMPlus_NgenDebugDump": "*" })
 
         jit_dump_complus_vars = asm_complus_vars.copy()
         jit_dump_complus_vars.update({
@@ -3634,6 +3640,11 @@ def setup_args(args):
                             "gcinfo",
                             lambda unused: True,
                             "Unable to set gcinfo.")
+
+        coreclr_args.verify(args,
+                            "debuginfo",
+                            lambda unused: True,
+                            "Unable to set debuginfo.")
 
         coreclr_args.verify(args,
                             "diff_jit_dump",
