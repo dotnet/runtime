@@ -280,7 +280,7 @@ namespace System.Net.Quic.Tests
                         }
                     }
 
-                    stream.Shutdown();
+                    stream.CompleteWrites();
                     await stream.ShutdownCompleted();
                 },
                 async serverConnection =>
@@ -298,7 +298,7 @@ namespace System.Net.Quic.Tests
                     int expectedTotalBytes = writes.SelectMany(x => x).Sum();
                     Assert.Equal(expectedTotalBytes, totalBytes);
 
-                    stream.Shutdown();
+                    stream.CompleteWrites();
                     await stream.ShutdownCompleted();
                 });
         }

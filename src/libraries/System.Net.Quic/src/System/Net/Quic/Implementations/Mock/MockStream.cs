@@ -203,14 +203,6 @@ namespace System.Net.Quic.Implementations.Mock
             WriteStreamBuffer?.EndWrite();
         }
 
-        internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
-        {
-            CheckDisposed();
-
-            return default;
-        }
-
-
         internal override ValueTask ShutdownCompleted(CancellationToken cancellationToken = default)
         {
             CheckDisposed();
@@ -218,7 +210,7 @@ namespace System.Net.Quic.Implementations.Mock
             return default;
         }
 
-        internal override void Shutdown()
+        internal override void CompleteWrites()
         {
             CheckDisposed();
 
@@ -247,7 +239,7 @@ namespace System.Net.Quic.Implementations.Mock
         {
             if (!_disposed)
             {
-                Shutdown();
+                CompleteWrites();
 
                 _disposed = true;
             }
@@ -257,7 +249,7 @@ namespace System.Net.Quic.Implementations.Mock
         {
             if (!_disposed)
             {
-                Shutdown();
+                CompleteWrites();
 
                 _disposed = true;
             }
