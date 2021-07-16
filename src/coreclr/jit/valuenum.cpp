@@ -454,7 +454,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     // We have no current allocation chunks.
     for (unsigned i = 0; i < TYP_COUNT; i++)
     {
-        for (unsigned j = CEA_None; j <= CEA_Count + BasicBlock::MAX_LOOP_NUM; j++)
+        for (unsigned j = CEA_Const; j <= CEA_Count; j++)
         {
             m_curAllocChunk[i][j] = NoChunk;
         }
@@ -466,8 +466,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     }
     // We will reserve chunk 0 to hold some special constants, like the constant NULL, the "exception" value, and the
     // "zero map."
-    Chunk* specialConstChunk =
-        new (m_alloc) Chunk(m_alloc, &m_nextChunkBase, TYP_REF, CEA_Const, BasicBlock::MAX_LOOP_NUM);
+    Chunk* specialConstChunk = new (m_alloc) Chunk(m_alloc, &m_nextChunkBase, TYP_REF, CEA_Const);
     specialConstChunk->m_numUsed +=
         SRC_NumSpecialRefConsts; // Implicitly allocate 0 ==> NULL, and 1 ==> Exception, 2 ==> ZeroMap.
     ChunkNum cn = m_chunks.Push(specialConstChunk);
@@ -1552,17 +1551,12 @@ bool ValueNumStore::IsSharedStatic(ValueNum vn)
     return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_SharedStatic) != 0;
 }
 
-ValueNumStore::Chunk::Chunk(CompAllocator          alloc,
-                            ValueNum*              pNextBaseVN,
-                            var_types              typ,
-                            ChunkExtraAttribs      attribs,
-                            BasicBlock::loopNumber loopNum)
-    : m_defs(nullptr), m_numUsed(0), m_baseVN(*pNextBaseVN), m_typ(typ), m_attribs(attribs), m_loopNum(loopNum)
+ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_types typ, ChunkExtraAttribs attribs)
+    : m_defs(nullptr), m_numUsed(0), m_baseVN(*pNextBaseVN), m_typ(typ), m_attribs(attribs)
 {
     // Allocate "m_defs" here, according to the typ/attribs pair.
     switch (attribs)
     {
-        case CEA_None:
         case CEA_NotAField:
             break; // Nothing to do.
         case CEA_Const:
@@ -1619,26 +1613,11 @@ ValueNumStore::Chunk::Chunk(CompAllocator          alloc,
     *pNextBaseVN += ChunkSize;
 }
 
-ValueNumStore::Chunk* ValueNumStore::GetAllocChunk(var_types              typ,
-                                                   ChunkExtraAttribs      attribs,
-                                                   BasicBlock::loopNumber loopNum)
+ValueNumStore::Chunk* ValueNumStore::GetAllocChunk(var_types typ, ChunkExtraAttribs attribs)
 {
     Chunk*   res;
-    unsigned index;
-    if (loopNum == BasicBlock::MAX_LOOP_NUM)
-    {
-        // Loop nest is unknown/irrelevant for this VN.
-        index = attribs;
-    }
-    else
-    {
-        // Loop nest is interesting.  Since we know this is only true for unique VNs, we know attribs will
-        // be CEA_None and can just index based on loop number.
-        noway_assert(attribs == CEA_None);
-        // Map NOT_IN_LOOP -> BasicBlock::MAX_LOOP_NUM to make the index range contiguous [0..BasicBlock::MAX_LOOP_NUM]
-        index = CEA_Count + (loopNum == BasicBlock::NOT_IN_LOOP ? BasicBlock::MAX_LOOP_NUM : loopNum);
-    }
-    ChunkNum cn = m_curAllocChunk[typ][index];
+    unsigned index = attribs;
+    ChunkNum cn    = m_curAllocChunk[typ][index];
     if (cn != NoChunk)
     {
         res = m_chunks.Get(cn);
@@ -1648,7 +1627,7 @@ ValueNumStore::Chunk* ValueNumStore::GetAllocChunk(var_types              typ,
         }
     }
     // Otherwise, must allocate a new one.
-    res                         = new (m_alloc) Chunk(m_alloc, &m_nextChunkBase, typ, attribs, loopNum);
+    res                         = new (m_alloc) Chunk(m_alloc, &m_nextChunkBase, typ, attribs);
     cn                          = m_chunks.Push(res);
     m_curAllocChunk[typ][index] = cn;
     return res;
@@ -1911,6 +1890,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func)
 //
 ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
 {
+    assert(func != VNF_MemOpaque);
     assert(arg0VN == VNNormalValue(arg0VN)); // Arguments don't carry exceptions.
 
     // Try to perform constant-folding.
@@ -1922,7 +1902,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
     ValueNum resultVN;
 
     // Have we already assigned a ValueNum for 'func'('arg0VN') ?
-    //
     VNDefFunc1Arg fstruct(func, arg0VN);
     if (!GetVNFunc1Map()->Lookup(fstruct, &resultVN))
     {
@@ -3675,12 +3654,14 @@ ValueNum ValueNumStore::VNForExpr(BasicBlock* block, var_types typ)
         loopNum = block->bbNatLoopNum;
     }
 
-    // We always allocate a new, unique VN in this call.
-    // The 'typ' is used to partition the allocation of VNs into different chunks.
-    Chunk*   c                 = GetAllocChunk(typ, CEA_None, loopNum);
-    unsigned offsetWithinChunk = c->AllocVN();
-    ValueNum result            = c->m_baseVN + offsetWithinChunk;
-    return result;
+    // VNForFunc(typ, func, vn) but bypasses looking in the cache
+    //
+    VNDefFunc1Arg fstruct(VNF_MemOpaque, loopNum);
+    Chunk*        c                                                = GetAllocChunk(typ, CEA_Func1);
+    unsigned      offsetWithinChunk                                = c->AllocVN();
+    ValueNum      resultVN                                         = c->m_baseVN + offsetWithinChunk;
+    reinterpret_cast<VNDefFunc1Arg*>(c->m_defs)[offsetWithinChunk] = fstruct;
+    return resultVN;
 }
 
 ValueNum ValueNumStore::VNApplySelectors(ValueNumKind  vnk,
@@ -4343,27 +4324,30 @@ var_types ValueNumStore::TypeOfVN(ValueNum vn)
 }
 
 //------------------------------------------------------------------------
-// LoopOfVN: If the given value number is an opaque one associated with a particular
-//    expression in the IR, give the loop number where the expression occurs; otherwise,
-//    returns BasicBlock::MAX_LOOP_NUM.
+// LoopOfVN: If the given value number is VNF_MemOpaque, return
+//    the loop number where the memory update occurs, otherwise returns MAX_LOOP_NUM.
 //
 // Arguments:
 //    vn - Value number to query
 //
 // Return Value:
-//    The correspondingblock's bbNatLoopNum, which may be BasicBlock::NOT_IN_LOOP.
-//    Returns BasicBlock::MAX_LOOP_NUM if this VN is not an opaque value number associated with
-//    a particular expression/location in the IR.
-
+//    The memory loop number, which may be BasicBlock::NOT_IN_LOOP.
+//    Returns BasicBlock::MAX_LOOP_NUM if this VN is not a memory value number.
+//
 BasicBlock::loopNumber ValueNumStore::LoopOfVN(ValueNum vn)
 {
-    if (vn == NoVN)
+    if (IsVNFunc(vn))
     {
-        return BasicBlock::MAX_LOOP_NUM;
+        VNFuncApp funcApp;
+        GetVNFunc(vn, &funcApp);
+
+        if (funcApp.m_func == VNF_MemOpaque)
+        {
+            return (BasicBlock::loopNumber)funcApp.m_args[0];
+        }
     }
 
-    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
-    return c->m_loopNum;
+    return BasicBlock::MAX_LOOP_NUM;
 }
 
 bool ValueNumStore::IsVNConstant(ValueNum vn)
@@ -5554,6 +5538,9 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             case VNF_ValWithExc:
                 vnDumpValWithExc(comp, &funcApp);
                 break;
+            case VNF_MemOpaque:
+                vnDumpMemOpaque(comp, &funcApp);
+                break;
 #ifdef FEATURE_SIMD
             case VNF_SimdType:
                 vnDumpSimdType(comp, &funcApp);
@@ -5710,6 +5697,25 @@ void ValueNumStore::vnDumpMapStore(Compiler* comp, VNFuncApp* mapStore)
     printf(" := ");
     comp->vnPrint(newValVN, 0);
     printf("]");
+}
+
+void ValueNumStore::vnDumpMemOpaque(Compiler* comp, VNFuncApp* memOpaque)
+{
+    assert(memOpaque->m_func == VNF_MemOpaque); // Precondition.
+    const unsigned loopNum = memOpaque->m_args[0];
+
+    if (loopNum == BasicBlock::NOT_IN_LOOP)
+    {
+        printf("MemOpaque:NotInLoop");
+    }
+    else if (loopNum == BasicBlock::MAX_LOOP_NUM)
+    {
+        printf("MemOpaque:Indeterminate");
+    }
+    else
+    {
+        printf("MemOpaque:L%02u", loopNum);
+    }
 }
 
 #ifdef FEATURE_SIMD
