@@ -20026,7 +20026,14 @@ start_no_gc_region_status gc_heap::prepare_for_no_gc_region (uint64_t total_size
     }
 
     int soh_align_const = get_alignment_constant (TRUE);
+#ifdef USE_REGIONS
+    // With regions, we 'could' extend the SOH as large as we wanted by chaining the
+    // regions together. However, it probably does not make sense to have a huge SOH
+    // the next ephemeral GC will suffer badly otherwise.
+    size_t max_soh_allocated = (size_t)1 << min_segment_size_shr;
+#else
     size_t max_soh_allocated = soh_segment_size - segment_info_size - eph_gen_starts_size;
+#endif
     size_t size_per_heap = 0;
     const double scale_factor = 1.05;
 
