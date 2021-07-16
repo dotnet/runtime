@@ -346,7 +346,7 @@ namespace System
 
                 while (bytesLeft > 0)
                 {
-                    int b = fs.Read(buffer);
+                    int b = fs.Read(buffer.Slice(bytesRead));
                     if (b == 0)
                     {
                         break;
