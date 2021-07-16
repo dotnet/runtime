@@ -372,6 +372,25 @@ stages:
       - windows_x86
       - Linux_x64
 
+  #
+  # Build Blazor Workload
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/workloads-build.yml
+      buildConfig: release
+      platforms:
+      - windows_x64
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        dependsOn:
+        - Build_Android_arm_release_AllSubsets_Mono
+        - Build_Android_arm64_release_AllSubsets_Mono
+        - Build_Android_x86_release_AllSubsets_Mono
+        - Build_Android_x64_release_AllSubsets_Mono
+        - Build_Browser_wasm_release_AllSubsets_Mono
+        - Build_Windows_x64_release_CrossAOT_Mono
+
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml
     parameters:
