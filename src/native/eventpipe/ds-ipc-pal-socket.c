@@ -323,15 +323,15 @@ ipc_socket_create_uds (DiagnosticsIpc *ipc)
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	new_socket = socket (ipc->server_address_family, socket_type, 0);
 #ifndef SOCK_CLOEXEC
-#if DEBUG
-	int fcntl_rc =
-#endif // DEBUG
-	fcntl(new_socket, F_SETFD, FD_CLOEXEC); // best effort; don't validate return value
-	EP_ASSERT (fcntl_rc != -1);
+	if (new_socket != DS_IPC_INVALID_SOCKET) {
+		if (fcntl (new_socket, F_SETFD, FD_CLOEXEC) == -1) {
+			EP_ASSERT (!"Failed to set CLOEXEC");
+		}
+	}
 #endif // SOCK_CLOEXEC
 	DS_EXIT_BLOCKING_PAL_SECTION;
 	return new_socket;
-#endif
+#endif // DS_IPC_PAL_AF_UNIX
 	return DS_IPC_INVALID_SOCKET;
 }
 
@@ -354,14 +354,12 @@ ipc_socket_create_tcp (DiagnosticsIpc *ipc)
 #endif // SOCK_CLOEXEC
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	new_socket = socket (ipc->server_address_family, socket_type, IPPROTO_TCP);
-#ifndef SOCK_CLOEXEC
-#if DEBUG
-	int fcntl_rc =
-#endif // DEBUG
-	fcntl(new_socket, F_SETFD, FD_CLOEXEC); // best effort; don't validate return value
-	EP_ASSERT(fcntl_rc != -1);
-#endif // SOCK_CLOEXEC
 	if (new_socket != DS_IPC_INVALID_SOCKET) {
+#ifndef SOCK_CLOEXEC
+		if (fcntl (new_socket, F_SETFD, FD_CLOEXEC) == -1) {
+			EP_ASSERT (!"Failed to set CLOEXEC");
+		}
+#endif // SOCK_CLOEXEC
 		int option_value = 1;
 		setsockopt (new_socket, IPPROTO_TCP, TCP_NODELAY, (const char*)&option_value, sizeof (option_value));
 		if (ipc->mode == DS_IPC_CONNECTION_MODE_LISTEN) {
