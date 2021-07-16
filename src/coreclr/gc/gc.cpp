@@ -11517,6 +11517,7 @@ void gc_heap::rearrange_heap_segments(BOOL compacting)
 }
 #endif //!USE_REGIONS
 
+#if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
 // go through the list of regions pointed at by root_link and move any regions above the threshold to the list decommit_link
 static int64_t move_regions_above_threshold_to_decommit_list (heap_segment** root_link, heap_segment** decommit_link, uint8_t *threshold)
 {
@@ -11637,6 +11638,7 @@ static int64_t move_huge_regions (heap_segment** from_link, heap_segment** to_li
     }
     return moved_size;
 }
+#endif //USE_REGIONS && MULTIPLE_HEAPS
 
 void gc_heap::distribute_free_regions()
 {
@@ -11797,8 +11799,7 @@ void gc_heap::distribute_free_regions()
             num_large_regions_to_decommit -= num_moved_large_regions;
             total_num_free_large_regions -= num_moved_large_regions;
 
-            if (num_moved_large_regions > 0)
-                dprintf (REGIONS_LOG, ("Removed %Id large regions from surplus list", num_moved_large_regions));
+            dprintf (REGIONS_LOG, ("Removed %Id large regions from surplus list", num_moved_large_regions));
 
             // remove regions above the threshold from free huge regions
             int64_t num_moved_huge_region_units = move_regions_above_threshold_to_decommit_list (
@@ -11808,8 +11809,7 @@ void gc_heap::distribute_free_regions()
 
             num_large_regions_to_decommit -= num_moved_huge_region_units;
 
-            if (num_moved_huge_region_units > 0)
-                dprintf (REGIONS_LOG, ("Removed %Id large region units from free huge regions", num_moved_huge_region_units));
+            dprintf (REGIONS_LOG, ("Removed %Id large region units from free huge regions", num_moved_huge_region_units));
 
             for (int i = 0; i < n_heaps; i++)
             {
@@ -11824,8 +11824,7 @@ void gc_heap::distribute_free_regions()
                 num_large_regions_to_decommit -= num_moved_large_regions;
                 total_num_free_large_regions -= num_moved_large_regions;
 
-                if (num_moved_large_regions > 0)
-                    dprintf(REGIONS_LOG, ("Removed %Id large regions from heap %d", num_moved_large_regions, i));
+                dprintf (REGIONS_LOG, ("Removed %Id large regions from heap %d", num_moved_large_regions, i));
 
                 if (num_large_regions_to_decommit <= 0)
                     break;
