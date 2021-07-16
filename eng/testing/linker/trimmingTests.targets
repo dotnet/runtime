@@ -53,7 +53,6 @@
       <_projectDir>%(TestConsoleApps.ProjectDir)\</_projectDir>
       <_projectFile>%(TestConsoleApps.ProjectFile)</_projectFile>
       <_projectSourceFile>%(TestConsoleApps.ProjectCompileItems)</_projectSourceFile>
-      <_extraTrimmerArgs>%(TestConsoleApps.ExtraTrimmerArgs)</_extraTrimmerArgs>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(AdditionalProjectReferences)' != ''">
@@ -75,8 +74,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_extraTrimmerArgs>$(_extraTrimmerArgs) @(_switchesAsItems->'--feature %(Identity) %(Value)', ' ')</_extraTrimmerArgs>
-      <_runtimeHostConfigurationOptionsString>@(_switchesAsItems->'&lt;RuntimeHostConfigurationOption Include=&quot;%(Identity)&quot; Value=&quot;%(Value)&quot; /&gt;', '%0a    ')</_runtimeHostConfigurationOptionsString>
+      <_runtimeHostConfigurationOptionsString>@(_switchesAsItems->'&lt;RuntimeHostConfigurationOption Include=&quot;%(Identity)&quot; Value=&quot;%(Value)&quot; Trim=&quot;true&quot; /&gt;', '%0a    ')</_runtimeHostConfigurationOptionsString>
     </PropertyGroup>
 
     <MakeDir Directories="$(_projectDir)" />
@@ -89,7 +87,7 @@
                                                  .Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)')
                                                  .Replace('{UseMonoRuntime}','$(UseMonoRuntime)')
                                                  .Replace('{MicrosoftNETILLinkTasksVersion}', '$(MicrosoftNETILLinkTasksVersion)')
-                                                 .Replace('{ExtraTrimmerArgs}', '$(_extraTrimmerArgs)')
+                                                 .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)')
                                                  .Replace('{RuntimeHostConfigurationOptions}', '$(_runtimeHostConfigurationOptionsString)')
                                                  .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
                                                  .Replace('{RepositoryEngineeringDir}', '$(RepositoryEngineeringDir)')
