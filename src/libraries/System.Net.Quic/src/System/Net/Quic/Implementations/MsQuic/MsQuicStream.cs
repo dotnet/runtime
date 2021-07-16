@@ -53,7 +53,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             // set when ReadState.PendingRead:
             public Memory<byte> ReceiveUserBuffer;
             public CancellationTokenRegistration ReceiveCancellationRegistration;
-
             // Resettable completions to be used for multiple calls to receive.
             public readonly ResettableCompletionSource<int> ReceiveResettableCompletionSource = new ResettableCompletionSource<int>();
 
