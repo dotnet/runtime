@@ -2796,16 +2796,24 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
+        unsigned regSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
+                               ? YMM_REGSIZE_BYTES
+                               : XMM_REGSIZE_BYTES;
+
         if (src->gtSkipReloadOrCopy()->IsIntegralConst(0))
         {
             // If the source is constant 0 then always use xorps, it's faster
             // than copying the constant from a GPR to a XMM register.
-            emit->emitIns_R_R(INS_xorps, EA_16BYTE, srcXmmReg, srcXmmReg);
+            emit->emitIns_R_R(INS_xorps, EA_ATTR(regSize), srcXmmReg, srcXmmReg);
         }
         else
         {
             emit->emitIns_Mov(INS_movd, EA_PTRSIZE, srcXmmReg, srcIntReg, /* canSkip */ false);
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
+
+            if (regSize == YMM_REGSIZE_BYTES) {
+                emit->emitIns_R_R_R_I(INS_vinsertf128, EA_32BYTE, srcXmmReg, srcXmmReg, srcXmmReg, 1);
+            }
 #ifdef TARGET_X86
             // For x86, we need one more to convert it from 8 bytes to 16 bytes.
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
@@ -2813,7 +2821,6 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         }
 
         instruction simdMov      = simdUnalignedMovIns();
-        unsigned    regSize      = XMM_REGSIZE_BYTES;
         unsigned    bytesWritten = 0;
 
         while (bytesWritten < size)
@@ -2825,6 +2832,11 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                 regSize = 8;
             }
 #endif
+            if (regSize == YMM_REGSIZE_BYTES && bytesWritten + regSize > size)
+            {
+                regSize = XMM_REGSIZE_BYTES;
+            }
+
             if (bytesWritten + regSize > size)
             {
                 assert(srcIntReg != REG_NA);
@@ -2843,6 +2855,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
             dstOffset += regSize;
             bytesWritten += regSize;
+
         }
 
         size -= bytesWritten;
