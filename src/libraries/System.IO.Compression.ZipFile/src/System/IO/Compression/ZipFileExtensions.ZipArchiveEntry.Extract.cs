@@ -19,8 +19,7 @@ namespace System.IO.Compression
         /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The path specified in destinationFileName is invalid (for example, it is on
         /// an unmapped drive).</exception>
-        /// <exception cref="IOException">destinationFileName already exists.
-        /// -or- An I/O error has occurred. -or- The entry is currently open for writing.
+        /// <exception cref="IOException">An I/O error has occurred. -or- The entry is currently open for writing.
         /// -or- The entry has been deleted from the archive.</exception>
         /// <exception cref="NotSupportedException">destinationFileName is in an invalid format
         /// -or- The ZipArchive that this entry belongs to was opened in a write-only mode.</exception>
@@ -48,8 +47,7 @@ namespace System.IO.Compression
         /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The path specified in destinationFileName is invalid
         /// (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">destinationFileName exists and overwrite is false.
-        /// -or- An I/O error has occurred.
+        /// <exception cref="IOException">An I/O error has occurred.
         /// -or- The entry is currently open for writing.
         /// -or- The entry has been deleted from the archive.</exception>
         /// <exception cref="NotSupportedException">destinationFileName is in an invalid format
