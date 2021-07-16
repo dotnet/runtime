@@ -64,17 +64,23 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
 endif()
 
 if (NOT CLR_CMAKE_HOST_WIN32)
-  # detect linker
-  set(ldVersion ${CMAKE_C_COMPILER};-Wl,--version)
-  execute_process(COMMAND ${ldVersion}
-    ERROR_QUIET
-    OUTPUT_VARIABLE ldVersionOutput)
 
-  if("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold" OR "${ldVersionOutput}" MATCHES "GNU linkers")
-    set(LD_GNU 1)
-  elseif("${ldVersionOutput}" MATCHES "Solaris Link")
-    set(LD_SOLARIS 1)
-  else(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
-    set(LD_OSX 1)
+  if (CMAKE_C_COMPILER_ID MATCHES "Clang" AND NOT CLR_CMAKE_HOST_ARCH_S390X AND NOT CLR_CMAKE_HOST_OSX AND NOT CLR_CMAKE_HOST_FREEBSD)
+    add_linker_flag(-fuse-ld=lld)
+    set(LD_LLVM 1)
+  else()
+    # detect linker
+    set(ldVersion ${CMAKE_C_COMPILER};-Wl,--version)
+    execute_process(COMMAND ${ldVersion}
+      ERROR_QUIET
+      OUTPUT_VARIABLE ldVersionOutput)
+
+    if("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold" OR "${ldVersionOutput}" MATCHES "GNU linkers")
+      set(LD_GNU 1)
+    elseif("${ldVersionOutput}" MATCHES "Solaris Link")
+      set(LD_SOLARIS 1)
+    else(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
+      set(LD_OSX 1)
+    endif()
   endif()
 endif()
