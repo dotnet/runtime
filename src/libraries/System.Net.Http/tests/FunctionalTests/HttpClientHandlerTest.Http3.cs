@@ -443,6 +443,279 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        public enum CancellationType
+        {
+            Dispose,
+            CancellationToken
+        }
+
+        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [InlineData(CancellationType.Dispose)]
+        [InlineData(CancellationType.CancellationToken)]
+        public async Task ResponseCancellation_ServerReceivesCancellation(CancellationType type)
+        {
+            if (UseQuicImplementationProvider != QuicImplementationProviders.MsQuic)
+            {
+                return;
+            }
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            using var clientDone = new SemaphoreSlim(0);
+            using var serverDone = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+
+                int contentLength = 2*1024*1024;
+                var headers = new List<HttpHeaderData>();
+                headers.Append(new HttpHeaderData("Content-Length", contentLength.ToString(CultureInfo.InvariantCulture)));
+
+                await stream.SendResponseHeadersAsync(HttpStatusCode.OK, headers).ConfigureAwait(false);
+                await stream.SendDataFrameAsync(new byte[1024]).ConfigureAwait(false);
+
+                await clientDone.WaitAsync();
+
+                // It is possible that PEER_RECEIVE_ABORTED event will arrive with a significant delay after peer calls AbortReceive
+                // In that case even with synchronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
+                // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
+
+                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(10)));
+                Assert.Equal((type == CancellationType.CancellationToken ? 268 : 0xffffffff), ex.ErrorCode);
+
+                serverDone.Release();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
+
+                Stream stream = await response.Content.ReadAsStreamAsync();
+
+                int bytesRead = await stream.ReadAsync(new byte[1024]);
+                Assert.Equal(1024, bytesRead);
+
+                var cts = new CancellationTokenSource(200);
+
+                if (type == CancellationType.Dispose)
+                {
+                    cts.Token.Register(() => response.Dispose());
+                }
+                CancellationToken readCt = type == CancellationType.CancellationToken ? cts.Token : default;
+
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => stream.ReadAsync(new byte[1024], cancellationToken: readCt).AsTask());
+
+                if (type == CancellationType.CancellationToken)
+                {
+                    Assert.IsType<OperationCanceledException>(ex);
+                }
+                else
+                {
+                    var ioe = Assert.IsType<IOException>(ex);
+                    var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
+                    Assert.IsType<QuicOperationAbortedException>(hre.InnerException);
+                }
+
+                clientDone.Release();
+                await serverDone.WaitAsync();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
+        public async Task ResponseCancellation_BothCancellationTokenAndDispose_Success()
+        {
+            if (UseQuicImplementationProvider != QuicImplementationProviders.MsQuic)
+            {
+                return;
+            }
+
+            using var log = new LogEventListener();
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            using var clientDone = new SemaphoreSlim(0);
+            using var serverDone = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                Console.WriteLine($"{GetHttp3LoopbackStreamStateTraceId(stream)} SERVER");
+
+                HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+
+                int contentLength = 2*1024*1024;
+                var headers = new List<HttpHeaderData>();
+                headers.Append(new HttpHeaderData("Content-Length", contentLength.ToString(CultureInfo.InvariantCulture)));
+
+                await stream.SendResponseHeadersAsync(HttpStatusCode.OK, headers).ConfigureAwait(false);
+                await stream.SendDataFrameAsync(new byte[1024]).ConfigureAwait(false);
+
+                await clientDone.WaitAsync();
+
+                // It is possible that PEER_RECEIVE_ABORTED event will arrive with a significant delay after peer calls AbortReceive
+                // In that case even with synchronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
+                // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
+
+                Console.WriteLine($"{GetHttp3LoopbackStreamStateTraceId(stream)} SERVER will loop send");
+                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(20)));
+                // exact error code depends on who won the race
+                Assert.True(ex.ErrorCode == 268 /* cancellation */ || ex.ErrorCode == 0xffffffff /* disposal */, $"Expected 268 or 0xffffffff, got {ex.ErrorCode}");
+
+                serverDone.Release();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(20));
+
+                Stream stream = await response.Content.ReadAsStreamAsync();
+                Console.WriteLine($"{GetHttp3ReadStreamStateTraceId(stream)} CLIENT");
+
+                int bytesRead = await stream.ReadAsync(new byte[1024]);
+                Assert.Equal(1024, bytesRead);
+
+                var cts = new CancellationTokenSource(200);
+                cts.Token.Register(() => response.Dispose());
+
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => stream.ReadAsync(new byte[1024], cancellationToken: cts.Token).AsTask());
+
+                // exact exception depends on who won the race
+                if (ex is not OperationCanceledException and not ObjectDisposedException)
+                {
+                    var ioe = Assert.IsType<IOException>(ex);
+                    var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
+                    Assert.IsType<QuicOperationAbortedException>(hre.InnerException);
+                }
+
+                clientDone.Release();
+                await serverDone.WaitAsync();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+        }
+
+        private static async Task SendDataForever(Http3LoopbackStream stream)
+        {
+            var buf = new byte[100];
+            while (true)
+            {
+                await stream.SendDataFrameAsync(buf);
+            }
+        }
+
+        internal sealed class LogEventListener : EventListener
+        {
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Quic")
+                    EnableEvents(eventSource, EventLevel.LogAlways);
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                var sb = new StringBuilder().Append($"{eventData.TimeStamp:HH:mm:ss.fffffff}[{eventData.EventName}] ");
+                for (int i = 0; i < eventData.Payload?.Count; i++)
+                {
+                    if (i > 0)
+                        sb.Append(", ");
+                    sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
+                }
+                Console.WriteLine(sb.ToString());
+            }
+        }
+
+        private static string GetStreamStateTraceId(QuicStream wrapper)
+        {
+            var wrapperType = typeof(QuicStream);
+            //private readonly QuicStreamProvider _provider;
+            var streamField = wrapperType.GetField("_provider", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            if (streamField is null) throw new Exception("reflection failed: streamField");
+            var stream = streamField.GetValue(wrapper);
+            if (stream is null) throw new Exception("reflection failed: stream");
+
+            var assembly = wrapper.GetType().Assembly;
+            var streamType = stream.GetType();
+            if (streamType is null) throw new Exception("reflection failed: streamType");
+            if (streamType.Name == "MockStream") return "-";
+
+            if (streamType.Name != "MsQuicStream") throw new Exception("reflection failed: streamType=" + streamType.Name);
+            //private readonly State _state = new State();
+            var stateField = streamType.GetField("_state", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            if (stateField is null) throw new Exception("reflection failed: stateField");
+            var state = stateField.GetValue(stream);
+            if (state is null) throw new Exception("reflection failed: state");
+
+            // public string TraceId
+            var traceIdField = state.GetType().GetField("TraceId", Reflection.BindingFlags.Public | Reflection.BindingFlags.Instance);
+            var traceId = traceIdField.GetValue(state);
+            if (traceId is null) throw new Exception("reflection failed: traceId");
+            return (string)traceId;
+        }
+
+        private static string GetHttp3ReadStreamStateTraceId(Stream reader)
+        {
+            var readerType = reader.GetType();
+            if (readerType.Name != "Http3ReadStream") throw new Exception("reflection failed: readerType=" + readerType.Name);
+            //private Http3RequestStream? _stream;
+            var h3rsField = readerType.GetField("_stream", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            if (h3rsField is null) throw new Exception("reflection failed: h3rsField");
+            var h3rStream = h3rsField.GetValue(reader);
+            if (h3rStream is null) throw new Exception("reflection failed: h3rStream");
+
+            var h3rsType = h3rStream.GetType();
+            if (h3rsType.Name != "Http3RequestStream") throw new Exception("reflection failed: h3rsType=" + h3rsType.Name);
+            //private QuicStream _stream;
+            var qsField = h3rsType.GetField("_stream", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            if (qsField is null) throw new Exception("reflection failed: qsField");
+            var qStream = qsField.GetValue(h3rStream);
+            if (qStream is null) throw new Exception("reflection failed: qStream");
+
+            var qsType = qStream.GetType();
+            if (qsType.Name != "QuicStream") throw new Exception("reflection failed: qsType=" + qsType.Name);
+
+            return GetStreamStateTraceId((QuicStream)qStream);
+        }
+
+        private static string GetHttp3LoopbackStreamStateTraceId(Http3LoopbackStream lb)
+        {
+            var lbType = lb.GetType();
+            //private readonly QuicStream _stream;
+            var qsField = lbType.GetField("_stream", Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Instance);
+            if (qsField is null) throw new Exception("reflection failed: qsField");
+            var qStream = qsField.GetValue(lb);
+            if (qStream is null) throw new Exception("reflection failed: qStream");
+
+            var qsType = qStream.GetType();
+            if (qsType.Name != "QuicStream") throw new Exception("reflection failed: qsType=" + qsType.Name);
+
+            return GetStreamStateTraceId((QuicStream)qStream);
+        }
+
         /// <summary>
         /// These are public interop test servers for various QUIC and HTTP/3 implementations,
         /// taken from https://github.com/quicwg/base-drafts/wiki/Implementations
