@@ -1182,7 +1182,7 @@ namespace System.ServiceModel.Syndication
             }
             if (link.Length != 0 && !link.AttributeExtensions.ContainsKey(s_rss20Length))
             {
-                writer.WriteAttributeString(Rss20Constants.LengthTag, Rss20Constants.Rss20Namespace, Convert.ToString(link.Length, CultureInfo.InvariantCulture));
+                writer.WriteAttributeString(Rss20Constants.LengthTag, Rss20Constants.Rss20Namespace, link.Length.ToString(CultureInfo.InvariantCulture));
             }
             writer.WriteEndElement();
         }
