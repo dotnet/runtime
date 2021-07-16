@@ -51,12 +51,18 @@
     <ItemGroup>
       <!-- Overrides for Visual Studio setup generation. If the workload definition IDs change,
            these must be updated. -->
-      <ComponentResources Include="wasm-tools" Title=".NET WebAssembly Build Tools" Version="$(FileVersion)"
+      <ComponentResources Include="wasm-tools" Title=".NET WebAssembly Build Tools"
                           Description="Build tools for WebAssembly ahead-of-time (AoT) compilation and native linking."/>
-      <ComponentResources Include="microsoft-net-runtime-android" Title=".NET Android Build Tools" Version="$(FileVersion)"
+      <ComponentResources Include="microsoft-net-runtime-android" Title=".NET Android Build Tools"
                           Description="Build tools for Android compilation and native linking."/>
-      <ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET Android Build Tools (AoT)" Version="$(FileVersion)"
+      <ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET Android Build Tools (AoT)"
                           Description="Build tools for Android ahead-of-time (AoT) compilation and native linking."/>
+
+      <!-- Visual Studio components must be versioned. Build tasks will fall back to cobbling a version number from
+           the manifest information unless it's overridden. -->
+      <ComponentVersions Include="wasm-tools" Version="$(FileVersion)" />
+      <ComponentVersions Include="microsoft-net-runtime-android" Version="$(FileVersion)" />
+      <ComponentVersions Include="microsoft-net-runtime-android-aot" Version="$(FileVersion)" />
     </ItemGroup>
 
     <!-- BAR requires having version information in blobs -->
@@ -78,8 +84,7 @@
     <GenerateVisualStudioWorkload IntermediateBaseOutputPath="$(WorkloadIntermediateOutputPath)"
                                   WixToolsetPath="$(WixToolsetPath)"
                                   GenerateMsis="true"
-                                  ComponentVersions="@(ComponentResources)"
-                                  ComponentResources="@(ComponentResources)"
+                                  ComponentVersions="@(ComponentVersions)"
                                   OutputPath="$(WorkloadOutputPath)"
                                   PackagesPath="$(PackageSource)"
                                   ShortNames="@(ShortNames)"
