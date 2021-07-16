@@ -831,21 +831,9 @@ namespace System.Reflection
                     else if (right == null)
                         return false;
 
-                    // TODO: switch to use MemberInfo.MetadataToken here.
-                    // It compares honestly referring ECMA-335 I.8.6.1.6 Signature Matching.
-                    if (!Equals(left.DeclaringType, right.DeclaringType))
+                    if (left.Module.Name != right.Module.Name)
                         return false;
-
-                    if (!Equals(left.ReturnType, right.ReturnType))
-                        return false;
-
-                    if (left.CallingConvention != right.CallingConvention)
-                        return false;
-
-                    if (left.IsStatic != right.IsStatic)
-                        return false;
-
-                    if (left.Name != right.Name)
+                    if (left.MetadataToken != right.MetadataToken)
                         return false;
 
                     Type[] leftGenericParameters = left.GetGenericArguments();
