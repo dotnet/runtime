@@ -36,7 +36,7 @@
       <ExtraTrimmerArgs>--feature System.Resources.UseSystemResourceKeys true</ExtraTrimmerArgs>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="TypeBuilderComDisabled.cs">
-      <ExtraTrimmerArgs>--feature System.Runtime.InteropServices.BuiltInComInterop.IsSupported false</ExtraTrimmerArgs>
+      <DisabledFeatureSwitches>System.Runtime.InteropServices.BuiltInComInterop.IsSupported</DisabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

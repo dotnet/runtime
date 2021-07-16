@@ -53,6 +53,7 @@
       <_projectDir>%(TestConsoleApps.ProjectDir)\</_projectDir>
       <_projectFile>%(TestConsoleApps.ProjectFile)</_projectFile>
       <_projectSourceFile>%(TestConsoleApps.ProjectCompileItems)</_projectSourceFile>
+      <_extraTrimmerArgs>%(TestConsoleApps.ExtraTrimmerArgs)</_extraTrimmerArgs>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(AdditionalProjectReferences)' != ''">
@@ -68,6 +69,16 @@
       <_additionalProjectSourceFiles Include="%(TestConsoleApps.AdditionalSourceFiles)" />
     </ItemGroup>
 
+    <ItemGroup>
+      <_switchesAsItems Include="%(TestConsoleApps.DisabledFeatureSwitches)" Value="false" />
+      <_switchesAsItems Include="%(TestConsoleApps.EnabledFeatureSwitches)" Value="true" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_extraTrimmerArgs>$(_extraTrimmerArgs) @(_switchesAsItems->'--feature %(Identity) %(Value)', ' ')</_extraTrimmerArgs>
+      <_runtimeHostConfigruationOptionsString>@(_switchesAsItems->'&lt;RuntimeHostConfigurationOption Include=&quot;%(Identity)&quot; Value=&quot;%(Value)&quot; /&gt;', '%0a    ')</_runtimeHostConfigruationOptionsString>
+    </PropertyGroup>
+
     <MakeDir Directories="$(_projectDir)" />
     <WriteLinesToFile File="$(_projectFile)"
                       Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)')
@@ -78,7 +89,8 @@
                                                  .Replace('{RuntimeIdentifier}','%(TestConsoleApps.TestRuntimeIdentifier)')
                                                  .Replace('{UseMonoRuntime}','$(UseMonoRuntime)')
                                                  .Replace('{MicrosoftNETILLinkTasksVersion}', '$(MicrosoftNETILLinkTasksVersion)')
-                                                 .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)')
+                                                 .Replace('{ExtraTrimmerArgs}', '$(_extraTrimmerArgs)')
+                                                 .Replace('{RuntimeHostConfigurationOptions}', '$(_runtimeHostConfigruationOptionsString)')
                                                  .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
                                                  .Replace('{RepositoryEngineeringDir}', '$(RepositoryEngineeringDir)')
                                                  .Replace('{MonoAOTCompilerDir}', '$(MonoAOTCompilerDir)')
