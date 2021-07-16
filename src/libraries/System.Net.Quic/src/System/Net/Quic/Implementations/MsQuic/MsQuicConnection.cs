@@ -188,9 +188,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             _state.StateGCHandle = GCHandle.Alloc(_state);
             try
             {
-                // this handle is ref counted by MsQuic, so safe to dispose here.
-                using SafeMsQuicConfigurationHandle config = SafeMsQuicConfigurationHandle.Create(options);
-
                 uint status = MsQuicApi.Api.ConnectionOpenDelegate(
                     MsQuicApi.Api.Registration,
                     s_connectionDelegate,
@@ -575,6 +572,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                     (ushort)port);
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");
+
+                // this handle is ref counted by MsQuic, so safe to dispose here.
+                _configuration.Dipose();
+                _configuration = null;
             }
             catch
             {
