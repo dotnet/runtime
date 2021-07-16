@@ -96,7 +96,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return Runtime.CreateJSObjectForCLRObject(d, id);
         }
 
-        public void AddEventListener(string name, Delegate listener, EventListenerOptions? options = null)
+        public JSObject AddEventListener(string name, Delegate listener, EventListenerOptions? options = null)
         {
             var optionsDict = options.HasValue
                 ? new JSObject()
@@ -128,18 +128,27 @@ namespace System.Runtime.InteropServices.JavaScript
                     bool success = false;
                     jsfunc.DangerousAddRef(ref success);
                 }
+                return jsfunc;
             } finally {
                 optionsDict?.Dispose();
             }
         }
 
-        public void RemoveEventListener(string name, Delegate listener, EventListenerOptions? options = null)
+        public void RemoveEventListener(string name, Delegate? listener, EventListenerOptions? options = null)
         {
+            if (listener == null)
+                return;
             var jsfunc = GetJSObjectForDelegate(listener);
             // TODO: Unique syscall
-            Invoke("removeEventListener", jsfunc, options?.Capture ?? false);
+            RemoveEventListener(name, jsfunc, options);
             if (options?.Weak != true)
                 jsfunc.DangerousRelease();
+        }
+
+        public void RemoveEventListener(string name, JSObject listener, EventListenerOptions? options = null)
+        {
+            // TODO: Unique syscall
+            Invoke("removeEventListener", listener, options?.Capture ?? false);
         }
 
         /// <summary>
