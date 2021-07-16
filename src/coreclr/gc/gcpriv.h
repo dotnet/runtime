@@ -4632,7 +4632,10 @@ protected:
     PER_HEAP_ISOLATED
     heap_segment* large_regions_to_decommit;
 #endif //USE_REGIONS && MULTIPLE_HEAPS
-
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    heap_segment* free_huge_regions;
+#endif
     PER_HEAP
     size_t ordered_free_space_indices[MAX_NUM_BUCKETS];
 
