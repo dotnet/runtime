@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma once
-
+#ifdef _WIN32
 #include <Windows.h>
 #include <comdef.h>
 #include <cassert>
 #include <exception>
 #include <type_traits>
+#endif
 #include <atomic>
 
 // Common macro for working in COM
@@ -21,7 +22,12 @@ namespace Internal
         /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject,
         /* [in] */ I obj)
     {
+#ifdef _WIN32        
         if (riid == __uuidof(I))
+#else
+        //__uuidof(I) doesn't work on linux, so needed types are checked
+        if (riid == __uuidof(IInspectable) || riid == __uuidof(IWeakReference) || riid == __uuidof(IWeakReferenceSource))
+#endif
         {
             *ppvObject = static_cast<I>(obj);
         }
@@ -41,7 +47,12 @@ namespace Internal
         /* [in] */ I1 i1,
         /* [in] */ IR... remain)
     {
+#ifdef _WIN32
         if (riid == __uuidof(I1))
+#else
+        //__uuidof(I1) doesn't work on linux, so needed types are checked
+        if (riid == __uuidof(IInspectable) || riid == __uuidof(IWeakReference) || riid == __uuidof(IWeakReferenceSource) )
+#endif
         {
             *ppvObject = static_cast<I1>(i1);
             return S_OK;
@@ -55,14 +66,24 @@ namespace Internal
 class UnknownImpl
 {
 public:
+#ifdef _WIN32
     UnknownImpl() = default;
+#else    
+    UnknownImpl() : _refCount{ 1 } {};
+#endif    
     virtual ~UnknownImpl() = default;
 
     UnknownImpl(const UnknownImpl&) = delete;
     UnknownImpl& operator=(const UnknownImpl&) = delete;
 
+#ifdef _WIN32
     UnknownImpl(UnknownImpl&&) = default;
     UnknownImpl& operator=(UnknownImpl&&) = default;
+ #else 
+    UnknownImpl(UnknownImpl&&)  : _refCount{ 1 } {};
+    UnknownImpl& operator=(UnknownImpl&&) = delete;
+ #endif   
+   
 
     template<typename I1, typename ...IR>
     HRESULT DoQueryInterface(
@@ -111,7 +132,12 @@ protected:
     }
 
 private:
+#ifdef _WIN32
     std::atomic<ULONG> _refCount = 1;
+#else
+    //Initizialization moved ad constructor level
+    std::atomic<ULONG> _refCount;
+#endif    
 };
 
 // Macro to use for defining ref counting impls
@@ -119,6 +145,7 @@ private:
     STDMETHOD_(ULONG, AddRef)(void) { return UnknownImpl::DoAddRef(); } \
     STDMETHOD_(ULONG, Release)(void) { return UnknownImpl::DoRelease(); }
 
+#ifdef _WIN32
 // Templated class factory
 template<typename T>
 class ClassFactoryBasic : public UnknownImpl, public IClassFactory
@@ -336,6 +363,7 @@ public: // IUnknown
 
     DEFINE_REF_COUNTING();
 };
+#endif
 
 template<typename T>
 struct ComSmartPtr

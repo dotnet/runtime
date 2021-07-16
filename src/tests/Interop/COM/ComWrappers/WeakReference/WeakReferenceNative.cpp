@@ -3,8 +3,10 @@
 
 #include <xplatform.h>
 #include <ComHelpers.h>
+#ifdef _WIN32
 #include <inspectable.h>
 #include <WeakReference.h>
+#endif //_WIN32
 
 namespace
 {

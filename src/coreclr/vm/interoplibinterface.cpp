@@ -6,7 +6,9 @@
 // Runtime headers
 #include "common.h"
 #include "rcwrefcache.h"
+#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #include "olecontexthelpers.h"
+#endif
 #include "finalizerthread.h"
 
 // Interop library header
@@ -17,8 +19,22 @@
 using CreateObjectFlags = InteropLib::Com::CreateObjectFlags;
 using CreateComInterfaceFlags = InteropLib::Com::CreateComInterfaceFlags;
 
+
 namespace
 {
+
+    void* GetCurrentCtxCookieWrapper()
+    {
+        STATIC_CONTRACT_WRAPPER;
+
+    #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        return GetCurrentCtxCookie();
+    #else
+        return NULL;
+    #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+    }
+
     // This class is used to track the external object within the runtime.
     struct ExternalObjectContext : public InteropLibInterface::ExternalObjectContextBase
     {
@@ -837,7 +853,7 @@ namespace
                 ExternalObjectContext::Construct(
                     resultHolder.GetContext(),
                     identity,
-                    GetCurrentCtxCookie(),
+                    GetCurrentCtxCookieWrapper(),
                     gc.objRefMaybe->GetSyncBlockIndex(),
                     wrapperId,
                     eocFlags);
@@ -1056,7 +1072,7 @@ namespace InteropLibImports
             ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
             gc.objsEnumRef = cache->CreateManagedEnumerable(
                 ExternalObjectContext::Flags_ReferenceTracker,
-                GetCurrentCtxCookie());
+                GetCurrentCtxCookieWrapper());
 
             CallReleaseObjects(&gc.implRef, &gc.objsEnumRef);
 

@@ -14,13 +14,19 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#endif // _WIN32
+
+#ifndef ARRAYSIZE
+#define ARRAYSIZE(x)    (sizeof(x)/sizeof(x[0]))
+#endif // !ARRAYSIZE
+
+#if defined(_WIN32) || defined(HOST_UNIX)
 #include <objidl.h> // COM interfaces
 
 // Common macro for working in COM
 #define RETURN_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { _ASSERTE(false && #exp); return hr; } }
 #define RETURN_VOID_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { _ASSERTE(false && #exp); return; } }
-
-#endif // _WIN32
+#endif // defined(_WIN32) || defined(HOST_UNIX)
 
 #define ABI_ASSERT(abi_definition) static_assert((abi_definition), "ABI is being invalidated.")
 

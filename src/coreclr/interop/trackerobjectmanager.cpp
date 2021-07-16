@@ -9,11 +9,15 @@ using RuntimeCallContext = InteropLibImports::RuntimeCallContext;
 
 namespace
 {
-    const IID IID_IReferenceTrackerHost = __uuidof(IReferenceTrackerHost);
-    const IID IID_IReferenceTrackerTarget = __uuidof(IReferenceTrackerTarget);
-    const IID IID_IReferenceTracker = __uuidof(IReferenceTracker);
-    const IID IID_IReferenceTrackerManager = __uuidof(IReferenceTrackerManager);
-    const IID IID_IFindReferenceTargetsCallback = __uuidof(IFindReferenceTargetsCallback);
+
+    //29a71c6a-3c42-4416-a39d-e2825a07a773
+    const GUID IID_IReferenceTrackerHost = { 0x29a71c6a, 0x3c42, 0x4416, { 0xa3, 0x9d, 0xe2, 0x82, 0x5a, 0x7, 0xa7, 0x73} };
+
+    //3cf184b4-7ccb-4dda-8455-7e6ce99a3298
+    const GUID IID_IReferenceTrackerManager = { 0x3cf184b4, 0x7ccb, 0x4dda, { 0x84, 0x55, 0x7e, 0x6c, 0xe9, 0x9a, 0x32, 0x98} };
+
+    //04b3486c-4687-4229-8d14-505ab584dd88
+    const GUID IID_IFindReferenceTargetsCallback = { 0x04b3486c, 0x4687, 0x4229, { 0x8d, 0x14, 0x50, 0x5a, 0xb5, 0x84, 0xdd, 0x88} };
 
     // In order to minimize the impact of a constructor running on module load,
     // the HostServices class should have no instance fields.
@@ -120,7 +124,7 @@ namespace
 
         // QI for IUnknown to get the identity unknown
         ComHolder<IUnknown> identity;
-        RETURN_IF_FAILED(obj->QueryInterface(&identity));
+        RETURN_IF_FAILED(obj->QueryInterface(IID_IUnknown, (void**)&identity));
 
         // Get or create an existing implementation for this external.
         ComHolder<IUnknown> target;
@@ -274,7 +278,7 @@ HRESULT TrackerObjectManager::OnIReferenceTrackerFound(_In_ IReferenceTracker* o
     RETURN_IF_FAILED(g_HostServicesInstance.QueryInterface(IID_IReferenceTrackerHost, (void**)&hostServices));
 
     // Attempt to set the tracker instance.
-    if (::InterlockedCompareExchangePointer((void**)&s_TrackerManager, trackerManager.p, nullptr) == nullptr)
+    if (InterlockedCompareExchangePointer((void**)&s_TrackerManager, trackerManager.p, nullptr) == nullptr)
     {
         (void)trackerManager.Detach(); // Ownership has been transfered
         RETURN_IF_FAILED(s_TrackerManager->SetReferenceTrackerHost(hostServices));
