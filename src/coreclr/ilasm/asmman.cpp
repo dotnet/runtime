@@ -353,7 +353,7 @@ void AsmMan::EmitDebuggableAttribute(mdToken tkOwner)
         pbsSig->appendInt8(ELEMENT_TYPE_VOID);
         pbsSig->append(&bsSigArg);
 
-        bsBytes->appendInt32(pAsm->m_dwIncludeDebugInfo);
+        bsBytes->appendInt32(VAL32(pAsm->m_dwIncludeDebugInfo));
     }
     bsBytes->appendInt8(0);
     bsBytes->appendInt8(0);

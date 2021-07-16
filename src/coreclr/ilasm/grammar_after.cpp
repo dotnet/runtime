@@ -367,6 +367,134 @@ static void AppendStringWithLength(BinStr* pbs, __in __nullterminated char* sz)
 }
 
 /********************************************************************************/
+/* Append a typed field initializer to an untyped custom attribute blob
+ * Since the result is untyped, we have to byte-swap here on big-endian systems
+ */
+#ifdef BIGENDIAN
+static int ByteSwapCustomBlob(BYTE *ptr, int length, int type, bool isSZArray)
+{
+    BYTE *orig_ptr = ptr;
+
+    int nElem = 1;
+    if (isSZArray)
+    {
+        _ASSERTE(length >= 4);
+        nElem = GET_UNALIGNED_32(ptr);
+        SET_UNALIGNED_VAL32(ptr, nElem);
+        if (nElem == 0xffffffff)
+            nElem = 0;
+        ptr += 4;
+        length -= 4;
+    }
+
+    for (int i = 0; i < nElem; i++)
+    {
+        switch (type)
+        {
+            case ELEMENT_TYPE_BOOLEAN:
+            case ELEMENT_TYPE_I1:
+            case ELEMENT_TYPE_U1:
+                _ASSERTE(length >= 1);
+                ptr++;
+                length--;
+                break;
+            case ELEMENT_TYPE_CHAR:
+            case ELEMENT_TYPE_I2:
+            case ELEMENT_TYPE_U2:
+                _ASSERTE(length >= 2);
+                SET_UNALIGNED_VAL16(ptr, GET_UNALIGNED_16(ptr));
+                ptr += 2;
+                length -= 2;
+                break;
+            case ELEMENT_TYPE_I4:
+            case ELEMENT_TYPE_U4:
+            case ELEMENT_TYPE_R4:
+                _ASSERTE(length >= 4);
+                SET_UNALIGNED_VAL32(ptr, GET_UNALIGNED_32(ptr));
+                ptr += 4;
+                length -= 4;
+                break;
+            case ELEMENT_TYPE_I8:
+            case ELEMENT_TYPE_U8:
+            case ELEMENT_TYPE_R8:
+                _ASSERTE(length >= 8);
+                SET_UNALIGNED_VAL64(ptr, GET_UNALIGNED_64(ptr));
+                ptr += 8;
+                length -= 8;
+                break;
+            case ELEMENT_TYPE_STRING:
+            case SERIALIZATION_TYPE_TYPE:
+                _ASSERTE(length >= 1);
+                if (*ptr == 0xFF)
+                {
+                    ptr++;
+                    length--;
+                }
+                else
+                {
+                    int skipped = CorSigUncompressData((PCCOR_SIGNATURE&)ptr);
+                    _ASSERTE(length >= skipped);
+                    ptr += skipped;
+                    length -= skipped;
+                }
+                break;
+            case SERIALIZATION_TYPE_TAGGED_OBJECT:
+            {
+                _ASSERTE(length >= 1);
+                bool objIsSZArray = false;
+                int objType = *ptr;
+                ptr++;
+                length--;
+                if (type == ELEMENT_TYPE_SZARRAY)
+                {
+                    _ASSERTE(length >= 1);
+                    objIsSZArray = false;
+                    objType = *ptr;
+                    ptr++;
+                    length--;
+                }
+                int skipped = ByteSwapCustomBlob(ptr, length, objType, objIsSZArray);
+                _ASSERTE(length >= skipped);
+                ptr += skipped;
+                length -= skipped;
+                break;
+            }
+        }
+    }
+
+    return ptr - orig_ptr;
+}
+#endif
+
+static void AppendFieldToCustomBlob(BinStr* pBlob, __in BinStr* pField)
+{
+    pBlob->appendFrom(pField, (*(pField->ptr()) == ELEMENT_TYPE_SZARRAY) ? 2 : 1);
+
+#ifdef BIGENDIAN
+    BYTE *fieldPtr = pField->ptr();
+    int fieldLength = pField->length();
+
+    bool isSZArray = false;
+    int type = fieldPtr[0];
+    fieldLength--;
+    if (type == ELEMENT_TYPE_SZARRAY)
+    {
+        isSZArray = true;
+        type = fieldPtr[1];
+        fieldLength--;
+    }
+
+    // This may be a bytearray that must not be swapped.
+    if (type == ELEMENT_TYPE_STRING && !isSZArray)
+        return;
+
+    BYTE *blobPtr = pBlob->ptr() + (pBlob->length() - fieldLength);
+    ByteSwapCustomBlob(blobPtr, fieldLength, type, isSZArray);
+#endif
+}
+
+
+/********************************************************************************/
 /* fetch the next token, and return it   Also set the yylval.union if the
    lexical token also has a value */
 

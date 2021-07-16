@@ -766,7 +766,17 @@ BOOL Assembler::EmitMethod(Method *pMethod)
                 dwCPlusTypeFlag= (DWORD)*(pMethod->m_pRetValue->ptr());
                 pValue = (void const *)(pMethod->m_pRetValue->ptr()+1);
                 cbValue = pMethod->m_pRetValue->length()-1;
-                if(dwCPlusTypeFlag == ELEMENT_TYPE_STRING) cbValue /= sizeof(WCHAR);
+                if(dwCPlusTypeFlag == ELEMENT_TYPE_STRING)
+                {
+                    cbValue /= sizeof(WCHAR);
+#if BIGENDIAN
+                    void* pValueTemp = _alloca(cbValue * sizeof(WCHAR));
+                    memcpy(pValueTemp, pValue, cbValue * sizeof(WCHAR));
+                    pValue = pValueTemp;
+
+                    SwapStringLength((WCHAR*)pValue, cbValue);
+#endif
+                }
             }
             else
             {
@@ -804,7 +814,17 @@ BOOL Assembler::EmitMethod(Method *pMethod)
                 dwCPlusTypeFlag= (DWORD)*(pAN->pValue->ptr());
                 pValue = (void const *)(pAN->pValue->ptr()+1);
                 cbValue = pAN->pValue->length()-1;
-                if(dwCPlusTypeFlag == ELEMENT_TYPE_STRING) cbValue /= sizeof(WCHAR);
+                if(dwCPlusTypeFlag == ELEMENT_TYPE_STRING)
+                {
+                    cbValue /= sizeof(WCHAR);
+#if BIGENDIAN
+                    void* pValueTemp = _alloca(cbValue * sizeof(WCHAR));
+                    memcpy(pValueTemp, pValue, cbValue * sizeof(WCHAR));
+                    pValue = pValueTemp;
+
+                    SwapStringLength((WCHAR*)pValue, cbValue);
+#endif
+                }
             }
             else
             {
@@ -986,13 +1006,25 @@ BOOL Assembler::EmitProp(PropDescriptor* pPD)
     }
     mdOthers[nOthers] = mdMethodDefNil; // like null-terminator
 
+    void* pValue = pPD->m_pValue;
+#if BIGENDIAN
+    if (pPD->m_dwCPlusTypeFlag == ELEMENT_TYPE_STRING)
+    {
+        void* pValueTemp = _alloca(pPD->m_cbValue * sizeof(WCHAR));
+        memcpy(pValueTemp, pValue, pPD->m_cbValue * sizeof(WCHAR));
+        pValue = pValueTemp;
+
+        SwapStringLength((WCHAR*)pValue, pPD->m_cbValue);
+    }
+#endif
+
     if(FAILED(m_pEmitter->DefineProperty(   pPD->m_tdClass,
                                             wzMemberName,
                                             pPD->m_dwAttr,
                                             pPD->m_pSig,
                                             pPD->m_dwCSig,
                                             pPD->m_dwCPlusTypeFlag,
-                                            pPD->m_pValue,
+                                            pValue,
                                             pPD->m_cbValue,
                                             mdSet,
                                             mdGet,

@@ -2280,7 +2280,7 @@ case 73:
 case 74:
 #line 334 "asmparse.y"
 { yyval.binstr = yypvt[-1].binstr;
-                                                                                  yyval.binstr->appendInt16(nCustomBlobNVPairs);
+                                                                                  yyval.binstr->appendInt16(VAL16(nCustomBlobNVPairs));
                                                                                   yyval.binstr->append(yypvt[-0].binstr);
                                                                                   nCustomBlobNVPairs = 0; } break;
 case 75:
@@ -2289,7 +2289,7 @@ case 75:
 case 76:
 #line 341 "asmparse.y"
 { yyval.binstr = yypvt[-1].binstr;
-                                                                                  yyval.binstr->appendFrom(yypvt[-0].binstr, (*(yypvt[-0].binstr->ptr()) == ELEMENT_TYPE_SZARRAY) ? 2 : 1); } break;
+                                                                                  AppendFieldToCustomBlob(yyval.binstr,yypvt[-0].binstr); } break;
 case 77:
 #line 343 "asmparse.y"
 { yyval.binstr = yypvt[-1].binstr; } break;
@@ -2301,7 +2301,7 @@ case 79:
 { yyval.binstr = yypvt[-5].binstr; yyval.binstr->appendInt8(yypvt[-4].int32);
                                                                                   yyval.binstr->append(yypvt[-3].binstr);
                                                                                   AppendStringWithLength(yyval.binstr,yypvt[-2].string);
-                                                                                  yyval.binstr->appendFrom(yypvt[-0].binstr, (*(yypvt[-0].binstr->ptr()) == ELEMENT_TYPE_SZARRAY) ? 2 : 1);
+                                                                                  AppendFieldToCustomBlob(yyval.binstr,yypvt[-0].binstr);
                                                                                   nCustomBlobNVPairs++; } break;
 case 80:
 #line 353 "asmparse.y"
