@@ -201,6 +201,11 @@ function Build {
 
   MSBuild $_InitializeToolset \
     $bl \
+    /p:Restore=$restore \
+    $properties
+
+  MSBuild $_InitializeToolset \
+    $bl \
     /p:Configuration=$configuration \
     /p:RepoRoot="$repo_root" \
     /p:Restore=$restore \
