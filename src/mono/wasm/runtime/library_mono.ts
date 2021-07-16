@@ -47,6 +47,11 @@
  * @property {object} eventArgs - arguments for the event itself
  */
 
+
+// TODO remove. it is just currently stopping ts failures for undefined objects
+let ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, require, read, locateFile: any;
+
+
 var MonoSupportLib = {
 	$MONO__postset: 'MONO.export_functions (Module);',
 	$MONO: {
@@ -158,12 +163,17 @@ var MonoSupportLib = {
 					ch2 = reader.read();
 					ch3 = reader.read();
 
+					// @ts-ignore This condition will always return 'false' since the types 'number' and 'boolean' have no overlap.
 					if (ch1 === false)
 						break;
+					
+					// @ts-ignore This condition will always return 'false' since the types 'number' and 'boolean' have no overlap.
 					if (ch2 === false) {
 						ch2 = 0;
 						equalsCount += 1;
 					}
+
+					// @ts-ignore This condition will always return 'false' since the types 'number' and 'boolean' have no overlap.
 					if (ch3 === false) {
 						ch3 = 0;
 						equalsCount += 1;
@@ -996,7 +1006,7 @@ var MonoSupportLib = {
 					break;
 
 				default:
-					throw new Error ("Unrecognized asset behavior:", asset.behavior, "for asset", asset.name);
+					throw new Error (`Unrecognized asset behavior: ${asset.behavior} for asset ${asset.name}`);
 			}
 
 			if (asset.behavior === "assembly") {
@@ -1147,9 +1157,9 @@ var MonoSupportLib = {
 				try {
 					load_runtime ("unused", args.debug_level);
 				} catch (ex) {
-					print ("MONO_WASM: load_runtime () failed: " + ex);
-					print ("MONO_WASM: Stacktrace: \n");
-					print (ex.stack);
+					Module.print ("MONO_WASM: load_runtime () failed: " + ex);
+					Module.print ("MONO_WASM: Stacktrace: \n");
+					Module.print (ex.stack);
 
 					var wasm_exit = Module.cwrap ('mono_wasm_exit', null, ['number']);
 					wasm_exit (1);
@@ -1375,7 +1385,7 @@ var MonoSupportLib = {
 
 			var manifest;
 			try {
-				manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
+				const manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
 				manifest = JSON.parse(manifestContent);
 				if (!(manifest instanceof Array))
 					return false;
@@ -1402,7 +1412,7 @@ var MonoSupportLib = {
 				Module['FS_createPath'](prefix, folder, true, true);
 			});
 
-			for (row of manifest) {
+			for (let row of manifest) {
 				var name = row[0];
 				var length = row[1];
 				var bytes = data.slice(0, length);
@@ -1512,5 +1522,7 @@ var MonoSupportLib = {
 	}
 };
 
+// @ts-ignore: TS2304
 autoAddDeps(MonoSupportLib, '$MONO')
+// @ts-ignore: TS2304
 mergeInto(LibraryManager.library, MonoSupportLib)

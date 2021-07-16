@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// suppress these as they are not defined yet TODO remove once they are
+var MONO, DOTNET, setValue, Module, BINDING: any;
+
 var BindingSupportLib = {
 	$BINDING__postset: 'BINDING.export_functions (Module);',
 	$BINDING: {
@@ -546,6 +549,7 @@ var BindingSupportLib = {
 				case typeof js_obj === "undefined":
 					return 0;
 				case typeof js_obj === "number": {
+					let result;
 					if ((js_obj | 0) === js_obj)
 						result = this._box_js_int (js_obj);
 					else if ((js_obj >>> 0) === js_obj)
@@ -716,7 +720,7 @@ var BindingSupportLib = {
 		typed_array_from : function (pinned_array, begin, end, bytes_per_element, type) {
 
 			// typed array
-			var newTypedArray = 0;
+			var newTypedArray: ArrayBuffer;
 
 			switch (type)
 			{
@@ -984,7 +988,7 @@ var BindingSupportLib = {
 
 				var conv = primitiveConverters.get (key);
 				if (!conv)
-					throw new Error ("Unknown parameter type " + type);
+					throw new Error ("Unknown parameter type " + key);
 
 				var localStep = Object.create (conv.steps[0]);
 				localStep.size = conv.size;
@@ -1260,7 +1264,6 @@ var BindingSupportLib = {
 
 		/*
 		args_marshal is a string with one character per parameter that tells how to marshal it, here are the valid values:
-
 		i: int32
 		j: int32 - Enum with underlying type of int32
 		l: int64
@@ -1271,7 +1274,6 @@ var BindingSupportLib = {
 		S: interned string
 		o: js object will be converted to a C# object (this will box numbers/bool/promises)
 		m: raw mono object. Don't use it unless you know what you're doing
-
 		to suppress marshaling of the return value, place '!' at the end of args_marshal, i.e. 'ii!' instead of 'ii'
 		*/
 		call_method: function (method, this_arg, args_marshal, args) {
@@ -1323,11 +1325,11 @@ var BindingSupportLib = {
 		) {
 			this._handle_exception_for_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer);
 
+			let result = resultRoot.value;
+
 			if (is_result_marshaled)
 				result = this._unbox_mono_obj_root (resultRoot);
-			else
-				result = resultRoot.value;
-
+				
 			this._teardown_after_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer);
 			return result;
 		},
@@ -1465,7 +1467,7 @@ var BindingSupportLib = {
 				"return result;"
 			);
 
-			bodyJs = body.join ("\r\n");
+			const bodyJs = body.join ("\r\n");
 
 			if (friendly_name) {
 				var escapeRE = /[^A-Za-z0-9_]/g;
@@ -2042,9 +2044,9 @@ var BindingSupportLib = {
 		var res = BINDING.typedarray_copy_from(requireObject, pinned_array, begin, end, bytes_per_element);
 		return BINDING.js_to_mono_obj (res)
 	},
-
-
 };
 
+// @ts-ignore: TS2304
 autoAddDeps(BindingSupportLib, '$BINDING')
+// @ts-ignore: TS2304
 mergeInto(LibraryManager.library, BindingSupportLib)

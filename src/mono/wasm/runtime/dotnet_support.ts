@@ -1,13 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// suppress these as they are not defined yet TODO remove once they are
+var MONO, DOTNET, setValue, Module: any;
+
 var DotNetSupportLib = {
 	$DOTNET: {
 		conv_string: function (mono_obj) {
 			return MONO.string_decoder.copy (mono_obj);
 		}
 	},
-	mono_wasm_invoke_js_blazor: function(exceptionMessage, callInfo, arg0, arg1, arg2)	{
+	mono_wasm_invoke_js_blazor: function (exceptionMessage, callInfo, arg0, arg1, arg2)	{
 		var mono_string = globalThis._mono_string_cached
 			|| (globalThis._mono_string_cached = Module.cwrap('mono_wasm_string_from_js', 'number', ['string']));
 
@@ -27,7 +30,7 @@ var DotNetSupportLib = {
 	},
 
 	// This is for back-compat only and will eventually be removed
-	mono_wasm_invoke_js_marshalled: function(exceptionMessage, asyncHandleLongPtr, functionName, argsJson, treatResultAsVoid) {
+	mono_wasm_invoke_js_marshalled: function (exceptionMessage, asyncHandleLongPtr, functionName, argsJson, treatResultAsVoid) {
 
 		var mono_string = globalThis._mono_string_cached
 			|| (globalThis._mono_string_cached = Module.cwrap('mono_wasm_string_from_js', 'number', ['string']));
@@ -46,7 +49,7 @@ var DotNetSupportLib = {
 			var funcNameJsString = DOTNET.conv_string(functionName);
 			var argsJsonJsString = argsJson && DOTNET.conv_string (argsJson);
 
-			var dotNetExports = globaThis.DotNet;
+			var dotNetExports = globalThis.DotNet;
 			if (!dotNetExports) {
 				throw new Error('The Microsoft.JSInterop.js library is not loaded.');
 			}
@@ -67,7 +70,7 @@ var DotNetSupportLib = {
 	},
 
 	// This is for back-compat only and will eventually be removed
-	mono_wasm_invoke_js_unmarshalled: function(exceptionMessage, funcName, arg0, arg1, arg2)	{
+	mono_wasm_invoke_js_unmarshalled: function (exceptionMessage, funcName, arg0, arg1, arg2) {
 		try {
 			// Get the function you're trying to invoke
 			var funcNameJsString = DOTNET.conv_string(funcName);
@@ -86,10 +89,9 @@ var DotNetSupportLib = {
 			return 0;
 		}
 	}
+}
 
-
-};
-
-autoAddDeps(DotNetSupportLib, '$DOTNET')
-mergeInto(LibraryManager.library, DotNetSupportLib)
-
+// @ts-ignore: TS2304
+autoAddDeps(DotNetSupportLib, '$DOTNET');
+// @ts-ignore: TS2304
+mergeInto(LibraryManager.library, DotNetSupportLib);
