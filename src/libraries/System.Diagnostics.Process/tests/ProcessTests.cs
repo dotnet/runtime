@@ -1174,10 +1174,10 @@ namespace System.Diagnostics.Tests
                 StringBuilder builder = new StringBuilder();
                 foreach (Process process in Process.GetProcesses())
                 {
-                    builder.AppendFormat("Pid: '{0}' Name: '{1}'", process.Id, process.ProcessName);
+                    builder.Append($"Pid: '{process.Id}' Name: '{process.ProcessName}'");
                     try
                     {
-                        builder.AppendFormat(" Main module: '{0}'", process.MainModule.FileName);
+                        builder.Append($" Main module: '{process.MainModule.FileName}'");
                     }
                     catch
                     {
@@ -1186,7 +1186,7 @@ namespace System.Diagnostics.Tests
                     builder.AppendLine();
                 }
 
-                builder.AppendFormat("Current process id: {0} Process name: '{1}'", currentProcess.Id, currentProcess.ProcessName);
+                builder.Append($"Current process id: {currentProcess.Id} Process name: '{currentProcess.ProcessName}'");
                 return builder.ToString();
             }
         }

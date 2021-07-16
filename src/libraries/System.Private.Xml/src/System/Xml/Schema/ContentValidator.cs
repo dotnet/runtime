@@ -1569,7 +1569,7 @@ namespace System.Xml.Schema
                         }
                         else
                         {
-                            bb.AppendFormat(" {0:000} ", transitionTable[i][j]);
+                            bb.Append($" {transitionTable[i][j]:000} ");
                         }
                     }
 

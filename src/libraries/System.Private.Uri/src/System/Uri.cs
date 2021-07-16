@@ -4864,12 +4864,10 @@ namespace System
                     return basePart.Scheme + ':' + relativePart;
                 }
 
-                // Got absolute relative path, and the base is nor FILE nor a DOS path (checked at the method start)
+                // Got absolute relative path, and the base is not FILE nor a DOS path (checked at the method start)
                 if (basePart.HostType == Flags.IPv6HostType)
                 {
-                    left = basePart.GetParts(UriComponents.Scheme | UriComponents.UserInfo, uriFormat)
-                                     + '[' + basePart.DnsSafeHost + ']'
-                                     + basePart.GetParts(UriComponents.KeepDelimiter | UriComponents.Port, uriFormat);
+                    left = $"{basePart.GetParts(UriComponents.Scheme | UriComponents.UserInfo, uriFormat)}[{basePart.DnsSafeHost}]{basePart.GetParts(UriComponents.KeepDelimiter | UriComponents.Port, uriFormat)}";
                 }
                 else
                 {
