@@ -90,6 +90,9 @@
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonNumberHandlingAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyNameAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyOrderAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableDictionaryOfTKeyTValueConverterWithReflection.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableEnumerableOfTConverterWithReflection.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOrQueueConverterWithReflection.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonMetadataServicesConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\IgnoreReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\IJsonOnDeserialized.cs" />
@@ -121,7 +124,7 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableConverterFactoryHelpers.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableDefaultConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableOfTConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableWithAddMethodConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOrQueueConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IListConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IListOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableDictionaryOfTKeyTValueConverter.cs" />
