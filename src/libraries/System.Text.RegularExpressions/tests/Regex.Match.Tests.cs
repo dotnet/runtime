@@ -384,6 +384,62 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D2", options, 0, 2, true, "\u05D0\u05D2" };
                 yield return new object[] { "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D4", options, 0, 0, false, "" };
             }
+
+            // .* Perf Optimization: Case sensitive
+            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Compiled })
+            {
+                yield return new object[] { @".*\nfoo", "This shouldn't match", options, 0, 20, false, "" };
+                yield return new object[] { @"a.*\nfoo", "This shouldn't match", options, 0, 20, false, "" };
+                yield return new object[] { @".*\nFoo", $"\nFooThis should match", options, 0, 21, true, "\nFoo" };
+                yield return new object[] { @".*\nfoo", "\nfooThis should match", options, 4, 17, false, "" };
+
+                yield return new object[] { @".*\dfoo", "This shouldn't match", options, 0, 20, false, "" };
+                yield return new object[] { @".*\dFoo", "This1Foo should match", options, 0, 21, true, "This1Foo" };
+                yield return new object[] { @".*\dFoo", "This1foo should 2Foo match", options, 0, 26, true, "This1foo should 2Foo" };
+                yield return new object[] { @".*\dFoo", "This1foo shouldn't 2foo match", options, 0, 29, false, "" };
+                yield return new object[] { @".*\dfoo", "This1foo shouldn't 2foo match", options, 24, 5, false, "" };
+
+                yield return new object[] { @".*\dfoo", "1fooThis1foo should 1foo match", options, 4, 9, true, "This1foo" };
+                yield return new object[] { @".*\dfoo", "This shouldn't match 1foo", options, 0, 20, false, "" };
+            }
+
+            // .* Perf Optimization: Case insensitive
+            foreach (RegexOptions options in new[] { RegexOptions.IgnoreCase, RegexOptions.IgnoreCase | RegexOptions.Compiled })
+            {
+                yield return new object[] { @".*\nFoo", "\nfooThis should match", options, 0, 21, true, "\nfoo" };
+                yield return new object[] { @".*\dFoo", "This1foo should match", options, 0, 21, true, "This1foo" };
+                yield return new object[] { @".*\dFoo", "This1foo should 2FoO match", options, 0, 26, true, "This1foo should 2FoO" };
+                yield return new object[] { @".*\dFoo", "This1Foo should 2fOo match", options, 0, 26, true, "This1Foo should 2fOo" };
+                yield return new object[] { @".*\dfoo", "1fooThis1FOO should 1foo match", options, 4, 9, true, "This1FOO" };
+            }
+
+            // .* Perf Optimization: RTL, Case-sensitive
+            foreach (RegexOptions options in new[] { RegexOptions.None | RegexOptions.RightToLeft, RegexOptions.Compiled | RegexOptions.RightToLeft })
+            {
+                yield return new object[] { @".*\nfoo", "This shouldn't match", options, 0, 20, false, "" };
+                yield return new object[] { @"a.*\nfoo", "This shouldn't match", options, 0, 20, false, "" };
+                yield return new object[] { @".*\nFoo", $"This should match\nFoo", options, 0, 21, true, "This should match\nFoo" };
+                yield return new object[] { @".*\nfoo", "This should matchfoo\n", options, 4, 13, false, "" };
+
+                yield return new object[] { @".*\dfoo", "This shouldn't match", options, 0, 20, false, "" };
+                yield return new object[] { @".*\dFoo", "This1Foo should match", options, 0, 21, true, "This1Foo" };
+                yield return new object[] { @".*\dFoo", "This1foo should 2Foo match", options, 0, 26, true, "This1foo should 2Foo" };
+                yield return new object[] { @".*\dFoo", "This1foo shouldn't 2foo match", options, 0, 29, false, "" };
+                yield return new object[] { @".*\dfoo", "This1foo shouldn't 2foo match", options, 19, 0, false, "" };
+
+                yield return new object[] { @".*\dfoo", "1fooThis2foo should 1foo match", options, 8, 4, true, "2foo" };
+                yield return new object[] { @".*\dfoo", "This shouldn't match 1foo", options, 0, 20, false, "" };
+            }
+
+            // .* Perf Optimization: RTL, case insensitive
+            foreach (RegexOptions options in new[] { RegexOptions.IgnoreCase | RegexOptions.RightToLeft, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft })
+            {
+                yield return new object[] { @".*\nFoo", "\nfooThis should match", options, 0, 21, true, "\nfoo" };
+                yield return new object[] { @".*\dFoo", "This1foo should match", options, 0, 21, true, "This1foo" };
+                yield return new object[] { @".*\dFoo", "This1foo should 2FoO match", options, 0, 26, true, "This1foo should 2FoO" };
+                yield return new object[] { @".*\dFoo", "This1Foo should 2fOo match", options, 0, 26, true, "This1Foo should 2fOo" };
+                yield return new object[] { @".*\dfoo", "1fooThis2FOO should 1foo match", options, 8, 4, true, "2FOO" };
+            }
         }
 
         public static IEnumerable<object[]> Match_Basic_TestData_NetCore()
