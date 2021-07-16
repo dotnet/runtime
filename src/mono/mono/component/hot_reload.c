@@ -26,6 +26,9 @@
 
 #include <mono/utils/mono-compiler.h>
 
+#define ALLOW_METHOD_ADD
+
+
 static void
 hot_reload_init (void);
 
@@ -80,6 +83,16 @@ hot_reload_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx);
 static gboolean
 hot_reload_has_modified_rows (const MonoTableInfo *table);
 
+static int
+hot_reload_table_num_rows_slow (MonoImage *image, int table_index);
+
+static GArray*
+hot_reload_get_added_methods (MonoClass *klass);
+
+static uint32_t
+hot_reload_method_parent  (MonoImage *base, uint32_t method_token);
+
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_available },
 	&hot_reload_set_fastpath_data,
@@ -98,6 +111,9 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_delta_heap_lookup,
 	&hot_reload_get_updated_method_ppdb,
 	&hot_reload_has_modified_rows,
+	&hot_reload_table_num_rows_slow,
+	&hot_reload_get_added_methods,
+	&hot_reload_method_parent,
 };
 
 MonoComponentHotReload *
@@ -176,6 +192,9 @@ typedef struct _BaselineInfo {
 
 	/* TRUE if any published update modified an existing row */
 	gboolean any_modified_rows [MONO_TABLE_NUM];
+
+	GHashTable *added_methods; /* maps each MonoClass to a GArray of added method tokens */
+	GHashTable *method_parent; /* maps added methoddef tokens to typedef tokens */
 } BaselineInfo;
 
 #define DOTNET_MODIFIABLE_ASSEMBLIES "DOTNET_MODIFIABLE_ASSEMBLIES"
@@ -202,7 +221,8 @@ hot_reload_update_enabled (int *modifiable_assemblies_out)
 		char *val = g_getenv (DOTNET_MODIFIABLE_ASSEMBLIES);
 		if (val && !g_strcasecmp (val, "debug")) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Metadata update enabled for debuggable assemblies");
-			modifiable = MONO_MODIFIABLE_ASSM_DEBUG;
+			modifiable
+				= MONO_MODIFIABLE_ASSM_DEBUG;
 		}
 		g_free (val);
 		inited = TRUE;
@@ -474,6 +494,10 @@ image_append_delta (MonoImage *base, BaselineInfo *base_info, MonoImage *delta, 
 
 static int
 metadata_update_local_generation (MonoImage *base, BaselineInfo *base_info, MonoImage *delta);
+
+static void
+add_method_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t method_token, MonoDebugInformationEnc* pdb_address);
+
 
 void
 hot_reload_init (void)
@@ -1012,6 +1036,15 @@ delta_info_compute_table_records (MonoImage *image_dmeta, MonoImage *image_base,
 	return TRUE;
 }
 
+enum MonoEnCFuncCode {
+	ENC_FUNC_DEFAULT = 0,
+	ENC_FUNC_ADD_METHOD = 1,
+	ENC_FUNC_ADD_FIELD = 2,
+	ENC_FUNC_ADD_PARAM = 3,
+	ENC_FUNC_ADD_PROPERTY = 4,
+	ENC_FUNC_ADD_EVENT = 5,
+};
+
 static const char*
 funccode_to_str (int func_code)
 {
@@ -1056,17 +1089,28 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 		int token_table = mono_metadata_token_table (log_token);
 		int token_index = mono_metadata_token_index (log_token);
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x (%s idx=0x%02x) (base table has 0x%04x rows)\tfunc=0x%02x\n", i, log_token, mono_meta_table_name (token_table), token_index, table_info_get_rows (&image_base->tables [token_table]), func_code);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x (%s idx=0x%02x) (base table has 0x%04x rows)\tfunc=0x%02x (\"%s\")\n", i, log_token, mono_meta_table_name (token_table), token_index, table_info_get_rows (&image_base->tables [token_table]), func_code, funccode_to_str (func_code));
 
 
 		if (token_table != MONO_TABLE_METHOD)
 			continue;
+
+#ifndef ALLOW_METHOD_ADD
 
 		if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "\tcannot add new method with token 0x%08x", log_token);
 			mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: cannot add new method with token 0x%08x", log_token);
 			unsupported_edits = TRUE;
 		}
+
+#endif
+
+#ifdef ALLOW_METHOD_ADD
+		/* adding a new parameter to a new method is ok */
+		/* FIXME: total rows, not just the baseline rows */
+		if (func_code == ENC_FUNC_ADD_PARAM && token_index > table_info_get_rows (&image_base->tables [token_table]))
+			continue;
+#endif
 
 		g_assert (func_code == 0); /* anything else doesn't make sense here */
 	}
@@ -1086,6 +1130,10 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 			/* okay, supported */
 			break;
 		case MONO_TABLE_METHOD:
+#ifdef ALLOW_METHOD_ADD
+			if (func_code == ENC_FUNC_ADD_PARAM)
+				continue; /* ok, allowed */
+#endif
 			/* handled above */
 			break;
 		case MONO_TABLE_PROPERTY: {
@@ -1161,6 +1209,28 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 				break;
 			}
 		}
+		case MONO_TABLE_TYPEDEF: {
+#ifdef ALLOW_METHOD_ADD
+			/* FIXME: wrong for cumulative updates - need to look at DeltaInfo:count.prev_gen_rows */
+			gboolean new_class = token_index > table_info_get_rows (&image_base->tables [token_table]);
+			/* only allow adding methods to existing classes for now */
+			if (!new_class && func_code == ENC_FUNC_ADD_METHOD) {
+				/* next record should be a MONO_TABLE_METHOD addition (func == default) */
+				g_assert (i + 1 < rows);
+				guint32 next_cols [MONO_ENCLOG_SIZE];
+				mono_metadata_decode_row (table_enclog, i + 1, next_cols, MONO_ENCLOG_SIZE);
+				g_assert (next_cols [MONO_ENCLOG_FUNC_CODE] == ENC_FUNC_DEFAULT);
+				int next_token = next_cols [MONO_ENCLOG_TOKEN];
+				int next_table = mono_metadata_token_table (next_token);
+				int next_index = mono_metadata_token_index (next_token);
+				g_assert (next_table == MONO_TABLE_METHOD);
+				g_assert (next_index > table_info_get_rows (&image_base->tables [next_table]));
+				i++; /* skip the next record */
+				continue;
+			}
+#endif
+			/* fallthru */
+		}
 		default:
 			/* FIXME: this bounds check is wrong for cumulative updates - need to look at the DeltaInfo:count.prev_gen_rows */
 			if (token_index <= table_info_get_rows (&image_base->tables [token_table])) {
@@ -1178,7 +1248,7 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 		 * the preceeding MONO_TABLE_TYPEDEF enc record that identifies the parent type).
 		 */
 		switch (func_code) {
-			case 0: /* default */
+			case ENC_FUNC_DEFAULT: /* default */
 				break;
 			default:
 				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x FunCode %d (%s) not supported (token=0x%08x)", i, log_token, func_code, funccode_to_str (func_code), log_token);
@@ -1191,13 +1261,19 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 }
 
 static void
+set_delta_method_debug_info (DeltaInfo *delta_info, uint32_t token_index, MonoDebugInformationEnc *pdb_address)
+{
+	g_hash_table_insert (delta_info->method_ppdb_table_update, GUINT_TO_POINTER (token_index), (gpointer) pdb_address);
+}
+
+static void
 set_update_method (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, DeltaInfo *delta_info, uint32_t token_index, const char* il_address, MonoDebugInformationEnc* pdb_address)
 {
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "setting method 0x%08x in g=%d IL=%p", token_index, generation, (void*)il_address);
 	/* FIXME: this is a race if other threads are doing a lookup. */
 	g_hash_table_insert (base_info->method_table_update, GUINT_TO_POINTER (token_index), GUINT_TO_POINTER (generation));
 	g_hash_table_insert (delta_info->method_table_update, GUINT_TO_POINTER (token_index), (gpointer) il_address);
-	g_hash_table_insert (delta_info->method_ppdb_table_update, GUINT_TO_POINTER (token_index), (gpointer) pdb_address);
+	set_delta_method_debug_info (delta_info, token_index, pdb_address); 
 }
 
 static MonoDebugInformationEnc *
@@ -1233,6 +1309,9 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	int rows = table_info_get_rows (table_enclog);
 
+	MonoClass *add_method_klass = NULL;
+	uint32_t add_param_method_index = 0;
+
 	gboolean assemblyref_updated = FALSE;
 	for (int i = 0; i < rows ; ++i) {
 		guint32 cols [MONO_ENCLOG_SIZE];
@@ -1248,11 +1327,31 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 		/* TODO: See CMiniMdRW::ApplyDelta for how to drive this.
 		 */
 		switch (func_code) {
-			case 0: /* default */
-				break;
-			default:
-				g_error ("EnC: unsupported FuncCode, should be caught by pass1");
-				break;
+		case ENC_FUNC_DEFAULT: /* default */
+			break;
+#ifdef ALLOW_METHOD_ADD
+		case ENC_FUNC_ADD_METHOD: {
+			g_assert (token_table == MONO_TABLE_TYPEDEF);
+			/* FIXME: this bounds check is wrong for cumulative updates - need to look at the DeltaInfo:count.prev_gen_rows */
+			/* should've been caught by pass1 if we're adding a new method to a new class. */
+			MonoClass *klass = mono_class_get_checked (image_base, log_token, error);
+			if (!is_ok (error)) {
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Can't get class with token 0x%08x due to: %s", log_token, mono_error_get_message (error));
+				return FALSE;
+			}
+			add_method_klass = klass;
+			break;
+		}
+
+		case ENC_FUNC_ADD_PARAM: {
+			g_assert (token_table == MONO_TABLE_METHOD);
+			add_param_method_index = token_index;
+			break;
+		}
+#endif
+		default:
+			g_error ("EnC: unsupported FuncCode, should be caught by pass1");
+			break;
 		}
 
 		switch (token_table) {
@@ -1291,9 +1390,21 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			break;
 		}
 		case MONO_TABLE_METHOD: {
+#ifdef ALLOW_METHOD_ADD
+			/* if adding a param, handle it with the next record */
+			if (func_code == ENC_FUNC_ADD_PARAM)
+				break;
+
 			if (token_index > table_info_get_rows (&image_base->tables [token_table])) {
-				g_error ("EnC: new method added, should be caught by pass1");
+				if (!add_method_klass)
+					g_error ("EnC: new method added but I don't know the class, should be caught by pass1");
+				g_assert (add_method_klass);
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new method 0x%08x to class %s.%s", token_index, m_class_get_name_space (add_method_klass), m_class_get_name (add_method_klass));
+				MonoDebugInformationEnc *method_debug_information = hot_reload_get_method_debug_information (image_dppdb, token_index);
+				add_method_to_baseline (base_info, delta_info, add_method_klass, token_index, method_debug_information);
+				add_method_klass = NULL;
 			}
+#endif
 
 			if (!base_info->method_table_update)
 				base_info->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
@@ -1313,6 +1424,7 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 				/* rva points probably into image_base IL stream. can this ever happen? */
 				g_print ("TODO: this case is still a bit contrived. token=0x%08x with rva=0x%04x\n", log_token, rva);
 			}
+			add_method_klass = NULL;
 			break;
 		}
 		case MONO_TABLE_TYPEDEF: {
@@ -1334,6 +1446,30 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			/* ok, pass1 checked for disallowed modifications */
 			break;
 		}
+#ifdef ALLOW_METHOD_ADD
+		case MONO_TABLE_PARAM: {
+			/* if there were multiple added methods, this comes in as several method
+			 * additions, followed by the parameter additions.
+			 *
+			 * 10: 0x02000002 (TypeDef)          0x00000001 (AddMethod)
+			 * 11: 0x06000006 (MethodDef)        0
+			 * 12: 0x02000002 (TypeDef)          0x00000001 (AddMethod)
+			 * 13: 0x06000007 (MethodDef)        0
+			 * 14: 0x06000006 (MethodDef)        0x00000003 (AddParameter)
+			 * 15: 0x08000003 (Param)            0
+			 * 16: 0x06000006 (MethodDef)        0x00000003 (AddParameter)
+			 * 17: 0x08000004 (Param)            0
+			 * 18: 0x06000007 (MethodDef)        0x00000003 (AddParameter)
+			 * 19: 0x08000005 (Param)            0
+			 *
+			 * So by the time we see the param additions, the methods are already in.
+			 *
+			 * FIXME: we need a lookaside table (like method_parent) for every place
+			 * that looks at MONO_METHOD_PARAMLIST
+			 */
+			break;
+		}
+#endif
 		default: {
 			g_assert (token_index > table_info_get_rows (&image_base->tables [token_table]));
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
@@ -1550,6 +1686,10 @@ hot_reload_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx)
 		if (G_UNLIKELY (gen > 0)) {
 			loc = get_method_update_rva (base_image, info, idx, TRUE);
 		}
+		/* Check the method_parent table as a way of checking if the method was added by a later generation. If so, still look for its PPDB info in our update tables */
+		if (G_UNLIKELY (loc == 0 && GPOINTER_TO_UINT (g_hash_table_lookup (info->method_parent, GUINT_TO_POINTER (idx))) > 0)) {
+			loc = get_method_update_rva (base_image, info, idx, TRUE);
+		}
 	}
 	return loc;
 }
@@ -1656,3 +1796,74 @@ hot_reload_has_modified_rows (const MonoTableInfo *table)
 	return info->any_modified_rows[tbl_index];
 }
 
+static int
+hot_reload_table_num_rows_slow (MonoImage *base, int table_index)
+{
+	BaselineInfo *base_info = baseline_info_lookup (base);
+	if (!base_info)
+		return FALSE;
+
+	uint32_t current_gen = hot_reload_get_thread_generation ();
+
+	int rows = table_info_get_rows (&base->tables [table_index]);
+	GList *cur;
+	for (cur = base_info->delta_image; cur; cur = cur->next) {
+		MonoImage *delta_image = (MonoImage*)cur->data;
+		DeltaInfo *delta_info = delta_info_lookup (delta_image);
+		if (delta_info->generation > current_gen)
+			break;
+		rows = delta_info->count [table_index].prev_gen_rows + delta_info->count [table_index].inserted_rows;
+	}
+	return rows;
+}
+
+static void
+add_method_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t method_token, MonoDebugInformationEnc* pdb_address)
+{
+	if (!base_info->added_methods) {
+		base_info->added_methods = g_hash_table_new (g_direct_hash, g_direct_equal);
+	}
+	if (!base_info->method_parent) {
+		base_info->method_parent = g_hash_table_new (g_direct_hash, g_direct_equal);
+	}
+	/* FIXME: locking for readers/writers of the GArray */
+	GArray *arr = g_hash_table_lookup (base_info->added_methods, klass);
+	if (!arr) {
+		arr = g_array_new (FALSE, FALSE, sizeof(uint32_t));
+		g_hash_table_insert (base_info->added_methods, klass, arr);
+	}
+	g_array_append_val (arr, method_token);
+	g_hash_table_insert (base_info->method_parent, GUINT_TO_POINTER (method_token), GUINT_TO_POINTER (m_class_get_type_token (klass)));
+
+	if (pdb_address)
+		set_delta_method_debug_info (delta_info, method_token, pdb_address);
+}
+
+static GArray*
+hot_reload_get_added_methods (MonoClass *klass)
+{
+	/* FIXME: locking for the GArray? */
+	MonoImage *image = m_class_get_image (klass);
+	if (!image->has_updates)
+		return NULL;
+	BaselineInfo *base_info = baseline_info_lookup (image);
+	if (!base_info || base_info->added_methods == NULL)
+		return NULL;
+
+	return g_hash_table_lookup (base_info->added_methods, klass);
+}
+
+static uint32_t
+hot_reload_method_parent  (MonoImage *base_image, uint32_t method_token)
+{
+	if (!base_image->has_updates)
+		return 0;
+	BaselineInfo *base_info = baseline_info_lookup (base_image);
+	if (!base_info || base_info->method_parent == NULL)
+		return 0;
+
+	uint32_t res = GPOINTER_TO_UINT (g_hash_table_lookup (base_info->method_parent, GUINT_TO_POINTER (method_token)));
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "method_parent lookup: 0x%08x returned 0x%08x\n", method_token, res);
+
+	return res;
+}

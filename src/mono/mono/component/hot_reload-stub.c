@@ -65,6 +65,15 @@ hot_reload_stub_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx);
 static gboolean
 hot_reload_stub_has_modified_rows (const MonoTableInfo *table);
 
+static int
+hot_reload_stub_table_num_rows_slow (MonoImage *image, int table_index);
+
+static GArray*
+hot_reload_stub_get_added_methods (MonoClass *klass);
+
+static uint32_t
+hot_reload_stub_method_parent (MonoImage *image, uint32_t method_index);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
 	&hot_reload_stub_set_fastpath_data,
@@ -83,6 +92,9 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_delta_heap_lookup,
 	&hot_reload_stub_get_updated_method_ppdb,
 	&hot_reload_stub_has_modified_rows,
+	&hot_reload_stub_table_num_rows_slow,
+	&hot_reload_stub_get_added_methods,
+	&hot_reload_stub_method_parent,
 };
 
 static bool
@@ -191,6 +203,25 @@ hot_reload_stub_has_modified_rows (const MonoTableInfo *table)
 {
 	return FALSE;
 }
+
+static int
+hot_reload_stub_table_num_rows_slow (MonoImage *image, int table_index)
+{
+	g_assert_not_reached (); /* should always take the fast path */
+}
+
+static GArray*
+hot_reload_stub_get_added_methods (MonoClass *klass)
+{
+	return NULL;
+}
+
+static uint32_t
+hot_reload_stub_method_parent (MonoImage *image, uint32_t method_index)
+{
+	return 0;
+}
+
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT
 MonoComponentHotReload *
