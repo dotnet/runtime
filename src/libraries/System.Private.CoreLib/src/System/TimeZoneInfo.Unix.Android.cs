@@ -165,9 +165,22 @@ namespace System
         /*
         * Android v4.3 Timezone support infrastructure.
         *
-        * This is a C# port of libcore.util.ZoneInfoDB:
+        * Android tzdata files are found in the format of
+        * Header <Beginning of Entry Index> Entry Entry Entry ... Entry <Beginning of Data Index> <TZDATA>
         *
-        *    https://android.googlesource.com/platform/libcore/+/master/luni/src/main/java/libcore/util/ZoneInfoDB.java
+        * https://github.com/aosp-mirror/platform_bionic/blob/master/libc/tzcode/bionic.cpp
+        *
+        * The header (24 bytes) contains the following information
+        * signature - 12 bytes of the form "tzdata2012f\0" where 2012f is subject to change
+        * index offset - 4 bytes that denotes the offset at which the index of the tzdata file starts
+        * data offset - 4 bytes that denotes the offset at which the data of the tzdata file starts
+        * final offset - 4 bytes that used to denote the final offset, which we don't use but will note.
+        *
+        * Each Data Entry (52 bytes) can be used to generate a TimeZoneInfo and contain the following information
+        * id - 40 bytes that contain the id of the time zone data entry timezone<id>
+        * byte offset - 4 bytes that denote the offset from the data offset timezone<id> data can be found
+        * length - 4 bytes that denote the length of the data for timezone<id>
+        * unused - 4 bytes that used to be raw GMT offset, but now is always 0 since tzdata2014f (L).
         *
         * This is needed in order to read Android v4.3 tzdata files.
         *
@@ -177,20 +190,12 @@ namespace System
         */
         private sealed class AndroidTzData
         {
-            // public fixed byte signature[12]; // "tzdata2012f\0"
-            // public int indexOffset;
-            // public int dataOffset;
-            // public int finalOffset;
             private unsafe struct AndroidTzDataHeader
             {
                 public int indexOffset;
                 public int dataOffset;
             }
 
-            // public string id - 40 bytes
-            // public int byteOffset; - 4 bytes
-            // public int length - 4 bytes
-            // public int unused - 4 bytes Was raw GMT offset; always 0 since tzdata2014f (L).
             private unsafe struct AndroidTzDataEntry
             {
                 public fixed byte id[40];
@@ -228,6 +233,9 @@ namespace System
 
             public AndroidTzData()
             {
+                // On Android, time zone data is found in tzdata
+                // Based on https://github.com/mono/mono/blob/main/mcs/class/corlib/System/TimeZoneInfo.Android.cs
+                // Also follows the locations found at the bottom of https://github.com/aosp-mirror/platform_bionic/blob/master/libc/tzcode/bionic.cpp
                 string[] tzFileDirList = new string[] {GetApexTimeDataRoot() + "/etc/tz/", // Android 10+, TimeData module where the updates land
                                                        GetApexRuntimeRoot() + "/etc/tz/", // Android 10+, Fallback location if the above isn't found or corrupted
                                                        Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/",
@@ -272,7 +280,7 @@ namespace System
             [MemberNotNull(nameof(_lengths))]
             private void LoadTzFile(Stream fs)
             {
-                const int HeaderSize = 24; // AndroidTzDataHeader 12 bytes signature, 4 bytes index offset, 4 bytes data offset, 4 bytes final offset
+                const int HeaderSize = 24; // AndroidTzDataHeader
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
                 ReadTzDataIntoBuffer(fs, 0, buffer);
@@ -314,7 +322,7 @@ namespace System
             private unsafe void ReadIndex(Stream fs, int indexOffset, int dataOffset)
             {
                 int indexSize = dataOffset - indexOffset;
-                int entrySize = 52; // Size of AndroidTzDataEntry
+                int entrySize = 52; // AndroidTzDataEntry
                 int entryCount = indexSize / entrySize;
 
                 _byteOffsets = new int[entryCount];
@@ -330,7 +338,7 @@ namespace System
                     _ids![i] = new string(p);
                     _lengths![i] = entry.length;
 
-                    if (_lengths![i] < 24) // AndroidTzDataHeader 12 bytes signature, 4 bytes index offset, 4 bytes data offset, 4 bytes final offset
+                    if (_lengths![i] < 24) // AndroidTzDataHeader
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_BadIndexLength);
                     }
@@ -385,9 +393,6 @@ namespace System
                 return _ids!;
             }
 
-            // On Android, time zone data is found in tzdata
-            // Based on https://github.com/mono/mono/blob/main/mcs/class/corlib/System/TimeZoneInfo.Android.cs
-            // Also follows the locations found at the bottom of https://github.com/aosp-mirror/platform_bionic/blob/master/libc/tzcode/bionic.cpp
             public string GetTimeZoneDirectory()
             {
                 return _tzFilePath;
