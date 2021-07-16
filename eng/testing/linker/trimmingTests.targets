@@ -76,7 +76,7 @@
 
     <PropertyGroup>
       <_extraTrimmerArgs>$(_extraTrimmerArgs) @(_switchesAsItems->'--feature %(Identity) %(Value)', ' ')</_extraTrimmerArgs>
-      <_runtimeHostConfigruationOptionsString>@(_switchesAsItems->'&lt;RuntimeHostConfigurationOption Include=&quot;%(Identity)&quot; Value=&quot;%(Value)&quot; /&gt;', '%0a    ')</_runtimeHostConfigruationOptionsString>
+      <_runtimeHostConfigurationOptionsString>@(_switchesAsItems->'&lt;RuntimeHostConfigurationOption Include=&quot;%(Identity)&quot; Value=&quot;%(Value)&quot; /&gt;', '%0a    ')</_runtimeHostConfigurationOptionsString>
     </PropertyGroup>
 
     <MakeDir Directories="$(_projectDir)" />
@@ -90,7 +90,7 @@
                                                  .Replace('{UseMonoRuntime}','$(UseMonoRuntime)')
                                                  .Replace('{MicrosoftNETILLinkTasksVersion}', '$(MicrosoftNETILLinkTasksVersion)')
                                                  .Replace('{ExtraTrimmerArgs}', '$(_extraTrimmerArgs)')
-                                                 .Replace('{RuntimeHostConfigurationOptions}', '$(_runtimeHostConfigruationOptionsString)')
+                                                 .Replace('{RuntimeHostConfigurationOptions}', '$(_runtimeHostConfigurationOptionsString)')
                                                  .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
                                                  .Replace('{RepositoryEngineeringDir}', '$(RepositoryEngineeringDir)')
                                                  .Replace('{MonoAOTCompilerDir}', '$(MonoAOTCompilerDir)')
