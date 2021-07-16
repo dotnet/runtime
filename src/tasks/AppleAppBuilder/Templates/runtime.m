@@ -302,7 +302,7 @@ mono_ios_runtime_init (void)
     // register modules
     register_aot_modules ();
 
-#if (FORCE_INTERPRETER && TARGET_OS_MACCATALYST)
+#if (FORCE_INTERPRETER && FORCE_AOT)
     os_log_info (OS_LOG_DEFAULT, "AOT INTERP Enabled");
     mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP);
 #else

@@ -148,7 +148,7 @@
 
   <Target Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" Name="BundleTestAppleApp" DependsOnTargets="GenerateRuntimeConfig">
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
-    <Error Condition="('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(TargetOS)' == 'MacCatalyst') and '$(DevTeamProvisioning)' == ''"
+    <Error Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'MacCatalyst') and '$(DevTeamProvisioning)' == ''"
            Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'UBF8T346G9' if you're part of the Microsoft team account, or 'adhoc' to sign with an adhoc key.." />
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
@@ -162,7 +162,7 @@
     <PropertyGroup>
       <AOTMode Condition="'$(TargetOS)' != 'MacCatalyst'">Full</AOTMode>
       <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' != 'true'">Full</AOTMode>
-      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
+      <AOTMode Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
     </PropertyGroup>
     <ItemGroup>
       <_AotExcludeAssemblies Include="$(PublishDir)System.Runtime.WindowsRuntime.dll" />
