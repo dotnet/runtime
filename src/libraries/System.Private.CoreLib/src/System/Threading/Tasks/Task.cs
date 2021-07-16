@@ -796,7 +796,7 @@ namespace System.Threading.Tasks
         /// harmful).  Derived implementations may choose to only conditionally call down to this base
         /// implementation.
         /// </summary>
-        private protected virtual bool ShouldNotifyDebuggerOfWaitCompletion // ideally would be familyAndAssembly, but that can't be done in C#
+        private protected virtual bool ShouldNotifyDebuggerOfWaitCompletion
         {
             get
             {
