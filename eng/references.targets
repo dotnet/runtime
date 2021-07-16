@@ -1,4 +1,4 @@
-<Project>
+<Project InitialTargets="UpdateProjectReferencesWithPrivateAttribute">
   <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!--
       Disable RAR from transitively discovering dependencies for references. This is required as we don't copy
@@ -37,15 +37,13 @@
 
   <!-- Make shared framework assemblies not app-local (non private). -->
   <Target Name="UpdateProjectReferencesWithPrivateAttribute"
-          AfterTargets="AssignProjectConfiguration"
-          BeforeTargets="PrepareProjectReferences"
           Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                     ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true') and
-                     '@(ProjectReferenceWithConfiguration)' != ''">
+                     ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsSourceProject)' == 'true') and
+                     '@(ProjectReference)' != ''">
     <ItemGroup>
-      <ProjectReferenceWithConfiguration PrivateAssets="all"
-                                         Private="false"
-                                         Condition="$(NetCoreAppLibrary.Contains('%(Filename);'))" />
+      <ProjectReference PrivateAssets="all"
+                        Private="false"
+                        Condition="$(NetCoreAppLibrary.Contains('%(Filename);')) and '%(ProjectReference.DonotUseInboxVersion)' != 'true'" />
     </ItemGroup>
   </Target>
 

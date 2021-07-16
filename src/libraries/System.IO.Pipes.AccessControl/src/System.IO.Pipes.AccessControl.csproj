@@ -16,6 +16,7 @@
       <SkipUseReferenceAssembly Condition="'$(TargetsWindows)' == 'true'">true</SkipUseReferenceAssembly>
     </ProjectReference>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>
