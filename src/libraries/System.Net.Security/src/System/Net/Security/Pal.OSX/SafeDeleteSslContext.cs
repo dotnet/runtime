@@ -77,7 +77,7 @@ namespace System.Net
                     }
                 }
 
-                if (sslAuthenticationOptions.ApplicationProtocols != null)
+                if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
                 {
                     // On OSX coretls supports only client side. For server, we will silently ignore the option.
                     if (!sslAuthenticationOptions.IsServer)
