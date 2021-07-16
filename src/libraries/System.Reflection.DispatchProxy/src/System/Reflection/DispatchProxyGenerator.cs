@@ -823,43 +823,12 @@ namespace System.Reflection
 
                 public sealed override bool Equals(MethodInfo? left, MethodInfo? right)
                 {
-                    if (ReferenceEquals(left, right))
-                        return true;
-
                     if (left == null)
                         return right == null;
                     else if (right == null)
                         return false;
 
-                    if (left.Module.Name != right.Module.Name)
-                        return false;
-
-                    if (left.MetadataToken != right.MetadataToken)
-                        return false;
-
-                    Type[] leftGenericParameters = left.GetGenericArguments();
-                    Type[] rightGenericParameters = right.GetGenericArguments();
-                    if (leftGenericParameters.Length != rightGenericParameters.Length)
-                        return false;
-
-                    for (int i = 0; i < leftGenericParameters.Length; i++)
-                    {
-                        if (!Equals(leftGenericParameters[i], rightGenericParameters[i]))
-                            return false;
-                    }
-
-                    ParameterInfo[] leftParameters = left.GetParameters();
-                    ParameterInfo[] rightParameters = right.GetParameters();
-                    if (leftParameters.Length != rightParameters.Length)
-                        return false;
-
-                    for (int i = 0; i < leftParameters.Length; i++)
-                    {
-                        if (!Equals(leftParameters[i].ParameterType, rightParameters[i].ParameterType))
-                            return false;
-                    }
-
-                    return true;
+                    return left.Module.Name == right.Module.Name && left.MetadataToken == right.MetadataToken;
                 }
 
                 public sealed override int GetHashCode(MethodInfo obj)
