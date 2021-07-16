@@ -2811,7 +2811,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             emit->emitIns_Mov(INS_movd, EA_PTRSIZE, srcXmmReg, srcIntReg, /* canSkip */ false);
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
 
-            if (regSize == YMM_REGSIZE_BYTES) {
+            if (regSize == YMM_REGSIZE_BYTES)
+            {
                 // Extend the bytes in the lower lanes to the upper lanes
                 emit->emitIns_R_R_R_I(INS_vinsertf128, EA_32BYTE, srcXmmReg, srcXmmReg, srcXmmReg, 1);
             }
@@ -2857,7 +2858,6 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
             dstOffset += regSize;
             bytesWritten += regSize;
-
         }
 
         size -= bytesWritten;
