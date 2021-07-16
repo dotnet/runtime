@@ -63,7 +63,6 @@
 #include <mach/exception.h>
 #include <mach/task.h>
 #include <pthread.h>
-#include <dlfcn.h>
 #include <AvailabilityMacros.h>
 
 void
