@@ -34,7 +34,7 @@ namespace System.Configuration
                     // Construct FIPS-certified AES provider
                     if (key != null)
                     {
-                        AesCryptoServiceProvider aes = new AesCryptoServiceProvider();
+                        Aes aes = Aes.Create();
                         aes.Key = key;
 
                         return aes;
