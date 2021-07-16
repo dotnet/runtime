@@ -20,7 +20,6 @@ using CreateObjectFlags = InteropLib::Com::CreateObjectFlags;
 using CreateComInterfaceFlags = InteropLib::Com::CreateComInterfaceFlags;
 
 
-
 namespace
 {
 

@@ -12,7 +12,9 @@
 #define DECLSPEC_UUID(x)
 #define DECLSPEC_NOVTABLE
 #define MIDL_INTERFACE(x)   struct DECLSPEC_UUID(x) DECLSPEC_NOVTABLE
+#ifndef OBJC_TESTS
 #define interface struct
+#endif
 #define STDMETHOD(method)       virtual HRESULT STDMETHODCALLTYPE method
 #define STDMETHOD_(type,method) virtual type STDMETHODCALLTYPE method
 #undef _In_
