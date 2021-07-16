@@ -117,7 +117,7 @@
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeReference->Count()) > 0" >true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'"   >false</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'" >true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
@@ -191,10 +191,10 @@
       <_WasmRuntimePackSrcFile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
 
       <_DotnetJSSrcFile Include="$(_WasmRuntimePackSrcDir)\*.js" />
-      <_WasmNativeFileForLinking Include="@(NativeReference)" />
+      <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>
 
-    <Error Text="Could not find NativeReference %(NativeReference.Identity)" Condition="'%(NativeReference.Identity)' != '' and !Exists(%(NativeReference.Identity))" />
+    <Error Text="Could not find NativeFileReference %(NativeFileReference.Identity)" Condition="'%(NativeFileReference.Identity)' != '' and !Exists(%(NativeFileReference.Identity))" />
   </Target>
 
   <Target Name="_GeneratePInvokeTable">
@@ -496,9 +496,4 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_aot (const char *desc) { mono_
       <EmccProperties ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
     </ParameterGroup>
   </UsingTask>
-
-  <!-- @(NativeReference) is used by msbuild for native references too, and these targets get triggered by
-       them. But for wasm, we need different handling, so stub these out -->
-  <Target Name="ResolveNativeReferences" />
-  <Target Name="GenerateManifests" />
 </Project>

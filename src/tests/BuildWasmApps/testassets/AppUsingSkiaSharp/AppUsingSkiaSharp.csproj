@@ -12,7 +12,7 @@
     <PackageReference Include="SkiaSharp" Version="2.80.3" />
     <PackageReference Include="SkiaSharp.NativeAssets.WebAssembly" Version="2.80.3" />
 
-    <NativeReference Include="$(SkiaSharpStaticLibraryPath)\2.0.9\*.a" />
+    <NativeFileReference Include="$(SkiaSharpStaticLibraryPath)\2.0.9\*.a" />
     <WasmFilesToIncludeInFileSystem Include="$(MSBuildThisFileDirectory)mono.png" />
   </ItemGroup>
 </Project>
