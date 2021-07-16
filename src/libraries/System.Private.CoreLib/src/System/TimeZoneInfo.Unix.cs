@@ -1091,6 +1091,11 @@ namespace System
                 zoneAbbreviations.Substring(index);
         }
 
+        // Converts a span of bytes into a long - always using standard byte order (Big Endian)
+        // per TZif file standard
+        private static short TZif_ToInt16(ReadOnlySpan<byte> value)
+            => BinaryPrimitives.ReadInt16BigEndian(value);
+
         // Converts an array of bytes into an int - always using standard byte order (Big Endian)
         // per TZif file standard
         private static int TZif_ToInt32(byte[] value, int startIndex)
@@ -1106,10 +1111,6 @@ namespace System
         private static long TZif_ToInt64(byte[] value, int startIndex)
             => BinaryPrimitives.ReadInt64BigEndian(value.AsSpan(startIndex));
 
-        // Converts a span of bytes into a long - always using standard byte order (Big Endian)
-        // per TZif file standard
-        private static long TZif_ToInt64(ReadOnlySpan<byte> value)
-            => BinaryPrimitives.ReadInt64BigEndian(value);
 
         private static long TZif_ToUnixTime(byte[] value, int startIndex, TZVersion version) =>
             version != TZVersion.V1 ?

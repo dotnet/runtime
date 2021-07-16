@@ -177,27 +177,30 @@ namespace System
         */
         private sealed class AndroidTzData
         {
-            [StructLayout(LayoutKind.Sequential, Pack=1)]
+            // public fixed byte signature[12]; // "tzdata2012f\0"
+            // public int indexOffset;
+            // public int dataOffset;
+            // public int finalOffset;
             private unsafe struct AndroidTzDataHeader
             {
-                public fixed byte signature[12]; // "tzdata2012f\0"
                 public int indexOffset;
                 public int dataOffset;
-                public int finalOffset;
             }
 
-            [StructLayout(LayoutKind.Sequential, Pack=1)]
+            // public string id - 40 bytes
+            // public int byteOffset; - 4 bytes
+            // public int length - 4 bytes
+            // public int unused - 4 bytes Was raw GMT offset; always 0 since tzdata2014f (L).
             private unsafe struct AndroidTzDataEntry
             {
                 public fixed byte id[40];
                 public int byteOffset;
                 public int length;
-                public int unused; // Was raw GMT offset; always 0 since tzdata2014f (L).
             }
 
-            private string[]? _ids;
-            private int[]? _byteOffsets;
-            private int[]? _lengths;
+            private string[] _ids;
+            private int[] _byteOffsets;
+            private int[] _lengths;
             private string _tzFileDir;
             private string _tzFilePath;
 
@@ -225,7 +228,6 @@ namespace System
 
             public AndroidTzData()
             {
-
                 string[] tzFileDirList = new string[] {GetApexTimeDataRoot() + "/etc/tz/", // Android 10+, TimeData module where the updates land
                                                        GetApexRuntimeRoot() + "/etc/tz/", // Android 10+, Fallback location if the above isn't found or corrupted
                                                        Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/",
@@ -244,6 +246,9 @@ namespace System
                 throw new TimeZoneNotFoundException(SR.TimeZoneNotFound_ValidTimeZoneFileMissing);
             }
 
+            [MemberNotNullWhen(true, nameof(_ids))]
+            [MemberNotNullWhen(true, nameof(_byteOffsets))]
+            [MemberNotNullWhen(true, nameof(_lengths))]
             private bool LoadData(string path)
             {
                 if (!File.Exists(path))
@@ -257,24 +262,27 @@ namespace System
                     }
                     return true;
                 }
-                catch (IOException) {}
+                catch {}
 
                 return false;
             }
 
-            private unsafe void LoadTzFile(Stream fs)
+            [MemberNotNull(nameof(_ids))]
+            [MemberNotNull(nameof(_byteOffsets))]
+            [MemberNotNull(nameof(_lengths))]
+            private void LoadTzFile(Stream fs)
             {
-                int headerSize = 24;
-                Span<byte> buffer = stackalloc byte[headerSize];
+                const int HeaderSize = 24; // AndroidTzDataHeader 12 bytes signature, 4 bytes index offset, 4 bytes data offset, 4 bytes final offset
+                Span<byte> buffer = stackalloc byte[HeaderSize];
                 int bytesRead = 0;
-                int bytesLeft = headerSize;
+                int bytesLeft = HeaderSize;
 
                 while (bytesLeft > 0)
                 {
                     int b = fs.Read(buffer);
                     if (b == 0)
                     {
-                        break;
+                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ReadTZError, _tzFilePath, 0, HeaderSize, bytesRead, HeaderSize));
                     }
 
                     bytesRead += b;
@@ -285,32 +293,20 @@ namespace System
                 ReadIndex(fs, header.indexOffset, header.dataOffset);
             }
 
-            private unsafe AndroidTzDataHeader LoadHeader(Span<byte> buffer)
+            private AndroidTzDataHeader LoadHeader(Span<byte> buffer)
             {
                 // tzdata files are expected to start with the form of "tzdata2012f\0" depending on the year of the tzdata used which is 2012 in this example
-                // since we're not differntiating on year, check for tzdata and the ending \0
-                Span<byte> signature = buffer.Slice(0, 12);
-                Span<byte> tzDataSignature = stackalloc byte[8];
-                tzDataSignature.Clear();
+                // since we're not differentiating on year, check for tzdata and the ending \0
+                var tz = (ushort)TZif_ToInt16(buffer.Slice(0, 2));
+                var data = (uint)TZif_ToInt32(buffer.Slice(2, 4));
 
-                signature.Slice(0, 6).CopyTo(tzDataSignature);
-                ulong tzdata = (ulong)TZif_ToInt64(tzDataSignature);
-
-                char[] cbits = Encoding.Default.GetChars(tzDataSignature.ToArray());
-
-                string sigBits = "";
-                for (int i = 0; i < signature.Length; i++)
+                if (tz != 0x747A || data != 0x64617461 || buffer[11] != 0)
                 {
-                    sigBits += signature[i].ToString() + " ";
-                }
-
-                if (tzdata != 0x747A646174610000 || signature[11] != 0)
-                {
-                    // 0x747A646174640000 = {0x74, 0x7A, 0x64, 0x61, 0x74, 0x64, 0x00, 0x00} = "tzdata[NUL][NUL]"
-                    var b = new StringBuilder(signature.Length);
-                    for (int i = 0; i < signature.Length; ++i)
+                    // 0x747A  0x646174640000 = {0x74, 0x7A} {0x64, 0x61, 0x74, 0x64} = "tz" "data"
+                    var b = new StringBuilder(buffer.Length);
+                    for (int i = 0; i < 12; ++i)
                     {
-                        b.Append(' ').Append(HexConverter.ToCharLower(signature[i]));
+                        b.Append(' ').Append(HexConverter.ToCharLower(buffer[i]));
                     }
 
                     throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadTZHeader, TimeZoneFileName, b.ToString()));
@@ -320,15 +316,17 @@ namespace System
 
                 header.indexOffset = TZif_ToInt32(buffer.Slice(12, 4));
                 header.dataOffset = TZif_ToInt32(buffer.Slice(16, 4));
-                header.finalOffset = TZif_ToInt32(buffer.Slice(20, 4));
 
                 return header;
             }
 
+            [MemberNotNull(nameof(_ids))]
+            [MemberNotNull(nameof(_byteOffsets))]
+            [MemberNotNull(nameof(_lengths))]
             private unsafe void ReadIndex(Stream fs, int indexOffset, int dataOffset)
             {
                 int indexSize = dataOffset - indexOffset;
-                int entrySize = sizeof(AndroidTzDataEntry);
+                int entrySize = 52; // Size of AndroidTzDataEntry
                 int entryCount = indexSize / entrySize;
 
                 _byteOffsets = new int[entryCount];
@@ -344,7 +342,7 @@ namespace System
                     _ids![i] = new string(p);
                     _lengths![i] = entry.length;
 
-                    if (_lengths![i] < sizeof(AndroidTzDataHeader))
+                    if (_lengths![i] < 24) // AndroidTzDataHeader 12 bytes signature, 4 bytes index offset, 4 bytes data offset, 4 bytes final offset
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_BadIndexLength);
                     }
@@ -353,7 +351,7 @@ namespace System
 
             private unsafe AndroidTzDataEntry LoadEntryAt(Stream fs, long position)
             {
-                int size = sizeof(AndroidTzDataEntry);
+                int size = 52; // AndroidTzDataEntry
                 Span<byte> entryBuffer = stackalloc byte[size];
 
                 fs.Position = position;
@@ -385,7 +383,6 @@ namespace System
                 }
                 entry.byteOffset = TZif_ToInt32(entryBuffer.Slice(40, 4));
                 entry.length = TZif_ToInt32(entryBuffer.Slice(44, 4));
-                entry.unused = TZif_ToInt32(entryBuffer.Slice(48));
 
                 return entry;
             }
@@ -400,7 +397,7 @@ namespace System
             // Also follows the locations found at the bottom of https://github.com/aosp-mirror/platform_bionic/blob/master/libc/tzcode/bionic.cpp
             public string GetTimeZoneDirectory()
             {
-                return _tzFilePath!;
+                return _tzFilePath;
             }
 
             public byte[] GetTimeZoneData(string id)
