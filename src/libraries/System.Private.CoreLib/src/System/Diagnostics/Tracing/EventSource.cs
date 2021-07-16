@@ -295,7 +295,7 @@ namespace System.Diagnostics.Tracing
             if (!IsEnabled())
                 return false;
 
-            if (!IsEnabledCommon(m_eventSourceEnabled, m_level, m_matchAnyKeyword, level, keywords, channel))
+            if (!IsEnabledCommon(IsEnabled(), m_level, m_matchAnyKeyword, level, keywords, channel))
                 return false;
 
             return true;
@@ -1307,6 +1307,7 @@ namespace System.Diagnostics.Tracing
                 Debug.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.
                 try
                 {
+                    m_activeWritesCount++;
                     ref EventMetadata metadata = ref m_eventData[eventId];
 
                     EventOpcode opcode = (EventOpcode)metadata.Descriptor.Opcode;
@@ -1380,6 +1381,10 @@ namespace System.Diagnostics.Tracing
                     else
                         ThrowEventSourceException(m_eventData[eventId].Name, ex);
                 }
+                finally
+                {
+                    m_activeWritesCount--;
+                }
             }
         }
 
@@ -1448,7 +1453,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW
                 // Send the manifest one more time to ensure circular buffers have a chance to get to this information
                 // even in scenarios with a high volume of ETW events.
-                if (m_eventSourceEnabled)
+                if (IsEnabled())
                 {
                     try
                     {
@@ -1457,6 +1462,10 @@ namespace System.Diagnostics.Tracing
                     catch { } // If it fails, simply give up.
                     m_eventSourceEnabled = false;
                 }
+
+                // Wait till active writes have finished (stop waiting at 1 second)
+                SpinWait.SpinUntil(() => m_activeWritesCount == 0, 1000);
+
                 if (m_etwProvider != null)
                 {
                     m_etwProvider.Dispose();
@@ -1625,7 +1634,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_PERFTRACING
                 m_eventPipeProvider = eventPipeProvider;
 #endif
-                Debug.Assert(!m_eventSourceEnabled);     // We can't be enabled until we are completely initted.
+                Debug.Assert(!IsEnabled());     // We can't be enabled until we are completely initted.
                 // We are logically completely initialized at this point.
                 m_completelyInited = true;
             }
@@ -1897,6 +1906,7 @@ namespace System.Diagnostics.Tracing
                 Debug.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.
                 try
                 {
+                    m_activeWritesCount++;
                     ref EventMetadata metadata = ref m_eventData[eventId];
 
                     if (childActivityID != null)
@@ -1995,6 +2005,10 @@ namespace System.Diagnostics.Tracing
                         throw;
                     else
                         ThrowEventSourceException(m_eventData[eventId].Name, ex);
+                }
+                finally
+                {
+                    m_activeWritesCount--;
                 }
             }
         }
@@ -2625,7 +2639,7 @@ namespace System.Diagnostics.Tracing
 
                     if (commandArgs.enable)
                     {
-                        if (!m_eventSourceEnabled)
+                        if (!IsEnabled())
                         {
                             // EventSource turned on for the first time, simply copy the bits.
                             m_level = commandArgs.level;
@@ -3852,9 +3866,10 @@ namespace System.Diagnostics.Tracing
         private bool m_eventSourceDisposed;              // has Dispose been called.
 
         // Enabling bits
-        private bool m_eventSourceEnabled;              // am I enabled (any of my events are enabled for any dispatcher)
+        private volatile bool m_eventSourceEnabled;              // am I enabled (any of my events are enabled for any dispatcher)
         internal EventLevel m_level;                    // highest level enabled by any output dispatcher
         internal EventKeywords m_matchAnyKeyword;       // the logical OR of all levels enabled by any output dispatcher (zero is a special case) meaning 'all keywords'
+        private volatile int m_activeWritesCount;       // The number of currently active calls to Write methods that have already checked m_eventSourceEnabled
 
         // Dispatching state
         internal volatile EventDispatcher? m_Dispatchers;    // Linked list of code:EventDispatchers we write the data to (we also do ETW specially)
