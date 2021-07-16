@@ -165,7 +165,7 @@
   <!-- Copy Mono runtime bits to the coreclr's Core_Root in order to run runtime tests -->
   <Target Name="PatchCoreClrCoreRoot">
     <MSBuild Projects="$(MSBuildProjectFullPath)"
-             Properties="Destination=$(CoreClrTestCoreRoot)"
+             Properties="Destination=$(CoreClrTestCoreRoot);ForNode=$(ForNode)"
              Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
   </Target>
 

@@ -99,7 +99,7 @@
     <!-- Invoke MSBuild once for each Scenario (because of the "batching" defined in "_ProjectsToBuild").
          Create the Helix work items and start the jobs. This is done by invoking the "Test" Helix target.
     -->
-    <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" />
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="ForNode=$(ForNode)"/>
   </Target>
 
   <Target Name="CreateOneScenarioTestEnvFile">
@@ -112,7 +112,7 @@
 
     <ItemGroup>
       <_ProjectsToBuild Include="$(RepoRoot)\src\tests\Common\testenvironment.proj">
-        <Properties>Scenario=$(Scenario);TestEnvFileName=$(TestEnvFilePath);TargetsWindows=$(TargetsWindows)</Properties>
+        <Properties>Scenario=$(Scenario);TestEnvFileName=$(TestEnvFilePath);TargetsWindows=$(TargetsWindows);ForNode=$(ForNode)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
 
@@ -135,7 +135,7 @@
       </_ProjectsToBuild>
     </ItemGroup>
 
-    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateOneScenarioTestEnvFile" StopOnFirstFailure="true" />
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateOneScenarioTestEnvFile" StopOnFirstFailure="true" Properties="ForNode=$(ForNode)" />
   </Target>
 
   <Target Name="_CollectRuntimeInputs">
