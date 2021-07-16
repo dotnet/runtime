@@ -77,6 +77,71 @@ namespace System.Runtime.InteropServices.JavaScript
             return res;
         }
 
+        public struct EventListenerOptions {
+            public bool Capture;
+            public bool Once;
+            public bool Passive;
+            public bool Weak;
+            public object? Signal;
+        }
+
+        // FIXME: The existing Runtime binding apis are completely unusable for this
+        private static int _NextJSObjectID = 0xFFFFFF;
+        private static JSObject GetJSObjectForDelegate (Delegate d) {
+            var result = Runtime.TryGetJSObjectForCLRObject(d);
+            if (result != null)
+                return result;
+
+            int id = _NextJSObjectID++;
+            return Runtime.CreateJSObjectForCLRObject(d, id);
+        }
+
+        public void AddEventListener(string name, Delegate listener, EventListenerOptions? options = null)
+        {
+            var optionsDict = options.HasValue
+                ? new JSObject()
+                : null;
+
+            try {
+                if (options?.Signal != null)
+                    throw new NotImplementedException("EventListenerOptions.Signal");
+
+                var jsfunc = GetJSObjectForDelegate(listener);
+                int exception;
+                if (options.HasValue) {
+                    // TODO: Optimize this
+                    var _options = options.Value;
+                    optionsDict?.SetObjectProperty("capture", _options.Capture, true, true);
+                    optionsDict?.SetObjectProperty("once", _options.Once, true, true);
+                    optionsDict?.SetObjectProperty("passive", _options.Passive, true, true);
+                }
+
+                // TODO: Unique optimized syscall
+                // Interop.Runtime.AddEventListener(JSHandle, name, listener, optionsDict);
+                var args = options.HasValue
+                    ? new object?[] { jsfunc, optionsDict }
+                    : new object?[] { jsfunc };
+                var res = Interop.Runtime.InvokeJSWithArgs(JSHandle, "addEventListener", args, out exception);
+                if (exception != 0)
+                    throw new JSException((string)res);
+                else if (options?.Weak != true) {
+                    bool success = false;
+                    jsfunc.DangerousAddRef(ref success);
+                }
+            } finally {
+                optionsDict?.Dispose();
+            }
+        }
+
+        public void RemoveEventListener(string name, Delegate listener, EventListenerOptions? options = null)
+        {
+            var jsfunc = GetJSObjectForDelegate(listener);
+            // TODO: Unique syscall
+            Invoke("removeEventListener", jsfunc, options?.Capture ?? false);
+            if (options?.Weak != true)
+                jsfunc.DangerousRelease();
+        }
+
         /// <summary>
         ///   Returns the named property from the object, or throws a JSException on error.
         /// </summary>

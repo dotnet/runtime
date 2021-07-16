@@ -218,6 +218,23 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject.Int32Handle;
         }
 
+        public static JSObject CreateJSObjectForCLRObject(object rawObj, int jsId) {
+            var jsObject = new JSObject(jsId, rawObj);
+            lock (_rawToJS)
+            {
+                _rawToJS.Add(rawObj, jsObject);
+            }
+            return jsObject;
+        }
+
+        public static JSObject? TryGetJSObjectForCLRObject(object rawObj) {
+            lock (_rawToJS)
+            {
+                _rawToJS.TryGetValue(rawObj, out JSObject? jsObject);
+                return jsObject;
+            }
+        }
+
         public static int GetJSObjectId(object rawObj)
         {
             JSObject? jsObject;
