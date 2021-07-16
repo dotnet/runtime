@@ -233,7 +233,11 @@ if [[ "$mono_dotnet" != "" ]] && [[ "$monointerpreter" == "false" ]]; then
 fi
 
 if [[ "$wasm_runtime_loc" != "" ]]; then
-    configurations="CompilationMode=wasm RunKind=$kind"
+    if [[ "$wasmaot" == "true" ]]; then
+        configurations="CompilationMode=wasm AOT=true RunKind=$kind"
+    else
+        configurations="CompilationMode=wasm RunKind=$kind"
+    fi
     if [[ "$javascript_engine" == "javascriptcore" ]]; then
       configurations="$configurations JSEngine=javascriptcore"
     fi
