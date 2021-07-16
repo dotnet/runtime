@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <!-- opt-out of trimming until it works https://github.com/dotnet/runtime/issues/49062 -->
@@ -98,6 +98,7 @@
     <Compile Include="System\Configuration\ExeContext.cs" />
     <Compile Include="System\Configuration\FactoryId.cs" />
     <Compile Include="System\Configuration\FactoryRecord.cs" />
+    <Compile Include="System\Configuration\FipsAwareEncryptedXml.cs" />
     <Compile Include="System\Configuration\GenericEnumConverter.cs" />
     <Compile Include="System\Configuration\HandlerBase.cs" />
     <Compile Include="System\Configuration\IApplicationSettingsProvider.cs" />
@@ -286,8 +287,12 @@
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.ProtectedData\src\System.Security.Cryptography.ProtectedData.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
+    <PackageReference Include="System.Security.Cryptography.Csp" Version="4.3.0" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <Reference Include="System.Configuration" />
+    <PackageReference Include="System.Security.Cryptography.Csp" Version="4.3.0" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="5.0.0" />
   </ItemGroup>
 </Project>
