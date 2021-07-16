@@ -19631,14 +19631,16 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         }
 
         GenTree* actualArg = use.GetNode();
-        if (actualArg != nullptr)
+        if (actualArg != nullptr && actualArg->OperIsSimple())
         {
-            if (actualArg->OperIsUnary() && actualArg->gtGetOp1()->OperIsConst())
+            GenTree* op1 = actualArg->gtGetOp1();
+            GenTree* op2 = actualArg->gtGetOp2IfPresent();
+            if (actualArg->OperIsUnary() && (op1 != nullptr) && op1->OperIsConst())
             {
                 actualArg = gtFoldExprConst(actualArg);
             }
-            else if (actualArg->OperIsBinary() && actualArg->gtGetOp1()->OperIsConst() &&
-                     (actualArg->gtGetOp2IfPresent() != nullptr) && actualArg->gtGetOp2IfPresent()->OperIsConst())
+            else if (actualArg->OperIsBinary() && (op1 != nullptr) && (op2 != nullptr) && op1->OperIsConst() &&
+                     op2->OperIsConst())
             {
                 actualArg = gtFoldExprConst(actualArg);
             }
