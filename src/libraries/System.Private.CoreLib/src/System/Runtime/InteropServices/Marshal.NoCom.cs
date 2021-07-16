@@ -10,6 +10,8 @@ namespace System.Runtime.InteropServices
 {
     public static partial class Marshal
     {
+        internal static bool IsBuiltInComSupported => false;
+
         public static int GetHRForException(Exception? e)
         {
             return e?.HResult ?? 0;
