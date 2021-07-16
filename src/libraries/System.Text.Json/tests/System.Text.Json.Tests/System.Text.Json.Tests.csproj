@@ -143,18 +143,7 @@
     <Compile Include="Serialization\JsonElementTests.cs" />
     <Compile Include="Serialization\JsonSerializerWrapperForStream.cs" />
     <Compile Include="Serialization\JsonSerializerWrapperForString.cs" />
-    <Compile Include="Serialization\MetadataTests\JsonContext\DateTimeOffset.cs" />
-    <Compile Include="Serialization\MetadataTests\JsonContext\Dictionary.cs" />
-    <Compile Include="Serialization\MetadataTests\JsonContext\HighLowTemps.cs" />
-    <Compile Include="Serialization\MetadataTests\JsonContext\Int32.cs" />
-    <Compile Include="Serialization\MetadataTests\JsonContext\JsonContext.cs" />
-    <Compile Include="Serialization\MetadataTests\JsonContext\JsonContext.GetJsonTypeInfo.cs" />
-    <Compile Include="Serialization\MetadataTests\JsonContext\List.cs" />
-    <Compile Include="Serialization\MetadataTests\JsonContext\String.cs" />
-    <Compile Include="Serialization\MetadataTests\JsonContext\StringArray.cs" />
-    <Compile Include="Serialization\MetadataTests\JsonContext\WeatherForecastWithPOCOs.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.cs" />
-    <Compile Include="Serialization\MetadataTests\MetadataTests.JsonMetadataServices.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.Options.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
@@ -215,5 +204,8 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
     <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>
