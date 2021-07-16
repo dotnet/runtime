@@ -87,12 +87,11 @@ namespace System.Security.Cryptography
             ValidatePadding(padding);
             SafeEvpPKeyHandle key = GetKey();
             int rsaSize = Interop.Crypto.EvpPKeySize(key);
-            byte[]? buf = null;
             Span<byte> destination = default;
+            byte[] buf = CryptoPool.Rent(rsaSize);
 
             try
             {
-                buf = CryptoPool.Rent(rsaSize);
                 destination = new Span<byte>(buf, 0, rsaSize);
 
                 int bytesWritten = Decrypt(key, data, destination, padding);
@@ -101,7 +100,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(destination);
-                CryptoPool.Return(buf!, clearSize: 0);
+                CryptoPool.Return(buf, clearSize: 0);
             }
         }
 
