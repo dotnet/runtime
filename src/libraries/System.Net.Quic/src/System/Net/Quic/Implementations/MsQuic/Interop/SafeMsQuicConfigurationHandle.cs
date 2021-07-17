@@ -36,20 +36,39 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         public static unsafe SafeMsQuicConfigurationHandle Create(QuicClientConnectionOptions options)
         {
             X509Certificate? certificate = null;
-            if (options.ClientAuthenticationOptions?.ClientCertificates != null)
+
+            if (options.ClientAuthenticationOptions != null)
             {
-                foreach (var cert in options.ClientAuthenticationOptions.ClientCertificates)
+                if (options.ClientAuthenticationOptions.CipherSuitesPolicy != null)
                 {
-                    try
+                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_optiopn, nameof(options.ClientAuthenticationOptions.CipherSuitesPolicy)));
+                }
+
+                if (options.ClientAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
+                {
+                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_optiopn, nameof(options.ClientAuthenticationOptions.EncryptionPolicy)));
+                }
+
+                if (options.ClientAuthenticationOptions.LocalCertificateSelectionCallback != null)
+                {
+                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_optiopn, nameof(options.ClientAuthenticationOptions.LocalCertificateSelectionCallback)));
+                }
+
+                if (options.ClientAuthenticationOptions.ClientCertificates != null)
+                {
+                    foreach (var cert in options.ClientAuthenticationOptions.ClientCertificates)
                     {
-                        if (((X509Certificate2)cert).HasPrivateKey)
+                        try
                         {
-                            // Pick first certificate with private key.
-                            certificate = cert;
-                            break;
+                            if (((X509Certificate2)cert).HasPrivateKey)
+                            {
+                                // Pick first certificate with private key.
+                                certificate = cert;
+                                break;
+                            }
                         }
+                        catch { }
                     }
-                    catch { }
                 }
             }
 
@@ -59,9 +78,23 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         public static unsafe SafeMsQuicConfigurationHandle Create(QuicListenerOptions options)
         {
             QUIC_CREDENTIAL_FLAGS flags = QUIC_CREDENTIAL_FLAGS.NONE;
-            if (options.ServerAuthenticationOptions != null && options.ServerAuthenticationOptions.ClientCertificateRequired)
+
+            if (options.ServerAuthenticationOptions != null)
             {
-                flags |= QUIC_CREDENTIAL_FLAGS.REQUIRE_CLIENT_AUTHENTICATION | QUIC_CREDENTIAL_FLAGS.INDICATE_CERTIFICATE_RECEIVED | QUIC_CREDENTIAL_FLAGS.NO_CERTIFICATE_VALIDATION;
+                if (options.ServerAuthenticationOptions.CipherSuitesPolicy != null)
+                {
+                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_optiopn, nameof(options.ServerAuthenticationOptions.CipherSuitesPolicy)));
+                }
+
+                if (options.ServerAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
+                {
+                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_optiopn, nameof(options.ServerAuthenticationOptions.EncryptionPolicy)));
+                }
+
+                if (options.ServerAuthenticationOptions.ClientCertificateRequired)
+                {
+                    flags |= QUIC_CREDENTIAL_FLAGS.REQUIRE_CLIENT_AUTHENTICATION | QUIC_CREDENTIAL_FLAGS.INDICATE_CERTIFICATE_RECEIVED | QUIC_CREDENTIAL_FLAGS.NO_CERTIFICATE_VALIDATION;
+                }
             }
 
             return Create(options, flags, options.ServerAuthenticationOptions?.ServerCertificate, options.ServerAuthenticationOptions?.ServerCertificateContext, options.ServerAuthenticationOptions?.ApplicationProtocols);
