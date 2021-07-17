@@ -131,7 +131,7 @@ namespace System
                 _readAs32Bit =
                     magic == MagicLegacyNumber ? false :
                     magic == Magic32BitNumber ? true :
-                    throw new InvalidOperationException(SR.Format(SR.IO_TermInfoInvalidMagicNumber, string.Concat("O" + Convert.ToString(magic, 8)))); // magic number was not recognized. Printing the magic number in octal.
+                    throw new InvalidOperationException(SR.Format(SR.IO_TermInfoInvalidMagicNumber, "O" + Convert.ToString(magic, 8))); // magic number was not recognized. Printing the magic number in octal.
                 _sizeOfInt = (_readAs32Bit) ? 4 : 2;
 
                 _nameSectionNumBytes = ReadInt16(data, 2);
