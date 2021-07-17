@@ -9,16 +9,18 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal unsafe sealed class MsQuicApi
     {
+        private static readonly Version MinWindowsVersion = new Version(10, 0, 20145, 1000);
+
         public SafeMsQuicRegistrationHandle Registration { get; }
 
         // This is workaround for a bug in ILTrimmer.
         // Without these DynamicDependency attributes, .ctor() will be removed from the safe handles.
         // Remove once fixed: https://github.com/mono/linker/issues/1660
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicRegistrationHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicConfigurationHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicListenerHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicConnectionHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicStreamHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicRegistrationHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicConfigurationHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicListenerHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicConnectionHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicStreamHandle))]
         private MsQuicApi(NativeApi* vtable)
         {
             uint status;
@@ -119,18 +121,39 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal static bool IsQuicSupported { get; }
 
+        private const int MsQuicVersion = 1;
+
         static MsQuicApi()
         {
-            // TODO: Consider updating all of these delegates to instead use function pointers.
+            if (!IsHttp3Enabled())
+            {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(null, $"HTTP/3 and QUIC is not enabled, see 'System.Net.SocketsHttpHandler.Http3Support' AppContext switch.");
+                }
+
+                return;
+            }
+
+            if (OperatingSystem.IsWindows() && !IsWindowsVersionSupported())
+            {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
+                }
+
+                return;
+            }
+
             if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle))
             {
                 try
                 {
-                    if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpen", out IntPtr msQuicOpenAddress))
+                    if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpenVersion", out IntPtr msQuicOpenVersionAddress))
                     {
-                        MsQuicOpenDelegate msQuicOpen =
-                            Marshal.GetDelegateForFunctionPointer<MsQuicOpenDelegate>(msQuicOpenAddress);
-                        uint status = msQuicOpen(out NativeApi* vtable);
+                        delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint> msQuicOpenVersion =
+                            (delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint>)msQuicOpenVersionAddress;
+                        uint status = msQuicOpenVersion(MsQuicVersion, out NativeApi* vtable);
                         if (MsQuicStatusHelper.SuccessfulStatusCode(status))
                         {
                             IsQuicSupported = true;
@@ -148,6 +171,38 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
         }
 
+        // Note that this is copy-pasted from S.N.Http just to hide S.N.Quic behind the same AppContext switch
+        // since this library is considered "private" for 6.0.
+        // We should get rid of this once S.N.Quic API surface is officially exposed.
+        private static bool IsHttp3Enabled()
+        {
+            bool value;
+
+            // First check for the AppContext switch, giving it priority over the environment variable.
+            if (AppContext.TryGetSwitch("System.Net.SocketsHttpHandler.Http3Support", out value))
+            {
+                return value;
+            }
+
+            // AppContext switch wasn't used. Check the environment variable.
+            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3SUPPORT");
+
+            if (bool.TryParse(envVar, out value))
+            {
+                return value;
+            }
+            else if (uint.TryParse(envVar, out uint intVal))
+            {
+                return intVal != 0;
+            }
+
+            return false;
+        }
+
+        private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,
+            MinWindowsVersion.Minor, MinWindowsVersion.Build, MinWindowsVersion.Revision);
+
+        // TODO: Consider updating all of these delegates to instead use function pointers.
         internal RegistrationOpenDelegate RegistrationOpenDelegate { get; }
         internal RegistrationCloseDelegate RegistrationCloseDelegate { get; }
 

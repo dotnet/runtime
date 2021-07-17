@@ -1084,7 +1084,7 @@ public static partial class DataContractSerializerTests
     public static void DCS_DerivedTypeWithDifferentOverrides()
     {
         var x = new DerivedTypeWithDifferentOverrides() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5" };
-        var y = DataContractSerializerHelper.SerializeAndDeserialize<DerivedTypeWithDifferentOverrides>(x, @"<DerivedTypeWithDifferentOverrides xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Name1>Name1</Name1><Name2 i:nil=""true""/><Name3 i:nil=""true""/><Name4 i:nil=""true""/><Name5 i:nil=""true""/><Name6 i:nil=""true""/><Name2>Name2</Name2><Name3>Name3</Name3><Name5>Name5</Name5></DerivedTypeWithDifferentOverrides>");
+        var y = DataContractSerializerHelper.SerializeAndDeserialize<DerivedTypeWithDifferentOverrides>(x, @"<DerivedTypeWithDifferentOverrides xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Name1>Name1</Name1><Name2 i:nil=""true""/><Name3 i:nil=""true""/><Name4 i:nil=""true""/><Name5 i:nil=""true""/><Name6 i:nil=""true""/><Name7 i:nil=""true""/><Name2>Name2</Name2><Name3>Name3</Name3><Name5>Name5</Name5></DerivedTypeWithDifferentOverrides>");
 
         Assert.Equal(x.Name1, y.Name1);
         Assert.Equal(x.Name2, y.Name2);
@@ -1389,6 +1389,30 @@ public static partial class DataContractSerializerTests
         var obj = new MyOtherType() { Str = "Hello" };
         Func<DataContractSerializer> serializerFactory = () => new DataContractSerializer(typeof(MyOtherType), xmlDictionary.Add("ChangedRoot"), xmlDictionary.Add("http://changedNamespace"));
         string baselineXml = @"<ChangedRoot xmlns=""http://changedNamespace"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><a:Str>Hello</a:Str></ChangedRoot>";
+        var result = DataContractSerializerHelper.SerializeAndDeserialize(obj, baselineXml, serializerFactory: serializerFactory);
+        Assert.Equal("Hello", result.Str);
+    }
+
+    [Fact]
+    public static void DCS_RootNameAndNamespaceThroughSettings()
+    {
+        var xmlDictionary = new XmlDictionary();
+        var obj = new MyOtherType() { Str = "Hello" };
+        var settings = new DataContractSerializerSettings() { RootName = xmlDictionary.Add("ChangedRoot"), RootNamespace = xmlDictionary.Add("http://changedNamespace") };
+        Func<DataContractSerializer> serializerFactory = () => new DataContractSerializer(typeof(MyOtherType), settings);
+        string baselineXml = @"<ChangedRoot xmlns=""http://changedNamespace"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><a:Str>Hello</a:Str></ChangedRoot>";
+        var result = DataContractSerializerHelper.SerializeAndDeserialize(obj, baselineXml, serializerFactory: serializerFactory);
+        Assert.Equal("Hello", result.Str);
+    }
+
+    [Fact]
+    public static void DCS_RootNameWithoutNamespaceThroughSettings()
+    {
+        var xmlDictionary = new XmlDictionary();
+        var obj = new MyOtherType() { Str = "Hello" };
+        var settings = new DataContractSerializerSettings() { RootName = xmlDictionary.Add("ChangedRoot") };
+        Func<DataContractSerializer> serializerFactory = () => new DataContractSerializer(typeof(MyOtherType), settings);
+        string baselineXml = @"<ChangedRoot xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><a:Str>Hello</a:Str></ChangedRoot>";
         var result = DataContractSerializerHelper.SerializeAndDeserialize(obj, baselineXml, serializerFactory: serializerFactory);
         Assert.Equal("Hello", result.Str);
     }

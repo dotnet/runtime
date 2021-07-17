@@ -116,6 +116,48 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/microsoft/msquic/pull/1728")]
+        public async Task ConnectWithClientCertificate()
+        {
+            bool clientCertificateOK = false;
+
+            var serverOptions = new QuicListenerOptions();
+            serverOptions.ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
+            serverOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
+            serverOptions.ServerAuthenticationOptions.ClientCertificateRequired = true;
+            serverOptions.ServerAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+            {
+                _output.WriteLine("client certificate {0}", cert);
+                Assert.NotNull(cert);
+                Assert.Equal(ClientCertificate.Thumbprint, ((X509Certificate2)cert).Thumbprint);
+
+                clientCertificateOK = true;
+                return true;
+            };
+            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, serverOptions);
+
+            QuicClientConnectionOptions clientOptions = new QuicClientConnectionOptions()
+            {
+                RemoteEndPoint = listener.ListenEndPoint,
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
+            };
+            clientOptions.ClientAuthenticationOptions.ClientCertificates = new X509CertificateCollection() { ClientCertificate };
+
+            using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, clientOptions);
+            ValueTask clientTask = clientConnection.ConnectAsync();
+
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await clientTask;
+            // Verify functionality of the connections.
+            await PingPong(clientConnection, serverConnection);
+            // check we completed the client certificate verification.
+            Assert.True(clientCertificateOK);
+
+            await serverConnection.CloseAsync(0);
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52048")]
         public async Task WaitForAvailableUnidirectionStreamsAsyncWorks()
         {
@@ -125,8 +167,9 @@ namespace System.Net.Quic.Tests
             ValueTask clientTask = clientConnection.ConnectAsync();
             using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
             await clientTask;
+            listener.Dispose();
 
-            // No stream openned yet, should return immediately.
+            // No stream opened yet, should return immediately.
             Assert.True(clientConnection.WaitForAvailableUnidirectionalStreamsAsync().IsCompletedSuccessfully);
 
             // Open one stream, should wait till it closes.
@@ -134,14 +177,15 @@ namespace System.Net.Quic.Tests
             ValueTask waitTask = clientConnection.WaitForAvailableUnidirectionalStreamsAsync();
             Assert.False(waitTask.IsCompleted);
             Assert.Throws<QuicException>(() => clientConnection.OpenUnidirectionalStream());
-
-            // Close the stream, the waitTask should finish as a result.
+            // Close the streams, the waitTask should finish as a result.
             stream.Dispose();
+            QuicStream newStream = await serverConnection.AcceptStreamAsync();
+            newStream.Dispose();
+
             await waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(10));
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52048")]
         public async Task WaitForAvailableBidirectionStreamsAsyncWorks()
         {
             using QuicListener listener = CreateQuicListener(maxBidirectionalStreams: 1);
@@ -151,7 +195,7 @@ namespace System.Net.Quic.Tests
             using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
             await clientTask;
 
-            // No stream openned yet, should return immediately.
+            // No stream opened yet, should return immediately.
             Assert.True(clientConnection.WaitForAvailableBidirectionalStreamsAsync().IsCompletedSuccessfully);
 
             // Open one stream, should wait till it closes.
@@ -160,8 +204,10 @@ namespace System.Net.Quic.Tests
             Assert.False(waitTask.IsCompleted);
             Assert.Throws<QuicException>(() => clientConnection.OpenBidirectionalStream());
 
-            // Close the stream, the waitTask should finish as a result.
+            // Close the streams, the waitTask should finish as a result.
             stream.Dispose();
+            QuicStream newStream = await serverConnection.AcceptStreamAsync();
+            newStream.Dispose();
             await waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(10));
         }
 
@@ -170,7 +216,7 @@ namespace System.Net.Quic.Tests
         public async Task SetListenerTimeoutWorksWithSmallTimeout()
         {
             var quicOptions = new QuicListenerOptions();
-            quicOptions.IdleTimeout = TimeSpan.FromSeconds(10);
+            quicOptions.IdleTimeout = TimeSpan.FromSeconds(1);
             quicOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
             quicOptions.ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
 
@@ -192,6 +238,7 @@ namespace System.Net.Quic.Tests
 
         [Theory]
         [MemberData(nameof(WriteData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         public async Task WriteTests(int[][] writes, WriteType writeType)
         {
             await RunClientServer(
@@ -406,6 +453,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [OuterLoop("May take several seconds")]
         public async Task ByteMixingOrNativeAVE_MinimalFailingTest()
         {
             const int writeSize = 64 * 1024;
@@ -429,7 +477,7 @@ namespace System.Net.Quic.Tests
                         byte[] buffer = new byte[data.Length];
                         int bytesRead = await ReadAll(stream, buffer);
                         Assert.Equal(data.Length, bytesRead);
-                        AssertArrayEqual(data, buffer);
+                        AssertExtensions.SequenceEqual(data, buffer);
 
                         for (int pos = 0; pos < data.Length; pos += writeSize)
                         {
@@ -452,7 +500,7 @@ namespace System.Net.Quic.Tests
                         byte[] buffer = new byte[data.Length];
                         int bytesRead = await ReadAll(stream, buffer);
                         Assert.Equal(data.Length, bytesRead);
-                        AssertArrayEqual(data, buffer);
+                        AssertExtensions.SequenceEqual(data, buffer);
 
                         await stream.ShutdownCompleted();
                     }

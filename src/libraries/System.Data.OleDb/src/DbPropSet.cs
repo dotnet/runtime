@@ -254,7 +254,7 @@ namespace System.Data.OleDb
 
                 for (int i = 0; i < properties.Length; ++i)
                 {
-                    Debug.Assert(null != properties[i], "null tagDBPROP " + i.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(null != properties[i], $"null tagDBPROP {i.ToString(CultureInfo.InvariantCulture)}");
                     IntPtr propertyPtr = ADP.IntPtrOffset(propset.rgProperties, i * ODB.SizeOf_tagDBPROP);
                     Marshal.StructureToPtr(properties[i], propertyPtr, false/*deleteold*/);
                 }

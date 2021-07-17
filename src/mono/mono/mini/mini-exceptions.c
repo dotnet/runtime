@@ -70,11 +70,10 @@
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/w32subset.h>
+#include <mono/metadata/components.h>
 
 #include "mini.h"
 #include "trace.h"
-#include "debugger-agent.h"
-#include "debugger-engine.h"
 #include "seq-points.h"
 #include "llvm-runtime.h"
 #include "mini-llvm.h"
@@ -451,6 +450,8 @@ arch_unwind_frame (MonoJitTlsData *jit_tls,
 					frame->type = FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX;
 					memcpy (new_ctx, &ext->ctx, sizeof (MonoContext));
 				}
+			} else if (ext->kind == MONO_LMFEXT_JIT_ENTRY) {
+				frame->type = FRAME_TYPE_JIT_ENTRY;
 			} else {
 				g_assert_not_reached ();
 			}
@@ -1874,6 +1875,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			case FRAME_TYPE_INTERP_TO_MANAGED:
 			case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
 			case FRAME_TYPE_INTERP_ENTRY:
+			case FRAME_TYPE_JIT_ENTRY:
 				continue;
 			case FRAME_TYPE_INTERP:
 			case FRAME_TYPE_MANAGED:
@@ -2279,6 +2281,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 		case FRAME_TYPE_TRAMPOLINE:
 		case FRAME_TYPE_INTERP_TO_MANAGED:
 		case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
+		case FRAME_TYPE_JIT_ENTRY:
 			*ctx = new_ctx;
 			continue;
 		case FRAME_TYPE_INTERP_ENTRY:
@@ -2392,7 +2395,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 #endif
 					}
 
-					mini_get_dbg_callbacks ()->begin_exception_filter (mono_ex, ctx, &initial_ctx);
+					mono_component_debugger ()->begin_exception_filter (mono_ex, ctx, &initial_ctx);
 
 					if (G_UNLIKELY (mono_profiler_clauses_enabled ())) {
 						jit_tls->orig_ex_ctx_set = TRUE;
@@ -2416,7 +2419,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 					if (enable_trace)
 						g_print ("[%p:] EXCEPTION filter result: %d\n", (void*)(gsize)mono_native_thread_id_get (), filtered);
 
-					mini_get_dbg_callbacks ()->end_exception_filter (mono_ex, ctx, &initial_ctx);
+					mono_component_debugger ()->end_exception_filter (mono_ex, ctx, &initial_ctx);
 					if (filtered && out_filter_idx)
 						*out_filter_idx = filter_idx;
 					if (out_ji)
@@ -2657,7 +2660,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		if (res == MONO_FIRST_PASS_UNHANDLED) {
 			if (mini_debug_options.break_on_exc)
 				G_BREAKPOINT ();
-			mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
+			mono_component_debugger ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
 
 			// FIXME: This runs managed code so it might cause another stack overflow when
 			// we are handling a stack overflow
@@ -2667,21 +2670,21 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			gboolean unhandled = FALSE;
 
 			if (unhandled)
-				mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
+				mono_component_debugger ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
 			else if (!ji || (jinfo_get_method (ji)->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE)) {
 				if (last_mono_wrapper_runtime_invoke && !mono_thread_internal_current ()->threadpool_thread) {
-					mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
+					mono_component_debugger ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
 					if (mini_get_debug_options ()->top_runtime_invoke_unhandled) {
 						mini_set_abort_threshold (&catch_frame);
 						mono_unhandled_exception_internal (obj);
 					}
 				} else {
-					mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, &ctx_cp, &catch_frame);
+					mono_component_debugger ()->handle_exception ((MonoException *)obj, ctx, &ctx_cp, &catch_frame);
 				}
 			}
 			else if (res != MONO_FIRST_PASS_CALLBACK_TO_NATIVE)
 				if (!is_caught_unmanaged)
-					mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, &ctx_cp, &catch_frame);
+					mono_component_debugger ()->handle_exception ((MonoException *)obj, ctx, &ctx_cp, &catch_frame);
 		}
 	}
 
@@ -2723,6 +2726,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			case FRAME_TYPE_TRAMPOLINE:
 			case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
 			case FRAME_TYPE_INTERP_ENTRY:
+			case FRAME_TYPE_JIT_ENTRY:
 				*ctx = new_ctx;
 				continue;
 			case FRAME_TYPE_INTERP_TO_MANAGED:

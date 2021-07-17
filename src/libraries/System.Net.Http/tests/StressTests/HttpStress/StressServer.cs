@@ -45,7 +45,7 @@ namespace HttpStress
             (string scheme, string hostname, int port) = ParseServerUri(configuration.ServerUri);
             IWebHostBuilder host = WebHost.CreateDefaultBuilder();
 
-            if (configuration.UseHttpSys)
+            if (configuration.UseHttpSys && OperatingSystem.IsWindows())
             {
                 // Use http.sys.  This requires additional manual configuration ahead of time;
                 // see https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/httpsys?view=aspnetcore-2.2#configure-windows-server.
@@ -108,16 +108,29 @@ namespace HttpStress
                                 }
                                 listenOptions.UseHttps(cert);
                             }
+                            if (configuration.HttpVersion == HttpVersion.Version30)
+                            {
+                                listenOptions.Protocols = HttpProtocols.Http3;
+                            }
                         }
                         else
                         {
                             listenOptions.Protocols =
-                                configuration.HttpVersion == new Version(2,0) ?
+                                configuration.HttpVersion ==  HttpVersion.Version20 ?
                                 HttpProtocols.Http2 :
                                 HttpProtocols.Http1 ;
                         }
                     }
                 });
+
+                if (configuration.HttpVersion == HttpVersion.Version30)
+                {
+                    host = host.UseQuic(options =>
+                    {
+                        options.Alpn = "h3-29";
+                        options.IdleTimeout = TimeSpan.FromMinutes(1);
+                    });
+                }
             };
 
             LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
@@ -161,7 +174,7 @@ namespace HttpStress
         private static void MapRoutes(IEndpointRouteBuilder endpoints)
         {
             var loggerFactory = endpoints.ServiceProvider.GetService<ILoggerFactory>();
-            var logger = loggerFactory.CreateLogger<StressServer>();
+            var logger = loggerFactory?.CreateLogger<StressServer>();
             var head = new[] { "HEAD" };
 
             endpoints.MapGet("/", async context =>

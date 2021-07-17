@@ -3,7 +3,7 @@
 
 // Authors:
 //   Patrik Torstensson (Patrik.Torstensson@labs2.com)
-//   Wictor Wilén (decode/encode functions) (wictor@ibizkit.se)
+//   Wictor WilÃ©n (decode/encode functions) (wictor@ibizkit.se)
 //   Tim Coleman (tim@timcoleman.com)
 //   Gonzalo Paniagua Javier (gonzalo@ximian.com)
 //
@@ -59,19 +59,17 @@ namespace System.Web
                 string?[] keys = AllKeys;
                 for (int i = 0; i < count; i++)
                 {
-                    string[]? values = GetValues(keys[i]);
+                    string? key = keys[i];
+                    string[]? values = GetValues(key);
                     if (values != null)
                     {
                         foreach (string value in values)
                         {
-                            if (string.IsNullOrEmpty(keys[i]))
+                            if (!string.IsNullOrEmpty(key))
                             {
-                                sb.AppendFormat("{0}&", UrlEncode(value));
+                                sb.Append(key).Append('=');
                             }
-                            else
-                            {
-                                sb.AppendFormat("{0}={1}&", keys[i], UrlEncode(value));
-                            }
+                            sb.Append(UrlEncode(value)).Append('&');
                         }
                     }
                 }

@@ -257,7 +257,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(builtDotnet)
+                .DotNetRoot(builtDotnet, sharedTestState.RepoDirectories.BuildArchitecture)
                 .MultilevelLookup(false)
                 .Execute()
                 .Should().Pass()
@@ -268,7 +268,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Verify running from within the working directory
             Command.Create(appExe)
                 .WorkingDirectory(fixture.TestProject.OutputDirectory)
-                .DotNetRoot(builtDotnet)
+                .DotNetRoot(builtDotnet, sharedTestState.RepoDirectories.BuildArchitecture)
                 .MultilevelLookup(false)
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -297,10 +297,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(appExe))
             {
-                string architecture = fixture.CurrentRid.Split('-')[1];
+                string architecture = fixture.RepoDirProvider.BuildArchitecture;
                 if (useRegisteredLocation)
                 {
-                    registeredInstallLocationOverride.SetInstallLocation(builtDotnet, architecture);
+                    registeredInstallLocationOverride.SetInstallLocation(new (string, string)[] { (architecture, builtDotnet) });
                 }
 
                 // Verify running with the default working directory
@@ -357,7 +357,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (useAppHost)
             {
                 command = Command.Create(sharedTestState.MockApp.AppExe)
-                    .DotNetRoot(sharedTestState.BuiltDotNet.BinPath);
+                    .DotNetRoot(sharedTestState.BuiltDotNet.BinPath, sharedTestState.RepoDirectories.BuildArchitecture);
             }
             else
             {
@@ -386,7 +386,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (useAppHost)
             {
                 command = Command.Create(app.AppExe)
-                    .DotNetRoot(sharedTestState.BuiltDotNet.BinPath);
+                    .DotNetRoot(sharedTestState.BuiltDotNet.BinPath, sharedTestState.RepoDirectories.BuildArchitecture);
             }
             else
             {
@@ -540,7 +540,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 Command command = Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
-                    .DotNetRoot(dotnet.BinPath)
+                    .DotNetRoot(dotnet.BinPath, sharedTestState.RepoDirectories.BuildArchitecture)
                     .MultilevelLookup(false)
                     .Start();
 

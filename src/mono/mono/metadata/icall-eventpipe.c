@@ -237,7 +237,8 @@ typedef enum {
 	EP_RT_COUNTERS_GC_LARGE_OBJECT_SIZE_BYTES,
 	EP_RT_COUNTERS_GC_LAST_PERCENT_TIME_IN_GC,
 	EP_RT_COUNTERS_JIT_IL_BYTES_JITTED,
-	EP_RT_COUNTERS_JIT_METOHODS_JITTED
+	EP_RT_COUNTERS_JIT_METHODS_JITTED,
+	EP_RT_COUNTERS_JIT_TICKS_IN_JIT
 } EventPipeRuntimeCounters;
 
 static
@@ -265,24 +266,26 @@ get_il_bytes_jitted (void)
 	gint64 methods_compiled = 0;
 	gint64 cil_code_size_bytes = 0;
 	gint64 native_code_size_bytes = 0;
+	gint64 jit_time = 0;
 
 	if (mono_get_runtime_callbacks ()->get_jit_stats)
-		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes);
+		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes, &jit_time);
 	return cil_code_size_bytes;
 }
 
 static
 inline
-gint32
+gint64
 get_methods_jitted (void)
 {
 	gint64 methods_compiled = 0;
 	gint64 cil_code_size_bytes = 0;
 	gint64 native_code_size_bytes = 0;
+	gint64 jit_time = 0;
 
 	if (mono_get_runtime_callbacks ()->get_jit_stats)
-		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes);
-	return (gint32)methods_compiled;
+		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes, &jit_time);
+	return methods_compiled;
 }
 
 static
@@ -294,6 +297,21 @@ get_exception_count (void)
 	if (mono_get_runtime_callbacks ()->get_exception_stats)
 		mono_get_runtime_callbacks ()->get_exception_stats (&excepion_count);
 	return excepion_count;
+}
+
+static
+inline
+gint64
+get_ticks_in_jit (void)
+{
+	gint64 methods_compiled = 0;
+	gint64 cil_code_size_bytes = 0;
+	gint64 native_code_size_bytes = 0;
+	gint64 jit_time = 0;
+
+	if (mono_get_runtime_callbacks ()->get_jit_stats)
+		mono_get_runtime_callbacks ()->get_jit_stats (&methods_compiled, &cil_code_size_bytes, &native_code_size_bytes, &jit_time);
+	return jit_time;
 }
 
 guint64 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetRuntimeCounterValue (gint32 id)
@@ -314,8 +332,10 @@ guint64 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetRuntimeCounter
 		return (guint64)gc_last_percent_time_in_gc ();
 	case EP_RT_COUNTERS_JIT_IL_BYTES_JITTED :
 		return (guint64)get_il_bytes_jitted ();
-	case EP_RT_COUNTERS_JIT_METOHODS_JITTED :
+	case EP_RT_COUNTERS_JIT_METHODS_JITTED :
 		return (guint64)get_methods_jitted ();
+	case EP_RT_COUNTERS_JIT_TICKS_IN_JIT :
+		return (gint64)get_ticks_in_jit ();
 	default:
 		return 0;
 	}

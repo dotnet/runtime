@@ -1044,15 +1044,21 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 //
 void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 {
-    GenTree* data = tree->gtOp1;
-
+    GenTree* data       = tree->gtOp1;
+    GenTree* actualData = data->gtSkipReloadOrCopy();
+    unsigned regCount   = 1;
     // var = call, where call returns a multi-reg return value
     // case is handled separately.
-    if (data->gtSkipReloadOrCopy()->IsMultiRegNode())
+    if (actualData->IsMultiRegNode())
     {
-        genMultiRegStoreToLocal(tree);
+        regCount = actualData->IsMultiRegLclVar() ? actualData->AsLclVar()->GetFieldCount(compiler)
+                                                  : actualData->GetMultiRegCount();
+        if (regCount > 1)
+        {
+            genMultiRegStoreToLocal(tree);
+        }
     }
-    else
+    if (regCount == 1)
     {
         unsigned varNum = tree->GetLclNum();
         assert(varNum < compiler->lvaCount);

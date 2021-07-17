@@ -203,10 +203,6 @@ ASMCONSTANTS_C_ASSERT(METHODTABLE_EQUIVALENCE_FLAGS
 #define               METHODTABLE_EQUIVALENCE_FLAGS 0x0
 #endif
 
-#define               METHODTABLE_NONTRIVIALINTERFACECAST_FLAGS (0x00080000 + 0x40000000 + 0x00400000 + 0x00200000)
-ASMCONSTANTS_C_ASSERT(METHODTABLE_NONTRIVIALINTERFACECAST_FLAGS
-                    == MethodTable::enum_flag_NonTrivialInterfaceCast);
-
 #define               MethodTable__enum_flag_ContainsPointers 0x01000000
 ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers
                     == MethodTable::enum_flag_ContainsPointers);
@@ -496,6 +492,10 @@ ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, Th
 #define REDIRECTSTUB_RBP_OFFSET_CONTEXT     0x20
 
 #define THROWSTUB_ESTABLISHER_OFFSET_FaultingExceptionFrame 0x30
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+#define OFFSETOF__APC_CALLBACK_DATA__ContextRecord 0x8
+#endif
 
 #define Thread__ObjectRefFlush  ?ObjectRefFlush@Thread@@SAXPEAV1@@Z
 

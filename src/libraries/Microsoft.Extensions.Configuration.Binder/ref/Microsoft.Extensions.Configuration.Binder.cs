@@ -10,6 +10,7 @@ namespace Microsoft.Extensions.Configuration
     {
         public BinderOptions() { }
         public bool BindNonPublicProperties { get { throw null; } set { } }
+        public bool ErrorOnUnknownConfiguration { get { throw null; } set { } }
     }
     public static partial class ConfigurationBinder
     {

@@ -2532,7 +2532,7 @@ method_is_reabstracted (MonoMethod *method)
 	/* only on interfaces */
 	/* method is marked "final abstract" */
 	/* FIXME: we need some other way to detect reabstracted methods.  "final" is an incidental detail of the spec. */
-	return method->flags & METHOD_ATTRIBUTE_FINAL && method->flags & METHOD_ATTRIBUTE_ABSTRACT;
+	return m_method_is_final (method) && m_method_is_abstract (method);
 }
 
 static gboolean
@@ -2540,7 +2540,7 @@ method_is_dim (MonoMethod *method)
 {
 	/* only valid on interface methods*/
 	/* method is marked "virtual" but not "virtual abstract" */
-	return method->flags & method->flags & METHOD_ATTRIBUTE_VIRTUAL && !(method->flags & METHOD_ATTRIBUTE_ABSTRACT);
+	return m_method_is_virtual (method) && !m_method_is_abstract (method);
 }
 
 static gboolean
@@ -2582,9 +2582,8 @@ set_interface_map_data_method_object (MonoMethod *method, MonoClass *iclass, int
 	 * the method), then say the target method is null.
 	 */
 	if (method_is_reabstracted (method) &&
-	    ((foundMethod->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
-	     (mono_class_is_interface (foundMethod->klass) && method_is_dim (foundMethod))
-		    ))
+	    (m_method_is_abstract (foundMethod) ||
+	     (mono_class_is_interface (foundMethod->klass) && method_is_dim (foundMethod))))
 		MONO_HANDLE_ARRAY_SETREF (targets, i, NULL_HANDLE);
 	else if (mono_class_is_interface (foundMethod->klass) && method_is_reabstracted (foundMethod) && !m_class_is_abstract (klass)) {
 		/* if the method we found is a reabstracted DIM method, but the class isn't abstract, return NULL */
@@ -4460,26 +4459,27 @@ fail:
 }
 
 MonoStringHandle
-ves_icall_System_Reflection_RuntimeAssembly_get_code_base (MonoReflectionAssemblyHandle assembly, MonoBoolean escaped, MonoError *error)
+ves_icall_System_Reflection_RuntimeAssembly_get_code_base (MonoReflectionAssemblyHandle assembly, MonoError *error)
 {
 	MonoAssembly *mass = MONO_HANDLE_GETVAL (assembly, assembly);
-	gchar *absolute;
 	
-	if (g_path_is_absolute (mass->image->name)) {
-		absolute = g_strdup (mass->image->name);
+	/* return NULL for bundled assemblies in single-file scenarios */
+	const char* filename = m_image_get_filename (mass->image);
+
+	if (!filename)
+		return NULL_HANDLE_STRING;
+
+	gchar *absolute;
+	if (g_path_is_absolute (filename)) {
+		absolute = g_strdup (filename);
 	} else {
-		absolute = g_build_filename (mass->basedir, mass->image->name, (const char*)NULL);
+		absolute = g_build_filename (mass->basedir, filename, (const char*)NULL);
 	}
 
 	mono_icall_make_platform_path (absolute);
 
-	gchar *uri;
-	if (escaped) {
-		uri = g_filename_to_uri (absolute, NULL, NULL);
-	} else {
-		const gchar *prepend = mono_icall_get_file_path_prefix (absolute);
-		uri = g_strconcat (prepend, absolute, (const char*)NULL);
-	}
+	const gchar *prepend = mono_icall_get_file_path_prefix (absolute);
+	gchar *uri = g_strconcat (prepend, absolute, (const char*)NULL);
 
 	g_free (absolute);
 
@@ -5782,15 +5782,25 @@ ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 	g_assert (dmeta_len >= 0);
 	MonoImage *image_base = assm->image;
 	g_assert (image_base);
-	// TODO: use dpdb_bytes
 
-	mono_image_load_enc_delta (image_base, dmeta_bytes, dmeta_len, dil_bytes, dil_len, error);
+#ifndef HOST_WASM
+        if (mono_is_debugger_attached ()) {
+                mono_error_set_not_supported (error, "Cannot use System.Reflection.Metadata.MetadataUpdater.ApplyChanges while debugger is attached");
+                mono_error_set_pending_exception (error);
+                return;
+        }
+#endif
+
+	mono_image_load_enc_delta (MONO_ENC_DELTA_API, image_base, dmeta_bytes, dmeta_len, dil_bytes, dil_len, dpdb_bytes, dpdb_len, error);
+	
 	mono_error_set_pending_exception (error);
 }
 
-gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (void)
+gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (gint32 just_component_check)
 {
-        return mono_metadata_update_available ();
+	// if just_component_check is true, we only care whether the hot_reload component is enabled,
+	// not whether the environment is appropriately setup to apply updates.
+	return mono_metadata_update_available () && (just_component_check || mono_metadata_update_enabled (NULL));
 }
 
 MonoBoolean
@@ -6281,15 +6291,25 @@ ves_icall_System_Reflection_RuntimeModule_ResolveSignature (MonoImage *image, gu
 }
 
 static void
-check_for_invalid_array_type (MonoClass *klass, MonoError *error)
+check_for_invalid_array_type (MonoType *type, MonoError *error)
 {
+	gboolean allowed = TRUE;
 	char *name;
 
 	error_init (error);
 
-	if (m_class_get_byval_arg (klass)->type != MONO_TYPE_TYPEDBYREF)
-		return;
+	if (type->byref)
+		allowed = FALSE;
+	else if (type->type == MONO_TYPE_TYPEDBYREF)
+		allowed = FALSE;
 
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
+
+	if (m_class_is_byreflike (klass))
+		allowed = FALSE;
+
+	if (allowed)
+		return;
 	name = mono_type_get_full_name (klass);
 	mono_error_set_type_load_name (error, name, g_strdup (""), "");
 }
@@ -6305,9 +6325,9 @@ ves_icall_RuntimeType_make_array_type (MonoReflectionTypeHandle ref_type, int ra
 {
 	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
 
-	MonoClass *klass = mono_class_from_mono_type_internal (type);
-	check_for_invalid_array_type (klass, error);
+	check_for_invalid_array_type (type, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE));
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
 
 	MonoClass *aklass;
 	if (rank == 0) //single dimension array

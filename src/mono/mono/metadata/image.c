@@ -1263,8 +1263,11 @@ mono_image_storage_trypublish (MonoImageStorage *candidate, MonoImageStorage **o
 	gboolean result;
 	mono_images_storage_lock ();
 	MonoImageStorage *val = (MonoImageStorage *)g_hash_table_lookup (images_storage_hash, candidate->key);
+	if (val && !mono_refcount_tryinc (val)) {
+		// We raced against a mono_image_storage_dtor in progress.
+		val = NULL;
+	}
 	if (val) {
-		mono_refcount_inc (val);
 		*out_storage = val;
 		result = FALSE;
 	} else {
@@ -1295,8 +1298,11 @@ mono_image_storage_tryaddref (const char *key, MonoImageStorage **found)
 	gboolean result = FALSE;
 	mono_images_storage_lock ();
 	MonoImageStorage *val = (MonoImageStorage *)g_hash_table_lookup (images_storage_hash, key);
+	if (val && !mono_refcount_tryinc (val)) {
+		// We raced against a mono_image_storage_dtor in progress.
+		val = NULL;
+	}
 	if (val) {
-		mono_refcount_inc (val);
 		*found = val;
 		result = TRUE;
 	}

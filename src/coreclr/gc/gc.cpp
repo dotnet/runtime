@@ -641,6 +641,10 @@ process_sync_log_stats()
 #ifndef DACCESS_COMPILE
 uint32_t g_num_active_processors = 0;
 
+// Note that when a join is no longer used we still keep the values here because
+// tooling already recognized them as having the meaning they were assigned originally.
+// It doesn't break tooling if we stop using them but does if we assign a new meaning 
+// to them. 
 enum gc_join_stage
 {
     gc_join_init_cpu_mapping = 0,
@@ -681,6 +685,7 @@ enum gc_join_stage
     gc_join_after_commit_soh_no_gc = 35,
     gc_join_expand_loh_no_gc = 36,
     gc_join_final_no_gc = 37,
+    // No longer in use but do not remove, see comments for this enum.
     gc_join_disable_software_write_watch = 38,
     gc_join_max = 39
 };
@@ -3640,10 +3645,10 @@ void region_allocator::enter_spin_lock()
 
 void region_allocator::leave_spin_lock()
 {
-    region_allocator_lock.lock = -1;
 #ifdef _DEBUG
     region_allocator_lock.holding_thread = (Thread*)-1;
 #endif //_DEBUG
+    region_allocator_lock.lock = -1;
 }
 
 uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction direction)
@@ -5669,9 +5674,17 @@ heap_segment* gc_heap::get_segment_for_uoh (int gen_number, size_t size
 #ifdef MULTIPLE_HEAPS
         heap_segment_heap (res) = hp;
 #endif //MULTIPLE_HEAPS
-        res->flags |= (gen_number == poh_generation) ?
-                                        heap_segment_flags_poh :
-                                        heap_segment_flags_loh;
+
+        size_t flags = (gen_number == poh_generation) ?
+            heap_segment_flags_poh :
+            heap_segment_flags_loh;
+
+#ifdef USE_REGIONS
+        // in the regions case, flags are set by get_new_region
+        assert ((res->flags & (heap_segment_flags_loh | heap_segment_flags_poh)) == flags);
+#else //USE_REGIONS
+        res->flags |= flags;
+#endif //USE_REGIONS
 
         FIRE_EVENT(GCCreateSegment_V1,
             heap_segment_mem(res),
@@ -7104,6 +7117,8 @@ void gc_heap::fix_youngest_allocation_area()
     assert (generation_allocation_pointer (youngest_generation) == nullptr);
     assert (generation_allocation_limit (youngest_generation) == nullptr);
     heap_segment_allocated (ephemeral_heap_segment) = alloc_allocated;
+    assert (heap_segment_mem (ephemeral_heap_segment) <= heap_segment_allocated (ephemeral_heap_segment));
+    assert (heap_segment_allocated (ephemeral_heap_segment) <= heap_segment_reserved (ephemeral_heap_segment));
 }
 
 //for_gc_p indicates that the work is being done for GC,
@@ -7115,35 +7130,41 @@ void gc_heap::fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
                  (size_t)acontext,
                  (size_t)acontext->alloc_ptr, (size_t)acontext->alloc_limit));
 
+    if (acontext->alloc_ptr == 0)
+    {
+        return;
+    }
     int align_const = get_alignment_constant (TRUE);
-
-    if (((size_t)(alloc_allocated - acontext->alloc_limit) > Align (min_obj_size, align_const)) ||
+#ifdef USE_REGIONS
+    bool is_ephemeral_heap_segment = in_range_for_segment (acontext->alloc_limit, ephemeral_heap_segment);
+#else // USE_REGIONS
+    bool is_ephemeral_heap_segment = true;
+#endif // USE_REGIONS
+    if ((!is_ephemeral_heap_segment) || ((size_t)(alloc_allocated - acontext->alloc_limit) > Align (min_obj_size, align_const)) ||
         !for_gc_p)
     {
         uint8_t*  point = acontext->alloc_ptr;
-        if (point != 0)
+        size_t  size = (acontext->alloc_limit - acontext->alloc_ptr);
+        // the allocation area was from the free list
+        // it was shortened by Align (min_obj_size) to make room for
+        // at least the shortest unused object
+        size += Align (min_obj_size, align_const);
+        assert ((size >= Align (min_obj_size)));
+
+        dprintf(3,("Making unused area [%Ix, %Ix[", (size_t)point,
+                    (size_t)point + size ));
+        make_unused_array (point, size);
+
+        if (for_gc_p)
         {
-            size_t  size = (acontext->alloc_limit - acontext->alloc_ptr);
-            // the allocation area was from the free list
-            // it was shortened by Align (min_obj_size) to make room for
-            // at least the shortest unused object
-            size += Align (min_obj_size, align_const);
-            assert ((size >= Align (min_obj_size)));
-
-            dprintf(3,("Making unused area [%Ix, %Ix[", (size_t)point,
-                       (size_t)point + size ));
-            make_unused_array (point, size);
-
-            if (for_gc_p)
-            {
-                generation_free_obj_space (generation_of (0)) += size;
-                if (record_ac_p)
-                    alloc_contexts_used ++;
-            }
+            generation_free_obj_space (generation_of (0)) += size;
+            if (record_ac_p)
+                alloc_contexts_used ++;
         }
     }
     else if (for_gc_p)
     {
+        assert (is_ephemeral_heap_segment);
         alloc_allocated = acontext->alloc_ptr;
         assert (heap_segment_allocated (ephemeral_heap_segment) <=
                 heap_segment_committed (ephemeral_heap_segment));
@@ -10808,7 +10829,7 @@ void gc_heap::return_free_region (heap_segment* region)
         heap_segment_mem (region), num_basic_regions, num_free_regions));
     for (int i = 0; i < num_basic_regions; i++)
     {
-        uint8_t* basic_region_start = region_start + (i << min_segment_size_shr);
+        uint8_t* basic_region_start = region_start + ((size_t)i << min_segment_size_shr);
         heap_segment* basic_region = get_region_info (basic_region_start);
         heap_segment_allocated (basic_region) = 0;
 #ifdef MULTIPLE_HEAPS
@@ -14178,6 +14199,8 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
         if (heap_segment_used (seg) < (alloc_allocated - plug_skew))
         {
             heap_segment_used (seg) = alloc_allocated - plug_skew;
+            assert (heap_segment_mem (seg) <= heap_segment_used (seg));
+            assert (heap_segment_used (seg) <= heap_segment_reserved (seg));
         }
     }
 #ifdef BACKGROUND_GC
@@ -14623,6 +14646,7 @@ BOOL gc_heap::short_on_end_of_seg (heap_segment* seg)
     BOOL sufficient_p = sufficient_space_regions (end_gen0_region_space, end_space_after_gc());
 #else
     BOOL sufficient_p = sufficient_space_end_seg (allocated,
+                                                  heap_segment_committed (seg),
                                                   heap_segment_reserved (seg),
                                                   end_space_after_gc());
 #endif //USE_REGIONS
@@ -20241,6 +20265,7 @@ void gc_heap::update_collection_counts ()
         }
 
         dd_gc_clock (dd) = dd_gc_clock (dd0);
+        dd_previous_time_clock (dd) = dd_time_clock (dd);
         dd_time_clock (dd) = now;
     }
 }
@@ -20587,6 +20612,7 @@ void gc_heap::garbage_collect (int n)
             update_collection_counts_for_no_gc();
 
 #ifdef MULTIPLE_HEAPS
+            gc_start_event.Reset();
             gc_t_join.restart();
 #endif //MULTIPLE_HEAPS
         }
@@ -28278,6 +28304,21 @@ heap_segment* gc_heap::get_new_region (int gen_number, size_t size)
 
     if (new_region)
     {
+        switch (gen_number)
+        {
+        default:
+            assert ((new_region->flags & (heap_segment_flags_loh | heap_segment_flags_poh)) == 0);
+            break;
+
+        case    loh_generation:
+            new_region->flags |= heap_segment_flags_loh;
+            break;
+
+        case    poh_generation:
+            new_region->flags |= heap_segment_flags_poh;
+            break;
+        }
+
         generation* gen = generation_of (gen_number);
         heap_segment_next (generation_tail_region (gen)) = new_region;
         generation_tail_region (gen) = new_region;
@@ -31804,23 +31845,6 @@ void gc_heap::background_mark_phase ()
         //concurrent_print_time_delta ("nonconcurrent revisit dirtied pages on LOH");
         concurrent_print_time_delta ("NRre LOH");
 
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-#ifdef MULTIPLE_HEAPS
-        bgc_t_join.join(this, gc_join_disable_software_write_watch);
-        if (bgc_t_join.joined())
-#endif // MULTIPLE_HEAPS
-        {
-            // The runtime is suspended, and we will be doing a final query of dirty pages, so pause tracking written pages to
-            // avoid further perf penalty after the runtime is restarted
-            SoftwareWriteWatch::DisableForGCHeap();
-
-#ifdef MULTIPLE_HEAPS
-            dprintf(3, ("Restarting BGC threads after disabling software write watch"));
-            bgc_t_join.restart();
-#endif // MULTIPLE_HEAPS
-        }
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
         dprintf (2, ("before NR 1st Hov count: %d", bgc_overflow_count));
         bgc_overflow_count = 0;
 
@@ -31845,6 +31869,12 @@ void gc_heap::background_mark_phase ()
         if (bgc_t_join.joined())
 #endif //MULTIPLE_HEAPS
         {
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+            // The runtime is suspended, take this opportunity to pause tracking written pages to
+            // avoid further perf penalty after the runtime is restarted
+            SoftwareWriteWatch::DisableForGCHeap();
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
             GCToEEInterface::AfterGcScanRoots (max_generation, max_generation, &sc);
 
 #ifdef MULTIPLE_HEAPS
@@ -36683,6 +36713,7 @@ bool gc_heap::init_dynamic_data()
         dynamic_data* dd = dynamic_data_of (i);
         dd->gc_clock = 0;
         dd->time_clock = now;
+        dd->previous_time_clock = now;
         dd->current_size = 0;
         dd->promoted_size = 0;
         dd->collection_count = 0;
@@ -36708,21 +36739,19 @@ float gc_heap::surv_to_growth (float cst, float limit, float max_limit)
 //not be correct (collection happened too soon). Correct with a linear estimation based on the previous
 //value of the budget
 static size_t linear_allocation_model (float allocation_fraction, size_t new_allocation,
-                                       size_t previous_desired_allocation, size_t collection_count)
+                                       size_t previous_desired_allocation, float time_since_previous_collection_secs)
 {
     if ((allocation_fraction < 0.95) && (allocation_fraction > 0.0))
     {
-        dprintf (2, ("allocation fraction: %d", (int)(allocation_fraction/100.0)));
-        new_allocation = (size_t)(allocation_fraction*new_allocation + (1.0-allocation_fraction)*previous_desired_allocation);
+        const float decay_time = 5*60.0f; // previous desired allocation expires over 5 minutes
+        float decay_factor = (decay_time <= time_since_previous_collection_secs) ?
+                                0 :
+                                ((decay_time - time_since_previous_collection_secs) / decay_time);
+        float previous_allocation_factor = (1.0f - allocation_fraction) * decay_factor;
+        dprintf (2, ("allocation fraction: %d, decay factor: %d, previous allocation factor: %d",
+            (int)(allocation_fraction*100.0), (int)(decay_factor*100.0), (int)(previous_allocation_factor*100.0)));
+        new_allocation = (size_t)((1.0 - previous_allocation_factor)*new_allocation + previous_allocation_factor * previous_desired_allocation);
     }
-#if 0
-    size_t smoothing = 3; // exponential smoothing factor
-    if (smoothing  > collection_count)
-        smoothing  = collection_count;
-    new_allocation = new_allocation / smoothing + ((previous_desired_allocation / smoothing) * (smoothing-1));
-#else
-    UNREFERENCED_PARAMETER(collection_count);
-#endif //0
     return new_allocation;
 }
 
@@ -36749,6 +36778,7 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
         float     f = 0;
         size_t    max_size = dd_max_size (dd);
         size_t    new_allocation = 0;
+        float     time_since_previous_collection_secs = (dd_time_clock (dd) - dd_previous_time_clock (dd))*1e-6f;
         float allocation_fraction = (float) (dd_desired_allocation (dd) - dd_gc_new_allocation (dd)) / (float) (dd_desired_allocation (dd));
 
         if (gen_number >= max_generation)
@@ -36775,7 +36805,7 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                 new_allocation  =  max((new_size - current_size), min_gc_size);
 
                 new_allocation = linear_allocation_model (allocation_fraction, new_allocation,
-                                                          dd_desired_allocation (dd), dd_collection_count (dd));
+                                                          dd_desired_allocation (dd), time_since_previous_collection_secs);
 
                 if (
 #ifdef BGC_SERVO_TUNING
@@ -36827,7 +36857,7 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                                       max ((current_size/4), min_gc_size));
 
                 new_allocation = linear_allocation_model (allocation_fraction, new_allocation,
-                                                          dd_desired_allocation (dd), dd_collection_count (dd));
+                                                          dd_desired_allocation (dd), time_since_previous_collection_secs);
 
             }
         }
@@ -36839,7 +36869,7 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
             new_allocation = (size_t) min (max ((f * (survivors)), min_gc_size), max_size);
 
             new_allocation = linear_allocation_model (allocation_fraction, new_allocation,
-                                                      dd_desired_allocation (dd), dd_collection_count (dd));
+                                                      dd_desired_allocation (dd), time_since_previous_collection_secs);
 
             if (gen_number == 0)
             {
@@ -37847,13 +37877,18 @@ bool gc_heap::sufficient_space_regions (size_t end_space, size_t end_space_requi
         return false;
 }
 #else //USE_REGIONS
-BOOL gc_heap::sufficient_space_end_seg (uint8_t* start, uint8_t* seg_end, size_t end_space_required)
+BOOL gc_heap::sufficient_space_end_seg (uint8_t* start, uint8_t* committed, uint8_t* reserved, size_t end_space_required)
 {
     BOOL can_fit = FALSE;
-    size_t end_seg_space = (size_t)(seg_end - start);
-    if (end_seg_space > end_space_required)
+    size_t committed_space = (size_t)(committed - start);
+    size_t end_seg_space = (size_t)(reserved - start);
+    if (committed_space > end_space_required)
     {
-        return check_against_hard_limit (end_space_required);
+        return true;
+    }
+    else if (end_seg_space > end_space_required)
+    {
+        return check_against_hard_limit (end_space_required - committed_space);
     }
     else
         return false;
@@ -38017,7 +38052,7 @@ BOOL gc_heap::ephemeral_gen_fit_p (gc_tuning_point tp)
         size_t gen0_end_space = get_gen0_end_space();
         BOOL can_fit = sufficient_space_regions (gen0_end_space, end_space);
 #else //USE_REGIONS
-        BOOL can_fit = sufficient_space_end_seg (start, heap_segment_reserved (ephemeral_heap_segment), end_space);
+        BOOL can_fit = sufficient_space_end_seg (start, heap_segment_committed (ephemeral_heap_segment), heap_segment_reserved (ephemeral_heap_segment), end_space);
 #endif //USE_REGIONS
         return can_fit;
     }
@@ -42262,6 +42297,15 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
         newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, gen_num, acontext->alloc_bytes_uoh);
         ASSERT(((size_t)newAlloc & 7) == 0);
 
+#ifdef MULTIPLE_HEAPS
+        if (flags & GC_ALLOC_FINALIZE)
+        {
+            // the heap may have changed due to heap balancing - it's important
+            // to register the object for finalization on the heap it was allocated on
+            hp = gc_heap::heap_of ((uint8_t*)newAlloc);
+        }
+#endif //MULTIPLE_HEAPS
+
 #ifdef FEATURE_STRUCTALIGN
         newAlloc = (Object*) hp->pad_for_alignment_large ((uint8_t*) newAlloc, requiredAlignment, size);
 #endif // FEATURE_STRUCTALIGN
@@ -42280,6 +42324,16 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
         {
             newAlloc = (Object*) hp->allocate (size + ComputeMaxStructAlignPad(requiredAlignment), acontext, flags);
         }
+
+#ifdef MULTIPLE_HEAPS
+        if (flags & GC_ALLOC_FINALIZE)
+        {
+            // the heap may have changed due to heap balancing - it's important
+            // to register the object for finalization on the heap it was allocated on
+            hp = acontext->get_alloc_heap()->pGenGCHeap;
+            assert ((newAlloc == nullptr) || (hp == gc_heap::heap_of ((uint8_t*)newAlloc)));
+        }
+#endif //MULTIPLE_HEAPS
 
 #ifdef FEATURE_STRUCTALIGN
         newAlloc = (Object*) hp->pad_for_alignment ((uint8_t*) newAlloc, requiredAlignment, size, acontext);
@@ -44409,6 +44463,9 @@ CFinalize::RelocateFinalizationData (int gen, gc_heap* hp)
     unsigned int Seg = gen_segment (gen);
 
     Object** startIndex = SegQueue (Seg);
+
+    dprintf (3, ("RelocateFinalizationData gen=%d, [%Ix,%Ix[", gen, startIndex, SegQueue (FreeList)));
+
     for (Object** po = startIndex; po < SegQueue (FreeList);po++)
     {
         GCHeap::Relocate (po, &sc);
@@ -44418,6 +44475,8 @@ CFinalize::RelocateFinalizationData (int gen, gc_heap* hp)
 void
 CFinalize::UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p)
 {
+    dprintf(3, ("UpdatePromotedGenerations gen=%d, gen_0_empty_p=%d", gen, gen_0_empty_p));
+
     // update the generation fill pointers.
     // if gen_0_empty is FALSE, test each object to find out if
     // it was promoted or not
@@ -44442,6 +44501,8 @@ CFinalize::UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p)
                 int new_gen = g_theGCHeap->WhichGeneration (*po);
                 if (new_gen != i)
                 {
+                    dprintf (3, ("Moving object %Ix->%Ix from gen %d to gen %d", po, *po, i, new_gen));
+
                     if (new_gen > i)
                     {
                         //promotion
@@ -44472,6 +44533,8 @@ CFinalize::GrowArray()
         return FALSE;
     }
     memcpy (newArray, m_Array, oldArraySize*sizeof(Object*));
+
+    dprintf (3, ("Grow finalizer array [%Ix,%Ix[ -> [%Ix,%Ix[", m_Array, m_EndArray, newArray, &m_Array[newArraySize]));
 
     //adjust the fill pointers
     for (int i = 0; i < FreeList; i++)

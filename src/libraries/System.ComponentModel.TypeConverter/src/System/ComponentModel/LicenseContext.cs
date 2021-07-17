@@ -19,12 +19,12 @@ namespace System.ComponentModel
         /// When overridden in a derived class, gets a saved license
         /// key for the specified type, from the specified resource assembly.
         /// </summary>
-        public virtual string GetSavedLicenseKey(Type type, Assembly resourceAssembly) => null;
+        public virtual string? GetSavedLicenseKey(Type type, Assembly? resourceAssembly) => null;
 
         /// <summary>
         /// When overridden in a derived class, will return an object that implements the asked for service.
         /// </summary>
-        public virtual object GetService(Type type) => null;
+        public virtual object? GetService(Type type) => null;
 
         /// <summary>
         /// When overridden in a derived class, sets a license key for the specified type.

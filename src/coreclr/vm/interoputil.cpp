@@ -820,25 +820,6 @@ BOOL CanCastComObject(OBJECTREF obj, MethodTable * pTargetMT)
     }
 }
 
-// Returns TRUE iff the argument represents the "__ComObject" type or
-// any type derived from it (i.e. typelib-imported RCWs).
-BOOL IsComWrapperClass(TypeHandle type)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodTable* pMT = type.GetMethodTable();
-    if (pMT == NULL)
-        return FALSE;
-
-    return pMT->IsComObjectType();
-}
-
 // Returns TRUE iff the argument represents the "__ComObject" type.
 BOOL IsComObjectClass(TypeHandle type)
 {

@@ -378,8 +378,8 @@ namespace System.Threading.Tasks
             // been recorded, and (4) Cancellation has not been requested.
             //
             // If the reservation is successful, then set the result and finish completion processing.
-            if (AtomicStateUpdate(TASK_STATE_COMPLETION_RESERVED,
-                    TASK_STATE_COMPLETION_RESERVED | TASK_STATE_RAN_TO_COMPLETION | TASK_STATE_FAULTED | TASK_STATE_CANCELED))
+            if (AtomicStateUpdate((int)TaskStateFlags.CompletionReserved,
+                    (int)TaskStateFlags.CompletionReserved | (int)TaskStateFlags.RanToCompletion | (int)TaskStateFlags.Faulted | (int)TaskStateFlags.Canceled))
             {
                 m_result = result;
 
@@ -390,7 +390,7 @@ namespace System.Threading.Tasks
                 // However, that goes through a windy code path, involves many non-inlineable functions
                 // and which can be summarized more concisely with the following snippet from
                 // FinishStageTwo, omitting everything that doesn't pertain to TrySetResult.
-                Interlocked.Exchange(ref m_stateFlags, m_stateFlags | TASK_STATE_RAN_TO_COMPLETION);
+                Interlocked.Exchange(ref m_stateFlags, m_stateFlags | (int)TaskStateFlags.RanToCompletion);
                 ContingentProperties? props = m_contingentProperties;
                 if (props != null)
                 {
@@ -425,7 +425,7 @@ namespace System.Threading.Tasks
             else
             {
                 m_result = result;
-                m_stateFlags |= TASK_STATE_RAN_TO_COMPLETION;
+                m_stateFlags |= (int)TaskStateFlags.RanToCompletion;
             }
         }
 

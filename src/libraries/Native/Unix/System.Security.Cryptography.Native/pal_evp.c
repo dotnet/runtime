@@ -119,7 +119,7 @@ int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, in
 
 int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
 {
-    return EVP_MD_size(md);
+    return EVP_MD_get_size(md);
 }
 
 const EVP_MD* CryptoNative_EvpMd5()

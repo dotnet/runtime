@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
     internal class MetadataLoadContextInternal
     {
@@ -42,8 +42,6 @@ namespace System.Text.Json.SourceGeneration.Reflection
             CoreAssembly = new AssemblyWrapper(compilation.GetTypeByMetadataName("System.Object")!.ContainingAssembly, this);
             MainAssembly = new AssemblyWrapper(compilation.Assembly, this);
         }
-
-        public Type Resolve<T>() => Resolve(typeof(T));
 
         public Type? Resolve(Type type)
         {

@@ -91,6 +91,8 @@
 
   <ItemGroup>
     <Dependency Include="@(ExternalLibraryPackage)"
+                TargetFramework="net6.0" />
+    <Dependency Include="@(ExternalLibraryPackage)"
                 TargetFramework="netcoreapp3.1" />
     <Dependency Include="@(ExternalLibraryPackage)"
                 TargetFramework="netstandard2.0" />

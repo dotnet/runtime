@@ -510,7 +510,7 @@ namespace System.Reflection.Tests
         }
 
 #pragma warning disable SYSLIB0012
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // single file
         public void CodeBase()
         {
             Assert.NotEmpty(Helpers.ExecutingAssembly.CodeBase);

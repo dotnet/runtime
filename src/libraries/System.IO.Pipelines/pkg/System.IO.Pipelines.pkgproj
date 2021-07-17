@@ -19,7 +19,7 @@
 
     <!-- Exclude TFMs that aren't supported by the package anymore from validation. -->
     <ExcludeHarvestedSupportedFramework Include="netcoreapp1.0;netcoreapp1.1;netcore50;uap10.0;net46" />
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="netcoreapp3.1" />
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

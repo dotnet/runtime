@@ -35,6 +35,11 @@
 #if HAVE_INOTIFY
 #include <sys/inotify.h>
 #endif
+#if HAVE_STATFS_VFS // Linux
+#include <sys/vfs.h>
+#elif HAVE_STATFS_MOUNT // BSD
+#include <sys/mount.h>
+#endif
 
 #ifdef _AIX
 #include <alloca.h>
@@ -715,6 +720,13 @@ int32_t SystemNative_Link(const char* source, const char* linkTarget)
     return result;
 }
 
+int32_t SystemNative_SymLink(const char* target, const char* linkPath)
+{
+    int32_t result;
+    while ((result = symlink(target, linkPath)) < 0 && errno == EINTR);
+    return result;
+}
+
 intptr_t SystemNative_MksTemps(char* pathTemplate, int32_t suffixLength)
 {
     intptr_t result;
@@ -1196,41 +1208,46 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd)
         return -1;
     }
 
-
     // On 32-bit, if you use 64-bit offsets, the last argument of `sendfile' will be a
     // `size_t' a 32-bit integer while the `st_size' field of the stat structure will be off64_t.
     // So `size' will have to be `uint64_t'. In all other cases, it will be `size_t'.
     uint64_t size = (uint64_t)sourceStat.st_size;
-
-    // Note that per man page for large files, you have to iterate until the
-    // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
-    while (size > 0)
+    if (size != 0)
     {
-        ssize_t sent = sendfile(outFd, inFd, NULL, (size >= SSIZE_MAX ? SSIZE_MAX : (size_t)size));
-        if (sent < 0)
+        // Note that per man page for large files, you have to iterate until the
+        // whole file is copied (Linux has a limit of 0x7ffff000 bytes copied).
+        while (size > 0)
         {
-            if (errno != EINVAL && errno != ENOSYS)
+            ssize_t sent = sendfile(outFd, inFd, NULL, (size >= SSIZE_MAX ? SSIZE_MAX : (size_t)size));
+            if (sent < 0)
             {
-                return -1;
+                if (errno != EINVAL && errno != ENOSYS)
+                {
+                    return -1;
+                }
+                else
+                {
+                    break;
+                }
             }
             else
             {
-                break;
+                assert((size_t)sent <= size);
+                size -= (size_t)sent;
             }
         }
-        else
+
+        if (size == 0)
         {
-            assert((size_t)sent <= size);
-            size -= (size_t)sent;
+            copied = true;
         }
     }
-    if (size == 0)
-    {
-        copied = true;
-    }
+
     // sendfile couldn't be used; fall back to a manual copy below. This could happen
     // if we're on an old kernel, for example, where sendfile could only be used
-    // with sockets and not regular files.
+    // with sockets and not regular files.  Additionally, certain files (e.g. procfs)
+    // may return a size of 0 even though reading from then will produce data.  As such,
+    // we avoid using sendfile with the queried size if the size is reported as 0.
 #endif // HAVE_SENDFILE_4
 
     // Manually read all data from the source and write it to the destination.
@@ -1377,6 +1394,20 @@ static int16_t ConvertLockType(int16_t managedLockType)
             assert_msg(managedLockType == 2, "Unknown Lock Type", (int)managedLockType);
             return F_UNLCK;
     }
+}
+
+int64_t SystemNative_GetFileSystemType(intptr_t fd)
+{
+#if HAVE_STATFS_VFS || HAVE_STATFS_MOUNT
+    int statfsRes;
+    struct statfs statfsArgs;
+    // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
+    // which got deprecated in macOS 10.6, in favor of statfs
+    while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
+    return statfsRes == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
+#else
+    #error "Platform doesn't support fstatfs"
+#endif
 }
 
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)

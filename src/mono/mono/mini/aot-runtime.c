@@ -65,13 +65,14 @@
 
 #include "mini.h"
 #include "seq-points.h"
-#include "debugger-agent.h"
 #include "aot-compiler.h"
 #include "aot-runtime.h"
 #include "jit-icalls.h"
 #include "mini-runtime.h"
 #include "mono-private-unstable.h"
 #include "llvmonly-runtime.h"
+
+#include <mono/metadata/components.h>
 
 #ifndef DISABLE_AOT
 
@@ -1964,7 +1965,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 			g_free (err);
 		}
 		g_free (aot_name);
-#if !defined(PLATFORM_ANDROID) && !defined(TARGET_WASM)
+#if !defined(HOST_ANDROID) && !defined(HOST_WASM)
 		if (!sofile) {
 			char *basename = g_path_get_basename (assembly->image->name);
 			aot_name = g_strdup_printf ("%s/mono/aot-cache/%s/%s%s", mono_assembly_getrootdir(), MONO_ARCHITECTURE, basename, MONO_SOLIB_EXT);
@@ -5321,10 +5322,10 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				MONO_AOT_ICALL (mono_exception_from_token)
 
 				case MONO_JIT_ICALL_mono_debugger_agent_single_step_from_context:
-					target = (gpointer)mini_get_dbg_callbacks ()->single_step_from_context;
+					target = (gpointer)mono_component_debugger ()->single_step_from_context;
 					break;
 				case MONO_JIT_ICALL_mono_debugger_agent_breakpoint_from_context:
-					target = (gpointer)mini_get_dbg_callbacks ()->breakpoint_from_context;
+					target = (gpointer)mono_component_debugger ()->breakpoint_from_context;
 					break;
 				case MONO_JIT_ICALL_mono_throw_exception:
 					target = mono_get_throw_exception_addr ();

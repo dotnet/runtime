@@ -19,10 +19,6 @@ namespace System.IO.Ports
             //
             // QueryDosDevice involves finding any ports that map to \Device\Serialx (call with null to get all, then iterate to get the actual device name)
 
-#if NETSTANDARD
-            Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
-#endif
-
             using (RegistryKey serialKey = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM"))
             {
                 if (serialKey != null)
