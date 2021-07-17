@@ -172,16 +172,17 @@ GenTree* LC_Expr::ToGenTree(Compiler* comp, BasicBlock* bb)
 // Arguments:
 //      comp    Compiler instance to allocate trees
 //      bb      Basic block of the new tree
+//      invert  `true` if the condition should be inverted
 //
 // Return Values:
-//      Returns the gen tree representation for the conditional operator on lhs and rhs trees
+//      Returns the GenTree representation for the conditional operator on lhs and rhs trees
 //
-GenTree* LC_Condition::ToGenTree(Compiler* comp, BasicBlock* bb)
+GenTree* LC_Condition::ToGenTree(Compiler* comp, BasicBlock* bb, bool invert)
 {
     GenTree* op1Tree = op1.ToGenTree(comp, bb);
     GenTree* op2Tree = op2.ToGenTree(comp, bb);
     assert(genTypeSize(genActualType(op1Tree->TypeGet())) == genTypeSize(genActualType(op2Tree->TypeGet())));
-    return comp->gtNewOperNode(oper, TYP_INT, op1Tree, op2Tree);
+    return comp->gtNewOperNode(invert ? GenTree::ReverseRelop(oper) : oper, TYP_INT, op1Tree, op2Tree);
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -463,9 +464,11 @@ void LoopCloneContext::PrintBlockLevelConditions(unsigned level, JitExpandArrayS
     {
         if (j != 0)
         {
-            printf(" & ");
+            printf(" && ");
         }
+        printf("(");
         (*levelCond)[j].Print();
+        printf(")");
     }
     printf("\n");
 }
@@ -715,9 +718,11 @@ void LoopCloneContext::PrintConditions(unsigned loopNum)
     {
         if (i != 0)
         {
-            printf(" & ");
+            printf(" && ");
         }
+        printf("(");
         (*conditions[loopNum])[i].Print();
+        printf(")");
     }
 }
 #endif
@@ -732,9 +737,23 @@ void LoopCloneContext::PrintConditions(unsigned loopNum)
 //      slowHead    Branch here on condition failure
 //      insertAfter Insert the conditions in a block after this block
 //
-// Note:
-//      The condition that will be generated: jmpTrue(cond1 & cond2 ... == 0)
-//      That is, if any condition fails, we branch.
+// Notes:
+//      If any condition fails, branch to the `slowHead` block. There are two options here:
+//      1. Generate all the conditions in a single block using bitwise `&` to merge them, e.g.:
+//            jmpTrue(cond1 & cond2 ... == 0) => slowHead
+//         In this form, we always execute all the conditions (there is no short-circuit evaluation).
+//         Since we expect that in the usual case all the conditions will fail, and we'll execute the
+//         loop fast path, the lack of short-circuit evaluation is not a problem. If the code is smaller
+//         and faster, this would be preferable.
+//      2. Generate each condition in a separate block, e.g.:
+//            jmpTrue(!cond1) => slowHead
+//            jmpTrue(!cond2) => slowHead
+//            ...
+//         If this code is smaller/faster, this can be preferable. Also, the flow graph is more normal,
+//         and amenable to downstream flow optimizations.
+//
+//      Which option we choose is currently compile-time determined.
+//
 //      We assume that `insertAfter` is a fall-through block, and we add it to the predecessors list
 //      of the first newly added block. `insertAfter` is also assumed to be in the same loop (we can
 //      clone its loop number).
@@ -751,42 +770,85 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
     assert(slowHead != nullptr);
     assert((insertAfter->bbJumpKind == BBJ_NONE) || (insertAfter->bbJumpKind == BBJ_COND));
 
-    BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true);
-    newBlk->inheritWeight(insertAfter);
-    newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
-    newBlk->bbJumpDest   = slowHead;
+    // Choose how to generate the conditions
+    const bool generateOneConditionPerBlock = true;
 
-    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->bbJumpDest->bbNum);
-    comp->fgAddRefPred(newBlk->bbJumpDest, newBlk);
-
-    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
-    comp->fgAddRefPred(newBlk, insertAfter);
-
-    // Get the first condition.
-    GenTree* cond = conds[0].ToGenTree(comp, newBlk);
-    for (unsigned i = 1; i < conds.Size(); ++i)
+    if (generateOneConditionPerBlock)
     {
-        // Append all conditions using AND operator.
-        cond = comp->gtNewOperNode(GT_AND, TYP_INT, cond, conds[i].ToGenTree(comp, newBlk));
+        BasicBlock* newBlk = nullptr;
+
+        for (unsigned i = 0; i < conds.Size(); ++i)
+        {
+            newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true);
+            newBlk->inheritWeight(insertAfter);
+            newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
+            newBlk->bbJumpDest   = slowHead;
+
+            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->bbJumpDest->bbNum);
+            comp->fgAddRefPred(newBlk->bbJumpDest, newBlk);
+
+            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
+            comp->fgAddRefPred(newBlk, insertAfter);
+
+            JITDUMP("Adding conditions %u to " FMT_BB "\n", i, newBlk->bbNum);
+
+            GenTree*   cond        = conds[i].ToGenTree(comp, newBlk, /* invert */ true);
+            GenTree*   jmpTrueTree = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, cond);
+            Statement* stmt        = comp->fgNewStmtFromTree(jmpTrueTree);
+
+            comp->fgInsertStmtAtEnd(newBlk, stmt);
+
+            // Remorph.
+            JITDUMP("Loop cloning condition tree before morphing:\n");
+            DBEXEC(comp->verbose, comp->gtDispTree(jmpTrueTree));
+            JITDUMP("\n");
+            comp->fgMorphBlockStmt(newBlk, stmt DEBUGARG("Loop cloning condition"));
+
+            insertAfter = newBlk;
+        }
+
+        return newBlk;
     }
+    else
+    {
+        BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true);
+        newBlk->inheritWeight(insertAfter);
+        newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
+        newBlk->bbJumpDest   = slowHead;
 
-    // Add "cond == 0" node
-    cond = comp->gtNewOperNode(GT_EQ, TYP_INT, cond, comp->gtNewIconNode(0));
+        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->bbJumpDest->bbNum);
+        comp->fgAddRefPred(newBlk->bbJumpDest, newBlk);
 
-    // Add jmpTrue "cond == 0"
-    GenTree*   jmpTrueTree = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, cond);
-    Statement* stmt        = comp->fgNewStmtFromTree(jmpTrueTree);
+        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
+        comp->fgAddRefPred(newBlk, insertAfter);
 
-    // Add stmt to the block.
-    comp->fgInsertStmtAtEnd(newBlk, stmt);
+        JITDUMP("Adding conditions to " FMT_BB "\n", newBlk->bbNum);
 
-    // Remorph.
-    JITDUMP("Loop cloning condition tree before morphing:\n");
-    DBEXEC(comp->verbose, comp->gtDispTree(jmpTrueTree));
-    JITDUMP("\n");
-    comp->fgMorphBlockStmt(newBlk, stmt DEBUGARG("Loop cloning condition"));
+        // Get the first condition.
+        GenTree* cond = conds[0].ToGenTree(comp, newBlk, /* invert */ false);
+        for (unsigned i = 1; i < conds.Size(); ++i)
+        {
+            // Append all conditions using AND operator.
+            cond = comp->gtNewOperNode(GT_AND, TYP_INT, cond, conds[i].ToGenTree(comp, newBlk, /* invert */ false));
+        }
 
-    return newBlk;
+        // Add "cond == 0" node
+        cond = comp->gtNewOperNode(GT_EQ, TYP_INT, cond, comp->gtNewIconNode(0));
+
+        // Add jmpTrue "cond == 0"
+        GenTree*   jmpTrueTree = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, cond);
+        Statement* stmt        = comp->fgNewStmtFromTree(jmpTrueTree);
+
+        comp->fgInsertStmtAtEnd(newBlk, stmt);
+
+        // Remorph.
+        JITDUMP("Loop cloning condition tree before morphing:\n");
+        DBEXEC(comp->verbose, comp->gtDispTree(jmpTrueTree));
+        JITDUMP("\n");
+        comp->fgMorphBlockStmt(newBlk, stmt DEBUGARG("Loop cloning condition"));
+
+        return newBlk;
+    }
 }
 
 //--------------------------------------------------------------------------------------------------

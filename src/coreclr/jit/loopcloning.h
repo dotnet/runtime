@@ -585,7 +585,7 @@ struct LC_Condition
     }
 
     // Convert this conditional operation into a GenTree.
-    GenTree* ToGenTree(Compiler* comp, BasicBlock* bb);
+    GenTree* ToGenTree(Compiler* comp, BasicBlock* bb, bool invert);
 };
 
 /**
