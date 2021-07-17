@@ -4425,7 +4425,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
 #ifdef FEATURE_SIMD
     // storing of TYP_SIMD12 (i.e. Vector3) field
-    if (tree->TypeGet() == TYP_SIMD12)
+    if (targetType == TYP_SIMD12)
     {
         genStoreLclTypeSIMD12(tree);
         return;
@@ -4436,7 +4436,32 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     assert(genTypeSize(genActualType(targetType)) == genTypeSize(genActualType(op1->TypeGet())));
 
     genConsumeRegs(op1);
-    GetEmitter()->emitInsBinary(ins_Store(targetType), emitTypeSize(tree), tree, op1);
+
+    if (op1->OperIs(GT_BITCAST) && op1->isContained())
+    {
+        regNumber targetReg  = tree->GetRegNum();
+        GenTree*  bitCastSrc = op1->gtGetOp1();
+        var_types srcType    = bitCastSrc->TypeGet();
+        noway_assert(!bitCastSrc->isContained());
+
+        if (targetReg == REG_NA)
+        {
+            unsigned   lclNum = tree->GetLclNum();
+            LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+
+            GetEmitter()->emitIns_S_R(ins_Store(srcType, compiler->isSIMDTypeLocalAligned(lclNum)),
+                                      emitTypeSize(targetType), bitCastSrc->GetRegNum(), lclNum, 0);
+            varDsc->SetRegNum(REG_STK);
+        }
+        else
+        {
+            genBitCast(targetType, targetReg, srcType, bitCastSrc->GetRegNum());
+        }
+    }
+    else
+    {
+        GetEmitter()->emitInsBinary(ins_Store(targetType), emitTypeSize(tree), tree, op1);
+    }
 
     // Updating variable liveness after instruction was emitted
     genUpdateLife(tree);
