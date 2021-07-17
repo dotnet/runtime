@@ -14296,41 +14296,33 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
             GenTreeHWIntrinsic* hw = tree->AsHWIntrinsic();
             switch (hw->gtHWIntrinsicId)
             {
+                case NI_SSE_Xor:
                 case NI_SSE2_Xor:
-                {
-                    // Optimize Sse2.Xor(x, Vector128.Zero) to x
-                    GenTree* op1 = hw->gtGetOp1();
-                    GenTree* op2 = hw->gtGetOp2();
-                    if (op1->OperIsHWIntrinsic() && (op1->AsHWIntrinsic()->gtHWIntrinsicId == NI_Vector128_get_Zero))
-                    {
-                        DEBUG_DESTROY_NODE(tree);
-                        DEBUG_DESTROY_NODE(op1);
-                        INDEBUG(op2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-                        return op2;
-                    }
-                    if (op2->OperIsHWIntrinsic() && (op2->AsHWIntrinsic()->gtHWIntrinsicId == NI_Vector128_get_Zero))
-                    {
-                        DEBUG_DESTROY_NODE(tree);
-                        DEBUG_DESTROY_NODE(op2);
-                        INDEBUG(op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-                        return op1;
-                    }
-                    break;
-                }
-
+                case NI_AVX_Xor:
                 case NI_AVX2_Xor:
                 {
-                    // Optimize Avx.Xor(x, Vector128.Zero) to x
+                    // Optimize Xor(x, Vector_.Zero) to just x
                     GenTree* op1 = hw->gtGetOp1();
                     GenTree* op2 = hw->gtGetOp2();
-                    if (op1->OperIsHWIntrinsic() && (op1->AsHWIntrinsic()->gtHWIntrinsicId == NI_Vector256_get_Zero))
+
+                    // Is node - Vector_.Zero ?
+                    auto isHwZero = [](GenTree* node) -> bool {
+                        if (node->OperIs(GT_HWINTRINSIC))
+                        {
+                            NamedIntrinsic ni = node->AsHWIntrinsic()->gtHWIntrinsicId;
+                            return (ni == NI_Vector128_get_Zero) || (ni == NI_Vector256_get_Zero);
+                        }
+                        return false;
+                    };
+
+                    if (isHwZero(op1))
                     {
                         DEBUG_DESTROY_NODE(tree);
                         DEBUG_DESTROY_NODE(op1);
                         INDEBUG(op2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                         return op2;
                     }
-                    if (op2->OperIsHWIntrinsic() && (op2->AsHWIntrinsic()->gtHWIntrinsicId == NI_Vector256_get_Zero))
+                    if (isHwZero(op2))
                     {
                         DEBUG_DESTROY_NODE(tree);
                         DEBUG_DESTROY_NODE(op2);
