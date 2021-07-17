@@ -4010,13 +4010,6 @@ size_t size_seg_mapping_table_of (uint8_t* from, uint8_t* end)
     return sizeof (seg_mapping)*((size_t)(end - from) >> gc_heap::min_segment_size_shr);
 }
 
-// for seg_mapping_table we want it to start from a pointer sized address.
-inline
-size_t align_for_seg_mapping_table (size_t size)
-{
-    return ((size + (sizeof (uint8_t*) - 1)) &~ (sizeof (uint8_t*) - 1));
-}
-
 inline
 size_t seg_mapping_word_of (uint8_t* add)
 {
@@ -8558,21 +8551,35 @@ void gc_heap::get_card_table_element_layout (uint8_t* start, uint8_t* end, size_
     size_t sizes[total_bookkeeping_elements];
     get_card_table_element_sizes(start, end, sizes);
 
-    layout[card_table_element] = sizeof(card_table_info);
-    layout[brick_table_element] = layout[card_table_element] + sizes[card_table_element];
+    size_t alignment[total_bookkeeping_elements + 1];
+    alignment[card_table_element] = 1;
+    alignment[brick_table_element] = 2;
 #ifdef CARD_BUNDLE
-    layout[card_bundle_table_element] = layout[brick_table_element] + sizes[brick_table_element];
-#endif
+    alignment[card_bundle_table_element] = 1;
+#endif //CARD_BUNDLE
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    layout[software_write_watch_table_element] = layout[software_write_watch_table_element - 1] + sizes[software_write_watch_table_element - 1];
-    if (gc_can_use_concurrent)
+    alignment[software_write_watch_table_element] = sizeof(size_t);
+#endif //FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    alignment[seg_mapping_table_element] = sizeof (uint8_t*);
+    // In order to avoid a dependency between commit_mark_array_by_range and this logic, it is easier to make sure
+    // pages for mark array never overlaps with pages in the seg mapping table. That way commit_mark_array_by_range
+    // will never commit a page that is already committed here for the seg mapping table.
+    alignment[mark_array_element] = OS_PAGE_SIZE;
+    // commit_mark_array_by_range extends the end pointer of the commit to the next page boundary, we better make sure it
+    // is reserved
+    alignment[total_bookkeeping_elements] = OS_PAGE_SIZE;
+
+    layout[card_table_element] = ALIGN_UP(sizeof(card_table_info), alignment[card_table_element]);
+    for (int element = brick_table_element; element <= total_bookkeeping_elements; element++)
     {
-        layout[software_write_watch_table_element] = SoftwareWriteWatch::GetTableStartByteOffset(layout[software_write_watch_table_element]);
+        layout[element] = layout[element - 1] + sizes[element - 1];
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        if (element != software_write_watch_table_element || gc_can_use_concurrent)
+#endif //FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        {
+            layout[element] = ALIGN_UP(layout[element], alignment[element]);
+        }
     }
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    layout[seg_mapping_table_element] = align_for_seg_mapping_table (layout[seg_mapping_table_element - 1] + sizes[seg_mapping_table_element - 1]);
-    layout[mark_array_element] = align_on_page (layout[seg_mapping_table_element] + sizes[seg_mapping_table_element]);
-    layout[total_bookkeeping_elements] = align_on_page (layout[mark_array_element] + sizes[mark_array_element]);
 }
 
 #ifdef USE_REGIONS
@@ -8605,9 +8612,9 @@ bool gc_heap::on_used_changed (uint8_t* new_used)
                 assert (UINT64_MAX - new_committed_size >  (uint64_t)g_gc_lowest_address);
                 uint8_t* double_commit = g_gc_lowest_address + new_committed_size;
                 new_bookkeeping_data_committed = max(double_commit, new_used);
-                dprintf (REGIONS_LOG, ("committed_size                           = %ld", committed_size));
-                dprintf (REGIONS_LOG, ("total_size                               = %ld", total_size));
-                dprintf (REGIONS_LOG, ("new_committed_size                       = %ld", new_committed_size));
+                dprintf (REGIONS_LOG, ("committed_size                           = %Id", committed_size));
+                dprintf (REGIONS_LOG, ("total_size                               = %Id", total_size));
+                dprintf (REGIONS_LOG, ("new_committed_size                       = %Id", new_committed_size));
                 dprintf (REGIONS_LOG, ("double_commit                            = %p", double_commit));
             }
             dprintf (REGIONS_LOG, ("bookkeeping_data_committed     = %p", bookkeeping_data_committed));
@@ -8635,7 +8642,7 @@ bool gc_heap::on_used_changed (uint8_t* new_used)
 
 bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
 {
-    dprintf (REGIONS_LOG, ("inplace_commit_card_table(%p, %p), size = %ld", from, to, to - from));
+    dprintf (REGIONS_LOG, ("inplace_commit_card_table(%p, %p), size = %Id", from, to, to - from));
 
     uint8_t* start = g_gc_lowest_address;
     uint8_t* end = g_gc_highest_address;
@@ -8657,7 +8664,7 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
         for (int i = card_table_element; i <= total_bookkeeping_elements; i++)
         {
             assert (offsets[i] == card_table_element_layout[i]);
-            dprintf (REGIONS_LOG, ("%p", bookkeeping_data + card_table_element_layout[i]));
+            dprintf (REGIONS_LOG, ("%Id", card_table_element_layout[i]));
         }
 #endif
         get_card_table_element_sizes (start, to, new_sizes);
@@ -8665,7 +8672,7 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
         dprintf (REGIONS_LOG, ("new_sizes"));
         for (int i = card_table_element; i < total_bookkeeping_elements; i++)
         {
-            dprintf (REGIONS_LOG, ("%ld", new_sizes[i]));
+            dprintf (REGIONS_LOG, ("%Id", new_sizes[i]));
         }
         if (additional_commit)
         {
@@ -8675,7 +8682,7 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
             for (int i = card_table_element; i < total_bookkeeping_elements; i++)
             {
                 assert (current_sizes[i] == bookkeeping_sizes[i]);
-                dprintf (REGIONS_LOG, ("%ld", bookkeeping_sizes[i]));
+                dprintf (REGIONS_LOG, ("%Id", bookkeeping_sizes[i]));
             }
         }
 #endif
@@ -8708,8 +8715,8 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
             }
             assert (commit_begin <= commit_end);
 
-            dprintf (REGIONS_LOG, ("required = [%p, %p), size = %ld", required_begin, required_end, required_end - required_begin));
-            dprintf (REGIONS_LOG, ("commit   = [%p, %p), size = %ld", commit_begin, commit_end, commit_end - commit_begin));
+            dprintf (REGIONS_LOG, ("required = [%p, %p), size = %Id", required_begin, required_end, required_end - required_begin));
+            dprintf (REGIONS_LOG, ("commit   = [%p, %p), size = %Id", commit_begin, commit_end, commit_end - commit_begin));
 
             commit_begins[i] = commit_begin;
             commit_sizes[i] = (size_t)(commit_end - commit_begin);
