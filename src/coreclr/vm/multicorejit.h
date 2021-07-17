@@ -207,7 +207,6 @@ private:
     LONG                    m_fSetProfileRootCalled;   // SetProfileRoot has been called
     LONG                    m_fAutoStartCalled;
     bool                    m_fRecorderActive;         // Manager open for recording/event, turned on when initialized properly, turned off when at full capacity
-    bool                    m_fAppxMode;
     CrstExplicitInit        m_playerLock;              // Thread protection (accessing m_pMulticoreJitRecorder)
     MulticoreJitPlayerStat  m_stats;                   // Statistics: normally gathered by player, written to profile
 
@@ -229,7 +228,6 @@ public:
         m_fSetProfileRootCalled = 0;
         m_fAutoStartCalled      = 0;
         m_fRecorderActive       = false;
-        m_fAppxMode             = false;
     }
 
     ~MulticoreJitManager()
@@ -299,7 +297,7 @@ public:
 
     static void DisableMulticoreJit();
 
-    static bool IsSupportedModule(Module * pModule, bool fMethodJit, bool fAppx);
+    static bool IsSupportedModule(Module * pModule, bool fMethodJit);
 
     static FileLoadLevel GetModuleFileLoadLevel(Module * pModule);
 
