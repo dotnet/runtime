@@ -2428,19 +2428,28 @@ namespace System.Numerics
             int length,
             int sign)
         {
-            ulong highBit, middleBit, lowBit;
-            double returnValue;
+            ulong highBit, middleBit;
+            ulong nonZeroDigit;
+            int leftShiftingSize;
+            double unsignedNumber, returnValue;
+
+            const int NonZeroDigitsCountOfUInt32 = 32;
 
             highBit = bits[length - 1];
             middleBit = length > 1 ? bits[length - 2] : 0;
-            lowBit = length > 2 ? bits[length - 3] : 0;
 
-            int z = NumericsHelpers.CbitHighZero((uint)highBit);
+            leftShiftingSize = (length - 2) * NonZeroDigitsCountOfUInt32;
+            nonZeroDigit = (highBit << NonZeroDigitsCountOfUInt32) | middleBit;
+            unsignedNumber = Math.ScaleB(nonZeroDigit, leftShiftingSize);
 
-            int exp = (length - 2) * 32 - z;
-            ulong man = (highBit << 32 + z) | (middleBit << z) | (lowBit >> 32 - z);
-
-            returnValue = NumericsHelpers.GetDoubleFromParts(sign, exp, man);
+            if (sign < 0)
+            {
+                returnValue = -unsignedNumber;
+            }
+            else
+            {
+                returnValue = unsignedNumber;
+            }
 
             return returnValue;
         }
