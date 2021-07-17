@@ -1,57 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/**
- * @typedef WasmId
- * @type {object}
- * @property {string} idStr - full object id string
- * @property {string} scheme - eg, object, valuetype, array ..
- * @property {string} value - string part after `dotnet:scheme:` of the id string
- * @property {object} o - value parsed as JSON
- */
-
-/**
- * @typedef WasmRoot - a single address in the managed heap, visible to the GC
- * @type {object}
- * @property {ManagedPointer} value - pointer into the managed heap, stored in the root
- * @property {function} get_address - retrieves address of the root in wasm memory
- * @property {function} get - retrieves pointer value
- * @property {function} set - updates the pointer
- * @property {function} release - releases the root storage for future use
- */
-
-/**
- * @typedef WasmRootBuffer - a collection of addresses in the managed heap, visible to the GC
- * @type {object}
- * @property {number} length - number of elements the root buffer can hold
- * @property {function} get_address - retrieves address of an element in wasm memory, by index
- * @property {function} get - retrieves an element by index
- * @property {function} set - sets an element's value by index
- * @property {function} release - releases the root storage for future use
- */
-
-/**
- * @typedef ManagedPointer
- * @type {number} - address in the managed heap
- */
-
-/**
- * @typedef NativePointer
- * @type {number} - address in wasm memory
- */
-
-/**
- * @typedef Event
- * @type {object}
- * @property {string} eventName - name of the event being raised
- * @property {object} eventArgs - arguments for the event itself
- */
-
-
-// TODO remove. it is just currently stopping ts failures for undefined objects
-let ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, require, read, locateFile: any;
-
-
 var MonoSupportLib = {
 	$MONO__postset: 'MONO.export_functions (Module);',
 	$MONO: {
@@ -60,6 +9,13 @@ var MonoSupportLib = {
 		_vt_stack: [],
 		mono_wasm_runtime_is_ready : false,
 		mono_wasm_ignore_pdb_load_errors: true,
+		interned_string_table: undefined,
+		mono_wasm_deregister_root: undefined, // becomes a function later
+		commands_received: undefined,
+		var_info: undefined,
+		loaded_assets: undefined,
+		loaded_files: undefined,
+		_c_fn_table: undefined,
 
 		/** @type {object.<string, object>} */
 		_id_table: {},
@@ -151,7 +107,7 @@ var MonoSupportLib = {
 				return result;
 			},
 
-			toBase64StringImpl: function (inArray, offset, length) {
+			toBase64StringImpl: function (inArray, offset?, length?) {
 				var reader = this._makeByteReader(inArray, offset, length);
 				var result = "";
 				var ch1 = 0, ch2 = 0, ch3 = 0, bits = 0, equalsCount = 0, sum = 0;
@@ -353,7 +309,7 @@ var MonoSupportLib = {
 		 * @param {string} [msg] - a description of the root buffer (for debugging)
 		 * @returns {WasmRootBuffer}
 		 */
-		mono_wasm_new_root_buffer: function (capacity, msg) {
+		mono_wasm_new_root_buffer: function (capacity, msg?) {
 			if (!this.mono_wasm_register_root || !this.mono_wasm_deregister_root) {
 				this.mono_wasm_register_root = Module.cwrap ("mono_wasm_register_root", "number", ["number", "number", "string"]);
 				this.mono_wasm_deregister_root = Module.cwrap ("mono_wasm_deregister_root", null, ["number"]);
@@ -390,7 +346,7 @@ var MonoSupportLib = {
 		 * @param {string} [msg] - a description of the root buffer (for debugging)
 		 * @returns {WasmRootBuffer}
 		 */
-		mono_wasm_new_root_buffer_from_pointer: function (offset, capacity, msg) {
+		mono_wasm_new_root_buffer_from_pointer: function (offset, capacity, msg?) {
 			if (!this.mono_wasm_register_root || !this.mono_wasm_deregister_root) {
 				this.mono_wasm_register_root = Module.cwrap ("mono_wasm_register_root", "number", ["number", "number", "string"]);
 				this.mono_wasm_deregister_root = Module.cwrap ("mono_wasm_deregister_root", null, ["number"]);
@@ -427,7 +383,7 @@ var MonoSupportLib = {
 		 * @param {ManagedPointer} [value] - an address in the managed heap to initialize the root with (or 0)
 		 * @returns {WasmRoot}
 		 */
-		mono_wasm_new_root: function (value) {
+		mono_wasm_new_root: function (value?): WasmRoot {
 			var result;
 
 			if (this._scratch_root_free_instances.length > 0) {
@@ -486,12 +442,12 @@ var MonoSupportLib = {
 		 *  even if you are not sure all of your roots have been created yet.
 		 * @param {... WasmRoot} roots
 		 */
-		mono_wasm_release_roots: function () {
-			for (var i = 0; i < arguments.length; i++) {
-				if (!arguments[i])
+		mono_wasm_release_roots: function (...roots: WasmRoot[]) {
+			for (var i = 0; i < roots.length; i++) {
+				if (!roots[i])
 					continue;
 
-				arguments[i].release ();
+				roots[i].release ();
 			}
 		},
 
@@ -924,7 +880,7 @@ var MonoSupportLib = {
 				return args.fetch_file_cb;
 
 			if (ENVIRONMENT_IS_NODE) {
-				var fs = require('fs');
+				var fs: any = require('fs');
 				return function (asset) {
 					console.debug ("MONO_WASM: Loading... " + asset);
 					var binary = fs.readFileSync (asset);
@@ -1401,7 +1357,7 @@ var MonoSupportLib = {
 			// /usr/share/zoneinfo/Asia
 			// ..
 
-			var folders = new Set()
+			var folders = new Set<string>()
 			manifest.filter(m => {
 				var file = m[0];
 				var last = file.lastIndexOf ("/");
@@ -1425,10 +1381,10 @@ var MonoSupportLib = {
 		/**
 		 * Raises an event for the debug proxy
 		 *
-		 * @param {Event} event - event to be raised
-		 * @param {object} args - arguments for raising this event, eg. `{trace: true}`
+		 * @param {WasmEvent} event - event to be raised
+		 * @param {object} [args] - arguments for raising this event, eg. `{trace: true}`
 		 */
-		mono_wasm_raise_debug_event: function(event, args={}) {
+		mono_wasm_raise_debug_event: function(event: WasmEvent, args?: object): void {
 			if (typeof event !== 'object')
 				throw new Error(`event must be an object, but got ${JSON.stringify(event)}`);
 
@@ -1448,7 +1404,7 @@ var MonoSupportLib = {
 		 * @param {string} configFilePath - relative path to the config file
 		 * @throws Will throw an error if the config file loading fails
 		 */
-		mono_wasm_load_config: async function (configFilePath) {
+		mono_wasm_load_config: async function (configFilePath: string): Promise<void> {
 			Module.addRunDependency(configFilePath);	
 			try {
 				let config = null;

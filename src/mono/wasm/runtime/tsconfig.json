@@ -7,7 +7,7 @@
     "target": "es2019",
     "lib": ["es2019", "dom"],
     "strict": false, // todo set to true eventually once types are setup
-    "outDir": "build",
+    "outDir": "build"
   },
   "exclude": [ "build" ]
 }

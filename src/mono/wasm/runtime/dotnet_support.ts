@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// suppress these as they are not defined yet TODO remove once they are
-var MONO, DOTNET, setValue, Module: any;
-
 var DotNetSupportLib = {
 	$DOTNET: {
 		conv_string: function (mono_obj) {
@@ -24,7 +21,7 @@ var DotNetSupportLib = {
 		} catch (ex) {
 			var exceptionJsString = ex.message + '\n' + ex.stack;
 			var exceptionSystemString = mono_string(exceptionJsString);
-			setValue (exceptionMessage, exceptionSystemString, 'i32'); // *exceptionMessage = exceptionSystemString;
+			Module.setValue (exceptionMessage, exceptionSystemString, 'i32'); // *exceptionMessage = exceptionSystemString;
 			return 0;
 		}
 	},
@@ -64,7 +61,7 @@ var DotNetSupportLib = {
 		} catch (ex) {
 			var exceptionJsString = ex.message + '\n' + ex.stack;
 			var exceptionSystemString = mono_string(exceptionJsString);
-			setValue (exceptionMessage, exceptionSystemString, 'i32'); // *exceptionMessage = exceptionSystemString;
+			Module.setValue (exceptionMessage, exceptionSystemString, 'i32'); // *exceptionMessage = exceptionSystemString;
 			return 0;
 		}
 	},
@@ -85,7 +82,7 @@ var DotNetSupportLib = {
 			var exceptionJsString = ex.message + '\n' + ex.stack;
 			var mono_string = Module.cwrap('mono_wasm_string_from_js', 'number', ['string']); // TODO: Cache
 			var exceptionSystemString = mono_string(exceptionJsString);
-			setValue (exceptionMessage, exceptionSystemString, 'i32'); // *exceptionMessage = exceptionSystemString;
+			Module.setValue (exceptionMessage, exceptionSystemString, 'i32'); // *exceptionMessage = exceptionSystemString;
 			return 0;
 		}
 	}

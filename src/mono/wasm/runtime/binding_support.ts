@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// suppress these as they are not defined yet TODO remove once they are
-var MONO, DOTNET, setValue, Module, BINDING: any;
-
 var BindingSupportLib = {
 	$BINDING__postset: 'BINDING.export_functions (Module);',
 	$BINDING: {
@@ -14,11 +11,11 @@ var BindingSupportLib = {
 		mono_wasm_owned_objects_frames: [],
 		mono_wasm_owned_objects_LMF: [],
 		mono_wasm_marshal_enum_as_int: true,
-		mono_bindings_init: function (binding_asm) {
+		mono_bindings_init: function (binding_asm: string): void {
 			this.BINDING_ASM = binding_asm;
 		},
 
-		export_functions: function (module) {
+		export_functions: function (module: object): void {
 			module ["mono_bindings_init"] = BINDING.mono_bindings_init.bind(BINDING);
 			module ["mono_bind_method"] = BINDING.bind_method.bind(BINDING);
 			module ["mono_method_invoke"] = BINDING.call_method.bind(BINDING);
@@ -31,10 +28,10 @@ var BindingSupportLib = {
 			module ["mono_intern_string"] = BINDING.mono_intern_string.bind(BINDING);
 		},
 
-		bindings_lazy_init: function () {
+		bindings_lazy_init: function (): void {
 			if (this.init)
 				return;
-
+	
 			// avoid infinite recursion
 			this.init = true;
 
@@ -162,7 +159,7 @@ var BindingSupportLib = {
 
 		// Ensures the string is already interned on both the managed and JavaScript sides,
 		//  then returns the interned string value (to provide fast reference comparisons like C#)
-		mono_intern_string: function (string) {
+		mono_intern_string: function (string: string): string {
 			if (string.length === 0)
 				return this._empty_string;
 
@@ -171,7 +168,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_store_string_in_intern_table: function (string, ptr, internIt) {
+		_store_string_in_intern_table: function (string: string, ptr: number, internIt: boolean): number {
 			if (!ptr)
 				throw new Error ("null pointer passed to _store_string_in_intern_table");
 			else if (typeof (ptr) !== "number")
@@ -230,7 +227,7 @@ var BindingSupportLib = {
 			return ptr;
 		},
 
-		js_string_to_mono_string: function (string) {
+		js_string_to_mono_string: function (string: string): string {
 			if (string === null)
 				return null;
 			else if (typeof (string) === "symbol")
@@ -255,7 +252,7 @@ var BindingSupportLib = {
 			return this.js_string_to_mono_string_new (string);
 		},
 				
-		js_string_to_mono_string_new: function (string) {
+		js_string_to_mono_string_new: function (string: string): string {
 			var buffer = Module._malloc ((string.length + 1) * 2);
 			var buffer16 = (buffer / 2) | 0;
 			for (var i = 0; i < string.length; i++)
@@ -266,7 +263,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		find_method: function (klass, name, n) {
+		find_method: function (klass: number, name: string, n: number): number {
 			var result = this._find_method(klass, name, n);
 			if (result) {
 				if (!this._method_descriptions)
@@ -276,27 +273,27 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		get_js_obj: function (js_handle) {
+		get_js_obj: function (js_handle: number): object | null {
 			if (js_handle > 0)
 				return this.mono_wasm_require_handle(js_handle);
 			return null;
 		},
 
-		_get_string_from_intern_table: function (mono_obj) {
+		_get_string_from_intern_table: function (mono_obj: number): string {
 			if (!MONO.interned_string_table)
 				return undefined;
 			return MONO.interned_string_table.get (mono_obj);
 		},
 
-		conv_string: function (mono_obj) {
+		conv_string: function (mono_obj: number): string {
 			return MONO.string_decoder.copy (mono_obj);
 		},
 
-		is_nested_array: function (ele) {
+		is_nested_array: function (ele: any): boolean {
 			return this._is_simple_array(ele);
 		},
 
-		mono_array_to_js_array: function (mono_array) {
+		mono_array_to_js_array: function (mono_array: number): number | null {
 			if (mono_array === 0)
 				return null;
 
@@ -308,7 +305,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		_mono_array_root_to_js_array: function (arrayRoot) {
+		_mono_array_root_to_js_array: function (arrayRoot){
 			if (arrayRoot.value === 0)
 				return null;
 
@@ -800,7 +797,7 @@ var BindingSupportLib = {
 			return this.wasm_get_raw_obj (js_obj.__mono_gchandle__, true);
 		},
 
-		mono_method_get_call_signature: function(method, mono_obj) {
+		mono_method_get_call_signature: function(method, mono_obj): number {
 			let instanceRoot = MONO.mono_wasm_new_root (mono_obj);
 			try {
 				this.bindings_lazy_init ();
@@ -1276,7 +1273,7 @@ var BindingSupportLib = {
 		m: raw mono object. Don't use it unless you know what you're doing
 		to suppress marshaling of the return value, place '!' at the end of args_marshal, i.e. 'ii!' instead of 'ii'
 		*/
-		call_method: function (method, this_arg, args_marshal, args) {
+		call_method: function (method, this_arg, args_marshal, args): number {
 			this.bindings_lazy_init ();
 
 			// HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
@@ -1322,7 +1319,7 @@ var BindingSupportLib = {
 
 		_handle_exception_and_produce_result_for_call: function (
 			converter, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled
-		) {
+		): number {
 			this._handle_exception_for_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer);
 
 			let result = resultRoot.value;
@@ -1354,7 +1351,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_call_method_with_converted_args: function (method, this_arg, converter, buffer, is_result_marshaled, argsRootBuffer) {
+		_call_method_with_converted_args: function (method, this_arg, converter, buffer, is_result_marshaled, argsRootBuffer): number {
 			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
 			resultRoot.value = this.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());
 			return this._handle_exception_and_produce_result_for_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled);
@@ -1551,7 +1548,7 @@ var BindingSupportLib = {
 			return method;
 		},
 
-		call_static_method: function (fqn, args, signature) {
+		call_static_method: function (fqn: string, args: any[] | null, signature: string | null) {
 			this.bindings_lazy_init ();
 
 			var method = this.resolve_method_fqn (fqn);
@@ -1721,13 +1718,13 @@ var BindingSupportLib = {
 
 			var obj = BINDING.get_js_obj (js_handle);
 			if (!obj) {
-				setValue (is_exception, 1, "i32");
+				Module.setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 			}
 
 			var js_name = BINDING.conv_string (nameRoot.value);
 			if (!js_name || (typeof(js_name) !== "string")) {
-				setValue (is_exception, 1, "i32");
+				Module.setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Invalid method name object '" + nameRoot.value + "'");
 			}
 
@@ -1744,7 +1741,7 @@ var BindingSupportLib = {
 				// make sure we release object reference counts on errors.
 				BINDING.mono_wasm_unwind_LMF();
 				var res = e.toString ();
-				setValue (is_exception, 1, "i32");
+				Module.setValue (is_exception, 1, "i32");
 				if (res === null || res === undefined)
 					res = "unknown exception";
 				return BINDING.js_string_to_mono_string (res);
@@ -1761,13 +1758,13 @@ var BindingSupportLib = {
 		try {
 			var obj = BINDING.mono_wasm_require_handle (js_handle);
 			if (!obj) {
-				setValue (is_exception, 1, "i32");
+				Module.setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 			}
 
 			var js_name = BINDING.conv_string (nameRoot.value);
 			if (!js_name) {
-				setValue (is_exception, 1, "i32");
+				Module.setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Invalid property name object '" + nameRoot.value + "'");
 			}
 
@@ -1780,7 +1777,7 @@ var BindingSupportLib = {
 				return BINDING.js_to_mono_obj (m);
 			} catch (e) {
 				var res = e.toString ();
-				setValue (is_exception, 1, "i32");
+				Module.setValue (is_exception, 1, "i32");
 				if (res === null || typeof res === "undefined")
 					res = "unknown exception";
 				return BINDING.js_string_to_mono_string (res);
@@ -1795,13 +1792,13 @@ var BindingSupportLib = {
 			BINDING.bindings_lazy_init ();
 			var requireObject = BINDING.mono_wasm_require_handle (js_handle);
 			if (!requireObject) {
-				setValue (is_exception, 1, "i32");
+				Module.setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 			}
 
 			var property = BINDING.conv_string (nameRoot.value);
 			if (!property) {
-				setValue (is_exception, 1, "i32");
+				Module.setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Invalid property name object '" + property_name + "'");
 			}
 
@@ -1845,7 +1842,7 @@ var BindingSupportLib = {
 
 		var obj = BINDING.mono_wasm_require_handle (js_handle);
 		if (!obj) {
-			setValue (is_exception, 1, "i32");
+			Module.setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
@@ -1854,7 +1851,7 @@ var BindingSupportLib = {
 			return BINDING.js_to_mono_obj (m);
 		} catch (e) {
 			var res = e.toString ();
-			setValue (is_exception, 1, "i32");
+			Module.setValue (is_exception, 1, "i32");
 			if (res === null || typeof res === "undefined")
 				res = "unknown exception";
 			return BINDING.js_string_to_mono_string (res);
@@ -1867,7 +1864,7 @@ var BindingSupportLib = {
 
 			var obj = BINDING.mono_wasm_require_handle (js_handle);
 			if (!obj) {
-				setValue (is_exception, 1, "i32");
+				Module.setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 			}
 
@@ -1880,7 +1877,7 @@ var BindingSupportLib = {
 				return true;
 			} catch (e) {
 				var res = e.toString ();
-				setValue (is_exception, 1, "i32");
+				Module.setValue (is_exception, 1, "i32");
 				if (res === null || typeof res === "undefined")
 					res = "unknown exception";
 				return BINDING.js_string_to_mono_string (res);
@@ -1906,7 +1903,7 @@ var BindingSupportLib = {
 			}
 
 			if (globalObj === null || typeof globalObj === undefined) {
-				setValue (is_exception, 1, "i32");
+				Module.setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Global object '" + js_name + "' not found.");
 			}
 
@@ -1930,7 +1927,7 @@ var BindingSupportLib = {
 
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
 		if (!requireObject) {
-			setValue (is_exception, 1, "i32");
+			Module.setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
@@ -1944,7 +1941,7 @@ var BindingSupportLib = {
 
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
 		if (!requireObject) {
-			setValue (is_exception, 1, "i32");
+			Module.setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
@@ -1960,14 +1957,14 @@ var BindingSupportLib = {
 			var js_name = BINDING.conv_string (nameRoot.value);
 
 			if (!js_name) {
-				setValue (is_exception, 1, "i32");
+				Module.setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("Invalid name @" + nameRoot.value);
 			}
 
 			var coreObj = globalThis[js_name];
 
 			if (coreObj === null || typeof coreObj === "undefined") {
-				setValue (is_exception, 1, "i32");
+				Module.setValue (is_exception, 1, "i32");
 				return BINDING.js_string_to_mono_string ("JavaScript host object '" + js_name + "' not found.");
 			}
 
@@ -1993,7 +1990,7 @@ var BindingSupportLib = {
 				return BINDING.mono_wasm_convert_return_value(gc_handle + 1);
 			} catch (e) {
 				var res = e.toString ();
-				setValue (is_exception, 1, "i32");
+				Module.setValue (is_exception, 1, "i32");
 				if (res === null || res === undefined)
 					res = "Error allocating object.";
 				return BINDING.js_string_to_mono_string (res);
@@ -2009,7 +2006,7 @@ var BindingSupportLib = {
 
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
 		if (!requireObject) {
-			setValue (is_exception, 1, "i32");
+			Module.setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
@@ -2020,7 +2017,7 @@ var BindingSupportLib = {
 
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
 		if (!requireObject) {
-			setValue (is_exception, 1, "i32");
+			Module.setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
@@ -2037,7 +2034,7 @@ var BindingSupportLib = {
 
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
 		if (!requireObject) {
-			setValue (is_exception, 1, "i32");
+			Module.setValue (is_exception, 1, "i32");
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
