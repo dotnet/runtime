@@ -57,15 +57,21 @@ namespace System.Net.Quic.Tests
             return new QuicConnection(ImplementationProvider, endpoint, GetSslClientAuthenticationOptions());
         }
 
-        internal QuicListener CreateQuicListener(int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
+        internal QuicListenerOptions CreateQuicListenerOptions()
         {
-            var options = new QuicListenerOptions()
+            return new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
-                ServerAuthenticationOptions = GetSslServerAuthenticationOptions(),
-                MaxUnidirectionalStreams = maxUnidirectionalStreams,
-                MaxBidirectionalStreams = maxBidirectionalStreams
+                ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
             };
+        }
+
+        internal QuicListener CreateQuicListener(int maxUnidirectionalStreams = 100, int maxBidirectionalStreams = 100)
+        {
+            var options = CreateQuicListenerOptions();
+            options.MaxUnidirectionalStreams = maxUnidirectionalStreams;
+            options.MaxBidirectionalStreams = maxBidirectionalStreams;
+
             return CreateQuicListener(options);
         }
 
@@ -111,9 +117,12 @@ namespace System.Net.Quic.Tests
 
         private QuicListener CreateQuicListener(QuicListenerOptions options) => new QuicListener(ImplementationProvider, options);
 
-        internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
+        internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 30_000, QuicListenerOptions listenerOptions = null)
         {
-            using QuicListener listener = CreateQuicListener();
+            const long ClientCloseErrorCode = 11111;
+            const long ServerCloseErrorCode = 22222;
+
+            using QuicListener listener = CreateQuicListener(listenerOptions ?? CreateQuicListenerOptions());
 
             using var serverFinished = new SemaphoreSlim(0);
             using var clientFinished = new SemaphoreSlim(0);
@@ -126,18 +135,20 @@ namespace System.Net.Quic.Tests
                     {
                         using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
                         await serverFunction(serverConnection);
+
                         serverFinished.Release();
                         await clientFinished.WaitAsync();
-                        await serverConnection.CloseAsync(0);
+                        await serverConnection.CloseAsync(ServerCloseErrorCode);
                     }),
                     Task.Run(async () =>
                     {
                         using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
                         await clientConnection.ConnectAsync();
                         await clientFunction(clientConnection);
+
                         clientFinished.Release();
                         await serverFinished.WaitAsync();
-                        await clientConnection.CloseAsync(0);
+                        await clientConnection.CloseAsync(ClientCloseErrorCode);
                     })
                 }.WhenAllOrAnyFailed(millisecondsTimeout);
             }
@@ -175,10 +186,10 @@ namespace System.Net.Quic.Tests
             );
         }
 
-        internal Task RunBidirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
+        internal Task RunBidirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 30_000)
             => RunStreamClientServer(clientFunction, serverFunction, bidi: true, iterations, millisecondsTimeout);
 
-        internal Task RunUnirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 10_000)
+        internal Task RunUnirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = 30_000)
             => RunStreamClientServer(clientFunction, serverFunction, bidi: false, iterations, millisecondsTimeout);
 
         internal static async Task<int> ReadAll(QuicStream stream, byte[] buffer)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -21,40 +22,53 @@ namespace System.Text.Json.SourceGeneration
         private sealed class Parser
         {
             private const string SystemTextJsonNamespace = "System.Text.Json";
-
             private const string JsonConverterAttributeFullName = "System.Text.Json.Serialization.JsonConverterAttribute";
-
+            private const string JsonElementFullName = "System.Text.Json.JsonElement";
             private const string JsonIgnoreAttributeFullName = "System.Text.Json.Serialization.JsonIgnoreAttribute";
-
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
-
             private const string JsonIncludeAttributeFullName = "System.Text.Json.Serialization.JsonIncludeAttribute";
-
             private const string JsonNumberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonNumberHandlingAttribute";
-
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
 
-            private readonly GeneratorExecutionContext _executionContext;
+            private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
 
+            private readonly GeneratorExecutionContext _executionContext;
             private readonly MetadataLoadContextInternal _metadataLoadContext;
 
+            private readonly Type _ilistOfTType;
+            private readonly Type _icollectionOfTType;
             private readonly Type _ienumerableType;
-            private readonly Type _listOfTType;
-            private readonly Type _dictionaryType;
+            private readonly Type _ienumerableOfTType;
+
+            private readonly Type? _listOfTType;
+            private readonly Type? _dictionaryType;
+            private readonly Type? _idictionaryOfTKeyTValueType;
+            private readonly Type? _ireadonlyDictionaryType;
+            private readonly Type? _isetType; 
+            private readonly Type? _stackOfTType;
+            private readonly Type? _queueOfTType;
+            private readonly Type? _concurrentStackType;
+            private readonly Type? _concurrentQueueType;
+            private readonly Type? _idictionaryType;
+            private readonly Type? _ilistType;
+            private readonly Type? _stackType;
+            private readonly Type? _queueType;
 
             private readonly Type _booleanType;
-            private readonly Type _byteArrayType;
             private readonly Type _charType;
             private readonly Type _dateTimeType;
-            private readonly Type _dateTimeOffsetType;
-            private readonly Type _guidType;
             private readonly Type _nullableOfTType;
+            private readonly Type _objectType;
             private readonly Type _stringType;
-            private readonly Type _uriType;
-            private readonly Type _versionType;
+
+            private readonly Type? _dateTimeOffsetType;
+            private readonly Type? _byteArrayType;
+            private readonly Type? _guidType;
+            private readonly Type? _uriType;
+            private readonly Type? _versionType;
+            private readonly Type? _jsonElementType;
 
             private readonly HashSet<Type> _numberTypes = new();
-
             private readonly HashSet<Type> _knownTypes = new();
 
             /// <summary>
@@ -79,20 +93,38 @@ namespace System.Text.Json.SourceGeneration
                 _executionContext = executionContext;
                 _metadataLoadContext = new MetadataLoadContextInternal(executionContext.Compilation);
 
-                _ienumerableType = _metadataLoadContext.Resolve(typeof(IEnumerable));
-                _listOfTType = _metadataLoadContext.Resolve(typeof(List<>));
-                _dictionaryType = _metadataLoadContext.Resolve(typeof(Dictionary<,>));
+                _ilistOfTType = ResolveType(SpecialType.System_Collections_Generic_IList_T);
+                _icollectionOfTType = ResolveType(SpecialType.System_Collections_Generic_ICollection_T);
+                _ienumerableOfTType = ResolveType(SpecialType.System_Collections_Generic_IEnumerable_T);
+                _ienumerableType = ResolveType(SpecialType.System_Collections_IEnumerable);
 
-                _booleanType = _metadataLoadContext.Resolve(typeof(bool));
-                _byteArrayType = _metadataLoadContext.Resolve(typeof(byte[]));
-                _charType = _metadataLoadContext.Resolve(typeof(char));
-                _dateTimeType = _metadataLoadContext.Resolve(typeof(DateTime));
-                _dateTimeOffsetType = _metadataLoadContext.Resolve(typeof(DateTimeOffset));
-                _guidType = _metadataLoadContext.Resolve(typeof(Guid));
-                _nullableOfTType = _metadataLoadContext.Resolve(typeof(Nullable<>));
-                _stringType = _metadataLoadContext.Resolve(typeof(string));
-                _uriType = _metadataLoadContext.Resolve(typeof(Uri));
-                _versionType = _metadataLoadContext.Resolve(typeof(Version));
+                _listOfTType = ResolveType(typeof(List<>).FullName!);
+                _dictionaryType = ResolveType(typeof(Dictionary<,>).FullName!);
+                _idictionaryOfTKeyTValueType = ResolveType(typeof(IDictionary<,>).FullName!);
+                _ireadonlyDictionaryType = ResolveType(typeof(IReadOnlyDictionary<,>).FullName!);
+                _isetType = ResolveType(typeof(ISet<>).FullName!);
+                _stackOfTType = ResolveType(typeof(Stack<>).FullName!);
+                _queueOfTType = ResolveType(typeof(Queue<>).FullName!);
+                _concurrentStackType = ResolveType(typeof(ConcurrentStack<>).FullName!);
+                _concurrentQueueType = ResolveType(typeof(ConcurrentQueue<>).FullName!);
+                _idictionaryType = ResolveType(typeof(IDictionary).FullName!);
+                _ilistType = ResolveType(typeof(IList).FullName!);
+                _stackType = ResolveType(typeof(Stack).FullName!);
+                _queueType = ResolveType(typeof(Queue).FullName!);
+
+                _booleanType = ResolveType(SpecialType.System_Boolean);
+                _charType = ResolveType(SpecialType.System_Char);
+                _dateTimeType = ResolveType(SpecialType.System_DateTime);
+                _nullableOfTType = ResolveType(SpecialType.System_Nullable_T);
+                _objectType = ResolveType(SpecialType.System_Object);
+                _stringType = ResolveType(SpecialType.System_String);
+
+                _dateTimeOffsetType = ResolveType(typeof(DateTimeOffset).FullName!);
+                _byteArrayType = ResolveType(typeof(byte[]).FullName!);
+                _guidType = ResolveType(typeof(Guid).FullName!);
+                _uriType = ResolveType(typeof(Uri).FullName!);
+                _versionType = ResolveType(typeof(Version).FullName!);
+                _jsonElementType = ResolveType(JsonElementFullName);
 
                 PopulateKnownTypes();
             }
@@ -497,13 +529,11 @@ namespace System.Text.Json.SourceGeneration
                 Type? collectionValueType = null;
                 TypeGenerationSpec? nullableUnderlyingTypeGenSpec = null;
                 List<PropertyGenerationSpec>? propGenSpecList = null;
-                CollectionType collectionType = CollectionType.NotApplicable;
                 ObjectConstructionStrategy constructionStrategy = default;
+                CollectionType collectionType = CollectionType.NotApplicable;
                 JsonNumberHandling? numberHandling = null;
-
                 bool foundDesignTimeCustomConverter = false;
                 string? converterInstatiationLogic = null;
-
                 bool implementsIJsonOnSerialized = false;
                 bool implementsIJsonOnSerializing = false;
 
@@ -522,6 +552,15 @@ namespace System.Text.Json.SourceGeneration
                         foundDesignTimeCustomConverter = true;
                         converterInstatiationLogic = GetConverterInstantiationLogic(attributeData);
                     }
+                }
+
+                if (type.Name.StartsWith("StackWrapper"))
+                {
+                }
+
+                if (type.GetConstructor(Type.EmptyTypes) != null && !type.IsAbstract && !type.IsInterface)
+                {
+                    constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
                 }
 
                 if (foundDesignTimeCustomConverter)
@@ -547,53 +586,150 @@ namespace System.Text.Json.SourceGeneration
                 }
                 else if (_ienumerableType.IsAssignableFrom(type))
                 {
-                    // Only T[], List<T>, and Dictionary<Tkey, TValue> are supported.
+                    Type actualTypeToConvert;
 
                     if (type.IsArray)
                     {
-                        classType = ClassType.Enumerable;
+                        classType = type.GetArrayRank() > 1
+                            ? ClassType.TypeUnsupportedBySourceGen // Multi-dimentional arrays are not supported in STJ.
+                            : ClassType.Enumerable;
                         collectionType = CollectionType.Array;
                         collectionValueType = type.GetElementType();
                     }
-                    else if (!type.IsGenericType)
+                    else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _listOfTType)) != null)
                     {
-                        classType = ClassType.TypeUnsupportedBySourceGen;
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.List;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _dictionaryType)) != null)
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.Dictionary;
+
+                        Type[] genericArgs = actualTypeToConvert.GetGenericArguments();
+                        collectionKeyType = genericArgs[0];
+                        collectionValueType = genericArgs[1];
+                    }
+                    else if (type.IsImmutableDictionaryType(sourceGenType: true))
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.ImmutableDictionary;
+
+                        Type[] genericArgs = type.GetGenericArguments();
+                        collectionKeyType = genericArgs[0];
+                        collectionValueType = genericArgs[1];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_idictionaryOfTKeyTValueType)) != null)
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.IDictionaryOfTKeyTValue;
+
+                        Type[] genericArgs = actualTypeToConvert.GetGenericArguments();
+                        collectionKeyType = genericArgs[0];
+                        collectionValueType = genericArgs[1];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_ireadonlyDictionaryType)) != null)
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.IReadOnlyDictionary;
+
+                        Type[] genericArgs = actualTypeToConvert.GetGenericArguments();
+                        collectionKeyType = genericArgs[0];
+                        collectionValueType = genericArgs[1];
+                    }
+                    else if (type.IsImmutableEnumerableType(sourceGenType: true))
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.ImmutableEnumerable;
+                        collectionValueType = type.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_ilistOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.IListOfT;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_isetType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.ISet;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_icollectionOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.ICollectionOfT;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _stackOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.StackOfT;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = GetCompatibleGenericBaseClass(type, _queueOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.QueueOfT;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseClass(_concurrentStackType, _objectType, sourceGenType: true)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.ConcurrentStack;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericBaseClass(_concurrentQueueType, _objectType, sourceGenType: true)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.ConcurrentQueue;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if ((actualTypeToConvert = type.GetCompatibleGenericInterface(_ienumerableOfTType)) != null)
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.IEnumerableOfT;
+                        collectionValueType = actualTypeToConvert.GetGenericArguments()[0];
+                    }
+                    else if (_idictionaryType.IsAssignableFrom(type))
+                    {
+                        classType = ClassType.Dictionary;
+                        collectionType = CollectionType.IDictionary;
+                        collectionKeyType = _stringType;
+                        collectionValueType = _objectType;
+                    }
+                    else if (_ilistType.IsAssignableFrom(type))
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.IList;
+                        collectionValueType = _objectType;
+                    }
+                    else if (_stackType.IsAssignableFrom(type))
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.Stack;
+                        collectionValueType = _objectType;
+                    }
+                    else if (_queueType.IsAssignableFrom(type))
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.Queue;
+                        collectionValueType = _objectType;
                     }
                     else
                     {
-                        Type genericTypeDef = type.GetGenericTypeDefinition();
-                        Type[] genericTypeArgs = type.GetGenericArguments();
-
-                        if (genericTypeDef == _listOfTType)
-                        {
-                            classType = ClassType.Enumerable;
-                            collectionType = CollectionType.List;
-                            collectionValueType = genericTypeArgs[0];
-                        }
-                        else if (genericTypeDef == _dictionaryType)
-                        {
-                            classType = ClassType.Dictionary;
-                            collectionType = CollectionType.Dictionary;
-                            collectionKeyType = genericTypeArgs[0];
-                            collectionValueType = genericTypeArgs[1];
-                        }
-                        else
-                        {
-                            classType = ClassType.TypeUnsupportedBySourceGen;
-                        }
+                        classType = ClassType.Enumerable;
+                        collectionType = CollectionType.IEnumerable;
+                        collectionValueType = _objectType;
                     }
                 }
                 else
                 {
                     classType = ClassType.Object;
 
-                    if (type.GetConstructor(Type.EmptyTypes) != null && !type.IsAbstract && !type.IsInterface)
-                    {
-                        constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
-                    }
-
                     // GetInterface() is currently not implemented, so we use GetInterfaces().
-                    IEnumerable<string> interfaces = type.GetInterfaces().Select(interfaceType => interfaceType.FullName);
+                    IEnumerable<string> interfaces = type.GetInterfaces().Select(interfaceType => interfaceType.FullName!);
                     implementsIJsonOnSerialized = interfaces.FirstOrDefault(interfaceName => interfaceName == IJsonOnSerializedFullName) != null;
                     implementsIJsonOnSerializing = interfaces.FirstOrDefault(interfaceName => interfaceName == IJsonOnSerializingFullName) != null;
 
@@ -605,6 +741,8 @@ namespace System.Text.Json.SourceGeneration
                         BindingFlags.Public |
                         BindingFlags.NonPublic |
                         BindingFlags.DeclaredOnly;
+
+                    bool propertyOrderSpecified = false;
 
                     for (Type? currentType = type; currentType != null; currentType = currentType.BaseType)
                     {
@@ -620,6 +758,7 @@ namespace System.Text.Json.SourceGeneration
 
                             PropertyGenerationSpec spec = GetPropertyGenerationSpec(propertyInfo, isVirtual, generationMode);
                             CacheMember(spec, ref propGenSpecList, ref ignoredMembers);
+                            propertyOrderSpecified |= spec.Order != 0;
                         }
 
                         foreach (FieldInfo fieldInfo in currentType.GetFields(bindingFlags))
@@ -631,17 +770,20 @@ namespace System.Text.Json.SourceGeneration
 
                             PropertyGenerationSpec spec = GetPropertyGenerationSpec(fieldInfo, isVirtual: false, generationMode);
                             CacheMember(spec, ref propGenSpecList, ref ignoredMembers);
+                            propertyOrderSpecified |= spec.Order != 0;
                         }
+                    }
+
+                    if (propertyOrderSpecified)
+                    {
+                        propGenSpecList.Sort((p1, p2) => p1.Order.CompareTo(p2.Order));
                     }
                 }
 
                 typeMetadata.Initialize(
                     generationMode,
-                    typeRef: type.GetUniqueCompilableTypeName(),
-                    typeInfoPropertyName: type.GetFriendlyTypeName(),
                     type,
                     classType,
-                    isValueType: type.IsValueType,
                     numberHandling,
                     propGenSpecList,
                     collectionType,
@@ -655,6 +797,9 @@ namespace System.Text.Json.SourceGeneration
 
                 return typeMetadata;
             }
+
+            private Type GetCompatibleGenericBaseClass(Type type, Type baseType)
+                => type.GetCompatibleGenericBaseClass(baseType, _objectType);
 
             private void CacheMember(
                 PropertyGenerationSpec propGenSpec,
@@ -697,6 +842,7 @@ namespace System.Text.Json.SourceGeneration
 
                 bool foundDesignTimeCustomConverter = false;
                 string? converterInstantiationLogic = null;
+                int order = 0;
 
                 foreach (CustomAttributeData attributeData in attributeDataList)
                 {
@@ -743,6 +889,12 @@ namespace System.Text.Json.SourceGeneration
                                     IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
                                     jsonPropertyName = (string)ctorArgs[0].Value;
                                     // Null check here is done at runtime within JsonSerializer.
+                                }
+                                break;
+                            case JsonPropertyOrderAttributeFullName:
+                                {
+                                    IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
+                                    order = (int)ctorArgs[0].Value;
                                 }
                                 break;
                             default:
@@ -839,9 +991,10 @@ namespace System.Text.Json.SourceGeneration
                     SetterIsVirtual = setterIsVirtual,
                     DefaultIgnoreCondition = ignoreCondition,
                     NumberHandling = numberHandling,
+                    Order = order,
                     HasJsonInclude = hasJsonInclude,
                     TypeGenerationSpec = GetOrAddTypeGenerationSpec(memberCLRType, generationMode),
-                    DeclaringTypeRef = $"global::{memberInfo.DeclaringType.GetUniqueCompilableTypeName()}",
+                    DeclaringTypeRef = memberInfo.DeclaringType.GetCompilableName(),
                     ConverterInstantiationLogic = converterInstantiationLogic
                 };
             }
@@ -864,7 +1017,7 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
-                return $"new {converterType.GetUniqueCompilableTypeName()}()";
+                return $"new {converterType.GetCompilableName()}()";
             }
 
             private static string DetermineRuntimePropName(string clrPropName, string? jsonPropName, JsonKnownNamingPolicy namingPolicy)
@@ -890,23 +1043,22 @@ namespace System.Text.Json.SourceGeneration
             private void PopulateNumberTypes()
             {
                 Debug.Assert(_numberTypes != null);
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(byte)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(decimal)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(double)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(short)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(sbyte)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(int)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(long)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(float)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(ushort)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(uint)));
-                _numberTypes.Add(_metadataLoadContext.Resolve(typeof(ulong)));
+                _numberTypes.Add(ResolveType(SpecialType.System_Byte));
+                _numberTypes.Add(ResolveType(SpecialType.System_Decimal));
+                _numberTypes.Add(ResolveType(SpecialType.System_Double));
+                _numberTypes.Add(ResolveType(SpecialType.System_Int16));
+                _numberTypes.Add(ResolveType(SpecialType.System_SByte));
+                _numberTypes.Add(ResolveType(SpecialType.System_Int32));
+                _numberTypes.Add(ResolveType(SpecialType.System_Int64));
+                _numberTypes.Add(ResolveType(SpecialType.System_Single));
+                _numberTypes.Add(ResolveType(SpecialType.System_UInt64));
+                _numberTypes.Add(ResolveType(SpecialType.System_UInt32));
+                _numberTypes.Add(ResolveType(SpecialType.System_UInt64));
             }
 
             private void PopulateKnownTypes()
             {
                 PopulateNumberTypes();
-
                 Debug.Assert(_knownTypes != null);
                 Debug.Assert(_numberTypes != null);
 
@@ -917,16 +1069,23 @@ namespace System.Text.Json.SourceGeneration
                 _knownTypes.Add(_dateTimeType);
                 _knownTypes.Add(_dateTimeOffsetType);
                 _knownTypes.Add(_guidType);
-                _knownTypes.Add(_metadataLoadContext.Resolve(typeof(object)));
+                _knownTypes.Add(_objectType);
                 _knownTypes.Add(_stringType);
+                _knownTypes.Add(_uriType);
+                _knownTypes.Add(_versionType);
+                _knownTypes.Add(_jsonElementType);
+            }
 
-                // System.Private.Uri may not be loaded in input compilation.
-                if (_uriType != null)
-                {
-                    _knownTypes.Add(_uriType);
-                }
+            private Type ResolveType(string fullyQualifiedMetadataName)
+            {
+                INamedTypeSymbol? typeSymbol = _executionContext.Compilation.GetTypeByMetadataName(fullyQualifiedMetadataName);
+                return typeSymbol.AsType(_metadataLoadContext);
+            }
 
-                _knownTypes.Add(_metadataLoadContext.Resolve(typeof(Version)));
+            private Type ResolveType(SpecialType specialType)
+            {
+                INamedTypeSymbol? typeSymbol = _executionContext.Compilation.GetSpecialType(specialType);
+                return typeSymbol.AsType(_metadataLoadContext);
             }
         }
     }

@@ -5783,7 +5783,15 @@ ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm,
 	MonoImage *image_base = assm->image;
 	g_assert (image_base);
 
-	mono_image_load_enc_delta (image_base, dmeta_bytes, dmeta_len, dil_bytes, dil_len, dpdb_bytes, dpdb_len, error);
+#ifndef HOST_WASM
+        if (mono_is_debugger_attached ()) {
+                mono_error_set_not_supported (error, "Cannot use System.Reflection.Metadata.MetadataUpdater.ApplyChanges while debugger is attached");
+                mono_error_set_pending_exception (error);
+                return;
+        }
+#endif
+
+	mono_image_load_enc_delta (MONO_ENC_DELTA_API, image_base, dmeta_bytes, dmeta_len, dil_bytes, dil_len, dpdb_bytes, dpdb_len, error);
 	
 	mono_error_set_pending_exception (error);
 }

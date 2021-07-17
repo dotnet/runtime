@@ -3,6 +3,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" />
 
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime.Experimental\ref\System.Runtime.Experimental.csproj"
+                      Condition="'$(BuildAllConfigurations)' == 'true'" />
     <ProjectReference Include="$(PkgDir)*\*.proj" Exclude="$(PkgDir)test\*" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\src\*.*proj"
                       Condition="'$(BuildAllConfigurations)' == 'true'"

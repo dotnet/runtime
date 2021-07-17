@@ -9757,7 +9757,10 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 	jit_mm_lock (jit_mm);
-	g_hash_table_replace (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
+	gpointer seq_points = g_hash_table_lookup (jit_mm->seq_points, imethod->method);
+	if (!seq_points || seq_points != imethod->jinfo->seq_points)
+		g_hash_table_replace (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
+
 	jit_mm_unlock (jit_mm);
 
 	// FIXME: Add a different callback ?

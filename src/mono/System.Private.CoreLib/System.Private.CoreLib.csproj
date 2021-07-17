@@ -109,7 +109,7 @@
     <FeatureMono>true</FeatureMono>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
-    <FeatureGenericMath>false</FeatureGenericMath>
+    <FeatureGenericMath>true</FeatureGenericMath>
     <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
     <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableThreadPool>
     <FeaturePerfTracing Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePerfTracing>
@@ -195,7 +195,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeData.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeData.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeTypedArgument.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Mono.cs" />
@@ -242,6 +242,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\JitHelpers.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.Mono.cs" />

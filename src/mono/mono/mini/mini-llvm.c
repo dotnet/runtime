@@ -7230,6 +7230,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			MonoClass *klass = ins->klass;
 			LLVMValueRef src = NULL, dst, args [5];
 			gboolean done = FALSE;
+			gboolean is_volatile = FALSE;
 
 			if (!klass) {
 				// FIXME:
@@ -7285,15 +7286,20 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (done)
 				break;
 
+#ifdef TARGET_WASM
+			is_volatile = m_class_has_references (klass);
+#endif
+
 			int aindex = 0;
 			args [aindex ++] = dst;
 			args [aindex ++] = src;
 			args [aindex ++] = LLVMConstInt (LLVMInt32Type (), mono_class_value_size (klass, NULL), FALSE);
+
 #if LLVM_API_VERSION < 900
 			// FIXME: Alignment
 			args [aindex ++] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 #endif
-			args [aindex ++] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
+			args [aindex ++] = LLVMConstInt (LLVMInt1Type (), is_volatile ? 1 : 0, FALSE);
 			call_intrins (ctx, INTRINS_MEMCPY, args, "");
 			break;
 		}

@@ -144,6 +144,8 @@ namespace Internal.Cryptography
             if (rgbKey == null)
                 throw new ArgumentNullException(nameof(rgbKey));
 
+            ValidateFeedbackSize(mode, feedbackSizeInBits);
+
             byte[] key = rgbKey.CloneByteArray();
 
             long keySize = key.Length * (long)BitsPerByte;
@@ -187,6 +189,9 @@ namespace Internal.Cryptography
         {
             // note: iv is guaranteed to be cloned before this method, so no need to clone it again
 
+            ValidateFeedbackSize(mode, feedbackSizeInBits);
+            Debug.Assert(mode == CipherMode.CFB ? feedbackSizeInBits == 8 : true);
+
             int blockSizeInBytes = _outer.BlockSize.BitSizeToByteSize();
             BasicSymmetricCipher cipher = new BasicSymmetricCipherNCrypt(
                 cngKeyFactory,
@@ -194,7 +199,6 @@ namespace Internal.Cryptography
                 blockSizeInBytes,
                 iv,
                 encrypting,
-                feedbackSizeInBits,
                 _outer.GetPaddingSize(mode, feedbackSizeInBits));
             return UniversalCryptoTransform.Create(padding, cipher, encrypting);
         }
@@ -206,9 +210,29 @@ namespace Internal.Cryptography
             return CngKey.Open(_keyName!, _provider!, _optionOptions);
         }
 
-        public bool KeyInPlainText
+        private bool KeyInPlainText
         {
             get { return _keyName == null; }
+        }
+
+        private void ValidateFeedbackSize(CipherMode mode, int feedbackSizeInBits)
+        {
+            if (mode != CipherMode.CFB)
+                return;
+
+            if (KeyInPlainText)
+            {
+                if (!_outer.IsValidEphemeralFeedbackSize(feedbackSizeInBits))
+                {
+                    throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedbackSizeInBits, CipherMode.CFB));
+                }
+            }
+            else if (feedbackSizeInBits != 8)
+            {
+                // Persisted CNG keys in CFB mode always use CFB8 when in CFB mode,
+                // so require the feedback size to be set to 8.
+                throw new CryptographicException(string.Format(SR.Cryptography_CipherModeFeedbackNotSupported, feedbackSizeInBits, CipherMode.CFB));
+            }
         }
 
         private readonly ICngSymmetricAlgorithm _outer;

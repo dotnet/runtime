@@ -74,7 +74,7 @@ namespace System.Reflection
 
         public override bool ReflectionOnly => false;
 
-        [RequiresAssemblyFiles(Message = "The code will throw for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
         public override string? CodeBase
         {
             get
@@ -275,7 +275,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributes(this);
+            return CustomAttributeData.GetCustomAttributesInternal(this);
         }
 
         public override object[] GetCustomAttributes(bool inherit)

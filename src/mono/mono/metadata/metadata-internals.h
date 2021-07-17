@@ -802,6 +802,11 @@ mono_metadata_has_updates (void)
 	return mono_metadata_update_data_private.has_updates != 0;
 }
 
+/* components can't call the inline function directly since the private data isn't exported */
+MONO_COMPONENT_API
+gboolean
+mono_metadata_has_updates_api (void);
+
 void
 mono_image_effective_table_slow (const MonoTableInfo **t, int *idx);
 
@@ -821,8 +826,13 @@ mono_image_effective_table (const MonoTableInfo **t, int *idx)
 int
 mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
 
+enum MonoEnCDeltaOrigin {
+        MONO_ENC_DELTA_API = 0,
+        MONO_ENC_DELTA_DBG = 1,
+};
+
 MONO_COMPONENT_API void
-mono_image_load_enc_delta (MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb, uint32_t dpdb_len, MonoError *error);
+mono_image_load_enc_delta (int delta_origin, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len, gconstpointer dpdb, uint32_t dpdb_len, MonoError *error);
 
 gboolean
 mono_image_load_cli_header (MonoImage *image, MonoCLIImageInfo *iinfo);

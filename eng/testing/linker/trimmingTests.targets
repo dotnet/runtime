@@ -82,8 +82,10 @@
                                                  .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
                                                  .Replace('{RepositoryEngineeringDir}', '$(RepositoryEngineeringDir)')
                                                  .Replace('{MonoAOTCompilerDir}', '$(MonoAOTCompilerDir)')
+                                                 .Replace('{JsonToItemsTaskFactoryDir}', '$(JsonToItemsTaskFactoryDir)')
                                                  .Replace('{MonoProjectRoot}', '$(MonoProjectRoot)')
                                                  .Replace('{MonoAOTCompilerTasksAssemblyPath}', '$(MonoAOTCompilerTasksAssemblyPath)')
+                                                 .Replace('{JsonToItemsTaskFactoryTasksAssemblyPath}', '$(JsonToItemsTaskFactoryTasksAssemblyPath)')
                                                  .Replace('{WasmAppBuilderTasksAssemblyPath}', '$(WasmAppBuilderTasksAssemblyPath)')
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackRidDir}', '$(MicrosoftNetCoreAppRuntimePackRidDir)'))"
                       Overwrite="true" />
