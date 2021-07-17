@@ -19863,7 +19863,14 @@ start_no_gc_region_status gc_heap::prepare_for_no_gc_region (uint64_t total_size
     }
 
     int soh_align_const = get_alignment_constant (TRUE);
+#ifdef USE_REGIONS
+    // With regions, we 'could' extend the SOH as large as we wanted by chaining the
+    // regions together. However, it probably does not make sense to have a huge SOH
+    // the next ephemeral GC will suffer badly otherwise.
+    size_t max_soh_allocated = (size_t)1 << min_segment_size_shr;
+#else
     size_t max_soh_allocated = soh_segment_size - segment_info_size - eph_gen_starts_size;
+#endif
     size_t size_per_heap = 0;
     const double scale_factor = 1.05;
 
@@ -20116,15 +20123,24 @@ BOOL gc_heap::should_proceed_for_no_gc()
         for (int i = 0; i < n_heaps; i++)
         {
             gc_heap* hp = g_heaps[i];
-            if ((size_t)(heap_segment_reserved (hp->ephemeral_heap_segment) - hp->alloc_allocated) < hp->soh_allocation_no_gc)
+#else //MULTIPLE_HEAPS
+            gc_heap* hp = nullptr;
+#endif //MULTIPLE_HEAPS
+#ifdef USE_REGIONS
+            size_t reserved_space = hp->get_gen0_end_space();
+            reserved_space -= (hp->alloc_allocated - heap_segment_allocated (hp->ephemeral_heap_segment));
+#else //USE_REGIONS
+            size_t reserved_space = heap_segment_reserved (hp->ephemeral_heap_segment) - hp->alloc_allocated;
+#endif //USE_REGIONS
+            if (reserved_space < hp->soh_allocation_no_gc)
             {
                 gc_requested = TRUE;
+#ifdef MULTIPLE_HEAPS
                 break;
+#endif //MULTIPLE_HEAPS
             }
+#ifdef MULTIPLE_HEAPS
         }
-#else //MULTIPLE_HEAPS
-        if ((size_t)(heap_segment_reserved (ephemeral_heap_segment) - alloc_allocated) < soh_allocation_no_gc)
-            gc_requested = TRUE;
 #endif //MULTIPLE_HEAPS
 
         if (!gc_requested)
@@ -20133,15 +20149,42 @@ BOOL gc_heap::should_proceed_for_no_gc()
             for (int i = 0; i < n_heaps; i++)
             {
                 gc_heap* hp = g_heaps[i];
+#else //MULTIPLE_HEAPS
+                gc_heap* hp = nullptr;
+#endif //MULTIPLE_HEAPS
+#ifdef USE_REGIONS
+                size_t required = hp->soh_allocation_no_gc;
+                heap_segment* region = hp->ephemeral_heap_segment;
+                while (required > 0)
+                {
+                    assert (region != nullptr);
+                    uint8_t* allocated = (region == hp->ephemeral_heap_segment) ? hp->alloc_allocated : heap_segment_allocated (region);
+                    uint8_t* end = min (heap_segment_reserved(region), allocated + required);
+                    if (!hp->grow_heap_segment (region, end))
+                    {
+                        soh_full_gc_requested = TRUE;
+                        break;
+                    }
+                    required -= (end - allocated);
+                    region = heap_segment_next (region);
+                }
+#ifdef MULTIPLE_HEAPS
+                if (soh_full_gc_requested)
+                {
+                    break;
+                }
+#endif //MULTIPLE_HEAPS                
+#else //USE_REGIONS
                 if (!(hp->grow_heap_segment (hp->ephemeral_heap_segment, (hp->alloc_allocated + hp->soh_allocation_no_gc))))
                 {
                     soh_full_gc_requested = TRUE;
+#ifdef MULTIPLE_HEAPS
                     break;
+#endif //USE_REGIONS
                 }
+#endif //USE_REGIONS
+#ifdef MULTIPLE_HEAPS
             }
-#else //MULTIPLE_HEAPS
-            if (!grow_heap_segment (ephemeral_heap_segment, (alloc_allocated + soh_allocation_no_gc)))
-                soh_full_gc_requested = TRUE;
 #endif //MULTIPLE_HEAPS
         }
     }
@@ -20273,8 +20316,8 @@ void gc_heap::update_collection_counts ()
 BOOL gc_heap::expand_soh_with_minimal_gc()
 {
 #ifdef USE_REGIONS
-    assert (!"NoGC region mode is not implemented yet for regions");
-    return FALSE;
+    assert (false);
+    return TRUE;
 #else
     if ((size_t)(heap_segment_reserved (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment)) >= soh_allocation_no_gc)
         return TRUE;
@@ -20378,11 +20421,43 @@ void gc_heap::allocate_for_no_gc_after_gc()
     {
         if (current_no_gc_region_info.soh_allocation_size != 0)
         {
+#ifdef USE_REGIONS
+            size_t required = soh_allocation_no_gc;
+            heap_segment* seg = generation_allocation_segment (generation_of (0));
+            size_t available = heap_segment_reserved (seg) - heap_segment_allocated (seg);
+            size_t commit = min (available, required);
+            if (grow_heap_segment (seg, heap_segment_allocated (seg) + commit))
+            {
+                required -= commit;
+                while (required > 0)
+                {
+                    heap_segment* seg = get_new_region (0);
+                    if (seg == nullptr)
+                    {
+                        no_gc_oom_p = true;
+                        break;
+                    }
+                    size_t usable_size = heap_segment_reserved (seg) - heap_segment_allocated (seg);
+                    commit = min (required, usable_size);
+                    if (!grow_heap_segment (seg, heap_segment_allocated (seg) + commit))
+                    {
+                        no_gc_oom_p = true;
+                        break;
+                    }
+                    required -= commit;
+                }
+            }
+            else
+            {
+                no_gc_oom_p = true;
+            }
+#else 
             if (((size_t)(heap_segment_reserved (ephemeral_heap_segment) - heap_segment_allocated (ephemeral_heap_segment)) < soh_allocation_no_gc) ||
                 (!grow_heap_segment (ephemeral_heap_segment, (heap_segment_allocated (ephemeral_heap_segment) + soh_allocation_no_gc))))
             {
                 no_gc_oom_p = true;
             }
+#endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
             gc_t_join.join(this, gc_join_after_commit_soh_no_gc);
@@ -20597,6 +20672,7 @@ void gc_heap::garbage_collect (int n)
         if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
         {
+#ifndef USE_REGIONS
 #ifdef MULTIPLE_HEAPS
             // this is serialized because we need to get a segment
             for (int i = 0; i < n_heaps; i++)
@@ -20608,6 +20684,7 @@ void gc_heap::garbage_collect (int n)
             if (!expand_soh_with_minimal_gc())
                 current_no_gc_region_info.start_status = start_no_gc_no_memory;
 #endif //MULTIPLE_HEAPS
+#endif //!USE_REGIONS
 
             update_collection_counts_for_no_gc();
 
@@ -43816,11 +43893,6 @@ int GCHeap::WaitForFullGCComplete(int millisecondsTimeout)
 
 int GCHeap::StartNoGCRegion(uint64_t totalSize, bool lohSizeKnown, uint64_t lohSize, bool disallowFullBlockingGC)
 {
-#ifdef USE_REGIONS
-    assert (!"not impl!");
-    return -1;
-#endif //USE_REGIONS
-
     NoGCRegionLockHolder lh;
 
     dprintf (1, ("begin no gc called"));
@@ -43839,11 +43911,6 @@ int GCHeap::StartNoGCRegion(uint64_t totalSize, bool lohSizeKnown, uint64_t lohS
 
 int GCHeap::EndNoGCRegion()
 {
-#ifdef USE_REGIONS
-    assert (!"not impl!");
-    return -1;
-#endif //USE_REGIONS
-
     NoGCRegionLockHolder lh;
     return (int)gc_heap::end_no_gc_region();
 }
