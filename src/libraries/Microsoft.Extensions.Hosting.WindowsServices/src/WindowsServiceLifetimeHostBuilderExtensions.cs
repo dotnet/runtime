@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting.WindowsServices;
@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Hosting
                 })
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.AddSingleton<IHostLifetime, WindowsServiceLifetime>();
+                    ConfigureLifetime(services);
                     services.Configure<EventLogSettings>(settings =>
                     {
                         if (string.IsNullOrEmpty(settings.SourceName))
@@ -66,6 +66,14 @@ namespace Microsoft.Extensions.Hosting
             }
 
             return hostBuilder;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "ServiceDescriptor has RequiresUnreferencedCode because Service and Implementation types could be generic with mis-matching trimming annotations. " +
+            "Types used here are not generic.")]
+        private static void ConfigureLifetime(IServiceCollection services)
+        {
+            services.AddSingleton<IHostLifetime, WindowsServiceLifetime>();
         }
     }
 }

@@ -273,6 +273,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:MakeGenericType",
+            Justification = "ServiceDescriptor's ctor that takes an ImplementationType is marked as RequiresUnreferencedCode " +
+            "stating that generic Service and Implementation types need to have matching trimming annotations.")]
         private ServiceCallSite TryCreateOpenGeneric(ServiceDescriptor descriptor, Type serviceType, CallSiteChain callSiteChain, int slot, bool throwOnConstraintViolation)
         {
             if (serviceType.IsConstructedGenericType &&

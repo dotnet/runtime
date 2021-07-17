@@ -276,7 +276,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public static IHostBuilder UseConsoleLifetime(this IHostBuilder hostBuilder)
         {
-            return hostBuilder.ConfigureServices(collection => collection.AddSingleton<IHostLifetime, ConsoleLifetime>());
+            return hostBuilder.ConfigureServices(collection => AddConsoleLifeTime(collection));
         }
 
         /// <summary>
@@ -290,10 +290,16 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureServices(collection =>
             {
-                collection.AddSingleton<IHostLifetime, ConsoleLifetime>();
+                AddConsoleLifeTime(collection);
                 collection.Configure(configureOptions);
             });
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "ServiceDescriptor has RequiresUnreferencedCode because Service and Implementation types could be generic with mis-matching trimming annotations. " +
+            "Types used here are not generic.")]
+        private static void AddConsoleLifeTime(IServiceCollection collection) =>
+            collection.AddSingleton<IHostLifetime, ConsoleLifetime>();
 
         /// <summary>
         /// Enables console support, builds and starts the host, and waits for Ctrl+C or SIGTERM to shut down.

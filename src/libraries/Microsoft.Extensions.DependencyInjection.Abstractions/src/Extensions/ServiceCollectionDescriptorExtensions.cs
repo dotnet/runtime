@@ -129,6 +129,9 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// </summary>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="service">The type of the service to register.</param>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "AddSingleton has RequiresUnreferencedCode because Service and Implementation types could be generic with mis-matching trimming annotations. " +
+            "Here, Service and Implementation types are the same, so they will have matching trimming annotations.")]
         public static void TryAddTransient(
             this IServiceCollection collection,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type service)
@@ -155,6 +158,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="service">The type of the service to register.</param>
         /// <param name="implementationType">The implementation type of the service.</param>
+        [RequiresUnreferencedCode(ServiceDescriptor.RequiresUnreferencedCode)]
         public static void TryAddTransient(
             this IServiceCollection collection,
             Type service,
@@ -217,6 +221,9 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// </summary>
         /// <typeparam name="TService">The type of the service to add.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "AddSingleton has RequiresUnreferencedCode because Service and Implementation types could be generic with mis-matching trimming annotations. " +
+            "Here, Service and Implementation types are the same, so they will have matching trimming annotations.")]
         public static void TryAddTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection collection)
             where TService : class
         {
@@ -236,6 +243,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TService">The type of the service to add.</typeparam>
         /// <typeparam name="TImplementation">The type of the implementation to use.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
+        [RequiresUnreferencedCode(ServiceDescriptor.RequiresUnreferencedCode)]
         public static void TryAddTransient<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection collection)
             where TService : class
             where TImplementation : class, TService
@@ -270,6 +278,9 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// </summary>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="service">The type of the service to register.</param>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "AddSingleton has RequiresUnreferencedCode because Service and Implementation types could be generic with mis-matching trimming annotations. " +
+            "Here, Service and Implementation types are the same, so they will have matching trimming annotations.")]
         public static void TryAddScoped(
             this IServiceCollection collection,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type service)
@@ -296,6 +307,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="service">The type of the service to register.</param>
         /// <param name="implementationType">The implementation type of the service.</param>
+        [RequiresUnreferencedCode(ServiceDescriptor.RequiresUnreferencedCode)]
         public static void TryAddScoped(
             this IServiceCollection collection,
             Type service,
@@ -358,6 +370,9 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// </summary>
         /// <typeparam name="TService">The type of the service to add.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "AddSingleton has RequiresUnreferencedCode because Service and Implementation types could be generic with mis-matching trimming annotations. " +
+            "Here, Service and Implementation types are the same, so they will have matching trimming annotations.")]
         public static void TryAddScoped<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection collection)
             where TService : class
         {
@@ -377,6 +392,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TService">The type of the service to add.</typeparam>
         /// <typeparam name="TImplementation">The type of the implementation to use.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
+        [RequiresUnreferencedCode(ServiceDescriptor.RequiresUnreferencedCode)]
         public static void TryAddScoped<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection collection)
             where TService : class
             where TImplementation : class, TService
@@ -411,6 +427,9 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// </summary>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="service">The type of the service to register.</param>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "AddSingleton has RequiresUnreferencedCode because Service and Implementation types could be generic with mis-matching trimming annotations. " +
+            "Here, Service and Implementation types are the same, so they will have matching trimming annotations.")]
         public static void TryAddSingleton(
             this IServiceCollection collection,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type service)
@@ -437,6 +456,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
         /// <param name="service">The type of the service to register.</param>
         /// <param name="implementationType">The implementation type of the service.</param>
+        [RequiresUnreferencedCode(ServiceDescriptor.RequiresUnreferencedCode)]
         public static void TryAddSingleton(
             this IServiceCollection collection,
             Type service,
@@ -499,6 +519,9 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// </summary>
         /// <typeparam name="TService">The type of the service to add.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "AddSingleton has RequiresUnreferencedCode because Service and Implementation types could be generic with mis-matching trimming annotations. " +
+            "Here, Service and Implementation types are the same, so they will have matching trimming annotations.")]
         public static void TryAddSingleton<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection collection)
             where TService : class
         {
@@ -518,6 +541,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <typeparam name="TService">The type of the service to add.</typeparam>
         /// <typeparam name="TImplementation">The type of the implementation to use.</typeparam>
         /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
+        [RequiresUnreferencedCode(ServiceDescriptor.RequiresUnreferencedCode)]
         public static void TryAddSingleton<TService, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(this IServiceCollection collection)
             where TService : class
             where TImplementation : class, TService

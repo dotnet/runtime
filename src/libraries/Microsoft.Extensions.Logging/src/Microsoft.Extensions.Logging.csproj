@@ -9,6 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+    
     <Compile Include="$(CommonPath)\Extensions\ProviderAliasUtilities\ProviderAliasUtilities.cs"
              Link="Common\Extensions\ProviderAliasUtilities\ProviderAliasUtilities.cs" />
     <Compile Include="$(CommonPath)Extensions\Logging\NullExternalScopeProvider.cs"

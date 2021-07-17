@@ -244,8 +244,9 @@ namespace Microsoft.Extensions.Hosting
 #pragma warning disable CS0618 // Type or member is obsolete
             services.AddSingleton<IApplicationLifetime>(s => (IApplicationLifetime)s.GetService<IHostApplicationLifetime>());
 #pragma warning restore CS0618 // Type or member is obsolete
-            services.AddSingleton<IHostApplicationLifetime, ApplicationLifetime>();
-            services.AddSingleton<IHostLifetime, ConsoleLifetime>();
+
+            AddLifeTimeServices(services);
+
             services.AddSingleton<IHost>(_ =>
             {
                 return new Internal.Host(_appServices,
@@ -281,6 +282,15 @@ namespace Microsoft.Extensions.Hosting
             // resolve configuration explicitly once to mark it as resolved within the
             // service provider, ensuring it will be properly disposed with the provider
             _ = _appServices.GetService<IConfiguration>();
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "ServiceDescriptor has RequiresUnreferencedCode because Service and Implementation types could be generic with mis-matching trimming annotations. " +
+            "Types used here are not generic.")]
+        private void AddLifeTimeServices(ServiceCollection services)
+        {
+            services.AddSingleton<IHostApplicationLifetime, ApplicationLifetime>();
+            services.AddSingleton<IHostLifetime, ConsoleLifetime>();
         }
     }
 }
