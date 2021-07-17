@@ -2961,25 +2961,6 @@ namespace System.Xml.Xsl
             }
         }
 
-        private static bool IsAsciiDigit(char ch)
-        {
-            return unchecked((uint)(ch - '0')) <= 9;
-        }
-
-        private static bool IsWhitespace(char ch)
-        {
-            return ch == '\x20' || ch == '\x9' || ch == '\xA' || ch == '\xD';
-        }
-
-        private static unsafe char* SkipWhitespace(char* pch)
-        {
-            while (IsWhitespace(*pch))
-            {
-                pch++;
-            }
-            return pch;
-        }
-
         public static unsafe double StringToDouble(string s)
         {
             if (double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double result) && double.IsFinite(result))
