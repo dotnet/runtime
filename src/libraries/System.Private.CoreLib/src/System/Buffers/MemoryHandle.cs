@@ -39,10 +39,7 @@ namespace System.Buffers
         /// </summary>
         public void Dispose()
         {
-            if (_handle.IsAllocated)
-            {
-                _handle.Free();
-            }
+            _handle.Dispose();
 
             if (_pinnable != null)
             {

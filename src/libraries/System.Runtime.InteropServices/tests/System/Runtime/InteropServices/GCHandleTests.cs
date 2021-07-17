@@ -119,20 +119,60 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<InvalidOperationException>(() => handle.Free());
         }
 
+        [Fact]
+        public void Dispose_NotInitialized_DoesntThrow()
+        {
+            var handle = new GCHandle();
+            handle.Dispose();
+        }
+
+        [Fact]
+        public void Dispose_WorksAsExpected()
+        {
+            object target = new object();
+            GCHandle handle = GCHandle.Alloc(target);
+
+            try
+            {
+                Assert.Equal(target, handle.Target);
+                Assert.True(handle.IsAllocated);
+
+                handle.Dispose();
+
+                Assert.False(handle.IsAllocated);
+
+                // Repeated Dispose() calls are just a no-op
+                handle.Dispose();
+                handle.Dispose();
+                handle.Dispose();
+                handle.Dispose();
+
+                Assert.False(handle.IsAllocated);
+            }
+            finally
+            {
+                handle.Dispose();
+                Assert.False(handle.IsAllocated);
+            }
+        }
+
         public static IEnumerable<object[]> Equals_TestData()
         {
-            GCHandle handle = GCHandle.Alloc(new object());
-            yield return new object[] { handle, handle, true };
-            yield return new object[] { GCHandle.Alloc(new object()), GCHandle.Alloc(new object()), false };
+            // xunit disposes of any IDisposables passed as row values in a member data.
+            // Avoid GCHandle being disposed of automatically by wrapping it.
 
-            yield return new object[] { GCHandle.Alloc(new object()), new object(), false };
-            yield return new object[] { GCHandle.Alloc(new object()), null, false };
+            GCHandle handle = GCHandle.Alloc(new object());
+            yield return new object[] { new KeyValuePair<GCHandle, object>(handle, handle), true };
+            yield return new object[] { new KeyValuePair<GCHandle, object>(GCHandle.Alloc(new object()), GCHandle.Alloc(new object())), false };
+            yield return new object[] { new KeyValuePair<GCHandle, object>(GCHandle.Alloc(new object()), new object()), false };
+            yield return new object[] { new KeyValuePair<GCHandle, object>(GCHandle.Alloc(new object()), null), false };
         }
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public void Equals_Object_ReturnsExpected(GCHandle handle, object other, bool expected)
+        public void Equals_Object_ReturnsExpected(KeyValuePair<GCHandle, object> pair, bool expected)
         {
+            (GCHandle handle, object other) = pair;
             try
             {
                 Assert.Equal(expected, handle.Equals(other));

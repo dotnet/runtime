@@ -256,10 +256,7 @@ namespace System.Net.Sockets
             {
                 for (int i = 0; i < count; ++i)
                 {
-                    if (objectsToPin[i].IsAllocated)
-                    {
-                        objectsToPin[i].Free();
-                    }
+                    objectsToPin[i].Dispose();
                 }
                 if (!useStack)
                 {

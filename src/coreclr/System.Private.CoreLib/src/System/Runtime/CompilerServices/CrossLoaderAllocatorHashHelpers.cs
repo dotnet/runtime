@@ -17,8 +17,7 @@ namespace System.Runtime.CompilerServices
 
         ~LAHashDependentHashTracker()
         {
-            if (_dependentHandle.IsAllocated)
-                _dependentHandle.Free();
+            _dependentHandle.Dispose();
         }
     }
 

@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
@@ -23,7 +22,7 @@ namespace System.Runtime.InteropServices
     /// Pinned - same as Normal, but allows the address of the actual object to be taken.
     /// </remarks>
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct GCHandle
+    public partial struct GCHandle : IDisposable
     {
         // The actual integer handle value that the EE uses internally.
         private IntPtr _handle;
@@ -67,12 +66,25 @@ namespace System.Runtime.InteropServices
         /// <returns>A new GC handle that protects the object.</returns>
         public static GCHandle Alloc(object? value, GCHandleType type) => new GCHandle(value, type);
 
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            IntPtr handle = _handle;
+
+            if ((nint)handle != 0)
+            {
+                _handle = IntPtr.Zero;
+
+                InternalFree(GetHandleValue(handle));
+            }
+        }
+
         /// <summary>Frees a GC handle.</summary>
         public void Free()
         {
-            // Free the handle if it hasn't already been freed.
-            IntPtr handle = Interlocked.Exchange(ref _handle, IntPtr.Zero);
+            IntPtr handle = _handle;
             ThrowIfInvalid(handle);
+            _handle = IntPtr.Zero;
             InternalFree(GetHandleValue(handle));
         }
 
