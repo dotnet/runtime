@@ -87,7 +87,7 @@ namespace Mono.Linker
 
 		static Attribute ProcessRequiresUnreferencedCodeAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
 		{
-			if (!(provider is MethodDefinition method))
+			if (!(provider is MethodDefinition || provider is TypeDefinition))
 				return null;
 
 			if (customAttribute.HasConstructorArguments && customAttribute.ConstructorArguments[0].Value is string message) {
@@ -106,7 +106,7 @@ namespace Mono.Linker
 
 			context.LogWarning (
 				$"Attribute '{typeof (RequiresUnreferencedCodeAttribute).FullName}' doesn't have the required number of parameters specified",
-				2028, method);
+				2028, (IMemberDefinition) provider);
 			return null;
 		}
 

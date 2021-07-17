@@ -1768,6 +1768,19 @@ namespace Mono.Linker.Steps
 				MarkType (type.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, type));
 			MarkSecurityDeclarations (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 
+			if (type.BaseType != null &&
+				!_context.Annotations.TryGetEffectiveRequiresUnreferencedCodeAttributeOnType (type, out RequiresUnreferencedCodeAttribute _) &&
+				_context.Annotations.TryGetEffectiveRequiresUnreferencedCodeAttributeOnType (_context.TryResolve (type.BaseType), out RequiresUnreferencedCodeAttribute effectiveRequiresUnreferencedCode)) {
+				var currentOrigin = _scopeStack.CurrentScope.Origin;
+
+				string formatString = SharedStrings.RequiresOnBaseClassMessage;
+				string arg1 = MessageFormat.FormatRequiresAttributeMessageArg (effectiveRequiresUnreferencedCode.Message);
+				string arg2 = MessageFormat.FormatRequiresAttributeUrlArg (effectiveRequiresUnreferencedCode.Url);
+				string message = string.Format (formatString, type, type.BaseType.GetDisplayName (), arg1, arg2);
+				_context.LogWarning (message, 2109, currentOrigin, MessageSubCategory.TrimAnalysis);
+			}
+
+
 			if (type.IsMulticastDelegate ()) {
 				MarkMulticastDelegate (type);
 			}
@@ -2790,12 +2803,16 @@ namespace Mono.Linker.Steps
 
 			IMemberDefinition suppressionContextMember = currentOrigin.SuppressionContextMember;
 			if (suppressionContextMember != null &&
-				Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (suppressionContextMember))
+				(Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (suppressionContextMember) ||
+				(suppressionContextMember.DeclaringType != null &&
+				Annotations.TryGetEffectiveRequiresUnreferencedCodeAttributeOnType (suppressionContextMember.DeclaringType, out RequiresUnreferencedCodeAttribute _))))
 				return true;
 
 			IMemberDefinition originMember = currentOrigin.MemberDefinition;
 			if (suppressionContextMember != originMember && originMember != null &&
-				Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (originMember))
+				(Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (originMember) ||
+				(originMember.DeclaringType != null &&
+				Annotations.TryGetEffectiveRequiresUnreferencedCodeAttributeOnType (originMember.DeclaringType, out RequiresUnreferencedCodeAttribute _))))
 				return true;
 
 			return false;
@@ -2810,13 +2827,24 @@ namespace Mono.Linker.Steps
 			if (ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode ())
 				return;
 
-			if (Annotations.TryGetLinkerAttribute (method, out RequiresUnreferencedCodeAttribute requiresUnreferencedCode)) {
-				string formatString = SharedStrings.RequiresUnreferencedCodeMessage;
-				string arg1 = MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCode.Message);
-				string arg2 = MessageFormat.FormatRequiresAttributeUrlArg (requiresUnreferencedCode.Url);
-				string message = string.Format (formatString, method.GetDisplayName (), arg1, arg2);
-				_context.LogWarning (message, 2026, currentOrigin, MessageSubCategory.TrimAnalysis);
+			if (method.IsStatic || method.IsConstructor) {
+				if (Annotations.TryGetEffectiveRequiresUnreferencedCodeAttributeOnType (method.DeclaringType, out RequiresUnreferencedCodeAttribute requiresUnreferencedCodeOnTypeHierarchy)) {
+					ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCodeOnTypeHierarchy, currentOrigin);
+					return;
+				}
 			}
+
+			if (Annotations.TryGetLinkerAttribute (method, out RequiresUnreferencedCodeAttribute requiresUnreferencedCode))
+				ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode, currentOrigin);
+		}
+
+		private void ReportRequiresUnreferencedCode (string displayName, RequiresUnreferencedCodeAttribute requiresUnreferencedCode, MessageOrigin currentOrigin)
+		{
+			string formatString = SharedStrings.RequiresUnreferencedCodeMessage;
+			string arg1 = MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCode.Message);
+			string arg2 = MessageFormat.FormatRequiresAttributeUrlArg (requiresUnreferencedCode.Url);
+			string message = string.Format (formatString, displayName, arg1, arg2);
+			_context.LogWarning (message, 2026, currentOrigin, MessageSubCategory.TrimAnalysis);
 		}
 
 		protected (MethodReference, DependencyInfo) GetOriginalMethod (MethodReference method, DependencyInfo reason)

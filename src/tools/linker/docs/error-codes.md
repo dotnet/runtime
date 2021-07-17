@@ -1706,6 +1706,22 @@ class Warning
 }
 ```
 
+#### `IL2109` Trim analysis: Type 'type' derives from 'BaseType' which has 'RequiresUnreferencedCodeAttribute'. [message]. [url]
+
+- A type is being referenced in code, and this type derives from a base type with 'RequiresUnreferencedCodeAttribute' which can break functionality of a trimmed application.
+  Types that derive from a base class with 'RequiresUnreferencedCodeAttribute' need to explicitly use the 'RequiresUnreferencedCodeAttribute' or suppress this warning
+
+  ```C#
+  [RequiresUnreferencedCode("Using any of the members inside this class is trim unsafe", Url="http://help/unreferencedcode")]
+  public class UnsafeClass {
+     public UnsafeClass () {}
+     public static void UnsafeMethod();
+  }
+
+  // IL2109: Type 'Derived' derives from 'UnsafeClass' which has 'RequiresUnreferencedCodeAttribute'. Using any of the members inside this class is trim unsafe. http://help/unreferencedcode
+  class Derived : UnsafeClass {}
+  ```
+
 ## Single-File Warning Codes
 
 #### `IL3000`: 'member' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'
