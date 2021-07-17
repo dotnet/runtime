@@ -8,7 +8,8 @@
  THIS FILE IS NOT INCLUDED IN DOTNET.JS. ALL CODE HERE WILL BE IGNORED DURING THE BUILD
 ********************************************************************************************/
 
-// Make sure that this is updated with all the accessible members from dotnet.js such as callbacks
+// TODO PROPERLY SET THESE ANYS
+
 declare namespace Module {
     let config: MonoConfig;
     let HEAP8: Int8Array;
@@ -20,8 +21,6 @@ declare namespace Module {
     let HEAPF32: Float32Array;
     let HEAPF64: Float64Array;
 
-    // TODO properly type these anys
-    
     let arguments: string[];
     let loadReadFiles: boolean;
     let printWithColors: boolean;
@@ -43,7 +42,6 @@ declare namespace Module {
     function mono_method_get_call_signature (method: any, mono_obj?: any): string;
     function print (message: string): void;
 
-     // Make sure that this is updated with all the methods that we manually export from emsdk (i.e. EXPORTED_RUNTIME_METHODS in wasm.proj). The non exported ones I have intentaionally left out
     function ccall (ident: string, returnType?: string, argTypes?: any[] , args?: any[] , opts?: any): any;
     function FS_createPath (parent: string | any, path: string, canRead?: boolean /* unused */, canWrite?: boolean /* unused */): string;
     function FS_createDataFile (parent: string | any, name: string, data: string, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;

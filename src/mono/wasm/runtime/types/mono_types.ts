@@ -30,39 +30,10 @@ interface MONO_C_FUNCS {
     mono_set_timeout_exec (a: number): void;
 }
 
-interface BINDING_C_FUNCS {
-    mono_wasm_typed_array_new (a: string, b: string, c: number, d: number): number;
-    assembly_load (a: string): number;
-    find_corlib_class (a: string, b: string): number;
-    find_class (a: number, b: string, c: string): number;
-    _find_method (a: number, b: string, c: number): number; 
-    invoke_method (a: number, b: number, c: number, d: number): number;
-    mono_string_get_utf8 (a: number): number;
-    mono_wasm_string_from_utf16 (a: number, b: number): number;
-    mono_get_obj_type (a: number): number;
-    mono_array_length (a: number): number;
-    mono_array_get (a: number, b: number): number;
-    mono_obj_array_new (a: number): number;
-    mono_obj_array_set (a: number, b: number, c: number): void;
-    mono_wasm_register_bundled_satellite_assemblies (): void;
-    mono_wasm_try_unbox_primitive_and_get_type (a: number, b: number): number;
-    mono_wasm_box_primitive (a: number, b: number, c: number): number;
-    mono_wasm_intern_string (a: number): number;
-    assembly_get_entry_point (a: number): number;
-    mono_wasm_string_array_new (a: number): number;
-    mono_wasm_typed_array_new (a: number, b: number, c: number, d: number): number;
-}
-
-interface DOTNET_C_FUNCS {
-    mono_wasm_string_from_js (a: string): number;
-}
-
 // NAMESPACES ///////////////////////////////////////////////////////////////////////////////
 var MONO: typeof MonoSupportLib.$MONO & MONO_C_FUNCS;
-var DOTNET: typeof DotNetSupportLib.$DOTNET & DOTNET_C_FUNCS;
-var BINDING: typeof BindingSupportLib.$BINDING & BINDING_C_FUNCS;
 
-// LIBRARY_MONO TYPES ///////////////////////////////////////////////////////////////////////
+// OTHER TYPES ///////////////////////////////////////////////////////////////////////
 type ManagedPointer = number; // - address in the managed heap
 
 type NativePointer = number; // - address in wasm memory
@@ -117,16 +88,3 @@ type WasmRoot = {
     release: () => void,
     value: number,
 }
-
-// EMSDK NON MODULE RELATED /////////////////////////////////////////////////////////////////
-var ENVIRONMENT_IS_WEB: boolean;
-var ENVIRONMENT_IS_SHELL: boolean;
-var ENVIRONMENT_IS_NODE: boolean;
-var ENVIRONMENT_IS_WORKER: boolean;
-
-declare function locateFile(path: string): string;
-
-// OTHER ////////////////////////////////////////////////////////////////////////////////////
-declare function read (path: string): string;
-declare function load (path: string): string;
-declare function require (path: string): object;
