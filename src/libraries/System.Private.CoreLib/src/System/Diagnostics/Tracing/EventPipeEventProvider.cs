@@ -35,7 +35,9 @@ namespace System.Diagnostics.Tracing
         // Unregister an event provider.
         uint IEventProvider.EventUnregister(long registrationHandle)
         {
-            EventPipeInternal.DeleteProvider(m_provHandle);
+            IntPtr provHandle = m_provHandle;
+            m_provHandle = IntPtr.Zero;
+            EventPipeInternal.DeleteProvider(provHandle);
             return 0;
         }
 
@@ -82,8 +84,13 @@ namespace System.Diagnostics.Tracing
         unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level,
             byte *pMetadata, uint metadataLength)
         {
-            IntPtr eventHandlePtr = EventPipeInternal.DefineEvent(m_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength);
-            return eventHandlePtr;
+            if (m_provHandle != IntPtr.Zero)
+            {
+                IntPtr eventHandlePtr = EventPipeInternal.DefineEvent(m_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength);
+                return eventHandlePtr;
+            }
+
+            return IntPtr.Zero;
         }
 
         // Get or set the per-thread activity ID.

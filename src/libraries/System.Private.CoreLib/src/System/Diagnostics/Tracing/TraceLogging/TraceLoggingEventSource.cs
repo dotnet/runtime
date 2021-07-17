@@ -378,7 +378,9 @@ namespace System.Diagnostics.Tracing
 
             if (this.IsEnabled((EventLevel)level, keywords))
             {
+                m_activeWritesCount++;
                 WriteMultiMergeInner(eventName, ref options, eventTypes, activityID, childActivityID, values);
+                m_activeWritesCount--;
             }
         }
 
@@ -555,6 +557,8 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
+            m_activeWritesCount++;
+
             fixed (EventSourceOptions* pOptions = &options)
             {
                 NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out EventDescriptor descriptor);
@@ -610,6 +614,8 @@ namespace System.Diagnostics.Tracing
                         (IntPtr)descriptors);
                 }
             }
+
+            m_activeWritesCount--;
 #endif // FEATURE_MANAGED_ETW
         }
 
@@ -623,6 +629,7 @@ namespace System.Diagnostics.Tracing
         {
             try
             {
+                m_activeWritesCount++;
                 fixed (EventSourceOptions* pOptions = &options)
                 {
                     options.Opcode = options.IsOpcodeSet ? options.Opcode : GetOpcodeWithDefault(options.Opcode, eventName);
@@ -740,6 +747,10 @@ namespace System.Diagnostics.Tracing
                     throw;
                 else
                     ThrowEventSourceException(eventName, ex);
+            }
+            finally
+            {
+                m_activeWritesCount--;
             }
         }
 
