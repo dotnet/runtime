@@ -29,11 +29,14 @@ mono_ppdb_lookup_method (MonoDebugHandle *handle, MonoMethod *method);
 MonoDebugSourceLocation *
 mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset);
 
+MonoDebugSourceLocation *
+mono_ppdb_lookup_location_enc (MonoDebugMethodInfo *minfo, MonoImage *image, int idx, uint32_t offset);
+
 void
 mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points);
 
 gboolean 
-mono_ppdb_get_seq_points_enc (MonoImage *image, int idx, MonoSymSeqPoint **seq_points, int *n_seq_points);
+mono_ppdb_get_seq_points_enc (MonoDebugMethodInfo *minfo, MonoImage *image, int idx, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points);
 
 MonoDebugLocalsInfo*
 mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo);

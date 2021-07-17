@@ -372,7 +372,7 @@ namespace DebuggerTests
         public async Task DebugHotReloadMethodEmpty()
         {
             int line = 38;
-            await SetBreakpoint(".*/MethodBody1.cs$", line, 8, use_regex: true);
+            await SetBreakpoint(".*/MethodBody1.cs$", line, 0, use_regex: true);
             var pause_location = await LoadAssemblyAndTestHotReload(
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
                     Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
@@ -380,16 +380,21 @@ namespace DebuggerTests
                     "MethodBody4", "StaticMethod4");
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 8, "StaticMethod4");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 12, "StaticMethod4");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-            Console.WriteLine("vou fazer step");
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 40, 12, "StaticMethod4",
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 39, 12, "StaticMethod4",
             locals_fn: (locals) =>
                 {
                     CheckNumber(locals, "a", 10);
                 }
             );
-            Console.WriteLine("vou fazer step 2");
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 40, 12, "StaticMethod4",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 10);
+                    CheckNumber(locals, "b", 20);
+                }
+            );
             await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 41, 12, "StaticMethod4",
             locals_fn: (locals) =>
                 {
@@ -397,12 +402,22 @@ namespace DebuggerTests
                     CheckNumber(locals, "b", 20);
                 }
             );
-
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, "StaticMethod4");
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 42, 12, "StaticMethod4",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 10);
+                    CheckNumber(locals, "b", 20);
+                }
+            );
+            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 43, 8, "StaticMethod4",
+            locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "a", 10);
+                    CheckNumber(locals, "b", 20);
+                }
+            );
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 8, "StaticMethod4");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-            CheckBool(locals, "c", true);
-
-            Console.WriteLine("terminei");
         }
     }
 }
