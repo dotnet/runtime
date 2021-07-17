@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Reflection
 {
-    public partial class CustomAttributeData
+    public class CustomAttributeData
     {
         #region Public Static Members
         public static IList<CustomAttributeData> GetCustomAttributes(MemberInfo target)
@@ -42,6 +43,10 @@ namespace System.Reflection
         }
         #endregion
 
+        protected CustomAttributeData()
+        {
+        }
+
         #region Object Override
         public override string ToString()
         {
@@ -53,19 +58,21 @@ namespace System.Reflection
 
             bool first = true;
 
-            int count = ConstructorArguments.Count;
-            for (int i = 0; i < count; i++)
+            IList<CustomAttributeTypedArgument> constructorArguments = ConstructorArguments;
+            int constructorArgumentsCount = constructorArguments.Count;
+            for (int i = 0; i < constructorArgumentsCount; i++)
             {
                 if (!first) vsb.Append(", ");
-                vsb.Append(ConstructorArguments[i].ToString());
+                vsb.Append(constructorArguments[i].ToString());
                 first = false;
             }
 
-            count = NamedArguments.Count;
-            for (int i = 0; i < count; i++)
+            IList<CustomAttributeNamedArgument> namedArguments = NamedArguments;
+            int namedArgumentsCount = namedArguments.Count;
+            for (int i = 0; i < namedArgumentsCount; i++)
             {
                 if (!first) vsb.Append(", ");
-                vsb.Append(NamedArguments[i].ToString());
+                vsb.Append(namedArguments[i].ToString());
                 first = false;
             }
 
@@ -79,6 +86,11 @@ namespace System.Reflection
 
         #region Public Members
         public virtual Type AttributeType => Constructor.DeclaringType!;
+
+        // Expected to be overriden
+        public virtual ConstructorInfo Constructor => null!;
+        public virtual IList<CustomAttributeTypedArgument> ConstructorArguments => null!;
+        public virtual IList<CustomAttributeNamedArgument> NamedArguments => null!;
         #endregion
     }
 }
