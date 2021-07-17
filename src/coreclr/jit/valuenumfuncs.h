@@ -6,6 +6,7 @@
 // <is-shared-static>)
 
 // clang-format off
+ValueNumFuncDef(MemOpaque, 1, false, false, false)  // Args: 0: loop num
 ValueNumFuncDef(MapStore, 3, false, false, false)   // Args: 0: map, 1: index (e. g. field handle), 2: value being stored.
 ValueNumFuncDef(MapSelect, 2, false, false, false)  // Args: 0: map, 1: key.
 

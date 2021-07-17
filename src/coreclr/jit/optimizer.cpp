@@ -6567,6 +6567,11 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNToBoolMap* loo
             BasicBlock* defnBlk = reinterpret_cast<BasicBlock*>(vnStore->ConstantValue<ssize_t>(funcApp.m_args[0]));
             res                 = !optLoopContains(lnum, defnBlk->bbNatLoopNum);
         }
+        else if (funcApp.m_func == VNF_MemOpaque)
+        {
+            const unsigned vnLoopNum = funcApp.m_args[0];
+            res                      = !optLoopContains(lnum, vnLoopNum);
+        }
         else
         {
             for (unsigned i = 0; i < funcApp.m_arity; i++)
@@ -6580,21 +6585,6 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNToBoolMap* loo
                     break;
                 }
             }
-        }
-    }
-    else
-    {
-        // Non-function "new, unique" VN's may be annotated with the loop nest where
-        // their definition occurs.
-        BasicBlock::loopNumber vnLoopNum = vnStore->LoopOfVN(vn);
-
-        if (vnLoopNum == BasicBlock::MAX_LOOP_NUM)
-        {
-            res = false;
-        }
-        else
-        {
-            res = !optLoopContains(lnum, vnLoopNum);
         }
     }
 
