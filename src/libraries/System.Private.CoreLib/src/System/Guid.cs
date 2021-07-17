@@ -393,7 +393,7 @@ namespace System
 
             if ((uint)guidString.Length != 36 || guidString[8] != '-' || guidString[13] != '-' || guidString[18] != '-' || guidString[23] != '-')
             {
-                result.SetFailure(overflow: false, guidString.Length != 37 ? nameof(SR.Format_GuidInvLen) : nameof(SR.Format_GuidDashes));
+                result.SetFailure(overflow: false, guidString.Length != 36 ? nameof(SR.Format_GuidInvLen) : nameof(SR.Format_GuidDashes));
                 return false;
             }
 
