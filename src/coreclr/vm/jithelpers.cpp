@@ -776,7 +776,7 @@ HCIMPL2(void*, JIT_GetFieldAddr_Framed, Object *obj, FieldDesc* pFD)
     HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
 
     if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
+        COMPlusThrow(kArrayTypeMismatchException);
 
 
     fldAddr = pFD->GetAddress(OBJECTREFToObject(objRef));
@@ -823,7 +823,7 @@ NOINLINE HCIMPL2(FIELDTYPE, JIT_GetField_Framed, Object *obj, FieldDesc *pFD)
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
     if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
+        COMPlusThrow(kArrayTypeMismatchException);
     pFD->GetInstanceField(objRef, &value);
     HELPER_METHOD_POLL();
     HELPER_METHOD_FRAME_END();
@@ -950,7 +950,7 @@ NOINLINE HCIMPL3(VOID, JIT_SetField_Framed, Object *obj, FieldDesc* pFD, FIELDTY
 
     HELPER_METHOD_FRAME_BEGIN_1(objRef);
     if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
+        COMPlusThrow(kArrayTypeMismatchException);
     pFD->SetInstanceField(objRef, &val);
     HELPER_METHOD_POLL();
     HELPER_METHOD_FRAME_END();
@@ -1066,7 +1066,7 @@ HCIMPL2(Object*, JIT_GetFieldObj_Framed, Object *obj, FieldDesc *pFD)
 
     HELPER_METHOD_FRAME_BEGIN_RET_2(objRef, val);        // Set up a frame
     if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
+        COMPlusThrow(kArrayTypeMismatchException);
     pFD->GetInstanceField(objRef, &val);
     HELPER_METHOD_POLL();
     HELPER_METHOD_FRAME_END();
@@ -1112,7 +1112,7 @@ HCIMPL3(VOID, JIT_SetFieldObj_Framed, Object *obj, FieldDesc *pFD, Object *value
 
     HELPER_METHOD_FRAME_BEGIN_2(objRef, val);
     if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
+        COMPlusThrow(kArrayTypeMismatchException);
     pFD->SetInstanceField(objRef, &val);
     HELPER_METHOD_POLL();
     HELPER_METHOD_FRAME_END();
@@ -1160,7 +1160,7 @@ HCIMPL4(VOID, JIT_GetFieldStruct_Framed, LPVOID retBuff, Object *obj, FieldDesc 
     HELPER_METHOD_FRAME_BEGIN_1(objRef);        // Set up a frame
 
     if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
+        COMPlusThrow(kArrayTypeMismatchException);
 
     // Try an unwrap operation in case that we are not being called
     // in the same context as the server.
@@ -1214,7 +1214,7 @@ HCIMPL4(VOID, JIT_SetFieldStruct_Framed, Object *obj, FieldDesc *pFD, MethodTabl
     HELPER_METHOD_FRAME_BEGIN_1(objRef);        // Set up a frame
 
     if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
+        COMPlusThrow(kArrayTypeMismatchException);
 
     // Try an unwrap operation in case that we are not being called
     // in the same context as the server.
@@ -3449,7 +3449,7 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
     HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);    // Set up a frame
 
     if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
+        COMPlusThrow(kArrayTypeMismatchException);
 
     // This is the static method descriptor describing the call.
     // It is not the destination of the call, which we must compute.
@@ -4099,7 +4099,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
 
     if (oref == 0)
-        COMPlusThrow(kNullReferenceException);
+        COMPlusThrow(kArrayTypeMismatchException);
     else
     if (!IsException(oref->GetMethodTable()))
     {

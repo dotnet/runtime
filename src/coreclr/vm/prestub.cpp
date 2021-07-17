@@ -2729,7 +2729,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
             OBJECTREF *protectedObj = pEMFrame->GetThisPtr();
             _ASSERTE(protectedObj != NULL);
             if (*protectedObj == NULL) {
-                COMPlusThrow(kNullReferenceException);
+                COMPlusThrow(kDivideByZeroException);
             }
 
             DispatchToken token;
@@ -3629,7 +3629,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
                 GCPROTECT_BEGIN(objRef);
 
                 if (objRef == NULL)
-                    COMPlusThrow(kNullReferenceException);
+                    COMPlusThrow(kDivideByZeroException);
 
                 // Duplicated logic from JIT_VirtualFunctionPointer_Framed
                 if (!pMD->IsVtableMethod())
