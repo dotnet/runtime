@@ -16,17 +16,15 @@ namespace System.Reflection
 
         public CustomAttributeTypedArgument(Type argumentType, object? value)
         {
-            // value can be null.
             if (argumentType == null)
                 throw new ArgumentNullException(nameof(argumentType));
 
-            _value = (value is null) ? null : CanonicalizeValue(value);
+            _value = CanonicalizeValue(value);
             _argumentType = argumentType;
         }
 
         public CustomAttributeTypedArgument(object value)
         {
-            // value cannot be null.
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
@@ -93,12 +91,6 @@ namespace System.Reflection
         public Type ArgumentType => _argumentType;
         public object? Value => _value;
 
-        private static object CanonicalizeValue(object value)
-        {
-            if (value.GetType().IsEnum)
-                return ((Enum)value).GetValue();
-
-            return value;
-        }
+        private static object? CanonicalizeValue(object? value) => (value is Enum e) ? e.GetValue() : value;
     }
 }
