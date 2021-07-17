@@ -19630,22 +19630,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             continue;
         }
 
-        GenTree* actualArg = use.GetNode();
-        if (actualArg != nullptr && actualArg->OperIsSimple())
-        {
-            GenTree* op1 = actualArg->gtGetOp1();
-            GenTree* op2 = actualArg->gtGetOp2IfPresent();
-            if (actualArg->OperIsUnary() && (op1 != nullptr) && op1->OperIsConst())
-            {
-                actualArg = gtFoldExprConst(actualArg);
-            }
-            else if (actualArg->OperIsBinary() && (op1 != nullptr) && (op2 != nullptr) && op1->OperIsConst() &&
-                     op2->OperIsConst())
-            {
-                actualArg = gtFoldExprConst(actualArg);
-            }
-        }
-
+        GenTree* actualArg = gtFoldExpr(use.GetNode());
         impInlineRecordArgInfo(pInlineInfo, actualArg, argCnt, inlineResult);
 
         if (inlineResult->IsFailure())
@@ -19747,8 +19732,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         if ((sigType != inlArgNode->gtType) || inlArgNode->OperIs(GT_PUTARG_TYPE))
         {
             assert(impCheckImplicitArgumentCoercion(sigType, inlArgNode->gtType));
-            assert(!varTypeIsStruct(inlArgNode->gtType) && !varTypeIsStruct(sigType) &&
-                   genTypeSize(inlArgNode->gtType) == genTypeSize(sigType));
+            assert(!varTypeIsStruct(inlArgNode->gtType) && !varTypeIsStruct(sigType));
 
             /* In valid IL, this can only happen for short integer types or byrefs <-> [native] ints,
                but in bad IL cases with caller-callee signature mismatches we can see other types.
