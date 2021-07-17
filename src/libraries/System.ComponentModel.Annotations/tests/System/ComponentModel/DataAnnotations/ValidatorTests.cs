@@ -365,6 +365,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
             Validator.ValidateObject(instance, context);
         }
+
         #endregion ValidateObject
 
         #region TryValidateProperty

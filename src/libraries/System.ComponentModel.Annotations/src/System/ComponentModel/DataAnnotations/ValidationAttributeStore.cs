@@ -215,22 +215,42 @@ namespace System.ComponentModel.DataAnnotations
                 return _propertyStoreItems.TryGetValue(propertyName, out item);
             }
 
-            private Dictionary<string, PropertyStoreItem> CreatePropertyStoreItems()
+            private Dictionary<string, PropertyStoreItem> CreatePropertyStoreItems() 
             {
-                var propertyStoreItems = new Dictionary<string, PropertyStoreItem>();
-
-                // exclude index properties to match old TypeDescriptor functionality
-                var properties = _type.GetRuntimeProperties()
-                    .Where(prop => IsPublic(prop) && !prop.GetIndexParameters().Any());
-                foreach (PropertyInfo property in properties)
-                {
-                    // use CustomAttributeExtensions.GetCustomAttributes() to get inherited attributes as well as direct ones
-                    var item = new PropertyStoreItem(property.PropertyType,
-                        CustomAttributeExtensions.GetCustomAttributes(property, true));
+                Dictionary<string, PropertyStoreItem> propertyStoreItems = new Dictionary<string, PropertyStoreItem>();
+                PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(this._type);
+                foreach (PropertyDescriptor property in properties) {
+                    PropertyStoreItem item = new PropertyStoreItem(property.PropertyType, GetExplicitAttributes(property).Cast<Attribute>());
                     propertyStoreItems[property.Name] = item;
                 }
-
+ 
                 return propertyStoreItems;
+            }
+
+            /// <summary>
+            /// Method to extract only the explicitly specified attributes from a <see cref="PropertyDescriptor"/>
+            /// </summary>
+            /// <remarks>
+            /// Normal TypeDescriptor semantics are to inherit the attributes of a property's type.  This method
+            /// exists to suppress those inherited attributes.
+            /// </remarks>
+            /// <param name="propertyDescriptor">The property descriptor whose attributes are needed.</param>
+            /// <returns>A new <see cref="AttributeCollection"/> stripped of any attributes from the property's type.</returns>
+            public static AttributeCollection GetExplicitAttributes(PropertyDescriptor propertyDescriptor) {
+                List<Attribute> attributes = new List<Attribute>(propertyDescriptor.Attributes.Cast<Attribute>());
+                IEnumerable<Attribute> typeAttributes = TypeDescriptor.GetAttributes(propertyDescriptor.PropertyType).Cast<Attribute>();
+                bool removedAttribute = false;
+                foreach (Attribute attr in typeAttributes) {
+                    for (int i = attributes.Count - 1; i >= 0; --i) {
+                        // We must use ReferenceEquals since attributes could Match if they are the same.
+                        // Only ReferenceEquals will catch actual duplications.
+                        if (object.ReferenceEquals(attr, attributes[i])) {
+                            attributes.RemoveAt(i);
+                            removedAttribute = true;
+                        }
+                    }
+                }
+                return removedAttribute ? new AttributeCollection(attributes.ToArray()) : propertyDescriptor.Attributes;
             }
         }
 
