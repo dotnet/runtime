@@ -28,3 +28,6 @@ run-browser:
 
 run-console:
 	cd bin/$(CONFIG)/AppBundle && ~/.jsvu/v8 --expose_wasm runtime.js -- $(DOTNET_MONO_LOG_LEVEL) --run Wasm.Console.Sample.dll
+
+run-console-node:
+	cd bin/$(CONFIG)/AppBundle && node runtime.js --run Wasm.Console.Sample.dll
