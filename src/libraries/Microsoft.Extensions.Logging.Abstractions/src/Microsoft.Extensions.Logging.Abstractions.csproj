@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
@@ -35,4 +35,8 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <AnalyzerReference Include="..\gen\Microsoft.Extensions.Logging.Generators.csproj" />
+  </ItemGroup>
+  
 </Project>

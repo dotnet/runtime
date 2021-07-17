@@ -10,7 +10,6 @@
     <IsPackable>false</IsPackable>
     <IsAspNetCoreAppAnalyzer>true</IsAspNetCoreAppAnalyzer>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
-    <AddSyntheticProjectReferencesForSolutionDependencies>false</AddSyntheticProjectReferencesForSolutionDependencies>
   </PropertyGroup>
 
   <ItemGroup>
