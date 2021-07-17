@@ -17,7 +17,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     internal sealed class SafeMsQuicConfigurationHandle : SafeHandle
     {
         private static readonly FieldInfo _contextCertificate = typeof(SslStreamCertificateContext).GetField("Certificate", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        private static readonly FieldInfo _contextChain= typeof(SslStreamCertificateContext).GetField("IntermediateCertificates", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        private static readonly FieldInfo _contextChain = typeof(SslStreamCertificateContext).GetField("IntermediateCertificates", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
         public override bool IsInvalid => handle == IntPtr.Zero;
 
@@ -33,7 +33,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         }
 
         // TODO: consider moving the static code from here to keep all the handle classes small and simple.
-        public static unsafe SafeMsQuicConfigurationHandle Create(QuicClientConnectionOptions options)
+        public static SafeMsQuicConfigurationHandle Create(QuicClientConnectionOptions options)
         {
             X509Certificate? certificate = null;
             if (options.ClientAuthenticationOptions?.ClientCertificates != null)
@@ -56,7 +56,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             return Create(options, QUIC_CREDENTIAL_FLAGS.CLIENT, certificate: certificate, certificateContext: null, options.ClientAuthenticationOptions?.ApplicationProtocols);
         }
 
-        public static unsafe SafeMsQuicConfigurationHandle Create(QuicListenerOptions options)
+        public static SafeMsQuicConfigurationHandle Create(QuicListenerOptions options)
         {
             QUIC_CREDENTIAL_FLAGS flags = QUIC_CREDENTIAL_FLAGS.NONE;
             if (options.ServerAuthenticationOptions != null && options.ServerAuthenticationOptions.ClientCertificateRequired)
@@ -65,6 +65,23 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
 
             return Create(options, flags, options.ServerAuthenticationOptions?.ServerCertificate, options.ServerAuthenticationOptions?.ServerCertificateContext, options.ServerAuthenticationOptions?.ApplicationProtocols);
+        }
+
+        public static SafeMsQuicConfigurationHandle Create(QuicOptions options, SslServerAuthenticationOptions? serverAuthenticationOptions, string targetHost)
+        {
+            QUIC_CREDENTIAL_FLAGS flags = QUIC_CREDENTIAL_FLAGS.NONE;
+            X509Certificate? certificate = serverAuthenticationOptions?.ServerCertificate;
+            if (serverAuthenticationOptions != null && serverAuthenticationOptions.ClientCertificateRequired)
+            {
+                flags |= QUIC_CREDENTIAL_FLAGS.REQUIRE_CLIENT_AUTHENTICATION | QUIC_CREDENTIAL_FLAGS.INDICATE_CERTIFICATE_RECEIVED | QUIC_CREDENTIAL_FLAGS.NO_CERTIFICATE_VALIDATION;
+            }
+
+            if (certificate == null && serverAuthenticationOptions?.ServerCertificateSelectionCallback != null)
+            {
+                certificate = serverAuthenticationOptions.ServerCertificateSelectionCallback(options, targetHost);
+            }
+
+            return Create(options, flags, certificate, serverAuthenticationOptions?.ServerCertificateContext, serverAuthenticationOptions?.ApplicationProtocols);
         }
 
         // TODO: this is called from MsQuicListener and when it fails it wreaks havoc in MsQuicListener finalizer.
