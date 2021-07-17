@@ -2740,6 +2740,52 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             assert(block->getTryIndex() < compHndBBtabCount);
         }
 
+        // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated
+        // with the finally block the BBJ_CALLFINALLY is targeting. There is one special case: if the
+        // BBJ_CALLFINALLY is the first block of a `try`, then its predecessor can be outside the `try`:
+        // either a branch or fall-through to the first block.
+        //
+        // Note that this IR condition is a choice. It naturally occurs when importing EH constructs.
+        // This condition prevents flow optimizations from skipping blocks in a `try` and branching
+        // directly to the BBJ_CALLFINALLY. Relaxing this constraint would require careful thinking about
+        // the implications, such as data flow optimizations.
+        //
+        // Don't depend on predecessors list for the check.
+        for (BasicBlock* const succBlock : block->Succs())
+        {
+            if (succBlock->bbJumpKind == BBJ_CALLFINALLY)
+            {
+                BasicBlock* finallyBlock = succBlock->bbJumpDest;
+                assert(finallyBlock->hasHndIndex());
+                unsigned finallyIndex = finallyBlock->getHndIndex();
+
+                // Now make sure the block branching to the BBJ_CALLFINALLY is in the correct region. The branch
+                // to the BBJ_CALLFINALLY can come from the try region of the finally block, or from a more nested
+                // try region, e.g.:
+                //    try {
+                //        try {
+                //            LEAVE L_OUTER; // this becomes a branch to a BBJ_CALLFINALLY in an outer try region
+                //                           // (in the FEATURE_EH_CALLFINALLY_THUNKS case)
+                //        } catch {
+                //        }
+                //    } finally {
+                //    }
+                //    L_OUTER:
+                //
+                EHblkDsc* ehDsc = ehGetDsc(finallyIndex);
+                if (ehDsc->ebdTryBeg == succBlock)
+                {
+                    // The BBJ_CALLFINALLY is the first block of it's `try` region. Don't check the predecessor.
+                    // Note that this case won't occur in the FEATURE_EH_CALLFINALLY_THUNKS case, since the
+                    // BBJ_CALLFINALLY in that case won't exist in the `try` region of the `finallyIndex`.
+                }
+                else
+                {
+                    assert(bbInTryRegions(finallyIndex, block));
+                }
+            }
+        }
+
         /* Check if BBF_RUN_RARELY is set that we have bbWeight of zero */
         if (block->isRunRarely())
         {
