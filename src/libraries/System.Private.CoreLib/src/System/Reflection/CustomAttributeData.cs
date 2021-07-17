@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Reflection
@@ -47,6 +48,7 @@ namespace System.Reflection
         }
 
         #region Object Override
+        [MethodImpl(MethodImplOptions.NoOptimization)]  // Workaround for codegen bug?
         public override string ToString()
         {
             var vsb = new ValueStringBuilder(stackalloc char[256]);
