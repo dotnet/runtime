@@ -48,7 +48,6 @@ namespace System.Reflection
         }
 
         #region Object Override
-        [MethodImpl(MethodImplOptions.NoOptimization)]  // Workaround for codegen bug?
         public override string ToString()
         {
             var vsb = new ValueStringBuilder(stackalloc char[256]);
@@ -57,26 +56,24 @@ namespace System.Reflection
             vsb.Append(Constructor.DeclaringType!.FullName);
             vsb.Append('(');
 
+            bool first = true;
+
             IList<CustomAttributeTypedArgument> constructorArguments = ConstructorArguments;
-            int count = constructorArguments.Count;
-            for (int i = 0; i < count; i++)
+            int constructorArgumentsCount = constructorArguments.Count;
+            for (int i = 0; i < constructorArgumentsCount; i++)
             {
-                if (i != 0)
-                {
-                    vsb.Append(", ");
-                }
+                if (!first) vsb.Append(", ");
                 vsb.Append(constructorArguments[i].ToString());
+                first = false;
             }
 
             IList<CustomAttributeNamedArgument> namedArguments = NamedArguments;
-            count = namedArguments.Count;
-            for (int i = 0; i < count; i++)
+            int namedArgumentsCount = namedArguments.Count;
+            for (int i = 0; i < namedArgumentsCount; i++)
             {
-                if (i != 0)
-                {
-                    vsb.Append(", ");
-                }
+                if (!first) vsb.Append(", ");
                 vsb.Append(namedArguments[i].ToString());
+                first = false;
             }
 
             vsb.Append(")]");
