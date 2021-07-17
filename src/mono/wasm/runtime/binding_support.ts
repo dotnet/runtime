@@ -31,7 +31,7 @@ var BindingSupportLib = {
 		bindings_lazy_init: function (): void {
 			if (this.init)
 				return;
-	
+
 			// avoid infinite recursion
 			this.init = true;
 

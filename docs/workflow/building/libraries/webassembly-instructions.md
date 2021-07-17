@@ -19,7 +19,7 @@ export EMSDK_PATH=<FULL_PATH_TO_SDK_INSTALL>/emsdk
 
 ## Installing TypeScript
 
-To build the repo you will need to have the TypeScript `tsc` compiler installed globally. The easiest way to do this is to run `npm i -g typescript`. Learn more [here](https://www.typescriptlang.org/id/download). 
+To build the repo you will need to have the TypeScript `tsc` compiler installed globally. The easiest way to do this is to run `npm i -g typescript`. Learn more [here](https://www.typescriptlang.org/id/download).
 
 Also note that `NPM` and `NodeJS` come bundled with `EMSDK` so if you do not want to install these tools you can just add add the ones in `src/mono/wasm/emsdk` to your PATH.
 

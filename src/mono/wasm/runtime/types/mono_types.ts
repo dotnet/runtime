@@ -12,29 +12,49 @@
 // VARIOUS C FUNCTIONS THAT WE CALL INTO ////////////////////////////////////////////////////
 interface MONO_C_FUNCS {
     mono_background_exec (): void;
-    mono_wasm_register_root (a: number, b: number, c: string): number;
-    mono_wasm_deregister_root (a: number): void;
-    mono_wasm_string_get_data (a: number, b: number, c: number, d: number): void;
-    mono_wasm_set_is_debugger_attached (a: boolean): void;
-    mono_wasm_send_dbg_command (a: number, b:number, c: number, d: number, e: number): boolean;
-    mono_wasm_send_dbg_command_with_parms (a: number, b:number, c: number, d: number, e: number, f: number, g: string): boolean;
-    mono_wasm_setenv (a: string, b: string): void;
-    mono_wasm_parse_runtime_options (a: number, b:number): void;
-    mono_wasm_strdup (a: string): number;
-    mono_wasm_load_icu_data (a: number): number;
-    mono_wasm_get_icudt_name (a: string): string;
-    mono_wasm_load_runtime (a: string, b: number): void;
-    mono_wasm_exit (a: number): void;
+    mono_set_timeout_exec (a: number): void;
+    
     mono_wasm_add_assembly (a: string, b: number, c: number): number;
     mono_wasm_add_satellite_assembly (a: string, b: string, c: number, d: number): void;
-    mono_set_timeout_exec (a: number): void;
+    mono_wasm_deregister_root (a: number): void;
+    mono_wasm_exit (a: number): void;
+    mono_wasm_get_icudt_name (a: string): string;
+    mono_wasm_load_icu_data (a: number): number;
+    mono_wasm_load_runtime (a: string, b: number): void;
+    mono_wasm_parse_runtime_options (a: number, b:number): void;
+    mono_wasm_register_root (a: number, b: number, c: string): number;
+    mono_wasm_send_dbg_command (a: number, b:number, c: number, d: number, e: number): boolean;
+    mono_wasm_send_dbg_command_with_parms (a: number, b:number, c: number, d: number, e: number, f: number, g: string): boolean;
+    mono_wasm_set_is_debugger_attached (a: boolean): void;
+    mono_wasm_setenv (a: string, b: string): void;
+    mono_wasm_strdup (a: string): number;
+    mono_wasm_string_get_data (a: number, b: number, c: number, d: number): void;
 }
 
 // NAMESPACES ///////////////////////////////////////////////////////////////////////////////
 var MONO: typeof MonoSupportLib.$MONO & MONO_C_FUNCS;
 
 // OTHER TYPES ///////////////////////////////////////////////////////////////////////
+
+type GlobalizationMode = "icu" | "invarient" | "auto";
+
+type LoadedFiles = { 
+    url: string,
+    file: string,
+}[];
+
 type ManagedPointer = number; // - address in the managed heap
+
+type MonoRuntimeArgs = {
+    fetch_file_cb: (asset: string) => void,
+    loaded_cb: () => void,
+    debug_level: number,
+    assembly_root: string,
+    assets: {
+        name: string,
+        behavior: string,
+    }[],
+}
 
 type NativePointer = number; // - address in wasm memory
 
@@ -50,33 +70,6 @@ type WasmId = {
     o: string, // - value parsed as JSON
 }
 
-type MonoRuntimeArgs = {
-    fetch_file_cb: (asset: string) => void,
-    loaded_cb: () => void,
-    debug_level: number,
-    assembly_root: string,
-    assets: {
-        name: string,
-        behavior: string,
-    }[],
-}
-
-type LoadedFiles = { 
-    url: string,
-    file: string,
-}[];
-
-type GlobalizationMode = "icu" | "invarient" | "auto";
-
-type WasmRootBuffer = {
-    length: number,
-    get_address: (index: number) => number,
-    get_address_32: (index: number) => NativePointer,
-    get: (index: number) => ManagedPointer,
-    set: (index: number, value: number) => void,
-    release: () => void,
-}
-
 type WasmRoot = {
     get_address: () => NativePointer,
     get_address_32: () => number,
@@ -87,4 +80,13 @@ type WasmRoot = {
     toString: () => string,
     release: () => void,
     value: number,
+}
+
+type WasmRootBuffer = {
+    length: number,
+    get_address: (index: number) => number,
+    get_address_32: (index: number) => NativePointer,
+    get: (index: number) => ManagedPointer,
+    set: (index: number, value: number) => void,
+    release: () => void,
 }
