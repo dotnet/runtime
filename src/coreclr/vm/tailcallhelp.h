@@ -30,6 +30,7 @@ private:
         MetaSig& callSiteSig, MethodDesc* calleeMD,
         bool storeTarget, bool thisArgByRef, bool hasInstArg, ArgBufferLayout* layout);
     static TypeHandle NormalizeSigType(TypeHandle tyHnd);
+    static bool NeedsReturnWidening(TypeHandle tyHnd, bool* isSigned);
     static bool GenerateGCDescriptor(MethodDesc* pTargetMD, const ArgBufferLayout& values, GCRefMapBuilder* builder);
 
     static MethodDesc* CreateStoreArgsStub(TailCallInfo& info);
