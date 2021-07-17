@@ -30,6 +30,7 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
   </Type>
 
   <!-- GenTree -->
+
   <Type Name="GenTree">
     <DisplayString>[{gtOper,en}, {gtType,en}]</DisplayString>
   </Type>
@@ -51,6 +52,16 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
     <DisplayString Condition="this->gtOper==GT_SIMD">[{((GenTreeSIMD*)this)-&gt;gtSIMDIntrinsicID,en}, {gtType,en}]</DisplayString>
     <DisplayString Condition="this->gtOper==GT_HWINTRINSIC">[{((GenTreeHWIntrinsic*)this)-&gt;gtHWIntrinsicId,en}, {gtType,en}]</DisplayString>
     <DisplayString>[{gtOper,en}, {gtType,en}]</DisplayString>
+  </Type>
+
+  <Type Name="Statement">
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>this-&gt;m_treeList</HeadPointer>
+        <NextPointer>this-&gt;gtNext</NextPointer>
+        <ValueNode>this</ValueNode>
+      </LinkedListItems>
+    </Expand>
   </Type>
 
   <Type Name="LclVarDsc">
