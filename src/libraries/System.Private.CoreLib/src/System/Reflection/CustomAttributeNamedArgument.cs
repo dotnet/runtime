@@ -52,7 +52,9 @@ namespace System.Reflection
         }
 
         internal Type ArgumentType =>
-            _memberInfo is FieldInfo ?
+            _memberInfo is FieldInfo fi ?
+                fi.FieldType :
+                ((PropertyInfo)_memberInfo).PropertyType;
                 ((FieldInfo)_memberInfo).FieldType :
                 ((PropertyInfo)_memberInfo).PropertyType;
 
