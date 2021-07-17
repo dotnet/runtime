@@ -30,7 +30,7 @@ MonoDebugSourceLocation *
 mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset);
 
 MonoDebugSourceLocation *
-mono_ppdb_lookup_location_enc (MonoDebugMethodInfo *minfo, MonoImage *image, int idx, uint32_t offset);
+mono_ppdb_lookup_location_enc (MonoImage *image, int idx, uint32_t offset);
 
 void
 mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points);
