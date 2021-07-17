@@ -24,6 +24,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private readonly MemoryCacheOptions _options;
         private readonly ConcurrentDictionary<object, CacheEntry> _entries;
+        private int _countEntries;
 
         private long _cacheSize;
         private bool _disposed;
@@ -57,6 +58,7 @@ namespace Microsoft.Extensions.Caching.Memory
             _logger = loggerFactory.CreateLogger<MemoryCache>();
 
             _entries = new ConcurrentDictionary<object, CacheEntry>();
+            _countEntries = 0;
 
             if (_options.Clock == null)
             {
@@ -72,9 +74,10 @@ namespace Microsoft.Extensions.Caching.Memory
         ~MemoryCache() => Dispose(false);
 
         /// <summary>
-        /// Gets the count of the current entries for diagnostic purposes.
+        /// Gets the count of the current entries. This value should not be taken as an exact number of entries
+        /// since it can be slighly off, if or while, concurrent writes to the cache happen.
         /// </summary>
-        public int Count => _entries.Count;
+        public int Count => _countEntries;
 
         // internal for testing
         internal long Size { get => Interlocked.Read(ref _cacheSize); }
@@ -144,6 +147,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     // Try to add the new entry if no previous entries exist.
                     entryAdded = _entries.TryAdd(entry.Key, entry);
+                    if (entryAdded)
+                    {
+                        Interlocked.Increment(ref _countEntries);
+                    }
                 }
                 else
                 {
@@ -164,6 +171,10 @@ namespace Microsoft.Extensions.Caching.Memory
                         // Adding the new entry will succeed only if no entry has been added since.
                         // This guarantees removing an old entry does not prevent adding a new entry.
                         entryAdded = _entries.TryAdd(entry.Key, entry);
+                        if (entryAdded)
+                        {
+                            Interlocked.Increment(ref _countEntries);
+                        }
                     }
                 }
 
@@ -264,6 +275,8 @@ namespace Microsoft.Extensions.Caching.Memory
             CheckDisposed();
             if (_entries.TryRemove(key, out CacheEntry entry))
             {
+                Interlocked.Decrement(ref _countEntries);
+
                 if (_options.SizeLimit.HasValue)
                 {
                     Interlocked.Add(ref _cacheSize, -entry.Size.Value);
@@ -280,6 +293,7 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             if (EntriesCollection.Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
             {
+                Interlocked.Decrement(ref _countEntries);
                 if (_options.SizeLimit.HasValue)
                 {
                     Interlocked.Add(ref _cacheSize, -entry.Size.Value);
