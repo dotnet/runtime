@@ -130,44 +130,6 @@ namespace System.Net
             }
         }
 
-        private static bool MaybeUri(string s)
-        {
-            int p = s.IndexOf(':');
-            if (p == -1)
-                return false;
-
-            if (p >= 10)
-                return false;
-
-            return IsPredefinedScheme(s.AsSpan(0, p));
-        }
-
-        private static bool IsPredefinedScheme(ReadOnlySpan<char> scheme)
-        {
-            if (scheme.Length < 3)
-                return false;
-
-            char c = scheme[0];
-            if (c == 'h')
-                return (scheme == UriScheme.Http ||  scheme == UriScheme.Https);
-            if (c == 'f')
-                return (scheme == UriScheme.File || scheme == UriScheme.Ftp);
-
-            if (c == 'n')
-            {
-                c = scheme[1];
-                if (c == 'e')
-                    return (scheme == UriScheme.News || scheme == UriScheme.NetPipe || scheme == UriScheme.NetTcp);
-                if (scheme == UriScheme.Nntp)
-                    return true;
-                return false;
-            }
-            if ((c == 'g' && scheme == UriScheme.Gopher) || (c == 'm' && scheme == UriScheme.Mailto))
-                return true;
-
-            return false;
-        }
-
         internal void FinishInitialization()
         {
             string host = UserHostName;
@@ -178,9 +140,8 @@ namespace System.Net
             }
 
             string path;
-            Uri? raw_uri = null;
             Debug.Assert(_rawUrl != null);
-            if (MaybeUri(_rawUrl!.ToLowerInvariant()) && Uri.TryCreate(_rawUrl, UriKind.Absolute, out raw_uri))
+            if (Uri.TryCreate(_rawUrl, UriKind.Absolute, out Uri? raw_uri))
                 path = raw_uri.PathAndQuery;
             else
                 path = _rawUrl;
