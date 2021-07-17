@@ -30,6 +30,11 @@ Always succeeds.
 PALEXPORT void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey);
 
 /*
+Returns the algorithm-specific key size, in bits.
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyBits(EVP_PKEY* pkey);
+
+/*
 Returns the maximum size, in bytes, of an operation with the provided key.
 */
 PALEXPORT int32_t CryptoNative_EvpPKeySize(EVP_PKEY* pkey);
@@ -42,6 +47,16 @@ Returns the number (as of this call) of references to the EVP_PKEY. Anything les
 2 is an error, because the key is already in the process of being freed.
 */
 PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey);
+
+/*
+Verify a signature for the specified hash using the provided key (wrapped in an EVP_PKEY) for algorithms
+with no signature options.
+
+Not suitable for use with RSA. Use RsaVerifyHash instead.
+
+Returns 1 on a verified signature, 0 on a mismatched signature, -1 on error.
+*/
+PALEXPORT int32_t CryptoNative_SimpleVerifyHash(EVP_PKEY* pkey, const uint8_t* hash, int32_t hashLen, const uint8_t* signature, int32_t signatureLen);
 
 /*
 Decodes an X.509 SubjectPublicKeyInfo into an EVP_PKEY*, verifying the interpreted algorithm type.

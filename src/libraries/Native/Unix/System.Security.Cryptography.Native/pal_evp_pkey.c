@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include "pal_evp_pkey.h"
+#include "pal_utilities.h"
 
 EVP_PKEY* CryptoNative_EvpPkeyCreate()
 {
@@ -42,6 +43,15 @@ EVP_PKEY* CryptoNative_EvpPKeyDuplicate(EVP_PKEY* currentKey, int32_t algId)
             success = false;
         }
     }
+    else if (currentAlgId == EVP_PKEY_DSA)
+    {
+        DSA* dsa = EVP_PKEY_get0_DSA(currentKey);
+
+        if (dsa == NULL || !EVP_PKEY_set1_DSA(newKey, dsa))
+        {
+            success = false;
+        }
+    }
     else
     {
         ERR_put_error(ERR_LIB_EVP, 0, EVP_R_UNSUPPORTED_ALGORITHM, __FILE__, __LINE__);
@@ -65,6 +75,12 @@ void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey)
     }
 }
 
+int32_t CryptoNative_EvpPKeyBits(EVP_PKEY* pkey)
+{
+    assert(pkey != NULL);
+    return EVP_PKEY_get_bits(pkey);
+}
+
 int32_t CryptoNative_EvpPKeySize(EVP_PKEY* pkey)
 {
     assert(pkey != NULL);
@@ -79,6 +95,30 @@ int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey)
     }
 
     return EVP_PKEY_up_ref(pkey);
+}
+
+int32_t CryptoNative_SimpleVerifyHash(EVP_PKEY* pkey, const uint8_t* hash, int32_t hashLen, const uint8_t* signature, int32_t signatureLen)
+{
+    assert(pkey != NULL);
+    assert(signature != NULL);
+
+    int ret = -1;
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+
+    if (ctx == NULL || EVP_PKEY_verify_init(ctx) <= 0)
+    {
+        goto done;
+    }
+
+    ret = EVP_PKEY_verify(ctx, signature, Int32ToSizeT(signatureLen), hash, Int32ToSizeT(hashLen));
+
+done:
+    if (ctx != NULL)
+    {
+        EVP_PKEY_CTX_free(ctx);
+    }
+
+    return ret;
 }
 
 static bool CheckKey(EVP_PKEY* key, int32_t algId, int32_t (*check_func)(EVP_PKEY_CTX*))

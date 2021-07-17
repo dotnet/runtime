@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
         public DSAOpenSsl(DSAParameters parameters)
         {
             // Make _key be non-null before calling ImportParameters
-            _key = new Lazy<SafeDsaHandle>();
+            _key = new Lazy<SafeEvpPKeyHandle>();
             ImportParameters(parameters);
         }
 
@@ -31,15 +31,11 @@ namespace System.Security.Cryptography
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
-            // If dsa is valid it has already been up-ref'd, so we can just use this handle as-is.
-            SafeDsaHandle key = Interop.Crypto.EvpPkeyGetDsa(pkeyHandle);
-            if (key.IsInvalid)
-            {
-                key.Dispose();
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
+            SafeEvpPKeyHandle newKey = Interop.Crypto.EvpPKeyDuplicate(
+                pkeyHandle,
+                Interop.Crypto.EvpAlgorithmId.DSA);
 
-            SetKey(key);
+            SetKey(newKey);
         }
 
         /// <summary>
@@ -57,8 +53,10 @@ namespace System.Security.Cryptography
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(handle));
 
-            SafeDsaHandle ecKeyHandle = SafeDsaHandle.DuplicateHandle(handle);
-            SetKey(ecKeyHandle);
+            SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyCreateDsa(handle);
+            Debug.Assert(!key.IsInvalid);
+
+            SetKey(key);
         }
 
         /// <summary>
@@ -68,26 +66,7 @@ namespace System.Security.Cryptography
         /// <returns>A SafeHandle for the DSA key in OpenSSL</returns>
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
-            SafeDsaHandle currentKey = _key.Value;
-            SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
-
-            try
-            {
-                // Wrapping our key in an EVP_PKEY will up_ref our key.
-                // When the EVP_PKEY is Disposed it will down_ref the key.
-                // So everything should be copacetic.
-                if (!Interop.Crypto.EvpPkeySetDsa(pkeyHandle, currentKey))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                return pkeyHandle;
-            }
-            catch
-            {
-                pkeyHandle.Dispose();
-                throw;
-            }
+            return Interop.Crypto.EvpPKeyDuplicate(GetKey(), Interop.Crypto.EvpAlgorithmId.DSA);
         }
     }
 }
