@@ -64,6 +64,14 @@ namespace ILCompiler.DependencyAnalysis
                     new ReadyToRunInstructionSetSupportSignature(key));
             });
 
+            _precodeFieldAddressCache = new NodeCache<FieldDesc, ISymbolNode>(key =>
+            {
+                return new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    new FieldFixupSignature(ReadyToRunFixupKind.FieldAddress, key, _codegenNodeFactory)
+                );
+            });
+
             _fieldAddressCache = new NodeCache<FieldDesc, ISymbolNode>(key =>
             {
                 return new DelayLoadHelperImport(
@@ -396,6 +404,13 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode FieldAddress(FieldDesc fieldDesc)
         {
             return _fieldAddressCache.GetOrAdd(fieldDesc);
+        }
+
+        private NodeCache<FieldDesc, ISymbolNode> _precodeFieldAddressCache;
+
+        public ISymbolNode PrecodeFieldAddress(FieldDesc fieldDesc)
+        {
+            return _precodeFieldAddressCache.GetOrAdd(fieldDesc);
         }
 
         private NodeCache<FieldDesc, ISymbolNode> _fieldOffsetCache;

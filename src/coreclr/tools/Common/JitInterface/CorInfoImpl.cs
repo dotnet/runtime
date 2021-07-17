@@ -2652,7 +2652,7 @@ namespace Internal.JitInterface
                 return null;
             }
 
-            return (void*)ObjectToHandle(_compilation.GetFieldRvaData(fd));
+            return (void*)ObjectToHandle(_compilation.GetFieldRvaData(fd, mustBeLocalToGeneratedAssemblyCode: true));
         }
 
         private CorInfoIsAccessAllowedResult canAccessClass(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_HELPER_DESC pAccessHelper)

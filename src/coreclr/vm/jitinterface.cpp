@@ -14034,6 +14034,21 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         break;
 #endif // PROFILING_SUPPORTED
 
+    case ENCODE_FIELD_ADDRESS:
+        {
+            FieldDesc *pField = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
+
+            pField->GetEnclosingMethodTable()->CheckRestore();
+
+            // We can only take address of RVA field here as we don't handle scenarios where the static variable may move
+            // Also, this cannot be used with a ZapImage as it relies on a separate signatures block as an RVA static
+            // address may be unaligned which would interfere with the tagged pointer approach.
+            _ASSERTE(currentModule->IsReadyToRun());
+            _ASSERTE(pField->IsRVA());
+            result = (size_t)pField->GetStaticAddressHandle(NULL);
+        }
+        break;
+
     case ENCODE_STATIC_FIELD_ADDRESS:
         {
             FieldDesc *pField = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);

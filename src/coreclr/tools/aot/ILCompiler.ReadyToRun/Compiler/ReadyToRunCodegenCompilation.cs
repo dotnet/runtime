@@ -641,7 +641,7 @@ namespace ILCompiler
             }
         }
 
-        public ISymbolNode GetFieldRvaData(FieldDesc field) => NodeFactory.CopiedFieldRva(field);
+        public ISymbolNode GetFieldRvaData(FieldDesc field, bool mustBeLocalToGeneratedAssemblyCode = false) => NodeFactory.CompilationModuleGroup.IsCompositeBuildMode && !mustBeLocalToGeneratedAssemblyCode ? SymbolNodeFactory.PrecodeFieldAddress(field) : NodeFactory.CopiedFieldRva(field);
 
         public override void Dispose()
         {
