@@ -55,8 +55,6 @@ namespace System.Reflection
             _memberInfo is FieldInfo fi ?
                 fi.FieldType :
                 ((PropertyInfo)_memberInfo).PropertyType;
-                ((FieldInfo)_memberInfo).FieldType :
-                ((PropertyInfo)_memberInfo).PropertyType;
 
         public MemberInfo MemberInfo => _memberInfo;
         public CustomAttributeTypedArgument TypedValue => _value;
