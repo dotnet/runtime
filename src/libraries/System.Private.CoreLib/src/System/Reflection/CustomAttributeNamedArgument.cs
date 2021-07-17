@@ -13,7 +13,7 @@ namespace System.Reflection
 
         public CustomAttributeNamedArgument(MemberInfo memberInfo, object? value)
         {
-            if (memberInfo == null)
+            if (memberInfo is null)
                 throw new ArgumentNullException(nameof(memberInfo));
 
             Type type = memberInfo switch
@@ -35,7 +35,7 @@ namespace System.Reflection
 
         public override string ToString()
         {
-            if (_memberInfo == null)
+            if (_memberInfo is null)
                 return base.ToString()!;
 
             return $"{MemberInfo.Name} = {TypedValue.ToString(ArgumentType != typeof(object))}";

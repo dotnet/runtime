@@ -12,7 +12,7 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
-    public class RuntimeCustomAttributeData : CustomAttributeData
+    internal sealed class RuntimeCustomAttributeData : CustomAttributeData
     {
         #region Internal Static Members
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeType target)
