@@ -3,11 +3,7 @@
     <OutputPath>$(RuntimeBinDir)/crossgen2</OutputPath>
     <!-- The default value for macOS is false -->
     <UseAppHost>true</UseAppHost>
-
-    <TargetArchitectureAppHost>$(TargetArchitecture)</TargetArchitectureAppHost>
-    <TargetArchitectureAppHost Condition="'$(TargetArchitectureAppHost)'=='armel'">arm</TargetArchitectureAppHost>
-
-    <AppHostRuntimeIdentifier>$(PackageRID)</AppHostRuntimeIdentifier>
+    <AppHostRuntimeIdentifier>$(Crossgen2PackageRID)</AppHostRuntimeIdentifier>
   </PropertyGroup>
   <Import Project="crossgen2.props" />
 </Project>
