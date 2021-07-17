@@ -1129,6 +1129,21 @@ enum interesting_data_point
     max_idp_count
 };
 
+enum bookkeeping_element
+{
+    card_table_element,
+    brick_table_element,
+#ifdef CARD_BUNDLE
+    card_bundle_table_element,
+#endif
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    software_write_watch_table_element,
+#endif
+    seg_mapping_table_element,
+    mark_array_element,
+    total_bookkeeping_elements
+};
+
 //class definition of the internal class
 class gc_heap
 {
@@ -1499,6 +1514,20 @@ public:
 
     static
     uint32_t* make_card_table (uint8_t* start, uint8_t* end);
+
+    static
+    void get_card_table_element_layout (uint8_t* start, uint8_t* end, size_t layout[total_bookkeeping_elements + 1]);
+
+    static
+    void get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t bookkeeping_sizes[total_bookkeeping_elements]);
+
+#ifdef USE_REGIONS
+    static
+    bool on_used_changed (uint8_t* left);
+
+    static
+    bool inplace_commit_card_table (uint8_t* from, uint8_t* to);
+#endif //USE_REGIONS
 
     static
     void set_fgm_result (failure_get_memory f, size_t s, BOOL loh_p);
@@ -4779,6 +4808,20 @@ public:
 protected:
     PER_HEAP
     void update_collection_counts ();
+    
+    PER_HEAP_ISOLATED
+    size_t card_table_element_layout[total_bookkeeping_elements + 1];
+
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    uint8_t* bookkeeping_covered_start;
+
+    PER_HEAP_ISOLATED
+    uint8_t* bookkeeping_covered_committed;
+
+    PER_HEAP_ISOLATED
+    size_t bookkeeping_sizes[total_bookkeeping_elements];
+#endif //USE_REGIONS
 }; // class gc_heap
 
 #define ASSERT_OFFSETS_MATCH(field) \
@@ -5440,6 +5483,8 @@ enum allocate_direction
     allocate_backward = -1,
 };
 
+typedef bool (*region_allocator_callback_fn)(uint8_t*);
+
 // The big space we reserve for regions is divided into units of region_alignment.
 // 
 // SOH regions are all basic regions, meaning their size is the same as alignment. UOH regions 
@@ -5491,7 +5536,7 @@ private:
     uint8_t* region_address_of (uint32_t* map_index);
     uint32_t* region_map_index_of (uint8_t* address);
 
-    uint8_t* allocate (uint32_t num_units, allocate_direction direction);
+    uint8_t* allocate (uint32_t num_units, allocate_direction direction, region_allocator_callback_fn fn);
     uint8_t* allocate_end (uint32_t num_units, allocate_direction direction);
 
     void enter_spin_lock();
@@ -5529,10 +5574,11 @@ private:
 
 public:
     bool init (uint8_t* start, uint8_t* end, size_t alignment, uint8_t** lowest, uint8_t** highest);
-    bool allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction);
-    bool allocate_basic_region (uint8_t** start, uint8_t** end);
-    bool allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction, size_t size = 0);
+    bool allocate_region (size_t size, uint8_t** start, uint8_t** end, allocate_direction direction, region_allocator_callback_fn fn);
+    bool allocate_basic_region (uint8_t** start, uint8_t** end, region_allocator_callback_fn fn);
+    bool allocate_large_region (uint8_t** start, uint8_t** end, allocate_direction direction, size_t size, region_allocator_callback_fn fn);
     void delete_region (uint8_t* start);
+    void delete_region_impl (uint8_t* start);
     uint32_t get_va_memory_load()
     {
         return (uint32_t)(((global_region_left_used - global_region_start) + ((global_region_end - global_region_right_used)))* 100.0
@@ -5542,6 +5588,13 @@ public:
     size_t get_free() { return (total_free_units * region_alignment) ; }
     size_t get_region_alignment () { return region_alignment; }
     size_t get_large_region_alignment () { return large_region_alignment; }
+
+    uint8_t* get_start() { return global_region_start; }
+
+    // global_region_left_used can be modified concurrently by allocate and delete
+    // usage of this function must make sure either it is under the region lock or we
+    // are certain that these functions cannot be running concurrently.
+    uint8_t* get_left_used_unsafe() { return global_region_left_used; }
 };
 #endif //USE_REGIONS
 
