@@ -34,7 +34,7 @@ using System.Text;
 
 namespace System.Reflection
 {
-    public partial class CustomAttributeData
+    internal sealed class RuntimeCustomAttributeData : CustomAttributeData
     {
         private sealed class LazyCAttrData
         {
@@ -48,12 +48,8 @@ namespace System.Reflection
         private IList<CustomAttributeNamedArgument> namedArgs = null!;
         private LazyCAttrData? lazyData;
 
-        protected CustomAttributeData()
-        {
-        }
-
         // custom-attrs.c:create_custom_attr_data ()
-        internal CustomAttributeData(ConstructorInfo ctorInfo, Assembly assembly, IntPtr data, uint data_length)
+        internal RuntimeCustomAttributeData(ConstructorInfo ctorInfo, Assembly assembly, IntPtr data, uint data_length)
         {
             this.ctorInfo = ctorInfo;
             this.lazyData = new LazyCAttrData();
@@ -62,12 +58,12 @@ namespace System.Reflection
             this.lazyData.data_length = data_length;
         }
 
-        internal CustomAttributeData(ConstructorInfo ctorInfo)
+        internal RuntimeCustomAttributeData(ConstructorInfo ctorInfo)
             : this(ctorInfo, Array.Empty<CustomAttributeTypedArgument>(), Array.Empty<CustomAttributeNamedArgument>())
         {
         }
 
-        internal CustomAttributeData(ConstructorInfo ctorInfo, IList<CustomAttributeTypedArgument> ctorArgs, IList<CustomAttributeNamedArgument> namedArgs)
+        internal RuntimeCustomAttributeData(ConstructorInfo ctorInfo, IList<CustomAttributeTypedArgument> ctorArgs, IList<CustomAttributeNamedArgument> namedArgs)
         {
             this.ctorInfo = ctorInfo;
             this.ctorArgs = ctorArgs;
@@ -94,7 +90,7 @@ namespace System.Reflection
         }
 
         public
-        virtual
+        override
         ConstructorInfo Constructor
         {
             get
@@ -104,7 +100,7 @@ namespace System.Reflection
         }
 
         public
-        virtual
+        override
         IList<CustomAttributeTypedArgument> ConstructorArguments
         {
             get
@@ -115,7 +111,7 @@ namespace System.Reflection
         }
 
         public
-        virtual
+        override
         IList<CustomAttributeNamedArgument> NamedArguments
         {
             get

@@ -544,9 +544,9 @@ namespace System.Reflection
             count = 0;
 
             if ((Attributes & TypeAttributes.Serializable) != 0)
-                attrsData[count++] = new CustomAttributeData((typeof(SerializableAttribute)).GetConstructor(Type.EmptyTypes)!);
+                attrsData[count++] = new RuntimeCustomAttributeData((typeof(SerializableAttribute)).GetConstructor(Type.EmptyTypes)!);
             if ((Attributes & TypeAttributes.Import) != 0)
-                attrsData[count++] = new CustomAttributeData((typeof(ComImportAttribute)).GetConstructor(Type.EmptyTypes)!);
+                attrsData[count++] = new RuntimeCustomAttributeData((typeof(ComImportAttribute)).GetConstructor(Type.EmptyTypes)!);
 
             return attrsData;
         }
