@@ -552,6 +552,26 @@ namespace Mono.Linker
 			return marked_types_with_cctor.Add (type);
 		}
 
+		/// <summary>
+		/// Looks if there is a RequiresUnreferencedCodeAttribute on the <paramref name="type"/> or any of its declaring types and returns the attribute information
+		/// on <paramref name="attribute"/>
+		/// </summary>
+		/// <param name="type">Type to start the search of the attribute</param>
+		/// <param name="attribute">Information about the found RequiresUnreferencedCode Attribute</param>
+		/// <returns>Returns true along with the RequiresUnreferencedCodeAttribute if found, otherwise returns false</returns>
+		public bool TryGetEffectiveRequiresUnreferencedCodeAttributeOnType (TypeDefinition type, out RequiresUnreferencedCodeAttribute attribute)
+		{
+			do {
+				if (TryGetLinkerAttribute (type, out RequiresUnreferencedCodeAttribute declaringTypeAttribute)) {
+					attribute = declaringTypeAttribute;
+					return true;
+				}
+				type = type.DeclaringType;
+			} while (type != null);
+			attribute = null;
+			return false;
+		}
+
 		public bool HasLinkerAttribute<T> (IMemberDefinition member) where T : Attribute
 		{
 			// Avoid setting up and inserting LinkerAttributesInformation for members without attributes.
