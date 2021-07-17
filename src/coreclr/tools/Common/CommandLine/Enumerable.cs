@@ -18,16 +18,6 @@ namespace Internal.CommandLine
             return Linq.Enumerable.Empty<T>();
         }
 
-        public static IEnumerable<U> Select<T, U>(this IEnumerable<T> values, Func<T, U> func)
-        {
-            Debug.Assert(values != null);
-
-            foreach (T value in values)
-            {
-                yield return func(value);
-            }
-        }
-
         public static IEnumerable<T> Where<T>(this IEnumerable<T> values, Func<T, bool> func)
         {
             Debug.Assert(values != null);
@@ -37,11 +27,6 @@ namespace Internal.CommandLine
                 if (func(value))
                     yield return value;
             }
-        }
-
-        public static IEnumerable<T> Concat<T>(this IEnumerable<T> first, IEnumerable<T> second)
-        {
-            return Linq.Enumerable.Concat(first, second);
         }
 
         public static bool All<T>(this IEnumerable<T> source, Func<T, bool> predicate)
