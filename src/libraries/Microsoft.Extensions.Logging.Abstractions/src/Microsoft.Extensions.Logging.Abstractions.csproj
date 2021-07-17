@@ -35,8 +35,4 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
-  <ItemGroup> 
-    <AnalyzerReference Include="..\gen\Microsoft.Extensions.Logging.Generators.csproj" />
-  </ItemGroup>
-
 </Project>
