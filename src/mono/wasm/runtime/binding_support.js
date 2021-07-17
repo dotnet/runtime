@@ -26,6 +26,7 @@ var BindingSupportLib = {
 			module ["mono_bind_assembly_entry_point"] = BINDING.bind_assembly_entry_point.bind(BINDING);
 			module ["mono_call_assembly_entry_point"] = BINDING.call_assembly_entry_point.bind(BINDING);
 			module ["mono_intern_string"] = BINDING.mono_intern_string.bind(BINDING);
+			module ["mono_register_js_lifetime_object"] = BINDING.mono_register_js_lifetime_object.bind(BINDING);
 		},
 
 		bindings_lazy_init: function () {
@@ -146,6 +147,7 @@ var BindingSupportLib = {
 			this.safehandle_release = get_method ("SafeHandleRelease");
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
+			this.release_js_lifetime_object = bind_runtime_method ("ReleaseJSLifetimeObject", "i");
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 
@@ -155,6 +157,19 @@ var BindingSupportLib = {
 			this._interned_string_current_root_buffer = null;
 			this._interned_string_current_root_buffer_count = 0;
 			this._interned_js_string_table = new Map ();
+
+			this._js_lifetime_object_registry = new FinalizationRegistry(this._js_lifetime_object_finalized.bind(this));
+		},
+
+		mono_register_js_lifetime_object: function (id, obj) {
+			this.bindings_lazy_init();
+			console.log(`registering lifetime object ${id}`);
+			this._js_lifetime_object_registry.register(obj, id);
+		},
+
+		_js_lifetime_object_finalized: function (id) {
+			console.log(`releasing lifetime object ${id}`);
+			this.release_js_lifetime_object(id);
 		},
 
 		// Ensures the string is already interned on both the managed and JavaScript sides,

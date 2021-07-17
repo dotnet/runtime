@@ -218,13 +218,44 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject.Int32Handle;
         }
 
-        public static JSObject CreateJSObjectForCLRObject(object rawObj, int jsId) {
-            var jsObject = new JSObject(jsId, rawObj);
-            lock (_rawToJS)
-            {
-                _rawToJS.Add(rawObj, jsObject);
+        private static int _NextJSLifetimeID = 0xFFFFFF;
+        private static object JSLifetimeLock = new object();
+        private static Dictionary<JSObject, object> ObjectFromJSLifetime = new Dictionary<JSObject, object>();
+        private static Dictionary<object, JSObject> JSLifetimeFromObject = new Dictionary<object, JSObject>();
+        private static Dictionary<int, JSObject> JSLifetimeFromID = new Dictionary<int, JSObject>();
+
+        public static JSObject GetJSLifetimeObject (object? rawObj) {
+            if (rawObj == null)
+                throw new ArgumentNullException(nameof(rawObj));
+
+            JSObject result;
+            int id;
+            lock (JSLifetimeLock) {
+                if (JSLifetimeFromObject.TryGetValue(rawObj, out result))
+                    return result;
+                id = _NextJSLifetimeID++;
             }
-            return jsObject;
+                
+            result = new JSObject(id, rawObj);
+
+            lock (JSLifetimeLock) {
+                ObjectFromJSLifetime.Add(result, rawObj);
+                JSLifetimeFromObject.Add(rawObj, result);
+                JSLifetimeFromID.Add(id, result);
+            }
+
+            return result;
+        }
+
+        public static void ReleaseJSLifetimeObject (int id) {
+            lock (JSLifetimeLock) {
+                var jsObject = JSLifetimeFromID[id];
+                var rawObj = ObjectFromJSLifetime[jsObject];
+                JSLifetimeFromID.Remove(id);
+                ObjectFromJSLifetime.Remove(jsObject);
+                JSLifetimeFromObject.Remove(rawObj);
+                jsObject.Dispose();
+            }
         }
 
         public static JSObject? TryGetJSObjectForCLRObject(object rawObj) {

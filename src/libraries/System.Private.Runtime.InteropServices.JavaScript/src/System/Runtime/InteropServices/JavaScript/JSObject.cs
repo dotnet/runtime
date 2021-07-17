@@ -81,19 +81,7 @@ namespace System.Runtime.InteropServices.JavaScript
             public bool Capture;
             public bool Once;
             public bool Passive;
-            public bool Weak;
             public object? Signal;
-        }
-
-        // FIXME: The existing Runtime binding apis are completely unusable for this
-        private static int _NextJSObjectID = 0xFFFFFF;
-        private static JSObject GetJSObjectForDelegate (Delegate d) {
-            var result = Runtime.TryGetJSObjectForCLRObject(d);
-            if (result != null)
-                return result;
-
-            int id = _NextJSObjectID++;
-            return Runtime.CreateJSObjectForCLRObject(d, id);
         }
 
         public JSObject AddEventListener(string name, Delegate listener, EventListenerOptions? options = null)
@@ -106,7 +94,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (options?.Signal != null)
                     throw new NotImplementedException("EventListenerOptions.Signal");
 
-                var jsfunc = GetJSObjectForDelegate(listener);
+                var jsfunc = Runtime.GetJSLifetimeObject(listener);
                 int exception;
                 if (options.HasValue) {
                     // TODO: Optimize this
@@ -124,10 +112,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 var res = Interop.Runtime.InvokeJSWithArgs(JSHandle, "addEventListener", args, out exception);
                 if (exception != 0)
                     throw new JSException((string)res);
-                else if (options?.Weak != true) {
-                    bool success = false;
-                    jsfunc.DangerousAddRef(ref success);
-                }
                 return jsfunc;
             } finally {
                 optionsDict?.Dispose();
@@ -138,11 +122,9 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (listener == null)
                 return;
-            var jsfunc = GetJSObjectForDelegate(listener);
+            var jsfunc = Runtime.GetJSLifetimeObject(listener);
             // TODO: Unique syscall
             RemoveEventListener(name, jsfunc, options);
-            if (options?.Weak != true)
-                jsfunc.DangerousRelease();
         }
 
         public void RemoveEventListener(string name, JSObject listener, EventListenerOptions? options = null)
