@@ -27,7 +27,8 @@
     <Message Text="Building Targeting Pack" Importance="High" />
     <Error Text="TargetOS has not been specified. Please do that then run build again." Condition="'$(TargetOS)' == 'AnyOS'" />
     <MSBuild Projects="Common\external\external.csproj"
-             Targets="Build" />
+             Targets="Build"
+             Properties="ForNode=$(ForNode)" />
   </Target>
 
   <Target Name="BatchRestorePackages" Condition="$(__SkipPackageRestore) != 'true'">
@@ -35,7 +36,7 @@
 
     <!-- restore all csproj's with PackageReferences in one pass -->
     <MSBuild Projects="build.proj"
-             Properties="RestoreProj=%(RestoreProjects.Identity)"
+             Properties="RestoreProj=%(RestoreProjects.Identity);ForNode=$(ForNode)"
              Targets="RestorePackage" />
 
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages...Done." />

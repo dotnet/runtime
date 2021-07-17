@@ -209,7 +209,8 @@
     <MSBuild
       Targets="GetPackageIdentity"
       BuildInParallel="$(BuildInParallel)"
-      Projects="@(RuntimeProject -> WithMetadataValue('Extension', '.pkgproj'))">
+      Projects="@(RuntimeProject -> WithMetadataValue('Extension', '.pkgproj'))"
+      Properties="ForNode=$(ForNode)">
       <Output TaskParameter="TargetOutputs" ItemName="_runtimeDependencyIdentity" />
     </MSBuild>
 

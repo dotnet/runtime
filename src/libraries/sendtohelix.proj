@@ -131,11 +131,11 @@
     <ItemGroup>
       <_Scenario Include="$(Scenarios.Split(','))" />
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <AdditionalProperties>Scenario=%(_Scenario.Identity)</AdditionalProperties>
+        <AdditionalProperties>Scenario=%(_Scenario.Identity);ForNode=$(ForNode)</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
 
-    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateOneScenarioTestEnvFile" StopOnFirstFailure="true" Properties="ForNode=$(ForNode)" />
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateOneScenarioTestEnvFile" StopOnFirstFailure="true"/>
   </Target>
 
   <Target Name="_CollectRuntimeInputs">
