@@ -125,6 +125,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
+                    VersionCheck();
                     Node? current = root;
                     T? result = default;
 
@@ -155,6 +156,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
+                    VersionCheck();
                     Node? current = root;
                     T? result = default;
 
