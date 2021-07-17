@@ -309,7 +309,7 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [DynamicDependency("#ctor(System.Reflection.ConstructorInfo,System.Reflection.Assembly,System.IntPtr,System.UInt32)", typeof(CustomAttributeData))]
+        [DynamicDependency("#ctor(System.Reflection.ConstructorInfo,System.Reflection.Assembly,System.IntPtr,System.UInt32)", typeof(RuntimeCustomAttributeData))]
         [DynamicDependency("#ctor(System.Reflection.MemberInfo,System.Object)", typeof(CustomAttributeNamedArgument))]
         [DynamicDependency("#ctor(System.Type,System.Object)", typeof(CustomAttributeTypedArgument))]
         private static extern CustomAttributeData[] GetCustomAttributesDataInternal(ICustomAttributeProvider obj);
