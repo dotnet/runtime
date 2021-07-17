@@ -125,17 +125,9 @@ namespace System.Runtime.Intrinsics
                     Vector256<double> result = Avx.Compare(this.AsDouble(), other.AsDouble(), FloatComparisonMode.OrderedEqualNonSignaling);
                     return Avx.MoveMask(result) == 0b1111; // We have one bit per element
                 }
-            }
 
-            if (Avx2.IsSupported)
-            {
-                // Unlike float/double, there are no special values to consider
-                // for integral types and we can just do a comparison that all
-                // bytes are exactly the same.
-
-                Debug.Assert((typeof(T) != typeof(float)) && (typeof(T) != typeof(double)));
-                Vector256<byte> result = Avx2.CompareEqual(this.AsByte(), other.AsByte());
-                return Avx2.MoveMask(result) == unchecked((int)(0b1111_1111_1111_1111_1111_1111_1111_1111)); // We have one bit per element
+                Vector256<byte> xored = Avx.Xor(this.AsByte(), other.AsByte());
+                return Avx.TestZ(xored, xored);
             }
 
             return SoftwareFallback(in this, other);

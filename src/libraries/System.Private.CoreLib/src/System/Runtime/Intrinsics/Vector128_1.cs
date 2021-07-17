@@ -116,6 +116,15 @@ namespace System.Runtime.Intrinsics
                 return Sse.MoveMask(result) == 0b1111; // We have one bit per element
             }
 
+            if (Sse41.IsSupported && (typeof(T) != typeof(double)))
+            {
+                Debug.Assert((typeof(T) != typeof(float))
+
+                // xor + testz is slightly better for integer types
+                Vector128<byte> xored = Sse2.Xor(this.AsByte(), other.AsByte());
+                return Sse41.TestZ(xored, xored);
+            }
+
             if (Sse2.IsSupported)
             {
                 if (typeof(T) == typeof(double))

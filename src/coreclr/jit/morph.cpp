@@ -11598,6 +11598,54 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_PUTARG_TYPE:
             return fgMorphTree(tree->AsUnOp()->gtGetOp1());
 
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+        {
+            GenTreeHWIntrinsic* hw = tree->AsHWIntrinsic();
+            switch (hw->gtHWIntrinsicId)
+            {
+                case NI_SSE2_Xor:
+                {
+                    // Optimize Sse2.Xor(x, Vector128.Zero) to x
+                    GenTree* op1 = hw->gtGetOp1();
+                    GenTree* op2 = hw->gtGetOp2();
+                    if (op1->OperIsHWIntrinsic() && (op1->AsHWIntrinsic()->gtHWIntrinsicId == NI_Vector128_get_Zero))
+                    {
+                        INDEBUG(op2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                        return op2;
+                    }
+                    if (op2->OperIsHWIntrinsic() && (op2->AsHWIntrinsic()->gtHWIntrinsicId == NI_Vector128_get_Zero))
+                    {
+                        INDEBUG(op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                        return op1;
+                    }
+                    break;
+                }
+
+                case NI_AVX_Xor:
+                {
+                    // Optimize Avx.Xor(x, Vector128.Zero) to x
+                    GenTree* op1 = hw->gtGetOp1();
+                    GenTree* op2 = hw->gtGetOp2();
+                    if (op1->OperIsHWIntrinsic() && (op1->AsHWIntrinsic()->gtHWIntrinsicId == NI_Vector256_get_Zero))
+                    {
+                        INDEBUG(op2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                        return op2;
+                    }
+                    if (op2->OperIsHWIntrinsic() && (op2->AsHWIntrinsic()->gtHWIntrinsicId == NI_Vector256_get_Zero))
+                    {
+                        INDEBUG(op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                        return op1;
+                    }
+                    break;
+                }
+
+                default:
+                    break;
+            }
+        }
+#endif
+
         default:
             break;
     }
