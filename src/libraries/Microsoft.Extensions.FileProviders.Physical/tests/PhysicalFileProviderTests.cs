@@ -15,7 +15,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.FileProviders
 {
-    public class PhysicalFileProviderTests
+    public partial class PhysicalFileProviderTests
     {
         private const int WaitTimeForTokenToFire = 500;
         private const int WaitTimeForTokenCallback = 10000;
