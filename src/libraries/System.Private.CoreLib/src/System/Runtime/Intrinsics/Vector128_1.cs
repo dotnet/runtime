@@ -118,7 +118,7 @@ namespace System.Runtime.Intrinsics
 
             if (Sse41.IsSupported && (typeof(T) != typeof(double)))
             {
-                Debug.Assert((typeof(T) != typeof(float))
+                Debug.Assert(typeof(T) != typeof(float));
 
                 // xor + testz is slightly better for integer types
                 Vector128<byte> xored = Sse2.Xor(this.AsByte(), other.AsByte());
