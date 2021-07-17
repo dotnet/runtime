@@ -16,19 +16,12 @@ namespace System.Reflection
             if (memberInfo == null)
                 throw new ArgumentNullException(nameof(memberInfo));
 
-            Type type;
-            if (memberInfo is FieldInfo field)
+            Type type = memberInfo switch
             {
-                type = field.FieldType;
-            }
-            else if (memberInfo is PropertyInfo property)
-            {
-                type = property.PropertyType;
-            }
-            else
-            {
-                throw new ArgumentException(SR.Argument_InvalidMemberForNamedArgument);
-            }
+                FieldInfo field => field.FieldType,
+                PropertyInfo property => property.PropertyType,
+                _ => throw new ArgumentException(SR.Argument_InvalidMemberForNamedArgument)
+            };
 
             _memberInfo = memberInfo;
             _value = new CustomAttributeTypedArgument(type, value);
