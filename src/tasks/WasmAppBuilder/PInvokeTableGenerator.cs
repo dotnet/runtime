@@ -22,6 +22,8 @@ public class PInvokeTableGenerator : Task
     [Required]
     public string? OutputPath { get; set; }
 
+    private static char[] s_charsToReplace = new[] { '.', '-', };
+
     public override bool Execute()
     {
         Log.LogMessage(MessageImportance.Normal, $"Generating pinvoke table to '{OutputPath}'.");
@@ -101,7 +103,7 @@ public class PInvokeTableGenerator : Task
 
         foreach (var module in modules.Keys)
         {
-            string symbol = module.Replace(".", "_") + "_imports";
+            string symbol = ModuleNameToId(module) + "_imports";
             w.WriteLine("static PinvokeImport " + symbol + " [] = {");
 
             var assemblies_pinvokes = pinvokes.
@@ -120,7 +122,7 @@ public class PInvokeTableGenerator : Task
         w.Write("static void *pinvoke_tables[] = { ");
         foreach (var module in modules.Keys)
         {
-            string symbol = module.Replace(".", "_") + "_imports";
+            string symbol = ModuleNameToId(module) + "_imports";
             w.Write(symbol + ",");
         }
         w.WriteLine("};");
@@ -130,6 +132,18 @@ public class PInvokeTableGenerator : Task
             w.Write("\"" + module + "\"" + ",");
         }
         w.WriteLine("};");
+
+        static string ModuleNameToId(string name)
+        {
+            if (name.IndexOfAny(s_charsToReplace) < 0)
+                return name;
+
+            string fixedName = name;
+            foreach (char c in s_charsToReplace)
+                fixedName = fixedName.Replace(c, '_');
+
+            return fixedName;
+        }
     }
 
     private string MapType (Type t)

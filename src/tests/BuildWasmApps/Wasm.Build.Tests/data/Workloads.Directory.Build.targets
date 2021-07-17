@@ -2,7 +2,6 @@
   <PropertyGroup>
     <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
     <_MicrosoftNetCoreAppRefDir>$(AppRefDir)\</_MicrosoftNetCoreAppRefDir>
-    <LocalFrameworkOverrideName>Microsoft.NETCore.App</LocalFrameworkOverrideName>
   </PropertyGroup>
 
   <Target Name="PrepareForWasmBuild">

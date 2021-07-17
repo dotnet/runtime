@@ -31,9 +31,8 @@ namespace Wasm.Build.Tests
         {
             string projectName = $"{projectNamePrefix}_{buildArgs.Config}_{buildArgs.AOT}";
 
-            buildArgs = buildArgs with { ProjectName = projectName, ProjectFileContents = projectContents };
+            buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
-            Console.WriteLine ($"-- args: {buildArgs}, name: {projectName}");
 
             BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), projectContents),
