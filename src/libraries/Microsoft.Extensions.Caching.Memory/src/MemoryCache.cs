@@ -74,7 +74,8 @@ namespace Microsoft.Extensions.Caching.Memory
         ~MemoryCache() => Dispose(false);
 
         /// <summary>
-        /// Gets the count of the current entries for diagnostic purposes.
+        /// Gets the count of the current entries. This value should not be taken as an exact number of entries
+        /// since it can be slighly off, if or while, concurrent writes to the cache happen.
         /// </summary>
         public int Count => _countEntries;
 
@@ -179,7 +180,6 @@ namespace Microsoft.Extensions.Caching.Memory
 
                 if (entryAdded)
                 {
-                    Interlocked.Increment(ref _countEntries);
                     entry.AttachTokens();
                 }
                 else
