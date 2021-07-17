@@ -234,8 +234,7 @@ namespace System
         //
         public DateTime(int year, int month, int day, int hour, int minute, int second, Calendar calendar)
         {
-            if (calendar == null)
-                throw new ArgumentNullException(nameof(calendar));
+            ArgumentNullException.ThrowIfNull(calendar, nameof(calendar));
 
             if (second != 60 || !s_systemSupportsLeapSeconds)
             {
@@ -296,8 +295,7 @@ namespace System
         //
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar)
         {
-            if (calendar == null)
-                throw new ArgumentNullException(nameof(calendar));
+            ArgumentNullException.ThrowIfNull(calendar, nameof(calendar));
 
             if (second != 60 || !s_systemSupportsLeapSeconds)
             {
@@ -313,8 +311,7 @@ namespace System
 
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, DateTimeKind kind)
         {
-            if (calendar == null)
-                throw new ArgumentNullException(nameof(calendar));
+            ArgumentNullException.ThrowIfNull(calendar, nameof(calendar));
             if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
 
@@ -461,17 +458,9 @@ namespace System
             GetDate(out int year, out int month, out int day);
             int y = year, d = day;
             int m = month + months;
-            if (m > 0)
-            {
-                int q = (int)((uint)(m - 1) / 12);
-                y += q;
-                m -= q * 12;
-            }
-            else
-            {
-                y += m / 12 - 1;
-                m = 12 + m % 12;
-            }
+            int q = m > 0 ? (int)((uint)(m - 1) / 12) : m / 12 - 1;
+            y += q;
+            m -= q * 12;
             if (y < 1 || y > 9999) ThrowDateArithmetic(2);
             uint[] daysTo = IsLeapYear(y) ? s_daysToMonth366 : s_daysToMonth365;
             uint daysToMonth = daysTo[m - 1];

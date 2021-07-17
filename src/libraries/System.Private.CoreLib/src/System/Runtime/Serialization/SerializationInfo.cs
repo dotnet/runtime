@@ -26,15 +26,8 @@ namespace System.Runtime.Serialization
         [CLSCompliant(false)]
         public SerializationInfo(Type type, IFormatterConverter converter)
         {
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (converter == null)
-            {
-                throw new ArgumentNullException(nameof(converter));
-            }
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(converter, nameof(converter));
 
             _rootType = type;
             _rootTypeName = type.FullName!;
@@ -61,11 +54,7 @@ namespace System.Runtime.Serialization
             get => _rootTypeName;
             set
             {
-                if (null == value)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
+                ArgumentNullException.ThrowIfNull(value, nameof(value));
                 _rootTypeName = value;
                 IsFullTypeNameSetExplicit = true;
             }
@@ -76,10 +65,7 @@ namespace System.Runtime.Serialization
             get => _rootTypeAssemblyName;
             set
             {
-                if (null == value)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value, nameof(value));
                 _rootTypeAssemblyName = value;
                 IsAssemblyNameSetExplicit = true;
             }
@@ -91,10 +77,7 @@ namespace System.Runtime.Serialization
 
         public void SetType(Type type)
         {
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
 
             if (!ReferenceEquals(_rootType, type))
             {
@@ -145,15 +128,8 @@ namespace System.Runtime.Serialization
 
         public void AddValue(string name, object? value, Type type)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(name, nameof(name));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
 
             AddValueInternal(name, value, type);
         }
@@ -302,10 +278,7 @@ namespace System.Runtime.Serialization
 
         private int FindElement(string name)
         {
-            if (null == name)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name, nameof(name));
             if (_nameToIndex.TryGetValue(name, out int index))
             {
                 return index;
@@ -356,10 +329,7 @@ namespace System.Runtime.Serialization
 
         public object? GetValue(string name, Type type)
         {
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
 
             if (!type.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
