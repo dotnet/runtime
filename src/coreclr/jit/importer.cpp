@@ -10937,6 +10937,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
 
     // Pessimistically assume the jit cannot expand this as an inline test
     bool                  canExpandInline = false;
+    bool                  partialExpand   = false;
     const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
 
     // Legality check.
@@ -10956,6 +10957,23 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
             {
                 // If the class is exact, the jit can expand the IsInst check inline.
                 canExpandInline = impIsClassExact(pResolvedToken->hClass);
+                if (!canExpandInline)
+                {
+                    // If class is not exact we still can expand the cast with a fallback.
+                    // TODO: rely on PGO data, see https://github.com/dotnet/runtime/issues/55325
+                    const UINT32 attrs = info.compCompHnd->getClassAttribs(pResolvedToken->hClass);
+
+                    // Use compareTypesForEquality to filter out types like shared generics (but still support some
+                    // canonical subtypes)
+                    if (((attrs & CORINFO_FLG_ABSTRACT) == 0) &&
+                        (info.compCompHnd->compareTypesForEquality(pResolvedToken->hClass, pResolvedToken->hClass) ==
+                         TypeCompareState::Must))
+                    {
+                        canExpandInline = true;
+                        partialExpand   = true;
+                    }
+                    assert((attrs & CORINFO_FLG_INTERFACE) == 0);
+                }
             }
         }
     }
@@ -11000,7 +11018,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     //
 
     GenTree* op2Var = op2;
-    if (isCastClass)
+    if (isCastClass || partialExpand)
     {
         op2Var                                                  = fgInsertCommaFormTemp(&op2);
         lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
@@ -11032,6 +11050,10 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
         const CorInfoHelpFunc specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
 
         condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, gtNewCallArgs(op2Var, gtClone(op1)));
+    }
+    else if (partialExpand)
+    {
+        condTrue = gtNewHelperCallNode(helper, TYP_REF, gtNewCallArgs(op2Var, gtClone(op1)));
     }
     else
     {
