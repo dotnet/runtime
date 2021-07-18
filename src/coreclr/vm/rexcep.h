@@ -207,7 +207,7 @@ DEFINE_EXCEPTION(g_SystemNS,           NotFiniteNumberException,       false,  C
 
 DEFINE_EXCEPTION(g_SystemNS,           NotSupportedException,          false,  COR_E_NOTSUPPORTED, STD_CTL_SCODE(438), STD_CTL_SCODE(445), STD_CTL_SCODE(458), STD_CTL_SCODE(459))
 
-DEFINE_EXCEPTION(g_SystemNS,           NullReferenceException,         false,  COR_E_NULLREFERENCE)
+DEFINE_EXCEPTION(g_SystemNS,           NullReferenceException,         false,  COR_E_OUTOFMEMORY)
 // Note: this has to come after NullReferenceException since we want NullReferenceException to be created
 // when E_POINTER is returned from COM interfaces.
 DEFINE_EXCEPTION(g_SystemNS,           AccessViolationException,       false,  E_POINTER)
