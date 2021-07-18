@@ -81,29 +81,31 @@ static gint32 signatures_size;
 void
 mono_loader_init ()
 {
-	static volatile gboolean runInit = TRUE;
+	static volatile gboolean inited = FALSE;
 
-	if (runInit) {
-		runInit = FALSE;
-
-		mono_coop_mutex_init_recursive (&loader_mutex);
-		mono_os_mutex_init_recursive (&global_loader_data_mutex);
-		loader_lock_inited = TRUE;
-
-		mono_global_loader_cache_init ();
-
-		mono_native_tls_alloc (&loader_lock_nest_id, NULL);
-
-		mono_counters_init ();
-		mono_counters_register ("Inflated signatures size",
-								MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_signatures_size);
-		mono_counters_register ("Memberref signature cache size",
-								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &memberref_sig_cache_size);
-		mono_counters_register ("MonoMethod size",
-								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &methods_size);
-		mono_counters_register ("MonoMethodSignature size",
-								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &signatures_size);
+	if (inited) {
+		return;
 	}
+	
+	runInit = TRUE;
+
+	mono_coop_mutex_init_recursive (&loader_mutex);
+	mono_os_mutex_init_recursive (&global_loader_data_mutex);
+	loader_lock_inited = TRUE;
+
+	mono_global_loader_cache_init ();
+
+	mono_native_tls_alloc (&loader_lock_nest_id, NULL);
+
+	mono_counters_init ();
+	mono_counters_register ("Inflated signatures size",
+								MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_signatures_size);
+	mono_counters_register ("Memberref signature cache size",
+								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &memberref_sig_cache_size);
+	mono_counters_register ("MonoMethod size",
+								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &methods_size);
+	mono_counters_register ("MonoMethodSignature size",
+								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &signatures_size);
 }
 
 void
