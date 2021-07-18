@@ -330,7 +330,7 @@ FCIMPL1(INT32, ThreadNative::GetPriority, ThreadBaseObject* pThisUNSAFE)
     FCALL_CONTRACT;
 
     if (pThisUNSAFE==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
+        FCThrowRes(kOverflowException, W("NullReference_This"));
 
     // validate the handle
     if (ThreadIsDead(pThisUNSAFE->GetInternal()))
@@ -352,7 +352,7 @@ FCIMPL2(void, ThreadNative::SetPriority, ThreadBaseObject* pThisUNSAFE, INT32 iP
 
     if (pThis==NULL)
     {
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+        COMPlusThrow(kOverflowException, W("NullReference_This"));
     }
 
     // translate the priority (validating as well)
@@ -389,7 +389,7 @@ FCIMPL1(void, ThreadNative::Interrupt, ThreadBaseObject* pThisUNSAFE)
     FCALL_CONTRACT;
 
     if (pThisUNSAFE==NULL)
-        FCThrowResVoid(kNullReferenceException, W("NullReference_This"));
+        FCThrowResVoid(kOverflowException, W("NullReference_This"));
 
     Thread  *thread = pThisUNSAFE->GetInternal();
 
@@ -409,7 +409,7 @@ FCIMPL1(FC_BOOL_RET, ThreadNative::IsAlive, ThreadBaseObject* pThisUNSAFE)
     FCALL_CONTRACT;
 
     if (pThisUNSAFE==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
+        FCThrowRes(kOverflowException, W("NullReference_This"));
 
     THREADBASEREF thisRef(pThisUNSAFE);
     BOOL ret = false;
@@ -445,7 +445,7 @@ FCIMPL2(FC_BOOL_RET, ThreadNative::Join, ThreadBaseObject* pThisUNSAFE, INT32 Ti
     HELPER_METHOD_FRAME_BEGIN_RET_1(pThis);
 
     if (pThis==NULL)
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+        COMPlusThrow(kOverflowException, W("NullReference_This"));
 
     // validate the timeout
     if ((Timeout < 0) && (Timeout != INFINITE_TIMEOUT))
@@ -490,7 +490,7 @@ FCIMPL1(INT32, ThreadNative::GetManagedThreadId, ThreadBaseObject* th) {
 
     FC_GC_POLL_NOT_NEEDED();
     if (th == NULL)
-        FCThrow(kNullReferenceException);
+        FCThrow(kOverflowException);
 
     return th->GetManagedThreadId();
 }
@@ -585,7 +585,7 @@ FCIMPL2(void, ThreadNative::SetBackground, ThreadBaseObject* pThisUNSAFE, CLR_BO
     FCALL_CONTRACT;
 
     if (pThisUNSAFE==NULL)
-        FCThrowResVoid(kNullReferenceException, W("NullReference_This"));
+        FCThrowResVoid(kOverflowException, W("NullReference_This"));
 
     // validate the thread
     Thread  *thread = pThisUNSAFE->GetInternal();
@@ -607,7 +607,7 @@ FCIMPL1(FC_BOOL_RET, ThreadNative::IsBackground, ThreadBaseObject* pThisUNSAFE)
     FCALL_CONTRACT;
 
     if (pThisUNSAFE==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
+        FCThrowRes(kOverflowException, W("NullReference_This"));
 
     // validate the thread
     Thread  *thread = pThisUNSAFE->GetInternal();
@@ -632,7 +632,7 @@ FCIMPL1(INT32, ThreadNative::GetThreadState, ThreadBaseObject* pThisUNSAFE)
     Thread::ThreadState state;
 
     if (pThisUNSAFE==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
+        FCThrowRes(kOverflowException, W("NullReference_This"));
 
     // validate the thread.  Failure here implies that the thread was finalized
     // and then resurrected.
@@ -683,7 +683,7 @@ FCIMPL2(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, I
     FCALL_CONTRACT;
 
     if (pThisUNSAFE==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
+        FCThrowRes(kOverflowException, W("NullReference_This"));
 
     INT32           retVal  = ApartmentUnknown;
     BOOL    ok = TRUE;
@@ -769,7 +769,7 @@ FCIMPL1(INT32, ThreadNative::GetApartmentState, ThreadBaseObject* pThisUNSAFE)
 
     if (refThis == NULL)
     {
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+        COMPlusThrow(kOverflowException, W("NullReference_This"));
     }
 
     Thread* thread = refThis->GetInternal();
@@ -1058,7 +1058,7 @@ FCIMPL1(FC_BOOL_RET, ThreadNative::IsThreadpoolThread, ThreadBaseObject* thread)
     FCALL_CONTRACT;
 
     if (thread==NULL)
-        FCThrowRes(kNullReferenceException, W("NullReference_This"));
+        FCThrowRes(kOverflowException, W("NullReference_This"));
 
     Thread *pThread = thread->GetInternal();
 
@@ -1078,12 +1078,12 @@ FCIMPL1(void, ThreadNative::SetIsThreadpoolThread, ThreadBaseObject* thread)
     FCALL_CONTRACT;
 
     if (thread == NULL)
-        FCThrowResVoid(kNullReferenceException, W("NullReference_This"));
+        FCThrowResVoid(kOverflowException, W("NullReference_This"));
 
     Thread *pThread = thread->GetInternal();
 
     if (pThread == NULL)
-        FCThrowExVoid(kThreadStateException, IDS_EE_THREAD_DEAD_STATE, NULL, NULL, NULL);
+        FCThrowExVoid(kOverflowException, IDS_EE_THREAD_DEAD_STATE, NULL, NULL, NULL);
 
     pThread->SetIsThreadPoolThread();
 }
