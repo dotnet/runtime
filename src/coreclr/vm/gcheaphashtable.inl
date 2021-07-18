@@ -70,7 +70,7 @@ template <bool removeSupported>
     CONTRACTL_END;
 
     if (srcArray == NULL)
-        COMPlusThrow(kNullReferenceException);
+        COMPlusThrow(kSynchronizationLockException);
 
     if ((INT32)srcArray->GetNumComponents() < indexSrc)
         COMPlusThrow(kIndexOutOfRangeException);
@@ -101,7 +101,7 @@ template <bool removeSupported>
     PTRARRAYREF arr((PTRARRAYREF)(*pgcHeap)->GetData());
 
     if (arr == NULL)
-        COMPlusThrow(kNullReferenceException);
+        COMPlusThrow(kSynchronizationLockException);
 
     if ((INT32)arr->GetNumComponents() < index)
         COMPlusThrow(kIndexOutOfRangeException);
@@ -136,7 +136,7 @@ template<class TElement>
     PTRARRAYREF arr((PTRARRAYREF)(*pgcHeap)->GetData());
 
     if (arr == NULL)
-        COMPlusThrow(kNullReferenceException);
+        COMPlusThrow(kSynchronizationLockException);
 
     if ((INT32)arr->GetNumComponents() < index)
         COMPlusThrow(kIndexOutOfRangeException);
@@ -202,7 +202,7 @@ void GCHeapHash<TRAITS>::Insert(TKey *pKey, const TValueSetter &valueSetter)
         if (isNull || isDeleted)
         {
             if (arr == NULL)
-                COMPlusThrow(kNullReferenceException);
+                COMPlusThrow(kSynchronizationLockException);
 
             if ((INT32)arr->GetNumComponents() < index)
                 COMPlusThrow(kIndexOutOfRangeException);

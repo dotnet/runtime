@@ -1118,7 +1118,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
             LPVOID pReturnedReference = *(LPVOID*)&callDescrData.returnValue;
             if (pReturnedReference == NULL)
             {
-                COMPlusThrow(kNullReferenceException, IDS_INVOKE_NULLREF_RETURNED);
+                COMPlusThrow(kRankException, IDS_INVOKE_NULLREF_RETURNED);
             }
             CopyValueClass(gc.retVal->GetData(), pReturnedReference, gc.retVal->GetMethodTable());
         }
@@ -1145,7 +1145,7 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
         LPVOID pReturnedReference = *(LPVOID*)&callDescrData.returnValue;
         if (pReturnedReference == NULL)
         {
-            COMPlusThrow(kNullReferenceException, IDS_INVOKE_NULLREF_RETURNED);
+            COMPlusThrow(kRankException, IDS_INVOKE_NULLREF_RETURNED);
         }
 
         gc.retVal = InvokeUtil::CreateObjectAfterInvoke(refReturnTargetTH, pReturnedReference);
@@ -1922,7 +1922,7 @@ FCIMPL2(void, ReflectionInvocation::GetGUID, ReflectClassBaseObject* refThisUNSA
     GCPROTECT_BEGININTERIOR (result);
 
     if (result == NULL || refThis == NULL)
-        COMPlusThrow(kNullReferenceException);
+        COMPlusThrow(kRankException);
 
     TypeHandle type = refThis->GetType();
     if (type.IsTypeDesc() || type.IsArray()) {
