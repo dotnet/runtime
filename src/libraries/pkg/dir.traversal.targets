@@ -4,7 +4,7 @@
   <Target Name="BuildAllProjects">
     <MSBuild Targets="$(MSBuildProjectDefaultTargets)"
              Projects="@(Project)"
-             Properties="BuildAllProjects=true;%(Project.AdditionalProperties)"
+             Properties="BuildAllProjects=true;%(Project.AdditionalProperties);ForNode=$(ForNode)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
   </Target>
@@ -15,7 +15,7 @@
     <MSBuild Targets="GetFilesToPackage"
              Projects="@(Project)"
              BuildInParallel="true"
-             Properties="$(ProjectProperties)"
+             Properties="$(ProjectProperties);ForNode=$(ForNode)"
              ContinueOnError="ErrorAndContinue" >
       <Output TaskParameter="TargetOutputs"
               ItemName="FilesToPackage" />

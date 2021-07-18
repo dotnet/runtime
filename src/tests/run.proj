@@ -164,7 +164,7 @@ $(_XunitEpilog)
   </Target>
 
   <Target Name="BuildXunitWrapper">
-    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Restore;Build" />
+    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Restore;Build" Properties="ForNode=$(ForNode)"/>
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)Common/testgrouping.proj" />
@@ -628,6 +628,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       Targets="AotCompile"
       Condition="@(TestDlls->Count()) &gt; 0"
       BuildInParallel="true"
+      Properties="ForNode=$(ForNode)"
       />
   </Target>
 

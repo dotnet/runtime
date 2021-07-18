@@ -178,7 +178,7 @@
   </Target>
 
   <Target Name="PrepareCorrelationPayloadDirectory">
-    <MSBuild Projects="$(RepoRoot)src\tests\Common\xunitconsolerunner.depproj" Targets="Restore" />
+    <MSBuild Projects="$(RepoRoot)src\tests\Common\xunitconsolerunner.depproj" Targets="Restore" Properties="ForNode=$(ForNode)"/>
 
     <ItemGroup>
       <_XUnitConsoleRunnerFiles Include="$(NuGetPackageRoot)Microsoft.DotNet.XUnitConsoleRunner\$(MicrosoftDotNetXUnitConsoleRunnerVersion)\**\xunit.console.*" />
@@ -199,7 +199,7 @@
       </_ProjectsToBuild>
     </ItemGroup>
 
-    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFile" StopOnFirstFailure="true" />
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFile" StopOnFirstFailure="true" Properties="ForNode=$(ForNode)"/>
   </Target>
 
   <Target Name="PreparePALTestArchive">
@@ -220,7 +220,7 @@
       </_ProjectsToBuild>
     </ItemGroup>
 
-    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" Properties="ForNode=$(ForNode)"/>
   </Target>
 
   <PropertyGroup>

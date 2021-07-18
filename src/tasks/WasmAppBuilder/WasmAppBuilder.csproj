@@ -30,7 +30,7 @@
     <ItemGroup>
       <_PublishFramework Include="$(TargetFrameworks)" />
     </ItemGroup>
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Publish" Properties="TargetFramework=%(_PublishFramework.Identity)" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Publish" Properties="TargetFramework=%(_PublishFramework.Identity);ForNode=$(ForNode)" />
   </Target>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">

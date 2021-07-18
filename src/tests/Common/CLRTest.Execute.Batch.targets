@@ -23,7 +23,7 @@ WARNING:   When setting properties based on their current state (for example:
     <!--Call GetExecuteCmdFullPath to get ToRunProject cmd file Path  -->
     <MSBuild Projects="$(CLRTestProjectToRun)" 
              Targets="GetExecuteCmdFullPath"
-             Properties="GenerateRunScript=True"
+             Properties="GenerateRunScript=True;ForNode=$(ForNode)"
              Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'">
       <Output TaskParameter="TargetOutputs" PropertyName="_CLRTestToRunFileFullPath"/>
     </MSBuild>

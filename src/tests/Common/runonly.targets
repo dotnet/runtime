@@ -6,7 +6,7 @@
 
   <!-- if this is a RunOnly project that has been scheduled to build, make the output directory and build any dependent projects -->
   <Target Name="Build" Condition="('$(CLRTestKind)'=='RunOnly') And '$(_WillCLRTestProjectBuild)' == 'true'">
-    <MSBuild Projects="@(ProjectReference)" />
+    <MSBuild Projects="@(ProjectReference)" Properties="ForNode=$(ForNode)"/>
     <MakeDir ContinueOnError="false" Directories="$(OutputPath)" />
   </Target>
   
