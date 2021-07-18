@@ -11,6 +11,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Security;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
@@ -108,7 +109,7 @@ namespace System
             // These are expected in environments without time zone globalization data
             _standardDisplayName = standardAbbrevName;
             _daylightDisplayName = daylightAbbrevName ?? standardAbbrevName;
-            _displayName = $"(UTC{(_baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{_baseUtcOffset:hh\\:mm}) {_id}";
+            _displayName = string.Create(null, stackalloc char[256], $"(UTC{(_baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{_baseUtcOffset:hh\\:mm}) {_id}");
 
             // Try to populate the display names from the globalization data
             TryPopulateTimeZoneDisplayNamesFromGlobalizationData(_id, _baseUtcOffset, ref _standardDisplayName, ref _daylightDisplayName, ref _displayName);
@@ -615,16 +616,17 @@ namespace System
             try
             {
                 // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-                using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
+                using (SafeFileHandle sfh = File.OpenHandle(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    if (stream.Length == rawData.Length)
+                    long fileLength = RandomAccess.GetLength(sfh);
+                    if (fileLength == rawData.Length)
                     {
                         int index = 0;
                         int count = rawData.Length;
 
                         while (count > 0)
                         {
-                            int n = stream.Read(buffer, index, count);
+                            int n = RandomAccess.Read(sfh, buffer.AsSpan(index, count), index);
                             if (n == 0)
                                 ThrowHelper.ThrowEndOfFileException();
 

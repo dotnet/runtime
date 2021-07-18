@@ -697,7 +697,7 @@ namespace System.Net.Security
                 throw new InvalidOperationException(SR.net_ssl_certificate_exist);
             }
 
-            return RenegotiateAsync(cancellationToken);
+            return RenegotiateAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken));
         }
 
         protected override void Dispose(bool disposing)

@@ -728,24 +728,29 @@ mono_array_new_n_icall (MonoMethod *cm, gint32 pcount, intptr_t *params)
 	const int pcount_sig = mono_method_signature_internal (cm)->param_count;
 	const int rank = m_class_get_rank (cm->klass);
 	g_assert (pcount == pcount_sig);
-	g_assert (rank == pcount || rank * 2 == pcount);
 
 	uintptr_t *lengths = (uintptr_t*)params;
+	MonoArray *arr;
 
-	if (rank == pcount) {
-		/* Only lengths provided. */
-		if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
-			lower_bounds = g_newa (intptr_t, rank);
-			memset (lower_bounds, 0, sizeof (intptr_t) * rank);
-		}
+	if (pcount > rank && m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_SZARRAY) {
+		// Special constructor for jagged arrays
+		arr = mono_array_new_jagged_checked (cm->klass, pcount, lengths, error);
 	} else {
-		g_assert (pcount == (rank * 2));
-		/* lower bounds are first. */
-		lower_bounds = params;
-		lengths += rank;
-	}
+		if (rank == pcount) {
+			/* Only lengths provided. */
+			if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
+				lower_bounds = g_newa (intptr_t, rank);
+				memset (lower_bounds, 0, sizeof (intptr_t) * rank);
+			}
+		} else {
+			g_assert (pcount == (rank * 2));
+			/* lower bounds are first. */
+			lower_bounds = params;
+			lengths += rank;
+		}
 
-	MonoArray *arr = mono_array_new_full_checked (cm->klass, lengths, lower_bounds, error);
+		arr = mono_array_new_full_checked (cm->klass, lengths, lower_bounds, error);
+	}
 
 	return mono_error_set_pending_exception (error) ? NULL : arr;
 }

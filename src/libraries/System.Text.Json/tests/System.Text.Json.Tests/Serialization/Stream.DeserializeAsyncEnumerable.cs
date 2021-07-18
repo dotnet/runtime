@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Utf8MemoryStream = System.Text.Json.Tests.Serialization.CollectionTests.Utf8MemoryStream;
+using Utf8MemoryStream = System.Text.Json.Serialization.Tests.CollectionTests.Utf8MemoryStream;
 
 namespace System.Text.Json.Serialization.Tests
 {

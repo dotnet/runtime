@@ -508,6 +508,7 @@ namespace System.Security.Cryptography
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.CryptoConfigEncodeOIDMessage, DiagnosticId = Obsoletions.CryptoConfigEncodeOIDDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static byte[] EncodeOID(string str)
         {
             if (str == null)

@@ -43,11 +43,11 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Sets the currently selected set of components.
         /// </summary>
-        void SetSelectedComponents(ICollection components);
+        void SetSelectedComponents(ICollection? components);
 
         /// <summary>
         /// Sets the currently selected set of components to those with the specified selection type within the specified array of components.
         /// </summary>
-        void SetSelectedComponents(ICollection components, SelectionTypes selectionType);
+        void SetSelectedComponents(ICollection? components, SelectionTypes selectionType);
     }
 }

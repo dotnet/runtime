@@ -620,6 +620,12 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
 
     associateRefPosWithInterval(newRP);
 
+    if (RefTypeIsDef(newRP->refType))
+    {
+        assert(theInterval != nullptr);
+        theInterval->isSingleDef = theInterval->firstRefPosition == newRP;
+    }
+
     DBEXEC(VERBOSE, newRP->dump(this));
     return newRP;
 }
@@ -1159,7 +1165,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
             {
                 LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                if (Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType))
+                if (Compiler::varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()))
                 {
                     if (!VarSetOps::IsMember(compiler, largeVectorCalleeSaveCandidateVars, varIndex))
                     {
@@ -1505,7 +1511,40 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
     for (RefInfoListNode *listNode = defList.Begin(), *end = defList.End(); listNode != end;
          listNode = listNode->Next())
     {
-        if (Compiler::varTypeNeedsPartialCalleeSave(listNode->treeNode->TypeGet()))
+        const GenTree* defNode = listNode->treeNode;
+        var_types      regType = defNode->TypeGet();
+        if (regType == TYP_STRUCT)
+        {
+            assert(defNode->OperIs(GT_LCL_VAR, GT_CALL));
+            if (defNode->OperIs(GT_LCL_VAR))
+            {
+                const GenTreeLclVar* lcl    = defNode->AsLclVar();
+                const LclVarDsc*     varDsc = compiler->lvaGetDesc(lcl);
+                regType                     = varDsc->GetRegisterType();
+            }
+            else
+            {
+                const GenTreeCall*          call      = defNode->AsCall();
+                const CORINFO_CLASS_HANDLE  retClsHnd = call->gtRetClsHnd;
+                Compiler::structPassingKind howToReturnStruct;
+                regType = compiler->getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
+                if (howToReturnStruct == Compiler::SPK_ByValueAsHfa)
+                {
+                    regType = compiler->GetHfaType(retClsHnd);
+                }
+#if defined(TARGET_ARM64)
+                else if (howToReturnStruct == Compiler::SPK_ByValue)
+                {
+                    // TODO-Cleanup: add a new Compiler::SPK for this case.
+                    // This is the case when 16-byte struct is returned as [x0, x1].
+                    // We don't need a partial callee save.
+                    regType = TYP_LONG;
+                }
+#endif // TARGET_ARM64
+            }
+            assert((regType != TYP_STRUCT) && (regType != TYP_UNDEF));
+        }
+        if (Compiler::varTypeNeedsPartialCalleeSave(regType))
         {
             // In the rare case where such an interval is live across nested calls, we don't need to insert another.
             if (listNode->ref->getInterval()->recentRefPosition->refType != RefTypeUpperVectorSave)
@@ -2602,20 +2641,20 @@ void LinearScan::buildIntervals()
     {
         lsraDumpIntervals("BEFORE VALIDATING INTERVALS");
         dumpRefPositions("BEFORE VALIDATING INTERVALS");
-        validateIntervals();
     }
+    validateIntervals();
+
 #endif // DEBUG
 }
 
 #ifdef DEBUG
 //------------------------------------------------------------------------
-// validateIntervals: A DEBUG-only method that checks that the lclVar RefPositions
-//                    do not reflect uses of undefined values
+// validateIntervals: A DEBUG-only method that checks that:
+//      - the lclVar RefPositions do not reflect uses of undefined values
+//      - A singleDef interval should have just first RefPosition as RefTypeDef.
 //
-// Notes: If an undefined use is encountered, it merely prints a message.
-//
-// TODO-Cleanup: This should probably assert, or at least print the message only
-//               when doing a JITDUMP.
+// TODO-Cleanup: If an undefined use is encountered, it merely prints a message
+// but probably assert.
 //
 void LinearScan::validateIntervals()
 {
@@ -2630,19 +2669,29 @@ void LinearScan::validateIntervals()
             Interval* interval = getIntervalForLocalVar(i);
 
             bool defined = false;
-            printf("-----------------\n");
+            JITDUMP("-----------------\n");
             for (RefPosition* ref = interval->firstRefPosition; ref != nullptr; ref = ref->nextRefPosition)
             {
-                ref->dump(this);
+                if (VERBOSE)
+                {
+                    ref->dump(this);
+                }
                 RefType refType = ref->refType;
                 if (!defined && RefTypeIsUse(refType))
                 {
                     if (compiler->info.compMethodName != nullptr)
                     {
-                        printf("%s: ", compiler->info.compMethodName);
+                        JITDUMP("%s: ", compiler->info.compMethodName);
                     }
-                    printf("LocalVar V%02u: undefined use at %u\n", interval->varNum, ref->nodeLocation);
+                    JITDUMP("LocalVar V%02u: undefined use at %u\n", interval->varNum, ref->nodeLocation);
                 }
+
+                // For single-def intervals, the only the first refposition should be a RefTypeDef
+                if (interval->isSingleDef && RefTypeIsDef(refType))
+                {
+                    assert(ref == interval->firstRefPosition);
+                }
+
                 // Note that there can be multiple last uses if they are on disjoint paths,
                 // so we can't really check the lastUse flag
                 if (ref->lastUse)
@@ -3543,6 +3592,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                 noway_assert(op1->IsMultiRegCall() || op1->IsMultiRegLclVar());
 
                 int                   srcCount;
+                ReturnTypeDesc        nonCallRetTypeDesc;
                 const ReturnTypeDesc* pRetTypeDesc;
                 if (op1->OperIs(GT_CALL))
                 {
@@ -3551,13 +3601,12 @@ int LinearScan::BuildReturn(GenTree* tree)
                 else
                 {
                     assert(compiler->lvaEnregMultiRegVars);
-                    LclVarDsc*     varDsc = compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum());
-                    ReturnTypeDesc retTypeDesc;
-                    retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(),
-                                                           compiler->info.compCallConv);
-                    pRetTypeDesc = &retTypeDesc;
+                    LclVarDsc* varDsc = compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum());
+                    nonCallRetTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(),
+                                                                  compiler->info.compCallConv);
+                    pRetTypeDesc = &nonCallRetTypeDesc;
                     assert(compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum())->lvFieldCnt ==
-                           retTypeDesc.GetReturnRegCount());
+                           nonCallRetTypeDesc.GetReturnRegCount());
                 }
                 srcCount = pRetTypeDesc->GetReturnRegCount();
                 // For any source that's coming from a different register file, we need to ensure that

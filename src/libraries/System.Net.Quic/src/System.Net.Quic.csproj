@@ -20,6 +20,7 @@
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicNativeMethods.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusHelper.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicTraceHelper.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\SafeMsQuicConfigurationHandle.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\SafeMsQuicConnectionHandle.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\SafeMsQuicListenerHandle.cs" />
@@ -88,6 +89,7 @@
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentRuntimePath)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(LibrariesNativeArtifactsPath)" ItemName="NativeBinPlaceItem" />
     <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\*" />
   </ItemGroup>
 

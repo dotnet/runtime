@@ -34,7 +34,7 @@ DumpWriter::OpenDump(const char* dumpFileName)
 
 // Write all of the given buffer, handling short writes and EINTR. Return true iff successful.
 bool
-DumpWriter::WriteData(const void* buffer, size_t length)
+DumpWriter::WriteData(int fd, const void* buffer, size_t length)
 {
     const uint8_t* data = (const uint8_t*)buffer;
 
@@ -42,7 +42,7 @@ DumpWriter::WriteData(const void* buffer, size_t length)
     while (done < length) {
         ssize_t written;
         do {
-            written = write(m_fd, data + done, length - done);
+            written = write(fd, data + done, length - done);
         } while (written == -1 && errno == EINTR);
 
         if (written < 1) {

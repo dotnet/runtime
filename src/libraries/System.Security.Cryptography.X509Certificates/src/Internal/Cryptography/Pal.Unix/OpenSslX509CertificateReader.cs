@@ -49,12 +49,13 @@ namespace Internal.Cryptography.Pal
 
             ICertificatePal? cert;
             Exception? openSslException;
+            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
 
             if (TryReadX509Der(rawData, out cert) ||
                 TryReadX509Pem(rawData, out cert) ||
                 PkcsFormatReader.TryReadPkcs7Der(rawData, out cert) ||
                 PkcsFormatReader.TryReadPkcs7Pem(rawData, out cert) ||
-                PkcsFormatReader.TryReadPkcs12(rawData, password, out cert, out openSslException))
+                PkcsFormatReader.TryReadPkcs12(rawData, password, ephemeralSpecified, out cert, out openSslException))
             {
                 if (cert == null)
                 {
@@ -73,6 +74,7 @@ namespace Internal.Cryptography.Pal
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             ICertificatePal? pal;
+            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
 
             // If we can't open the file, fail right away.
             using (SafeBioHandle fileBio = Interop.Crypto.BioNewFile(fileName, "rb"))
@@ -87,6 +89,7 @@ namespace Internal.Cryptography.Pal
                 PkcsFormatReader.TryReadPkcs12(
                     File.ReadAllBytes(fileName),
                     password,
+                    ephemeralSpecified,
                     out pal,
                     out Exception? exception);
 

@@ -6,6 +6,7 @@
     <MonoProjectRoot>{MonoProjectRoot}</MonoProjectRoot>
     <MonoAOTCompilerTasksAssemblyPath>{MonoAOTCompilerTasksAssemblyPath}</MonoAOTCompilerTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
+    <JsonToItemsTaskFactoryTasksAssemblyPath>{JsonToItemsTaskFactoryTasksAssemblyPath}</JsonToItemsTaskFactoryTasksAssemblyPath>
     <MicrosoftNetCoreAppRuntimePackRidDir>{MicrosoftNetCoreAppRuntimePackRidDir}</MicrosoftNetCoreAppRuntimePackRidDir>
     <RepositoryEngineeringDir>{RepositoryEngineeringDir}</RepositoryEngineeringDir>
     <TargetFramework>{TestTargetFramework}</TargetFramework>

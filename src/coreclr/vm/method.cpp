@@ -4188,46 +4188,6 @@ c_CentralJumpCode = {
 };
 #include <poppack.h>
 
-#elif defined(TARGET_AMD64)
-
-#include <pshpack1.h>
-static const struct CentralJumpCode {
-    BYTE m_movzxRAX[4];
-    BYTE m_shlEAX[4];
-    BYTE m_movRAX[2];
-    MethodDesc* m_pBaseMD;
-    BYTE m_addR10RAX[3];
-    BYTE m_jmp[1];
-    INT32 m_rel32;
-
-    inline void Setup(CentralJumpCode* pCodeRX, MethodDesc* pMD, PCODE target, LoaderAllocator *pLoaderAllocator) {
-        WRAPPER_NO_CONTRACT;
-        m_pBaseMD = pMD;
-        m_rel32 = rel32UsingJumpStub(&pCodeRX->m_rel32, target, pMD, pLoaderAllocator);
-    }
-
-    inline BOOL CheckTarget(TADDR target) {
-        WRAPPER_NO_CONTRACT;
-        TADDR addr = rel32Decode(PTR_HOST_MEMBER_TADDR(CentralJumpCode, this, m_rel32));
-        if (*PTR_BYTE(addr) == 0x48 &&
-            *PTR_BYTE(addr+1) == 0xB8 &&
-            *PTR_BYTE(addr+10) == 0xFF &&
-            *PTR_BYTE(addr+11) == 0xE0)
-        {
-            addr = *PTR_TADDR(addr+2);
-        }
-        return (addr == target);
-    }
-}
-c_CentralJumpCode = {
-    { 0x48, 0x0F, 0xB6, 0xC0 },                         //   movzx rax,al
-    { 0x48, 0xC1, 0xE0, MethodDesc::ALIGNMENT_SHIFT },  //   shl   rax, MethodDesc::ALIGNMENT_SHIFT
-    { 0x49, 0xBA }, NULL,                               //   mov   r10, pBaseMD
-    { 0x4C, 0x03, 0xD0 },                               //   add   r10,rax
-    { 0xE9 }, 0                     // jmp PreStub
-};
-#include <poppack.h>
-
 #elif defined(TARGET_ARM)
 
 #include <pshpack1.h>

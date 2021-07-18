@@ -15,7 +15,7 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public AbortTest(ITestOutputHelper output) : base(output) { }
 
-        [OuterLoop]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Abort_ConnectAndAbort_ThrowsWebSocketExceptionWithmessage(Uri server)
         {
@@ -40,7 +40,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Abort_SendAndAbort_Success(Uri server)
         {
@@ -60,7 +60,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Abort_ReceiveAndAbort_Success(Uri server)
         {
@@ -84,7 +84,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Abort_CloseAndAbort_Success(Uri server)
         {
@@ -108,7 +108,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ClientWebSocket_Abort_CloseOutputAsync(Uri server)
         {

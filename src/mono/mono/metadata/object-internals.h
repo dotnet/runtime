@@ -642,7 +642,7 @@ typedef struct {
 	void (*init_mem_manager)(MonoMemoryManager*);
 	void (*free_mem_manager)(MonoMemoryManager*);
 	void     (*metadata_update_published) (MonoAssemblyLoadContext *alc, uint32_t generation);
-	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes);
+	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes, gint64 *jit_time);
 	void (*get_exception_stats)(guint32 *exception_count);
 	// Same as compile_method, but returns a MonoFtnDesc in llvmonly mode
 	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
@@ -1492,6 +1492,9 @@ mono_array_new_checked (MonoClass *eclass, uintptr_t n, MonoError *error);
 
 MONO_COMPONENT_API MonoArray*
 mono_array_new_full_checked (MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
+
+MonoArray*
+mono_array_new_jagged_checked (MonoClass *klass, int n, uintptr_t *lengths, MonoError *error);
 
 ICALL_EXPORT
 MonoArray*

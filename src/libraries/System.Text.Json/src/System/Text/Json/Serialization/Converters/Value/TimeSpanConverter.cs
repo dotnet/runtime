@@ -54,7 +54,7 @@ namespace System.Text.Json.Serialization.Converters
                 int backslash = source.IndexOf(JsonConstants.BackSlash);
                 Debug.Assert(backslash != -1);
 
-                Span<byte> sourceUnescaped = stackalloc byte[source.Length];
+                Span<byte> sourceUnescaped = stackalloc byte[MaximumEscapedTimeSpanFormatLength];
 
                 JsonReaderHelper.Unescape(source, sourceUnescaped, backslash, out int written);
                 Debug.Assert(written > 0);

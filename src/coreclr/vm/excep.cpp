@@ -6699,14 +6699,12 @@ AdjustContextForJITHelpers(
 
     PCODE ip = GetIP(pContext);
 
-#ifdef FEATURE_WRITEBARRIER_COPY
     if (IsIPInWriteBarrierCodeCopy(ip))
     {
         // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
         ip = AdjustWriteBarrierIP(ip);
         SetIP(pContext, ip);
     }
-#endif // FEATURE_WRITEBARRIER_COPY
 
 #ifdef FEATURE_DATABREAKPOINT
 
@@ -6973,13 +6971,31 @@ void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
     WRAPPER_NO_CONTRACT;
 
     // Ok.  Now we have a brand new fault in jitted code.
-    g_SavedExceptionInfo.Enter();
-    g_SavedExceptionInfo.SaveExceptionRecord(pExceptionRecord);
-    g_SavedExceptionInfo.SaveContext(pContext);
+    if (!Thread::UseContextBasedThreadRedirection())
+    {
+        // Once this code path gets enough bake time, perhaps this path could always be used instead of the alternative path to
+        // redirect the thread
+        FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
+        FaultingExceptionFrame *frame = &frameWithCookie;
+    #if defined(FEATURE_EH_FUNCLETS)
+        *frame->GetGSCookiePtr() = GetProcessGSCookie();
+    #endif // FEATURE_EH_FUNCLETS
+        frame->InitAndLink(pContext);
 
-    SetNakedThrowHelperArgRegistersInContext(pContext);
+        SEHException exception(pExceptionRecord);
+        OBJECTREF managedException = CLRException::GetThrowableFromException(&exception);
+        RaiseTheExceptionInternalOnly(managedException, FALSE);
+    }
+    else
+    {
+        g_SavedExceptionInfo.Enter();
+        g_SavedExceptionInfo.SaveExceptionRecord(pExceptionRecord);
+        g_SavedExceptionInfo.SaveContext(pContext);
 
-    SetIP(pContext, GetEEFuncEntryPoint(NakedThrowHelper));
+        SetNakedThrowHelperArgRegistersInContext(pContext);
+
+        SetIP(pContext, GetEEFuncEntryPoint(NakedThrowHelper));
+    }
 }
 
 #else // USE_FEF && !TARGET_UNIX

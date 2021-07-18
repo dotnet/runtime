@@ -209,7 +209,7 @@ public class PInvokeTableGenerator : Task
             // The signature of the interp entry function
             // This is a gsharedvt_in signature
             sb.Append("typedef void ");
-            sb.Append(" (*WasmInterpEntrySig_" + cb_index + ") (");
+            sb.Append($" (*WasmInterpEntrySig_{cb_index}) (");
             int pindex = 0;
             if (method.ReturnType.Name != "Void") {
                 sb.Append("int");
@@ -247,13 +247,13 @@ public class PInvokeTableGenerator : Task
                 if (pindex > 0)
                     sb.Append(',');
                 sb.Append(MapType(method.GetParameters()[pindex].ParameterType));
-                sb.Append(" arg" + pindex);
+                sb.Append($" arg{pindex}");
                 pindex++;
             }
             sb.Append(") { \n");
             if (!is_void)
                 sb.Append(MapType(method.ReturnType) + " res;\n");
-            sb.Append("((WasmInterpEntrySig_" + cb_index + ")wasm_native_to_interp_ftndescs [" + cb_index + "].func) (");
+            sb.Append($"((WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) (");
             pindex = 0;
             if (!is_void) {
                 sb.Append("&res");
@@ -263,7 +263,7 @@ public class PInvokeTableGenerator : Task
             foreach (var p in method.GetParameters()) {
                 if (pindex > 0)
                     sb.Append(", ");
-                sb.Append("&arg" + aindex);
+                sb.Append($"&arg{aindex}");
                 pindex++;
                 aindex++;
             }

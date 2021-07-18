@@ -584,7 +584,7 @@ namespace System.Data.OleDb
 #if DEBUG
                 if (AdapterSwitches.DataSchema.TraceVerbose)
                 {
-                    Debug.WriteLine("OleDbDataReader[" + info.ordinal.ToInt64().ToString(CultureInfo.InvariantCulture) + ", " + dbColumnInfo.pwszName + "]=" + dbType.enumOleDbType.ToString() + "," + dbType.dataSourceType + ", " + dbType.wType);
+                    Debug.WriteLine($"OleDbDataReader[{info.ordinal}, {dbColumnInfo.pwszName}]={dbType.enumOleDbType},{dbType.dataSourceType}, {dbType.wType}");
                 }
 #endif
                 rowCount++;
@@ -2108,7 +2108,7 @@ namespace System.Data.OleDb
 #if DEBUG
                             if (AdapterSwitches.DataSchema.TraceVerbose)
                             {
-                                Debug.WriteLine("PartialKeyColumn detected: <" + name + "> metaindex=" + metaindex);
+                                Debug.WriteLine($"PartialKeyColumn detected: <{name}> metaindex={metaindex}");
                             }
 #endif
                             partialPrimaryKey = true;
@@ -2199,7 +2199,7 @@ namespace System.Data.OleDb
 #if DEBUG
                                         if (AdapterSwitches.DataSchema.TraceVerbose)
                                         {
-                                            Debug.WriteLine("MultipleUniqueIndexes detected: <" + uniqueIndexName + "> <" + indexname + ">");
+                                            Debug.WriteLine($"MultipleUniqueIndexes detected: <{uniqueIndexName}> <{indexname}>");
                                         }
 #endif
                                         uniq = null;
@@ -2211,7 +2211,7 @@ namespace System.Data.OleDb
 #if DEBUG
                                 if (AdapterSwitches.DataSchema.TraceVerbose)
                                 {
-                                    Debug.WriteLine("PartialKeyColumn detected: " + name);
+                                    Debug.WriteLine($"PartialKeyColumn detected: {name}");
                                 }
 #endif
                                 partialPrimaryKey = true;
@@ -2226,7 +2226,7 @@ namespace System.Data.OleDb
 #if DEBUG
                                     if (AdapterSwitches.DataSchema.TraceVerbose)
                                     {
-                                        Debug.WriteLine("PartialUniqueIndexes detected: <" + uniqueIndexName + "> <" + indexname + ">");
+                                        Debug.WriteLine($"PartialUniqueIndexes detected: <{uniqueIndexName}> <{indexname}>");
                                     }
 #endif
                                     uniq = null;
@@ -2247,7 +2247,7 @@ namespace System.Data.OleDb
 #if DEBUG
                         if (AdapterSwitches.DataSchema.TraceVerbose)
                         {
-                            Debug.WriteLine("upgrade single unique index to be a key: <" + uniqueIndexName + ">");
+                            Debug.WriteLine($"upgrade single unique index to be a key: <{uniqueIndexName}>");
                         }
 #endif
                         // upgrade single unique index to be a key
@@ -2498,7 +2498,7 @@ namespace System.Data.OleDb
 #if DEBUG
                     if (AdapterSwitches.DataSchema.TraceVerbose)
                     {
-                        Debug.WriteLine("Filtered Column: DBCOLUMN_GUID=DBCOL_SPECIALCOL DBCOLUMN_NAME=" + info.columnName + " DBCOLUMN_KEYCOLUMN=" + info.isKeyColumn);
+                        Debug.WriteLine($"Filtered Column: DBCOLUMN_GUID=DBCOL_SPECIALCOL DBCOLUMN_NAME={info.columnName} DBCOLUMN_KEYCOLUMN={info.isKeyColumn}");
                     }
 #endif
                     info.isHidden = true;
@@ -2509,7 +2509,7 @@ namespace System.Data.OleDb
 #if DEBUG
                     if (AdapterSwitches.DataSchema.TraceVerbose)
                     {
-                        Debug.WriteLine("Filtered Column: DBCOLUMN_NUMBER=" + info.ordinal.ToInt64().ToString(CultureInfo.InvariantCulture) + " DBCOLUMN_NAME=" + info.columnName);
+                        Debug.WriteLine($"Filtered Column: DBCOLUMN_NUMBER={info.ordinal} DBCOLUMN_NAME={info.columnName}");
                     }
 #endif
                     info.isHidden = true;
@@ -2520,7 +2520,7 @@ namespace System.Data.OleDb
 #if DEBUG
                     if (AdapterSwitches.DataSchema.TraceVerbose)
                     {
-                        Debug.WriteLine("Filtered Column: DBCOLUMN_FLAGS=" + info.flags.ToString("X8", null) + " DBCOLUMN_NAME=" + info.columnName);
+                        Debug.WriteLine($"Filtered Column: DBCOLUMN_FLAGS={info.flags:X8} DBCOLUMN_NAME={info.columnName}");
                     }
 #endif
                     info.isHidden = true;

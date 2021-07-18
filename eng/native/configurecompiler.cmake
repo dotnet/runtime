@@ -48,7 +48,10 @@ add_compile_definitions("$<$<CONFIG:CHECKED>:DEBUG;_DEBUG;_DBG;URTBLDENV_FRIENDL
 add_compile_definitions("$<$<OR:$<CONFIG:RELEASE>,$<CONFIG:RELWITHDEBINFO>>:NDEBUG;URTBLDENV_FRIENDLY=Retail>")
 
 if (MSVC)
-  add_linker_flag(/GUARD:CF)
+  add_linker_flag(/guard:cf)
+  #if (CLR_CMAKE_HOST_ARCH_AMD64)
+  #  add_linker_flag(/guard:ehcont)
+  #endif (CLR_CMAKE_HOST_ARCH_AMD64)
 
   # Linker flags
   #
@@ -70,6 +73,10 @@ if (MSVC)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /IGNORE:4197,4013,4254,4070,4221")
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /SUBSYSTEM:WINDOWS,${WINDOWS_SUBSYSTEM_VERSION}")
+
+  #if (CLR_CMAKE_HOST_ARCH_AMD64)
+  #  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /CETCOMPAT")
+  #endif (CLR_CMAKE_HOST_ARCH_AMD64)
 
   set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /IGNORE:4221")
 
@@ -564,6 +571,14 @@ if (MSVC)
   # Added using variables instead of add_compile_options to let individual projects override it
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:cf")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:cf")
+
+  # Enable EH-continuation table for native components for amd64 builds
+  # Added using variables instead of add_compile_options to let individual projects override it
+  #if (CLR_CMAKE_HOST_ARCH_AMD64)
+  #  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:ehcont")
+  #  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:ehcont")
+  #  set(CMAKE_ASM_MASM_FLAGS "${CMAKE_C_FLAGS} /guard:ehcont")
+  #endif (CLR_CMAKE_HOST_ARCH_AMD64)
 
   # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
   # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.
