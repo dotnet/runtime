@@ -81,7 +81,7 @@ static gint32 signatures_size;
 void
 mono_loader_init ()
 {
-	static volatile gboolean inited;
+	static volatile gboolean inited = FALSE;
 
 	if (!inited) {
 		mono_coop_mutex_init_recursive (&loader_mutex);
