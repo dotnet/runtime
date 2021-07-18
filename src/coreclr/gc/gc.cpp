@@ -8942,7 +8942,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         uint32_t* saved_g_card_bundle_table = g_gc_card_bundle_table;
 #endif
-        get_card_table_element_layout(start, end, card_table_element_layout);
+        get_card_table_element_layout(saved_g_lowest_address, saved_g_highest_address, card_table_element_layout);
         size_t alloc_size = card_table_element_layout[total_bookkeeping_elements];
         size_t cb = 0;
         uint32_t* ct = 0;
