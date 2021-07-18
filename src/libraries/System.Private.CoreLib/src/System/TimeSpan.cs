@@ -96,7 +96,7 @@ namespace System
 
         public long Ticks => _ticks;
 
-        public int Days => (int)(_ticks / TicksPerDay);
+        public int Days => (int)((_ticks / TicksPerDay) % 365);
 
         public int Hours => (int)((_ticks / TicksPerHour) % 24);
 
