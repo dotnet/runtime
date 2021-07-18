@@ -1,14 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
+using System.Buffers.Binary;
 using System.Collections;
-using System.IO;
 using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace System.Xml.Serialization
 {
@@ -95,9 +97,9 @@ namespace System.Xml.Serialization
 
         private static uint GetPersistentHashCode(string value)
         {
-            byte[] valueBytes = System.Text.Encoding.UTF8.GetBytes(value);
+            byte[] valueBytes = Encoding.UTF8.GetBytes(value);
             byte[] hash = SHA512.HashData(valueBytes);
-            return (uint)(hash[0] << 24 | hash[1] << 16 | hash[2] << 8 | hash[3]);
+            return BinaryPrimitives.ReadUInt32BigEndian(hash);
         }
     }
 }
