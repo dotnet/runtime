@@ -1,5 +1,9 @@
 <Project>
   <PropertyGroup>
+      <!-- disable workloads for this emsdk build -->
+    <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
+    <WasmNativeWorkload>false</WasmNativeWorkload>
+
     <_WasmTargetsDir Condition="'$(RuntimeSrcDir)' != ''">$(RuntimeSrcDir)\src\mono\wasm\build\</_WasmTargetsDir>
     <_WasmTargetsDir Condition="'$(WasmBuildSupportDir)' != ''">$(WasmBuildSupportDir)\wasm\</_WasmTargetsDir>
     <EMSDK_PATH Condition="'$(WasmBuildSupportDir)' != ''">$(WasmBuildSupportDir)\emsdk\</EMSDK_PATH>

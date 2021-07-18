@@ -149,4 +149,9 @@
          as we do with many of the package versions above -->
     <BaselineMicrosoftNetCoreAppPackageVersion>2.1.0-preview3-26416-01</BaselineMicrosoftNetCoreAppPackageVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <CLRTestBashEnvironmentVariable Include="export UsingBrowserRuntimeWorkload=false" Condition="'$(TargetOS)' == 'Browser'" />
+    <CLRTestBashEnvironmentVariable Include="export WasmNativeWorkload=false" Condition="'$(TargetOS)' == 'Browser'" />
+  </ItemGroup>
 </Project>
