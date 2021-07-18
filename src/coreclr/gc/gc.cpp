@@ -8945,6 +8945,8 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         get_card_table_element_layout(start, end, card_table_element_layout);
         size_t alloc_size = card_table_element_layout[total_bookkeeping_elements];
         size_t cb = 0;
+        uint32_t* ct = 0;
+        uint32_t* translated_ct = 0;
 
 #ifdef CARD_BUNDLE
         if (can_use_write_watch_for_card_table())
@@ -8982,7 +8984,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             }
         }
 
-        uint32_t* ct = (uint32_t*)(mem + card_table_element_layout[card_table_element]);
+        ct = (uint32_t*)(mem + card_table_element_layout[card_table_element]);
         card_table_refcount (ct) = 0;
         card_table_lowest_address (ct) = saved_g_lowest_address;
         card_table_highest_address (ct) = saved_g_highest_address;
@@ -9025,7 +9027,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             card_table_mark_array (ct) = NULL;
 #endif //BACKGROUND_GC
 
-        uint32_t* translated_ct = translate_card_table (ct);
+        translated_ct = translate_card_table (ct);
 
         dprintf (GC_TABLE_LOG, ("card table: %Ix(translated: %Ix), seg map: %Ix, mark array: %Ix",
             (size_t)ct, (size_t)translated_ct, (size_t)new_seg_mapping_table, (size_t)card_table_mark_array (ct)));
