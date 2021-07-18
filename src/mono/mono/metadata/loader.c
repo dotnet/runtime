@@ -87,7 +87,7 @@ mono_loader_init ()
 		return;
 	}
 	
-	runInit = TRUE;
+	inited = TRUE;
 
 	mono_coop_mutex_init_recursive (&loader_mutex);
 	mono_os_mutex_init_recursive (&global_loader_data_mutex);
