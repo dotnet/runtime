@@ -81,22 +81,18 @@ namespace System.IO.Pipes
             async Task WaitForConnectionAsyncCore()
             {
                 Socket acceptedSocket;
-                CancellationTokenSource? linkedTokenSource = null;
+                CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_internalTokenSource.Token, cancellationToken);
                 try
                 {
-                    linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_internalTokenSource.Token, cancellationToken);
                     acceptedSocket = await _instance!.ListeningSocket.AcceptAsync(linkedTokenSource.Token).ConfigureAwait(false);
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                 {
-                    //if cancellation was via external token, throw an OCE
-                    cancellationToken.ThrowIfCancellationRequested();
-
                     throw new IOException(SR.IO_PipeBroken);
                 }
                 finally
                 {
-                    linkedTokenSource?.Dispose();
+                    linkedTokenSource.Dispose();
                 }
 
                 HandleAcceptedSocket(acceptedSocket);
@@ -148,7 +144,6 @@ namespace System.IO.Pipes
                 {
                     _internalTokenSource.Cancel();
                 }
-                _internalTokenSource.Dispose();
             }
         }
 
