@@ -954,7 +954,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                // We want to go over StackallocThreshold=256 to force a pooled allocation, so this property is 200 chars and 400 bytes.
+                // We want to go over StackallocByteThreshold=256 to force a pooled allocation, so this property is 200 chars and 400 bytes.
                 const int charsInProperty = 200;
 
                 string longPropertyName = new string('\u0467', charsInProperty);
