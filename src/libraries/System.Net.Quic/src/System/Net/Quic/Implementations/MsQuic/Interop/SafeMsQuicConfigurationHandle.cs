@@ -41,17 +41,17 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             {
                 if (options.ClientAuthenticationOptions.CipherSuitesPolicy != null)
                 {
-                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_optiopn, nameof(options.ClientAuthenticationOptions.CipherSuitesPolicy)));
+                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.CipherSuitesPolicy)));
                 }
 
                 if (options.ClientAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
                 {
-                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_optiopn, nameof(options.ClientAuthenticationOptions.EncryptionPolicy)));
+                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.EncryptionPolicy)));
                 }
 
                 if (options.ClientAuthenticationOptions.LocalCertificateSelectionCallback != null)
                 {
-                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_optiopn, nameof(options.ClientAuthenticationOptions.LocalCertificateSelectionCallback)));
+                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.LocalCertificateSelectionCallback)));
                 }
 
                 if (options.ClientAuthenticationOptions.ClientCertificates != null)
@@ -83,12 +83,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             {
                 if (options.ServerAuthenticationOptions.CipherSuitesPolicy != null)
                 {
-                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_optiopn, nameof(options.ServerAuthenticationOptions.CipherSuitesPolicy)));
+                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ServerAuthenticationOptions.CipherSuitesPolicy)));
                 }
 
                 if (options.ServerAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
                 {
-                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_optiopn, nameof(options.ServerAuthenticationOptions.EncryptionPolicy)));
+                    throw new  PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ServerAuthenticationOptions.EncryptionPolicy)));
                 }
 
                 if (options.ServerAuthenticationOptions.ClientCertificateRequired)
