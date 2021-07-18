@@ -81,9 +81,11 @@ static gint32 signatures_size;
 void
 mono_loader_init ()
 {
-	static volatile gboolean inited = FALSE;
+	static volatile gboolean runInit = TRUE;
 
-	if (!inited) {
+	if (runInit) {
+		runInit = FALSE;
+
 		mono_coop_mutex_init_recursive (&loader_mutex);
 		mono_os_mutex_init_recursive (&global_loader_data_mutex);
 		loader_lock_inited = TRUE;
@@ -101,8 +103,6 @@ mono_loader_init ()
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &methods_size);
 		mono_counters_register ("MonoMethodSignature size",
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &signatures_size);
-
-		inited = TRUE;
 	}
 }
 
