@@ -8878,11 +8878,34 @@ void emitter::emitDispIns(
                 {
                     if (iconType == GTF_ICON_CLASS_HDL)
                     {
-                        printf(" ; %.32s", emitComp->eeGetClassName((CORINFO_CLASS_HANDLE)val));
+                        printf(" ; %.32s", emitComp->eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(val)));
                     }
                     else if (iconType == GTF_ICON_STR_HDL)
                     {
-                        printf(" ; \"%.32ls\"", emitComp->eeGetCPString((size_t)val));
+                        const WCHAR* str = emitComp->eeGetCPString(static_cast<size_t>(val));
+                        if (str != nullptr)
+                        {
+                            size_t    len            = wcslen(str);
+                            const int maxLength      = 32;
+                            WCHAR     buf[maxLength] = {0};
+                            wcsncpy(buf, str, min(maxLength, len));
+                            for (size_t i = 0; i < min(maxLength, len); i++)
+                            {
+                                // Escape \n and \r symbols
+                                if (buf[i] == L'\n' || buf[i] == L'\r')
+                                {
+                                    buf[i] = ' ';
+                                }
+                            }
+                            if (len > maxLength)
+                            {
+                                // Append "..." for long strings
+                                buf[maxLength - 3] = L'.';
+                                buf[maxLength - 2] = L'.';
+                                buf[maxLength - 1] = L'.';
+                            }
+                            printf(" ; \"%.32ls\"", buf);
+                        }
                     }
                 }
             }
