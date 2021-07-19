@@ -1905,7 +1905,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
                 // In case of a chained GT_COMMA case, we sink the last
                 // GT_COMMA below the blockNode addr.
                 GenTree* blockNodeAddr = blockNode->AsOp()->gtOp1;
-                assert(blockNodeAddr->gtType == TYP_BYREF);
+                assert(blockNodeAddr->gtType == TYP_BYREF || blockNodeAddr->gtType == TYP_I_IMPL);
                 GenTree* commaNode       = parent;
                 commaNode->gtType        = TYP_BYREF;
                 commaNode->AsOp()->gtOp2 = blockNodeAddr;
@@ -7699,11 +7699,24 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         {
             // Do we need the address of a static field?
             //
-            if (access & CORINFO_ACCESS_ADDRESS)
-            {
-                void** pFldAddr = nullptr;
-                void*  fldAddr  = info.compCompHnd->getFieldAddress(pResolvedToken->hField, (void**)&pFldAddr);
+            void*  fldAddr = nullptr;
+            void** pFldAddr = nullptr;
+            bool forceAccessViaAddress = false;
 
+            if ((access & CORINFO_ACCESS_ADDRESS)
+#ifdef FEATURE_READYTORUN_COMPILER
+                || (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_RVA_ADDRESS && opts.IsReadyToRun())
+#endif
+            )
+            {
+                fldAddr  = info.compCompHnd->getFieldAddress(pResolvedToken->hField, (void**)&pFldAddr);
+
+                if (pFldAddr != nullptr)
+                {
+                    // RVA static field access may need to go through an indirection instead of the field path
+                    // This is only necessary if getFieldAddress returns null.
+                    forceAccessViaAddress = true;
+                }
 // We should always be able to access this static's address directly unless this is a field RVA
 // used within a composite image during R2R composite image building.
 //
@@ -7713,7 +7726,10 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 #else
                 assert(pFldAddr == nullptr);
 #endif
+            }
 
+            if ((access & CORINFO_ACCESS_ADDRESS) || forceAccessViaAddress)
+            {
                 FieldSeqNode* fldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
 
                 /* Create the data member node */
