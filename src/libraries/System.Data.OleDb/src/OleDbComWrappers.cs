@@ -73,7 +73,7 @@ namespace System.Data.OleDb
                 IntPtr pSource = IntPtr.Zero;
                 int errorCode = ((delegate* unmanaged<IntPtr, IntPtr*, int>)(*(*(void***)_wrappedInstance + 4 /* IErrorInfo.GetSource slot */)))
                     (_wrappedInstance, &pSource);
-                if (pSource == IntPtr.Zero)
+                if (pSource == IntPtr.Zero || errorCode < 0)
                 {
                     source = null;
                 }
@@ -90,7 +90,7 @@ namespace System.Data.OleDb
                 IntPtr pDescription;
                 int errorCode = ((delegate* unmanaged<IntPtr, IntPtr*, int>)(*(*(void***)_wrappedInstance + 5 /* IErrorInfo.GetDescription slot */)))
                     (_wrappedInstance, &pDescription);
-                if (pDescription == IntPtr.Zero)
+                if (pDescription == IntPtr.Zero || errorCode < 0)
                 {
                     description = null;
                 }
