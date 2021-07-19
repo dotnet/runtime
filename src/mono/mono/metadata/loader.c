@@ -84,6 +84,7 @@ mono_loader_init ()
 	static volatile gboolean inited = FALSE; // volatile to avoid race conditions
 
 	if (inited) {
+		/* Do nothing if this function has already been called */
 		return;
 	}
 	
