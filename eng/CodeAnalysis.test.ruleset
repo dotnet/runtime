@@ -478,9 +478,6 @@
     <Rule Id="IDE0064" Action="Hidden" />       <!-- MakeStructFieldsWritable -->
     <Rule Id="IDE0065" Action="Hidden" />       <!-- MoveMisplacedUsingDirectives -->
     <Rule Id="IDE0066" Action="Hidden" />       <!-- ConvertSwitchStatementToExpression -->
-    <Rule Id="IDE0067" Action="Hidden" />       <!-- DisposeObjectsBeforeLosingScope -->
-    <Rule Id="IDE0068" Action="Hidden" />       <!-- UseRecommendedDisposePattern -->
-    <Rule Id="IDE0069" Action="Hidden" />       <!-- DisposableFieldsShouldBeDisposed -->
     <Rule Id="IDE0070" Action="Hidden" />       <!-- UseSystemHashCode -->
     <Rule Id="IDE0071" Action="Hidden" />       <!-- SimplifyInterpolation -->
     <Rule Id="IDE0072" Action="Hidden" />       <!-- PopulateSwitchExpression -->
