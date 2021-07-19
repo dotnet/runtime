@@ -63,9 +63,6 @@ namespace System.Drawing
 
             private static void PlatformInitialize()
             {
-                if (!LocalAppContextSwitches.EnableUnixSupport)
-                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_Unix);
-
                 LibraryResolver.EnsureRegistered();
             }
 
