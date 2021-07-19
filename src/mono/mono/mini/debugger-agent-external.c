@@ -5,6 +5,7 @@
 #include <glib.h>
 #include <mono/metadata/components.h>
 #include "debugger-agent-external.h"
+#include <mono/metadata/external-only.h>
 
 #ifndef DISABLE_SDB
 
@@ -58,5 +59,11 @@ char *
 mono_debugger_agent_get_sdb_options (void)
 {
 	return sdb_options;
+}
+
+void
+mono_debugger_agent_unhandled_exception (MonoObject *e)
+{
+	MONO_EXTERNAL_ONLY_VOID (mono_component_debugger ()->unhandled_exception ((MonoException*)e));
 }
 #endif /* DISABLE_SDB */
