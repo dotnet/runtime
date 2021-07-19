@@ -190,13 +190,6 @@ namespace System
         */
         private sealed class AndroidTzData
         {
-            private unsafe struct AndroidTzDataEntry
-            {
-                public string id;
-                public int byteOffset;
-                public int length;
-            }
-
             private string[] _ids;
             private int[] _byteOffsets;
             private int[] _lengths;
@@ -275,7 +268,7 @@ namespace System
             [MemberNotNull(nameof(_lengths))]
             private void LoadTzFile(Stream fs)
             {
-                const int HeaderSize = 24; // AndroidTzDataHeader
+                const int HeaderSize = 24;
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
                 ReadTzDataIntoBuffer(fs, 0, buffer);
@@ -313,7 +306,7 @@ namespace System
             private unsafe void ReadIndex(Stream fs, int indexOffset, int dataOffset)
             {
                 int indexSize = dataOffset - indexOffset;
-                const int entrySize = 52; // AndroidTzDataEntry
+                const int entrySize = 52; // Data entry size
                 int entryCount = indexSize / entrySize;
 
                 _byteOffsets = new int[entryCount];
@@ -322,13 +315,13 @@ namespace System
 
                 for (int i = 0; i < entryCount; ++i)
                 {
-                    AndroidTzDataEntry entry = LoadEntryAt(fs, indexOffset + (entrySize*i));
+                    LoadEntryAt(fs, indexOffset + (entrySize*i), out string id, out int byteOffset, out int length);
 
-                    _byteOffsets[i] = entry.byteOffset + dataOffset;
-                    _ids[i] = entry.id;
-                    _lengths[i] = entry.length;
+                    _byteOffsets[i] = byteOffset + dataOffset;
+                    _ids[i] = id;
+                    _lengths[i] = length;
 
-                    if (entry.length < 24) // AndroidTzDataHeader
+                    if (length < 24) // Header Size
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_BadIndexLength);
                     }
@@ -360,24 +353,21 @@ namespace System
                 }
             }
 
-            private unsafe AndroidTzDataEntry LoadEntryAt(Stream fs, long position)
+            private unsafe void LoadEntryAt(Stream fs, long position, out string id, out int byteOffset, out int length)
             {
-                const int size = 52; // AndroidTzDataEntry
+                const int size = 52; // data entry size
                 Span<byte> entryBuffer = stackalloc byte[size];
 
                 ReadTzDataIntoBuffer(fs, position, entryBuffer);
 
-                AndroidTzDataEntry entry;
                 int index = 0;
                 while (entryBuffer[index] != 0 && index < 40)
                 {
                     index += 1;
                 }
-                entry.id = Encoding.UTF8.GetString(entryBuffer.Slice(0, index));
-                entry.byteOffset = TZif_ToInt32(entryBuffer.Slice(40, 4));
-                entry.length = TZif_ToInt32(entryBuffer.Slice(44, 4));
-
-                return entry;
+                id = Encoding.UTF8.GetString(entryBuffer.Slice(0, index));
+                byteOffset = TZif_ToInt32(entryBuffer.Slice(40, 4));
+                length = TZif_ToInt32(entryBuffer.Slice(44, 4));
             }
 
             public string[] GetTimeZoneIds()
