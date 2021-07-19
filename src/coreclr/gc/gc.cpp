@@ -3694,9 +3694,9 @@ uint8_t* region_allocator::allocate (uint32_t num_units, allocate_direction dire
             if (current_num_units >= num_units)
             {
                 dprintf (REGIONS_LOG, ("found %Id contiguous free units(%d->%d), sufficient",
-                    (size_t)current_val,
+                    (size_t)current_num_units,
                     (int)(current_index - region_map_left_start),
-                    (int)(current_index - region_map_left_start + current_val)));
+                    (int)(current_index - region_map_left_start + current_num_units)));
 
                 uint32_t* busy_block;
                 uint32_t* free_block;
@@ -3806,7 +3806,7 @@ void region_allocator::delete_region (uint8_t* region_start)
     uint32_t current_val = *current_index;
     assert (!is_unit_memory_free (current_val));
 
-    dprintf (REGIONS_LOG, ("----DEL %d-----", (current_index - region_map_left_start)));
+    dprintf (REGIONS_LOG, ("----DEL %d (%u units)-----", (current_index - region_map_left_start), current_val));
     uint32_t* region_end_index = current_index + current_val;
     uint8_t* region_end = region_address_of (region_end_index);
 
