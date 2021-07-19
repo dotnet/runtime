@@ -236,7 +236,7 @@ namespace System.Diagnostics.Tracing
     // This coarse suppression silences all RequiresUnreferencedCode warnings in the class.
     // https://github.com/mono/linker/issues/2136 tracks making it possible to add more granular suppressions at the member level, and with a different warning code.
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-        Justification = "GetCreateManifestAndDescriptorsViaLocalMethod's use of GetType uses preverves all members, so " +
+        Justification = "EnsureDescriptorsInitialized's use of GetType preverves all members, so " +
                         "those that are marked with RequiresUnreferencedCode will warn. " +
                         "This method will not access any of these members and is safe to call.")]
 #endif
@@ -2819,12 +2819,7 @@ namespace System.Diagnostics.Tracing
             {
                 // get the metadata via reflection.
                 Debug.Assert(m_rawManifest == null);
-#if !ES_BUILD_STANDALONE
-                byte[]? GetCreateManifestAndDescriptorsViaLocalMethod(string name) => CreateManifestAndDescriptors(this.GetType(), name, this);
-                m_rawManifest = GetCreateManifestAndDescriptorsViaLocalMethod(Name);
-#else
                 m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
-#endif
                 Debug.Assert(m_eventData != null);
 
                 // TODO Enforce singleton pattern
