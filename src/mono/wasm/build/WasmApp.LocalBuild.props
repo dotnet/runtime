@@ -23,8 +23,7 @@
 
   <PropertyGroup>
     <_NetCoreAppToolCurrent>net6.0</_NetCoreAppToolCurrent>
-    <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
-    <WasmNativeWorkload>false</WasmNativeWorkload>
+    <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeSrcDir)' != '' and '$(WasmBuildSupportDir)' == ''">

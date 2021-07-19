@@ -7,8 +7,6 @@
          For offline builds we still set OfficialBuildId but we need to build all the packages for a single
          leg only, so we also take DotNetBuildFromSource  into account. -->
     <BuildingAnOfficialBuildLeg Condition="'$(BuildingAnOfficialBuildLeg)' == '' and '$(OfficialBuildId)' != '' and '$(DotNetBuildFromSource)' != 'true'">true</BuildingAnOfficialBuildLeg>
-    <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
-    <WasmNativeWorkload>false</WasmNativeWorkload>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateTargetOS">

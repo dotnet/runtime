@@ -151,6 +151,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <CLRTestMSBuildArgs>/p:UsingBrowserRuntimeWorkload=false /p:WasmNativeWorkload=false</CLRTestMSBuildArgs>
+    <CLRTestMSBuildArgs>/p:MSBuildEnableWorkloadResolver=false</CLRTestMSBuildArgs>
   </PropertyGroup>
 </Project>

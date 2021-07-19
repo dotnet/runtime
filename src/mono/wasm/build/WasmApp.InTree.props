@@ -3,9 +3,6 @@
 
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.props" />
   <PropertyGroup>
-    <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
-    <WasmNativeWorkload>false</WasmNativeWorkload>
-
     <Platform>AnyCPU</Platform>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
