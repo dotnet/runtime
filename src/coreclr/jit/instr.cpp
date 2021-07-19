@@ -1911,15 +1911,19 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         return INS_mov;
     }
 #elif defined(TARGET_ARM)
-    // No SIMD support yet
+    // No SIMD support yet.
     assert(!varTypeIsSIMD(dstType));
     if (dstIsFloatReg)
     {
-        return (dstType == TYP_DOUBLE) ? INS_vmov_i2d : INS_vmov_i2f;
+        // Can't have LONG in a register.
+        assert(dstType == TYP_FLOAT);
+        return INS_vmov_i2f;
     }
     else
     {
-        return (dstType == TYP_LONG) ? INS_vmov_d2i : INS_vmov_f2i;
+        // Can't have LONG in a register.
+        assert(dstType == TYP_INT);
+        return INS_vmov_f2i;
     }
 #else // TARGET*
 #error "Unknown TARGET"
