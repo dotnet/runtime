@@ -510,7 +510,7 @@ CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_In
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
 CONFIG_INTEGER(JitClassProfiling, W("JitClassProfiling"), 1)
-CONFIG_INTEGER(JitIsinstProfiling, W("JitIsinstProfiling"), 0)
+CONFIG_INTEGER(JitIsinstProfiling, W("JitIsinstProfiling"), 1)
 CONFIG_INTEGER(JitEdgeProfiling, W("JitEdgeProfiling"), 1)
 CONFIG_INTEGER(JitCollect64BitCounts, W("JitCollect64BitCounts"), 0) // Collect counts as 64-bit values.
 
