@@ -2834,13 +2834,14 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                 regSize = 8;
             }
 #endif
-            if (regSize == YMM_REGSIZE_BYTES && bytesWritten + regSize > size)
+            if (bytesWritten + regSize > size && bytesWritten < size)
             {
-                // Step down from YMM registers to XMM registers
-                regSize = XMM_REGSIZE_BYTES;
+                // Shift dstOffset back to use full SIMD move
+                unsigned shiftBack = regSize - (size - bytesWritten);
+                bytesWritten -= shiftBack;
+                dstOffset -= shiftBack;
             }
-
-            if (bytesWritten + regSize > size)
+            else if (bytesWritten + regSize > size)
             {
                 assert(srcIntReg != REG_NA);
                 break;
