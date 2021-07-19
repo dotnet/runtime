@@ -653,3 +653,23 @@ public class LoadDebuggerTestALC {
         }
     }
 
+
+public class Foo
+{
+    public string Lorem { get; set; } = "Safe";
+    public int Bar()
+    {
+        int ret;
+        if (Lorem.StartsWith('S'))
+            ret = 0;
+        else
+            ret = 1;
+        return ret;
+    }
+    public static void RunBar()
+    {
+        Foo foo = new Foo();
+        foo.Bar();
+    }
+}
+

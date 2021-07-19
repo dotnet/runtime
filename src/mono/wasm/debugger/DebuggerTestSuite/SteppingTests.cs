@@ -862,5 +862,19 @@ namespace DebuggerTests
             Task t = await Task.WhenAny(pause_task, Task.Delay(2000));
             Assert.True(t != pause_task, "Debugger unexpectedly paused");
         }
+
+        [Fact]
+        public async Task StepAndEvaluateProperty()
+        {
+            await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 663, 0);
+
+            string expression = "window.setTimeout(function() { invoke_static_method ('[debugger-test] Foo:RunBar'); }, 1);";
+            await EvaluateAndCheck(
+                expression,
+                "dotnet://debugger-test.dll/debugger-test.cs", 663, 12,
+                "Bar");
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 666, 8, "Bar");
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 667, 4, "Bar");
+        }
     }
 }
