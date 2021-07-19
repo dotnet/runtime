@@ -128,11 +128,6 @@ namespace ILCompiler
             return _devirtualizationManager.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
         }
 
-        public bool AllowCompileTimeStaticVirtualMethodResolution(TypeDesc implType, MethodDesc interfaceMethod)
-        {
-            return _devirtualizationManager.AllowCompileTimeStaticVirtualMethodResolution(implType, interfaceMethod);
-        }
-
         public bool IsModuleInstrumented(ModuleDesc module)
         {
             return _modulesBeingInstrumented.Contains(module);
