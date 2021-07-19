@@ -681,7 +681,18 @@ public class Foo
     {
         Foo foo = new Foo();
         foo.Bart();
+        foo.OtherBar();
         Console.WriteLine(foo);
+    }
+    public void OtherBar()
+    {
+        var a = 1;
+        var b = 2;
+        var x = "Stew";
+        var y = "00.123";
+        var c = a + b == 3 || b + a == 2;
+        var d = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts) && x.Contains('S');
+        Console.WriteLine(d);
     }
 }
 
