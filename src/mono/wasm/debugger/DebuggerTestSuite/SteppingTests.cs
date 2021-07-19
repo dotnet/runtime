@@ -864,17 +864,35 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task StepAndEvaluateProperty()
+        public async Task SimpleStepTest()
         {
-            await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 663, 0);
+            await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 674, 0);
 
-            string expression = "window.setTimeout(function() { invoke_static_method ('[debugger-test] Foo:RunBar'); }, 1);";
+            string expression = "window.setTimeout(function() { invoke_static_method ('[debugger-test] Foo:RunBart'); }, 1);";
             await EvaluateAndCheck(
                 expression,
-                "dotnet://debugger-test.dll/debugger-test.cs", 663, 12,
-                "Bar");
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 666, 8, "Bar");
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 667, 4, "Bar");
+                "dotnet://debugger-test.dll/debugger-test.cs", 674, 12,
+                "Bart");
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 677, 8, "Bart");
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 678, 4, "Bart");
+        }
+
+        [Fact]
+        public async Task StepAndEvaluate()
+        {
+            await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 682, 0);
+
+            string expression = "window.setTimeout(function() { invoke_static_method ('[debugger-test] Foo:RunBart'); }, 1);";
+            await EvaluateAndCheck(
+                expression,
+                "dotnet://debugger-test.dll/debugger-test.cs", 682, 8,
+                "RunBart");
+            var pause_location = await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 671, 4, "Bart");
+            var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            await EvaluateOnCallFrameAndCheck(id, ("this.Bar", TString("Same of something")));
+            pause_location = await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 673, 8, "Bart");
+            id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            await EvaluateOnCallFrameAndCheck(id, ("this.Bar", TString("Same of something")));
         }
     }
 }

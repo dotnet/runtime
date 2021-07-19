@@ -476,23 +476,6 @@ namespace DebuggerTests
                 await EvaluateOnCallFrameAndCheck(id, ("this.PropertyThrowException", TString("System.Exception: error")));
             });
 
-        async Task EvaluateOnCallFrameAndCheck(string call_frame_id, params (string expression, JObject expected)[] args)
-        {
-            foreach (var arg in args)
-            {
-                var (eval_val, _) = await EvaluateOnCallFrame(call_frame_id, arg.expression);
-                try
-                {
-                    await CheckValue(eval_val, arg.expected, arg.expression);
-                }
-                catch
-                {
-                    Console.WriteLine($"CheckValue failed for {arg.expression}. Expected: {arg.expected}, vs {eval_val}");
-                    throw;
-                }
-            }
-        }
-
         async Task EvaluateOnCallFrameFail(string call_frame_id, params (string expression, string class_name)[] args)
         {
             foreach (var arg in args)
