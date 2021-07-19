@@ -2338,7 +2338,7 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
 /*****************************************************************************
  *
  *  Given a lclNum, a fromType and a toType, return assertion index of the assertion that
- *  claims that a variable's value is always a valid subrange of the formType.
+ *  claims that a variable's value is always a valid subrange of the fromType.
  *  Thus we can discard or omit a cast to fromType. Returns NO_ASSERTION_INDEX
  *  if one such assertion could not be found in "assertions."
  */
