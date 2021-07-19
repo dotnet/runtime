@@ -2,10 +2,14 @@
 
   <PropertyGroup>
     <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;netstandard2.0;net461</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <PackageDescription>File provider for physical files for Microsoft.Extensions.FileProviders.</PackageDescription>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.FileProvidersPhysical_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
 
   <ItemGroup>
