@@ -1222,7 +1222,8 @@ public:
             else if ((call->gtCallType == CT_HELPER) && (JitConfig.JitIsinstProfiling() > 0))
             {
                 const CorInfoHelpFunc helper = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
-                if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS))
+                if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
+                    (helper == CORINFO_HELP_CHKCASTCLASS))
                 {
                     m_functor(m_compiler, call);
                 }
@@ -1331,7 +1332,8 @@ public:
         if ((call->gtCallType == CT_HELPER) && !call->IsVirtual())
         {
             const CorInfoHelpFunc helper = compiler->eeGetHelperNum(call->gtCallMethHnd);
-            assert((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS));
+            assert((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS) ||
+                   (helper == CORINFO_HELP_CHKCASTCLASS));
             assert(JitConfig.JitIsinstProfiling() > 0);
             // Grab the second arg of isinst helper call
             objUse = call->gtCallArgs->GetNext();
