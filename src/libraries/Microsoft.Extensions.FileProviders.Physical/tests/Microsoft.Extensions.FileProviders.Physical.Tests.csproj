@@ -5,6 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
+    <IncludePlatformAttributes>false</IncludePlatformAttributes>
   </PropertyGroup>
 
   <ItemGroup>
