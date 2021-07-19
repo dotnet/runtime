@@ -99,13 +99,13 @@ mono_loader_init ()
 
 	mono_counters_init ();
 	mono_counters_register ("Inflated signatures size",
-								MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_signatures_size);
+							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_signatures_size);
 	mono_counters_register ("Memberref signature cache size",
-								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &memberref_sig_cache_size);
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &memberref_sig_cache_size);
 	mono_counters_register ("MonoMethod size",
-								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &methods_size);
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &methods_size);
 	mono_counters_register ("MonoMethodSignature size",
-								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &signatures_size);
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &signatures_size);
 }
 
 void
