@@ -2877,7 +2877,7 @@ lookup_or_register_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoM
 static inline int
 class_rgctx_array_size (int n)
 {
-	return 4 << n;
+	return 16 << n;
 }
 
 static inline int

@@ -886,6 +886,7 @@ public:
     size_t    fragmentation;    //fragmentation when we don't compact
     size_t    gc_clock;         //gc# when last GC happened
     uint64_t  time_clock;       //time when last gc started
+    uint64_t  previous_time_clock; // time when previous gc started
     size_t    gc_elapsed_time;  // Time it took for the gc to complete
     float     gc_speed;         //  speed in bytes/msec for the gc to complete
 
@@ -3187,7 +3188,7 @@ protected:
                                BOOL& should_expand);
 #ifndef USE_REGIONS
     PER_HEAP
-    BOOL sufficient_space_end_seg (uint8_t* start, uint8_t* seg_end,
+    BOOL sufficient_space_end_seg (uint8_t* start, uint8_t* committed, uint8_t* reserved,
                                    size_t end_space_required);
 #endif //!USE_REGIONS
 
@@ -5019,6 +5020,12 @@ uint64_t& dd_time_clock (dynamic_data* inst)
 {
   return inst->time_clock;
 }
+inline
+uint64_t& dd_previous_time_clock (dynamic_data* inst)
+{
+    return inst->previous_time_clock;
+}
+
 
 inline
 size_t& dd_gc_clock_interval (dynamic_data* inst)

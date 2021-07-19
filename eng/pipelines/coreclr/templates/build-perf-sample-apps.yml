@@ -44,6 +44,29 @@ steps:
           archiveExtension: '.tar.gz'
           archiveType: tar
           tarCompression: gz
+    - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
+      workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
+      displayName: Clean bindir
+    - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=True
+      env:
+        DevTeamProvisioning: '-'
+      workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
+      displayName: Build HelloiOS AOT sample app LLVM=True
+    - task: PublishBuildArtifacts@1
+      condition: succeededOrFailed()
+      displayName: 'Publish binlog'
+      inputs:
+        pathtoPublish: $(Build.SourcesDirectory)/src/mono/sample/iOS/msbuild.binlog
+        artifactName:  ${{ parameters.artifactName }}
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+          rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/HelloiOS.app
+          includeRootFolder: true
+          displayName: iOS Sample App LLVM
+          artifactName: iOSSampleAppLLVM
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:

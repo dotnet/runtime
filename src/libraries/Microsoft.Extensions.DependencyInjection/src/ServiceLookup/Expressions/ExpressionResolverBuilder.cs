@@ -4,26 +4,14 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     internal sealed class ExpressionResolverBuilder : CallSiteVisitor<object, Expression>
     {
-        internal static readonly MethodInfo InvokeFactoryMethodInfo = GetMethodInfo<Action<Func<IServiceProvider, object>, IServiceProvider>>((a, b) => a.Invoke(b));
-        internal static readonly MethodInfo CaptureDisposableMethodInfo = GetMethodInfo<Func<ServiceProviderEngineScope, object, object>>((a, b) => a.CaptureDisposable(b));
-        internal static readonly MethodInfo TryGetValueMethodInfo = GetMethodInfo<Func<IDictionary<ServiceCacheKey, object>, ServiceCacheKey, object, bool>>((a, b, c) => a.TryGetValue(b, out c));
-        internal static readonly MethodInfo ResolveCallSiteAndScopeMethodInfo = GetMethodInfo<Func<CallSiteRuntimeResolver, ServiceCallSite, ServiceProviderEngineScope, object>>((a, b, c) => a.Resolve(b, c));
-        internal static readonly MethodInfo AddMethodInfo = GetMethodInfo<Action<IDictionary<ServiceCacheKey, object>, ServiceCacheKey, object>>((a, b, c) => a.Add(b, c));
-        internal static readonly MethodInfo MonitorEnterMethodInfo = GetMethodInfo<Action<object, bool>>((lockObj, lockTaken) => Monitor.Enter(lockObj, ref lockTaken));
-        internal static readonly MethodInfo MonitorExitMethodInfo = GetMethodInfo<Action<object>>(lockObj => Monitor.Exit(lockObj));
-
-        private static readonly MethodInfo ArrayEmptyMethodInfo = typeof(Array).GetMethod(nameof(Array.Empty));
-
         private static readonly ParameterExpression ScopeParameter = Expression.Parameter(typeof(ServiceProviderEngineScope));
 
         private static readonly ParameterExpression ResolvedServices = Expression.Variable(typeof(IDictionary<ServiceCacheKey, object>), ScopeParameter.Name + "resolvedServices");
@@ -42,7 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private static readonly ParameterExpression CaptureDisposableParameter = Expression.Parameter(typeof(object));
         private static readonly LambdaExpression CaptureDisposable = Expression.Lambda(
-                    Expression.Call(ScopeParameter, CaptureDisposableMethodInfo, CaptureDisposableParameter),
+                    Expression.Call(ScopeParameter, ServiceLookupHelpers.CaptureDisposableMethodInfo, CaptureDisposableParameter),
                     CaptureDisposableParameter);
 
         private static readonly ConstantExpression CallSiteRuntimeResolverInstanceExpression = Expression.Constant(
@@ -127,7 +115,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             if (callSite.ServiceCallSites.Length == 0)
             {
                 return Expression.Constant(
-                    GetArrayEmptyMethodInfo(callSite.ItemType)
+                    ServiceLookupHelpers.GetArrayEmptyMethodInfo(callSite.ItemType)
                     .Invoke(obj: null, parameters: Array.Empty<object>()));
             }
 
@@ -147,11 +135,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ScopeParameter,
                 VisitCallSiteMain(callSite, context));
         }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-            Justification = "Calling Array.Empty<T>() is safe since the T doesn't have trimming annotations.")]
-        internal static MethodInfo GetArrayEmptyMethodInfo(Type itemType) =>
-            ArrayEmptyMethodInfo.MakeGenericMethod(itemType);
 
         private Expression TryCaptureDisposable(ServiceCallSite callSite, ParameterExpression scope, Expression service)
         {
@@ -212,7 +195,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Avoid the compilation for singletons (or promoted singletons)
             MethodCallExpression resolveRootScopeExpression = Expression.Call(
                 CallSiteRuntimeResolverInstanceExpression,
-                ResolveCallSiteAndScopeMethodInfo,
+                ServiceLookupHelpers.ResolveCallSiteAndScopeMethodInfo,
                 callSiteExpression,
                 ScopeParameter);
 
@@ -226,7 +209,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             MethodCallExpression tryGetValueExpression = Expression.Call(
                 resolvedServices,
-                TryGetValueMethodInfo,
+                ServiceLookupHelpers.TryGetValueMethodInfo,
                 keyExpression,
                 resolvedVariable);
 
@@ -238,7 +221,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             MethodCallExpression addValueExpression = Expression.Call(
                 resolvedServices,
-                AddMethodInfo,
+                ServiceLookupHelpers.AddMethodInfo,
                 keyExpression,
                 resolvedVariable);
 
@@ -261,8 +244,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             ParameterExpression lockWasTaken = Expression.Variable(typeof(bool), "lockWasTaken");
             ParameterExpression sync = Sync;
 
-            MethodCallExpression monitorEnter = Expression.Call(MonitorEnterMethodInfo, sync, lockWasTaken);
-            MethodCallExpression monitorExit = Expression.Call(MonitorExitMethodInfo, sync);
+            MethodCallExpression monitorEnter = Expression.Call(ServiceLookupHelpers.MonitorEnterMethodInfo, sync, lockWasTaken);
+            MethodCallExpression monitorExit = Expression.Call(ServiceLookupHelpers.MonitorExitMethodInfo, sync);
 
             BlockExpression tryBody = Expression.Block(monitorEnter, blockExpression);
             ConditionalExpression finallyBody = Expression.IfThen(lockWasTaken, monitorExit);
@@ -278,12 +261,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         new[] { lockWasTaken },
                         Expression.TryFinally(tryBody, finallyBody))
                 );
-        }
-
-        private static MethodInfo GetMethodInfo<T>(Expression<T> expr)
-        {
-            var mc = (MethodCallExpression)expr.Body;
-            return mc.Method;
         }
 
         public Expression GetCaptureDisposable(ParameterExpression scope)

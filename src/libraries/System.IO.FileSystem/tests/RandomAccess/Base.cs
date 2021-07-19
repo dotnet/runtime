@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO.Pipes;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
@@ -12,11 +13,17 @@ namespace System.IO.Tests
     {
         protected abstract T MethodUnderTest(SafeFileHandle handle, byte[] bytes, long fileOffset);
 
-        protected virtual bool ShouldThrowForSyncHandle => false;
-
-        protected virtual bool ShouldThrowForAsyncHandle => false;
-
         protected virtual bool UsesOffsets => true;
+
+        public static IEnumerable<object[]> GetSyncAsyncOptions()
+        {
+            yield return new object[] { FileOptions.None };
+
+            if (PlatformDetection.IsAsyncFileIOSupported)
+            {
+                yield return new object[] { FileOptions.Asynchronous };
+            }
+        }
 
         [Fact]
         public void ThrowsArgumentNullExceptionForNullHandle()
@@ -52,41 +59,15 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        public void ThrowsArgumentOutOfRangeExceptionForNegativeFileOffset()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public void ThrowsArgumentOutOfRangeExceptionForNegativeFileOffset(FileOptions options)
         {
             if (UsesOffsets)
             {
-                FileOptions options = ShouldThrowForAsyncHandle ? FileOptions.None : FileOptions.Asynchronous;
                 using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: options))
                 {
                     AssertExtensions.Throws<ArgumentOutOfRangeException>("fileOffset", () => MethodUnderTest(handle, Array.Empty<byte>(), -1));
-                }
-            }
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [SkipOnPlatform(TestPlatforms.Browser, "async file IO is not supported on browser")]
-        public void ThrowsArgumentExceptionForAsyncFileHandle()
-        {
-            if (ShouldThrowForAsyncHandle)
-            {
-                using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: FileOptions.Asynchronous))
-                {
-                    AssertExtensions.Throws<ArgumentException>("handle", () => MethodUnderTest(handle, new byte[100], 0));
-                }
-            }
-        }
-
-        [Fact]
-        public void ThrowsArgumentExceptionForSyncFileHandle()
-        {
-            if (ShouldThrowForSyncHandle)
-            {
-                using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: FileOptions.None))
-                {
-                    AssertExtensions.Throws<ArgumentException>("handle", () => MethodUnderTest(handle, new byte[100], 0));
                 }
             }
         }
@@ -98,12 +79,10 @@ namespace System.IO.Tests
             return source;
         }
 
-        protected SafeFileHandle GetHandleToExistingFile(FileAccess access)
+        protected SafeFileHandle GetHandleToExistingFile(FileAccess access, FileOptions options)
         {
             string filePath = GetTestFilePath();
             File.WriteAllBytes(filePath, new byte[1]);
-
-            FileOptions options = ShouldThrowForAsyncHandle ? FileOptions.None : FileOptions.Asynchronous;
             return File.OpenHandle(filePath, FileMode.Open, access, FileShare.None, options);
         }
     }

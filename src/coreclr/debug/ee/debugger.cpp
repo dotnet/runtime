@@ -992,10 +992,9 @@ Debugger::~Debugger()
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
-typedef void (*PFN_HIJACK_FUNCTION) (void);
 
 // Given the start address and the end address of a function, return a MemoryRange for the function.
-inline MemoryRange GetMemoryRangeForFunction(PFN_HIJACK_FUNCTION pfnStart, PFN_HIJACK_FUNCTION pfnEnd)
+inline MemoryRange GetMemoryRangeForFunction(void *pfnStart, void *pfnEnd)
 {
     PCODE pfnStartAddress = (PCODE)GetEEFuncEntryPoint(pfnStart);
     PCODE pfnEndAddress   = (PCODE)GetEEFuncEntryPoint(pfnEnd);
@@ -1016,6 +1015,11 @@ MemoryRange Debugger::s_hijackFunction[kMaxHijackFunctions] =
      GetMemoryRangeForFunction(RedirectedHandledJITCaseForGCStress_Stub,
                                RedirectedHandledJITCaseForGCStress_StubEnd)
 #endif // HAVE_GCCOVER && TARGET_AMD64
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+     ,
+     GetMemoryRangeForFunction(ApcActivationCallbackStub,
+                               ApcActivationCallbackStubEnd)
+#endif // FEATURE_SPECIAL_USER_MODE_APC
     };
 #endif // FEATURE_HIJACK && !TARGET_UNIX
 
@@ -1317,13 +1321,19 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
 
     // Allocate the breakpoint instruction info in executable memory.
     void *bpInfoSegmentRX = g_pDebugger->GetInteropSafeExecutableHeap()->Alloc(sizeof(DebuggerEvalBreakpointInfoSegment));
+
+#if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE) && defined(HOST_OSX) && defined(HOST_ARM64)
     ExecutableWriterHolder<DebuggerEvalBreakpointInfoSegment> bpInfoSegmentWriterHolder((DebuggerEvalBreakpointInfoSegment*)bpInfoSegmentRX, sizeof(DebuggerEvalBreakpointInfoSegment));
-    new (bpInfoSegmentWriterHolder.GetRW()) DebuggerEvalBreakpointInfoSegment(this);
+    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = bpInfoSegmentWriterHolder.GetRW();
+#else // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
+    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = (DebuggerEvalBreakpointInfoSegment*)bpInfoSegmentRX;
+#endif // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
+    new (bpInfoSegmentRW) DebuggerEvalBreakpointInfoSegment(this);
     m_bpInfoSegment = (DebuggerEvalBreakpointInfoSegment*)bpInfoSegmentRX;
 
     // This must be non-zero so that the saved opcode is non-zero, and on IA64 we want it to be 0x16
     // so that we can have a breakpoint instruction in any slot in the bundle.
-    bpInfoSegmentWriterHolder.GetRW()->m_breakpointInstruction[0] = 0x16;
+    bpInfoSegmentRW->m_breakpointInstruction[0] = 0x16;
 #if defined(TARGET_ARM)
     USHORT *bp = (USHORT*)&m_bpInfoSegment->m_breakpointInstruction;
     *bp = CORDbg_BREAK_INSTRUCTION;
@@ -15884,7 +15894,7 @@ HRESULT Debugger::UpdateSpecialThreadList(DWORD cThreadArrayLength,
 //
 // 3) If the IP is in the prolog or epilog of a managed function.
 //
-BOOL Debugger::IsThreadContextInvalid(Thread *pThread)
+BOOL Debugger::IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx)
 {
     CONTRACTL
     {
@@ -15896,14 +15906,22 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread)
     BOOL invalid = FALSE;
 
     // Get the thread context.
+    BOOL success = pCtx != NULL;
     CONTEXT ctx;
-    ctx.ContextFlags = CONTEXT_CONTROL;
-    BOOL success = pThread->GetThreadContext(&ctx);
+    if (!success)
+    {
+        ctx.ContextFlags = CONTEXT_CONTROL;
+        success = pThread->GetThreadContext(&ctx);
+        if (success)
+        {
+            pCtx = &ctx;
+        }
+    }
 
     if (success)
     {
         // Check single-step flag
-        if (IsSSFlagEnabled(reinterpret_cast<DT_CONTEXT *>(&ctx) ARM_ARG(pThread) ARM64_ARG(pThread)))
+        if (IsSSFlagEnabled(reinterpret_cast<DT_CONTEXT *>(pCtx) ARM_ARG(pThread) ARM64_ARG(pThread)))
         {
             // Can't hijack a thread whose SS-flag is set. This could lead to races
             // with the thread taking the SS-exception.
@@ -15917,7 +15935,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread)
     {
 #ifdef TARGET_X86
         // Grab Eip - 1
-        LPVOID address = (((BYTE*)GetIP(&ctx)) - 1);
+        LPVOID address = (((BYTE*)GetIP(pCtx)) - 1);
 
         EX_TRY
         {
@@ -15928,7 +15946,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread)
             if (AddressIsBreakpoint((CORDB_ADDRESS_TYPE*)address))
             {
                 size_t prologSize; // Unused...
-                if (g_pEEInterface->IsInPrologOrEpilog((BYTE*)GetIP(&ctx), &prologSize))
+                if (g_pEEInterface->IsInPrologOrEpilog((BYTE*)GetIP(pCtx), &prologSize))
                 {
                     LOG((LF_CORDB, LL_INFO1000, "D::ITCI: thread is after a BP and in prolog or epilog.\n"));
                     invalid = TRUE;
@@ -16234,6 +16252,7 @@ void Debugger::ReleaseDebuggerDataLock(Debugger *pDebugger)
 }
 #endif // DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
 /* ------------------------------------------------------------------------ *
  * Functions for DebuggerHeap executable memory allocations
  * ------------------------------------------------------------------------ */
@@ -16378,6 +16397,7 @@ void* DebuggerHeapExecutableMemoryAllocator::GetPointerToChunkWithUsageUpdate(De
 
     return page->GetPointerToChunk(chunkNumber);
 }
+#endif // DACCESS_COMPILE
 
 /* ------------------------------------------------------------------------ *
  * DebuggerHeap impl
@@ -16412,7 +16432,7 @@ void DebuggerHeap::Destroy()
         m_hHeap = NULL;
     }
 #endif
-#ifndef HOST_WINDOWS
+#if !defined(HOST_WINDOWS) && !defined(DACCESS_COMPILE)
     if (m_execMemAllocator != NULL)
     {
         delete m_execMemAllocator;
@@ -16438,6 +16458,8 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+
+#ifndef DACCESS_COMPILE
 
     // Have knob catch if we don't want to lazy init the debugger.
     _ASSERTE(!g_DbgShouldntUseDebugger);
@@ -16472,7 +16494,9 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
             return E_OUTOFMEMORY;
         }
     }
-#endif
+#endif    
+
+#endif // !DACCESS_COMPILE
 
     return S_OK;
 }
@@ -16549,7 +16573,10 @@ void *DebuggerHeap::Alloc(DWORD size)
     size += sizeof(InteropHeapCanary);
 #endif
 
-    void *ret;
+    void *ret = NULL;
+
+#ifndef DACCESS_COMPILE
+
 #ifdef USE_INTEROPSAFE_HEAP
     _ASSERTE(m_hHeap != NULL);
     ret = ::HeapAlloc(m_hHeap, HEAP_ZERO_MEMORY, size);
@@ -16585,7 +16612,7 @@ void *DebuggerHeap::Alloc(DWORD size)
     InteropHeapCanary * pCanary = InteropHeapCanary::GetFromRawAddr(ret);
     ret = pCanary->GetUserAddr();
 #endif
-
+#endif // !DACCESS_COMPILE
     return ret;
 }
 
@@ -16638,6 +16665,8 @@ void DebuggerHeap::Free(void *pMem)
     }
     CONTRACTL_END;
 
+#ifndef DACCESS_COMPILE
+
 #ifdef USE_INTEROPSAFE_CANARY
     // Check for canary
 
@@ -16673,6 +16702,7 @@ void DebuggerHeap::Free(void *pMem)
 #endif // HOST_WINDOWS
     }
 #endif
+#endif // !DACCESS_COMPILE
 }
 
 #ifndef DACCESS_COMPILE

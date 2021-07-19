@@ -67,13 +67,6 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
     STRINGREF CookieStringObj = StringObject::NewString(strCookie, cCookieStrBytes);
     GCPROTECT_BEGIN(CookieStringObj);
 #endif
-
-    // Load the method desc's for all the methods in the ICustomMarshaler interface.
-    m_pMarshalNativeToManagedMD = GetCustomMarshalerMD(CustomMarshalerMethods_MarshalNativeToManaged, hndCustomMarshalerType);
-    m_pMarshalManagedToNativeMD = GetCustomMarshalerMD(CustomMarshalerMethods_MarshalManagedToNative, hndCustomMarshalerType);
-    m_pCleanUpNativeDataMD = GetCustomMarshalerMD(CustomMarshalerMethods_CleanUpNativeData, hndCustomMarshalerType);
-    m_pCleanUpManagedDataMD = GetCustomMarshalerMD(CustomMarshalerMethods_CleanUpManagedData, hndCustomMarshalerType);
-
     // Load the method desc for the static method to retrieve the instance.
     MethodDesc *pGetCustomMarshalerMD = GetCustomMarshalerMD(CustomMarshalerMethods_GetInstance, hndCustomMarshalerType);
 
@@ -103,7 +96,9 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
     };
 
     // Call the GetCustomMarshaler method to retrieve the custom marshaler to use.
-    OBJECTREF CustomMarshalerObj = getCustomMarshaler.Call_RetOBJECTREF(GetCustomMarshalerArgs);
+    OBJECTREF CustomMarshalerObj = NULL;
+    GCPROTECT_BEGIN(CustomMarshalerObj);
+    CustomMarshalerObj = getCustomMarshaler.Call_RetOBJECTREF(GetCustomMarshalerArgs);
     if (!CustomMarshalerObj)
     {
         DefineFullyQualifiedNameForClassW()
@@ -111,7 +106,16 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
                      IDS_EE_NOCUSTOMMARSHALER,
                      GetFullyQualifiedNameForClassW(hndCustomMarshalerType.GetMethodTable()));
     }
+    // Load the method desc's for all the methods in the ICustomMarshaler interface based on the type of the marshaler object.
+    TypeHandle customMarshalerObjType = CustomMarshalerObj->GetMethodTable();
+
+    m_pMarshalNativeToManagedMD = GetCustomMarshalerMD(CustomMarshalerMethods_MarshalNativeToManaged, customMarshalerObjType);
+    m_pMarshalManagedToNativeMD = GetCustomMarshalerMD(CustomMarshalerMethods_MarshalManagedToNative, customMarshalerObjType);
+    m_pCleanUpNativeDataMD = GetCustomMarshalerMD(CustomMarshalerMethods_CleanUpNativeData, customMarshalerObjType);
+    m_pCleanUpManagedDataMD = GetCustomMarshalerMD(CustomMarshalerMethods_CleanUpManagedData, customMarshalerObjType);
+
     m_hndCustomMarshaler = pLoaderAllocator->AllocateHandle(CustomMarshalerObj);
+    GCPROTECT_END();
 
     // Retrieve the size of the native data.
     if (m_bDataIsByValue)

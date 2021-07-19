@@ -55,39 +55,29 @@ namespace System.IO.Tests
             }
         }
 
-        /// <summary>
-        /// In some cases (such as when running without elevated privileges),
-        /// the symbolic link may fail to create. Only run this test if it creates
-        /// links successfully.
-        /// </summary>
-        protected static bool CanCreateSymbolicLinks => s_canCreateSymbolicLinks.Value;
-
-        private static readonly Lazy<bool> s_canCreateSymbolicLinks = new Lazy<bool>(() =>
-        {
-            // Verify file symlink creation
-            string path = Path.GetTempFileName();
-            string linkPath = path + ".link";
-            bool success = MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false);
-            try { File.Delete(path); } catch { }
-            try { File.Delete(linkPath); } catch { }
-
-            // Verify directory symlink creation
-            path = Path.GetTempFileName();
-            linkPath = path + ".link";
-            success = success && MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true);
-            try { Directory.Delete(path); } catch { }
-            try { Directory.Delete(linkPath); } catch { }
-
-            return success;
-        });
-
         public static string GetNamedPipeServerStreamName()
         {
             if (PlatformDetection.IsInAppContainer)
             {
                 return @"LOCAL\" + Guid.NewGuid().ToString("N");
             }
-            return Guid.NewGuid().ToString("N");
+
+            if (PlatformDetection.IsWindows)
+            {
+                return Guid.NewGuid().ToString("N");
+            }
+
+            const int MinUdsPathLength = 104; // required min is 92, but every platform we currently target is at least 104
+            const int MinAvailableForSufficientRandomness = 5; // we want enough randomness in the name to avoid conflicts between concurrent tests
+            string prefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
+            int availableLength = MinUdsPathLength - prefix.Length - 1; // 1 - for possible null terminator
+            Assert.True(availableLength >= MinAvailableForSufficientRandomness, $"UDS prefix {prefix} length {prefix.Length} is too long");
+            
+            return string.Create(availableLength, 0, (span, _) =>
+            {
+                for (int i = 0; i < span.Length; i++)
+                    span[i] = (char)('a' + Random.Shared.Next(0, 26));
+            });
         }
 
         /// <summary>

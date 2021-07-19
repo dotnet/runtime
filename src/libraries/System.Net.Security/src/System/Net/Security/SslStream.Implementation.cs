@@ -19,6 +19,7 @@ namespace System.Net.Security
         private SslAuthenticationOptions? _sslAuthenticationOptions;
 
         private int _nestedAuth;
+        private bool _isRenego;
 
         private enum Framing
         {
@@ -296,7 +297,8 @@ namespace System.Net.Security
         }
 
         // This will initiate renegotiation or PHA for Tls1.3
-        private async Task RenegotiateAsync(CancellationToken cancellationToken)
+        private async Task RenegotiateAsync<TIOAdapter>(TIOAdapter adapter)
+            where TIOAdapter : IReadWriteAdapter
         {
             if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
             {
@@ -314,13 +316,19 @@ namespace System.Net.Security
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(WriteAsync), "write"));
             }
 
+            if (_decryptedBytesCount is not 0)
+            {
+                throw new InvalidOperationException(SR.net_ssl_renegotiate_buffer);
+            }
+
             _sslAuthenticationOptions!.RemoteCertRequired = true;
-            IReadWriteAdapter adapter = new AsyncReadWriteAdapter(InnerStream, cancellationToken);
+            _isRenego = true;
 
             try
             {
                 SecurityStatusPal status = _context!.Renegotiate(out byte[]? nextmsg);
-                if (nextmsg?.Length > 0)
+
+                if (nextmsg is {} && nextmsg.Length > 0)
                 {
                     await adapter.WriteAsync(nextmsg, 0, nextmsg.Length).ConfigureAwait(false);
                     await adapter.FlushAsync().ConfigureAwait(false);
@@ -330,20 +338,39 @@ namespace System.Net.Security
                 {
                     if (status.ErrorCode == SecurityStatusPalErrorCode.NoRenegotiation)
                     {
-                        // peer does not want to renegotiate. That should keep session usable.
+                        // Peer does not want to renegotiate. That should keep session usable.
                         return;
                     }
 
                     throw SslStreamPal.GetException(status);
                 }
 
-                // Issue empty read to get renegotiation going.
-                await ReadAsyncInternal(adapter, Memory<byte>.Empty, renegotiation: true).ConfigureAwait(false);
+                _handshakeBuffer = new ArrayBuffer(InitialHandshakeBufferSize);
+                ProtocolToken message = null!;
+                do {
+                    message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
+                    if (message.Size > 0)
+                    {
+                        await adapter.WriteAsync(message.Payload!, 0, message.Size).ConfigureAwait(false);
+                        await adapter.FlushAsync().ConfigureAwait(false);
+                    }
+                } while (message.Status.ErrorCode == SecurityStatusPalErrorCode.ContinueNeeded);
+
+                if (_handshakeBuffer.ActiveLength > 0)
+                {
+                    // If we read more than we needed for handshake, move it to input buffer for further processing.
+                    ResetReadBuffer();
+                    _handshakeBuffer.ActiveSpan.CopyTo(_internalBuffer);
+                    _internalBufferCount = _handshakeBuffer.ActiveLength;
+                }
+
+                CompleteHandshake(_sslAuthenticationOptions!);
             }
             finally
             {
                 _nestedRead = 0;
                 _nestedWrite = 0;
+                _isRenego = false;
                 // We will not release _nestedAuth at this point to prevent another renegotiation attempt.
             }
         }
@@ -452,25 +479,7 @@ namespace System.Net.Security
                     _internalBufferCount = _handshakeBuffer.ActiveLength;
                 }
 
-                ProtocolToken? alertToken = null;
-                if (!CompleteHandshake(ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
-                {
-                    if (_sslAuthenticationOptions!.CertValidationDelegate != null)
-                    {
-                        // there may be some chain errors but the decision was made by custom callback. Details should be tracing if enabled.
-                        SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null)));
-                    }
-                    else if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chainStatus != X509ChainStatusFlags.NoError)
-                    {
-                        // We failed only because of chain and we have some insight.
-                        SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null)));
-                    }
-                    else
-                    {
-                        // Simple add sslPolicyErrors as crude info.
-                        SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null)));
-                    }
-                }
+                CompleteHandshake(_sslAuthenticationOptions!);
             }
             finally
             {
@@ -478,6 +487,7 @@ namespace System.Net.Security
                 if (reAuthenticationData == null)
                 {
                     _nestedAuth = 0;
+                    _isRenego = false;
                 }
             }
 
@@ -534,51 +544,60 @@ namespace System.Net.Security
             }
 
             // At this point, we have at least one TLS frame.
-            if (_lastFrame.Header.Type == TlsContentType.Alert)
+            switch (_lastFrame.Header.Type)
             {
-                if (TlsFrameHelper.TryGetFrameInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame))
-                {
-                    if (NetEventSource.Log.IsEnabled() && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify) NetEventSource.Error(this, $"Received TLS alert {_lastFrame.AlertDescription}");
-                }
-            }
-            else if (_lastFrame.Header.Type == TlsContentType.Handshake)
-            {
-                if (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
-                    (_sslAuthenticationOptions!.ServerCertSelectionDelegate != null ||
-                    _sslAuthenticationOptions!.ServerOptionDelegate != null))
-                {
-                    TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
-                                                                TlsFrameHelper.ProcessingOptions.All :
-                                                                TlsFrameHelper.ProcessingOptions.ServerName;
-
-                    // Process SNI from Client Hello message
-                    if (!TlsFrameHelper.TryGetFrameInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame, options))
+                case TlsContentType.Alert:
+                    if (TlsFrameHelper.TryGetFrameInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame))
                     {
-                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Failed to parse TLS hello.");
+                        if (NetEventSource.Log.IsEnabled() && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify) NetEventSource.Error(this, $"Received TLS alert {_lastFrame.AlertDescription}");
                     }
-
-                    if (_lastFrame.HandshakeType == TlsHandshakeType.ClientHello)
+                    break;
+                case TlsContentType.Handshake:
+                    if (!_isRenego && _handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
+                        (_sslAuthenticationOptions!.ServerCertSelectionDelegate != null ||
+                        _sslAuthenticationOptions!.ServerOptionDelegate != null))
                     {
-                        // SNI if it exist. Even if we could not parse the hello, we can fall-back to default certificate.
-                        if (_lastFrame.TargetName != null)
+                        TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
+                                                                    TlsFrameHelper.ProcessingOptions.All :
+                                                                    TlsFrameHelper.ProcessingOptions.ServerName;
+
+                        // Process SNI from Client Hello message
+                        if (!TlsFrameHelper.TryGetFrameInfo(_handshakeBuffer.ActiveReadOnlySpan, ref _lastFrame, options))
                         {
-                            _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
+                            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Failed to parse TLS hello.");
                         }
 
-                        if (_sslAuthenticationOptions.ServerOptionDelegate != null)
+                        if (_lastFrame.HandshakeType == TlsHandshakeType.ClientHello)
                         {
-                            SslServerAuthenticationOptions userOptions =
-                                await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_sslAuthenticationOptions.TargetHost, _lastFrame.SupportedVersions),
-                                                                                    _sslAuthenticationOptions.UserState, adapter.CancellationToken).ConfigureAwait(false);
-                            _sslAuthenticationOptions.UpdateOptions(userOptions);
+                            // SNI if it exist. Even if we could not parse the hello, we can fall-back to default certificate.
+                            if (_lastFrame.TargetName != null)
+                            {
+                                _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
+                            }
+
+                            if (_sslAuthenticationOptions.ServerOptionDelegate != null)
+                            {
+                                SslServerAuthenticationOptions userOptions =
+                                    await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_sslAuthenticationOptions.TargetHost, _lastFrame.SupportedVersions),
+                                                                                        _sslAuthenticationOptions.UserState, adapter.CancellationToken).ConfigureAwait(false);
+                                _sslAuthenticationOptions.UpdateOptions(userOptions);
+                            }
+                        }
+
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            NetEventSource.Log.ReceivedFrame(this, _lastFrame);
                         }
                     }
-
-                    if (NetEventSource.Log.IsEnabled())
+                    break;
+                case TlsContentType.AppData:
+                    // TLS1.3 it is not possible to distinguish between late Handshake and Application Data
+                    if (_isRenego && SslProtocol != SslProtocols.Tls13)
                     {
-                        NetEventSource.Log.ReceivedFrame(this, _lastFrame);
+                        throw new InvalidOperationException(SR.net_ssl_renegotiate_data);
                     }
-                }
+                    break;
+
             }
 
             return ProcessBlob(frameSize);
@@ -664,7 +683,7 @@ namespace System.Net.Security
                 return true;
             }
 
-            if (!_context.VerifyRemoteCertificate(_sslAuthenticationOptions!.CertValidationDelegate, ref alertToken, out sslPolicyErrors, out chainStatus))
+            if (!_context.VerifyRemoteCertificate(_sslAuthenticationOptions!.CertValidationDelegate, _sslAuthenticationOptions!.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
             {
                 _handshakeCompleted = false;
                 return false;
@@ -672,6 +691,29 @@ namespace System.Net.Security
 
             _handshakeCompleted = true;
             return true;
+        }
+
+        private void CompleteHandshake(SslAuthenticationOptions sslAuthenticationOptions)
+        {
+            ProtocolToken? alertToken = null;
+            if (!CompleteHandshake(ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+            {
+                if (sslAuthenticationOptions!.CertValidationDelegate != null)
+                {
+                    // there may be some chain errors but the decision was made by custom callback. Details should be tracing if enabled.
+                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null)));
+                }
+                else if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chainStatus != X509ChainStatusFlags.NoError)
+                {
+                    // We failed only because of chain and we have some insight.
+                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null)));
+                }
+                else
+                {
+                    // Simple add sslPolicyErrors as crude info.
+                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null)));
+                }
+            }
         }
 
         private async ValueTask WriteAsyncChunked<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
@@ -916,15 +958,12 @@ namespace System.Net.Security
             return status;
         }
 
-        private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(TIOAdapter adapter, Memory<byte> buffer, bool renegotiation = false)
+        private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(TIOAdapter adapter, Memory<byte> buffer)
             where TIOAdapter : IReadWriteAdapter
         {
-            if (!renegotiation)
+            if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
-                if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
-                {
-                    throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
-                }
+                throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(SslStream.ReadAsync), "read"));
             }
 
             ThrowIfExceptionalOrNotAuthenticated();
@@ -937,11 +976,6 @@ namespace System.Net.Security
             {
                 if (_decryptedBytesCount != 0)
                 {
-                    if (renegotiation)
-                    {
-                        throw new InvalidOperationException(SR.net_ssl_renegotiate_data);
-                    }
-
                     processedLength = CopyDecryptedData(buffer);
                     if (processedLength == buffer.Length || !HaveFullTlsFrame(out payloadBytes))
                     {
@@ -1006,11 +1040,6 @@ namespace System.Net.Security
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
                             await ReplyOnReAuthenticationAsync(adapter, extraBuffer).ConfigureAwait(false);
-                            if (renegotiation)
-                            {
-                                // if we received data frame instead, we would not be here but we would decrypt data and hit check above.
-                                return 0;
-                            }
                             // Loop on read.
                             continue;
                         }
@@ -1064,7 +1093,7 @@ namespace System.Net.Security
             }
             catch (Exception e)
             {
-                if (e is IOException || (e is OperationCanceledException && adapter.CancellationToken.IsCancellationRequested) || renegotiation)
+                if (e is IOException || (e is OperationCanceledException && adapter.CancellationToken.IsCancellationRequested))
                 {
                     throw;
                 }

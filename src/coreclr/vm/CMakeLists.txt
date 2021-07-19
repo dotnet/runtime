@@ -136,7 +136,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     versionresilienthashcode.cpp
     virtualcallstub.cpp
     win32threadpool.cpp
-    yieldprocessornormalized.cpp
     zapsig.cpp
 )
 
@@ -389,6 +388,7 @@ set(VM_SOURCES_WKS
     threadsuspend.cpp
     typeparse.cpp
     weakreferencenative.cpp
+    yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
 )
 
@@ -833,7 +833,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
     set(VM_SOURCES_DAC_AND_WKS_ARCH
         ${ARCH_SOURCES_DIR}/exceparm.cpp
         ${ARCH_SOURCES_DIR}/stubs.cpp
-        ${ARCH_SOURCES_DIR}/armsinglestepper.cpp
     )
 
     set(VM_HEADERS_DAC_AND_WKS_ARCH
@@ -844,6 +843,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
 
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
+        ${ARCH_SOURCES_DIR}/armsinglestepper.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
     )
@@ -868,7 +868,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     )
 
     if(CLR_CMAKE_HOST_UNIX)
-        list(APPEND VM_SOURCES_DAC_AND_WKS_ARCH
+        list(APPEND VM_SOURCES_WKS_ARCH
             ${ARCH_SOURCES_DIR}/arm64singlestepper.cpp
         )
     endif(CLR_CMAKE_HOST_UNIX)

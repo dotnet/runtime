@@ -61,6 +61,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <stdint.h>
 #include <dlfcn.h>
 #include <limits.h>
+#include <vector>
 
 #ifdef __linux__
 #include <sys/syscall.h> // __NR_membarrier
@@ -232,7 +233,7 @@ static_assert_no_msg(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
 Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
-char* g_argvCreateDump[8] = { nullptr };
+std::vector<const char*> g_argvCreateDump;
 
 //
 // Key used for associating CPalThread's with the underlying pthread
@@ -1334,9 +1335,10 @@ static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode, BOOL bTerminateUncon
         {
             // abort() has the semantics that
             // (1) it doesn't run atexit handlers
-            // (2) can invoke CrashReporter or produce a coredump,
-            // which is appropriate for TerminateProcess calls
-            PROCAbort();
+            // (2) can invoke CrashReporter or produce a coredump, which is appropriate for TerminateProcess calls
+            // TerminationRequestHandlingRoutine in synchmanager.cpp sets the exit code to this special value. The
+            // Watson analyzer needs to know that the process was terminated with a SIGTERM.
+            PROCAbort(uExitCode == (128 + SIGTERM) ? SIGTERM : SIGABRT);
         }
         else
         {
@@ -3085,6 +3087,28 @@ PROCNotifyProcessShutdownDestructor()
 }
 
 /*++
+Function:
+    PROCFormatInt
+
+    Helper function to format an ULONG32 as a string.
+
+--*/
+char*
+PROCFormatInt(ULONG32 value)
+{
+    char* buffer = (char*)InternalMalloc(128);
+    if (buffer != nullptr)
+    {
+        if (sprintf_s(buffer, 128, "%d", value) == -1)
+        {
+            free(buffer);
+            buffer = nullptr;
+        }
+    }
+    return buffer;
+}
+
+/*++
 Function
   PROCBuildCreateDumpCommandLine
 
@@ -3097,12 +3121,13 @@ Return
 --*/
 BOOL
 PROCBuildCreateDumpCommandLine(
-    const char** argv,
+    std::vector<const char*>& argv,
     char** pprogram,
     char** ppidarg,
     char* dumpName,
     char* dumpType,
-    BOOL diag)
+    BOOL diag,
+    BOOL crashReport)
 {
     if (g_szCoreCLRPath == nullptr)
     {
@@ -3132,50 +3157,51 @@ PROCBuildCreateDumpCommandLine(
     {
         return FALSE;
     }
-    char* pidarg = *ppidarg = (char*)InternalMalloc(128);
-    if (pidarg == nullptr)
+    *ppidarg = PROCFormatInt(gPID);
+    if (*ppidarg == nullptr)
     {
         return FALSE;
     }
-    if (sprintf_s(pidarg, 128, "%d", gPID) == -1)
-    {
-        return FALSE;
-    }
-    *argv++ = program;
+    argv.push_back(program);
 
     if (dumpName != nullptr)
     {
-        *argv++ = "--name";
-        *argv++ = dumpName;
+        argv.push_back("--name");
+        argv.push_back(dumpName);
     }
 
     if (dumpType != nullptr)
     {
         if (strcmp(dumpType, "1") == 0)
         {
-            *argv++ = "--normal";
+            argv.push_back("--normal");
         }
         else if (strcmp(dumpType, "2") == 0)
         {
-            *argv++ = "--withheap";
+            argv.push_back("--withheap");
         }
         else if (strcmp(dumpType, "3") == 0)
         {
-            *argv++ = "--triage";
+            argv.push_back("--triage");
         }
         else if (strcmp(dumpType, "4") == 0)
         {
-            *argv++ = "--full";
+            argv.push_back("--full");
         }
     }
 
     if (diag)
     {
-        *argv++ = "--diag";
+        argv.push_back("--diag");
     }
 
-    *argv++ = pidarg;
-    *argv = nullptr;
+    if (crashReport)
+    {
+        argv.push_back("--crashreport");
+    }
+
+    argv.push_back(*ppidarg);
+    argv.push_back(nullptr);
 
     return TRUE;
 }
@@ -3190,7 +3216,7 @@ Function:
 (no return value)
 --*/
 BOOL
-PROCCreateCrashDump(char** argv)
+PROCCreateCrashDump(std::vector<const char*>& argv)
 {
     // Fork the core dump child process.
     pid_t childpid = fork();
@@ -3204,7 +3230,7 @@ PROCCreateCrashDump(char** argv)
     else if (childpid == 0)
     {
         // Child process
-        if (execve(argv[0], argv, palEnvironment) == -1)
+        if (execve(argv[0], (char**)argv.data(), palEnvironment) == -1)
         {
             ERROR("PROCCreateCrashDump: execve() FAILED %d (%s)\n", errno, strerror(errno));
             return false;
@@ -3258,10 +3284,12 @@ PROCAbortInitialize()
         char* dumpType = getenv("COMPlus_DbgMiniDumpType");
         char* diagStr = getenv("COMPlus_CreateDumpDiagnostics");
         BOOL diag = diagStr != nullptr && strcmp(diagStr, "1") == 0;
+        char* crashReportStr = getenv("COMPlus_EnableCrashReport");
+        BOOL crashReport = crashReportStr != nullptr && strcmp(crashReportStr, "1") == 0;
 
         char* program = nullptr;
         char* pidarg = nullptr;
-        if (!PROCBuildCreateDumpCommandLine((const char **)g_argvCreateDump, &program, &pidarg, dumpName, dumpType, diag))
+        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dumpName, dumpType, diag, crashReport))
         {
             return FALSE;
         }
@@ -3296,7 +3324,7 @@ PAL_GenerateCoreDump(
     INT dumpType,
     BOOL diag)
 {
-    char* argvCreateDump[8] = { nullptr };
+    std::vector<const char*> argvCreateDump;
     char dumpTypeStr[16];
 
     if (dumpType < 1 || dumpType > 4)
@@ -3313,7 +3341,7 @@ PAL_GenerateCoreDump(
     }
     char* program = nullptr;
     char* pidarg = nullptr;
-    BOOL result = PROCBuildCreateDumpCommandLine((const char **)argvCreateDump, &program, &pidarg, (char*)dumpName, dumpTypeStr, diag);
+    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, (char*)dumpName, dumpTypeStr, diag, false);
     if (result)
     {
         result = PROCCreateCrashDump(argvCreateDump);
@@ -3330,15 +3358,48 @@ Function:
   Creates crash dump of the process (if enabled). Can be
   called from the unhandled native exception handler.
 
+Parameters:
+  signal - POSIX signal number
+
 (no return value)
 --*/
 VOID
-PROCCreateCrashDumpIfEnabled()
+PROCCreateCrashDumpIfEnabled(int signal)
 {
     // If enabled, launch the create minidump utility and wait until it completes
-    if (g_argvCreateDump[0] != nullptr)
+    if (!g_argvCreateDump.empty())
     {
-        PROCCreateCrashDump(g_argvCreateDump);
+        std::vector<const char*> argv(g_argvCreateDump);
+        char* signalArg = nullptr;
+        char* crashThreadArg = nullptr;
+
+        if (signal != 0)
+        {
+            // Remove the terminating nullptr
+            argv.pop_back();
+
+            // Add the Windows exception code to the command line
+            signalArg = PROCFormatInt(signal);
+            if (signalArg != nullptr)
+            {
+                argv.push_back("--signal");
+                argv.push_back(signalArg);
+            }
+
+            // Add the current thread id to the command line. This function is always called on the crashing thread.
+            crashThreadArg = PROCFormatInt(THREADSilentGetCurrentThreadId());
+            if (crashThreadArg != nullptr)
+            {
+                argv.push_back("--crashthread");
+                argv.push_back(crashThreadArg);
+            }
+            argv.push_back(nullptr);
+        }
+
+        PROCCreateCrashDump(argv);
+
+        free(signalArg);
+        free(crashThreadArg);
     }
 }
 
@@ -3349,16 +3410,19 @@ Function:
   Aborts the process after calling the shutdown cleanup handler. This function
   should be called instead of calling abort() directly.
 
+Parameters:
+  signal - POSIX signal number
+
   Does not return
 --*/
 PAL_NORETURN
 VOID
-PROCAbort()
+PROCAbort(int signal)
 {
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCCreateCrashDumpIfEnabled();
+    PROCCreateCrashDumpIfEnabled(signal);
 
     // Restore the SIGABORT handler to prevent recursion
     SEHCleanupAbort();

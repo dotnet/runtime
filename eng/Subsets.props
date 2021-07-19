@@ -317,7 +317,7 @@
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-host.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-hostfxr.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-runtime-deps\*.proj" />
-        <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" />
+        <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" Pack="true" />
       </ItemGroup>
       <ItemGroup>
         <SharedFrameworkProjectToBuild Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" />

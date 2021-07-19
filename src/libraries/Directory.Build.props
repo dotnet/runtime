@@ -128,8 +128,9 @@
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <TestArchiveRuntimeRoot>$(TestArchiveRoot)runtime/</TestArchiveRuntimeRoot>
 
-    <ASPNETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\aspnetcoreapp\ref</ASPNETCoreAppPackageRefPath>
-    <ASPNETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\aspnetcoreapp\lib</ASPNETCoreAppPackageRuntimePath>
+    <ASPNETCoreAppPackageRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'pkg', 'aspnetcoreapp'))</ASPNETCoreAppPackageRootPath>
+    <ASPNETCoreAppPackageRefPath>$([MSBuild]::NormalizeDirectory('$(ASPNETCoreAppPackageRootPath)', 'ref'))</ASPNETCoreAppPackageRefPath>
+    <ASPNETCoreAppPackageRuntimePath>$([MSBuild]::NormalizeDirectory('$(ASPNETCoreAppPackageRootPath)', 'lib'))</ASPNETCoreAppPackageRuntimePath>
 
     <CommonPathRoot>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common'))</CommonPathRoot>
     <CommonPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'src'))</CommonPath>
@@ -160,6 +161,13 @@
   <!-- To enable the interpreter for mono desktop, we need to pass an env switch -->
   <PropertyGroup>
     <MonoEnvOptions Condition="'$(MonoEnvOptions)' == '' and '$(TargetsMobile)' != 'true' and '$(MonoForceInterpreter)' == 'true'">--interpreter</MonoEnvOptions>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+    <SdkPathForWorkloadTesting Condition="'$(SdkPathForWorkloadTesting)' == ''">$(ArtifactsBinDir)dotnet-workload\</SdkPathForWorkloadTesting>
+    <SdkPathForWorkloadTesting>$([MSBuild]::NormalizeDirectory($(SdkPathForWorkloadTesting)))</SdkPathForWorkloadTesting>
+
+    <SdkForWorkloadTestingStampPath>$(SdkPathForWorkloadTesting)version-$(SdkVersionForWorkloadTesting).stamp</SdkForWorkloadTestingStampPath>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />

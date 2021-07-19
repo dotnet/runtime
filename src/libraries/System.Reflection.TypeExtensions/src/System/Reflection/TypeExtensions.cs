@@ -11,14 +11,14 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] this Type type,
             Type[] types)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetConstructor(types);
         }
 
         public static ConstructorInfo[] GetConstructors(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] this Type type)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetConstructors();
         }
 
@@ -26,7 +26,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] this Type type,
             BindingFlags bindingAttr)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetConstructors(bindingAttr);
         }
 
@@ -39,7 +39,7 @@ namespace System.Reflection
                 | DynamicallyAccessedMemberTypes.PublicConstructors
                 | DynamicallyAccessedMemberTypes.PublicNestedTypes)] this Type type)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetDefaultMembers();
         }
 
@@ -47,7 +47,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)] this Type type,
             string name)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetEvent(name);
         }
 
@@ -56,14 +56,14 @@ namespace System.Reflection
             string name,
             BindingFlags bindingAttr)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetEvent(name, bindingAttr);
         }
 
         public static EventInfo[] GetEvents(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)] this Type type)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetEvents();
         }
 
@@ -71,7 +71,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)] this Type type,
             BindingFlags bindingAttr)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetEvents(bindingAttr);
         }
 
@@ -79,7 +79,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] this Type type,
             string name)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetField(name);
         }
 
@@ -88,14 +88,14 @@ namespace System.Reflection
             string name,
             BindingFlags bindingAttr)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetField(name, bindingAttr);
         }
 
         public static FieldInfo[] GetFields(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] this Type type)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetFields();
         }
 
@@ -103,20 +103,20 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)] this Type type,
             BindingFlags bindingAttr)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetFields(bindingAttr);
         }
 
         public static Type[] GetGenericArguments(this Type type)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetGenericArguments();
         }
 
         public static Type[] GetInterfaces(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] this Type type)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetInterfaces();
         }
 
@@ -130,7 +130,7 @@ namespace System.Reflection
                 | DynamicallyAccessedMemberTypes.PublicNestedTypes)] this Type type,
             string name)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetMember(name);
         }
 
@@ -139,7 +139,7 @@ namespace System.Reflection
             string name,
             BindingFlags bindingAttr)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetMember(name, bindingAttr);
         }
 
@@ -152,7 +152,7 @@ namespace System.Reflection
                 | DynamicallyAccessedMemberTypes.PublicConstructors
                 | DynamicallyAccessedMemberTypes.PublicNestedTypes)] this Type type)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetMembers();
         }
 
@@ -160,7 +160,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] this Type type,
             BindingFlags bindingAttr)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetMembers(bindingAttr);
         }
 
@@ -168,7 +168,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] this Type type,
             string name)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetMethod(name);
         }
 
@@ -177,7 +177,7 @@ namespace System.Reflection
             string name,
             BindingFlags bindingAttr)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetMethod(name, bindingAttr);
         }
 
@@ -186,14 +186,14 @@ namespace System.Reflection
             string name,
             Type[] types)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetMethod(name, types);
         }
 
         public static MethodInfo[] GetMethods(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] this Type type)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetMethods();
         }
 
@@ -201,7 +201,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] this Type type,
             BindingFlags bindingAttr)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetMethods(bindingAttr);
         }
 
@@ -210,7 +210,7 @@ namespace System.Reflection
             string name,
             BindingFlags bindingAttr)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetNestedType(name, bindingAttr);
         }
 
@@ -218,14 +218,14 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)] this Type type,
             BindingFlags bindingAttr)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetNestedTypes(bindingAttr);
         }
 
         public static PropertyInfo[] GetProperties(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] this Type type)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetProperties();
         }
 
@@ -233,7 +233,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] this Type type,
             BindingFlags bindingAttr)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetProperties(bindingAttr);
         }
 
@@ -241,7 +241,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] this Type type,
             string name)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetProperty(name);
         }
 
@@ -250,7 +250,7 @@ namespace System.Reflection
             string name,
             BindingFlags bindingAttr)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetProperty(name, bindingAttr);
         }
 
@@ -259,7 +259,7 @@ namespace System.Reflection
             string name,
             Type? returnType)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetProperty(name, returnType);
         }
 
@@ -269,19 +269,19 @@ namespace System.Reflection
             Type? returnType,
             Type[] types)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.GetProperty(name, returnType, types);
         }
 
         public static bool IsAssignableFrom(this Type type, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Type? c)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.IsAssignableFrom(c);
         }
 
         public static bool IsInstanceOfType(this Type type, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? o)
         {
-            Requires.NotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
             return type.IsInstanceOfType(o);
         }
     }
@@ -291,20 +291,20 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types might be removed")]
         public static Type[] GetExportedTypes(this Assembly assembly)
         {
-            Requires.NotNull(assembly, nameof(assembly));
+            ArgumentNullException.ThrowIfNull(assembly, nameof(assembly));
             return assembly.GetExportedTypes();
         }
 
         public static Module[] GetModules(this Assembly assembly)
         {
-            Requires.NotNull(assembly, nameof(assembly));
+            ArgumentNullException.ThrowIfNull(assembly, nameof(assembly));
             return assembly.GetModules();
         }
 
         [RequiresUnreferencedCode("Types might be removed")]
         public static Type[] GetTypes(this Assembly assembly)
         {
-            Requires.NotNull(assembly, nameof(assembly));
+            ArgumentNullException.ThrowIfNull(assembly, nameof(assembly));
             return assembly.GetTypes();
         }
     }
@@ -313,37 +313,37 @@ namespace System.Reflection
     {
         public static MethodInfo? GetAddMethod(this EventInfo eventInfo)
         {
-            Requires.NotNull(eventInfo, nameof(eventInfo));
+            ArgumentNullException.ThrowIfNull(eventInfo, nameof(eventInfo));
             return eventInfo.GetAddMethod();
         }
 
         public static MethodInfo? GetAddMethod(this EventInfo eventInfo, bool nonPublic)
         {
-            Requires.NotNull(eventInfo, nameof(eventInfo));
+            ArgumentNullException.ThrowIfNull(eventInfo, nameof(eventInfo));
             return eventInfo.GetAddMethod(nonPublic);
         }
 
         public static MethodInfo? GetRaiseMethod(this EventInfo eventInfo)
         {
-            Requires.NotNull(eventInfo, nameof(eventInfo));
+            ArgumentNullException.ThrowIfNull(eventInfo, nameof(eventInfo));
             return eventInfo.GetRaiseMethod();
         }
 
         public static MethodInfo? GetRaiseMethod(this EventInfo eventInfo, bool nonPublic)
         {
-            Requires.NotNull(eventInfo, nameof(eventInfo));
+            ArgumentNullException.ThrowIfNull(eventInfo, nameof(eventInfo));
             return eventInfo.GetRaiseMethod(nonPublic);
         }
 
         public static MethodInfo? GetRemoveMethod(this EventInfo eventInfo)
         {
-            Requires.NotNull(eventInfo, nameof(eventInfo));
+            ArgumentNullException.ThrowIfNull(eventInfo, nameof(eventInfo));
             return eventInfo.GetRemoveMethod();
         }
 
         public static MethodInfo? GetRemoveMethod(this EventInfo eventInfo, bool nonPublic)
         {
-            Requires.NotNull(eventInfo, nameof(eventInfo));
+            ArgumentNullException.ThrowIfNull(eventInfo, nameof(eventInfo));
             return eventInfo.GetRemoveMethod(nonPublic);
         }
     }
@@ -358,7 +358,7 @@ namespace System.Reflection
         /// <remarks>This maybe</remarks>
         public static bool HasMetadataToken(this MemberInfo member)
         {
-            Requires.NotNull(member, nameof(member));
+            ArgumentNullException.ThrowIfNull(member, nameof(member));
 
             try
             {
@@ -380,7 +380,7 @@ namespace System.Reflection
         /// </exception>
         public static int GetMetadataToken(this MemberInfo member)
         {
-            Requires.NotNull(member, nameof(member));
+            ArgumentNullException.ThrowIfNull(member, nameof(member));
 
             int token = GetMetadataTokenOrZeroOrThrow(member);
 
@@ -413,7 +413,7 @@ namespace System.Reflection
     {
         public static MethodInfo GetBaseDefinition(this MethodInfo method)
         {
-            Requires.NotNull(method, nameof(method));
+            ArgumentNullException.ThrowIfNull(method, nameof(method));
             return method.GetBaseDefinition();
         }
     }
@@ -422,13 +422,13 @@ namespace System.Reflection
     {
         public static bool HasModuleVersionId(this Module module)
         {
-            Requires.NotNull(module, nameof(module));
+            ArgumentNullException.ThrowIfNull(module, nameof(module));
             return true; // not expected to fail on platforms with Module.ModuleVersionId built-in.
         }
 
         public static Guid GetModuleVersionId(this Module module)
         {
-            Requires.NotNull(module, nameof(module));
+            ArgumentNullException.ThrowIfNull(module, nameof(module));
             return module.ModuleVersionId;
         }
     }
@@ -437,37 +437,37 @@ namespace System.Reflection
     {
         public static MethodInfo[] GetAccessors(this PropertyInfo property)
         {
-            Requires.NotNull(property, nameof(property));
+            ArgumentNullException.ThrowIfNull(property, nameof(property));
             return property.GetAccessors();
         }
 
         public static MethodInfo[] GetAccessors(this PropertyInfo property, bool nonPublic)
         {
-            Requires.NotNull(property, nameof(property));
+            ArgumentNullException.ThrowIfNull(property, nameof(property));
             return property.GetAccessors(nonPublic);
         }
 
         public static MethodInfo? GetGetMethod(this PropertyInfo property)
         {
-            Requires.NotNull(property, nameof(property));
+            ArgumentNullException.ThrowIfNull(property, nameof(property));
             return property.GetGetMethod();
         }
 
         public static MethodInfo? GetGetMethod(this PropertyInfo property, bool nonPublic)
         {
-            Requires.NotNull(property, nameof(property));
+            ArgumentNullException.ThrowIfNull(property, nameof(property));
             return property.GetGetMethod(nonPublic);
         }
 
         public static MethodInfo? GetSetMethod(this PropertyInfo property)
         {
-            Requires.NotNull(property, nameof(property));
+            ArgumentNullException.ThrowIfNull(property, nameof(property));
             return property.GetSetMethod();
         }
 
         public static MethodInfo? GetSetMethod(this PropertyInfo property, bool nonPublic)
         {
-            Requires.NotNull(property, nameof(property));
+            ArgumentNullException.ThrowIfNull(property, nameof(property));
             return property.GetSetMethod(nonPublic);
         }
     }

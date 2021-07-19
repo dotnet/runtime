@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.DependencyModel
             RuntimeGraph = runtimeGraph.ToArray();
         }
 
-        [RequiresAssemblyFiles(Message = "DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
+        [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         public static DependencyContext Default => _defaultContext.Value;
 
         public TargetInfo Target { get; }
@@ -79,7 +79,7 @@ namespace Microsoft.Extensions.DependencyModel
                 );
         }
 
-        [RequiresAssemblyFiles(Message = "DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
+        [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         private static DependencyContext LoadDefault()
         {
             var entryAssembly = Assembly.GetEntryAssembly();
@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.DependencyModel
             return Load(entryAssembly);
         }
 
-        [RequiresAssemblyFiles(Message = "DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
+        [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
         public static DependencyContext Load(Assembly assembly)
         {
             return DependencyContextLoader.Default.Load(assembly);

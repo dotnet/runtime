@@ -1166,7 +1166,7 @@ namespace System.Speech.Recognition
 
             private string DisplayDebugInfo()
             {
-                return string.Format("'rule={0}", _rule);
+                return $"'rule={_rule}";
             }
             internal Grammar _grammar;
             internal string _rule;

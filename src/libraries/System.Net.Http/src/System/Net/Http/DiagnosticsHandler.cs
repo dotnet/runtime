@@ -13,123 +13,138 @@ namespace System.Net.Http
     /// <summary>
     /// DiagnosticHandler notifies DiagnosticSource subscribers about outgoing Http requests
     /// </summary>
-    internal sealed class DiagnosticsHandler : DelegatingHandler
+    internal sealed class DiagnosticsHandler : HttpMessageHandlerStage
     {
-        private const string Namespace                      = "System.Net.Http";
-        private const string RequestWriteNameDeprecated     = Namespace + ".Request";
-        private const string ResponseWriteNameDeprecated    = Namespace + ".Response";
-        private const string ExceptionEventName             = Namespace + ".Exception";
-        private const string ActivityName                   = Namespace + ".HttpRequestOut";
-        private const string ActivityStartName              = ActivityName + ".Start";
-        private const string ActivityStopName               = ActivityName + ".Stop";
+        private static readonly DiagnosticListener s_diagnosticListener =
+                new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
 
-        private static readonly DiagnosticListener s_diagnosticListener = new("HttpHandlerDiagnosticListener");
-        private static readonly ActivitySource s_activitySource = new(Namespace);
+        private readonly HttpMessageHandler _innerHandler;
+        private readonly DistributedContextPropagator _propagator;
+        private readonly HeaderDescriptor[]? _propagatorFields;
 
-        public static bool IsGloballyEnabled { get; } = GetEnableActivityPropagationValue();
-
-        private static bool GetEnableActivityPropagationValue()
+        public DiagnosticsHandler(HttpMessageHandler innerHandler, DistributedContextPropagator propagator, bool autoRedirect = false)
         {
-            // First check for the AppContext switch, giving it priority over the environment variable.
-            if (AppContext.TryGetSwitch(Namespace + ".EnableActivityPropagation", out bool enableActivityPropagation))
-            {
-                return enableActivityPropagation;
-            }
+            Debug.Assert(IsGloballyEnabled());
+            Debug.Assert(innerHandler is not null && propagator is not null);
 
-            // AppContext switch wasn't used. Check the environment variable to determine which handler should be used.
-            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION");
-            if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
-            {
-                // Suppress Activity propagation.
-                return false;
-            }
+            _innerHandler = innerHandler;
+            _propagator = propagator;
 
-            // Defaults to enabling Activity propagation.
-            return true;
+            // Prepare HeaderDescriptors for fields we need to clear when following redirects
+            if (autoRedirect && _propagator.Fields is IReadOnlyCollection<string> fields && fields.Count > 0)
+            {
+                var fieldDescriptors = new List<HeaderDescriptor>(fields.Count);
+                foreach (string field in fields)
+                {
+                    if (field is not null && HeaderDescriptor.TryGet(field, out HeaderDescriptor descriptor))
+                    {
+                        fieldDescriptors.Add(descriptor);
+                    }
+                }
+                _propagatorFields = fieldDescriptors.ToArray();
+            }
         }
 
-        public DiagnosticsHandler(HttpMessageHandler innerHandler) : base(innerHandler)
+        private static bool IsEnabled()
         {
-            Debug.Assert(IsGloballyEnabled);
+            // check if there is a parent Activity or if someone listens to HttpHandlerDiagnosticListener
+            return Activity.Current != null || s_diagnosticListener.IsEnabled();
         }
 
-        private static bool ShouldLogDiagnostics(HttpRequestMessage request, out Activity? activity)
+        internal static bool IsGloballyEnabled() => GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation;
+
+        internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            if (request is null)
+            if (IsEnabled())
+            {
+                return SendAsyncCore(request, async, cancellationToken);
+            }
+            else
+            {
+                return async ?
+                    new ValueTask<HttpResponseMessage>(_innerHandler.SendAsync(request, cancellationToken)) :
+                    new ValueTask<HttpResponseMessage>(_innerHandler.Send(request, cancellationToken));
+            }
+        }
+
+        private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async,
+            CancellationToken cancellationToken)
+        {
+            // HttpClientHandler is responsible to call static DiagnosticsHandler.IsEnabled() before forwarding request here.
+            // It will check if propagation is on (because parent Activity exists or there is a listener) or off (forcibly disabled)
+            // This code won't be called unless consumer unsubscribes from DiagnosticListener right after the check.
+            // So some requests happening right after subscription starts might not be instrumented. Similarly,
+            // when consumer unsubscribes, extra requests might be instrumented
+
+            if (request == null)
             {
                 throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
 
-            activity = null;
-
-            if (s_activitySource.HasListeners())
+            // Since we are reusing the request message instance on redirects, clear any existing headers
+            // Do so before writing DiagnosticListener events as instrumentations use those to inject headers
+            if (request.WasRedirected() && _propagatorFields is HeaderDescriptor[] fields)
             {
-                activity = s_activitySource.CreateActivity(ActivityName, ActivityKind.Client);
+                foreach (HeaderDescriptor field in fields)
+                {
+                    request.Headers.Remove(field);
+                }
             }
 
-            if (activity is null)
-            {
-                bool diagnosticListenerEnabled = s_diagnosticListener.IsEnabled();
+            Activity? activity = null;
+            DiagnosticListener diagnosticListener = s_diagnosticListener;
 
-                if (Activity.Current is not null || (diagnosticListenerEnabled && s_diagnosticListener.IsEnabled(ActivityName, request)))
+            // if there is no listener, but propagation is enabled (with previous IsEnabled() check)
+            // do not write any events just start/stop Activity and propagate Ids
+            if (!diagnosticListener.IsEnabled())
+            {
+                activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
+                activity.Start();
+                InjectHeaders(activity, request);
+
+                try
                 {
-                    // If a diagnostics listener is enabled for the Activity, always create one
-                    activity = new Activity(ActivityName);
+                    return async ?
+                        await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false) :
+                        _innerHandler.Send(request, cancellationToken);
+                }
+                finally
+                {
+                    activity.Stop();
+                }
+            }
+
+            Guid loggingRequestId = Guid.Empty;
+
+            // There is a listener. Check if listener wants to be notified about HttpClient Activities
+            if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request))
+            {
+                activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
+
+                // Only send start event to users who subscribed for it, but start activity anyway
+                if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
+                {
+                    StartActivity(diagnosticListener, activity, new ActivityStartData(request));
                 }
                 else
                 {
-                    // There is no Activity, but we may still want to use the instrumented SendAsyncCore if diagnostic listeners are interested in other events
-                    return diagnosticListenerEnabled;
+                    activity.Start();
                 }
             }
-
-            activity.Start();
-
-            if (s_diagnosticListener.IsEnabled(ActivityStartName))
+            // try to write System.Net.Http.Request event (deprecated)
+            if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated))
             {
-                Write(ActivityStartName, new ActivityStartData(request));
-            }
-
-            InjectHeaders(activity, request);
-
-            return true;
-        }
-
-        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            if (ShouldLogDiagnostics(request, out Activity? activity))
-            {
-                ValueTask<HttpResponseMessage> sendTask = SendAsyncCore(request, activity, async: false, cancellationToken);
-                return sendTask.IsCompleted ?
-                    sendTask.Result :
-                    sendTask.AsTask().GetAwaiter().GetResult();
-            }
-            else
-            {
-                return base.Send(request, cancellationToken);
-            }
-        }
-
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            if (ShouldLogDiagnostics(request, out Activity? activity))
-            {
-                return SendAsyncCore(request, activity, async: true, cancellationToken).AsTask();
-            }
-            else
-            {
-                return base.SendAsync(request, cancellationToken);
-            }
-        }
-
-        private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Activity? activity, bool async, CancellationToken cancellationToken)
-        {
-            Guid loggingRequestId = default;
-
-            if (s_diagnosticListener.IsEnabled(RequestWriteNameDeprecated))
-            {
+                long timestamp = Stopwatch.GetTimestamp();
                 loggingRequestId = Guid.NewGuid();
-                Write(RequestWriteNameDeprecated, new RequestData(request, loggingRequestId, Stopwatch.GetTimestamp()));
+                Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated,
+                    new RequestData(request, loggingRequestId, timestamp));
+            }
+
+            // If we are on at all, we propagate current activity information
+            Activity? currentActivity = Activity.Current;
+            if (currentActivity != null)
+            {
+                InjectHeaders(currentActivity, request);
             }
 
             HttpResponseMessage? response = null;
@@ -137,45 +152,68 @@ namespace System.Net.Http
             try
             {
                 response = async ?
-                    await base.SendAsync(request, cancellationToken).ConfigureAwait(false) :
-                    base.Send(request, cancellationToken);
+                    await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false) :
+                    _innerHandler.Send(request, cancellationToken);
                 return response;
             }
             catch (OperationCanceledException)
             {
                 taskStatus = TaskStatus.Canceled;
+
+                // we'll report task status in HttpRequestOut.Stop
                 throw;
             }
             catch (Exception ex)
             {
-                if (s_diagnosticListener.IsEnabled(ExceptionEventName))
-                {
-                    Write(ExceptionEventName, new ExceptionData(ex, request));
-                }
-
                 taskStatus = TaskStatus.Faulted;
+
+                if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ExceptionEventName))
+                {
+                    // If request was initially instrumented, Activity.Current has all necessary context for logging
+                    // Request is passed to provide some context if instrumentation was disabled and to avoid
+                    // extensive Activity.Tags usage to tunnel request properties
+                    Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.ExceptionEventName, new ExceptionData(ex, request));
+                }
                 throw;
             }
             finally
             {
-                if (activity is not null)
+                // always stop activity if it was started
+                if (activity != null)
                 {
-                    activity.SetEndTime(DateTime.UtcNow);
-
-                    if (s_diagnosticListener.IsEnabled(ActivityStopName))
-                    {
-                        Write(ActivityStopName, new ActivityStopData(response, request, taskStatus));
-                    }
-
-                    activity.Stop();
+                    StopActivity(diagnosticListener, activity, new ActivityStopData(
+                        response,
+                        // If request is failed or cancelled, there is no response, therefore no information about request;
+                        // pass the request in the payload, so consumers can have it in Stop for failed/canceled requests
+                        // and not retain all requests in Start
+                        request,
+                        taskStatus));
                 }
-
-                if (s_diagnosticListener.IsEnabled(ResponseWriteNameDeprecated))
+                // Try to write System.Net.Http.Response event (deprecated)
+                if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
                 {
-                    Write(ResponseWriteNameDeprecated, new ResponseData(response, loggingRequestId, Stopwatch.GetTimestamp(), taskStatus));
+                    long timestamp = Stopwatch.GetTimestamp();
+                    Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated,
+                        new ResponseData(
+                            response,
+                            loggingRequestId,
+                            timestamp,
+                            taskStatus));
                 }
             }
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _innerHandler.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        #region private
 
         private sealed class ActivityStartData
         {
@@ -274,54 +312,50 @@ namespace System.Net.Http
             public override string ToString() => $"{{ {nameof(Response)} = {Response}, {nameof(LoggingRequestId)} = {LoggingRequestId}, {nameof(Timestamp)} = {Timestamp}, {nameof(RequestTaskStatus)} = {RequestTaskStatus} }}";
         }
 
-        private static void InjectHeaders(Activity currentActivity, HttpRequestMessage request)
+        private void InjectHeaders(Activity currentActivity, HttpRequestMessage request)
         {
-            const string TraceParentHeaderName = "traceparent";
-            const string TraceStateHeaderName = "tracestate";
-            const string RequestIdHeaderName = "Request-Id";
-            const string CorrelationContextHeaderName = "Correlation-Context";
-
-            if (currentActivity.IdFormat == ActivityIdFormat.W3C)
+            _propagator.Inject(currentActivity, request, static (carrier, key, value) =>
             {
-                if (!request.Headers.Contains(TraceParentHeaderName))
+                if (carrier is HttpRequestMessage request &&
+                    key is not null &&
+                    HeaderDescriptor.TryGet(key, out HeaderDescriptor descriptor) &&
+                    !request.Headers.TryGetHeaderValue(descriptor, out _))
                 {
-                    request.Headers.TryAddWithoutValidation(TraceParentHeaderName, currentActivity.Id);
-                    if (currentActivity.TraceStateString != null)
-                    {
-                        request.Headers.TryAddWithoutValidation(TraceStateHeaderName, currentActivity.TraceStateString);
-                    }
+                    request.Headers.TryAddWithoutValidation(descriptor, value);
                 }
-            }
-            else
-            {
-                if (!request.Headers.Contains(RequestIdHeaderName))
-                {
-                    request.Headers.TryAddWithoutValidation(RequestIdHeaderName, currentActivity.Id);
-                }
-            }
-
-            // we expect baggage to be empty or contain a few items
-            using (IEnumerator<KeyValuePair<string, string?>> e = currentActivity.Baggage.GetEnumerator())
-            {
-                if (e.MoveNext())
-                {
-                    var baggage = new List<string>();
-                    do
-                    {
-                        KeyValuePair<string, string?> item = e.Current;
-                        baggage.Add(new NameValueHeaderValue(WebUtility.UrlEncode(item.Key), WebUtility.UrlEncode(item.Value)).ToString());
-                    }
-                    while (e.MoveNext());
-                    request.Headers.TryAddWithoutValidation(CorrelationContextHeaderName, baggage);
-                }
-            }
+            });
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
             Justification = "The values being passed into Write have the commonly used properties being preserved with DynamicDependency.")]
-        private static void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(string name, T value)
+        private static void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
+            DiagnosticSource diagnosticSource,
+            string name,
+            T value)
         {
-            s_diagnosticListener.Write(name, value);
+            diagnosticSource.Write(name, value);
         }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "The args being passed into StartActivity have the commonly used properties being preserved with DynamicDependency.")]
+        private static Activity StartActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
+            DiagnosticSource diagnosticSource,
+            Activity activity,
+            T? args)
+        {
+            return diagnosticSource.StartActivity(activity, args);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+            Justification = "The args being passed into StopActivity have the commonly used properties being preserved with DynamicDependency.")]
+        private static void StopActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
+            DiagnosticSource diagnosticSource,
+            Activity activity,
+            T? args)
+        {
+            diagnosticSource.StopActivity(activity, args);
+        }
+
+        #endregion
     }
 }
