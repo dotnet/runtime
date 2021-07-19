@@ -26,4 +26,7 @@ mono_debugger_agent_get_transports (int *ntrans);
 MONO_COMPONENT_API char *
 mono_debugger_agent_get_sdb_options (void);
 
+MONO_API MONO_RT_EXTERNAL_ONLY void
+mono_debugger_agent_unhandled_exception (MonoObject *e);
+
 #endif
