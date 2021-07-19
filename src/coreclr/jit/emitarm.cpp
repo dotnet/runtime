@@ -1702,7 +1702,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  */
 
 void emitter::emitIns_R_I(
-    instruction ins, emitAttr attr, regNumber reg, target_ssize_t imm, insFlags flags /* = INS_FLAGS_DONT_CARE */)
+    instruction ins, emitAttr attr, regNumber reg, target_ssize_t imm, insFlags flags /* = INS_FLAGS_DONT_CARE */ DEBUGARG(unsigned gtFlags))
 
 {
     insFormat fmt = IF_NONE;
@@ -2006,6 +2006,7 @@ void emitter::emitIns_R_I(
     id->idInsSize(isz);
     id->idInsFlags(sf);
     id->idReg1(reg);
+    id->idDebugOnlyInfo()->idFlags = gtFlags;
 
     dispIns(id);
     appendToCurIG(id);
