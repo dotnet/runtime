@@ -41,5 +41,15 @@ namespace System.Diagnostics
         public static void NotifyOfCrossThreadDependency()
         {
         }
+
+#if TARGET_ANDROID
+        [MethodImplAttribute (MethodImplOptions.InternalCall)]
+        private static extern void Mono_UnhandledException_internal (Exception ex);
+
+        internal static void Mono_UnhandledException (Exception ex)
+        {
+            Mono_UnhandledException_internal (ex);
+        }
+#endif
     }
 }
