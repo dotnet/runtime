@@ -82,7 +82,7 @@ mono_loader_init ()
 {
 	static volatile gboolean inited = FALSE;
 
-	if (!inited) {
+	if (inited) {
 		return;
 	}
 	
