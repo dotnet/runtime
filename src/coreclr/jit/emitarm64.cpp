@@ -3969,7 +3969,7 @@ void emitter::emitIns_R_I(instruction ins,
     id->idInsOpt(opt);
 
     id->idReg1(reg);
-    id->idDebugOnlyInfo()->idFlags = gtFlags;
+    INDEBUG(id->idDebugOnlyInfo()->idFlags = gtFlags);
 
     dispIns(id);
     appendToCurIG(id);

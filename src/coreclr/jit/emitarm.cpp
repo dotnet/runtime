@@ -2009,7 +2009,7 @@ void emitter::emitIns_R_I(instruction    ins,
     id->idInsSize(isz);
     id->idInsFlags(sf);
     id->idReg1(reg);
-    id->idDebugOnlyInfo()->idFlags = gtFlags;
+    INDEBUG(id->idDebugOnlyInfo()->idFlags = gtFlags);
 
     dispIns(id);
     appendToCurIG(id);
