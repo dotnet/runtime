@@ -1512,6 +1512,67 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void UsePollingFileWatcher_UseActivePolling_HasChanged(bool useWildcard)
+        {
+            // Arrange
+            using var root = new DisposableFileSystem();
+            string fileName = Path.GetRandomFileName();
+            string filePath = Path.Combine(root.RootPath, fileName);
+            File.WriteAllText(filePath, "v1.1");
+
+            using var provider = new PhysicalFileProvider(root.RootPath) { UsePollingFileWatcher = true, UseActivePolling = true };
+            IChangeToken token = provider.Watch(useWildcard ? "*" : fileName);
+            Assert.False(token.HasChanged);
+
+            // Act
+            Thread.Sleep(100); // Wait a bit before writing again, see https://github.com/dotnet/runtime/issues/55951.
+            File.WriteAllText(filePath, "v1.2");
+            int timeout = GetTokenPollingInterval(token);
+            Thread.Sleep(timeout);
+
+            // Assert
+            Assert.True(token.HasChanged);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeleted(bool useWildcard)
+        {
+            // Arrange
+            using var root = new DisposableFileSystem();
+            string fileName = Path.GetRandomFileName();
+            string filePath = Path.Combine(root.RootPath, fileName);
+            File.WriteAllText(filePath, "v1.1");
+
+            string filter = useWildcard ? "*" : fileName;
+            using var provider = new PhysicalFileProvider(root.RootPath) { UsePollingFileWatcher = true, UseActivePolling = true };
+            IChangeToken token = provider.Watch(filter);
+            Assert.False(token.HasChanged);
+
+            // Act
+            File.Delete(filePath);
+            Thread.Sleep(GetTokenPollingInterval(token));
+
+            // Assert
+            Assert.True(token.HasChanged);
+        }
+
+        private int GetTokenPollingInterval(IChangeToken changeToken)
+        {
+            TimeSpan pollingInterval = (changeToken as CompositeChangeToken).ChangeTokens[1] switch
+            {
+                PollingWildCardChangeToken wildcardChangeToken => wildcardChangeToken.PollingInterval,
+                PollingFileChangeToken => PollingFileChangeToken.PollingInterval,
+                _ => throw new InvalidOperationException()
+            };
+
+            return (int)pollingInterval.TotalMilliseconds;
+        }
+
         [Fact]
         public void CreateFileWatcher_CreatesWatcherWithPollingAndActiveFlags()
         {
