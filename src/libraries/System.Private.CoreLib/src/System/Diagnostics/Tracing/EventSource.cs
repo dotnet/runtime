@@ -1302,12 +1302,12 @@ namespace System.Diagnostics.Tracing
         [CLSCompliant(false)]
         protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, Guid* relatedActivityId, int eventDataCount, EventSource.EventData* data)
         {
+            m_activeWritesCount++;
             if (IsEnabled())
             {
                 Debug.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.
                 try
                 {
-                    m_activeWritesCount++;
                     ref EventMetadata metadata = ref m_eventData[eventId];
 
                     EventOpcode opcode = (EventOpcode)metadata.Descriptor.Opcode;
@@ -1464,6 +1464,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // Wait till active writes have finished (stop waiting at 1 second)
+                // TODO: determine appropriate break out mechanism. Is 1 second appropriate? Is a timeout appropriate at all?
                 SpinWait.SpinUntil(() => m_activeWritesCount == 0, 1000);
 
                 if (m_etwProvider != null)
@@ -1901,12 +1902,12 @@ namespace System.Diagnostics.Tracing
 #endif
         private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object?[] args)
         {
+            m_activeWritesCount++;
             if (IsEnabled())
             {
                 Debug.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.
                 try
                 {
-                    m_activeWritesCount++;
                     ref EventMetadata metadata = ref m_eventData[eventId];
 
                     if (childActivityID != null)

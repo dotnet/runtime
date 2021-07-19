@@ -365,22 +365,27 @@ namespace System.Diagnostics.Tracing
              Guid* childActivityID,
             params object?[] values)
         {
-            if (!this.IsEnabled())
+            m_activeWritesCount++;
+            if (this.IsEnabled())
             {
-                return;
-            }
-            byte level = (options.valuesSet & EventSourceOptions.levelSet) != 0
-                ? options.level
-                : eventTypes.level;
-            EventKeywords keywords = (options.valuesSet & EventSourceOptions.keywordsSet) != 0
-                ? options.keywords
-                : eventTypes.keywords;
+                try
+                {
+                    byte level = (options.valuesSet & EventSourceOptions.levelSet) != 0
+                        ? options.level
+                        : eventTypes.level;
+                    EventKeywords keywords = (options.valuesSet & EventSourceOptions.keywordsSet) != 0
+                        ? options.keywords
+                        : eventTypes.keywords;
 
-            if (this.IsEnabled((EventLevel)level, keywords))
-            {
-                m_activeWritesCount++;
-                WriteMultiMergeInner(eventName, ref options, eventTypes, activityID, childActivityID, values);
-                m_activeWritesCount--;
+                    if (this.IsEnabled((EventLevel)level, keywords))
+                    {
+                        WriteMultiMergeInner(eventName, ref options, eventTypes, activityID, childActivityID, values);
+                    }
+                }
+                finally
+                {
+                    m_activeWritesCount--;
+                }
             }
         }
 
@@ -552,70 +557,73 @@ namespace System.Diagnostics.Tracing
             EventData* data)
         {
 #if FEATURE_MANAGED_ETW
-            if (!this.IsEnabled())
-            {
-                return;
-            }
-
             m_activeWritesCount++;
-
-            fixed (EventSourceOptions* pOptions = &options)
+            if (this.IsEnabled())
             {
-                NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out EventDescriptor descriptor);
-                if (nameInfo == null)
+                try
                 {
-                    return;
-                }
+                    fixed (EventSourceOptions* pOptions = &options)
+                    {
+                        NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out EventDescriptor descriptor);
+                        if (nameInfo == null)
+                        {
+                            return;
+                        }
 
 #if FEATURE_PERFTRACING
-                IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
-                Debug.Assert(eventHandle != IntPtr.Zero);
+                        IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
+                        Debug.Assert(eventHandle != IntPtr.Zero);
 #else
-                IntPtr eventHandle = IntPtr.Zero;
+                        IntPtr eventHandle = IntPtr.Zero;
 #endif
 
-                // We make a descriptor for each EventData, and because we morph strings to counted strings
-                // we may have 2 for each arg, so we allocate enough for this.
-                int descriptorsLength = eventTypes.dataCount + eventTypes.typeInfos.Length * 2 + 3;
-                EventData* descriptors = stackalloc EventData[descriptorsLength];
-                for (int i = 0; i < descriptorsLength; i++)
-                    descriptors[i] = default;
+                        // We make a descriptor for each EventData, and because we morph strings to counted strings
+                        // we may have 2 for each arg, so we allocate enough for this.
+                        int descriptorsLength = eventTypes.dataCount + eventTypes.typeInfos.Length * 2 + 3;
+                        EventData* descriptors = stackalloc EventData[descriptorsLength];
+                        for (int i = 0; i < descriptorsLength; i++)
+                            descriptors[i] = default;
 
-                var providerMetadata = ProviderMetadata;
-                fixed (byte*
-                    pMetadata0 = providerMetadata,
-                    pMetadata1 = nameInfo.nameMetadata,
-                    pMetadata2 = eventTypes.typeMetadata)
-                {
-                    descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
-                    descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
-                    descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
-                    int numDescrs = 3;
+                        var providerMetadata = ProviderMetadata;
+                        fixed (byte*
+                            pMetadata0 = providerMetadata,
+                            pMetadata1 = nameInfo.nameMetadata,
+                            pMetadata2 = eventTypes.typeMetadata)
+                        {
+                            descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
+                            descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
+                            descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
+                            int numDescrs = 3;
 
-                    for (int i = 0; i < eventTypes.typeInfos.Length; i++)
-                    {
-                        descriptors[numDescrs].m_Ptr = data[i].m_Ptr;
-                        descriptors[numDescrs].m_Size = data[i].m_Size;
+                            for (int i = 0; i < eventTypes.typeInfos.Length; i++)
+                            {
+                                descriptors[numDescrs].m_Ptr = data[i].m_Ptr;
+                                descriptors[numDescrs].m_Size = data[i].m_Size;
 
-                        // old conventions for bool is 4 bytes, but meta-data assumes 1.
-                        if (data[i].m_Size == 4 && eventTypes.typeInfos[i].DataType == typeof(bool))
-                            descriptors[numDescrs].m_Size = 1;
+                                // old conventions for bool is 4 bytes, but meta-data assumes 1.
+                                if (data[i].m_Size == 4 && eventTypes.typeInfos[i].DataType == typeof(bool))
+                                    descriptors[numDescrs].m_Size = 1;
 
-                        numDescrs++;
+                                numDescrs++;
+                            }
+
+                            this.WriteEventRaw(
+                                eventName,
+                                ref descriptor,
+                                eventHandle,
+                                activityID,
+                                childActivityID,
+                                numDescrs,
+                                (IntPtr)descriptors);
+                        }
                     }
-
-                    this.WriteEventRaw(
-                        eventName,
-                        ref descriptor,
-                        eventHandle,
-                        activityID,
-                        childActivityID,
-                        numDescrs,
-                        (IntPtr)descriptors);
+                }
+                finally
+                {
+                    m_activeWritesCount--;
                 }
             }
 
-            m_activeWritesCount--;
 #endif // FEATURE_MANAGED_ETW
         }
 
@@ -627,130 +635,133 @@ namespace System.Diagnostics.Tracing
             Guid* pRelatedActivityId,
             TraceLoggingEventTypes eventTypes)
         {
-            try
+            m_activeWritesCount++;
+            if (IsEnabled())
             {
-                m_activeWritesCount++;
-                fixed (EventSourceOptions* pOptions = &options)
+                try
                 {
-                    options.Opcode = options.IsOpcodeSet ? options.Opcode : GetOpcodeWithDefault(options.Opcode, eventName);
-                    NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out EventDescriptor descriptor);
-                    if (nameInfo == null)
+                    fixed (EventSourceOptions* pOptions = &options)
                     {
-                        return;
+                        options.Opcode = options.IsOpcodeSet ? options.Opcode : GetOpcodeWithDefault(options.Opcode, eventName);
+                        NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out EventDescriptor descriptor);
+                        if (nameInfo == null)
+                        {
+                            return;
+                        }
+
+    #if FEATURE_PERFTRACING
+                        IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
+                        Debug.Assert(eventHandle != IntPtr.Zero);
+    #else
+                        IntPtr eventHandle = IntPtr.Zero;
+    #endif
+
+    #if FEATURE_MANAGED_ETW
+                        int pinCount = eventTypes.pinCount;
+                        byte* scratch = stackalloc byte[eventTypes.scratchSize];
+                        EventData* descriptors = stackalloc EventData[eventTypes.dataCount + 3];
+                        for (int i = 0; i < eventTypes.dataCount + 3; i++)
+                            descriptors[i] = default;
+
+                        GCHandle* pins = stackalloc GCHandle[pinCount];
+                        for (int i = 0; i < pinCount; i++)
+                            pins[i] = default;
+
+                        var providerMetadata = ProviderMetadata;
+                        fixed (byte*
+                            pMetadata0 = providerMetadata,
+                            pMetadata1 = nameInfo.nameMetadata,
+                            pMetadata2 = eventTypes.typeMetadata)
+                        {
+                            descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
+                            descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
+                            descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
+    #endif // FEATURE_MANAGED_ETW
+
+    #if ES_BUILD_STANDALONE
+                            System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions();
+    #endif
+                            EventOpcode opcode = (EventOpcode)descriptor.Opcode;
+
+                            Guid activityId = Guid.Empty;
+                            Guid relatedActivityId = Guid.Empty;
+                            if (pActivityId == null && pRelatedActivityId == null &&
+                            ((options.ActivityOptions & EventActivityOptions.Disable) == 0))
+                            {
+                                if (opcode == EventOpcode.Start)
+                                {
+                                    Debug.Assert(eventName != null, "GetOpcodeWithDefault should not returned Start when eventName is null");
+                                    m_activityTracker.OnStart(m_name, eventName, 0, ref activityId, ref relatedActivityId, options.ActivityOptions);
+                                }
+                                else if (opcode == EventOpcode.Stop)
+                                {
+                                    Debug.Assert(eventName != null, "GetOpcodeWithDefault should not returned Stop when eventName is null");
+                                    m_activityTracker.OnStop(m_name, eventName, 0, ref activityId);
+                                }
+                                if (activityId != Guid.Empty)
+                                    pActivityId = &activityId;
+                                if (relatedActivityId != Guid.Empty)
+                                    pRelatedActivityId = &relatedActivityId;
+                            }
+
+                            try
+                            {
+    #if FEATURE_MANAGED_ETW
+                                DataCollector.ThreadInstance.Enable(
+                                    scratch,
+                                    eventTypes.scratchSize,
+                                    descriptors + 3,
+                                    eventTypes.dataCount,
+                                    pins,
+                                    pinCount);
+
+                                TraceLoggingTypeInfo info = eventTypes.typeInfos[0];
+                                info.WriteData(info.PropertyValueFactory(data));
+
+                                this.WriteEventRaw(
+                                    eventName,
+                                    ref descriptor,
+                                    eventHandle,
+                                    pActivityId,
+                                    pRelatedActivityId,
+                                    (int)(DataCollector.ThreadInstance.Finish() - descriptors),
+                                    (IntPtr)descriptors);
+    #endif // FEATURE_MANAGED_ETW
+
+                                // TODO enable filtering for listeners.
+                                if (m_Dispatchers != null)
+                                {
+                                    var eventData = (EventPayload?)(eventTypes.typeInfos[0].GetData(data));
+                                    WriteToAllListeners(eventName, ref descriptor, nameInfo.tags, pActivityId, pRelatedActivityId, eventData);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                if (ex is EventSourceException)
+                                    throw;
+                                else
+                                    ThrowEventSourceException(eventName, ex);
+                            }
+    #if FEATURE_MANAGED_ETW
+                            finally
+                            {
+                                WriteCleanup(pins, pinCount);
+                            }
+                        }
+    #endif // FEATURE_MANAGED_ETW
                     }
-
-#if FEATURE_PERFTRACING
-                    IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
-                    Debug.Assert(eventHandle != IntPtr.Zero);
-#else
-                    IntPtr eventHandle = IntPtr.Zero;
-#endif
-
-#if FEATURE_MANAGED_ETW
-                    int pinCount = eventTypes.pinCount;
-                    byte* scratch = stackalloc byte[eventTypes.scratchSize];
-                    EventData* descriptors = stackalloc EventData[eventTypes.dataCount + 3];
-                    for (int i = 0; i < eventTypes.dataCount + 3; i++)
-                        descriptors[i] = default;
-
-                    GCHandle* pins = stackalloc GCHandle[pinCount];
-                    for (int i = 0; i < pinCount; i++)
-                        pins[i] = default;
-
-                    var providerMetadata = ProviderMetadata;
-                    fixed (byte*
-                        pMetadata0 = providerMetadata,
-                        pMetadata1 = nameInfo.nameMetadata,
-                        pMetadata2 = eventTypes.typeMetadata)
-                    {
-                        descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
-                        descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
-                        descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
-#endif // FEATURE_MANAGED_ETW
-
-#if ES_BUILD_STANDALONE
-                        System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions();
-#endif
-                        EventOpcode opcode = (EventOpcode)descriptor.Opcode;
-
-                        Guid activityId = Guid.Empty;
-                        Guid relatedActivityId = Guid.Empty;
-                        if (pActivityId == null && pRelatedActivityId == null &&
-                           ((options.ActivityOptions & EventActivityOptions.Disable) == 0))
-                        {
-                            if (opcode == EventOpcode.Start)
-                            {
-                                Debug.Assert(eventName != null, "GetOpcodeWithDefault should not returned Start when eventName is null");
-                                m_activityTracker.OnStart(m_name, eventName, 0, ref activityId, ref relatedActivityId, options.ActivityOptions);
-                            }
-                            else if (opcode == EventOpcode.Stop)
-                            {
-                                Debug.Assert(eventName != null, "GetOpcodeWithDefault should not returned Stop when eventName is null");
-                                m_activityTracker.OnStop(m_name, eventName, 0, ref activityId);
-                            }
-                            if (activityId != Guid.Empty)
-                                pActivityId = &activityId;
-                            if (relatedActivityId != Guid.Empty)
-                                pRelatedActivityId = &relatedActivityId;
-                        }
-
-                        try
-                        {
-#if FEATURE_MANAGED_ETW
-                            DataCollector.ThreadInstance.Enable(
-                                scratch,
-                                eventTypes.scratchSize,
-                                descriptors + 3,
-                                eventTypes.dataCount,
-                                pins,
-                                pinCount);
-
-                            TraceLoggingTypeInfo info = eventTypes.typeInfos[0];
-                            info.WriteData(info.PropertyValueFactory(data));
-
-                            this.WriteEventRaw(
-                                eventName,
-                                ref descriptor,
-                                eventHandle,
-                                pActivityId,
-                                pRelatedActivityId,
-                                (int)(DataCollector.ThreadInstance.Finish() - descriptors),
-                                (IntPtr)descriptors);
-#endif // FEATURE_MANAGED_ETW
-
-                            // TODO enable filtering for listeners.
-                            if (m_Dispatchers != null)
-                            {
-                                var eventData = (EventPayload?)(eventTypes.typeInfos[0].GetData(data));
-                                WriteToAllListeners(eventName, ref descriptor, nameInfo.tags, pActivityId, pRelatedActivityId, eventData);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            if (ex is EventSourceException)
-                                throw;
-                            else
-                                ThrowEventSourceException(eventName, ex);
-                        }
-#if FEATURE_MANAGED_ETW
-                        finally
-                        {
-                            WriteCleanup(pins, pinCount);
-                        }
-                    }
-#endif // FEATURE_MANAGED_ETW
                 }
-            }
-            catch (Exception ex)
-            {
-                if (ex is EventSourceException)
-                    throw;
-                else
-                    ThrowEventSourceException(eventName, ex);
-            }
-            finally
-            {
-                m_activeWritesCount--;
+                catch (Exception ex)
+                {
+                    if (ex is EventSourceException)
+                        throw;
+                    else
+                        ThrowEventSourceException(eventName, ex);
+                }
+                finally
+                {
+                    m_activeWritesCount--;
+                }
             }
         }
 
