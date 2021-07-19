@@ -560,7 +560,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //------------------------------------------------------------------------
 // genSetRegToIcon: Generate code that will set the given register to the integer constant.
 //
-void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFlags flags)
+void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFlags flags DEBUGARG(unsigned gtFlags))
 {
     // Reg cannot be a FP reg
     assert(!genIsValidFloatReg(reg));
