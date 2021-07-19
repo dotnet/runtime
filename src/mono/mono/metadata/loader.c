@@ -81,7 +81,7 @@ static gint32 signatures_size;
 void
 mono_loader_init ()
 {
-	static volatile gboolean inited = FALSE; // volatile to avoid race conditions
+	static volatile gboolean inited = FALSE; // We make this volatile to avoid race conditions
 
 	if (inited) {
 		/* Do nothing if this function has already been called */
