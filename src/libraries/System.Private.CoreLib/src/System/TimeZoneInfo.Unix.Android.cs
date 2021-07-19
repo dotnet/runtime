@@ -368,7 +368,12 @@ namespace System
                 ReadTzDataIntoBuffer(fs, position, entryBuffer);
 
                 AndroidTzDataEntry entry;
-                entry.id = Encoding.UTF8.GetString(entryBuffer.Slice(0, 40)).Split('\0')[0];
+                int index = 0;
+                while (entryBuffer[index] != 0 && index < 40)
+                {
+                    index += 1;
+                }
+                entry.id = Encoding.UTF8.GetString(entryBuffer.Slice(0, index));
                 entry.byteOffset = TZif_ToInt32(entryBuffer.Slice(40, 4));
                 entry.length = TZif_ToInt32(entryBuffer.Slice(44, 4));
 
