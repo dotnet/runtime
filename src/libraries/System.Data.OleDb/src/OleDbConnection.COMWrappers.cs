@@ -57,10 +57,7 @@ namespace System.Data.OleDb
                 }
                 finally
                 {
-                    if (errorInfo is IDisposable disposable)
-                    {
-                        disposable.Dispose();
-                    }
+                    ((IDisposable)errorInfo).Dispose();
                 }
             }
             else if (0 < hresult)
