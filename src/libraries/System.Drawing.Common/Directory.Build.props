@@ -11,6 +11,8 @@ System.Drawing.BitmapData
 System.Drawing.Brush
 System.Drawing.Font
 System.Drawing.Graphics
-System.Drawing.Icon</PackageDescription>
+System.Drawing.Icon
+
+Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows for more information.</PackageDescription>
   </PropertyGroup>
 </Project>
