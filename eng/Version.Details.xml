@@ -154,33 +154,33 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>38017c3935de95d0335bac04f4901ddfc2718656</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="6.0.0-preview.7.21361.10">
+    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="6.0.0-rc.1.21369.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>98b7ed1a3b0543a31b5a0f9069cf44cb70c9230c</Sha>
+      <Sha>f7e4c261815c66fde2c1e750b744f193e236c17e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="6.0.0-preview.7.21361.10">
+    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="6.0.0-rc.1.21369.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>98b7ed1a3b0543a31b5a0f9069cf44cb70c9230c</Sha>
+      <Sha>f7e4c261815c66fde2c1e750b744f193e236c17e</Sha>
     </Dependency>
-    <Dependency Name="runtime.native.System.IO.Ports" Version="6.0.0-preview.7.21361.10">
+    <Dependency Name="runtime.native.System.IO.Ports" Version="6.0.0-rc.1.21369.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>98b7ed1a3b0543a31b5a0f9069cf44cb70c9230c</Sha>
+      <Sha>f7e4c261815c66fde2c1e750b744f193e236c17e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.ILAsm" Version="6.0.0-preview.7.21361.10">
+    <Dependency Name="Microsoft.NETCore.ILAsm" Version="6.0.0-rc.1.21369.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>98b7ed1a3b0543a31b5a0f9069cf44cb70c9230c</Sha>
+      <Sha>f7e4c261815c66fde2c1e750b744f193e236c17e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.IL" Version="6.0.0-preview.7.21361.10">
+    <Dependency Name="Microsoft.NET.Sdk.IL" Version="6.0.0-rc.1.21369.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>98b7ed1a3b0543a31b5a0f9069cf44cb70c9230c</Sha>
+      <Sha>f7e4c261815c66fde2c1e750b744f193e236c17e</Sha>
     </Dependency>
-    <Dependency Name="System.Text.Json" Version="6.0.0-preview.7.21361.10">
+    <Dependency Name="System.Text.Json" Version="6.0.0-rc.1.21369.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>98b7ed1a3b0543a31b5a0f9069cf44cb70c9230c</Sha>
+      <Sha>f7e4c261815c66fde2c1e750b744f193e236c17e</Sha>
     </Dependency>
-    <Dependency Name="System.Runtime.CompilerServices.Unsafe" Version="6.0.0-preview.7.21361.10">
+    <Dependency Name="System.Runtime.CompilerServices.Unsafe" Version="6.0.0-rc.1.21369.2">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>98b7ed1a3b0543a31b5a0f9069cf44cb70c9230c</Sha>
+      <Sha>f7e4c261815c66fde2c1e750b744f193e236c17e</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21362.3">
       <Uri>https://github.com/mono/linker</Uri>
