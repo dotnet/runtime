@@ -281,7 +281,7 @@
     <EmccCompile
           Condition="@(_BitCodeFile->Count()) > 0"
           SourceFiles="@(_BitCodeFile)"
-          Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; @(_EmccLDFlags->'%(Identity)', ' ')"
+          Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; &quot;@$(_EmccCompileRsp)&quot;"
           EnvironmentVariables="@(EmscriptenEnvVars)" />
 
     <ItemGroup>

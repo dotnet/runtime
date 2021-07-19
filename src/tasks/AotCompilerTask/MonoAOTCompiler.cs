@@ -194,8 +194,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
     public override bool Execute()
     {
-        Utils.Logger = Log;
-
         if (string.IsNullOrEmpty(CompilerBinaryPath))
         {
             throw new ArgumentException($"'{nameof(CompilerBinaryPath)}' is required.", nameof(CompilerBinaryPath));
@@ -545,11 +543,20 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         Log.LogMessage(MessageImportance.Low, $"AOT compiler arguments: {responseFileContent}");
 
+        string args = $"--response=\"{responseFilePath}\"";
+
+        // Log the command in a compact format which can be copy pasted
+        StringBuilder envStr = new StringBuilder(string.Empty);
+        foreach (KeyValuePair<string, string> kvp in envVariables)
+            envStr.Append($"{kvp.Key}={kvp.Value} ");
+        Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}{CompilerBinaryPath} {args}");
+
         try
         {
             // run the AOT compiler
-            (int exitCode, string output) = Utils.TryRunProcess(CompilerBinaryPath,
-                                                                $"--response=\"{responseFilePath}\"",
+            (int exitCode, string output) = Utils.TryRunProcess(Log,
+                                                                CompilerBinaryPath,
+                                                                args,
                                                                 envVariables,
                                                                 assemblyDir,
                                                                 logger: Log,

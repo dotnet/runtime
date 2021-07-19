@@ -34,8 +34,6 @@ namespace Microsoft.Workload.Build.Tasks
 
         public override bool Execute()
         {
-            Utils.Logger = Log;
-
             if (!HasMetadata(WorkloadId, nameof(WorkloadId), "Version") ||
                 !HasMetadata(WorkloadId, nameof(WorkloadId), "ManifestName"))
             {
@@ -59,6 +57,7 @@ namespace Microsoft.Workload.Build.Tasks
 
             Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** workload install **{Environment.NewLine}");
             (int exitCode, string output) = Utils.TryRunProcess(
+                                                    Log,
                                                     Path.Combine(SdkDir, "dotnet"),
                                                     $"workload install --skip-manifest-update --no-cache --configfile \"{nugetConfigPath}\" {WorkloadId.ItemSpec}",
                                                     workingDir: Path.GetTempPath(),
