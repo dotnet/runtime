@@ -1701,8 +1701,11 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(
-    instruction ins, emitAttr attr, regNumber reg, target_ssize_t imm, insFlags flags /* = INS_FLAGS_DONT_CARE */ DEBUGARG(unsigned gtFlags))
+void emitter::emitIns_R_I(instruction    ins,
+                          emitAttr       attr,
+                          regNumber      reg,
+                          target_ssize_t imm,
+                          insFlags flags /* = INS_FLAGS_DONT_CARE */ DEBUGARG(unsigned gtFlags))
 
 {
     insFormat fmt = IF_NONE;

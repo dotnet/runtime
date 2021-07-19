@@ -8878,11 +8878,11 @@ void emitter::emitDispIns(
                 {
                     if (iconType == GTF_ICON_CLASS_HDL)
                     {
-                        printf(" ; \"%.32s\"", emitComp->eeGetClassName((CORINFO_CLASS_HANDLE)val));
+                        printf(" ; %.32s", emitComp->eeGetClassName((CORINFO_CLASS_HANDLE)val));
                     }
                     else if (iconType == GTF_ICON_STR_HDL)
                     {
-                        printf(" ; %.32ls", emitComp->eeGetCPString((size_t)val));
+                        printf(" ; \"%.32ls\"", emitComp->eeGetCPString((size_t)val));
                     }
                 }
             }
