@@ -10939,6 +10939,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     bool                  partialExpand   = false;
     const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
 
+    GenTree* exactCls = nullptr;
+
     // Legality check.
     //
     // Not all classclass/isinst operations can be inline expanded.
@@ -10980,10 +10982,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                                 eeGetClassName(likelyClass), likelyClass);
                         canExpandInline = true;
                         partialExpand   = true;
-
-                        // Update op2
-                        op2                        = gtClone(op2);
-                        op2->AsIntCon()->gtIconVal = reinterpret_cast<ssize_t>(likelyClass);
+                        exactCls        = gtNewIconEmbClsHndNode(likelyClass);
                     }
                 }
             }
@@ -11047,7 +11046,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
     }
     temp   = gtNewMethodTableLookup(temp);
-    condMT = gtNewOperNode(GT_NE, TYP_INT, temp, op2);
+    condMT = gtNewOperNode(GT_NE, TYP_INT, temp, exactCls != nullptr ? exactCls : op2);
 
     GenTree* condNull;
     //
