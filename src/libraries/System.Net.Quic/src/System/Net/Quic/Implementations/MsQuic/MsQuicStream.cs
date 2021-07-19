@@ -18,7 +18,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Delegate that wraps the static function that will be called when receiving an event.
         internal static readonly StreamCallbackDelegate s_streamDelegate = new StreamCallbackDelegate(NativeCallbackHandler);
 
-        // The state is passed to msquic and returned in msquic callback handler.
+        // The state is passed to msquic and then it's passed back by msquic to the callback handler.
         private readonly State _state = new State();
 
         private readonly bool _canRead;
