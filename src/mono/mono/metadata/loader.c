@@ -83,6 +83,7 @@ mono_loader_init ()
 	static volatile gboolean inited = FALSE;
 
 	if (inited) {
+		/* Do nothing if this function has already been called */
 		return;
 	}
 	
