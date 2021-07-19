@@ -240,12 +240,12 @@ namespace System.Net.Http
 
                         // This should not cause RST_STREAM to be sent because the request is still marked as in progress.
                         bool sendReset;
-                        (signalWaiter, sendReset, _) = CancelResponseBody();
+                        (signalWaiter, sendReset) = CancelResponseBody();
                         Debug.Assert(!sendReset);
 
                         _requestCompletionState = StreamCompletionState.Failed;
-                        Complete();
                         SendReset();
+                        Complete();
                     }
 
                     if (signalWaiter)
@@ -376,7 +376,6 @@ namespace System.Net.Http
                 CancellationTokenSource? requestBodyCancellationSource = null;
                 bool signalWaiter = false;
                 bool sendReset = false;
-                bool complete = false;
 
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
@@ -387,7 +386,7 @@ namespace System.Net.Http
                         Debug.Assert(requestBodyCancellationSource != null);
                     }
 
-                    (signalWaiter, sendReset, complete) = CancelResponseBody();
+                    (signalWaiter, sendReset) = CancelResponseBody();
                 }
 
                 // When cancellation propagates, SendRequestBodyAsync will set _requestCompletionState to Failed
@@ -398,10 +397,6 @@ namespace System.Net.Http
                     if (sendReset)
                     {
                         SendReset();
-                    }
-
-                    if (complete)
-                    {
                         Complete();
                     }
                 }
@@ -413,12 +408,11 @@ namespace System.Net.Http
             }
 
             // Returns whether the waiter should be signalled or not.
-            private (bool signalWaiter, bool sendReset, bool complete) CancelResponseBody()
+            private (bool signalWaiter, bool sendReset) CancelResponseBody()
             {
                 Debug.Assert(Monitor.IsEntered(SyncObject));
 
                 bool sendReset = false;
-                bool complete = false;
 
                 if (_responseCompletionState == StreamCompletionState.InProgress)
                 {
@@ -426,7 +420,6 @@ namespace System.Net.Http
                     if (_requestCompletionState != StreamCompletionState.InProgress)
                     {
                         sendReset = true;
-                        complete = true;
                     }
                 }
 
@@ -438,7 +431,7 @@ namespace System.Net.Http
                 bool signalWaiter = _hasWaiter;
                 _hasWaiter = false;
 
-                return (signalWaiter, sendReset, complete);
+                return (signalWaiter, sendReset);
             }
 
             public void OnWindowUpdate(int amount)
