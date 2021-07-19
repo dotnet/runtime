@@ -390,9 +390,12 @@ namespace System
 
                 int offset = _byteOffsets[i];
                 int length = _lengths[i];
-
                 byte[] buffer = new byte[length];
-                ReadTzDataIntoBuffer(File.OpenRead(_tzFilePath), offset, buffer);
+
+                using (FileStream fs = File.OpenRead(_tzFilePath))
+                {
+                    ReadTzDataIntoBuffer(fs, offset, buffer);
+                }
 
                 return buffer;
             }
