@@ -152,6 +152,8 @@
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeHandles.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\AppContext.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\AppDomain.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Array.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Attribute.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Buffer.Mono.cs" />

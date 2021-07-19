@@ -633,6 +633,10 @@
 			<method name="get_BaseDirectory"/>
 		</type>
 
+		<type fullname="System.AppDomain">
+			<method name="DoUnhandledException"/>
+		</type>
+
 		<!-- mono_method_has_unmanaged_callers_only_attribute () -->
 		<!-- aot-compiler.c -->
 		<type fullname="System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"/>
