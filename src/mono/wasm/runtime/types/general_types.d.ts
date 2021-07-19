@@ -9,10 +9,15 @@
  THIS FILE IS NOT INCLUDED IN DOTNET.JS. ALL CODE HERE WILL BE IGNORED DURING THE BUILD
 ********************************************************************************************/
 
-// VARIOUS C FUNCTIONS THAT WE CALL INTO ////////////////////////////////////////////////////
-interface DOTNET_C_FUNCS {
-    mono_wasm_string_from_js (a: string): number;
-}
+// EMSDK NON MODULE RELATED /////////////////////////////////////////////////////////////////
+declare var ENVIRONMENT_IS_WEB: boolean;
+declare var ENVIRONMENT_IS_SHELL: boolean;
+declare var ENVIRONMENT_IS_NODE: boolean;
+declare var ENVIRONMENT_IS_WORKER: boolean;
 
-// NAMESPACES ///////////////////////////////////////////////////////////////////////////////
-var DOTNET: typeof DotNetSupportLib.$DOTNET & DOTNET_C_FUNCS;
+declare function locateFile(path: string): string;
+
+// OTHER ////////////////////////////////////////////////////////////////////////////////////
+declare function read (path: string): string;
+declare function load (path: string): string;
+declare function require (path: string): object;

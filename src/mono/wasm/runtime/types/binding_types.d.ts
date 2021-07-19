@@ -36,4 +36,4 @@ interface BINDING_C_FUNCS {
 }
 
 // NAMESPACES ///////////////////////////////////////////////////////////////////////////////
-var BINDING: typeof BindingSupportLib.$BINDING & BINDING_C_FUNCS;
+declare var BINDING: typeof BindingSupportLib.$BINDING & BINDING_C_FUNCS;
