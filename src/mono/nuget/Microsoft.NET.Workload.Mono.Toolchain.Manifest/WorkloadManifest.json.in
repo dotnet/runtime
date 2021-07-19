@@ -109,7 +109,7 @@
     },
     "runtimes-tvos": {
       "abstract": true,
-      "description": "tvOS Mono Runtime and AOT Workload",
+      "description": "tvOS Mono Runtime Packs",
       "packs": [
         "Microsoft.NETCore.App.Runtime.Mono.tvos-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.tvossimulator-arm64",
