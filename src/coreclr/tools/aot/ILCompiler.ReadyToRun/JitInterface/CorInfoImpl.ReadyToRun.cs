@@ -1764,6 +1764,16 @@ namespace Internal.JitInterface
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
                 pResult->nullInstanceCheck = false;
+
+                // Always use an instantiating stub for unresolved constrained SVM calls as we cannot
+                // always tell at compile time that a given SVM resolves to a method on a generic base
+                // class and not requesting the instantiating stub makes the runtime transform the
+                // owning type to its canonical equivalent that would need different codegen
+                // (supplying the instantiation argument).
+                if (!resolvedConstraint && !originalMethod.IsSharedByGenericInstantiations)
+                {
+                    useInstantiatingStub = true;
+                }
             }
             // All virtual calls which take method instantiations must
             // currently be implemented by an indirect call via a runtime-lookup
