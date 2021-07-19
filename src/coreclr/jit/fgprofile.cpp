@@ -1219,7 +1219,7 @@ public:
             {
                 m_functor(m_compiler, call);
             }
-            else if ((call->gtCallType == CT_HELPER) &&
+            else if ((call->gtCallType == CT_HELPER) && (JitConfig.JitIsinstProfiling() > 0) &&
                      (m_compiler->eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_ISINSTANCEOFCLASS))
             {
                 m_functor(m_compiler, call);
@@ -1329,6 +1329,7 @@ public:
         if ((call->gtCallType == CT_HELPER) &&
             (compiler->eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_ISINSTANCEOFCLASS))
         {
+            assert(JitConfig.JitIsinstProfiling() > 0);
             // Grab the second arg of isinst helper call
             objUse = call->gtCallArgs->GetNext();
         }

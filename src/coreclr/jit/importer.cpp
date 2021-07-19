@@ -10959,16 +10959,15 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
             {
                 // If the class is exact, the jit can expand the IsInst check inline.
                 canExpandInline = impIsClassExact(pResolvedToken->hClass);
-                if (!canExpandInline)
+                if (!canExpandInline && (JitConfig.JitIsinstProfiling() > 0))
                 {
                     // Check if we see any profile data
-
                     unsigned             likelihood      = 0;
                     unsigned             numberOfClasses = 0;
                     CORINFO_CLASS_HANDLE likelyClass     = getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData,
                                                                       ilOffset, &likelihood, &numberOfClasses);
-
-                    if (likelyClass != NO_CLASS_HANDLE)
+                    if ((likelyClass != NO_CLASS_HANDLE) &&
+                        (likelihood > static_cast<unsigned>(JitConfig.JitGuardedDevirtualizationChainLikelihood())))
                     {
                         if ((info.compCompHnd->compareTypesForEquality(likelyClass, likelyClass) ==
                              TypeCompareState::Must) &&
@@ -11005,7 +11004,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
         op2->gtFlags |= GTF_DONT_CSE;
 
         GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, gtNewCallArgs(op2, op1));
-        if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) && opts.OptimizationDisabled())
+        if ((JitConfig.JitIsinstProfiling() > 0) && (helper == CORINFO_HELP_ISINSTANCEOFCLASS) &&
+            opts.OptimizationDisabled())
         {
             ClassProfileCandidateInfo* pInfo  = new (this, CMK_Inlining) ClassProfileCandidateInfo;
             pInfo->ilOffset                   = ilOffset;
