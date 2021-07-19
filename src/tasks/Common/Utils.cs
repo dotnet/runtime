@@ -32,7 +32,6 @@ internal static class Utils
                                         MessageImportance debugMessageImportance=MessageImportance.Low,
                                         string? label=null)
     {
-        Logger = logger;
         string scriptFileName = CreateTemporaryBatchFile(command);
         (string shell, string args) = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                                                     ? ("cmd", $"/c \"{scriptFileName}\"")
