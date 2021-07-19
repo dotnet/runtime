@@ -741,7 +741,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         StringBuilder builder = new StringBuilder();
                         foreach (var status in chainValidator.ChainStatus)
                         {
-                            builder.AppendFormat("{0} {1}{2}", status.Status, status.StatusInformation, Environment.NewLine);
+                            builder.AppendLine($"{status.Status} {status.StatusInformation}");
                         }
 
                         Assert.True(chainBuildResult,

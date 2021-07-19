@@ -2214,7 +2214,6 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalFact(nameof(SupportsAlpn))]
         [OuterLoop("Incurs long delay")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/43877")]
         public async Task Http2_MultipleConnectionsEnabled_IdleConnectionTimeoutExpired_ConnectionRemovedAndNewCreated()
         {
             const int MaxConcurrentStreams = 2;
@@ -2244,15 +2243,6 @@ namespace System.Net.Http.Functional.Tests
 
                 // Wait until the idle connection timeout expires.
                 await connection1.WaitForClientDisconnectAsync(false).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
-                // Client connection might be still alive, so send an extra request which will either land on the shutting down connection or on a new one.
-                try
-                {
-                    await client.GetAsync(server.Address).WaitAsync(handler.PooledConnectionIdleTimeout).ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    // Suppress all exceptions.
-                }
 
                 Assert.True(connection1.IsInvalid);
                 Assert.False(connection0.IsInvalid);

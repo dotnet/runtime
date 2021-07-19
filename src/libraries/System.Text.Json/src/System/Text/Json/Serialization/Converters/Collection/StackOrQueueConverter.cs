@@ -3,29 +3,22 @@
 
 using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class IEnumerableWithAddMethodConverter<TCollection>
+    internal class StackOrQueueConverter<TCollection>
         : IEnumerableDefaultConverter<TCollection, object?>
         where TCollection : IEnumerable
     {
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        public IEnumerableWithAddMethodConverter() { }
-
-        // Used by source-gen initialization for reflection-free serialization.
-        public IEnumerableWithAddMethodConverter(bool dummy) { }
-
-        protected override void Add(in object? value, ref ReadStack state)
+        protected sealed override void Add(in object? value, ref ReadStack state)
         {
             var addMethodDelegate = ((Action<TCollection, object?>?)state.Current.JsonTypeInfo.AddMethodDelegate);
             Debug.Assert(addMethodDelegate != null);
             addMethodDelegate((TCollection)state.Current.ReturnValue!, value);
         }
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        protected sealed override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
             JsonTypeInfo.ConstructorDelegate? constructorDelegate = typeInfo.CreateObject;
@@ -40,7 +33,7 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(typeInfo.AddMethodDelegate != null);
         }
 
-        protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
+        protected sealed override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
         {
             IEnumerator enumerator;
             if (state.Current.CollectionEnumerator == null)
@@ -74,16 +67,6 @@ namespace System.Text.Json.Serialization.Converters
             } while (enumerator.MoveNext());
 
             return true;
-        }
-
-        internal override bool RequiresDynamicMemberAccessors => true;
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:UnrecognizedReflectionPattern",
-            Justification = "The ctor is marked RequiresUnreferencedCode.")]
-        internal override void Initialize(JsonSerializerOptions options, JsonTypeInfo? jsonTypeInfo = null)
-        {
-            Debug.Assert(jsonTypeInfo != null);
-            jsonTypeInfo.AddMethodDelegate = options.MemberAccessorStrategy.CreateAddMethodDelegate<TCollection>();
         }
     }
 }

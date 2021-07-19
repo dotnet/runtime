@@ -15911,7 +15911,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx)
     if (!success)
     {
         ctx.ContextFlags = CONTEXT_CONTROL;
-        BOOL success = pThread->GetThreadContext(&ctx);
+        success = pThread->GetThreadContext(&ctx);
         if (success)
         {
             pCtx = &ctx;

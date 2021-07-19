@@ -796,7 +796,7 @@ namespace System.Threading.Tasks
         /// harmful).  Derived implementations may choose to only conditionally call down to this base
         /// implementation.
         /// </summary>
-        internal virtual bool ShouldNotifyDebuggerOfWaitCompletion // ideally would be familyAndAssembly, but that can't be done in C#
+        private protected virtual bool ShouldNotifyDebuggerOfWaitCompletion
         {
             get
             {
@@ -5889,7 +5889,7 @@ namespace System.Threading.Tasks
             /// Returns whether we should notify the debugger of a wait completion.  This returns
             /// true iff at least one constituent task has its bit set.
             /// </summary>
-            internal override bool ShouldNotifyDebuggerOfWaitCompletion =>
+            private protected override bool ShouldNotifyDebuggerOfWaitCompletion =>
                 base.ShouldNotifyDebuggerOfWaitCompletion &&
                 AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
         }
@@ -6128,7 +6128,7 @@ namespace System.Threading.Tasks
             /// Returns whether we should notify the debugger of a wait completion.  This returns true
             /// iff at least one constituent task has its bit set.
             /// </summary>
-            internal override bool ShouldNotifyDebuggerOfWaitCompletion =>
+            private protected override bool ShouldNotifyDebuggerOfWaitCompletion =>
                 base.ShouldNotifyDebuggerOfWaitCompletion &&
                 AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
         }
