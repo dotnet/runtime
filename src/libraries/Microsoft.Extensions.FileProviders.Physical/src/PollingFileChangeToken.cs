@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 return DateTime.MinValue;
             }
 
-            return FileSystemInfoHelper.ResolveFileLinkTarget(_fileInfo)?.LastWriteTimeUtc ?? _fileInfo.LastWriteTimeUtc;
+            return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(_fileInfo) ?? _fileInfo.LastWriteTimeUtc;
         }
 
         /// <summary>

@@ -144,7 +144,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         protected virtual DateTime GetLastWriteUtc(string path)
         {
             string filePath = Path.Combine(_directoryInfo.FullName, path);
-            return FileSystemInfoHelper.ResolveFileLinkTarget(filePath)?.LastWriteTimeUtc ?? File.GetLastWriteTimeUtc(filePath);
+            return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(filePath) ?? File.GetLastWriteTimeUtc(filePath);
         }
 
         private static bool ArrayEquals(byte[] previousHash, byte[] currentHash)

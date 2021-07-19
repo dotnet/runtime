@@ -29,19 +29,23 @@ namespace Microsoft.Extensions.FileProviders.Physical
             return false;
         }
 
-        public static FileInfo ResolveFileLinkTarget(string filePath)
+        public static DateTime? GetFileLinkTargetLastWriteTimeUtc(string filePath)
         {
 #if NETCOREAPP
             var fileInfo = new FileInfo(filePath);
             if (fileInfo.Exists)
             {
-                return ResolveFileLinkTarget(fileInfo);
+                return GetFileLinkTargetLastWriteTimeUtc(fileInfo);
             }
 #endif
             return null;
         }
 
-        public static FileInfo ResolveFileLinkTarget(FileInfo fileInfo)
+        // If file is a link and link target exists, return target's LastWriteTimeUtc.
+        // If file is a link, and link target does not exists, return DateTime.MinValue
+        //   since the link's LastWriteTimeUtc doesn't convey anything for this scenario.
+        // If file is not a link, return null to inform the caller that file is not a link.
+        public static DateTime? GetFileLinkTargetLastWriteTimeUtc(FileInfo fileInfo)
         {
 #if NETCOREAPP
             Debug.Assert(fileInfo.Exists);
@@ -50,8 +54,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 FileSystemInfo targetInfo = fileInfo.ResolveLinkTarget(returnFinalTarget: true);
                 if (targetInfo.Exists)
                 {
-                    return (FileInfo)targetInfo;
+                    return targetInfo.LastWriteTimeUtc;
                 }
+
+                return DateTime.MinValue;
             }
 #endif
 
