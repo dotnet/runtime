@@ -302,7 +302,7 @@ namespace System.Reflection
                 _tb.AddInterfaceImplementation(iface);
 
                 // AccessorMethods -> Metadata mappings.
-                var propertyMap = new Dictionary<MethodInfo, PropertyAccessorInfo>(MethodInfoEqualityComparer.Instance);
+                var propertyMap = new Dictionary<MethodInfo, PropertyAccessorInfo>();
                 foreach (PropertyInfo pi in iface.GetRuntimeProperties())
                 {
                     var ai = new PropertyAccessorInfo(pi.GetMethod, pi.SetMethod);
@@ -312,7 +312,7 @@ namespace System.Reflection
                         propertyMap[pi.SetMethod] = ai;
                 }
 
-                var eventMap = new Dictionary<MethodInfo, EventAccessorInfo>(MethodInfoEqualityComparer.Instance);
+                var eventMap = new Dictionary<MethodInfo, EventAccessorInfo>();
                 foreach (EventInfo ei in iface.GetRuntimeEvents())
                 {
                     var ai = new EventAccessorInfo(ei.AddMethod, ei.RemoveMethod, ei.RaiseMethod);
@@ -336,7 +336,7 @@ namespace System.Reflection
                     MethodBuilder mdb = AddMethodImpl(mi, methodInfoIndex);
                     if (propertyMap.TryGetValue(mi, out PropertyAccessorInfo? associatedProperty))
                     {
-                        if (MethodInfoEqualityComparer.Instance.Equals(associatedProperty.InterfaceGetMethod, mi))
+                        if (mi.Equals(associatedProperty.InterfaceGetMethod))
                             associatedProperty.GetMethodBuilder = mdb;
                         else
                             associatedProperty.SetMethodBuilder = mdb;
@@ -344,9 +344,9 @@ namespace System.Reflection
 
                     if (eventMap.TryGetValue(mi, out EventAccessorInfo? associatedEvent))
                     {
-                        if (MethodInfoEqualityComparer.Instance.Equals(associatedEvent.InterfaceAddMethod, mi))
+                        if (mi.Equals(associatedEvent.InterfaceAddMethod))
                             associatedEvent.AddMethodBuilder = mdb;
-                        else if (MethodInfoEqualityComparer.Instance.Equals(associatedEvent.InterfaceRemoveMethod, mi))
+                        else if (mi.Equals(associatedEvent.InterfaceRemoveMethod))
                             associatedEvent.RemoveMethodBuilder = mdb;
                         else
                             associatedEvent.RaiseMethodBuilder = mdb;
@@ -812,39 +812,6 @@ namespace System.Reflection
                     InterfaceAddMethod = interfaceAddMethod;
                     InterfaceRemoveMethod = interfaceRemoveMethod;
                     InterfaceRaiseMethod = interfaceRaiseMethod;
-                }
-            }
-
-            private sealed class MethodInfoEqualityComparer : EqualityComparer<MethodInfo>
-            {
-                public static readonly MethodInfoEqualityComparer Instance = new MethodInfoEqualityComparer();
-
-                private MethodInfoEqualityComparer() { }
-
-                public sealed override bool Equals(MethodInfo? left, MethodInfo? right)
-                {
-                    if (left == null)
-                        return right == null;
-                    else if (right == null)
-                        return false;
-
-                    return left.Module.Name == right.Module.Name && left.MetadataToken == right.MetadataToken;
-                }
-
-                public sealed override int GetHashCode(MethodInfo obj)
-                {
-                    if (obj == null)
-                        return 0;
-
-                    Debug.Assert(obj.DeclaringType != null);
-                    int hashCode = obj.DeclaringType!.GetHashCode();
-                    hashCode ^= obj.Name.GetHashCode();
-                    foreach (ParameterInfo parameter in obj.GetParameters())
-                    {
-                        hashCode ^= parameter.ParameterType.GetHashCode();
-                    }
-
-                    return hashCode;
                 }
             }
         }
