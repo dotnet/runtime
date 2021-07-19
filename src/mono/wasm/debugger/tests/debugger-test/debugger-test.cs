@@ -692,6 +692,13 @@ public class Foo
         var y = "00.123";
         var c = a + b == 3 || b + a == 2;
         var d = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts) && x.Contains('S');
+        var e = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts1)
+                && x.Contains('S');
+        var f = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts2)
+                &&
+                x.Contains('S');
+        var g = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts3) &&
+                x.Contains('S');
         Console.WriteLine(d);
     }
 }
