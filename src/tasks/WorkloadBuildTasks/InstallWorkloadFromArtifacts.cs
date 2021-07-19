@@ -62,7 +62,6 @@ namespace Microsoft.Workload.Build.Tasks
                                                     $"workload install --skip-manifest-update --no-cache --configfile \"{nugetConfigPath}\" {WorkloadId.ItemSpec}",
                                                     workingDir: Path.GetTempPath(),
                                                     silent: false,
-                                                    logger: Log,
                                                     debugMessageImportance: MessageImportance.High);
             if (exitCode != 0)
             {
