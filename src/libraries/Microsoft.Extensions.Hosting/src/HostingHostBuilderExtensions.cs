@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -236,7 +237,12 @@ namespace Microsoft.Extensions.Hosting
                 }
 
                 logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-                logging.AddConsole();
+#if NET6_0_OR_GREATER
+                if (!OperatingSystem.IsBrowser())
+#endif
+                {
+                    logging.AddConsole();
+                }
                 logging.AddDebug();
                 logging.AddEventSourceLogger();
 
@@ -274,6 +280,11 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         public static IHostBuilder UseConsoleLifetime(this IHostBuilder hostBuilder)
         {
             return hostBuilder.ConfigureServices(collection => collection.AddSingleton<IHostLifetime, ConsoleLifetime>());
@@ -286,6 +297,11 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="configureOptions">The delegate for configuring the <see cref="ConsoleLifetime"/>.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         public static IHostBuilder UseConsoleLifetime(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions)
         {
             return hostBuilder.ConfigureServices(collection =>
@@ -301,6 +317,11 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> that can be used to cancel the console.</param>
         /// <returns>A <see cref="Task"/> that only completes when the token is triggered or shutdown is triggered.</returns>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         public static Task RunConsoleAsync(this IHostBuilder hostBuilder, CancellationToken cancellationToken = default)
         {
             return hostBuilder.UseConsoleLifetime().Build().RunAsync(cancellationToken);
@@ -313,6 +334,11 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="configureOptions">The delegate for configuring the <see cref="ConsoleLifetime"/>.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> that can be used to cancel the console.</param>
         /// <returns>A <see cref="Task"/> that only completes when the token is triggered or shutdown is triggered.</returns>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         public static Task RunConsoleAsync(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions, CancellationToken cancellationToken = default)
         {
             return hostBuilder.UseConsoleLifetime(configureOptions).Build().RunAsync(cancellationToken);

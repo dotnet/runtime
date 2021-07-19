@@ -245,7 +245,12 @@ namespace Microsoft.Extensions.Hosting
             services.AddSingleton<IApplicationLifetime>(s => (IApplicationLifetime)s.GetService<IHostApplicationLifetime>());
 #pragma warning restore CS0618 // Type or member is obsolete
             services.AddSingleton<IHostApplicationLifetime, ApplicationLifetime>();
-            services.AddSingleton<IHostLifetime, ConsoleLifetime>();
+#if NET6_0_OR_GREATER
+            if (!OperatingSystem.IsAndroid() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst() && !OperatingSystem.IsTvOS())
+#endif
+            {
+                services.AddSingleton<IHostLifetime, ConsoleLifetime>();
+            }
             services.AddSingleton<IHost>(_ =>
             {
                 return new Internal.Host(_appServices,

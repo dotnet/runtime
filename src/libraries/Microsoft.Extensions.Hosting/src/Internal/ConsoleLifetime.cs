@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,11 @@ namespace Microsoft.Extensions.Hosting.Internal
     /// <summary>
     /// Listens for Ctrl+C or SIGTERM and initiates shutdown.
     /// </summary>
+    [UnsupportedOSPlatform("android")]
+    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("maccatalyst")]
+    [UnsupportedOSPlatform("tvos")]
     public class ConsoleLifetime : IHostLifetime, IDisposable
     {
         private readonly ManualResetEvent _shutdownBlock = new ManualResetEvent(false);
