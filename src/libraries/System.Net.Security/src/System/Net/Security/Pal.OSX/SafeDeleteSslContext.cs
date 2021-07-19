@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Security;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -22,8 +23,6 @@ namespace System.Net
         private const int OSStatus_errSSLWouldBlock = -9803;
         private const int InitialBufferSize = 2048;
         private SafeSslHandle _sslContext;
-        private Interop.AppleCrypto.SSLReadFunc _readCallback;
-        private Interop.AppleCrypto.SSLWriteFunc _writeCallback;
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
@@ -38,18 +37,12 @@ namespace System.Net
             {
                 int osStatus;
 
-                unsafe
-                {
-                    _readCallback = ReadFromConnection;
-                    _writeCallback = WriteToConnection;
-                }
-
                 _sslContext = CreateSslContext(credential, sslAuthenticationOptions.IsServer);
 
                 osStatus = Interop.AppleCrypto.SslSetIoCallbacks(
                     _sslContext,
-                    _readCallback,
-                    _writeCallback);
+                    &ReadFromConnection,
+                    &WriteToConnection);
 
                 if (osStatus != 0)
                 {
@@ -160,7 +153,8 @@ namespace System.Net
             base.Dispose(disposing);
         }
 
-        private unsafe int WriteToConnection(void* connection, byte* data, void** dataLength)
+        [UnmanagedCallersOnly]
+        private static unsafe int WriteToConnection(void* connection, byte* data, void** dataLength)
         {
             // We don't pool these buffers and we can't because there's a race between their us in the native
             // read/write callbacks and being disposed when the SafeHandle is disposed. This race is benign currently,
@@ -188,7 +182,8 @@ namespace System.Net
             }
         }
 
-        private unsafe int ReadFromConnection(void* connection, byte* data, void** dataLength)
+        [UnmanagedCallersOnly]
+        private static unsafe int ReadFromConnection(void* connection, byte* data, void** dataLength)
         {
             try
             {

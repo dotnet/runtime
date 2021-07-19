@@ -119,10 +119,10 @@ internal static partial class Interop
         private static extern int AppleCryptoNative_SslSetAcceptClientCert(SafeSslHandle sslHandle);
 
         [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetIoCallbacks")]
-        internal static extern int SslSetIoCallbacks(
+        internal static extern unsafe int SslSetIoCallbacks(
             SafeSslHandle sslHandle,
-            SSLReadFunc readCallback,
-            SSLWriteFunc writeCallback);
+            delegate* unmanaged<void*, byte*, void**> readCallback,
+            delegate* unmanaged<void*, byte*, void**> writeCallback);
 
         [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslWrite")]
         internal static extern unsafe PAL_TlsIo SslWrite(SafeSslHandle sslHandle, byte* writeFrom, int count, out int bytesWritten);
