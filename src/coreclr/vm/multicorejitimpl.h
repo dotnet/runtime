@@ -711,6 +711,13 @@ public:
 #endif // !TARGET_UNIX
     }
 
+    bool CanGatherProfile()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_ModuleList != NULL && m_JitInfoArray != NULL;
+    }
+
     bool IsAtFullCapacity() const
     {
         LIMITED_METHOD_CONTRACT;

@@ -1211,6 +1211,8 @@ void MulticoreJitManager::StartProfile(AppDomain * pDomain, ICLRPrivBinder *pBin
 
         if (pRecorder != NULL)
         {
+            gatherProfile = pRecorder->CanGatherProfile();
+
             m_pMulticoreJitRecorder = pRecorder;
 
             LONG sessionID = m_ProfileSession.Increment();
