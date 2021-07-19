@@ -93,10 +93,3 @@ jobs:
         artifactName: 'Insertion'
       continueOnError: true
       condition: always()
-    - task: PublishPipelineArtifact@1
-      displayName: Publish more workload artifacts
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)
-        artifactName: 'Workloads'
-      continueOnError: true
-      condition: always()
