@@ -596,7 +596,7 @@ public:
     // Returns TYP_UNKNOWN if the given value number has not been given a type.
     var_types TypeOfVN(ValueNum vn);
 
-    // Returns MAX_LOOP_NUM if the given value number's loop nest is unknown or ill-defined.
+    // Returns BasicBlock::MAX_LOOP_NUM if the given value number's loop nest is unknown or ill-defined.
     BasicBlock::loopNumber LoopOfVN(ValueNum vn);
 
     // Returns true iff the VN represents a (non-handle) constant.
@@ -1121,14 +1121,17 @@ private:
     JitExpandArrayStack<Chunk*> m_chunks;
 
     // These entries indicate the current allocation chunk, if any, for each valid combination of <var_types,
-    // ChunkExtraAttribute, loopNumber>.  Valid combinations require attribs==CEA_None or loopNum==MAX_LOOP_NUM.
+    // ChunkExtraAttribute, loopNumber>.  Valid combinations require attribs==CEA_None or
+    // loopNum==BasicBlock::MAX_LOOP_NUM.
     // If the value is NoChunk, it indicates that there is no current allocation chunk for that pair, otherwise
     // it is the index in "m_chunks" of a chunk with the given attributes, in which the next allocation should
     // be attempted.
-    ChunkNum m_curAllocChunk[TYP_COUNT][CEA_Count + MAX_LOOP_NUM + 1];
+    ChunkNum m_curAllocChunk[TYP_COUNT][CEA_Count + BasicBlock::MAX_LOOP_NUM + 1];
 
     // Returns a (pointer to a) chunk in which a new value number may be allocated.
-    Chunk* GetAllocChunk(var_types typ, ChunkExtraAttribs attribs, BasicBlock::loopNumber loopNum = MAX_LOOP_NUM);
+    Chunk* GetAllocChunk(var_types              typ,
+                         ChunkExtraAttribs      attribs,
+                         BasicBlock::loopNumber loopNum = BasicBlock::MAX_LOOP_NUM);
 
     // First, we need mechanisms for mapping from constants to value numbers.
     // For small integers, we'll use an array.

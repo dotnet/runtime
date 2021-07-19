@@ -1461,7 +1461,7 @@ BOOL QCALLTYPE AssemblyNative::IsApplyUpdateSupported()
     BEGIN_QCALL;
 
 #ifdef EnC_SUPPORTED
-    BOOL result = CORDebuggerAttached() || g_pConfig->ForceEnc() || g_pConfig->DebugAssembliesModifiable();
+    result = CORDebuggerAttached() || g_pConfig->ForceEnc() || g_pConfig->DebugAssembliesModifiable();
 #endif
 
     END_QCALL;

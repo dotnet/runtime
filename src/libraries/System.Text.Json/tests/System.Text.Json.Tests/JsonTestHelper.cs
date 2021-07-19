@@ -801,11 +801,6 @@ namespace System.Text.Json
             }
         }
 
-        private static readonly Regex s_stripWhitespace = new Regex(@"\s+", RegexOptions.Compiled);
-
-        public static string StripWhitespace(this string value)
-            => s_stripWhitespace.Replace(value, string.Empty);
-
 #if NET6_0_OR_GREATER
         // This is needed due to the fact that git might normalize line endings when checking-out files
         public static string NormalizeLineEndings(this string value) => value.ReplaceLineEndings();

@@ -63,8 +63,12 @@ namespace System.Net.Http
                         if (response.Headers.ConnectionClose.GetValueOrDefault())
                         {
                             // Server is closing the connection and asking us to authenticate on a new connection.
+
+                            // First, detach the current connection from the pool. This means it will no longer count against the connection limit.
+                            // Instead, it will be replaced by the new connection below.
+                            connection.DetachFromPool();
+
                             connection = await connectionPool.CreateHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
-                            connectionPool.IncrementConnectionCount();
                             connection!.Acquire();
                             isNewConnection = true;
                             needDrain = false;

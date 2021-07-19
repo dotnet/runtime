@@ -160,7 +160,7 @@ internal static partial class Interop
                 GCHandle alpnHandle = default;
                 try
                 {
-                    if (sslAuthenticationOptions.ApplicationProtocols != null)
+                    if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
                     {
                         if (sslAuthenticationOptions.IsServer)
                         {

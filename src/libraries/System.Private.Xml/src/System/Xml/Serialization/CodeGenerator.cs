@@ -853,6 +853,19 @@ namespace System.Xml.Serialization
                             New(TimeSpan_ctor);
                             break;
                         }
+                        else if (valueType == typeof(DateTimeOffset))
+                        {
+                            ConstructorInfo DateTimeOffset_ctor = typeof(DateTimeOffset).GetConstructor(
+                            CodeGenerator.InstanceBindingFlags,
+                            null,
+                            new Type[] { typeof(long), typeof(TimeSpan) },
+                            null
+                            )!;
+                            Ldc(((DateTimeOffset)o).Ticks); // ticks
+                            Ldc(((DateTimeOffset)o).Offset); // offset
+                            New(DateTimeOffset_ctor);
+                            break;
+                        }
                         else
                         {
                             throw new NotSupportedException(SR.Format(SR.UnknownConstantType, valueType.AssemblyQualifiedName));

@@ -36,7 +36,7 @@ namespace System.Diagnostics.CodeAnalysis
         }
 
         /// <summary>
-        /// Gets or sets an optional message that contains information about the need for
+        /// Gets an optional message that contains information about the need for
         /// assembly files to be on disk.
         /// </summary>
         public string? Message { get; }

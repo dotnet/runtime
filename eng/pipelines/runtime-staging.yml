@@ -150,7 +150,7 @@ jobs:
 # Build the whole product using Mono for Android and run runtime tests with interpreter
 #
 #
-# Build Browser_wasm, on windows
+# Build Browser_wasm, on windows, run console and browser tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -170,7 +170,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: Browser_wasm_Windows
       buildArgs: -subset mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=windows
-      timeoutInMinutes: 120
+      timeoutInMinutes: 180
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -186,6 +186,7 @@ jobs:
         scenarios:
         - buildwasmapps
         #- normal
+        #- wasmtestonbrowser
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),

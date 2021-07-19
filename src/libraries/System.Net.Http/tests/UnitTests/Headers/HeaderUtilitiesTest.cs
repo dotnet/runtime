@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -69,7 +65,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void GetNextNonEmptyOrWhitespaceIndex_UseDifferentInput_MatchExpectation()
         {
-            CheckGetNextNonEmptyOrWhitespaceIndex("x , , ,,  ,\t\r\n , ,x", 1, true, 18, true);
+            CheckGetNextNonEmptyOrWhitespaceIndex("x , , ,,  ,\t , ,x", 1, true, 16, true);
             CheckGetNextNonEmptyOrWhitespaceIndex("x , ,   ", 1, false, 4, true); // stop at the second ','
             CheckGetNextNonEmptyOrWhitespaceIndex("x , ,   ", 1, true, 8, true);
             CheckGetNextNonEmptyOrWhitespaceIndex(" x", 0, true, 1, false);
