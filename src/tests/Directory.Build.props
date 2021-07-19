@@ -150,8 +150,7 @@
     <BaselineMicrosoftNetCoreAppPackageVersion>2.1.0-preview3-26416-01</BaselineMicrosoftNetCoreAppPackageVersion>
   </PropertyGroup>
 
-  <ItemGroup>
-    <CLRTestBashEnvironmentVariable Include="export UsingBrowserRuntimeWorkload=false" Condition="'$(TargetOS)' == 'Browser'" />
-    <CLRTestBashEnvironmentVariable Include="export WasmNativeWorkload=false" Condition="'$(TargetOS)' == 'Browser'" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <CLRTestMSBuildArgs>/p:UsingBrowserRuntimeWorkload=false /p:WasmNativeWorkload=false</CLRTestMSBuildArgs>
+  </PropertyGroup>
 </Project>

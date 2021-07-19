@@ -95,6 +95,10 @@ namespace Wasm.Build.Tests
                     DefaultBuildArgs = $" /p:RuntimeSrcDir={solutionRoot.FullName} /p:RuntimeConfig={s_runtimeConfig} /p:EMSDK_PATH={emsdkPath} ";
                 }
 
+                // needed to disable workloads on p5
+                // Later previews can be disabled by setting the properties in a Directory.Build.props
+                DefaultBuildArgs += " /p:UsingBrowserRuntimeWorkload=false /p:WasmNativeWorkload=false";
+
                 IsWorkload = false;
                 DotNet = "dotnet";
                 EnvVars = new Dictionary<string, string>()
