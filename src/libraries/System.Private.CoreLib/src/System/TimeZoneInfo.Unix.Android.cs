@@ -280,9 +280,7 @@ namespace System
 
                 ReadTzDataIntoBuffer(fs, 0, buffer);
 
-                int indexOffset;
-                int dataOffset;
-                LoadHeader(buffer, out indexOffset, out dataOffset);
+                LoadHeader(buffer, out int indexOffset, out int dataOffset);
                 ReadIndex(fs, indexOffset, dataOffset);
             }
 
@@ -331,7 +329,7 @@ namespace System
                     _ids[i] = new string(p);
                     _lengths[i] = entry.length;
 
-                    if (_lengths[i] < 24) // AndroidTzDataHeader
+                    if (entry.length < 24) // AndroidTzDataHeader
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_BadIndexLength);
                     }
@@ -365,7 +363,7 @@ namespace System
 
             private unsafe AndroidTzDataEntry LoadEntryAt(Stream fs, long position)
             {
-                int size = 52; // AndroidTzDataEntry
+                const int size = 52; // AndroidTzDataEntry
                 Span<byte> entryBuffer = stackalloc byte[size];
 
                 ReadTzDataIntoBuffer(fs, position, entryBuffer);
