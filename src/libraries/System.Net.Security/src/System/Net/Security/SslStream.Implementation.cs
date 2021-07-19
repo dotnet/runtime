@@ -194,7 +194,17 @@ namespace System.Net.Security
 
             if (NetSecurityTelemetry.Log.IsEnabled())
             {
-                return ProcessAuthenticationWithTelemetry(isAsync, isApm, cancellationToken);
+                ValueTask task = ProcessAuthenticationWithTelemetryAsync(isAsync, isApm, cancellationToken);
+                if (isAsync)
+                {
+                    return task.AsTask();
+                }
+                else
+                {
+                    Debug.Assert(task.IsCompleted);
+                    task.GetAwaiter().GetResult();
+                    return null;
+                }
             }
             else
             {
@@ -210,7 +220,7 @@ namespace System.Net.Security
             }
         }
 
-        private Task? ProcessAuthenticationWithTelemetry(bool isAsync, bool isApm, CancellationToken cancellationToken)
+        private async ValueTask ProcessAuthenticationWithTelemetryAsync(bool isAsync, bool isApm, CancellationToken cancellationToken)
         {
             NetSecurityTelemetry.Log.HandshakeStart(_context!.IsServer, _sslAuthenticationOptions!.TargetHost);
             ValueStopwatch stopwatch = ValueStopwatch.StartNew();
@@ -219,62 +229,23 @@ namespace System.Net.Security
             {
                 if (isAsync)
                 {
-                    Task task = ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), _context.IsServer, null, isApm);
-
-                    return task.ContinueWith((t, s) =>
-                        {
-                            var tuple = ((SslStream, ValueStopwatch))s!;
-                            SslStream thisRef = tuple.Item1;
-                            ValueStopwatch stopwatch = tuple.Item2;
-
-                            if (t.IsCompletedSuccessfully)
-                            {
-                                LogSuccess(thisRef, stopwatch);
-                            }
-                            else
-                            {
-                                LogFailure(thisRef._context!.IsServer, stopwatch, t.Exception?.Message ?? "Operation canceled.");
-
-                                // Throw the same exception we would if not using Telemetry
-                                t.GetAwaiter().GetResult();
-                            }
-                        },
-                        state: (this, stopwatch),
-                        cancellationToken: default,
-                        TaskContinuationOptions.ExecuteSynchronously,
-                        TaskScheduler.Current);
+                    await ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), _context.IsServer, null, isApm).ConfigureAwait(false);
                 }
                 else
                 {
-                    ForceAuthenticationAsync(new SyncReadWriteAdapter(InnerStream), _context.IsServer, null).GetAwaiter().GetResult();
-                    LogSuccess(this, stopwatch);
-                    return null;
+                    ForceAuthenticationAsync(new SyncReadWriteAdapter(InnerStream), _context!.IsServer, null).GetAwaiter().GetResult();
                 }
-            }
-            catch (Exception ex) when (LogFailure(_context.IsServer, stopwatch, ex.Message))
-            {
-                Debug.Fail("LogFailure should return false");
-                throw;
-            }
 
-            static bool LogFailure(bool isServer, ValueStopwatch stopwatch, string exceptionMessage)
-            {
-                NetSecurityTelemetry.Log.HandshakeFailed(isServer, stopwatch, exceptionMessage);
-                return false;
-            }
-
-            static void LogSuccess(SslStream thisRef, ValueStopwatch stopwatch)
-            {
                 // SslStream could already have been disposed at this point, in which case _connectionOpenedStatus == 2
                 // Make sure that we increment the open connection counter only if it is guaranteed to be decremented in dispose/finalize
+                bool connectionOpen = Interlocked.CompareExchange(ref _connectionOpenedStatus, 1, 0) == 0;
 
-                // Using a field of a marshal-by-reference class as a ref or out value or taking its address may cause a runtime exception
-                // Justification: thisRef is a reference to 'this', not a proxy object
-#pragma warning disable CS0197
-                bool connectionOpen = Interlocked.CompareExchange(ref thisRef._connectionOpenedStatus, 1, 0) == 0;
-#pragma warning restore CS0197
-
-                NetSecurityTelemetry.Log.HandshakeCompleted(thisRef.GetSslProtocolInternal(), stopwatch, connectionOpen);
+                NetSecurityTelemetry.Log.HandshakeCompleted(GetSslProtocolInternal(), stopwatch, connectionOpen);
+            }
+            catch (Exception ex)
+            {
+                NetSecurityTelemetry.Log.HandshakeFailed(_context.IsServer, stopwatch, ex.Message);
+                throw;
             }
         }
 
