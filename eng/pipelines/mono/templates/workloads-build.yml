@@ -89,7 +89,10 @@ jobs:
     - task: PublishPipelineArtifact@1
       displayName: Publish workload artifacts
       inputs:
-        targetPath: $(workloadArtifactsPath)
+        targetPath: |
+          $(Build.SourcesDirectory)/artifacts/VSSetup/$(_BuildConfig)/Insertion/*/*.json
+          $(Build.SourcesDirectory)/artifacts/VSSetup/$(_BuildConfig)/Insertion/*/*.msi
+          $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/*/*.msi.wixpack.zip
         artifactName: 'Workloads'
       continueOnError: true
       condition: always()
