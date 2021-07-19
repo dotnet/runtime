@@ -10910,11 +10910,8 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
 // Notes:
 //   May expand into a series of runtime checks or a helper call.
 
-GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
-                                              GenTree*                op2,
-                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                              bool                    isCastClass,
-                                              IL_OFFSETX              ilOffset)
+GenTree* Compiler::impCastClassOrIsInstToTree(
+    GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, IL_OFFSETX ilOffset)
 {
     assert(op1->TypeGet() == TYP_REF);
 
@@ -10965,27 +10962,27 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
                 ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFINTERFACE)))
             {
                 // Check if we see any profile data
-                unsigned             likelihood = 0;
+                unsigned             likelihood      = 0;
                 unsigned             numberOfClasses = 0;
-                CORINFO_CLASS_HANDLE likelyClass = getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData,
-                    ilOffset, &likelihood, &numberOfClasses);
+                CORINFO_CLASS_HANDLE likelyClass =
+                    getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, &likelihood, &numberOfClasses);
                 if ((likelyClass != NO_CLASS_HANDLE) &&
                     (likelihood > static_cast<unsigned>(JitConfig.JitGuardedDevirtualizationChainLikelihood())))
                 {
                     if ((info.compCompHnd->compareTypesForEquality(likelyClass, likelyClass) ==
-                        TypeCompareState::Must) &&
+                         TypeCompareState::Must) &&
                         (info.compCompHnd->compareTypesForCast(likelyClass, pResolvedToken->hClass) ==
-                            TypeCompareState::Must))
+                         TypeCompareState::Must))
                     {
-                        const UINT32 attrs = info.compCompHnd->getClassAttribs(pResolvedToken->hClass);
+                        const UINT32 attrs = info.compCompHnd->getClassAttribs(likelyClass);
                         assert((attrs & (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) == 0);
                         JITDUMP("Adding a check for \"is %s (%X)\" as a fast path for isinst using PGO data.\n",
-                            eeGetClassName(likelyClass), likelyClass);
+                                eeGetClassName(likelyClass), likelyClass);
                         canExpandInline = true;
                         partialExpand   = true;
 
                         // Update op2
-                        op2 = gtClone(op2);
+                        op2                        = gtClone(op2);
                         op2->AsIntCon()->gtIconVal = reinterpret_cast<ssize_t>(likelyClass);
                     }
                 }

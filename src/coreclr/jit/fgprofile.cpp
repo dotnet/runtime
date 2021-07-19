@@ -1313,7 +1313,6 @@ public:
         //         ... args ...)
         //
 
-
         // Sanity check that we're looking at the right schema entry
         //
         assert(m_schema[*m_currentSchemaIndex].ILOffset == (int32_t)call->gtClassProfileCandidateInfo->ilOffset);
