@@ -10940,27 +10940,45 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
         {
             ASSERT_HOLDING_SPIN_LOCK (&gc_lock);
 
-            // look for a region that is large enough
+            // look for the smallest region that is large enough
             heap_segment** link = &free_huge_regions;
+            heap_segment* smallest_region = nullptr;
+            size_t smallest_size = (size_t)-1;
+            heap_segment** smallest_link = nullptr;
             for (region = free_huge_regions; region != nullptr; region = heap_segment_next (region))
             {
                 uint8_t* region_start = get_region_start (region);
                 uint8_t* region_end = heap_segment_reserved (region);
 
-                if ((region_end - region_start) >= (ptrdiff_t)size)
+                size_t region_size = (size_t)(region_end - region_start);
+                assert (region_size >= LARGE_REGION_SIZE * 2);
+                if (region_size >= size)
                 {
-                    // found a region that is large enough
-                    break;
+                    // found a region that is large enough - see if it's smaller than the smallest so far
+                    if (smallest_size > region_size)
+                    {
+                        smallest_size = region_size;
+                        smallest_region = region;
+                        smallest_link = link;
+                    }
+                    // is the region's size equal to the minimum on this list?
+                    if (region_size == LARGE_REGION_SIZE * 2)
+                    {
+                        // we won't find a smaller one on this list
+                        assert (region == smallest_region);
+                        break;
+                    }
                 }
-                link = &heap_segment_next(region);
+                link = &heap_segment_next (region);
             }
 
-            if (region != nullptr)
+            if (smallest_region != nullptr)
             {
                 dprintf (REGIONS_LOG, ("get %Ix-%Ix-%Ix",
-                    heap_segment_mem (region), heap_segment_committed (region), heap_segment_used (region)));
-                *link = heap_segment_next(region);
+                    heap_segment_mem (smallest_region), heap_segment_committed (smallest_region), heap_segment_used (smallest_region)));
+                *smallest_link = heap_segment_next (smallest_region);
             }
+            region = smallest_region;
         }
     }
 
