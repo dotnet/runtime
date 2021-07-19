@@ -303,7 +303,7 @@ namespace System
             [MemberNotNull(nameof(_ids))]
             [MemberNotNull(nameof(_byteOffsets))]
             [MemberNotNull(nameof(_lengths))]
-            private unsafe void ReadIndex(Stream fs, int indexOffset, int dataOffset)
+            private void ReadIndex(Stream fs, int indexOffset, int dataOffset)
             {
                 int indexSize = dataOffset - indexOffset;
                 const int entrySize = 52; // Data entry size
@@ -353,7 +353,7 @@ namespace System
                 }
             }
 
-            private unsafe void LoadEntryAt(Stream fs, long position, out string id, out int byteOffset, out int length)
+            private void LoadEntryAt(Stream fs, long position, out string id, out int byteOffset, out int length)
             {
                 const int size = 52; // data entry size
                 Span<byte> entryBuffer = stackalloc byte[size];
