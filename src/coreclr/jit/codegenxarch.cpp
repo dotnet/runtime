@@ -3063,11 +3063,11 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         if (size > 0)
         {
             // Copy the remainder by moving the last regSize bytes of the buffer
-            unsigned remainder = regSize - size;
-            assert(remainder <= regSize);
+            unsigned shiftBack = regSize - size;
+            assert(shiftBack <= regSize);
 
-            srcOffset -= remainder;
-            dstOffset -= remainder;
+            srcOffset -= shiftBack;
+            dstOffset -= shiftBack;
 
             if (srcLclNum != BAD_VAR_NUM)
             {
