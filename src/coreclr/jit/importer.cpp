@@ -1905,7 +1905,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
                 // In case of a chained GT_COMMA case, we sink the last
                 // GT_COMMA below the blockNode addr.
                 GenTree* blockNodeAddr = blockNode->AsOp()->gtOp1;
-                assert(blockNodeAddr->gtType == TYP_BYREF);
+                assert(blockNodeAddr->gtType == TYP_BYREF || blockNodeAddr->gtType == TYP_I_IMPL);
                 GenTree* commaNode       = parent;
                 commaNode->gtType        = TYP_BYREF;
                 commaNode->AsOp()->gtOp2 = blockNodeAddr;
@@ -7699,19 +7699,45 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         {
             // Do we need the address of a static field?
             //
-            if (access & CORINFO_ACCESS_ADDRESS)
+            void*  fldAddr = nullptr;
+            void** pFldAddr = nullptr;
+            bool forceAccessViaAddress = false;
+
+            if ((access & CORINFO_ACCESS_ADDRESS)
+#ifdef FEATURE_READYTORUN_COMPILER
+                || (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_RVA_ADDRESS && opts.IsReadyToRun())
+#endif
+            )
             {
-                void** pFldAddr = nullptr;
-                void*  fldAddr  = info.compCompHnd->getFieldAddress(pResolvedToken->hField, (void**)&pFldAddr);
+                fldAddr  = info.compCompHnd->getFieldAddress(pResolvedToken->hField, (void**)&pFldAddr);
 
-                // We should always be able to access this static's address directly
-                //
+                if (pFldAddr != nullptr)
+                {
+                    // RVA static field access may need to go through an indirection instead of the field path
+                    // This is only necessary if getFieldAddress returns null.
+                    forceAccessViaAddress = true;
+                }
+// We should always be able to access this static's address directly unless this is a field RVA
+// used within a composite image during R2R composite image building.
+//
+#ifdef FEATURE_READYTORUN_COMPILER
+                assert((pFldAddr == nullptr) ||
+                       (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_RVA_ADDRESS && opts.IsReadyToRun()));
+#else
                 assert(pFldAddr == nullptr);
+#endif
+            }
 
+            if ((access & CORINFO_ACCESS_ADDRESS) || forceAccessViaAddress)
+            {
                 FieldSeqNode* fldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
 
                 /* Create the data member node */
-                op1 = gtNewIconHandleNode(pFldAddr == nullptr ? (size_t)fldAddr : (size_t)pFldAddr, GTF_ICON_STATIC_HDL,
+                op1 = gtNewIconHandleNode(pFldAddr == nullptr ? (size_t)fldAddr : (size_t)pFldAddr,
+#ifdef FEATURE_READYTORUN_COMPILER
+                                          pFldAddr != nullptr ? GTF_ICON_CONST_PTR :
+#endif
+                                                              GTF_ICON_STATIC_HDL,
                                           fldSeq);
 #ifdef DEBUG
                 op1->AsIntCon()->gtTargetHandle = op1->AsIntCon()->gtIconVal;
@@ -7721,6 +7747,17 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 {
                     op1->gtFlags |= GTF_ICON_INITCLASS;
                 }
+
+#ifdef FEATURE_READYTORUN_COMPILER
+                if (pFldAddr != nullptr)
+                {
+                    // Indirection used to get to initial actual field RVA when building a composite image
+                    // where the actual field does not move from the original file
+                    assert(!varTypeIsGC(lclTyp));
+                    op1 = gtNewOperNode(GT_IND, TYP_I_IMPL, op1);
+                    op1->gtFlags |= GTF_IND_INVARIANT | GTF_IND_NONFAULTING;
+                }
+#endif
             }
             else // We need the value of a static field
             {

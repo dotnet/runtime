@@ -12226,10 +12226,12 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                         regMaskTP regMask;
                         regMask = genRegMask(reg1) | genRegMask(reg2);
 
-                        // r1/r2 could have been a GCREF as GCREF + int=BYREF
-                        //                            or BYREF+/-int=BYREF
-                        assert(((regMask & emitThisGCrefRegs) && (ins == INS_add)) ||
-                               ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub)));
+// Assert disabled as requested in PR 55301. A use of the Unsafe api
+// which produces correct code, but isn't handled correctly here.
+// r1/r2 could have been a GCREF as GCREF + int=BYREF
+//                            or BYREF+/-int=BYREF
+// assert(((regMask & emitThisGCrefRegs) && (ins == INS_add)) ||
+//       ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub)));
 #endif
                         // Mark r1 as holding a byref
                         emitGCregLiveUpd(GCT_BYREF, reg1, dst);
