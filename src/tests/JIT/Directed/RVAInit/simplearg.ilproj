@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <RestorePackages>true</RestorePackages>
     <CLRTestPriority>1</CLRTestPriority>
+    <IlAsmFlags>-X64</IlAsmFlags>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

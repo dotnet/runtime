@@ -10,7 +10,7 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 4:0:0:0
 }
-.assembly repro2
+.assembly simplearg
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
@@ -18,7 +18,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module repro2.exe
+.module simplearg.exe
 // MVID: {07A1F03C-A750-4BCF-8997-C0AC2CBDB844}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -105,8 +105,13 @@
   {
     .entrypoint
     // Code size       59 (0x3b)
-    .maxstack  2
-    .locals init (int32 V_0)
+    .maxstack  8
+    .locals init (int32 V_0,
+                  valuetype SimpleArg.MyValue V_1)
+
+    ldstr      "Test1"
+    call       void [mscorlib]System.Console::WriteLine(string)
+
     IL_0000:  ldsfld     valuetype SimpleArg.MyValue SimpleArg.Holder::RvaStatic
     IL_0005:  call       int32 SimpleArg.Program::Method(valuetype SimpleArg.MyValue)
     IL_000a:  stloc.0
@@ -117,7 +122,59 @@
     IL_0017:  stloc.0
     IL_0018:  ldloc.0
     IL_0019:  ldc.i4.s   100
-    IL_001b:  bne.un.s   IL_0029
+    IL_001b:  bne.un     IL_0029
+
+// Update the value in the RVA static to be a different than the initial value via adjustment working through the static field address
+    ldstr      "Test2"
+    call       void [mscorlib]System.Console::WriteLine(string)
+
+    ldsflda valuetype SimpleArg.MyValue SimpleArg.Holder::RvaStatic
+    ldflda int32 SimpleArg.MyValue::IntValue
+    ldc.i4.1
+    stind.i4
+// This is the same as the logic above, but should run after adjust the RVA to hold the value 1 instead of 31
+    ldsfld     valuetype SimpleArg.MyValue SimpleArg.Holder::RvaStatic
+    call       int32 SimpleArg.Program::Method(valuetype SimpleArg.MyValue)
+    stloc.0
+    ldloc.0
+    ldsfld     valuetype SimpleArg.MyValue SimpleArg.Holder::NormalStatic
+    call       int32 SimpleArg.Program::Method(valuetype SimpleArg.MyValue)
+    add
+    stloc.0
+    ldloc.0
+    ldc.i4.s   70 // Since the value in the RVA static has been reduced to 1, the expected value is now 70.
+    bne.un     IL_0029
+    ldc.i4.s   100 // Put 100 in local 0, so that we return the right number and cause the test to pass
+    stloc.0
+
+
+// This is the same as the logic above, but should run after adjust the RVA to hold the value 2 instead of 31 via the stsfld opcode
+    ldstr      "Test3"
+    call       void [mscorlib]System.Console::WriteLine(string)
+
+    ldsfld     valuetype SimpleArg.MyValue SimpleArg.Holder::RvaStatic
+    stloc.1
+    ldloca 1
+    ldflda int32 SimpleArg.MyValue::IntValue
+    ldc.i4.2
+    stind.i4
+    ldloc.1
+    stsfld valuetype SimpleArg.MyValue SimpleArg.Holder::RvaStatic
+
+
+    ldsfld     valuetype SimpleArg.MyValue SimpleArg.Holder::RvaStatic
+    call       int32 SimpleArg.Program::Method(valuetype SimpleArg.MyValue)
+    stloc.0
+    ldloc.0
+    ldsfld     valuetype SimpleArg.MyValue SimpleArg.Holder::NormalStatic
+    call       int32 SimpleArg.Program::Method(valuetype SimpleArg.MyValue)
+    add
+    stloc.0
+    ldloc.0
+    ldc.i4.s   71 // Since the value in the RVA static has been reduced to 1, the expected value is now 71.
+    bne.un     IL_0029
+    ldc.i4.s   100 // Put 100 in local 0, so that we return the right number and cause the test to pass
+    stloc.0
 
     IL_001d:  ldstr      "Passed"
     IL_0022:  call       void [mscorlib]System.Console::WriteLine(string)
