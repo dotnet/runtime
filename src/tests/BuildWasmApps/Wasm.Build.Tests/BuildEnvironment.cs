@@ -97,7 +97,7 @@ namespace Wasm.Build.Tests
 
                 // needed to disable workloads on p5
                 // Later previews can be disabled by setting the properties in a Directory.Build.props
-                DefaultBuildArgs += " /p:UsingBrowserRuntimeWorkload=false /p:WasmNativeWorkload=false";
+                DefaultBuildArgs += " /p:MSBuildEnableWorkloadResolver=false";
 
                 IsWorkload = false;
                 DotNet = "dotnet";
