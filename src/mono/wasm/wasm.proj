@@ -141,7 +141,7 @@
           DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BundleTimeZones">
 
     <!-- Run TS -> JS compiler -->  
-    <Exec Command="tsc -p ./runtime/" IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="tsc -p runtime\" IgnoreStandardErrorWarningFormat="true" />
 
     <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) NATIVE_BIN_DIR=$(NativeBinDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(ICULibDir)"
           IgnoreStandardErrorWarningFormat="true" />
@@ -225,7 +225,7 @@
           IgnoreStandardErrorWarningFormat="true" />
 
     <!-- Run TS -> JS compiler -->
-    <Exec Command="tsc -p ./runtime/" IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="tsc -p runtime/" IgnoreStandardErrorWarningFormat="true" />
 
     <RunWithEmSdkEnv Command="$(EmccCmd) @$(_EmccDefaultsRspPath) $(EmccConfigurationFlags) --js-library runtime/bin/library_mono.js --js-library runtime/bin/binding_support.js --js-library runtime/bin/dotnet_support.js --js-library &quot;$(SystemNativeDir)\pal_random.js&quot; &quot;$(MonoObjDir)driver.o&quot; &quot;$(MonoObjDir)pinvoke.o&quot; &quot;$(MonoObjDir)corebindings.o&quot; &quot;@(MonoLibFiles->'%(FullPath)', '&quot; &quot;')&quot; -o &quot;$(NativeBinDir)dotnet.js&quot; &amp;&amp; $(StripCmd)"
           EmSdkPath="$(EMSDK_PATH)"

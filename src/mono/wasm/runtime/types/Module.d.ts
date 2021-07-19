@@ -42,11 +42,12 @@ declare namespace Module {
     function mono_method_get_call_signature (method: any, mono_obj?: any): string;
     function print (message: string): void;
 
-    function ccall (ident: string, returnType?: string, argTypes?: any[] , args?: any[] , opts?: any): any;
+    function ccall <T extends Function> (ident: string, returnType?: string, argTypes?: string[], args?: any[] , opts?: any): T;
+    function cwrap <T extends Function> (ident: string, returnType: string, argTypes?: string[], opts?: any): T;
+    function cwrap <T extends Function> (ident: string, ...args: any[]): T;
+
     function FS_createPath (parent: string | any, path: string, canRead?: boolean /* unused */, canWrite?: boolean /* unused */): string;
     function FS_createDataFile (parent: string | any, name: string, data: string, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
-    function cwrap (ident: string, returnType: string, argTypes?: any[], opts?: any): Function;
-    function cwrap (ident: string, ...args: any[]): Function;
     function setValue (ptr: number, value: number, type: string, noSafe?: number | boolean): void;
     function getValue (ptr: number, type: string, noSafe?: number | boolean ): number;
     function UTF8ToString (ptr: number, maxBytesToRead?: number): string;

@@ -21,18 +21,27 @@ interface MONO_C_FUNCS {
     mono_wasm_get_icudt_name (a: string): string;
     mono_wasm_load_icu_data (a: number): number;
     mono_wasm_load_runtime (a: string, b: number): void;
-    mono_wasm_parse_runtime_options (a: number, b:number): void;
-    mono_wasm_register_root (a: number, b: number, c: string): number;
+    wasm_parse_runtime_options (a: number, b:number): void;
+    mono_wasm_register_root (a: number, b: number, c: string | 0): number;
     mono_wasm_send_dbg_command (a: number, b:number, c: number, d: number, e: number): boolean;
     mono_wasm_send_dbg_command_with_parms (a: number, b:number, c: number, d: number, e: number, f: number, g: string): boolean;
     mono_wasm_set_is_debugger_attached (a: boolean): void;
-    mono_wasm_setenv (a: string, b: string): void;
+    wasm_setenv (a: string, b: string): void;
     mono_wasm_strdup (a: string): number;
     mono_wasm_string_get_data (a: number, b: number, c: number, d: number): void;
 }
 
+interface MONO_VARS {
+    _base64Table: string[];
+    mono_wasm_string_decoder_buffer: number;
+    mono_wasm_empty_string: string;
+    _next_call_function_res_id: number;
+    _next_id_var: number;
+    _call_function_res_cache: any;
+}
+
 // NAMESPACES ///////////////////////////////////////////////////////////////////////////////
-declare var MONO: typeof MonoSupportLib.$MONO & MONO_C_FUNCS;
+declare var MONO: typeof MonoSupportLib.$MONO & MONO_C_FUNCS & MONO_VARS;
 
 // OTHER TYPES ///////////////////////////////////////////////////////////////////////
 

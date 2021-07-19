@@ -21,3 +21,6 @@ declare function locateFile(path: string): string;
 declare function read (path: string): string;
 declare function load (path: string): string;
 declare function require (path: string): object;
+
+// Joins the various file specific C functions into 1 interface for easier access
+interface C_FUNCS extends BINDING_C_FUNCS, DOTNET_C_FUNCS, MONO_C_FUNCS {}
