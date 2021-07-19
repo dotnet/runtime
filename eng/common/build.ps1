@@ -109,6 +109,7 @@ function Build {
   MSBuild $toolsetBuildProj `
     $bl `
     $platformArg `
+    /p:RepoRoot=$RepoRoot `
     /p:Restore=$restore `
     @properties
 
