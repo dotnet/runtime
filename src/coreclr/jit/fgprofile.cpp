@@ -1219,10 +1219,13 @@ public:
             {
                 m_functor(m_compiler, call);
             }
-            else if ((call->gtCallType == CT_HELPER) && (JitConfig.JitIsinstProfiling() > 0) &&
-                     (m_compiler->eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_ISINSTANCEOFCLASS))
+            else if ((call->gtCallType == CT_HELPER) && (JitConfig.JitIsinstProfiling() > 0))
             {
-                m_functor(m_compiler, call);
+                const CorInfoHelpFunc helper = m_compiler->eeGetHelperNum(call->gtCallMethHnd);
+                if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS))
+                {
+                    m_functor(m_compiler, call);
+                }
             }
         }
 
@@ -1326,9 +1329,10 @@ public:
         *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
 
         GenTreeCall::Use* objUse = nullptr;
-        if ((call->gtCallType == CT_HELPER) &&
-            (compiler->eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_ISINSTANCEOFCLASS))
+        if ((call->gtCallType == CT_HELPER) && !call->IsVirtual())
         {
+            const CorInfoHelpFunc helper = compiler->eeGetHelperNum(call->gtCallMethHnd);
+            assert((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS));
             assert(JitConfig.JitIsinstProfiling() > 0);
             // Grab the second arg of isinst helper call
             objUse = call->gtCallArgs->GetNext();
@@ -1366,12 +1370,9 @@ public:
         JITDUMP("Modified call is now\n");
         DISPTREE(call);
 
-        if (call->gtCallType != CT_HELPER)
-        {
-            // Restore the stub address on the call
-            //
-            call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
-        }
+        // Restore the stub address on the call
+        //
+        call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
 
         m_instrCount++;
     }
