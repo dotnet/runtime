@@ -2838,6 +2838,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             {
                 // Shift dstOffset back to use full SIMD move
                 unsigned shiftBack = regSize - (size - bytesWritten);
+                assert(shiftBack <= regSize);
                 bytesWritten -= shiftBack;
                 dstOffset -= shiftBack;
             }
