@@ -10902,6 +10902,7 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
 //   op2 - type handle for type to cast to
 //   pResolvedToken - resolved token from the cast operation
 //   isCastClass - true if this is castclass, false means isinst
+//   ilOffset - IL offset of isisnt/cast opcode
 //
 // Return Value:
 //   Tree representing the cast
@@ -10912,7 +10913,8 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
 GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
                                               GenTree*                op2,
                                               CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                              bool                    isCastClass)
+                                              bool                    isCastClass,
+                                              IL_OFFSETX              ilOffset)
 {
     assert(op1->TypeGet() == TYP_REF);
 
@@ -10937,6 +10939,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
 
     // Pessimistically assume the jit cannot expand this as an inline test
     bool                  canExpandInline = false;
+    bool                  partialExpand   = false;
     const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
 
     // Legality check.
@@ -10956,6 +10959,35 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
             {
                 // If the class is exact, the jit can expand the IsInst check inline.
                 canExpandInline = impIsClassExact(pResolvedToken->hClass);
+                if (!canExpandInline)
+                {
+                    // Check if we see any profile data
+
+                    unsigned             likelihood      = 0;
+                    unsigned             numberOfClasses = 0;
+                    CORINFO_CLASS_HANDLE likelyClass     = getLikelyClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData,
+                                                                      ilOffset, &likelihood, &numberOfClasses);
+
+                    if (likelyClass != NO_CLASS_HANDLE)
+                    {
+                        if ((info.compCompHnd->compareTypesForEquality(likelyClass, likelyClass) ==
+                             TypeCompareState::Must) &&
+                            (info.compCompHnd->compareTypesForCast(likelyClass, pResolvedToken->hClass) ==
+                             TypeCompareState::Must))
+                        {
+                            const UINT32 attrs = info.compCompHnd->getClassAttribs(pResolvedToken->hClass);
+                            assert((attrs & (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) == 0);
+                            JITDUMP("Adding a check for \"is %s (%X)\" as a fast path for isinst using PGO data.\n",
+                                    eeGetClassName(likelyClass), likelyClass);
+                            canExpandInline = true;
+                            partialExpand   = true;
+
+                            // Update op2
+                            op2                        = gtClone(op2);
+                            op2->AsIntCon()->gtIconVal = reinterpret_cast<ssize_t>(likelyClass);
+                        }
+                    }
+                }
             }
         }
     }
@@ -10972,7 +11004,17 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
         //
         op2->gtFlags |= GTF_DONT_CSE;
 
-        return gtNewHelperCallNode(helper, TYP_REF, gtNewCallArgs(op2, op1));
+        GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, gtNewCallArgs(op2, op1));
+        if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) && opts.OptimizationDisabled())
+        {
+            ClassProfileCandidateInfo* pInfo  = new (this, CMK_Inlining) ClassProfileCandidateInfo;
+            pInfo->ilOffset                   = ilOffset;
+            pInfo->probeIndex                 = info.compClassProbeCount++;
+            pInfo->stubAddr                   = call->gtStubCallStubAddr;
+            call->gtClassProfileCandidateInfo = pInfo;
+            compCurBB->bbFlags |= BBF_HAS_CLASS_PROFILE;
+        }
+        return call;
     }
 
     JITDUMP("\nExpanding %s inline\n", isCastClass ? "castclass" : "isinst");
@@ -11000,7 +11042,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     //
 
     GenTree* op2Var = op2;
-    if (isCastClass)
+    if (isCastClass || partialExpand)
     {
         op2Var                                                  = fgInsertCommaFormTemp(&op2);
         lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
@@ -11032,6 +11074,10 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
         const CorInfoHelpFunc specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
 
         condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, gtNewCallArgs(op2Var, gtClone(op1)));
+    }
+    else if (partialExpand)
+    {
+        condTrue = gtNewHelperCallNode(helper, TYP_REF, gtNewCallArgs(op2Var, gtClone(op1)));
     }
     else
     {
@@ -15616,7 +15662,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (!usingReadyToRunHelper)
 #endif
                     {
-                        op1 = impCastClassOrIsInstToTree(op1, op2, &resolvedToken, false);
+                        op1 = impCastClassOrIsInstToTree(op1, op2, &resolvedToken, false, opcodeOffs);
                     }
                     if (compDonotInline())
                     {
@@ -16211,7 +16257,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (!usingReadyToRunHelper)
 #endif
                     {
-                        op1 = impCastClassOrIsInstToTree(op1, op2, &resolvedToken, true);
+                        op1 = impCastClassOrIsInstToTree(op1, op2, &resolvedToken, true, opcodeOffs);
                     }
                     if (compDonotInline())
                     {

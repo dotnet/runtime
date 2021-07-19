@@ -1219,6 +1219,11 @@ public:
             {
                 m_functor(m_compiler, call);
             }
+            else if ((call->gtCallType == CT_HELPER) &&
+                     (m_compiler->eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_ISINSTANCEOFCLASS))
+            {
+                m_functor(m_compiler, call);
+            }
         }
 
         return Compiler::WALK_CONTINUE;
@@ -1250,7 +1255,7 @@ public:
         }
         else
         {
-            assert(call->IsVirtualVtable());
+            assert(call->IsVirtualVtable() || (call->gtCallType == CT_HELPER));
         }
 
         schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
@@ -1305,7 +1310,6 @@ public:
         //         ... args ...)
         //
 
-        assert(call->gtCallThisArg->GetNode()->TypeGet() == TYP_REF);
 
         // Sanity check that we're looking at the right schema entry
         //
@@ -1321,6 +1325,20 @@ public:
         BYTE* classProfile = m_schema[*m_currentSchemaIndex].Offset + m_profileMemory;
         *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
 
+        GenTreeCall::Use* objUse = nullptr;
+        if ((call->gtCallType == CT_HELPER) &&
+            (compiler->eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_ISINSTANCEOFCLASS))
+        {
+            // Grab the second arg of isinst helper call
+            objUse = call->gtCallArgs->GetNext();
+        }
+        else
+        {
+            // Grab 'this' arg
+            objUse = call->gtCallThisArg;
+        }
+
+        assert(objUse->GetNode()->TypeGet() == TYP_REF);
         // Grab a temp to hold the 'this' object as it will be used three times
         //
         unsigned const tmpNum             = compiler->lvaGrabTemp(true DEBUGARG("class profile tmp"));
@@ -1337,19 +1355,22 @@ public:
         GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
         GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const asgNode = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, call->gtCallThisArg->GetNode());
-        GenTree* const asgCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
+        GenTree* const asgNode       = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetNode());
+        GenTree* const asgCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
         // Update the call
         //
-        call->gtCallThisArg->SetNode(asgCommaNode);
+        objUse->SetNode(asgCommaNode);
 
         JITDUMP("Modified call is now\n");
         DISPTREE(call);
 
-        // Restore the stub address on the call
-        //
-        call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
+        if (call->gtCallType != CT_HELPER)
+        {
+            // Restore the stub address on the call
+            //
+            call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
+        }
 
         m_instrCount++;
     }
