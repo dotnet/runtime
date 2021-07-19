@@ -5,7 +5,7 @@
 trigger: none
 
 schedules:
-- cron: "0 */2 * * *"
+- cron: 0 */2 * * *
   displayName: Once in 2 hours
   branches:
     include:
