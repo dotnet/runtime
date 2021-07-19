@@ -11040,8 +11040,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //
 
     GenTree* op2Var = op2;
-    if (isCastClass || partialExpand)
+    if (isCastClass)
     {
+        assert(!partialExpand);
         op2Var                                                  = fgInsertCommaFormTemp(&op2);
         lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
     }
@@ -11075,7 +11076,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     }
     else if (partialExpand)
     {
-        condTrue = gtNewHelperCallNode(helper, TYP_REF, gtNewCallArgs(op2Var, gtClone(op1)));
+        condTrue = gtNewHelperCallNode(helper, TYP_REF, gtNewCallArgs(op2, gtClone(op1)));
     }
     else
     {
