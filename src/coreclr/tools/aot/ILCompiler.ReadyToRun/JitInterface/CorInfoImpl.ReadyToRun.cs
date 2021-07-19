@@ -1495,7 +1495,10 @@ namespace Internal.JitInterface
                 if (isStaticVirtual)
                 {
                     directMethod = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(originalMethod, _compilation.CompilationModuleGroup.VersionsWithType);
-                    forceUseRuntimeLookup = (directMethod == null);
+                    if (directMethod == null)
+                    {
+                        throw new RequiresRuntimeJitException(originalMethod.ToString());
+                    }
                 }
                 else
                 {
