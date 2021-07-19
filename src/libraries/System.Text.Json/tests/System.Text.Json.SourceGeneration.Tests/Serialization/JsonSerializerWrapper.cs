@@ -14,6 +14,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         private readonly JsonSerializerContext _defaultContext;
         private readonly Func<JsonSerializerOptions, JsonSerializerContext> _customContextCreator;
 
+        protected internal override bool SupportsNullValueOnDeserialize => false;
+
         public StringSerializerWrapper(JsonSerializerContext defaultContext, Func<JsonSerializerOptions, JsonSerializerContext> customContextCreator)
         {
             _defaultContext = defaultContext ?? throw new ArgumentNullException(nameof(defaultContext));

@@ -23,7 +23,13 @@ namespace System.Text.Json
     {
         private ReadOnlyMemory<byte> _utf8Json;
         private MetadataDb _parsedData;
-        private byte[]? _extraRentedBytes;
+
+        private byte[]? _extraRentedArrayPoolBytes;
+        private bool _hasExtraRentedArrayPoolBytes;
+
+        private PooledByteBufferWriter? _extraPooledByteBufferWriter;
+        private bool _hasExtraPooledByteBufferWriter;
+
         private (int, string?) _lastIndexAndString = (-1, null);
 
         internal bool IsDisposable { get; }
@@ -36,19 +42,34 @@ namespace System.Text.Json
         private JsonDocument(
             ReadOnlyMemory<byte> utf8Json,
             MetadataDb parsedData,
-            byte[]? extraRentedBytes,
+            byte[]? extraRentedArrayPoolBytes = null,
+            PooledByteBufferWriter? extraPooledByteBufferWriter = null,
             bool isDisposable = true)
         {
             Debug.Assert(!utf8Json.IsEmpty);
 
+            // We never have both rented fields.
+            Debug.Assert(extraRentedArrayPoolBytes == null || extraPooledByteBufferWriter == null);
+
             _utf8Json = utf8Json;
             _parsedData = parsedData;
-            _extraRentedBytes = extraRentedBytes;
+
+            if (_extraRentedArrayPoolBytes != null)
+            {
+                _hasExtraRentedArrayPoolBytes = true;
+                _extraRentedArrayPoolBytes = extraRentedArrayPoolBytes;
+            }
+            else if (extraPooledByteBufferWriter != null)
+            {
+                _hasExtraPooledByteBufferWriter = true;
+                _extraPooledByteBufferWriter = extraPooledByteBufferWriter;
+            }
+
 
             IsDisposable = isDisposable;
 
-            // extraRentedBytes better be null if we're not disposable.
-            Debug.Assert(isDisposable || extraRentedBytes == null);
+            // Both rented fields better be null if we're not disposable.
+            Debug.Assert(isDisposable || (_extraRentedArrayPoolBytes == null && _extraPooledByteBufferWriter == null));
         }
 
         /// <inheritdoc />
@@ -65,12 +86,20 @@ namespace System.Text.Json
 
             // When "extra rented bytes exist" they contain the document,
             // and thus need to be cleared before being returned.
-            byte[]? extraRentedBytes = Interlocked.Exchange(ref _extraRentedBytes, null);
-
-            if (extraRentedBytes != null)
+            if (_hasExtraRentedArrayPoolBytes)
             {
-                extraRentedBytes.AsSpan(0, length).Clear();
-                ArrayPool<byte>.Shared.Return(extraRentedBytes);
+                byte[]? extraRentedBytes = Interlocked.Exchange(ref _extraRentedArrayPoolBytes, null);
+
+                if (extraRentedBytes != null)
+                {
+                    extraRentedBytes.AsSpan(0, length).Clear();
+                    ArrayPool<byte>.Shared.Return(extraRentedBytes);
+                }
+            }
+            else if (_hasExtraPooledByteBufferWriter)
+            {
+                PooledByteBufferWriter? extraBufferWriter = Interlocked.Exchange(ref _extraPooledByteBufferWriter, null);
+                extraBufferWriter?.Dispose();
             }
         }
 
@@ -184,7 +213,7 @@ namespace System.Text.Json
             return endIndex;
         }
 
-        private ReadOnlyMemory<byte> GetRawValue(int index, bool includeQuotes)
+        internal ReadOnlyMemory<byte> GetRawValue(int index, bool includeQuotes)
         {
             CheckNotDisposed();
 
@@ -764,7 +793,12 @@ namespace System.Text.Json
             ReadOnlyMemory<byte> segmentCopy = GetRawValue(index, includeQuotes: true).ToArray();
 
             JsonDocument newDocument =
-                new JsonDocument(segmentCopy, newDb, extraRentedBytes: null, isDisposable: false);
+                new JsonDocument(
+                    segmentCopy,
+                    newDb,
+                    extraRentedArrayPoolBytes: null,
+                    extraPooledByteBufferWriter: null,
+                    isDisposable: false);
 
             return newDocument.RootElement;
         }

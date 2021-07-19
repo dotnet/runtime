@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
@@ -21,9 +22,14 @@ namespace System.Text.Json.Serialization.Tests
         public static JsonSerializerWrapperForString AsyncStreamSerializerWithSmallBuffer => new AsyncStreamSerializerWrapperWithSmallBuffer();
         public static JsonSerializerWrapperForString SyncStreamSerializer => new SyncStreamSerializerWrapper();
         public static JsonSerializerWrapperForString ReaderWriterSerializer => new ReaderWriterSerializerWrapper();
+        public static JsonSerializerWrapperForString DocumentSerializer => new DocumentSerializerWrapper();
+        public static JsonSerializerWrapperForString ElementSerializer => new ElementSerializerWrapper();
+        public static JsonSerializerWrapperForString NodeSerializer => new NodeSerializerWrapper();
 
         private class SpanSerializerWrapper : JsonSerializerWrapperForString
         {
+            protected internal override bool SupportsNullValueOnDeserialize => true; // a 'null' value is supported via implicit operator.
+
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 byte[] result = JsonSerializer.SerializeToUtf8Bytes(value, inputType, options);
@@ -71,6 +77,8 @@ namespace System.Text.Json.Serialization.Tests
 
         private class StringSerializerWrapper : JsonSerializerWrapperForString
         {
+            protected internal override bool SupportsNullValueOnDeserialize => true;
+
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 return Task.FromResult(JsonSerializer.Serialize(value, inputType, options));
@@ -114,6 +122,8 @@ namespace System.Text.Json.Serialization.Tests
 
         private class AsyncStreamSerializerWrapper : JsonSerializerWrapperForString
         {
+            protected internal override bool SupportsNullValueOnDeserialize => false;
+
             protected internal override async Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 using var stream = new MemoryStream();
@@ -144,6 +154,12 @@ namespace System.Text.Json.Serialization.Tests
 
             protected internal override async Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
             {
+                if (json is null)
+                {
+                    // Emulate a null Stream for API validation tests.
+                    return await JsonSerializer.DeserializeAsync<T>((Stream)null, options ?? _optionsWithSmallBuffer);
+                }
+
                 using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
                     return await JsonSerializer.DeserializeAsync<T>(stream, options ?? _optionsWithSmallBuffer);
@@ -152,6 +168,12 @@ namespace System.Text.Json.Serialization.Tests
 
             protected internal override async Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
             {
+                if (json is null)
+                {
+                    // Emulate a null Stream for API validation tests.
+                    return await JsonSerializer.DeserializeAsync((Stream)null, type, options ?? _optionsWithSmallBuffer);
+                }
+
                 using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
                     return await JsonSerializer.DeserializeAsync(stream, type, options ?? _optionsWithSmallBuffer);
@@ -160,6 +182,12 @@ namespace System.Text.Json.Serialization.Tests
 
             protected internal override async Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
             {
+                if (json is null)
+                {
+                    // Emulate a null Stream for API validation tests.
+                    return await JsonSerializer.DeserializeAsync((Stream)null, jsonTypeInfo);
+                }
+
                 using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
                     return await JsonSerializer.DeserializeAsync(stream, jsonTypeInfo);
@@ -168,6 +196,12 @@ namespace System.Text.Json.Serialization.Tests
 
             protected internal override async Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
             {
+                if (json is null)
+                {
+                    // Emulate a null Stream for API validation tests.
+                    return await JsonSerializer.DeserializeAsync((Stream)null, type, context);
+                }
+
                 using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
                     return await JsonSerializer.DeserializeAsync(stream, type, context);
@@ -177,6 +211,8 @@ namespace System.Text.Json.Serialization.Tests
 
         private class AsyncStreamSerializerWrapperWithSmallBuffer : AsyncStreamSerializerWrapper
         {
+            protected internal override bool SupportsNullValueOnDeserialize => false;
+
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 if (options == null)
@@ -195,6 +231,8 @@ namespace System.Text.Json.Serialization.Tests
 
         private class SyncStreamSerializerWrapper : JsonSerializerWrapperForString
         {
+            protected internal override bool SupportsNullValueOnDeserialize => false;
+
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 using var stream = new MemoryStream();
@@ -225,6 +263,12 @@ namespace System.Text.Json.Serialization.Tests
 
             protected internal override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
             {
+                if (json is null)
+                {
+                    // Emulate a null Stream for API validation tests.
+                    return Task.FromResult(JsonSerializer.Deserialize<T>((Stream)null, options ?? _optionsWithSmallBuffer));
+                }
+
                 using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
                     return Task.FromResult(JsonSerializer.Deserialize<T>(stream, options ?? _optionsWithSmallBuffer));
@@ -233,6 +277,12 @@ namespace System.Text.Json.Serialization.Tests
 
             protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
             {
+                if (json is null)
+                {
+                    // Emulate a null Stream for API validation tests.
+                    return Task.FromResult(JsonSerializer.Deserialize((Stream)null, type, options ?? _optionsWithSmallBuffer));
+                }
+
                 using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
                     return Task.FromResult(JsonSerializer.Deserialize(stream, type, options ?? _optionsWithSmallBuffer));
@@ -241,6 +291,12 @@ namespace System.Text.Json.Serialization.Tests
 
             protected internal override Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
             {
+                if (json is null)
+                {
+                    // Emulate a null Stream for API validation tests.
+                    return Task.FromResult(JsonSerializer.Deserialize<T>((Stream)null, jsonTypeInfo));
+                }
+
                 using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
                     return Task.FromResult(JsonSerializer.Deserialize<T>(stream, jsonTypeInfo));
@@ -249,6 +305,12 @@ namespace System.Text.Json.Serialization.Tests
 
             protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
             {
+                if (json is null)
+                {
+                    // Emulate a null Stream for API validation tests.
+                    return Task.FromResult(JsonSerializer.Deserialize((Stream)null, type, context));
+                }
+
                 using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
                 {
                     return Task.FromResult(JsonSerializer.Deserialize(stream, type, context));
@@ -258,6 +320,8 @@ namespace System.Text.Json.Serialization.Tests
 
         private class ReaderWriterSerializerWrapper : JsonSerializerWrapperForString
         {
+            protected internal override bool SupportsNullValueOnDeserialize => false;
+
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 using MemoryStream stream = new MemoryStream();
@@ -312,6 +376,269 @@ namespace System.Text.Json.Serialization.Tests
             {
                 Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
                 return Task.FromResult(JsonSerializer.Deserialize(ref reader, type, context));
+            }
+        }
+
+        private class DocumentSerializerWrapper : JsonSerializerWrapperForString
+        {
+            protected internal override bool SupportsNullValueOnDeserialize => false;
+
+            protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
+            {
+                JsonDocument document = JsonSerializer.SerializeToDocument(value, inputType, options);
+                return Task.FromResult(GetStringFromDocument(document));
+            }
+
+            protected internal override Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null)
+            {
+                JsonDocument document = JsonSerializer.SerializeToDocument(value, options);
+                return Task.FromResult(GetStringFromDocument(document));
+            }
+
+            protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context)
+            {
+                JsonDocument document = JsonSerializer.SerializeToDocument(value, inputType, context);
+                return Task.FromResult(GetStringFromDocument(document));
+            }
+
+            protected internal override Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo)
+            {
+                JsonDocument document = JsonSerializer.SerializeToDocument(value, jsonTypeInfo);
+                return Task.FromResult(GetStringFromDocument(document));
+            }
+
+            private string GetStringFromDocument(JsonDocument document)
+            {
+                // Emulate a null return value.
+                if (document is null)
+                {
+                    return "null";
+                }
+
+                using (var stream = new MemoryStream())
+                {
+                    Utf8JsonWriter writer = new Utf8JsonWriter(stream, new JsonWriterOptions());
+                    document.WriteTo(writer);
+                    writer.Flush();
+                    return Encoding.UTF8.GetString(stream.ToArray());
+                }
+            }
+
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
+            {
+                if (json is null)
+                {
+                    // Emulate a null document for API validation tests.
+                    return Task.FromResult(JsonSerializer.Deserialize<T>(document: null));
+                }
+
+                using JsonDocument document = JsonDocument.Parse(json);
+                return Task.FromResult(document.Deserialize<T>(options));
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
+            {
+                if (json is null)
+                {
+                    // Emulate a null document for API validation tests.
+                    return Task.FromResult(JsonSerializer.Deserialize(document: null, type));
+                }
+
+                using JsonDocument document = JsonDocument.Parse(json);
+                return Task.FromResult(document.Deserialize(type, options));
+            }
+
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
+            {
+                if (json is null)
+                {
+                    // Emulate a null document for API validation tests.
+                    return Task.FromResult(JsonSerializer.Deserialize<T>(document: null, jsonTypeInfo));
+                }
+
+                using JsonDocument document = JsonDocument.Parse(json);
+                return Task.FromResult(document.Deserialize<T>(jsonTypeInfo));
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
+            {
+                if (json is null)
+                {
+                    // Emulate a null document for API validation tests.
+                    return Task.FromResult(JsonSerializer.Deserialize(document: null, type, context));
+                }
+
+                using JsonDocument document = JsonDocument.Parse(json);
+                return Task.FromResult(document.Deserialize(type, context));
+            }
+        }
+
+        private class ElementSerializerWrapper : JsonSerializerWrapperForString
+        {
+            protected internal override bool SupportsNullValueOnDeserialize => false;
+
+            protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
+            {
+                JsonElement element = JsonSerializer.SerializeToElement(value, inputType, options);
+                return Task.FromResult(GetStringFromElement(element));
+            }
+
+            protected internal override Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null)
+            {
+                JsonElement element = JsonSerializer.SerializeToElement(value, options);
+                return Task.FromResult(GetStringFromElement(element));
+            }
+
+            protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context)
+            {
+                JsonElement element = JsonSerializer.SerializeToElement(value, inputType, context);
+                return Task.FromResult(GetStringFromElement(element));
+            }
+
+            protected internal override Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo)
+            {
+                JsonElement element = JsonSerializer.SerializeToElement(value, jsonTypeInfo);
+                return Task.FromResult(GetStringFromElement(element));
+            }
+
+            private string GetStringFromElement(JsonElement element)
+            {
+                using (var stream = new MemoryStream())
+                {
+                    Utf8JsonWriter writer = new Utf8JsonWriter(stream, new JsonWriterOptions());
+                    element.WriteTo(writer);
+                    writer.Flush();
+                    return Encoding.UTF8.GetString(stream.ToArray());
+                }
+            }
+
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
+            {
+                using JsonDocument document = JsonDocument.Parse(json);
+                return Task.FromResult(document.RootElement.Deserialize<T>(options));
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
+            {
+                using JsonDocument document = JsonDocument.Parse(json);
+                return Task.FromResult(document.RootElement.Deserialize(type, options));
+            }
+
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
+            {
+                using JsonDocument document = JsonDocument.Parse(json);
+                return Task.FromResult(document.RootElement.Deserialize<T>(jsonTypeInfo));
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
+            {
+                using JsonDocument document = JsonDocument.Parse(json);
+                return Task.FromResult(document.RootElement.Deserialize(type, context));
+            }
+        }
+
+        private class NodeSerializerWrapper : JsonSerializerWrapperForString
+        {
+            protected internal override bool SupportsNullValueOnDeserialize => true;
+
+            protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
+            {
+                JsonNode node = JsonSerializer.SerializeToNode(value, inputType, options);
+
+                // Emulate a null return value.
+                if (node is null)
+                {
+                    return Task.FromResult("null");
+                }
+
+                return Task.FromResult(node.ToJsonString());
+            }
+
+            protected internal override Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null)
+            {
+                JsonNode node = JsonSerializer.SerializeToNode(value, options);
+
+                // Emulate a null return value.
+                if (node is null)
+                {
+                    return Task.FromResult("null");
+                }
+
+                return Task.FromResult(node.ToJsonString());
+            }
+
+            protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context)
+            {
+                JsonNode node = JsonSerializer.SerializeToNode(value, inputType, context);
+
+                // Emulate a null return value.
+                if (node is null)
+                {
+                    return Task.FromResult("null");
+                }
+
+                return Task.FromResult(node.ToJsonString());
+            }
+
+            protected internal override Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo)
+            {
+                JsonNode node = JsonSerializer.SerializeToNode(value, jsonTypeInfo);
+
+                // Emulate a null return value.
+                if (node is null)
+                {
+                    return Task.FromResult("null");
+                }
+
+                return Task.FromResult(node.ToJsonString());
+            }
+
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
+            {
+                if (json is null)
+                {
+                    // Emulate a null node for API validation tests.
+                    return Task.FromResult(JsonSerializer.Deserialize<T>(node: null));
+                }
+
+                JsonNode node = JsonNode.Parse(json);
+                return Task.FromResult(node.Deserialize<T>(options));
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
+            {
+                if (json is null)
+                {
+                    // Emulate a null node for API validation tests.
+                    return Task.FromResult(JsonSerializer.Deserialize(node: null, type));
+                }
+
+                JsonNode node = JsonNode.Parse(json);
+                return Task.FromResult(node.Deserialize(type, options));
+            }
+
+            protected internal override Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
+            {
+                if (json is null)
+                {
+                    // Emulate a null node for API validation tests.
+                    return Task.FromResult(JsonSerializer.Deserialize(node: null, jsonTypeInfo));
+                }
+
+                JsonNode node = JsonNode.Parse(json);
+                return Task.FromResult(node.Deserialize<T>(jsonTypeInfo));
+            }
+
+            protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
+            {
+                if (json is null)
+                {
+                    // Emulate a null document for API validation tests.
+                    return Task.FromResult(JsonSerializer.Deserialize(node: null, type));
+                }
+
+                JsonNode node = JsonNode.Parse(json);
+                return Task.FromResult(node.Deserialize(type, context));
             }
         }
     }
