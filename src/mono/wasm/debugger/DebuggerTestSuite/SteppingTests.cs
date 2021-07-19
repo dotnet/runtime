@@ -864,7 +864,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task SimpleStepTest()
+        public async Task SimpleStep_RegressionTest_49141()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 674, 0);
 
@@ -878,13 +878,12 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task StepAndEvaluate()
+        public async Task StepAndEvaluateExpression()
         {
             await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 682, 0);
 
-            string expression = "window.setTimeout(function() { invoke_static_method ('[debugger-test] Foo:RunBart'); }, 1);";
             await EvaluateAndCheck(
-                expression,
+                "window.setTimeout(function() { invoke_static_method ('[debugger-test] Foo:RunBart'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 682, 8,
                 "RunBart");
             var pause_location = await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 671, 4, "Bart");
@@ -910,6 +909,24 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 699, 8, "OtherBar");
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 701, 8, "OtherBar");
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 702, 4, "OtherBar");
+        }
+
+        [Fact]
+        public async Task StepOverWithMoreThanOneCommandInSameLineAsync()
+        {
+            await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 710, 0);
+
+            string expression = "window.setTimeout(function() { invoke_static_method ('[debugger-test] Foo:RunBart'); }, 1);";
+            await EvaluateAndCheck(
+                expression,
+                "dotnet://debugger-test.dll/debugger-test.cs", 710, 8,
+                "MoveNext");
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 711, 8, "MoveNext");
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 713, 8, "MoveNext");
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 716, 8, "MoveNext");
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 718, 8, "MoveNext");
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 719, 8, "MoveNext");
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 720, 4, "MoveNext");
         }
     }
 }

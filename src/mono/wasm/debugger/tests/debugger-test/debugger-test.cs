@@ -681,10 +681,10 @@ public class Foo
     {
         Foo foo = new Foo();
         foo.Bart();
-        foo.OtherBar();
-        Console.WriteLine(foo);
+        Console.WriteLine(foo.OtherBar());
+        foo.OtherBarAsync().Wait(10);
     }
-    public void OtherBar()
+    public bool OtherBar()
     {
         var a = 1;
         var b = 2;
@@ -699,7 +699,31 @@ public class Foo
                 x.Contains('S');
         var g = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts3) &&
                 x.Contains('S');
-        Console.WriteLine(d);
+        return d && e == true;
+    }
+    public async System.Threading.Tasks.Task OtherBarAsync()
+    {
+        var a = 1;
+        var b = 2;
+        var x = "Stew";
+        var y = "00.123";
+        var c = a + b == 3 || b + a == 2;
+        var d = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts) && await AsyncMethod();
+        var e = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts1)
+                && await AsyncMethod();
+        var f = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts2)
+                &&
+                await AsyncMethod();
+        var g = await AsyncMethod() &&
+                await AsyncMethod();
+        Console.WriteLine(g);
+        await System.Threading.Tasks.Task.CompletedTask;
+    }
+    public async System.Threading.Tasks.Task<bool> AsyncMethod()
+    {
+        await System.Threading.Tasks.Task.Delay(1);
+        Console.WriteLine($"time for await");
+        return true;
     }
 }
 
