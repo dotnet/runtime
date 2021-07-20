@@ -45566,6 +45566,44 @@ bool GCHeap::IsConcurrentGCEnabled()
 #endif //BACKGROUND_GC
 }
 
+#ifdef MULTIPLE_HEAPS
+int gc_heap_field_offsets[] = {
+    offsetof(gc_heap, alloc_allocated),                              // 0
+    offsetof(gc_heap, ephemeral_heap_segment),                       // 1
+    offsetof(gc_heap, finalize_queue),                               // 2
+    offsetof(gc_heap, oom_info),                                     // 3
+    offsetof(gc_heap, interesting_data_per_heap),                    // 4
+    offsetof(gc_heap, compact_reasons_per_heap),                     // 5
+    offsetof(gc_heap, expand_mechanisms_per_heap),                   // 6
+    offsetof(gc_heap, interesting_mechanism_bits_per_heap),          // 7
+    offsetof(gc_heap, internal_root_array),                          // 8
+    offsetof(gc_heap, internal_root_array_index),                    // 9
+    offsetof(gc_heap, heap_analyze_success),                         // 10
+    offsetof(gc_heap, card_table),                                   // 11
+#ifdef BACKGROUND_GC
+    offsetof(gc_heap, mark_array),                                   // 12
+    offsetof(gc_heap, next_sweep_obj),                               // 13
+    offsetof(gc_heap, background_saved_lowest_address),              // 14
+    offsetof(gc_heap, background_saved_highest_address),             // 15
+#ifndef USE_REGIONS
+    offsetof(gc_heap, saved_sweep_ephemeral_seg),                    // 16
+    offsetof(gc_heap, saved_sweep_ephemeral_start),                  // 17
+#else
+    -1,                                                              // 16
+    -1,                                                              // 17
+#endif //!USE_REGIONS
+#else
+    -1,                                                              // 12
+    -1,                                                              // 13
+    -1,                                                              // 14
+    -1,                                                              // 15
+    -1,                                                              // 16
+    -1,                                                              // 17
+#endif //BACKGROUND_GC
+    offsetof(gc_heap, generation_table)                              // 18
+};
+#endif //MULTIPLE_HEAPS
+
 void PopulateDacVars(GcDacVars *gcDacVars)
 {
 #ifndef DACCESS_COMPILE
@@ -45582,10 +45620,10 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->generation_size = sizeof(generation);
     gcDacVars->total_generation_count = total_generation_count;
     gcDacVars->max_gen = &g_max_generation;
+    gcDacVars->current_c_gc_state = const_cast<c_gc_state*>(&gc_heap::current_c_gc_state);
 #ifndef MULTIPLE_HEAPS
     gcDacVars->mark_array = &gc_heap::mark_array;
     gcDacVars->ephemeral_heap_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::ephemeral_heap_segment);
-    gcDacVars->current_c_gc_state = const_cast<c_gc_state*>(&gc_heap::current_c_gc_state);
 #ifdef USE_REGIONS
     gcDacVars->saved_sweep_ephemeral_seg = 0;
     gcDacVars->saved_sweep_ephemeral_start = 0;
@@ -45615,6 +45653,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #else
     gcDacVars->n_heaps = &gc_heap::n_heaps;
     gcDacVars->g_heaps = reinterpret_cast<dac_gc_heap***>(&gc_heap::g_heaps);
+    gcDacVars->gc_heap_field_offsets = reinterpret_cast<int**>(&gc_heap_field_offsets);
 #endif // MULTIPLE_HEAPS
 #else
     UNREFERENCED_PARAMETER(gcDacVars);
