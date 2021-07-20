@@ -188,53 +188,34 @@ namespace System.Net.Security
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
         //
-        private Task? ProcessAuthentication(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
+        private Task ProcessAuthenticationAsync(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
         {
             ThrowIfExceptional();
 
             if (NetSecurityTelemetry.Log.IsEnabled())
             {
-                ValueTask task = ProcessAuthenticationWithTelemetryAsync(isAsync, isApm, cancellationToken);
-                if (isAsync)
-                {
-                    return task.AsTask();
-                }
-                else
-                {
-                    Debug.Assert(task.IsCompleted);
-                    task.GetAwaiter().GetResult();
-                    return null;
-                }
+                return ProcessAuthenticationWithTelemetryAsync(isAsync, isApm, cancellationToken);
             }
             else
             {
-                if (isAsync)
-                {
-                    return ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), _context!.IsServer, null, isApm);
-                }
-                else
-                {
-                    ForceAuthenticationAsync(new SyncReadWriteAdapter(InnerStream), _context!.IsServer, null).GetAwaiter().GetResult();
-                    return null;
-                }
+                return isAsync ?
+                    ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), _context!.IsServer, null, isApm) :
+                    ForceAuthenticationAsync(new SyncReadWriteAdapter(InnerStream), _context!.IsServer, null);
             }
         }
 
-        private async ValueTask ProcessAuthenticationWithTelemetryAsync(bool isAsync, bool isApm, CancellationToken cancellationToken)
+        private async Task ProcessAuthenticationWithTelemetryAsync(bool isAsync, bool isApm, CancellationToken cancellationToken)
         {
             NetSecurityTelemetry.Log.HandshakeStart(_context!.IsServer, _sslAuthenticationOptions!.TargetHost);
             ValueStopwatch stopwatch = ValueStopwatch.StartNew();
 
             try
             {
-                if (isAsync)
-                {
-                    await ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), _context.IsServer, null, isApm).ConfigureAwait(false);
-                }
-                else
-                {
-                    ForceAuthenticationAsync(new SyncReadWriteAdapter(InnerStream), _context!.IsServer, null).GetAwaiter().GetResult();
-                }
+                Task task = isAsync?
+                    ForceAuthenticationAsync(new AsyncReadWriteAdapter(InnerStream, cancellationToken), _context!.IsServer, null, isApm) :
+                    ForceAuthenticationAsync(new SyncReadWriteAdapter(InnerStream), _context!.IsServer, null);
+
+                await task.ConfigureAwait(false);
 
                 // SslStream could already have been disposed at this point, in which case _connectionOpenedStatus == 2
                 // Make sure that we increment the open connection counter only if it is guaranteed to be decremented in dispose/finalize
