@@ -400,7 +400,7 @@ HRESULT ManagedObjectWrapper::Create(
         curr.Vtable = &ManagedObjectWrapper_IReferenceTrackerTargetImpl;
     }
     
-    _ASSERTE(runtimeDefinedCount <= ARRAYSIZE(runtimeDefinedLocal));
+    _ASSERTE(runtimeDefinedCount <= (int) ARRAYSIZE(runtimeDefinedLocal));
 
     // Compute size for ManagedObjectWrapper instance.
     const size_t totalRuntimeDefinedSize = runtimeDefinedCount * sizeof(ABI::ComInterfaceEntry);
