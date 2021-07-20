@@ -134,16 +134,16 @@ public:
 };
 
 template <typename LambdaTry, typename LambdaFinally>
-void RunWithErrorExceptionCodeCaptureAndContinue(LambdaTry &function, LambdaFinally &finally)
+void RunWithErrorExceptionCodeCaptureAndContinue(LambdaTry function, LambdaFinally finally)
 {
     struct LambdaArguments
     {
-        LambdaExecutor<typename LambdaTry> *pTryLambda;
-        LambdaExecutor<typename LambdaFinally> *pFinallyLambda;
+        LambdaExecutor<LambdaTry> *pTryLambda;
+        LambdaExecutor<LambdaFinally> *pFinallyLambda;
     } lambdaArgs;
 
-    LambdaExecutor<typename LambdaTry> tryStorage(function);
-    LambdaExecutor<typename LambdaFinally> finallyStorage(finally);
+    LambdaExecutor<LambdaTry> tryStorage(function);
+    LambdaExecutor<LambdaFinally> finallyStorage(finally);
 
     lambdaArgs.pTryLambda = &tryStorage;
     lambdaArgs.pFinallyLambda = &finallyStorage;
