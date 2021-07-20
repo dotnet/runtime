@@ -62,8 +62,10 @@ mono_debugger_agent_get_sdb_options (void)
 }
 
 void
-mono_debugger_agent_unhandled_exception (MonoObject *e)
+mono_debugger_agent_unhandled_exception (MonoException *e)
 {
-	MONO_EXTERNAL_ONLY_VOID (mono_component_debugger ()->unhandled_exception ((MonoException*)e));
+	MONO_ENTER_GC_UNSAFE;
+	MONO_EXTERNAL_ONLY_VOID (mono_component_debugger ()->unhandled_exception (e));
+	MONO_EXIT_GC_UNSAFE;
 }
 #endif /* DISABLE_SDB */
