@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,11 +14,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Internal;
 
 namespace System.Net.Http
 {
-    internal sealed partial class Http2Connection : HttpConnectionBase, IDisposable
+    internal sealed partial class Http2Connection : HttpConnectionBase
     {
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
@@ -37,35 +35,40 @@ namespace System.Net.Http
         private readonly Dictionary<int, Http2Stream> _httpStreams;
 
         private readonly CreditManager _connectionWindow;
-        private readonly CreditManager _concurrentStreams;
         private RttEstimator _rttEstimator;
 
         private int _nextStream;
         private bool _expectingSettingsAck;
         private int _initialServerStreamWindowSize;
-        private int _maxConcurrentStreams;
         private int _pendingWindowUpdate;
         private long _idleSinceTickCount;
+
+        private uint _maxConcurrentStreams;
+        private uint _streamsInUse;
+        private TaskCompletionSource<bool>? _availableStreamsWaiter;
 
         private readonly Channel<WriteQueueEntry> _writeChannel;
         private bool _lastPendingWriterShouldFlush;
 
-        // This means that the pool has disposed us, but there may still be
-        // requests in flight that will continue to be processed.
-        private bool _disposed;
+        // This flag indicates that the connection is shutting down and cannot accept new requests, because of one of the following conditions:
+        // (1) We received a GOAWAY frame from the server
+        // (2) We have exhaustead StreamIds (i.e. _nextStream == MaxStreamId)
+        // (3) A connection-level error occurred, in which case _abortException below is set.
+        private bool _shutdown;
+        private TaskCompletionSource? _shutdownWaiter;
 
-        // This will be set when:
-        // (1) We receive GOAWAY -- will be set to the value sent in the GOAWAY frame
-        // (2) A connection IO error occurs -- will be set to int.MaxValue
-        //     (meaning we must assume all streams have been processed by the server)
-        private int _lastStreamId = -1;
+        // If this is set, the connection is aborting due to an IO failure (IOException) or a protocol violation (Http2ProtocolException).
+        // _shutdown above is true, and requests in flight have been (or are being) failed.
+        private Exception? _abortException;
+
+        // This means that the user (i.e. the connection pool) has disposed us and will not submit further requests.
+        // Requests currently in flight will continue to be processed.
+        // When all requests have completed, the connection will be torn down.
+        private bool _disposed;
 
         private const int TelemetryStatus_Opened = 1;
         private const int TelemetryStatus_Closed = 2;
         private int _markedByTelemetryStatus;
-
-        // This will be set when a connection IO error occurs
-        private Exception? _abortException;
 
         private const int MaxStreamId = int.MaxValue;
 
@@ -125,6 +128,7 @@ namespace System.Net.Http
         {
             _pool = pool;
             _stream = stream;
+
             _incomingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
             _outgoingBuffer = new ArrayBuffer(InitialConnectionBufferSize);
 
@@ -133,7 +137,6 @@ namespace System.Net.Http
             _httpStreams = new Dictionary<int, Http2Stream>();
 
             _connectionWindow = new CreditManager(this, nameof(_connectionWindow), DefaultInitialWindowSize);
-            _concurrentStreams = new CreditManager(this, nameof(_concurrentStreams), InitialMaxConcurrentStreams);
 
             _rttEstimator = RttEstimator.Create();
 
@@ -143,9 +146,10 @@ namespace System.Net.Http
             _initialServerStreamWindowSize = DefaultInitialWindowSize;
 
             _maxConcurrentStreams = InitialMaxConcurrentStreams;
+            _streamsInUse = 0;
+
             _pendingWindowUpdate = 0;
             _idleSinceTickCount = Environment.TickCount64;
-
 
             _keepAlivePingDelay = TimeSpanToMs(_pool.Settings._keepAlivePingDelay);
             _keepAlivePingTimeout = TimeSpanToMs(_pool.Settings._keepAlivePingTimeout);
@@ -169,8 +173,6 @@ namespace System.Net.Http
         ~Http2Connection() => Dispose();
 
         private object SyncObject => _httpStreams;
-
-        public bool CanAddNewStream => _concurrentStreams.IsCreditAvailable;
 
         public async ValueTask SetupAsync()
         {
@@ -220,6 +222,158 @@ namespace System.Net.Http
 
             _ = ProcessIncomingFramesAsync();
             _ = ProcessOutgoingFramesAsync();
+        }
+
+        // This will complete when the connection begins to shut down and cannot be used anymore, or if it is disposed.
+        public ValueTask WaitForShutdownAsync()
+        {
+            lock (SyncObject)
+            {
+                if (_disposed)
+                {
+                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                    throw new ObjectDisposedException(nameof(Http2Connection));
+                }
+
+                if (_shutdown)
+                {
+                    Debug.Assert(_shutdownWaiter is null);
+                    return default;
+                }
+
+                _shutdownWaiter ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                return new ValueTask(_shutdownWaiter.Task);
+            }
+        }
+
+        private void Shutdown()
+        {
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_shutdown)}={_shutdown}, {nameof(_abortException)}={_abortException}");
+
+            Debug.Assert(Monitor.IsEntered(SyncObject));
+
+            SignalAvailableStreamsWaiter(false);
+            SignalShutdownWaiter();
+
+            // Note _shutdown could already be set, but that's fine.
+            _shutdown = true;
+        }
+
+        private void SignalShutdownWaiter()
+        {
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_shutdownWaiter)}?={_shutdownWaiter is not null}");
+
+            Debug.Assert(Monitor.IsEntered(SyncObject));
+
+            if (_shutdownWaiter is not null)
+            {
+                Debug.Assert(!_disposed);
+                Debug.Assert(!_shutdown);
+                _shutdownWaiter.SetResult();
+                _shutdownWaiter = null;
+            }
+        }
+
+        public bool TryReserveStream()
+        {
+            lock (SyncObject)
+            {
+                if (_disposed)
+                {
+                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                    throw new ObjectDisposedException(nameof(Http2Connection));
+                }
+
+                if (_shutdown)
+                {
+                    return false;
+                }
+
+                if (_streamsInUse < _maxConcurrentStreams)
+                {
+                    _streamsInUse++;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Can be called by the HttpConnectionPool after TryReserveStream if the stream doesn't end up being used.
+        // Otherwise, will be called when the request is complete and stream is closed.
+        public void ReleaseStream()
+        {
+            lock (SyncObject)
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_streamsInUse)}={_streamsInUse}");
+
+                Debug.Assert(_availableStreamsWaiter is null || _streamsInUse >= _maxConcurrentStreams);
+
+                _streamsInUse--;
+
+                Debug.Assert(_streamsInUse >= _httpStreams.Count);
+
+                if (_streamsInUse < _maxConcurrentStreams)
+                {
+                    SignalAvailableStreamsWaiter(true);
+                }
+
+                if (_streamsInUse == 0)
+                {
+                    _idleSinceTickCount = Environment.TickCount64;
+
+                    if (_disposed)
+                    {
+                        FinalTeardown();
+                    }
+                }
+            }
+        }
+
+        // Returns true to indicate at least one stream is available
+        // Returns false to indicate that the connection is shutting down and cannot be used anymore
+        public ValueTask<bool> WaitForAvailableStreamsAsync()
+        {
+            lock (SyncObject)
+            {
+                if (_disposed)
+                {
+                    Debug.Fail("As currently used, we don't expect to call this after disposing and we don't handle the ODE");
+                    throw new ObjectDisposedException(nameof(Http2Connection));
+                }
+
+                Debug.Assert(_availableStreamsWaiter is null, "As used currently, shouldn't already have a waiter");
+
+                if (_shutdown)
+                {
+                    return ValueTask.FromResult(false);
+                }
+
+                if (_streamsInUse < _maxConcurrentStreams)
+                {
+                    return ValueTask.FromResult(true);
+                }
+
+                // Need to wait for streams to become available.
+                _availableStreamsWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                return new ValueTask<bool>(_availableStreamsWaiter.Task);
+            }
+        }
+
+        private void SignalAvailableStreamsWaiter(bool result)
+        {
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(result)}={result}, {nameof(_availableStreamsWaiter)}?={_availableStreamsWaiter is not null}");
+
+            Debug.Assert(Monitor.IsEntered(SyncObject));
+
+            if (_availableStreamsWaiter is not null)
+            {
+                Debug.Assert(!_disposed);
+                Debug.Assert(!_shutdown);
+                _availableStreamsWaiter.SetResult(result);
+                _availableStreamsWaiter = null;
+            }
         }
 
         private async Task FlushOutgoingBytesAsync()
@@ -305,7 +459,6 @@ namespace System.Net.Http
 
             void ThrowMissingFrame() =>
                 throw new IOException(SR.net_http_invalid_response_missing_frame);
-
         }
 
         private async Task ProcessIncomingFramesAsync()
@@ -695,16 +848,18 @@ namespace System.Net.Http
 
         private void ChangeMaxConcurrentStreams(uint newValue)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(newValue)}={newValue}");
+            lock (SyncObject)
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(newValue)}={newValue}, {nameof(_streamsInUse)}={_streamsInUse}, {nameof(_availableStreamsWaiter)}?={_availableStreamsWaiter is not null}");
 
-            // The value is provided as a uint.
-            // Limit this to int.MaxValue since the CreditManager implementation only supports singed values.
-            // In practice, we should never reach this value.
-            int effectiveValue = newValue > (uint)int.MaxValue ? int.MaxValue : (int)newValue;
-            int delta = effectiveValue - _maxConcurrentStreams;
-            _maxConcurrentStreams = effectiveValue;
+                Debug.Assert(_availableStreamsWaiter is null || _streamsInUse >= _maxConcurrentStreams);
 
-            _concurrentStreams.AdjustCredit(delta);
+                _maxConcurrentStreams = newValue;
+                if (_streamsInUse < _maxConcurrentStreams)
+                {
+                    SignalAvailableStreamsWaiter(true);
+                }
+            }
         }
 
         private void ChangeInitialWindowSize(int newSize)
@@ -854,20 +1009,45 @@ namespace System.Net.Http
                 ThrowProtocolError(Http2ProtocolErrorCode.FrameSizeError);
             }
 
-            // GoAway frames always apply to the whole connection, never to a single stream.
-            // According to RFC 7540 section 6.8, this should be a connection error.
             if (frameHeader.StreamId != 0)
             {
                 ThrowProtocolError();
             }
 
-            int lastValidStream = (int)(BinaryPrimitives.ReadUInt32BigEndian(_incomingBuffer.ActiveSpan) & 0x7FFFFFFF);
-            var errorCode = (Http2ProtocolErrorCode)BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan.Slice(sizeof(int)));
-            if (NetEventSource.Log.IsEnabled()) Trace(frameHeader.StreamId, $"{nameof(lastValidStream)}={lastValidStream}, {nameof(errorCode)}={errorCode}");
-
-            StartTerminatingConnection(lastValidStream, new Http2ConnectionException(errorCode));
+            int lastStreamId = (int)(BinaryPrimitives.ReadUInt32BigEndian(_incomingBuffer.ActiveSpan) & 0x7FFFFFFF);
+            Http2ProtocolErrorCode errorCode = (Http2ProtocolErrorCode)BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan.Slice(sizeof(int)));
+            if (NetEventSource.Log.IsEnabled()) Trace(frameHeader.StreamId, $"{nameof(lastStreamId)}={lastStreamId}, {nameof(errorCode)}={errorCode}");
 
             _incomingBuffer.Discard(frameHeader.PayloadLength);
+
+            Debug.Assert(lastStreamId >= 0);
+            Exception resetException = new Http2ConnectionException(errorCode);
+
+            // There is no point sending more PING frames for RTT estimation:
+            _rttEstimator.OnGoAwayReceived();
+
+            List<Http2Stream> streamsToAbort = new List<Http2Stream>();
+            lock (SyncObject)
+            {
+                Shutdown();
+
+                foreach (KeyValuePair<int, Http2Stream> kvp in _httpStreams)
+                {
+                    int streamId = kvp.Key;
+                    Debug.Assert(streamId == kvp.Value.StreamId);
+
+                    if (streamId > lastStreamId)
+                    {
+                        streamsToAbort.Add(kvp.Value);
+                    }
+                }
+            }
+
+            // Avoid calling OnReset under the lock, as it may cause the Http2Stream to call back in to RemoveStream
+            foreach (Http2Stream s in streamsToAbort)
+            {
+                s.OnReset(resetException, canRetry: true);
+            }
         }
 
         internal Task FlushAsync(CancellationToken cancellationToken) =>
@@ -924,8 +1104,16 @@ namespace System.Net.Http
 
             if (!_writeChannel.Writer.TryWrite(writeEntry))
             {
-                Debug.Assert(_abortException is not null);
-                return Task.FromException(GetRequestAbortedException(_abortException));
+                if (_abortException is not null)
+                {
+                    return Task.FromException(GetRequestAbortedException(_abortException));
+                }
+
+                // We must be trying to send something asynchronously (like RST_STREAM or a PING or a SETTINGS ACK) and it has raced with the connection tear down.
+                // As such, it should not matter that we were not able to actually send the frame.
+                // But just in case, throw ObjectDisposedException. Asynchronous callers will ignore the failure.
+                Debug.Assert(_disposed && _streamsInUse == 0);
+                return Task.FromException(new ObjectDisposedException(nameof(Http2Connection)));
             }
 
             return writeEntry.Task;
@@ -994,9 +1182,6 @@ namespace System.Net.Http
                         await FlushOutgoingBytesAsync().ConfigureAwait(false);
                     }
                 }
-
-                // Connection should be aborting at this point.
-                Debug.Assert(_abortException is not null);
             }
             catch (Exception e)
             {
@@ -1297,83 +1482,44 @@ namespace System.Net.Http
             }
         }
 
-        [DoesNotReturn]
-        private void ThrowShutdownException()
+        private void AddStream(Http2Stream http2Stream)
         {
-            Debug.Assert(Monitor.IsEntered(SyncObject));
-
-            if (_abortException != null)
+            lock (SyncObject)
             {
-                // We had an IO failure on the connection. Don't retry in this case.
-                throw new HttpRequestException(SR.net_http_client_execution_error, _abortException);
-            }
+                if (_nextStream == MaxStreamId)
+                {
+                    // We have exhausted StreamIds. Shut down the connection.
+                    Shutdown();
+                }
 
-            // Connection is being gracefully shutdown. Allow the request to be retried.
-            Exception innerException;
-            if (_lastStreamId != -1)
-            {
-                // We must have received a GOAWAY.
-                innerException = new IOException(SR.net_http_server_shutdown);
-            }
-            else
-            {
-                // We must either be disposed or out of stream IDs.
-                Debug.Assert(_disposed || _nextStream == MaxStreamId);
+                if (_shutdown)
+                {
+                    // The connection has shut down. Throw a retryable exception so that this request will be handled on another connection.
+                    ThrowRetry(SR.net_http_server_shutdown);
+                }
 
-                innerException = new ObjectDisposedException(nameof(Http2Connection));
-            }
+                if (_streamsInUse > _maxConcurrentStreams)
+                {
+                    // The server must have sent a downward adjustment to SETTINGS_MAX_CONCURRENT_STREAMS, so our previous stream reservation is no longer valid.
+                    // We might want a better exception message here, but in general the user shouldn't see this anyway since it will be retried.
+                    ThrowRetry(SR.net_http_request_aborted);
+                }
 
-            ThrowRetry(SR.net_http_client_execution_error, innerException);
+                // Now that we're holding the lock, configure the stream.  The lock must be held while
+                // assigning the stream ID to ensure only one stream gets an ID, and it must be held
+                // across setting the initial window size (available credit) and storing the stream into
+                // collection such that window size updates are able to atomically affect all known streams.
+                http2Stream.Initialize(_nextStream, _initialServerStreamWindowSize);
+
+                // Client-initiated streams are always odd-numbered, so increase by 2.
+                _nextStream += 2;
+
+                _httpStreams.Add(http2Stream.StreamId, http2Stream);
+            }
         }
 
         private async ValueTask<Http2Stream> SendHeadersAsync(HttpRequestMessage request, CancellationToken cancellationToken, bool mustFlush)
         {
-            // Enforce MAX_CONCURRENT_STREAMS setting value.  We do this before anything else, e.g. renting buffers to serialize headers,
-            // in order to avoid consuming resources in potentially many requests waiting for access.
-            try
-            {
-                if (!_concurrentStreams.TryRequestCreditNoWait(1))
-                {
-                    if (_pool.EnableMultipleHttp2Connections)
-                    {
-                        throw new HttpRequestException(null, null, RequestRetryType.RetryOnStreamLimitReached);
-                    }
-
-                    if (HttpTelemetry.Log.IsEnabled())
-                    {
-                        // Only log Http20RequestLeftQueue if we spent time waiting on the queue
-                        ValueStopwatch stopwatch = ValueStopwatch.StartNew();
-                        await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
-                        HttpTelemetry.Log.Http20RequestLeftQueue(stopwatch.GetElapsedTime().TotalMilliseconds);
-                    }
-                    else
-                    {
-                        await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
-                    }
-                }
-            }
-            catch (ObjectDisposedException)
-            {
-                // We have race condition between shutting down and initiating new requests.
-                // When we are shutting down the connection (e.g. due to receiving GOAWAY, etc)
-                // we will wait until the stream count goes to 0, and then we will close the connetion
-                // and perform clean up, including disposing _concurrentStreams.
-                // So if we get ObjectDisposedException here, we must have shut down the connection.
-                // Throw a retryable request exception if this is not result of some other error.
-                // This will cause retry logic to kick in and perform another connection attempt.
-                // The user should never see this exception.  See similar handling below.
-                // Throw a retryable request exception if this is not result of some other error.
-                // This will cause retry logic to kick in and perform another connection attempt.
-                // The user should never see this exception.  See also below.
-                lock (SyncObject)
-                {
-                    Debug.Assert(_disposed || _lastStreamId != -1);
-                    Debug.Assert(_httpStreams.Count == 0);
-                    ThrowShutdownException();
-                    throw; // unreachable
-                }
-            }
-
             ArrayBuffer headerBuffer = default;
             try
             {
@@ -1402,32 +1548,7 @@ namespace System.Net.Http
                 {
                     if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.http2Stream.StreamId, $"Started writing. Total header bytes={s.headerBytes.Length}");
 
-                    // Allocate the next available stream ID. Note that if we fail before sending the headers,
-                    // we'll just skip this stream ID, which is fine.
-                    lock (s.thisRef.SyncObject)
-                    {
-                        if (s.thisRef._nextStream == MaxStreamId || s.thisRef._disposed || s.thisRef._lastStreamId != -1)
-                        {
-                            // We ran out of stream IDs or we raced between acquiring the connection from the pool and shutting down.
-                            // Throw a retryable request exception. This will cause retry logic to kick in
-                            // and perform another connection attempt. The user should never see this exception.
-                            s.thisRef.ThrowShutdownException();
-                        }
-
-                        // Now that we're holding the lock, configure the stream.  The lock must be held while
-                        // assigning the stream ID to ensure only one stream gets an ID, and it must be held
-                        // across setting the initial window size (available credit) and storing the stream into
-                        // collection such that window size updates are able to atomically affect all known streams.
-                        s.http2Stream.Initialize(s.thisRef._nextStream, s.thisRef._initialServerStreamWindowSize);
-
-                        // Client-initiated streams are always odd-numbered, so increase by 2.
-                        s.thisRef._nextStream += 2;
-
-                        // We're about to flush the HEADERS frame, so add the stream to the dictionary now.
-                        // The lifetime of the stream is now controlled by the stream itself and the connection.
-                        // This can fail if the connection is shutting down, in which case we will cancel sending this frame.
-                        s.thisRef._httpStreams.Add(s.http2Stream.StreamId, s.http2Stream);
-                    }
+                    s.thisRef.AddStream(s.http2Stream);
 
                     Span<byte> span = writeBuffer.Span;
 
@@ -1466,7 +1587,7 @@ namespace System.Net.Http
             }
             catch
             {
-                _concurrentStreams.AdjustCredit(1);
+                ReleaseStream();
                 throw;
             }
             finally
@@ -1572,94 +1693,33 @@ namespace System.Net.Http
             LogExceptions(SendWindowUpdateAsync(0, windowUpdateSize));
         }
 
+        public override long GetIdleTicks(long nowTicks)
+        {
+            lock (SyncObject)
+            {
+                return _streamsInUse == 0 ? nowTicks - _idleSinceTickCount : 0;
+            }
+        }
+
         /// <summary>Abort all streams and cause further processing to fail.</summary>
         /// <param name="abortException">Exception causing Abort to be called.</param>
         private void Abort(Exception abortException)
         {
-            // The connection has failed, e.g. failed IO or a connection-level frame error.
-            bool alreadyAborting = false;
-            lock (SyncObject)
-            {
-                if (_abortException is null)
-                {
-                    _abortException = abortException;
-                }
-                else
-                {
-                    alreadyAborting = true;
-                }
-            }
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(abortException)}=={abortException}");
 
-            if (alreadyAborting)
-            {
-                if (NetEventSource.Log.IsEnabled()) Trace($"Abort called while already aborting. {nameof(abortException)}=={abortException}");
-
-                return;
-            }
-
-            if (NetEventSource.Log.IsEnabled()) Trace($"Abort initiated. {nameof(abortException)}=={abortException}");
-
-            _writeChannel.Writer.Complete();
-
-            AbortStreams(_abortException);
-        }
-
-        /// <summary>Gets whether the connection exceeded any of the connection limits.</summary>
-        /// <param name="nowTicks">The current tick count.  Passed in to amortize the cost of calling Environment.TickCount64.</param>
-        /// <param name="connectionLifetime">How long a connection can be open to be considered reusable.</param>
-        /// <param name="connectionIdleTimeout">How long a connection can have been idle in the pool to be considered reusable.</param>
-        /// <returns>
-        /// true if we believe the connection is expired; otherwise, false.  There is an inherent race condition here,
-        /// in that the server could terminate the connection or otherwise make it unusable immediately after we check it,
-        /// but there's not much difference between that and starting to use the connection and then having the server
-        /// terminate it, which would be considered a failure, so this race condition is largely benign and inherent to
-        /// the nature of connection pooling.
-        /// </returns>
-        public bool IsExpired(long nowTicks,
-                              TimeSpan connectionLifetime,
-                              TimeSpan connectionIdleTimeout)
-        {
-            if (_disposed)
-            {
-                return true;
-            }
-
-            // Check idle timeout when there are not pending requests for a while.
-            if ((connectionIdleTimeout != Timeout.InfiniteTimeSpan) &&
-                (_httpStreams.Count == 0) &&
-                ((nowTicks - _idleSinceTickCount) > connectionIdleTimeout.TotalMilliseconds))
-            {
-                if (NetEventSource.Log.IsEnabled()) Trace($"HTTP/2 connection no longer usable. Idle {TimeSpan.FromMilliseconds(nowTicks - _idleSinceTickCount)} > {connectionIdleTimeout}.");
-
-                return true;
-            }
-
-            if (LifetimeExpired(nowTicks, connectionLifetime))
-            {
-                if (NetEventSource.Log.IsEnabled()) Trace($"HTTP/2 connection no longer usable. Lifetime {TimeSpan.FromMilliseconds(nowTicks - CreationTickCount)} > {connectionLifetime}.");
-
-                return true;
-            }
-
-            return false;
-        }
-
-        private void AbortStreams(Exception abortException)
-        {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(abortException)}={abortException}");
-
-            // Invalidate outside of lock to avoid race with HttpPool Dispose()
-            // We should not try to grab pool lock while holding connection lock as on disposing pool,
-            // we could hold pool lock while trying to grab connection lock in Dispose().
-            _pool.InvalidateHttp2Connection(this);
-
+            // The connection has failed, e.g. failed IO or a connection-level protocol error.
             List<Http2Stream> streamsToAbort = new List<Http2Stream>();
-
             lock (SyncObject)
             {
-                // Set _lastStreamId to int.MaxValue to indicate that we are shutting down
-                // and we must assume all active streams have been processed by the server
-                _lastStreamId = int.MaxValue;
+                if (_abortException is not null)
+                {
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Abort called while already aborting. {nameof(abortException)}={abortException}");
+                    return;
+                }
+
+                _abortException = abortException;
+
+                Shutdown();
 
                 foreach (KeyValuePair<int, Http2Stream> kvp in _httpStreams)
                 {
@@ -1668,91 +1728,28 @@ namespace System.Net.Http
 
                     streamsToAbort.Add(kvp.Value);
                 }
-
-                CheckForShutdown();
             }
 
-            // Avoid calling OnAbort under the lock, as it may cause the Http2Stream
-            // to call back in to RemoveStream
+            // Avoid calling OnReset under the lock, as it may cause the Http2Stream to call back in to RemoveStream
             foreach (Http2Stream s in streamsToAbort)
             {
-                s.OnReset(abortException);
+                s.OnReset(_abortException);
             }
         }
 
-        private void StartTerminatingConnection(int lastValidStream, Exception abortException)
+        private void FinalTeardown()
         {
-            Debug.Assert(lastValidStream >= 0);
+            if (NetEventSource.Log.IsEnabled()) Trace("");
 
-            // Invalidate outside of lock to avoid race with HttpPool Dispose()
-            // We should not try to grab pool lock while holding connection lock as on disposing pool,
-            // we could hold pool lock while trying to grab connection lock in Dispose().
-            _pool.InvalidateHttp2Connection(this);
-
-            // There is no point sending more PING frames for RTT estimation:
-            _rttEstimator.OnGoAwayReceived();
-
-            List<Http2Stream> streamsToAbort = new List<Http2Stream>();
-
-            lock (SyncObject)
-            {
-                if (_lastStreamId == -1)
-                {
-                    _lastStreamId = lastValidStream;
-                }
-                else
-                {
-                    // We have already received GOAWAY before
-                    // In this case the smaller valid stream is used
-                    _lastStreamId = Math.Min(_lastStreamId, lastValidStream);
-                }
-
-                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(lastValidStream)}={lastValidStream}, {nameof(_lastStreamId)}={_lastStreamId}");
-
-                foreach (KeyValuePair<int, Http2Stream> kvp in _httpStreams)
-                {
-                    int streamId = kvp.Key;
-                    Debug.Assert(streamId == kvp.Value.StreamId);
-
-                    if (streamId > _lastStreamId)
-                    {
-                        streamsToAbort.Add(kvp.Value);
-                    }
-                    else
-                    {
-                        if (NetEventSource.Log.IsEnabled()) Trace($"Found {nameof(streamId)} {streamId} <= {_lastStreamId}.");
-                    }
-                }
-
-                CheckForShutdown();
-            }
-
-            // Avoid calling OnAbort under the lock, as it may cause the Http2Stream
-            // to call back in to RemoveStream
-            foreach (Http2Stream s in streamsToAbort)
-            {
-                s.OnReset(abortException, canRetry: true);
-            }
-        }
-
-        private void CheckForShutdown()
-        {
-            Debug.Assert(_disposed || _lastStreamId != -1);
-            Debug.Assert(Monitor.IsEntered(SyncObject));
-
-            // Check if dictionary has become empty
-            if (_httpStreams.Count != 0)
-            {
-                return;
-            }
+            Debug.Assert(_disposed);
+            Debug.Assert(_streamsInUse == 0);
 
             GC.SuppressFinalize(this);
 
-            // Do shutdown.
             _stream.Dispose();
 
             _connectionWindow.Dispose();
-            _concurrentStreams.Dispose();
+            _writeChannel.Writer.Complete();
 
             if (HttpTelemetry.Log.IsEnabled())
             {
@@ -1763,15 +1760,23 @@ namespace System.Net.Http
             }
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             lock (SyncObject)
             {
+                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_disposed)}={_disposed}, {nameof(_streamsInUse)}={_streamsInUse}");
+
                 if (!_disposed)
                 {
+                    SignalAvailableStreamsWaiter(false);
+                    SignalShutdownWaiter();
+
                     _disposed = true;
 
-                    CheckForShutdown();
+                    if (_streamsInUse == 0)
+                    {
+                        FinalTeardown();
+                    }
                 }
             }
         }
@@ -1885,7 +1890,7 @@ namespace System.Net.Http
 
         // Note that this is safe to be called concurrently by multiple threads.
 
-        public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(async);
             if (NetEventSource.Log.IsEnabled()) Trace($"{request}");
@@ -1969,7 +1974,6 @@ namespace System.Net.Http
         private void RemoveStream(Http2Stream http2Stream)
         {
             if (NetEventSource.Log.IsEnabled()) Trace(http2Stream.StreamId, "");
-            Debug.Assert(http2Stream != null);
 
             lock (SyncObject)
             {
@@ -1978,20 +1982,9 @@ namespace System.Net.Http
                     Debug.Fail($"Stream {http2Stream.StreamId} not found in dictionary during RemoveStream???");
                     return;
                 }
-
-                if (_httpStreams.Count == 0)
-                {
-                    // If this was last pending request, get timestamp so we can monitor idle time.
-                    _idleSinceTickCount = Environment.TickCount64;
-
-                    if (_disposed || _lastStreamId != -1)
-                    {
-                        CheckForShutdown();
-                    }
-                }
             }
 
-            _concurrentStreams.AdjustCredit(1);
+            ReleaseStream();
         }
 
         private void RefreshPingTimestamp()
@@ -2023,7 +2016,10 @@ namespace System.Net.Http
             {
                 lock (SyncObject)
                 {
-                    if (_httpStreams.Count == 0) return;
+                    if (_streamsInUse == 0)
+                    {
+                        return;
+                    }
                 }
             }
 
@@ -2067,7 +2063,7 @@ namespace System.Net.Http
                 message);                     // message
 
         [DoesNotReturn]
-        private static void ThrowRetry(string message, Exception innerException) =>
+        private static void ThrowRetry(string message, Exception? innerException = null) =>
             throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>

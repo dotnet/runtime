@@ -8,6 +8,7 @@ ThreadInfo::ThreadInfo(CrashInfo& crashInfo, pid_t tid, mach_port_t port) :
     m_tid(tid),
     m_managed(false),
     m_exceptionObject(0),
+    m_exceptionHResult(0),
     m_port(port)
 {
 }

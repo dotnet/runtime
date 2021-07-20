@@ -610,6 +610,7 @@ struct InlArgInfo
     unsigned argHasStargOp : 1;           // Is there STARG(s) operation on this argument?
     unsigned argIsByRefToStructLocal : 1; // Is this arg an address of a struct local or a normed struct local or a
                                           // field in them?
+    unsigned argIsExact : 1;              // Is this arg of an exact class?
 };
 
 // InlLclVarInfo describes inline candidate argument and local variable properties.

@@ -51,20 +51,19 @@ CrashReportWriter::WriteCrashReport(const std::string& dumpFileName)
     }
 }
 
-#ifdef __APPLE__
-
 void
 CrashReportWriter::WriteCrashReport()
 {
-    const char* exceptionType = nullptr;
     OpenObject("payload");
-    WriteValue("protocol_version", "0.0.7");
+    WriteValue("protocol_version", "1.0.0");
 
     OpenObject("configuration");
 #if defined(__x86_64__)
     WriteValue("architecture", "amd64");
 #elif defined(__aarch64__)
     WriteValue("architecture", "arm64");
+#elif defined(__arm__)
+    WriteValue("architecture", "arm");
 #endif
     std::string version;
     assert(strncmp(sccsid, "@(#)Version ", 12) == 0);
@@ -73,6 +72,13 @@ CrashReportWriter::WriteCrashReport()
     WriteValue("version", version.c_str());
     CloseObject();                  // configuration
 
+    // The main module was saved away in the crash info 
+    if (m_crashInfo.MainModule()->BaseAddress() != 0)
+    {
+        WriteValue("process_name", GetFileName(m_crashInfo.MainModule()->ModuleName()).c_str());
+    }
+
+    const char* exceptionType = nullptr;
     OpenArray("threads");
     for (const ThreadInfo* thread : m_crashInfo.Threads())
     {
@@ -131,6 +137,10 @@ CrashReportWriter::WriteCrashReport()
         {
             WriteValue("managed_exception_type", thread->ManagedExceptionType().c_str());
         }
+        if (thread->ManagedExceptionHResult() != 0)
+        {
+            WriteValue32("managed_exception_hresult", thread->ManagedExceptionHResult());
+        }
         WriteValue64("native_thread_id", thread->Tid());
         OpenObject("ctx");
         WriteValue64("IP", thread->GetInstructionPointer());
@@ -148,7 +158,7 @@ CrashReportWriter::WriteCrashReport()
     }
     CloseArray();               // threads
     CloseObject();              // payload
-
+#ifdef __APPLE__
     OpenObject("parameters");
     if (exceptionType != nullptr)
     {
@@ -158,43 +168,10 @@ CrashReportWriter::WriteCrashReport()
     WriteSysctl("hw.model", "SystemModel");
     WriteValue("SystemManufacturer", "apple");
     CloseObject();              // parameters
+#endif // __APPLE__
 }
 
-void
-CrashReportWriter::WriteStackFrame(const StackFrame& frame)
-{ 
-    OpenObject();
-    WriteValueBool("is_managed", frame.IsManaged());
-    WriteValue64("module_address", frame.ModuleAddress());
-    WriteValue64("stack_pointer", frame.StackPointer());
-    WriteValue64("native_address", frame.ReturnAddress());
-    WriteValue64("native_offset", frame.NativeOffset());
-    if (frame.IsManaged())
-    {
-        WriteValue32("token", frame.Token());
-        WriteValue32("il_offset", frame.ILOffset());
-    }
-    if (frame.ModuleAddress() != 0)
-    {
-        const ModuleInfo* moduleInfo = m_crashInfo.GetModuleInfoFromBaseAddress(frame.ModuleAddress());
-        if (moduleInfo != nullptr)
-        {
-            std::string moduleName = GetFileName(moduleInfo->ModuleName());
-            if (frame.IsManaged())
-            {
-                WriteValue32("timestamp", moduleInfo->TimeStamp());
-                WriteValue32("sizeofimage", moduleInfo->ImageSize());
-                WriteValue("filename", moduleName.c_str());
-                WriteValue("guid", FormatGuid(moduleInfo->Mvid()).c_str());
-            }
-            else
-            {
-                WriteValue("native_module", moduleName.c_str());
-            }
-        }
-    }
-    CloseObject();
-}
+#ifdef __APPLE__
 
 void
 CrashReportWriter::WriteSysctl(const char* sysctlname, const char* valueName)
@@ -218,16 +195,62 @@ CrashReportWriter::WriteSysctl(const char* sysctlname, const char* valueName)
     }
 }
 
-#else // __APPLE__
-
-void
-CrashReportWriter::WriteCrashReport()
-{
-}
-
 #endif // __APPLE__
 
-bool CrashReportWriter::OpenWriter(const char* fileName)
+void
+CrashReportWriter::WriteStackFrame(const StackFrame& frame)
+{ 
+    OpenObject();
+    WriteValueBool("is_managed", frame.IsManaged());
+    WriteValue64("module_address", frame.ModuleAddress());
+    WriteValue64("stack_pointer", frame.StackPointer());
+    WriteValue64("native_address", frame.InstructionPointer());
+    WriteValue64("native_offset", frame.NativeOffset());
+    if (frame.IsManaged())
+    {
+        WriteValue32("token", frame.Token());
+        WriteValue32("il_offset", frame.ILOffset());
+    }
+    IXCLRDataMethodInstance* pMethod = frame.GetMethod();
+    if (pMethod != nullptr)
+    {
+        ArrayHolder<WCHAR> wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
+        if (SUCCEEDED(pMethod->GetName(0, MAX_LONGPATH, nullptr, wszUnicodeName)))
+        {
+            std::string methodName = FormatString("%S", wszUnicodeName.GetPtr());
+            WriteValue("method_name", methodName.c_str());
+        }
+    }
+    if (frame.ModuleAddress() != 0)
+    {
+        ModuleInfo* moduleInfo = m_crashInfo.GetModuleInfoFromBaseAddress(frame.ModuleAddress());
+        if (moduleInfo != nullptr)
+        {
+            std::string moduleName = GetFileName(moduleInfo->ModuleName());
+            if (frame.IsManaged())
+            {
+                WriteValue32("timestamp", moduleInfo->TimeStamp());
+                WriteValue32("sizeofimage", moduleInfo->ImageSize());
+                WriteValue("filename", moduleName.c_str());
+                WriteValue("guid", FormatGuid(moduleInfo->Mvid()).c_str());
+            }
+            else
+            {
+                const char* symbol = moduleInfo->GetSymbolName(frame.InstructionPointer());
+                if (symbol != nullptr)
+                {
+                    WriteValue("unmanaged_name", symbol);
+                    free((void*)symbol);
+                }
+                WriteValue("native_module", moduleName.c_str());
+            }
+        }
+    }
+    CloseObject();
+}
+
+bool
+CrashReportWriter::OpenWriter(const char* fileName)
 {
     m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, 0664);
     if (m_fd == -1)
@@ -239,13 +262,15 @@ bool CrashReportWriter::OpenWriter(const char* fileName)
     return true;
 }
 
-void CrashReportWriter::CloseWriter()
+void
+CrashReportWriter::CloseWriter()
 {
     assert(m_indent == JSON_INDENT_VALUE);
     Write("\n}\n");
 }
 
-void CrashReportWriter::Write(const std::string& text)
+void
+CrashReportWriter::Write(const std::string& text)
 {
     if (!DumpWriter::WriteData(m_fd, (void*)text.c_str(), text.length()))
     {
@@ -253,19 +278,22 @@ void CrashReportWriter::Write(const std::string& text)
     }
 }
 
-void CrashReportWriter::Write(const char* buffer)
+void
+CrashReportWriter::Write(const char* buffer)
 {
     std::string text(buffer);
     Write(text);
 }
 
-void CrashReportWriter::Indent(std::string& text)
+void
+CrashReportWriter::Indent(std::string& text)
 {
     assert(m_indent >= 0);
     text.append(m_indent, ' ');
 }
 
-void CrashReportWriter::WriteSeperator(std::string& text)
+void
+CrashReportWriter::WriteSeperator(std::string& text)
 {
     if (m_comma)
     {
@@ -275,7 +303,8 @@ void CrashReportWriter::WriteSeperator(std::string& text)
     Indent(text);
 }
 
-void CrashReportWriter::OpenValue(const char* key, char marker)
+void
+CrashReportWriter::OpenValue(const char* key, char marker)
 {
     std::string text;
     WriteSeperator(text);
@@ -292,7 +321,8 @@ void CrashReportWriter::OpenValue(const char* key, char marker)
     Write(text);
 }
 
-void CrashReportWriter::CloseValue(char marker)
+void
+CrashReportWriter::CloseValue(char marker)
 {
     std::string text;
     text.append(1, '\n');
@@ -304,7 +334,8 @@ void CrashReportWriter::CloseValue(char marker)
     Write(text);
 }
 
-void CrashReportWriter::WriteValue(const char* key, const char* value)
+void
+CrashReportWriter::WriteValue(const char* key, const char* value)
 {
     std::string text;
     WriteSeperator(text);
@@ -317,41 +348,48 @@ void CrashReportWriter::WriteValue(const char* key, const char* value)
     Write(text);
 }
 
-void CrashReportWriter::WriteValueBool(const char* key, bool value)
+void
+CrashReportWriter::WriteValueBool(const char* key, bool value)
 {
     WriteValue(key, value ? "true" : "false");
 }
 
-void CrashReportWriter::WriteValue32(const char* key, uint32_t value)
+void
+CrashReportWriter::WriteValue32(const char* key, uint32_t value)
 {
     char buffer[16];
     snprintf(buffer, sizeof(buffer), "0x%x", value);
     WriteValue(key, buffer);
 }
 
-void CrashReportWriter::WriteValue64(const char* key, uint64_t value)
+void
+CrashReportWriter::WriteValue64(const char* key, uint64_t value)
 {
     char buffer[32];
     snprintf(buffer, sizeof(buffer), "0x%" PRIx64, value);
     WriteValue(key, buffer);
 }
 
-void CrashReportWriter::OpenObject(const char* key)
+void
+CrashReportWriter::OpenObject(const char* key)
 {
     OpenValue(key, '{');
 }
 
-void CrashReportWriter::CloseObject()
+void
+CrashReportWriter::CloseObject()
 {
     CloseValue('}');
 }
 
-void CrashReportWriter::OpenArray(const char* key)
+void
+CrashReportWriter::OpenArray(const char* key)
 {
     OpenValue(key, '[');
 }
 
-void CrashReportWriter::CloseArray()
+void
+CrashReportWriter::CloseArray()
 {
     CloseValue(']');
 }

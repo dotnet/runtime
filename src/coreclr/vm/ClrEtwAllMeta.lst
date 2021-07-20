@@ -134,9 +134,9 @@ nomac:GarbageCollection:::GCJoin_V2
 
 nostack:Type:::BulkType
 
-###################
-# Threadpool events
-###################
+#################################
+# Threading and Threadpool events
+#################################
 nomac:WorkerThreadCreation:::WorkerThreadCreate
 noclrinstanceid:WorkerThreadCreation:::WorkerThreadCreate
 nomac:WorkerThreadCreation:::WorkerThreadTerminate
@@ -170,6 +170,8 @@ nomac:ThreadPoolWorkerThreadAdjustment:::ThreadPoolWorkerThreadAdjustmentSample
 nostack:ThreadPoolWorkerThreadAdjustment:::ThreadPoolWorkerThreadAdjustmentSample
 nomac:ThreadPoolWorkerThreadAdjustment:::ThreadPoolWorkerThreadAdjustmentAdjustment
 nostack:ThreadPoolWorkerThreadAdjustment:::ThreadPoolWorkerThreadAdjustmentAdjustment
+nomac:YieldProcessorMeasurement:::YieldProcessorMeasurement
+nostack:YieldProcessorMeasurement:::YieldProcessorMeasurement
 
 ##################
 # Exception events

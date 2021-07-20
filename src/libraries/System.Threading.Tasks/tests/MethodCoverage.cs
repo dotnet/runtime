@@ -189,6 +189,20 @@ namespace TaskCoverage
         }
 
         [Fact]
+        public static void Task_WhenAny_NoTasks_Throws()
+        {
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(new Task[0]); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(new List<Task>()); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(EmptyIterator<Task>()); });
+
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(new Task<int>[0]); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(new List<Task<int>>()); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(EmptyIterator<Task<int>>()); });
+
+            static IEnumerable<T> EmptyIterator<T>() { yield break; }
+        }
+
+        [Fact]
         public static async Task Task_WhenAny_TwoTasks_OnePreCompleted()
         {
             Task<int> t1 = Task.FromResult(1);

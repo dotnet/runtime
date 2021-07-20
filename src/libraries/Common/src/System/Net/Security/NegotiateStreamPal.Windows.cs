@@ -212,7 +212,7 @@ namespace System.Net.Security
             // throw if error
             if (errorCode != 0)
             {
-                NetEventSource.Info($"VerifySignature threw error: {errorCode.ToString("x", NumberFormatInfo.InvariantInfo)}");
+                NetEventSource.Info($"VerifySignature threw error: {errorCode:x}");
                 throw new Win32Exception(errorCode);
             }
 
@@ -256,7 +256,7 @@ namespace System.Net.Security
             // throw if error
             if (errorCode != 0)
             {
-                NetEventSource.Info($"MakeSignature threw error: {errorCode.ToString("x", NumberFormatInfo.InvariantInfo)}");
+                NetEventSource.Info($"MakeSignature threw error: {errorCode:x}");
                 throw new Win32Exception(errorCode);
             }
 

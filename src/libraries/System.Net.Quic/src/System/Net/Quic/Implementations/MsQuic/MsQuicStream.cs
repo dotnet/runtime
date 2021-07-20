@@ -18,6 +18,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Delegate that wraps the static function that will be called when receiving an event.
         internal static readonly StreamCallbackDelegate s_streamDelegate = new StreamCallbackDelegate(NativeCallbackHandler);
 
+        // The state is passed to msquic and then it's passed back by msquic to the callback handler.
         private readonly State _state = new State();
 
         private readonly bool _canRead;
@@ -31,15 +32,29 @@ namespace System.Net.Quic.Implementations.MsQuic
         private sealed class State
         {
             public SafeMsQuicStreamHandle Handle = null!; // set in ctor.
+            // Roots the state in GC and it won't get collected while this exist.
+            // It must be kept alive until we receive SHUTDOWN_COMPLETE event
             public GCHandle StateGCHandle;
+
+            public MsQuicStream? Stream; // roots the stream in the pinned state to prevent GC during an async read I/O.
             public MsQuicConnection.State ConnectionState = null!; // set in ctor.
+            public string TraceId = null!; // set in ctor.
 
             public ReadState ReadState;
-            public long ReadErrorCode = -1;
-            public readonly List<QuicBuffer> ReceiveQuicBuffers = new List<QuicBuffer>();
 
+            // set when ReadState.Aborted:
+            public long ReadErrorCode = -1;
+
+            // filled when ReadState.BuffersAvailable:
+            public QuicBuffer[] ReceiveQuicBuffers = Array.Empty<QuicBuffer>();
+            public int ReceiveQuicBuffersCount;
+            public int ReceiveQuicBuffersTotalBytes;
+
+            // set when ReadState.PendingRead:
+            public Memory<byte> ReceiveUserBuffer;
+            public CancellationTokenRegistration ReceiveCancellationRegistration;
             // Resettable completions to be used for multiple calls to receive.
-            public readonly ResettableCompletionSource<uint> ReceiveResettableCompletionSource = new ResettableCompletionSource<uint>();
+            public readonly ResettableCompletionSource<int> ReceiveResettableCompletionSource = new ResettableCompletionSource<int>();
 
             public SendState SendState;
             public long SendErrorCode = -1;
@@ -59,6 +74,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             public readonly TaskCompletionSource ShutdownWriteCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             public ShutdownState ShutdownState;
+            // The value makes sure that we release the handles only once.
             public int ShutdownDone;
 
             // Set once stream have been shutdown.
@@ -66,7 +82,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public void Cleanup()
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{TraceId()} releasing handles.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{TraceId} releasing handles.");
 
                 ShutdownState = ShutdownState.Finished;
                 CleanupSendState(this);
@@ -76,14 +92,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (StateGCHandle.IsAllocated) StateGCHandle.Free();
                 ConnectionState?.RemoveStream(null);
             }
-
-            internal string TraceId()
-            {
-                return $"[MsQuicStream#{this.GetHashCode()}/{Handle?.DangerousGetHandle():x}]";
-            }
         }
 
-        internal string TraceId() => _state.TraceId();
+        internal string TraceId() => _state.TraceId;
 
         // inbound.
         internal MsQuicStream(MsQuicConnection.State connectionState, SafeMsQuicStreamHandle streamHandle, QUIC_STREAM_OPEN_FLAGS flags)
@@ -118,12 +129,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _state.ConnectionState = connectionState;
 
+            _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(
                     _state,
-                    $"{TraceId()} inbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
-                        $"in {_state.ConnectionState.TraceId()}.");
+                    $"{TraceId()} Inbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
+                        $"in connection {_state.ConnectionState.TraceId}.");
             }
         }
 
@@ -171,12 +183,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _state.ConnectionState = connectionState;
 
+            _state.TraceId = MsQuicTraceHelper.GetTraceId(_state.Handle);
             if (NetEventSource.Log.IsEnabled())
             {
                 NetEventSource.Info(
                     _state,
-                    $"{TraceId()} outbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
-                        $"in {_state.ConnectionState.TraceId()}.");
+                    $"{_state.TraceId} Outbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
+                        $"in connection {_state.ConnectionState.TraceId}.");
             }
         }
 
@@ -342,7 +355,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+        internal override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
@@ -351,109 +364,161 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new InvalidOperationException(SR.net_quic_reading_notallowed);
             }
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                lock (_state)
-                {
-                    if (_state.ReadState == ReadState.None)
-                    {
-                        _state.ReadState = ReadState.Aborted;
-                    }
-                }
-
-                throw new OperationCanceledException(cancellationToken);
-            }
-
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(_state, $"[Stream#{_state.GetHashCode()}] reading into Memory of '{destination.Length}' bytes.");
+                NetEventSource.Info(_state, $"{TraceId()} Stream reading into Memory of '{destination.Length}' bytes.");
             }
+
+            ReadState initialReadState;  // value before transitions
+            long abortError;
+            bool preCanceled = false;
 
             lock (_state)
             {
-                if (_state.ReadState == ReadState.ReadsCompleted)
-                {
-                    return 0;
-                }
-                else if (_state.ReadState == ReadState.Aborted)
-                {
-                    throw ThrowHelper.GetStreamAbortedException(_state.ReadErrorCode);
-                }
-                else if (_state.ReadState == ReadState.ConnectionClosed)
-                {
-                    throw GetConnectionAbortedException(_state);
-                }
-            }
+                initialReadState = _state.ReadState;
+                abortError = _state.ReadErrorCode;
 
-            using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
-            {
-                var state = (State)s!;
-                bool shouldComplete = false;
-                lock (state)
+                // Failure scenario: pre-canceled token. Transition: any -> Aborted
+                // PendingRead state indicates there is another concurrent read operation in flight
+                // which is forbidden, so it is handled separately
+                if (initialReadState != ReadState.PendingRead && cancellationToken.IsCancellationRequested)
                 {
-                    if (state.ReadState == ReadState.None)
+                    initialReadState = ReadState.Aborted;
+                    _state.ReadState = ReadState.Aborted;
+                    preCanceled = true;
+                }
+
+                // Success scenario: EOS already reached, completing synchronously. No transition (final state)
+                if (initialReadState == ReadState.ReadsCompleted)
+                {
+                    return new ValueTask<int>(0);
+                }
+
+                // Success scenario: no data available yet, will return a task to wait on. Transition None->PendingRead
+                if (initialReadState == ReadState.None)
+                {
+                    Debug.Assert(_state.Stream is null);
+
+                    _state.ReceiveUserBuffer = destination;
+                    _state.Stream = this;
+                    _state.ReadState = ReadState.PendingRead;
+
+                    if (cancellationToken.CanBeCanceled)
                     {
-                        shouldComplete = true;
+                        _state.ReceiveCancellationRegistration = cancellationToken.UnsafeRegister(static (obj, token) =>
+                        {
+                            var state = (State)obj!;
+                            bool completePendingRead;
+
+                            lock (state)
+                            {
+                                completePendingRead = state.ReadState == ReadState.PendingRead;
+                                state.Stream = null;
+                                state.ReceiveUserBuffer = null;
+                                state.ReadState = ReadState.Aborted;
+                            }
+
+                            if (completePendingRead)
+                            {
+                                state.ReceiveResettableCompletionSource.CompleteException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(token)));
+                            }
+                        }, _state);
                     }
-                    state.ReadState = ReadState.Aborted;
-                }
-
-                if (shouldComplete)
-                {
-                    state.ReceiveResettableCompletionSource.CompleteException(
-                        ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException("Read was canceled", token)));
-                }
-            }, _state);
-
-            // TODO there could potentially be a perf gain by storing the buffer from the initial read
-            // This reduces the amount of async calls, however it makes it so MsQuic holds onto the buffers
-            // longer than it needs to. We will need to benchmark this.
-            int length = (int)await _state.ReceiveResettableCompletionSource.GetValueTask().ConfigureAwait(false);
-
-            int actual = Math.Min(length, destination.Length);
-
-            static unsafe void CopyToBuffer(Span<byte> destinationBuffer, List<QuicBuffer> sourceBuffers)
-            {
-                Span<byte> slicedBuffer = destinationBuffer;
-                for (int i = 0; i < sourceBuffers.Count; i++)
-                {
-                    QuicBuffer nativeBuffer = sourceBuffers[i];
-                    int length = Math.Min((int)nativeBuffer.Length, slicedBuffer.Length);
-                    new Span<byte>(nativeBuffer.Buffer, length).CopyTo(slicedBuffer);
-                    if (length < nativeBuffer.Length)
+                    else
                     {
-                        // The buffer passed in was larger that the received data, return
-                        return;
+                        _state.ReceiveCancellationRegistration = default;
                     }
-                    slicedBuffer = slicedBuffer.Slice(length);
+
+                    return _state.ReceiveResettableCompletionSource.GetValueTask();
                 }
-            }
 
-            CopyToBuffer(destination.Span, _state.ReceiveQuicBuffers);
-
-            lock (_state)
-            {
-                if (_state.ReadState == ReadState.IndividualReadComplete)
+                // Success scenario: data already available, completing synchronously. Transition IndividualReadComplete->None
+                if (initialReadState == ReadState.IndividualReadComplete)
                 {
-                    _state.ReceiveQuicBuffers.Clear();
-                    ReceiveComplete(actual);
-                    EnableReceive();
                     _state.ReadState = ReadState.None;
+
+                    int taken = CopyMsQuicBuffersToUserBuffer(_state.ReceiveQuicBuffers.AsSpan(0, _state.ReceiveQuicBuffersCount), destination.Span);
+                    ReceiveComplete(taken);
+
+                    if (taken != _state.ReceiveQuicBuffersTotalBytes)
+                    {
+                        // Need to re-enable receives because MsQuic will pause them when we don't consume the entire buffer.
+                        EnableReceive();
+                    }
+
+                    return new ValueTask<int>(taken);
                 }
             }
 
-            return actual;
+            // All success scenarios returned at this point. Failure scenarios below:
+
+            Exception? ex = null;
+
+            switch (initialReadState)
+            {
+                case ReadState.PendingRead:
+                    ex = new InvalidOperationException("Only one read is supported at a time.");
+                    break;
+                case ReadState.Aborted:
+                    ex =  preCanceled ? new OperationCanceledException(cancellationToken) :
+                          ThrowHelper.GetStreamAbortedException(abortError);
+                    break;
+                case ReadState.ConnectionClosed:
+                default:
+                    Debug.Assert(initialReadState == ReadState.ConnectionClosed, $"{nameof(ReadState)} of '{initialReadState}' is unaccounted for in {nameof(ReadAsync)}.");
+                    ex = GetConnectionAbortedException(_state);
+                    break;
+            }
+
+            return ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(ex!));
         }
 
-        // TODO do we want this to be a synchronization mechanism to cancel a pending read
-        // If so, we need to complete the read here as well.
+        /// <returns>The number of bytes copied.</returns>
+        private static unsafe int CopyMsQuicBuffersToUserBuffer(ReadOnlySpan<QuicBuffer> sourceBuffers, Span<byte> destinationBuffer)
+        {
+            Debug.Assert(sourceBuffers.Length != 0);
+
+            int originalDestinationLength = destinationBuffer.Length;
+            QuicBuffer nativeBuffer;
+            int takeLength = 0;
+            int i = 0;
+
+            do
+            {
+                nativeBuffer = sourceBuffers[i];
+                takeLength = Math.Min((int)nativeBuffer.Length, destinationBuffer.Length);
+
+                new Span<byte>(nativeBuffer.Buffer, takeLength).CopyTo(destinationBuffer);
+                destinationBuffer = destinationBuffer.Slice(takeLength);
+            }
+            while (destinationBuffer.Length != 0 && ++i < sourceBuffers.Length);
+
+            return originalDestinationLength - destinationBuffer.Length;
+        }
+
         internal override void AbortRead(long errorCode)
         {
             ThrowIfDisposed();
 
+            bool shouldComplete = false;
             lock (_state)
             {
-                _state.ReadState = ReadState.Aborted;
+                if (_state.ReadState == ReadState.PendingRead)
+                {
+                    shouldComplete = true;
+                    _state.Stream = null;
+                    _state.ReceiveUserBuffer = null;
+                }
+                if (_state.ReadState < ReadState.ReadsCompleted)
+                {
+                    _state.ReadState = ReadState.Aborted;
+                }
+            }
+
+            if (shouldComplete)
+            {
+                _state.ReceiveResettableCompletionSource.CompleteException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException("Read was aborted")));
             }
 
             StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, errorCode);
@@ -646,7 +711,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} disposing {disposing}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Stream disposing {disposing}");
 
             bool callShutdown = false;
             bool abortRead = false;
@@ -699,14 +764,19 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.Cleanup();
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} disposed");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Stream disposed");
         }
 
         private void EnableReceive()
         {
-            MsQuicApi.Api.StreamReceiveSetEnabledDelegate(_state.Handle, enabled: true);
+            uint status = MsQuicApi.Api.StreamReceiveSetEnabledDelegate(_state.Handle, enabled: true);
+            QuicExceptionHelpers.ThrowIfFailed(status, "StreamReceiveSetEnabled failed.");
         }
 
+        /// <summary>
+        /// Callback calls for a single instance of a stream are serialized by msquic.
+        /// They happen on a msquic thread and shouldn't take too long to not to block msquic.
+        /// </summary>
         private static uint NativeCallbackHandler(
             IntPtr stream,
             IntPtr context,
@@ -724,7 +794,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"{state.TraceId()} received event {evt.Type}");
+                NetEventSource.Info(state, $"{state.TraceId} Stream received event {evt.Type}");
             }
 
             try
@@ -767,10 +837,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Error(state, $"[Stream#{state.GetHashCode()}] Exception occurred during handling {evt.Type} event: {ex}");
+                    NetEventSource.Error(state, $"{state.TraceId} Exception occurred during handling Stream {evt.Type} event: {ex}");
                 }
 
-                Debug.Fail($"[Stream#{state.GetHashCode()}] Exception occurred during handling {evt.Type} event: {ex}");
+                Debug.Fail($"{state.TraceId} Exception occurred during handling Stream {evt.Type} event: {ex}");
 
                 return MsQuicStatusCodes.InternalError;
             }
@@ -778,31 +848,86 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static unsafe uint HandleEventRecv(State state, ref StreamEvent evt)
         {
-            StreamEventDataReceive receiveEvent = evt.Data.Receive;
-            for (int i = 0; i < receiveEvent.BufferCount; i++)
+            ref StreamEventDataReceive receiveEvent = ref evt.Data.Receive;
+
+            if (receiveEvent.BufferCount == 0)
             {
-                state.ReceiveQuicBuffers.Add(receiveEvent.Buffers[i]);
+                // This is a 0-length receive that happens once reads are finished (via abort or otherwise).
+                // State changes for this are handled in PEER_SEND_SHUTDOWN / PEER_SEND_ABORT / SHUTDOWN_COMPLETE event handlers.
+                return MsQuicStatusCodes.Success;
             }
+
+            int readLength;
 
             bool shouldComplete = false;
             lock (state)
             {
-                if (state.ReadState == ReadState.None)
+                switch (state.ReadState)
                 {
-                    shouldComplete = true;
-                }
-                if (state.ReadState != ReadState.ConnectionClosed)
-                {
-                    state.ReadState = ReadState.IndividualReadComplete;
+                    case ReadState.None:
+                        // ReadAsync() hasn't been called yet. Stash the buffer so the next ReadAsync call completes synchronously.
+
+                        // We are overwriting state.ReceiveQuicBuffers here even if we only partially consumed them
+                        // and it is intended, because unconsumed data will arrive again from the point we've stopped.
+                        // New RECEIVE event wouldn't come until we call EnableReceive(), and we call it only after we've consumed
+                        // as much as we could and said so to msquic in ReceiveComplete(taken), so new event will have all the
+                        // remaining data.
+
+                        if ((uint)state.ReceiveQuicBuffers.Length < receiveEvent.BufferCount)
+                        {
+                            QuicBuffer[] oldReceiveBuffers = state.ReceiveQuicBuffers;
+                            state.ReceiveQuicBuffers = ArrayPool<QuicBuffer>.Shared.Rent((int)receiveEvent.BufferCount);
+
+                            if (oldReceiveBuffers.Length != 0) // don't return Array.Empty.
+                            {
+                                ArrayPool<QuicBuffer>.Shared.Return(oldReceiveBuffers);
+                            }
+                        }
+
+                        for (uint i = 0; i < receiveEvent.BufferCount; ++i)
+                        {
+                            state.ReceiveQuicBuffers[i] = receiveEvent.Buffers[i];
+                        }
+
+                        state.ReceiveQuicBuffersCount = (int)receiveEvent.BufferCount;
+                        state.ReceiveQuicBuffersTotalBytes = checked((int)receiveEvent.TotalBufferLength);
+                        state.ReadState = ReadState.IndividualReadComplete;
+                        return MsQuicStatusCodes.Pending;
+                    case ReadState.PendingRead:
+                        // There is a pending ReadAsync().
+
+                        state.ReceiveCancellationRegistration.Unregister();
+                        shouldComplete = true;
+                        state.Stream = null;
+                        state.ReadState = ReadState.None;
+
+                        readLength = CopyMsQuicBuffersToUserBuffer(new ReadOnlySpan<QuicBuffer>(receiveEvent.Buffers, (int)receiveEvent.BufferCount), state.ReceiveUserBuffer.Span);
+                        state.ReceiveUserBuffer = null;
+                        break;
+                    default:
+                        Debug.Assert(state.ReadState is ReadState.Aborted or ReadState.ConnectionClosed, $"Unexpected {nameof(ReadState)} '{state.ReadState}' in {nameof(HandleEventRecv)}.");
+
+                        // There was a race between a user aborting the read stream and the callback being ran.
+                        // This will eat any received data.
+                        return MsQuicStatusCodes.Success;
                 }
             }
 
+            // We're completing a pending read.
             if (shouldComplete)
             {
-                state.ReceiveResettableCompletionSource.Complete((uint)receiveEvent.TotalBufferLength);
+                state.ReceiveResettableCompletionSource.Complete(readLength);
             }
 
-            return MsQuicStatusCodes.Pending;
+            // Returning Success when the entire buffer hasn't been consumed will cause MsQuic to disable further receive events until EnableReceive() is called.
+            // Returning Continue will cause a second receive event to fire immediately after this returns, but allows MsQuic to clean up its buffers.
+
+            uint ret = (uint)readLength == receiveEvent.TotalBufferLength
+                ? MsQuicStatusCodes.Success
+                : MsQuicStatusCodes.Continue;
+
+            receiveEvent.TotalBufferLength = (uint)readLength;
+            return ret;
         }
 
         private static uint HandleEventPeerRecvAborted(State state, ref StreamEvent evt)
@@ -871,14 +996,15 @@ namespace System.Net.Quic.Implementations.MsQuic
             lock (state)
             {
                 // This event won't occur within the middle of a receive.
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"[Stream#{state.GetHashCode()}] completing resettable event source.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"{state.TraceId} Stream completing resettable event source.");
 
-                if (state.ReadState == ReadState.None)
+                if (state.ReadState == ReadState.PendingRead)
                 {
                     shouldReadComplete = true;
+                    state.Stream = null;
+                    state.ReceiveUserBuffer = null;
                 }
-
-                if (state.ReadState != ReadState.ConnectionClosed && state.ReadState != ReadState.Aborted)
+                if (state.ReadState < ReadState.ReadsCompleted)
                 {
                     state.ReadState = ReadState.ReadsCompleted;
                 }
@@ -926,9 +1052,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             bool shouldComplete = false;
             lock (state)
             {
-                if (state.ReadState == ReadState.None)
+                if (state.ReadState == ReadState.PendingRead)
                 {
                     shouldComplete = true;
+                    state.Stream = null;
+                    state.ReceiveUserBuffer = null;
                 }
                 state.ReadState = ReadState.Aborted;
                 state.ReadErrorCode = (long)evt.Data.PeerSendAborted.ErrorCode;
@@ -950,14 +1078,15 @@ namespace System.Net.Quic.Implementations.MsQuic
             lock (state)
             {
                 // This event won't occur within the middle of a receive.
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"[Stream#{state.GetHashCode()}] completing resettable event source.");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"{state.TraceId} Stream completing resettable event source.");
 
-                if (state.ReadState == ReadState.None)
+                if (state.ReadState == ReadState.PendingRead)
                 {
                     shouldComplete = true;
+                    state.Stream = null;
+                    state.ReceiveUserBuffer = null;
                 }
-
-                if (state.ReadState != ReadState.ConnectionClosed)
+                if (state.ReadState < ReadState.ReadsCompleted)
                 {
                     state.ReadState = ReadState.ReadsCompleted;
                 }
@@ -1240,7 +1369,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             long errorCode = state.ConnectionState.AbortErrorCode;
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(state, $"[Stream#{state.GetHashCode()}] handling Connection#{state.ConnectionState.GetHashCode()} close" +
+                NetEventSource.Info(state, $"{state.TraceId} Stream handling connection {state.ConnectionState.TraceId} close" +
                     (errorCode != -1 ? $" with code {errorCode}" : ""));
             }
 
@@ -1251,11 +1380,11 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             lock (state)
             {
-                if (state.ReadState == ReadState.None)
+                shouldCompleteRead = state.ReadState == ReadState.PendingRead;
+                if (state.ReadState < ReadState.ReadsCompleted)
                 {
-                    shouldCompleteRead = true;
+                    state.ReadState = ReadState.ConnectionClosed;
                 }
-                state.ReadState = ReadState.ConnectionClosed;
 
                 if (state.SendState == SendState.None || state.SendState == SendState.Pending)
                 {
@@ -1306,6 +1435,16 @@ namespace System.Net.Quic.Implementations.MsQuic
         private static Exception GetConnectionAbortedException(State state) =>
             ThrowHelper.GetConnectionAbortedException(state.ConnectionState.AbortErrorCode);
 
+        // Read state transitions:
+        //
+        // None  --(data arrives in event RECV)->  IndividualReadComplete  --(user calls ReadAsync() & completes syncronously)->  None
+        // None  --(user calls ReadAsync() & waits)->  PendingRead  --(data arrives in event RECV & completes user's ReadAsync())->  None
+        // Any non-final state  --(event PEER_SEND_SHUTDOWN or SHUTDOWN_COMPLETED with ConnectionClosed=false)->  ReadsCompleted
+        // Any non-final state  --(event PEER_SEND_ABORT)->  Aborted
+        // Any non-final state  --(user calls AbortRead())->  Aborted
+        // Any state  --(CancellationToken's cancellation for ReadAsync())->  Aborted (TODO: should it be only for non-final as others?)
+        // Any non-final state  --(event SHUTDOWN_COMPLETED with ConnectionClosed=true)->  ConnectionClosed
+        // Closed - no transitions, set for Unidirectional write-only streams
         private enum ReadState
         {
             /// <summary>
@@ -1317,6 +1456,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             /// Data is available in <see cref="State.ReceiveQuicBuffers"/>.
             /// </summary>
             IndividualReadComplete,
+
+            /// <summary>
+            /// User called ReadAsync()
+            /// </summary>
+            PendingRead,
+
+            // following states are final:
 
             /// <summary>
             /// The peer has gracefully shutdown their sends / our receives; the stream's reads are complete.

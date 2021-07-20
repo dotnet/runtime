@@ -2505,7 +2505,7 @@ public:
                                  SIZE_T                     *rgVal2,
                                  BYTE                      **rgpVCs);
 
-    BOOL IsThreadContextInvalid(Thread *pThread);
+    BOOL IsThreadContextInvalid(Thread *pThread, T_CONTEXT *pCtx);
 
     // notification for SQL fiber debugging support
     void CreateConnection(CONNID dwConnectionId, __in_z WCHAR *wzName);
@@ -2875,6 +2875,9 @@ private:
 #if defined(HAVE_GCCOVER) && defined(TARGET_AMD64)
         kRedirectedForGCStress,
 #endif // HAVE_GCCOVER && TARGET_AMD64
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+        kRedirectedForApcActivation,
+#endif // FEATURE_SPECIAL_USER_MODE_APC
         kMaxHijackFunctions,
     };
 
@@ -2976,6 +2979,11 @@ void RedirectedHandledJITCaseForUserSuspend_StubEnd();
 void RedirectedHandledJITCaseForGCStress_Stub();
 void RedirectedHandledJITCaseForGCStress_StubEnd();
 #endif // HAVE_GCCOVER && TARGET_AMD64
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+void NTAPI ApcActivationCallbackStub(ULONG_PTR Parameter);
+void ApcActivationCallbackStubEnd();
+#endif // FEATURE_SPECIAL_USER_MODE_APC
 };
 
 

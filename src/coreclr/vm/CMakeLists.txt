@@ -136,7 +136,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     versionresilienthashcode.cpp
     virtualcallstub.cpp
     win32threadpool.cpp
-    yieldprocessornormalized.cpp
     zapsig.cpp
 )
 
@@ -389,6 +388,7 @@ set(VM_SOURCES_WKS
     threadsuspend.cpp
     typeparse.cpp
     weakreferencenative.cpp
+    yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
 )
 

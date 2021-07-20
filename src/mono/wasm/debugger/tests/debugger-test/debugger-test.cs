@@ -578,3 +578,78 @@ public class LoadDebuggerTestALC {
     }
 }
 
+    public class TestHotReload {
+        static System.Reflection.Assembly loadedAssembly;
+        static byte[] dmeta_data1_bytes;
+        static byte[] dil_data1_bytes;
+        static byte[] dpdb_data1_bytes;
+        static byte[] dmeta_data2_bytes;
+        static byte[] dil_data2_bytes;
+        static byte[] dpdb_data2_bytes;
+        public static void LoadLazyHotReload(string asm_base64, string pdb_base64, string dmeta_data1, string dil_data1, string dpdb_data1, string dmeta_data2, string dil_data2, string dpdb_data2)
+        {
+            byte[] asm_bytes = Convert.FromBase64String(asm_base64);
+            byte[] pdb_bytes = Convert.FromBase64String(pdb_base64);
+
+            dmeta_data1_bytes = Convert.FromBase64String(dmeta_data1);
+            dil_data1_bytes = Convert.FromBase64String(dil_data1);
+            dpdb_data1_bytes = Convert.FromBase64String(dpdb_data1);
+
+            dmeta_data2_bytes = Convert.FromBase64String(dmeta_data2);
+            dil_data2_bytes = Convert.FromBase64String(dil_data2);
+            dpdb_data2_bytes = Convert.FromBase64String(dpdb_data2);
+
+
+            loadedAssembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromStream(new System.IO.MemoryStream(asm_bytes), new System.IO.MemoryStream(pdb_bytes));
+            Console.WriteLine($"Loaded - {loadedAssembly}");
+
+        }
+        public static void RunMethod(string className, string methodName)
+        {
+            var ty = typeof(System.Reflection.Metadata.AssemblyExtensions);
+            var mi = ty.GetMethod("GetApplyUpdateCapabilities", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, Array.Empty<Type>());
+
+            if (mi == null)
+                return;
+
+            var caps = mi.Invoke(null, null) as string;
+
+            if (String.IsNullOrEmpty(caps))
+                return;
+
+            var myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
+            var myMethod = myType.GetMethod(methodName);
+            myMethod.Invoke(null, null);
+
+            ApplyUpdate(loadedAssembly, 1);
+
+            myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
+            myMethod = myType.GetMethod(methodName);
+            myMethod.Invoke(null, null);
+
+            ApplyUpdate(loadedAssembly, 2);
+
+            myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
+            myMethod = myType.GetMethod(methodName);
+            myMethod.Invoke(null, null);
+        }
+
+        internal static void ApplyUpdate (System.Reflection.Assembly assm, int version)
+        {
+            string basename = assm.Location;
+            if (basename == "")
+                basename = assm.GetName().Name + ".dll";
+            Console.Error.WriteLine($"Apply Delta Update for {basename}, revision {version}");
+
+            if (version == 1)
+            {
+                System.Reflection.Metadata.AssemblyExtensions.ApplyUpdate(assm, dmeta_data1_bytes, dil_data1_bytes, dpdb_data1_bytes);
+            }
+            else if (version == 2)
+            {
+                System.Reflection.Metadata.AssemblyExtensions.ApplyUpdate(assm, dmeta_data2_bytes, dil_data2_bytes, dpdb_data2_bytes);
+            }
+
+        }
+    }
+

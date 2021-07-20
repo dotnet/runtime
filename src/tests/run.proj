@@ -272,6 +272,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 coreRoot = Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
                 category = "$([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))"%3B
                 helixUploadRoot = Environment.GetEnvironmentVariable(%22HELIX_WORKITEM_UPLOAD_ROOT%22)%3B
+                int retCode = -100%3B
+
                 if (!String.IsNullOrEmpty(helixUploadRoot)) {
                     reportBase = Path.Combine(Path.GetFullPath(helixUploadRoot), "Reports")%3B
                 }
@@ -293,12 +295,15 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 string operatingSystem = Environment.GetEnvironmentVariable("OS")%3B
                 runningInWindows = (operatingSystem != null && operatingSystem.StartsWith("Windows"))%3B
 
-                handler.InstallMobileApp(%22$(MobilePlatform)%22, category, testBinaryBase, reportBase)%3B
+                retCode = handler.InstallMobileApp(%22$(MobilePlatform)%22, category, testBinaryBase, reportBase)%3B
+                Assert.True(retCode == 0, "Failed to install mobile app.")%3B
             }
 
             public void Dispose()
             {
-                handler.UninstallMobileApp(%22$(MobilePlatform)%22, category, testBinaryBase, reportBase)%3B
+                int retCode = -100%3B
+                retCode = handler.UninstallMobileApp(%22$(MobilePlatform)%22, category, testBinaryBase, reportBase)%3B
+                Assert.True(retCode == 0, "Failed to uninstall mobile app.")%3B
             }
         }
 

@@ -203,6 +203,8 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(d2i_PKCS12_fp) \
     REQUIRED_FUNCTION(d2i_PKCS7) \
     REQUIRED_FUNCTION(d2i_PKCS7_bio) \
+    REQUIRED_FUNCTION(d2i_PKCS8_PRIV_KEY_INFO) \
+    REQUIRED_FUNCTION(d2i_PUBKEY) \
     REQUIRED_FUNCTION(d2i_RSAPublicKey) \
     REQUIRED_FUNCTION(d2i_X509) \
     REQUIRED_FUNCTION(d2i_X509_bio) \
@@ -318,7 +320,9 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_MD_CTX_copy_ex) \
     RENAMED_FUNCTION(EVP_MD_CTX_free, EVP_MD_CTX_destroy) \
     RENAMED_FUNCTION(EVP_MD_CTX_new, EVP_MD_CTX_create) \
-    REQUIRED_FUNCTION(EVP_MD_size) \
+    RENAMED_FUNCTION(EVP_MD_get_size, EVP_MD_size) \
+    REQUIRED_FUNCTION(EVP_PKCS82PKEY) \
+    REQUIRED_FUNCTION(EVP_PKEY2PKCS8) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_ctrl) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_free) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_get0_pkey) \
@@ -329,7 +333,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_padding) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_rsa_pss_saltlen) \
     FALLBACK_FUNCTION(EVP_PKEY_CTX_set_signature_md) \
-    REQUIRED_FUNCTION(EVP_PKEY_base_id) \
+    FALLBACK_FUNCTION(EVP_PKEY_check) \
     REQUIRED_FUNCTION(EVP_PKEY_decrypt) \
     REQUIRED_FUNCTION(EVP_PKEY_decrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_derive_set_peer) \
@@ -338,6 +342,8 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_PKEY_encrypt) \
     REQUIRED_FUNCTION(EVP_PKEY_encrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_free) \
+    RENAMED_FUNCTION(EVP_PKEY_get_base_id, EVP_PKEY_base_id) \
+    RENAMED_FUNCTION(EVP_PKEY_get_size, EVP_PKEY_size) \
     FALLBACK_FUNCTION(EVP_PKEY_get0_RSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_EC_KEY) \
@@ -345,12 +351,12 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_PKEY_keygen) \
     REQUIRED_FUNCTION(EVP_PKEY_keygen_init) \
     REQUIRED_FUNCTION(EVP_PKEY_new) \
+    FALLBACK_FUNCTION(EVP_PKEY_public_check) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_EC_KEY) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_RSA) \
     REQUIRED_FUNCTION(EVP_PKEY_sign) \
     REQUIRED_FUNCTION(EVP_PKEY_sign_init) \
-    REQUIRED_FUNCTION(EVP_PKEY_size) \
     FALLBACK_FUNCTION(EVP_PKEY_up_ref) \
     REQUIRED_FUNCTION(EVP_PKEY_verify) \
     REQUIRED_FUNCTION(EVP_PKEY_verify_init) \
@@ -376,6 +382,8 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(i2d_OCSP_REQUEST) \
     REQUIRED_FUNCTION(i2d_OCSP_RESPONSE) \
     REQUIRED_FUNCTION(i2d_PKCS7) \
+    REQUIRED_FUNCTION(i2d_PKCS8_PRIV_KEY_INFO) \
+    REQUIRED_FUNCTION(i2d_PUBKEY) \
     REQUIRED_FUNCTION(i2d_X509) \
     REQUIRED_FUNCTION(i2d_X509_PUBKEY) \
     REQUIRED_FUNCTION(OBJ_ln2nid) \
@@ -412,6 +420,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     RENAMED_FUNCTION(OPENSSL_sk_value, sk_value) \
     FALLBACK_FUNCTION(OpenSSL_version_num) \
     LIGHTUP_FUNCTION(OSSL_PROVIDER_try_load) \
+    REQUIRED_FUNCTION(PKCS8_PRIV_KEY_INFO_free) \
     REQUIRED_FUNCTION(PEM_read_bio_PKCS7) \
     REQUIRED_FUNCTION(PEM_read_bio_X509) \
     REQUIRED_FUNCTION(PEM_read_bio_X509_AUX) \
@@ -458,7 +467,6 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(SSL_CTX_new) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_protos) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_select_cb) \
-    REQUIRED_FUNCTION(SSL_CTX_set_cert_verify_callback) \
     REQUIRED_FUNCTION(SSL_CTX_set_cipher_list) \
     LIGHTUP_FUNCTION(SSL_CTX_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_CTX_set_client_cert_cb) \
@@ -484,12 +492,16 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LEGACY_FUNCTION(SSL_library_init) \
     LEGACY_FUNCTION(SSL_load_error_strings) \
     REQUIRED_FUNCTION(SSL_new) \
+    REQUIRED_FUNCTION(SSL_peek) \
     REQUIRED_FUNCTION(SSL_read) \
+    REQUIRED_FUNCTION(SSL_renegotiate) \
     REQUIRED_FUNCTION(SSL_renegotiate_pending) \
     FALLBACK_FUNCTION(SSL_session_reused) \
     REQUIRED_FUNCTION(SSL_set_accept_state) \
     REQUIRED_FUNCTION(SSL_set_bio) \
     REQUIRED_FUNCTION(SSL_set_connect_state) \
+    FALLBACK_FUNCTION(SSL_set_options) \
+    REQUIRED_FUNCTION(SSL_set_verify) \
     REQUIRED_FUNCTION(SSL_shutdown) \
     LEGACY_FUNCTION(SSL_state) \
     LEGACY_FUNCTION(SSLeay) \
@@ -639,6 +651,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define d2i_PKCS12_fp d2i_PKCS12_fp_ptr
 #define d2i_PKCS7 d2i_PKCS7_ptr
 #define d2i_PKCS7_bio d2i_PKCS7_bio_ptr
+#define d2i_PKCS8_PRIV_KEY_INFO d2i_PKCS8_PRIV_KEY_INFO_ptr
+#define d2i_PUBKEY d2i_PUBKEY_ptr
 #define d2i_RSAPublicKey d2i_RSAPublicKey_ptr
 #define d2i_X509 d2i_X509_ptr
 #define d2i_X509_bio d2i_X509_bio_ptr
@@ -754,7 +768,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_MD_CTX_copy_ex EVP_MD_CTX_copy_ex_ptr
 #define EVP_MD_CTX_free EVP_MD_CTX_free_ptr
 #define EVP_MD_CTX_new EVP_MD_CTX_new_ptr
-#define EVP_MD_size EVP_MD_size_ptr
+#define EVP_MD_get_size EVP_MD_get_size_ptr
+#define EVP_PKCS82PKEY EVP_PKCS82PKEY_ptr
+#define EVP_PKEY2PKCS8 EVP_PKEY2PKCS8_ptr
 #define EVP_PKEY_CTX_ctrl EVP_PKEY_CTX_ctrl_ptr
 #define EVP_PKEY_CTX_free EVP_PKEY_CTX_free_ptr
 #define EVP_PKEY_CTX_get0_pkey EVP_PKEY_CTX_get0_pkey_ptr
@@ -765,7 +781,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_CTX_set_rsa_padding EVP_PKEY_CTX_set_rsa_padding_ptr
 #define EVP_PKEY_CTX_set_rsa_pss_saltlen EVP_PKEY_CTX_set_rsa_pss_saltlen_ptr
 #define EVP_PKEY_CTX_set_signature_md EVP_PKEY_CTX_set_signature_md_ptr
-#define EVP_PKEY_base_id EVP_PKEY_base_id_ptr
+#define EVP_PKEY_check EVP_PKEY_check_ptr
 #define EVP_PKEY_decrypt_init EVP_PKEY_decrypt_init_ptr
 #define EVP_PKEY_decrypt EVP_PKEY_decrypt_ptr
 #define EVP_PKEY_derive_set_peer EVP_PKEY_derive_set_peer_ptr
@@ -774,6 +790,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_encrypt_init EVP_PKEY_encrypt_init_ptr
 #define EVP_PKEY_encrypt EVP_PKEY_encrypt_ptr
 #define EVP_PKEY_free EVP_PKEY_free_ptr
+#define EVP_PKEY_get_base_id EVP_PKEY_get_base_id_ptr
+#define EVP_PKEY_get_size EVP_PKEY_get_size_ptr
 #define EVP_PKEY_get0_RSA EVP_PKEY_get0_RSA_ptr
 #define EVP_PKEY_get1_DSA EVP_PKEY_get1_DSA_ptr
 #define EVP_PKEY_get1_EC_KEY EVP_PKEY_get1_EC_KEY_ptr
@@ -781,12 +799,12 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_keygen EVP_PKEY_keygen_ptr
 #define EVP_PKEY_keygen_init EVP_PKEY_keygen_init_ptr
 #define EVP_PKEY_new EVP_PKEY_new_ptr
+#define EVP_PKEY_public_check EVP_PKEY_public_check_ptr
 #define EVP_PKEY_set1_DSA EVP_PKEY_set1_DSA_ptr
 #define EVP_PKEY_set1_EC_KEY EVP_PKEY_set1_EC_KEY_ptr
 #define EVP_PKEY_set1_RSA EVP_PKEY_set1_RSA_ptr
 #define EVP_PKEY_sign_init EVP_PKEY_sign_init_ptr
 #define EVP_PKEY_sign EVP_PKEY_sign_ptr
-#define EVP_PKEY_size EVP_PKEY_size_ptr
 #define EVP_PKEY_up_ref EVP_PKEY_up_ref_ptr
 #define EVP_PKEY_verify_init EVP_PKEY_verify_init_ptr
 #define EVP_PKEY_verify EVP_PKEY_verify_ptr
@@ -812,6 +830,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define i2d_OCSP_REQUEST i2d_OCSP_REQUEST_ptr
 #define i2d_OCSP_RESPONSE i2d_OCSP_RESPONSE_ptr
 #define i2d_PKCS7 i2d_PKCS7_ptr
+#define i2d_PKCS8_PRIV_KEY_INFO i2d_PKCS8_PRIV_KEY_INFO_ptr
+#define i2d_PUBKEY i2d_PUBKEY_ptr
 #define i2d_X509 i2d_X509_ptr
 #define i2d_X509_PUBKEY i2d_X509_PUBKEY_ptr
 #define OBJ_ln2nid OBJ_ln2nid_ptr
@@ -848,6 +868,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define OPENSSL_sk_value OPENSSL_sk_value_ptr
 #define OpenSSL_version_num OpenSSL_version_num_ptr
 #define OSSL_PROVIDER_try_load OSSL_PROVIDER_try_load_ptr
+#define PKCS8_PRIV_KEY_INFO_free PKCS8_PRIV_KEY_INFO_free_ptr
 #define PEM_read_bio_PKCS7 PEM_read_bio_PKCS7_ptr
 #define PEM_read_bio_X509 PEM_read_bio_X509_ptr
 #define PEM_read_bio_X509_AUX PEM_read_bio_X509_AUX_ptr
@@ -895,7 +916,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_new SSL_CTX_new_ptr
 #define SSL_CTX_set_alpn_protos SSL_CTX_set_alpn_protos_ptr
 #define SSL_CTX_set_alpn_select_cb SSL_CTX_set_alpn_select_cb_ptr
-#define SSL_CTX_set_cert_verify_callback SSL_CTX_set_cert_verify_callback_ptr
 #define SSL_CTX_set_cipher_list SSL_CTX_set_cipher_list_ptr
 #define SSL_CTX_set_ciphersuites SSL_CTX_set_ciphersuites_ptr
 #define SSL_CTX_set_client_cert_cb SSL_CTX_set_client_cert_cb_ptr
@@ -922,12 +942,18 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_library_init SSL_library_init_ptr
 #define SSL_load_error_strings SSL_load_error_strings_ptr
 #define SSL_new SSL_new_ptr
+#define SSL_peek SSL_peek_ptr
+#define SSL_state_string_long SSL_state_string_long_ptr
 #define SSL_read SSL_read_ptr
+#define ERR_print_errors_fp ERR_print_errors_fp_ptr
+#define SSL_renegotiate SSL_renegotiate_ptr
 #define SSL_renegotiate_pending SSL_renegotiate_pending_ptr
 #define SSL_session_reused SSL_session_reused_ptr
 #define SSL_set_accept_state SSL_set_accept_state_ptr
 #define SSL_set_bio SSL_set_bio_ptr
 #define SSL_set_connect_state SSL_set_connect_state_ptr
+#define SSL_set_options SSL_set_options_ptr
+#define SSL_set_verify SSL_set_verify_ptr
 #define SSL_shutdown SSL_shutdown_ptr
 #define SSL_state SSL_state_ptr
 #define SSLeay SSLeay_ptr
@@ -1078,6 +1104,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_RTM
 
 // Undo renames for renamed-in-3.0
+#define EVP_MD_get_size EVP_MD_size
+#define EVP_PKEY_get_base_id EVP_PKEY_base_id
+#define EVP_PKEY_get_size EVP_PKEY_size
 #define SSL_get1_peer_certificate SSL_get_peer_certificate
 
 #endif
@@ -1098,7 +1127,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_CIPHER_CTX_free local_EVP_CIPHER_CTX_free
 #define EVP_CIPHER_CTX_new local_EVP_CIPHER_CTX_new
 #define EVP_CIPHER_CTX_reset local_EVP_CIPHER_CTX_reset
+#define EVP_PKEY_check local_EVP_PKEY_check
 #define EVP_PKEY_get0_RSA local_EVP_PKEY_get0_RSA
+#define EVP_PKEY_public_check local_EVP_PKEY_public_check
 #define EVP_PKEY_up_ref local_EVP_PKEY_up_ref
 #define HMAC_CTX_free local_HMAC_CTX_free
 #define HMAC_CTX_new local_HMAC_CTX_new

@@ -46,6 +46,7 @@ private:
     pid_t m_pid;                                    // pid
     pid_t m_ppid;                                   // parent pid
     pid_t m_tgid;                                   // process group
+    HMODULE m_hdac;                                 // dac module handle when loaded
     bool m_gatherFrames;                            // if true, add the native and managed stack frames to the thread info
     pid_t m_crashThread;                            // crashing thread id or 0 if none
     uint32_t m_signal;                              // crash signal code or 0 if none
@@ -68,7 +69,12 @@ private:
     std::set<MemoryRegion> m_otherMappings;         // other memory mappings
     std::set<MemoryRegion> m_memoryRegions;         // memory regions from DAC, etc.
     std::set<MemoryRegion> m_moduleAddresses;       // memory region to module base address
-    std::set<ModuleInfo> m_moduleInfos;             // module infos (base address and module name)
+    std::set<ModuleInfo*, bool (*)(const ModuleInfo* lhs, const ModuleInfo* rhs)> m_moduleInfos; // module infos (base address and module name)
+    ModuleInfo* m_mainModule;                       // the module containing "Main"
+
+    // no public copy constructor
+    CrashInfo(const CrashInfo&) = delete;
+    void operator=(const CrashInfo&) = delete;
 
 public:
     CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t signal);
@@ -82,7 +88,7 @@ public:
     bool ReadProcessMemory(void* address, void* buffer, size_t size, size_t* read);     // read raw memory
     uint64_t GetBaseAddressFromAddress(uint64_t address);
     uint64_t GetBaseAddressFromName(const char* moduleName);
-    const ModuleInfo* GetModuleInfoFromBaseAddress(uint64_t baseAddress);
+    ModuleInfo* GetModuleInfoFromBaseAddress(uint64_t baseAddress);
     void AddModuleAddressRange(uint64_t startAddress, uint64_t endAddress, uint64_t baseAddress);
     void AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* pClrDataModule, const std::string& moduleName);
     void InsertMemoryRegion(uint64_t address, size_t size);
@@ -98,6 +104,7 @@ public:
     inline const pid_t CrashThread() const { return m_crashThread; }
     inline const uint32_t Signal() const { return m_signal; }
     inline const std::string& Name() const { return m_name; }
+    inline const ModuleInfo* MainModule() const { return m_mainModule; }
 
     inline const std::vector<ThreadInfo*> Threads() const { return m_threads; }
     inline const std::set<MemoryRegion> ModuleMappings() const { return m_moduleMappings; }

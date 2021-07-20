@@ -58,14 +58,9 @@ namespace System.IO.Strategies
             TaskToApm.End(asyncResult);
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-            WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken) =>
-#pragma warning disable CA2012 // The analyzer doesn't know the internal AsValueTask is safe.
-            WriteAsyncCore(source, cancellationToken).AsValueTask();
-#pragma warning restore CA2012
-
-        private ValueTask<int> WriteAsyncCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             if (!CanWrite)
             {

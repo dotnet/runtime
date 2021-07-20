@@ -2,8 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "stdafx.h"
+#include "yieldprocessornormalized.h"
 
-// Defaults are for when InitializeYieldProcessorNormalized has not yet been called or when no measurement is done, and are
-// tuned for Skylake processors
-unsigned int g_yieldsPerNormalizedYield = 1; // current value is for Skylake processors, this is expected to be ~8 for pre-Skylake
-unsigned int g_optimalMaxNormalizedYieldsPerSpinIteration = 7;
+bool YieldProcessorNormalization::s_isMeasurementScheduled;
+
+// Defaults are for when normalization has not yet been done
+unsigned int YieldProcessorNormalization::s_yieldsPerNormalizedYield = 1;
+unsigned int YieldProcessorNormalization::s_optimalMaxNormalizedYieldsPerSpinIteration =
+    (unsigned int)
+    (
+        (double)YieldProcessorNormalization::TargetMaxNsPerSpinIteration /
+        YieldProcessorNormalization::TargetNsPerNormalizedYield +
+        0.5
+    );
