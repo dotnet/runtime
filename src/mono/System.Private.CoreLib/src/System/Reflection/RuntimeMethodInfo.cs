@@ -595,7 +595,7 @@ namespace System.Reflection
             count = 0;
 
             if ((info.iattrs & MethodImplAttributes.PreserveSig) != 0)
-                attrsData[count++] = new CustomAttributeData((typeof(PreserveSigAttribute)).GetConstructor(Type.EmptyTypes)!);
+                attrsData[count++] = new RuntimeCustomAttributeData((typeof(PreserveSigAttribute)).GetConstructor(Type.EmptyTypes)!);
             if ((info.attrs & MethodAttributes.PinvokeImpl) != 0)
                 attrsData[count++] = GetDllImportAttributeData()!;
 
@@ -657,7 +657,7 @@ namespace System.Reflection
                 new CustomAttributeNamedArgument (attrType.GetField ("ThrowOnUnmappableChar")!, throwOnUnmappableChar)
             };
 
-            return new CustomAttributeData(
+            return new RuntimeCustomAttributeData(
                 attrType.GetConstructor(new[] { typeof(string) })!,
                 ctorArgs,
                 namedArgs);
@@ -750,7 +750,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributesInternal(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeMethodInfo>(other);
@@ -988,7 +988,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributesInternal(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeConstructorInfo>(other);

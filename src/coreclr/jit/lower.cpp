@@ -1507,6 +1507,11 @@ GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
 #ifdef TARGET_ARM
     if (floatType == TYP_DOUBLE)
     {
+        // A special case when we introduce TYP_LONG
+        // during lowering for arm32 softFP to pass double
+        // in int registers.
+        assert(comp->opts.compUseSoftFP);
+
         regNumber nextReg                  = REG_NEXT(regNum);
         intArg->AsMultiRegOp()->gtOtherReg = nextReg;
     }

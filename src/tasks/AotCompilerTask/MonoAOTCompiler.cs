@@ -176,6 +176,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? DedupAssembly { get; set; }
 
+    /// <summary>
     /// Debug option in llvm aot mode
     /// defaults to "nodebug" since some targes can't generate debug info
     /// </summary>
@@ -194,8 +195,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
     public override bool Execute()
     {
-        Utils.Logger = Log;
-
         if (string.IsNullOrEmpty(CompilerBinaryPath))
         {
             throw new ArgumentException($"'{nameof(CompilerBinaryPath)}' is required.", nameof(CompilerBinaryPath));
@@ -545,15 +544,25 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         Log.LogMessage(MessageImportance.Low, $"AOT compiler arguments: {responseFileContent}");
 
+        string args = $"--response=\"{responseFilePath}\"";
+
+        // Log the command in a compact format which can be copy pasted
+        StringBuilder envStr = new StringBuilder(string.Empty);
+        foreach (KeyValuePair<string, string> kvp in envVariables)
+            envStr.Append($"{kvp.Key}={kvp.Value} ");
+        Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}{CompilerBinaryPath} {args}");
+
         try
         {
             // run the AOT compiler
-            (int exitCode, string output) = Utils.TryRunProcess(CompilerBinaryPath,
-                                                                $"--response=\"{responseFilePath}\"",
+            (int exitCode, string output) = Utils.TryRunProcess(Log,
+                                                                CompilerBinaryPath,
+                                                                args,
                                                                 envVariables,
                                                                 assemblyDir,
                                                                 silent: false,
-                                                                debugMessageImportance: MessageImportance.Low);
+                                                                debugMessageImportance: MessageImportance.Low,
+                                                                label: assembly);
             if (exitCode != 0)
             {
                 Log.LogError($"Precompiling failed for {assembly}: {output}");
