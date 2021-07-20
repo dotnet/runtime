@@ -180,3 +180,46 @@ bool RunWithSPMIErrorTrap(void (*function)(void*), void* param)
 
     return success;
 }
+
+void RunWithErrorExceptionCodeCaptureAndContinueImp(void* param, void (*function)(void*), void (*finallyFunction)(void*, DWORD))
+{
+    struct Param : FilterSuperPMIExceptionsParam_CaptureException
+    {
+        void (*function)(void*);
+        void (*finallyFunction)(void*, DWORD);
+        void*       pParamActual;
+    } paramStruct;
+
+    paramStruct.pParamActual = param;
+    paramStruct.function = function;
+    paramStruct.finallyFunction = finallyFunction;
+
+#ifdef HOST_UNIX
+    // We can't capture the exception code in as a PAL exceptions when thrown
+    // from crossgen2 on Linux as the jitinteface dll does not use the PAL. So 
+    // assume there will be some error, then set it to zero (no error)
+    // if the called function doesn't throw.
+    paramStruct.exceptionCode = 1;
+#endif // HOST_UNIX
+
+    PAL_TRY(Param*, pOuterParam, &paramStruct)
+    {
+        PAL_TRY(Param*, pParam, pOuterParam)
+        {
+            pParam->function(pParam->pParamActual);
+#ifdef HOST_UNIX
+            pParam->exceptionCode = 0;
+#endif // HOST_UNIX
+        }
+        PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndContinue)
+        {
+        }
+        PAL_ENDTRY
+    }
+    PAL_FINALLY
+    {
+        paramStruct.finallyFunction(paramStruct.pParamActual, paramStruct.exceptionCode);
+    }
+    PAL_ENDTRY
+
+}
