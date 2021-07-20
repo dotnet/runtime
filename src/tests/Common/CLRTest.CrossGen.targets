@@ -107,7 +107,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         local readyToRunModeToRestore=$COMPlus_ReadyToRun;
         export COMPlus_GCStress=
         export COMPlus_HeapVerify=
-        export COMPlus_ReadyToRun=
+        export COMPlus_ReadyToRun=0
 
         __Command=$_DebuggerFullPath
         # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
