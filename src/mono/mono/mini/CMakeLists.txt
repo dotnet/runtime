@@ -305,6 +305,7 @@ endif()
 
 set(mini_public_headers_base
   jit.h
+  debugger-agent-external.h
   mono-private-unstable.h)
 addprefix(mini_public_headers ../mini "${mini_public_headers_base}")
 
