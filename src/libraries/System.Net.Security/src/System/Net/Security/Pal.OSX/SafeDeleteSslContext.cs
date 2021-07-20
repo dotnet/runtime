@@ -39,10 +39,13 @@ namespace System.Net
 
                 _sslContext = CreateSslContext(credential, sslAuthenticationOptions.IsServer);
 
-                osStatus = Interop.AppleCrypto.SslSetIoCallbacks(
-                    _sslContext,
-                    &ReadFromConnection,
-                    &WriteToConnection);
+                unsafe 
+                {
+                    osStatus = Interop.AppleCrypto.SslSetIoCallbacks(
+                        _sslContext,
+                        &ReadFromConnection,
+                        &WriteToConnection);
+                }
 
                 if (osStatus != 0)
                 {
