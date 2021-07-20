@@ -471,6 +471,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55948")]
         public async Task ReadOutstanding_ReadAborted_Throws()
         {
             // aborting doesn't work properly on mock
