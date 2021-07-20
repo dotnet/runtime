@@ -118,6 +118,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56000")]
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
