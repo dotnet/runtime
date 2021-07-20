@@ -1380,15 +1380,6 @@ int interceptor_ICJI::FilterException(struct _EXCEPTION_POINTERS* pExceptionPoin
     return temp;
 }
 
-// Cleans up internal EE tracking when an exception is caught.
-void interceptor_ICJI::HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    // bswHack?
-    mc->cr->AddCall("HandleException");
-    original_ICorJitInfo->HandleException(pExceptionPointers);
-    mc->recHandleException(pExceptionPointers);
-}
-
 void interceptor_ICJI::ThrowExceptionForJitResult(HRESULT result)
 {
     mc->cr->AddCall("ThrowExceptionForJitResult");
@@ -1926,6 +1917,16 @@ bool interceptor_ICJI::runWithErrorTrap(void (*function)(void*), void* param)
 {
     mc->cr->AddCall("runWithErrorTrap");
     return original_ICorJitInfo->runWithErrorTrap(function, param);
+}
+
+// Runs the given function with the given parameter under an error trap
+// and returns true if the function completes successfully. We don't
+// record the results of the call: when this call gets played back,
+// its result will depend on whether or not `function` calls something
+// that throws at playback time rather than at capture time.
+bool interceptor_ICJI::runWithSPMIErrorTrap(void (*function)(void*), void* param)
+{
+    return RunWithSPMIErrorTrap(function, param);
 }
 
 // get a block of memory for the code, readonly data, and read-write data

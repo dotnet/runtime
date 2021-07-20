@@ -123,6 +123,7 @@ extern LONG FilterSuperPMIExceptions_CaptureExceptionAndContinue(PEXCEPTION_POIN
 extern LONG FilterSuperPMIExceptions_CaptureExceptionAndStop(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
 
 extern bool RunWithErrorTrap(void (*function)(void*), void* param);
+extern bool RunWithSPMIErrorTrap(void (*function)(void*), void* param);
 
 class SpmiException
 {

@@ -118,10 +118,10 @@ struct JitInterfaceCallbacks
     JITINTERFACE_HRESULT (* GetErrorHRESULT)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
     uint32_t (* GetErrorMessage)(void * thisHandle, CorInfoExceptionClass** ppException, char16_t* buffer, uint32_t bufferLength);
     int (* FilterException)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
-    void (* HandleException)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
     void (* ThrowExceptionForJitResult)(void * thisHandle, CorInfoExceptionClass** ppException, JITINTERFACE_HRESULT result);
     void (* ThrowExceptionForHelper)(void * thisHandle, CorInfoExceptionClass** ppException, const CORINFO_HELPER_DESC* throwHelper);
     bool (* runWithErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
+    bool (* runWithSPMIErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
     void (* getEEInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_EE_INFO* pEEInfoOut);
     const char16_t* (* getJitTimeLogFilename)(void * thisHandle, CorInfoExceptionClass** ppException);
     mdMethodDef (* getMethodDefFromMethod)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hMethod);
@@ -1231,9 +1231,6 @@ public:
     virtual int FilterException(
           struct _EXCEPTION_POINTERS* pExceptionPointers);
 
-    virtual void HandleException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers);
-
     virtual void ThrowExceptionForJitResult(
           JITINTERFACE_HRESULT result)
 {
@@ -1251,6 +1248,10 @@ public:
 }
 
     virtual bool runWithErrorTrap(
+          ICorJitInfo::errorTrapFunction function,
+          void* parameter);
+
+    virtual bool runWithSPMIErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter);
 

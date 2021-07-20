@@ -46,19 +46,6 @@ struct FilterSuperPMIExceptionsParam_eeinterface
     EXCEPTION_POINTERS      exceptionPointers;
 };
 
-static LONG FilterSuperPMIExceptions_eeinterface(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
-{
-    FilterSuperPMIExceptionsParam_eeinterface* pSPMIEParam = (FilterSuperPMIExceptionsParam_eeinterface*)lpvParam;
-    pSPMIEParam->exceptionPointers                         = *pExceptionPointers;
-
-    if (pSPMIEParam->pThis->IsSuperPMIException(pExceptionPointers->ExceptionRecord->ExceptionCode))
-    {
-        return EXCEPTION_EXECUTE_HANDLER;
-    }
-
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
 const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
 {
     const char* className;
@@ -101,7 +88,7 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
     /* add length of methodName and opening bracket */
     length += strlen(methodName) + 1;
 
-    PAL_TRY(FilterSuperPMIExceptionsParam_eeinterface*, pParam, &param)
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_eeinterface>([](FilterSuperPMIExceptionsParam_eeinterface *pParam)
     {
 
         /* figure out the signature */
@@ -193,12 +180,12 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
             pParam->siglength += 5;
             pParam->hasThis = true;
         }
-    }
-    PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_eeinterface)
+    }, &param);
+
+    if (!success)
     {
         param.siglength = 0;
     }
-    PAL_ENDTRY
 
     /* add closing bracket and null terminator */
 

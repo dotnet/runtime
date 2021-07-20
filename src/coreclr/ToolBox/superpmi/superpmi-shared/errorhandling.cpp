@@ -121,6 +121,16 @@ LONG FilterSuperPMIExceptions_CatchNonSuperPMIException(PEXCEPTION_POINTERS pExc
     return !IsSuperPMIException(pExceptionPointers->ExceptionRecord->ExceptionCode);
 }
 
+
+// This filter function executes the handler only for non-SuperPMI generated exceptions, otherwise it continues the
+// handler search. This allows for SuperPMI-thrown exceptions to pass through the JIT and be caught by the outer
+// SuperPMI handler.
+LONG FilterSuperPMIExceptions_CatchSuperPMIException(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
+{
+    return IsSuperPMIException(pExceptionPointers->ExceptionRecord->ExceptionCode);
+}
+
+
 bool RunWithErrorTrap(void (*function)(void*), void* param)
 {
     bool success = true;
@@ -138,6 +148,31 @@ bool RunWithErrorTrap(void (*function)(void*), void* param)
         pTrapParam->function(pTrapParam->param);
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CatchNonSuperPMIException)
+    {
+        success = false;
+    }
+    PAL_ENDTRY
+
+    return success;
+}
+
+bool RunWithSPMIErrorTrap(void (*function)(void*), void* param)
+{
+    bool success = true;
+
+    struct TrapParam
+    {
+        void (*function)(void*);
+        void* param;
+    } trapParam;
+    trapParam.function = function;
+    trapParam.param    = param;
+
+    PAL_TRY(TrapParam*, pTrapParam, &trapParam)
+    {
+        pTrapParam->function(pTrapParam->param);
+    }
+    PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CatchSuperPMIException)
     {
         success = false;
     }
