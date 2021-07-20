@@ -39,6 +39,10 @@
 #include <sys/vfs.h>
 #elif HAVE_STATFS_MOUNT // BSD
 #include <sys/mount.h>
+#elif !HAVE_NON_LEGACY_STATFS // SunOS
+#include <sys/types.h>
+#include <sys/statvfs.h>
+#include <sys/vfs.h>
 #endif
 
 #ifdef _AIX
@@ -46,7 +50,7 @@
 // Somehow, AIX mangles the definition for this behind a C++ def
 // Redeclare it here
 extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
-#elif defined(__sun)
+#elif defined(TARGET_SUNOS)
 #ifndef _KERNEL
 #define _KERNEL
 #define UNDEF_KERNEL
@@ -1406,9 +1410,27 @@ int64_t SystemNative_GetFileSystemType(intptr_t fd)
     while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
     return statfsRes == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
 #else
-    #error "Platform doesn't support fstatfs"
+    (void)fd; // unused
+    return -1;
 #endif
 }
+
+char* SystemNative_GetFileSystemTypeAsString(intptr_t fd)
+{
+#if !HAVE_NON_LEGACY_STATFS
+    int statfsRes;
+    struct statvfs statfsArgs;
+    while ((statfsRes = fstatvfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
+    return statfsRes == -1 ? NULL : strdup(statfsArgs.f_basetype);
+#else
+    (void)fd; // unused
+    return NULL;
+#endif
+}
+
+#if !HAVE_STATFS_VFS && !HAVE_STATFS_MOUNT && HAVE_NON_LEGACY_STATFS
+    #error "Platform doesn't support fstatfs or fstatvfs"
+#endif
 
 int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length, int16_t lockType)
 {

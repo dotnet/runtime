@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <UseStatvfs Condition="'$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'">true</UseStatvfs>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\IO\DriveInfo.cs" />
@@ -58,6 +59,12 @@
              Link="Common\Interop\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs"
              Link="Common\Interop\Unix\Interop.UnixFileSystemTypes.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.statfs.cs"
+             Condition="'$(UseStatvfs)' != 'true'"
+             Link="Common\Interop\Unix\Interop.UnixFileSystemTypes.statfs.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.statvfs.cs"
+             Condition="'$(UseStatvfs)' == 'true'"
+             Link="Common\Interop\Unix\Interop.UnixFileSystemTypes.statvfs.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"

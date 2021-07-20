@@ -12742,6 +12742,8 @@ DONE_MORPHING_CHILDREN:
 
         CM_ADD_OP:
 
+            FALLTHROUGH;
+
         case GT_OR:
         case GT_XOR:
         case GT_AND:

@@ -723,6 +723,11 @@ PALEXPORT int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid);
 PALEXPORT int64_t SystemNative_GetFileSystemType(intptr_t fd);
 
 /**
+* Returns file system type name on success, or NULL on error.
+*/
+PALEXPORT char* SystemNative_GetFileSystemTypeAsString(intptr_t fd);
+
+/**
 * Attempts to lock/unlock the region of the file "fd" specified by the offset and length. lockType
 * can be set to F_UNLCK (2) for unlock or F_WRLCK (3) for lock.
 *

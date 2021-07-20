@@ -105,6 +105,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_RealPath)
     DllImportEntry(SystemNative_GetPeerID)
     DllImportEntry(SystemNative_GetFileSystemType)
+    DllImportEntry(SystemNative_GetFileSystemTypeAsString)
     DllImportEntry(SystemNative_LockFileRegion)
     DllImportEntry(SystemNative_LChflags)
     DllImportEntry(SystemNative_LChflagsCanSetHiddenFlag)
