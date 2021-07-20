@@ -273,6 +273,20 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("de-DE_phoneb").CompareInfo, "\u00DC", "UE", CompareOptions.None, useNls ? 0 : -1 };
                 yield return new object[] { new CultureInfo("es-ES_tradnl").CompareInfo, "llegar", "lugar", CompareOptions.None, useNls ? 1 : -1 };
             }
+
+            //
+            // Ordinal comparisons with ignore casing.
+            //
+
+            yield return new object[] { s_invariantCompare, "abcd", "abcd", CompareOptions.OrdinalIgnoreCase, 0};
+            yield return new object[] { s_invariantCompare, "abcd", "ABCD", CompareOptions.OrdinalIgnoreCase, 0};
+            yield return new object[] { s_invariantCompare, "Hello\u00F6", "HELLO\u00D6", CompareOptions.OrdinalIgnoreCase, 0};
+            yield return new object[] { s_invariantCompare, "Hello\uFE6A", "Hello\U0001F601", CompareOptions.OrdinalIgnoreCase, useNls ? 1 : -1};
+            yield return new object[] { s_invariantCompare, "Hello\U0001F601", "Hello\uFE6A", CompareOptions.OrdinalIgnoreCase, useNls ? -1 : 1};
+            yield return new object[] { s_invariantCompare, "\uDBFF", "\uD800\uDC00", CompareOptions.OrdinalIgnoreCase, useNls ? 1 : -1};
+            yield return new object[] { s_invariantCompare, "\uD800\uDC00", "\uDBFF", CompareOptions.OrdinalIgnoreCase, useNls ? -1 : 1};
+            yield return new object[] { s_invariantCompare, "abcdefg\uDBFF", "abcdefg\uD800\uDC00", CompareOptions.OrdinalIgnoreCase, useNls ? 1 : -1};
+            yield return new object[] { s_invariantCompare, "\U00010400", "\U00010428", CompareOptions.OrdinalIgnoreCase, useNls ? -1 : 0};
         }
 
         // There is a regression in Windows 190xx version with the Kana comparison. Avoid running this test there.

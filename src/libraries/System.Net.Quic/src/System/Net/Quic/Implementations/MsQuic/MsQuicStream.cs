@@ -18,6 +18,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Delegate that wraps the static function that will be called when receiving an event.
         internal static readonly StreamCallbackDelegate s_streamDelegate = new StreamCallbackDelegate(NativeCallbackHandler);
 
+        // The state is passed to msquic and then it's passed back by msquic to the callback handler.
         private readonly State _state = new State();
 
         private readonly bool _canRead;
@@ -31,6 +32,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         private sealed class State
         {
             public SafeMsQuicStreamHandle Handle = null!; // set in ctor.
+            // Roots the state in GC and it won't get collected while this exist.
+            // It must be kept alive until we receive SHUTDOWN_COMPLETE event
             public GCHandle StateGCHandle;
 
             public MsQuicStream? Stream; // roots the stream in the pinned state to prevent GC during an async read I/O.
@@ -71,6 +74,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             public readonly TaskCompletionSource ShutdownWriteCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             public ShutdownState ShutdownState;
+            // The value makes sure that we release the handles only once.
             public int ShutdownDone;
 
             // Set once stream have been shutdown.
@@ -780,6 +784,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             QuicExceptionHelpers.ThrowIfFailed(status, "StreamReceiveSetEnabled failed.");
         }
 
+        /// <summary>
+        /// Callback calls for a single instance of a stream are serialized by msquic.
+        /// They happen on a msquic thread and shouldn't take too long to not to block msquic.
+        /// </summary>
         private static uint NativeCallbackHandler(
             IntPtr stream,
             IntPtr context,

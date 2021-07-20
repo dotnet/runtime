@@ -427,20 +427,20 @@ namespace System.IO
         {
             string? targetPath = returnFinalTarget ?
                 GetFinalLinkTarget(linkPath, isDirectory) :
-                GetImmediateLinkTarget(linkPath, isDirectory, throwOnUnreachable: true, returnFullPath: true);
+                GetImmediateLinkTarget(linkPath, isDirectory, throwOnError: true, returnFullPath: true);
 
             return targetPath == null ? null :
                 isDirectory ? new DirectoryInfo(targetPath) : new FileInfo(targetPath);
         }
 
         internal static string? GetLinkTarget(string linkPath, bool isDirectory)
-            => GetImmediateLinkTarget(linkPath, isDirectory, throwOnUnreachable: false, returnFullPath: false);
+            => GetImmediateLinkTarget(linkPath, isDirectory, throwOnError: false, returnFullPath: false);
 
         /// <summary>
         /// Gets reparse point information associated to <paramref name="linkPath"/>.
         /// </summary>
         /// <returns>The immediate link target, absolute or relative or null if the file is not a supported link.</returns>
-        internal static unsafe string? GetImmediateLinkTarget(string linkPath, bool isDirectory, bool throwOnUnreachable, bool returnFullPath)
+        internal static unsafe string? GetImmediateLinkTarget(string linkPath, bool isDirectory, bool throwOnError, bool returnFullPath)
         {
             using SafeFileHandle handle = OpenSafeFileHandle(linkPath,
                     Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS |
@@ -448,13 +448,12 @@ namespace System.IO
 
             if (handle.IsInvalid)
             {
-                int error = Marshal.GetLastWin32Error();
-
-                if (!throwOnUnreachable && IsPathUnreachableError(error))
+                if (!throwOnError)
                 {
                     return null;
                 }
 
+                int error = Marshal.GetLastWin32Error();
                 // File not found doesn't make much sense coming from a directory.
                 if (isDirectory && error == Interop.Errors.ERROR_FILE_NOT_FOUND)
                 {
@@ -479,6 +478,11 @@ namespace System.IO
 
                 if (!success)
                 {
+                    if (!throwOnError)
+                    {
+                        return null;
+                    }
+
                     int error = Marshal.GetLastWin32Error();
                     // The file or directory is not a reparse point.
                     if (error == Interop.Errors.ERROR_NOT_A_REPARSE_POINT)
@@ -600,13 +604,15 @@ namespace System.IO
             {
                 // Since all these paths will be passed to CreateFile, which takes a string anyway, it is pointless to use span.
                 // I am not sure if it's possible to change CreateFile's param to ROS<char> and avoid all these allocations.
-                string? current = GetImmediateLinkTarget(linkPath, isDirectory, throwOnUnreachable: false, returnFullPath: true);
+
+                // We don't throw on error since we already did all the proper validations before.
+                string? current = GetImmediateLinkTarget(linkPath, isDirectory, throwOnError: false, returnFullPath: true);
                 string? prev = null;
 
                 while (current != null)
                 {
                     prev = current;
-                    current = GetImmediateLinkTarget(current, isDirectory, throwOnUnreachable: false, returnFullPath: true);
+                    current = GetImmediateLinkTarget(current, isDirectory, throwOnError: false, returnFullPath: true);
                 }
 
                 return prev;

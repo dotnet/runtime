@@ -304,12 +304,13 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-        public static void VerifyOneShotCfbPersistedUnsupportedFeedbackSize(
+        public static void VerifyCfbPersistedUnsupportedFeedbackSize(
             CngAlgorithm algorithm,
             Func<string, SymmetricAlgorithm> persistedFunc,
             int notSupportedFeedbackSizeInBits)
         {
             string keyName = Guid.NewGuid().ToString();
+            string feedbackSizeString = notSupportedFeedbackSizeInBits.ToString();
 
             // We try to delete the key later which will also dispose of it, so no need
             // to put this in a using.
@@ -319,9 +320,26 @@ namespace System.Security.Cryptography.Cng.Tests
             {
                 using (SymmetricAlgorithm alg = persistedFunc(keyName))
                 {
+                    alg.Mode = CipherMode.CFB;
+                    alg.FeedbackSize = notSupportedFeedbackSizeInBits;
+                    alg.Padding = PaddingMode.None;
+
                     byte[] destination = new byte[alg.BlockSize / 8];
-                    Assert.ThrowsAny<CryptographicException>(() =>
+                    CryptographicException ce = Assert.ThrowsAny<CryptographicException>(() =>
                         alg.EncryptCfb(Array.Empty<byte>(), destination, PaddingMode.None, notSupportedFeedbackSizeInBits));
+
+                    Assert.Contains(feedbackSizeString, ce.Message);
+
+                    ce = Assert.ThrowsAny<CryptographicException>(() =>
+                        alg.DecryptCfb(Array.Empty<byte>(), destination, PaddingMode.None, notSupportedFeedbackSizeInBits));
+
+                    Assert.Contains(feedbackSizeString, ce.Message);
+
+                    ce = Assert.ThrowsAny<CryptographicException>(() => alg.CreateDecryptor());
+                    Assert.Contains(feedbackSizeString, ce.Message);
+
+                    ce = Assert.ThrowsAny<CryptographicException>(() => alg.CreateEncryptor());
+                    Assert.Contains(feedbackSizeString, ce.Message);
                 }
             }
             finally

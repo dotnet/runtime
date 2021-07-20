@@ -27,15 +27,12 @@ namespace Wasm.Build.Tests
         public void SimpleNativeBuild(BuildArgs buildArgs, RunHost host, string id)
             => NativeBuild("simple_native_build", s_mainReturns42, buildArgs, host, id);
 
-
-
         private void NativeBuild(string projectNamePrefix, string projectContents, BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"{projectNamePrefix}_{buildArgs.Config}_{buildArgs.AOT}";
 
-            buildArgs = buildArgs with { ProjectName = projectName, ProjectFileContents = projectContents };
+            buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
-            Console.WriteLine ($"-- args: {buildArgs}, name: {projectName}");
 
             BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), projectContents),

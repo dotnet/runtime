@@ -232,6 +232,11 @@ namespace System.Text.Json.Tests
             // High byte expansion - parsing fails early at 254 characters.
             yield return new object[] { "\"" + new string('\u20AC', 250) + "\"" };
             yield return new object[] { "\"" + new string('\u20AC', 260) + "\"" };
+
+            // Whitespace
+            yield return new object[] { "\"\\t1997-07-16\"" };
+            yield return new object[] { "\"1997-07-16   \"" };
+            yield return new object[] { "\"   1997-07-16   \"" };
         }
 
         public static IEnumerable<object[]> DateTimeFractionTrimBaseTests()
