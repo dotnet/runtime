@@ -101,8 +101,8 @@ $(NATIVE_BIN_DIR)/include/wasm:
 $(BUILDS_OBJ_DIR):
 	mkdir -p $$@
 
-$(NATIVE_BIN_DIR)/dotnet.js: $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o runtime/bin/library_mono.js runtime/bin/binding_support.js runtime/bin/dotnet_support.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(2) $(EMCC_DEFAULT_RSP) | $(NATIVE_BIN_DIR)
-	$(EMCC) @$(EMCC_DEFAULT_RSP) $(1) --js-library runtime/bin/library_mono.js --js-library runtime/bin/binding_support.js --js-library runtime/bin/dotnet_support.js --js-library $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o $(2) -o $(NATIVE_BIN_DIR)/dotnet.js $(3)
+$(NATIVE_BIN_DIR)/dotnet.js: $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o runtime/bin/library-mono.js runtime/bin/binding-support.js runtime/bin/dotnet-support.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(2) $(EMCC_DEFAULT_RSP) | $(NATIVE_BIN_DIR)
+	$(EMCC) @$(EMCC_DEFAULT_RSP) $(1) --js-library runtime/bin/library-mono.js --js-library runtime/bin/binding-support.js --js-library runtime/bin/dotnet-support.js --js-library $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o $(2) -o $(NATIVE_BIN_DIR)/dotnet.js $(3)
 
 $(BUILDS_OBJ_DIR)/pinvoke-table.h: $(PINVOKE_TABLE) | $(BUILDS_OBJ_DIR)
 	if cmp -s $(PINVOKE_TABLE) $$@ ; then : ; else cp $(PINVOKE_TABLE) $$@ ; fi
@@ -141,7 +141,7 @@ clean:
 icu-files: $(wildcard $(ICU_LIBDIR)/*.dat) $(ICU_LIBDIR)/libicuuc.a $(ICU_LIBDIR)/libicui18n.a | $(NATIVE_BIN_DIR)
 	cp $^ $(NATIVE_BIN_DIR)
 
-source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/bin/binding_support.js runtime/bin/dotnet_support.js runtime/bin/library_mono.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js | $(NATIVE_BIN_DIR)/src
+source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/bin/binding-support.js runtime/bin/dotnet-support.js runtime/bin/library-mono.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js | $(NATIVE_BIN_DIR)/src
 	cp $^ $(NATIVE_BIN_DIR)/src
 
 header-files: runtime/pinvoke.h | $(NATIVE_BIN_DIR)/include/wasm

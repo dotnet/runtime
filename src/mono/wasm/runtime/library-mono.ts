@@ -537,9 +537,9 @@ var MonoSupportLib = {
 			MONO.commands_received = buffer_obj;
 		},
 
-		mono_wasm_send_dbg_command_with_parms: function (id, command_set, command, command_parameters, length, valtype, newvalue)
+		mono_wasm_send_dbg_command_with_parms: function (id: number, command_set: number, command: number, command_parameters: string, length: number, valtype: number, newvalue: string)
 		{
-			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
+			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters.length);
 			dataHeap.set (new Uint8Array (MONO._base64_to_uint8 (command_parameters)));
 			MONO._c_fn_table.mono_wasm_send_dbg_command_with_parms_wrapper (id, command_set, command, dataHeap.byteOffset, length, valtype, newvalue.toString());
 			let { res_ok, res } = MONO.commands_received;
@@ -548,9 +548,9 @@ var MonoSupportLib = {
 			return res;
 		},
 
-		mono_wasm_send_dbg_command: function (id, command_set, command, command_parameters)
+		mono_wasm_send_dbg_command: function (id: number, command_set: number, command: number, command_parameters: string)
 		{
-			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
+			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters.length);
 			dataHeap.set (new Uint8Array (MONO._base64_to_uint8 (command_parameters)));
 
 			MONO._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, dataHeap.byteOffset, command_parameters.length);
@@ -742,7 +742,7 @@ var MonoSupportLib = {
 			MONO.mono_wasm_set_is_debugger_attached(false);
 		},
 
-		_register_c_fn: function (name, ...args) {
+		_register_c_fn: function (name: string, ...args: any[]) {
 			Object.defineProperty (MONO._c_fn_table, name + '_wrapper', { value: Module.cwrap (name, ...args) });
 		},
 
