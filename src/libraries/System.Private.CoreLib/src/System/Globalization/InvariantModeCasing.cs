@@ -161,14 +161,15 @@ namespace System.Globalization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static (uint, int) GetScalar(ref char charA, int index, int length)
+        private static (uint, int) GetScalar(ref char source, int index, int length)
         {
+            char charA = source;
             if (!char.IsHighSurrogate(charA) || index >= length - 1)
             {
                 return ((uint)charA, 1);
             }
 
-            ref char charB = ref Unsafe.Add(ref charA, 1);
+            char charB = Unsafe.Add(ref source, 1);
             if (!char.IsLowSurrogate(charB))
             {
                 return ((uint)charA, 1);

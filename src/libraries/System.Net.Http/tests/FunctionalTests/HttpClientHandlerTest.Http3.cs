@@ -27,6 +27,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55774")]
         [InlineData(10)] // 2 bytes settings value.
         [InlineData(100)] // 4 bytes settings value.
         [InlineData(10_000_000)] // 8 bytes settings value.
@@ -166,6 +167,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55901")]
         public async Task SendMoreThanStreamLimitRequestsConcurrently_LastWaits(int streamLimit)
         {
             // This combination leads to a hang manifesting in CI only. Disabling it until there's more time to investigate.

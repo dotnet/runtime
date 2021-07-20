@@ -893,6 +893,10 @@ namespace System.Xml.Serialization
                     {
                         writer.Write_TimeSpan(o);
                     }
+                    else if (_primitiveType == typeof(DateTimeOffset))
+                    {
+                        writer.Write_dateTimeOffset(o);
+                    }
                     else
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlUnxpectedType, _primitiveType!.FullName));
@@ -970,6 +974,10 @@ namespace System.Xml.Serialization
                     else if (_primitiveType == typeof(TimeSpan))
                     {
                         o = reader.Read_TimeSpan();
+                    }
+                    else if (_primitiveType == typeof(DateTimeOffset))
+                    {
+                        o = reader.Read_dateTimeOffset();
                     }
                     else
                     {

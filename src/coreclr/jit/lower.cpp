@@ -6730,7 +6730,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
-    if (comp->opts.OptimizationEnabled())
+    if (!comp->opts.OptimizationEnabled())
     {
         return false;
     }
@@ -6751,7 +6751,9 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     {
         return false;
     }
-    if (varTypeIsSIMD(regType))
+
+    GenTree* src = blkNode->Data();
+    if (varTypeIsSIMD(regType) && src->IsConstInitVal())
     {
         // TODO-CQ: support STORE_IND SIMD16(SIMD16, CNT_INT 0).
         return false;
@@ -6764,13 +6766,12 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
-    GenTree* src = blkNode->Data();
     if (src->OperIsInitVal() && !src->IsConstInitVal())
     {
         return false;
     }
 
-    if (varTypeIsSmall(regType) && !src->IsConstInitVal())
+    if (varTypeIsSmall(regType) && !src->IsConstInitVal() && !src->IsLocal())
     {
         // source operand INDIR will use a widening instruction
         // and generate worse code, like `movzx` instead of `mov`

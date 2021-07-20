@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
   </PropertyGroup>
@@ -6,10 +6,6 @@
     <Compile Include="HttpClientJsonExtensionsTests.cs" />
     <Compile Include="HttpContentJsonExtensionsTests.cs" />
     <Compile Include="JsonContentTests.cs" />
-    <Compile Include="JsonContext\Int32.cs" />
-    <Compile Include="JsonContext\JsonContext.cs" />
-    <Compile Include="JsonContext\Person.cs" />
-    <Compile Include="JsonContext\String.cs" />
     <Compile Include="TestClasses.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
@@ -29,5 +25,8 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
     <Reference Include="System.Net.Http" />
     <ProjectReference Include="..\..\src\System.Net.Http.Json.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\gen\System.Text.Json.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

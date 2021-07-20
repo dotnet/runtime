@@ -328,12 +328,9 @@ namespace {_currentContext.ContextType.Namespace}
 
             private string GenerateForCollection(TypeGenerationSpec typeGenerationSpec)
             {
-                string typeCompilableName = typeGenerationSpec.TypeRef;
-                string typeFriendlyName = typeGenerationSpec.TypeInfoPropertyName;
-
                 // Key metadata
                 TypeGenerationSpec? collectionKeyTypeMetadata = typeGenerationSpec.CollectionKeyTypeMetadata;
-                Debug.Assert(!(typeGenerationSpec.CollectionType == CollectionType.Dictionary && collectionKeyTypeMetadata == null));
+                Debug.Assert(!(typeGenerationSpec.ClassType == ClassType.Dictionary && collectionKeyTypeMetadata == null));
                 string? keyTypeCompilableName = collectionKeyTypeMetadata?.TypeRef;
                 string? keyTypeReadableName = collectionKeyTypeMetadata?.TypeInfoPropertyName;
 
@@ -361,10 +358,7 @@ namespace {_currentContext.ContextType.Namespace}
 
                 string numberHandlingArg = $"{GetNumberHandlingAsStr(typeGenerationSpec.NumberHandling)}";
 
-                string serializeMethodName = $"{typeFriendlyName}{SerializeMethodNameSuffix}";
                 string serializeFuncNamedArg;
-
-                CollectionType collectionType = typeGenerationSpec.CollectionType;
 
                 string? serializeFuncSource;
                 if (!typeGenerationSpec.GenerateSerializationLogic)
@@ -374,81 +368,149 @@ namespace {_currentContext.ContextType.Namespace}
                 }
                 else
                 {
-                    bool canBeNull = typeGenerationSpec.CanBeNull;
+                    serializeFuncSource = typeGenerationSpec.ClassType == ClassType.Enumerable
+                        ? GenerateFastPathFuncForEnumerable(typeGenerationSpec)
+                        : GenerateFastPathFuncForDictionary(typeGenerationSpec);
 
-                    switch (collectionType)
-                    {
-                        case CollectionType.Array:
-                            serializeFuncSource = GenerateFastPathFuncForEnumerable(typeCompilableName, serializeMethodName, canBeNull, isArray: true, collectionValueTypeMetadata);
-                            break;
-                        case CollectionType.List:
-                            serializeFuncSource = GenerateFastPathFuncForEnumerable(typeCompilableName, serializeMethodName, canBeNull, isArray: false, collectionValueTypeMetadata);
-                            break;
-                        case CollectionType.Dictionary:
-                            serializeFuncSource = GenerateFastPathFuncForDictionary(typeCompilableName, serializeMethodName, canBeNull, collectionKeyTypeMetadata, collectionValueTypeMetadata);
-                            break;
-                        default:
-                            serializeFuncSource = null;
-                            break;
-                    }
-
-                    serializeFuncNamedArg = $"serializeFunc: {serializeMethodName}";
+                    serializeFuncNamedArg = $"serializeFunc: {typeGenerationSpec.FastPathSerializeMethodName}";
                 }
 
-                string collectionTypeInfoValue = collectionType switch
+                CollectionType collectionType = typeGenerationSpec.CollectionType;
+
+                string typeRef = typeGenerationSpec.TypeRef;
+                string createObjectFuncArg = typeGenerationSpec.ConstructionStrategy == ObjectConstructionStrategy.ParameterlessConstructor
+                    ? $"createObjectFunc: () => new {typeRef}()"
+                    : "createObjectFunc: null";
+
+                string collectionInfoCreationPrefix = collectionType switch
                 {
-                    CollectionType.Array => $"{JsonMetadataServicesTypeRef}.CreateArrayInfo<{valueTypeCompilableName}>({OptionsInstanceVariableName}, {valueTypeMetadataPropertyName}, {numberHandlingArg}, {serializeFuncNamedArg})",
-                    CollectionType.List => $"{JsonMetadataServicesTypeRef}.CreateListInfo<{typeCompilableName}, {valueTypeCompilableName}>({OptionsInstanceVariableName}, () => new {ListTypeRef}<{valueTypeCompilableName}>(), {valueTypeMetadataPropertyName}, {numberHandlingArg}, {serializeFuncNamedArg})",
-                    CollectionType.Dictionary => $"{JsonMetadataServicesTypeRef}.CreateDictionaryInfo<{typeCompilableName}, {keyTypeCompilableName!}, {valueTypeCompilableName}>({OptionsInstanceVariableName}, () => new {DictionaryTypeRef}<{keyTypeCompilableName}, {valueTypeCompilableName}>(), {keyTypeMetadataPropertyName!}, {valueTypeMetadataPropertyName}, {numberHandlingArg}, {serializeFuncNamedArg})",
-                    _ => throw new NotSupportedException()
+                    CollectionType.IListOfT => $"{JsonMetadataServicesTypeRef}.CreateIListInfo<",
+                    CollectionType.ICollectionOfT => $"{JsonMetadataServicesTypeRef}.CreateICollectionInfo<",
+                    CollectionType.StackOfT => $"{JsonMetadataServicesTypeRef}.CreateStackInfo<",
+                    CollectionType.QueueOfT => $"{JsonMetadataServicesTypeRef}.CreateQueueInfo<",
+                    CollectionType.Stack => $"{JsonMetadataServicesTypeRef}.CreateStackOrQueueInfo<",
+                    CollectionType.Queue => $"{JsonMetadataServicesTypeRef}.CreateStackOrQueueInfo<",
+                    CollectionType.IEnumerableOfT => $"{JsonMetadataServicesTypeRef}.CreateIEnumerableInfo<",
+                    CollectionType.IDictionaryOfTKeyTValue => $"{JsonMetadataServicesTypeRef}.CreateIDictionaryInfo<",
+                    _ => $"{JsonMetadataServicesTypeRef}.Create{collectionType}Info<"
                 };
 
-                string metadataInitSource = @$"_{typeFriendlyName} = {collectionTypeInfoValue};";
+                string dictInfoCreationPrefix = $"{collectionInfoCreationPrefix}{typeRef}, {keyTypeCompilableName!}, {valueTypeCompilableName}>({OptionsInstanceVariableName}, {createObjectFuncArg}, {keyTypeMetadataPropertyName!}, {valueTypeMetadataPropertyName}, {numberHandlingArg}, {serializeFuncNamedArg}";
+                string enumerableInfoCreationPrefix = $"{collectionInfoCreationPrefix}{typeRef}, {valueTypeCompilableName}>({OptionsInstanceVariableName}, {createObjectFuncArg}, {valueTypeMetadataPropertyName}, {numberHandlingArg}, {serializeFuncNamedArg}";
+                string immutableCollectionCreationSuffix = $"createRangeFunc: {typeGenerationSpec.ImmutableCollectionBuilderName}";
+
+                string collectionTypeInfoValue;
+
+                switch (collectionType)
+                {
+                    case CollectionType.Array:
+                        collectionTypeInfoValue = $"{collectionInfoCreationPrefix}{valueTypeCompilableName}>({OptionsInstanceVariableName}, {valueTypeMetadataPropertyName}, {numberHandlingArg}, {serializeFuncNamedArg})";
+                        break;
+                    case CollectionType.IEnumerable:
+                    case CollectionType.IList:
+                        collectionTypeInfoValue = $"{collectionInfoCreationPrefix}{typeRef}>({OptionsInstanceVariableName}, {createObjectFuncArg}, {valueTypeMetadataPropertyName}, {numberHandlingArg}, {serializeFuncNamedArg})";
+                        break;
+                    case CollectionType.Stack:
+                    case CollectionType.Queue:
+                        string addMethod = collectionType == CollectionType.Stack ? "Push" : "Enqueue";
+                        string addFuncNamedArg = $"addFunc: (collection, {ValueVarName}) => collection.{addMethod}({ValueVarName})";
+                        collectionTypeInfoValue = $"{collectionInfoCreationPrefix}{typeRef}>({OptionsInstanceVariableName}, {createObjectFuncArg}, {valueTypeMetadataPropertyName}, {numberHandlingArg}, {serializeFuncNamedArg}, {addFuncNamedArg})";
+                        break;
+                    case CollectionType.ImmutableEnumerable:
+                        collectionTypeInfoValue = $"{enumerableInfoCreationPrefix}, {immutableCollectionCreationSuffix})";
+                        break;
+                    case CollectionType.IDictionary:
+                        collectionTypeInfoValue = $"{collectionInfoCreationPrefix}{typeRef}>({OptionsInstanceVariableName}, {createObjectFuncArg}, {keyTypeMetadataPropertyName!}, {valueTypeMetadataPropertyName}, {numberHandlingArg}, {serializeFuncNamedArg})";
+                        break;
+                    case CollectionType.Dictionary:
+                    case CollectionType.IDictionaryOfTKeyTValue:
+                    case CollectionType.IReadOnlyDictionary:
+                        collectionTypeInfoValue = $"{dictInfoCreationPrefix})";
+                        break;
+                    case CollectionType.ImmutableDictionary:
+                        collectionTypeInfoValue = $"{dictInfoCreationPrefix}, {immutableCollectionCreationSuffix})";
+                        break;
+                    default:
+                        collectionTypeInfoValue = $"{enumerableInfoCreationPrefix})";
+                        break;
+                }
+
+                string metadataInitSource = @$"_{typeGenerationSpec.TypeInfoPropertyName} = {collectionTypeInfoValue};";
 
                 return GenerateForType(typeGenerationSpec, metadataInitSource, serializeFuncSource);
             }
 
-            private string GenerateFastPathFuncForEnumerable(string typeInfoRef, string serializeMethodName, bool canBeNull, bool isArray, TypeGenerationSpec valueTypeGenerationSpec)
+            private string GenerateFastPathFuncForEnumerable(TypeGenerationSpec typeGenerationSpec)
             {
-                string? writerMethodToCall = GetWriterMethod(valueTypeGenerationSpec.Type);
-                string valueToWrite = $"{ValueVarName}[i]";
-                string lengthPropName = isArray ? "Length" : "Count";
+                TypeGenerationSpec valueTypeGenerationSpec = typeGenerationSpec.CollectionValueTypeMetadata;
 
-                string elementSerializationLogic;
-                if (writerMethodToCall != null)
+                Type elementType = valueTypeGenerationSpec.Type;
+                string? writerMethodToCall = GetWriterMethod(elementType);
+                
+                string iterationLogic;
+                string valueToWrite;
+
+                switch (typeGenerationSpec.CollectionType)
                 {
-                    elementSerializationLogic = $"{writerMethodToCall}Value({valueToWrite});";
-                }
-                else
+                    case CollectionType.Array:
+                        iterationLogic = $"for (int i = 0; i < {ValueVarName}.Length; i++)";
+                        valueToWrite = $"{ValueVarName}[i]";
+                        break;
+                    case CollectionType.IListOfT:
+                    case CollectionType.List:
+                    case CollectionType.IList:
+                        iterationLogic = $"for (int i = 0; i < {ValueVarName}.Count; i++)";
+                        valueToWrite = $"{ValueVarName}[i]";
+                        break;
+                    default:
+                        const string elementVarName = "element";
+                        iterationLogic = $"foreach ({valueTypeGenerationSpec.TypeRef} {elementVarName} in {ValueVarName})";
+                        valueToWrite = elementVarName;
+                        break;
+                };
+
+                if (elementType == _generationSpec.CharType)
                 {
-                    elementSerializationLogic = GetSerializeLogicForNonPrimitiveType(valueTypeGenerationSpec.TypeInfoPropertyName, valueToWrite, valueTypeGenerationSpec.GenerateSerializationLogic);
+                    valueToWrite = $"{valueToWrite}.ToString()";
                 }
+
+                string elementSerializationLogic = writerMethodToCall == null
+                    ? GetSerializeLogicForNonPrimitiveType(valueTypeGenerationSpec.TypeInfoPropertyName, valueToWrite, valueTypeGenerationSpec.GenerateSerializationLogic)
+                    : $"{writerMethodToCall}Value({valueToWrite});";
 
                 string serializationLogic = $@"{WriterVarName}.WriteStartArray();
 
-    for (int i = 0; i < {ValueVarName}.{lengthPropName}; i++)
+    {iterationLogic}
     {{
         {elementSerializationLogic}
     }}
 
     {WriterVarName}.WriteEndArray();";
 
-                return GenerateFastPathFuncForType(serializeMethodName, typeInfoRef, serializationLogic, canBeNull);
+                return GenerateFastPathFuncForType(
+                    typeGenerationSpec.FastPathSerializeMethodName,
+                    typeGenerationSpec.TypeRef,
+                    serializationLogic,
+                    typeGenerationSpec.CanBeNull);
             }
 
-            private string GenerateFastPathFuncForDictionary(
-                string typeInfoRef,
-                string serializeMethodName,
-                bool canBeNull,
-                TypeGenerationSpec keyTypeGenerationSpec,
-                TypeGenerationSpec valueTypeGenerationSpec)
+            private string GenerateFastPathFuncForDictionary(TypeGenerationSpec typeGenerationSpec)
             {
+                TypeGenerationSpec keyTypeGenerationSpec = typeGenerationSpec.CollectionKeyTypeMetadata;
+                TypeGenerationSpec valueTypeGenerationSpec = typeGenerationSpec.CollectionValueTypeMetadata;
+
+                Type elementType = valueTypeGenerationSpec.Type;
+                string? writerMethodToCall = GetWriterMethod(elementType);
+                string elementSerializationLogic;
+
                 const string pairVarName = "pair";
                 string keyToWrite = $"{pairVarName}.Key";
                 string valueToWrite = $"{pairVarName}.Value";
 
-                string? writerMethodToCall = GetWriterMethod(valueTypeGenerationSpec.Type);
-                string elementSerializationLogic;
+                if (elementType == _generationSpec.CharType)
+                {
+                    valueToWrite = $"{valueToWrite}.ToString()";
+                }
 
                 if (writerMethodToCall != null)
                 {
@@ -469,7 +531,11 @@ namespace {_currentContext.ContextType.Namespace}
 
     {WriterVarName}.WriteEndObject();";
 
-                return GenerateFastPathFuncForType(serializeMethodName, typeInfoRef, serializationLogic, canBeNull);
+                return GenerateFastPathFuncForType(
+                    typeGenerationSpec.FastPathSerializeMethodName,
+                    typeGenerationSpec.TypeRef,
+                    serializationLogic,
+                    typeGenerationSpec.CanBeNull);
             }
 
             private string GenerateForObject(TypeGenerationSpec typeMetadata)

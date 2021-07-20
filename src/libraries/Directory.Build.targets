@@ -24,7 +24,7 @@
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrentBuildSettings)'))</NativeBinDir>
     <NetCoreAppCurrentTestHostPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(NetCoreAppCurrentBuildSettings)'))</NetCoreAppCurrentTestHostPath>
     <NetCoreAppCurrentTestHostSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(NetCoreAppCurrentTestHostPath)', 'shared', '$(MicrosoftNetCoreAppFrameworkName)', '$(ProductVersion)'))</NetCoreAppCurrentTestHostSharedFrameworkPath>
-    
+
     <SymbolPackageOutputPath>$(PackageOutputPath)</SymbolPackageOutputPath>
 
     <NoWarn Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' or '$(TargetFrameworkIdentifier)' == '.NETStandard' or ('$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '3.0')))">$(NoWarn);nullable</NoWarn>
@@ -282,10 +282,14 @@
   </Choose>
 
   <Target Name="LibIntellisenseDocs" Condition="'$(IncludeBuildOutput)' == 'true'">
+   <PropertyGroup>
+     <_intellisenseRootFolder>$(BuildOutputTargetFolder)</_intellisenseRootFolder>
+     <_intellisenseRootFolder Condition="'$(_intellisenseRootFolder)' == ''">lib</_intellisenseRootFolder>
+   </PropertyGroup>
    <ItemGroup>
       <TfmSpecificPackageFile Include="$(XmlDocFileRoot)1033\$(TargetName).xml"
                               Condition="Exists('$(XmlDocFileRoot)1033\$(TargetName).xml')"
-                              PackagePath="lib/$(TargetFramework)" />
+                              PackagePath="$(_intellisenseRootFolder)/$(TargetFramework)" />
     </ItemGroup>
   </Target>
 
@@ -294,8 +298,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Ensure AnalyzerReference items are restored and built 
-         The target framework of Analyzers has no relationship to that of the refrencing project, 
+    <!-- Ensure AnalyzerReference items are restored and built
+         The target framework of Analyzers has no relationship to that of the refrencing project,
          so we don't apply TargetFramework filters nor do we pass in TargetFramework.
          When BuildProjectReferences=false we make sure to set BuildReference=false to make
          sure not to try to call GetTargetPath in the outerbuild of the analyzer project. -->
@@ -313,9 +317,9 @@
 
     <ItemGroup>
       <Content Include="@(_AnalyzerFile)" Pack="True" Condition="!%(_AnalyzerFile.IsSymbol)" />
-      <!-- Symbols don't honor PackagePath.  By default they are placed in lib/%(TargetFramework).           
+      <!-- Symbols don't honor PackagePath.  By default they are placed in lib/%(TargetFramework).
            Pack does honor TargetPath and does Path.Combine("lib/%(TargetFramework)", "%(TargetPath)"),
-           so a rooted path value for TargetPath will override lib. 
+           so a rooted path value for TargetPath will override lib.
            https://github.com/NuGet/Home/issues/10860 -->
       <_TargetPathsToSymbols Include="@(_AnalyzerFile)" TargetPath="/%(_AnalyzerFile.PackagePath)" Condition="%(_AnalyzerFile.IsSymbol)" />
     </ItemGroup>
@@ -331,94 +335,9 @@
       <_AnalyzerPackFile Include="@(_TargetPathsToSymbols)" IsSymbol="true" />
       <_AnalyzerPackFile PackagePath="$(_analyzerPath)/%(TargetPath)" />
     </ItemGroup>
-    <Error Condition="'%(_AnalyzerPackFile.TargetFramework)' != 'netstandard2.0'" 
+    <Error Condition="'%(_AnalyzerPackFile.TargetFramework)' != 'netstandard2.0'"
            Text="Analyzers must only target netstandard2.0 since they run in the compiler which targets netstandard2.0. The following files were found to target '%(_AnalyzerPackFile.TargetFramework)': @(_AnalyzerPackFile)" />
   </Target>
 
-  <!-- ************** Workload based testing ************** -->
-
-  <Target Name="ProvisionSdkForWorkloadTesting" Condition="!Exists($(SdkForWorkloadTestingStampPath)) and '$(InstallWorkloadForTesting)' == 'true'">
-    <Error Text="%24(SdkPathForWorkloadTesting) is not set" Condition="'$(SdkPathForWorkloadTesting)' == ''" />
-    <Error Text="%24(SdkVersionForWorkloadTesting) is not set" Condition="'$(SdkVersionForWorkloadTesting)' == ''" />
-
-    <Message Text="** Installing sdk $(SdkVersionForWorkloadTesting) for workload based tests" Importance="High" />
-
-    <RemoveDir Directories="$(SdkPathForWorkloadTesting)" />
-    <MakeDir Directories="$(SdkPathForWorkloadTesting)" />
-
-    <PropertyGroup>
-      <_DotNetInstallScriptPath Condition="!$([MSBuild]::IsOSPlatform('windows'))">$(DOTNET_INSTALL_DIR)/dotnet-install.sh</_DotNetInstallScriptPath>
-      <_DotNetInstallScriptPath Condition=" $([MSBuild]::IsOSPlatform('windows'))">$(RepoRoot).dotnet\dotnet-install.ps1</_DotNetInstallScriptPath>
-    </PropertyGroup>
-
-    <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-          Command="chmod +x $(_DotNetInstallScriptPath); $(_DotNetInstallScriptPath) -i $(SdkPathForWorkloadTesting) -v $(SdkVersionForWorkloadTesting)" />
-
-    <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
-          Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallScriptPath) -InstallDir $(SdkPathForWorkloadTesting) -Version $(SdkVersionForWorkloadTesting)"' />
-
-    <WriteLinesToFile File="$(SdkForWorkloadTestingStampPath)" Lines="" Overwrite="true" />
-  </Target>
-
-  <Target Name="GetWorkloadInputs">
-    <ItemGroup>
-      <AvailableNuGetsInArtifacts Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
-    </ItemGroup>
-
-    <Error Text="Cannot find any nupkg files in $(LibrariesShippingPackagesDir), needed for workloads" Condition="@(AvailableNuGetsInArtifacts->Count()) == 0" />
-  </Target>
-
-  <UsingTask Condition="'$(InstallWorkloadForTesting)' == 'true'"
-             TaskName="Microsoft.Workload.Build.Tasks.InstallWorkloadFromArtifacts"
-             AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
-
-  <UsingTask Condition="'$(InstallWorkloadForTesting)' == 'true'"
-             TaskName="GenerateFileFromTemplate"
-             AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
-
-  <Target Name="InstallWorkloadUsingArtifacts"
-          AfterTargets="ArchiveTests"
-          DependsOnTargets="ProvisionSdkForWorkloadTesting;GetWorkloadInputs"
-          Inputs="@(AvailableNuGetsInArtifacts)"
-          Outputs="$(WorkloadStampFile)"
-          Condition="'$(InstallWorkloadForTesting)' == 'true'">
-
-    <ItemGroup>
-      <_PropsForAOTCrossBuild Include="TestingWorkloads=true" />
-      <_PropsForAOTCrossBuild Include="Configuration=$(Configuration)" />
-      <_PropsForAOTCrossBuild Include="TargetOS=Browser" />
-      <_PropsForAOTCrossBuild Include="TargetArchitecture=wasm" />
-      <_PropsForAOTCrossBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
-
-      <_PropsForAOTCrossBuild Include="RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)" />
-      <_PropsForAOTCrossBuild Include="TargetCrossRid=$(RuntimeIdentifier)" />
-    </ItemGroup>
-
-    <Exec Command="dotnet build -bl -restore -t:Pack @(_PropsForAOTCrossBuild -> '-p:%(Identity)', ' ') Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
-          WorkingDirectory="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App" />
-
-    <ItemGroup>
-      <_NuGetSourceForWorkloads Include="dotnet6" Value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6/nuget/v3/index.json" />
-      <_BuiltNuGets Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <!-- Eg. Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm.6.0.0-dev.nupkg -->
-      <_AOTCrossNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RuntimeIdentifier).$(PackageVersion).nupkg</_AOTCrossNuGetPath>
-    </PropertyGroup>
-
-    <Error Text="Could not find cross compiler nupkg at $(_AOTCrossNuGetPath). Found packages: @(_BuiltNuGets)"
-           Condition="!Exists($(_AOTCrossNuGetPath))" />
-
-    <Message Text="Packages found in $(LibrariesShippingPackagesDir): @(_BuiltNuGets)" Importance="Low" />
-
-    <InstallWorkloadFromArtifacts
-                     WorkloadId="@(WorkloadIdForTesting)"
-                     VersionBand="$(SdkBandVersion)"
-                     LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
-                     ExtraNuGetSources="@(_NuGetSourceForWorkloads)"
-                     SdkDir="$(SdkPathForWorkloadTesting)" />
-
-    <WriteLinesToFile File="$(WorkloadStampFile)" Lines="" Overwrite="true" />
-  </Target>
+  <Import Project="$(MSBuildThisFileDirectory)workloads-testing.targets" />
 </Project>

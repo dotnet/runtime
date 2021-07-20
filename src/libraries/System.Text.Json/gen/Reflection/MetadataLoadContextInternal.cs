@@ -43,8 +43,6 @@ namespace System.Text.Json.Reflection
             MainAssembly = new AssemblyWrapper(compilation.Assembly, this);
         }
 
-        public Type Resolve<T>() => Resolve(typeof(T));
-
         public Type? Resolve(Type type)
         {
             string assemblyName = type.Assembly.GetName().Name;

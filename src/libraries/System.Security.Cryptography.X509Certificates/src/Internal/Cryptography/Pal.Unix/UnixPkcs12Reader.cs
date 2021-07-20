@@ -786,7 +786,7 @@ namespace Internal.Cryptography.Pal
                 }
                 finally
                 {
-                    CryptoPool.Return(decrypted.Array!, clearSize: decrypted.Count);
+                    CryptoPool.Return(decrypted);
                 }
             }
 

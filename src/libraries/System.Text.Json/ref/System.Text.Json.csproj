@@ -13,11 +13,13 @@
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\ref\System.Collections.Concurrent.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\ref\System.Memory.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
     <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="netstandard" />
