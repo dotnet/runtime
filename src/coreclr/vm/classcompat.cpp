@@ -1241,7 +1241,11 @@ VOID MethodTableBuilder::BuildInteropVTable_ExpandInterface(InterfaceInfo_t *pIn
     if (pNewInterface->GetNumInterfaces() != 0) {
         MethodTable::InterfaceMapIterator it = pNewInterface->IterateInterfaceMap();
         while (it.Next()) {
-            BuildInteropVTable_ExpandInterface(pInterfaceMap, it.GetInterface(),
+            MethodTable *pItf = it.GetInterfaceApprox();
+            if (pItf->HasInstantiation() || pItf->IsSpecialMarkerTypeForGenericCasting())
+                continue;
+            
+            BuildInteropVTable_ExpandInterface(pInterfaceMap, pItf,
                                                pwInterfaceListSize, pdwMaxInterfaceMethods, FALSE);
         }
     }

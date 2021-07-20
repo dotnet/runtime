@@ -2,49 +2,37 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class ImmutableEnumerableOfTConverter<TCollection, TElement>
+    internal class ImmutableEnumerableOfTConverter<TCollection, TElement>
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : IEnumerable<TElement>
     {
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
-        public ImmutableEnumerableOfTConverter()
-        {
-        }
-
-        protected override void Add(in TElement value, ref ReadStack state)
+        protected sealed override void Add(in TElement value, ref ReadStack state)
         {
             ((List<TElement>)state.Current.ReturnValue!).Add(value);
         }
 
-        internal override bool CanHaveIdMetadata => false;
+        internal sealed override bool CanHaveIdMetadata => false;
 
-        protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        protected sealed override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             state.Current.ReturnValue = new List<TElement>();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "The ctor is marked RequiresUnreferencedCode.")]
-        protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
+        protected sealed override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
             Func<IEnumerable<TElement>, TCollection>? creator = (Func<IEnumerable<TElement>, TCollection>?)typeInfo.CreateObjectWithArgs;
-            if (creator == null)
-            {
-                creator = options.MemberAccessorStrategy.CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>();
-                typeInfo.CreateObjectWithArgs = creator;
-            }
-
+            Debug.Assert(creator != null);
             state.Current.ReturnValue = creator((List<TElement>)state.Current.ReturnValue!);
         }
 
-        protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
+        protected sealed override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
         {
             IEnumerator<TElement> enumerator;
             if (state.Current.CollectionEnumerator == null)

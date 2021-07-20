@@ -6,6 +6,7 @@
 // <is-shared-static>)
 
 // clang-format off
+ValueNumFuncDef(MemOpaque, 1, false, false, false)  // Args: 0: loop num
 ValueNumFuncDef(MapStore, 3, false, false, false)   // Args: 0: map, 1: index (e. g. field handle), 2: value being stored.
 ValueNumFuncDef(MapSelect, 2, false, false, false)  // Args: 0: map, 1: key.
 
@@ -127,6 +128,9 @@ ValueNumFuncDef(GetsharedGcthreadstaticBaseNoctor, 2, false, true, true)
 ValueNumFuncDef(GetsharedNongcthreadstaticBaseNoctor, 2, false, true, true)
 ValueNumFuncDef(GetsharedGcthreadstaticBaseDynamicclass, 2, false, true, true)
 ValueNumFuncDef(GetsharedNongcthreadstaticBaseDynamicclass, 2, false, true, true)
+
+ValueNumFuncDef(GetDefaultComparer, 1, false, true, false)
+ValueNumFuncDef(GetDefaultEqualityComparer, 1, false, true, false)
 
 ValueNumFuncDef(ClassinitSharedDynamicclass, 2, false, false, false)
 ValueNumFuncDef(RuntimeHandleMethod, 2, false, true, false)

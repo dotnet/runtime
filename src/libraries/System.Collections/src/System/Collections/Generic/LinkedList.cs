@@ -177,7 +177,7 @@ namespace System.Collections.Generic
             while (current != null)
             {
                 LinkedListNode<T> temp = current;
-                current = current.Next;   // use Next the instead of "next", otherwise it will loop forever
+                current = current.Next;
                 temp.Invalidate();
             }
 

@@ -11,6 +11,8 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public abstract class AnyRef : SafeHandleMinusOneIsInvalid
     {
+        private GCHandle? InFlight;
+        private int InFlightCounter;
         private GCHandle AnyRefHandle;
         public int JSHandle => (int)handle;
 
@@ -21,8 +23,40 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             SetHandle(jsHandle);
             AnyRefHandle = GCHandle.Alloc(this, ownsHandle ? GCHandleType.Weak : GCHandleType.Normal);
+            InFlight = null;
+            InFlightCounter = 0;
         }
         internal int Int32Handle => (int)(IntPtr)AnyRefHandle;
+
+        internal void AddInFlight()
+        {
+            lock (this)
+            {
+                InFlightCounter++;
+                if (InFlightCounter == 1)
+                {
+                    Debug.Assert(InFlight == null);
+                    InFlight = GCHandle.Alloc(this, GCHandleType.Normal);
+                }
+            }
+        }
+
+        internal void ReleaseInFlight()
+        {
+            lock (this)
+            {
+                Debug.Assert(InFlightCounter != 0);
+
+                InFlightCounter--;
+                if (InFlightCounter == 0)
+                {
+                    Debug.Assert(InFlight.HasValue);
+                    InFlight.Value.Free();
+                    InFlight = null;
+                }
+            }
+        }
+
 
         protected void FreeGCHandle()
         {

@@ -60,12 +60,12 @@ namespace System.Reflection
 
         public string? CodeBase
         {
-            [RequiresAssemblyFiles(Message = "The code will return an empty string for assemblies embedded in a single-file app")]
+            [RequiresAssemblyFiles("The code will return an empty string for assemblies embedded in a single-file app")]
             get => _codeBase;
             set => _codeBase = value;
         }
 
-        [RequiresAssemblyFiles(Message = "The code will return an empty string for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles("The code will return an empty string for assemblies embedded in a single-file app")]
         public string? EscapedCodeBase
         {
             get
@@ -261,7 +261,7 @@ namespace System.Reflection
             return refName.Equals(defName, StringComparison.OrdinalIgnoreCase);
         }
 
-        [RequiresAssemblyFiles(Message = "The code will return an empty string for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles("The code will return an empty string for assemblies embedded in a single-file app")]
         internal static string EscapeCodeBase(string? codebase)
         {
             if (codebase == null)

@@ -7874,10 +7874,20 @@ bool Compiler::impTailCallRetTypeCompatible(var_types                callerRetTy
                                             CORINFO_CLASS_HANDLE     calleeRetTypeClass,
                                             CorInfoCallConvExtension calleeCallConv)
 {
-    // Note that we can not relax this condition with genActualType() as the
-    // calling convention dictates that the caller of a function with a small
-    // typed return value is responsible for normalizing the return val.
+    // Early out if the types are the same.
     if (callerRetType == calleeRetType)
+    {
+        return true;
+    }
+
+    // For integral types the managed calling convention dictates that callee
+    // will widen the return value to 4 bytes, so we can allow implicit widening
+    // in managed to managed tailcalls when dealing with <= 4 bytes.
+    bool isManaged =
+        (callerCallConv == CorInfoCallConvExtension::Managed) && (calleeCallConv == CorInfoCallConvExtension::Managed);
+
+    if (isManaged && varTypeIsIntegral(callerRetType) && varTypeIsIntegral(calleeRetType) &&
+        (genTypeSize(callerRetType) <= 4) && (genTypeSize(calleeRetType) <= genTypeSize(callerRetType)))
     {
         return true;
     }
@@ -8672,7 +8682,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     if (call->gtFlags & GTF_CALL_UNMANAGED)
     {
         // We set up the unmanaged call by linking the frame, disabling GC, etc
-        // This needs to be cleaned up on return
+        // This needs to be cleaned up on return.
+        // In addition, native calls have different normalization rules than managed code
+        // (managed calling convention always widens return values in the callee)
         if (canTailCall)
         {
             canTailCall             = false;
@@ -13063,27 +13075,36 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
 
-#ifdef TARGET_64BIT
-                if (varTypeIsI(op1->TypeGet()) && (genActualType(op2->TypeGet()) == TYP_INT))
+                // Recognize the IL idiom of CGT_UN(op1, 0) and normalize
+                // it so that downstream optimizations don't have to.
+                if ((opcode == CEE_CGT_UN) && op2->IsIntegralConst(0))
                 {
-                    op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
+                    oper = GT_NE;
+                    uns  = false;
                 }
-                else if (varTypeIsI(op2->TypeGet()) && (genActualType(op1->TypeGet()) == TYP_INT))
+
+#ifdef TARGET_64BIT
+                // TODO-Casts: create a helper that upcasts int32 -> native int when necessary.
+                // See also identical code in impGetByRefResultType and STSFLD import.
+                if (varTypeIsI(op1) && (genActualType(op2) == TYP_INT))
                 {
-                    op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
+                    op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, TYP_I_IMPL);
+                }
+                else if (varTypeIsI(op2) && (genActualType(op1) == TYP_INT))
+                {
+                    op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, TYP_I_IMPL);
                 }
 #endif // TARGET_64BIT
 
-                assertImp(genActualType(op1->TypeGet()) == genActualType(op2->TypeGet()) ||
-                          (varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet())) ||
-                          (varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType)));
+                assertImp(genActualType(op1) == genActualType(op2) || (varTypeIsI(op1) && varTypeIsI(op2)) ||
+                          (varTypeIsFloating(op1) && varTypeIsFloating(op2)));
 
-                /* Create the comparison node */
+                // Create the comparison node.
 
                 op1 = gtNewOperNode(oper, TYP_INT, op1, op2);
 
-                /* TODO: setting both flags when only one is appropriate */
-                if (opcode == CEE_CGT_UN || opcode == CEE_CLT_UN)
+                // TODO: setting both flags when only one is appropriate.
+                if (uns)
                 {
                     op1->gtFlags |= GTF_RELOP_NAN_UN | GTF_UNSIGNED;
                 }
@@ -13246,8 +13267,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto COND_JUMP;
 
             case CEE_SWITCH:
-                assert(!compIsForInlining());
-
                 if (tiVerificationNeeded)
                 {
                     Verify(impStackTop().seTypeInfo.IsType(TI_INT), "Bad switch val");
@@ -18921,36 +18940,34 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         inlineResult->Note(InlineObservation::CALLSITE_NONGENERIC_CALLS_GENERIC);
     }
 
-    if (pInlineInfo != nullptr)
+    // Inspect callee's arguments (and the actual values at the callsite for them)
+    CORINFO_SIG_INFO        sig    = info.compMethodInfo->args;
+    CORINFO_ARG_LIST_HANDLE sigArg = sig.args;
+
+    GenTreeCall::Use* argUse = pInlineInfo == nullptr ? nullptr : pInlineInfo->iciCall->AsCall()->gtCallArgs;
+
+    for (unsigned i = 0; i < info.compMethodInfo->args.numArgs; i++)
     {
-        // Inspect callee's arguments (and the actual values at the callsite for them)
-        CORINFO_SIG_INFO        sig    = info.compMethodInfo->args;
-        CORINFO_ARG_LIST_HANDLE sigArg = sig.args;
+        CORINFO_CLASS_HANDLE sigClass;
+        CorInfoType          corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
+        GenTree*             argNode = argUse == nullptr ? nullptr : argUse->GetNode()->gtSkipPutArgType();
 
-        GenTreeCall::Use* argUse = pInlineInfo->iciCall->AsCall()->gtCallArgs;
-
-        for (unsigned i = 0; i < info.compMethodInfo->args.numArgs; i++)
+        if (corType == CORINFO_TYPE_CLASS)
         {
-            assert(argUse != nullptr);
+            sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
+        }
+        else if (corType == CORINFO_TYPE_VALUECLASS)
+        {
+            inlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT);
+        }
+        else if (corType == CORINFO_TYPE_BYREF)
+        {
+            sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
+            corType  = info.compCompHnd->getChildType(sigClass, &sigClass);
+        }
 
-            CORINFO_CLASS_HANDLE sigClass;
-            CorInfoType          corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
-            GenTree*             argNode = argUse->GetNode()->gtSkipPutArgType();
-
-            if (corType == CORINFO_TYPE_CLASS)
-            {
-                sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
-            }
-            else if (corType == CORINFO_TYPE_VALUECLASS)
-            {
-                inlineResult->Note(InlineObservation::CALLEE_ARG_STRUCT);
-            }
-            else if (corType == CORINFO_TYPE_BYREF)
-            {
-                sigClass = info.compCompHnd->getArgClass(&sig, sigArg);
-                corType  = info.compCompHnd->getChildType(sigClass, &sigClass);
-            }
-
+        if (argNode != nullptr)
+        {
             bool                 isExact   = false;
             bool                 isNonNull = false;
             CORINFO_CLASS_HANDLE argCls    = gtGetClassHandle(argNode, &isExact, &isNonNull);
@@ -18978,10 +18995,9 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
             {
                 inlineResult->Note(InlineObservation::CALLSITE_ARG_CONST);
             }
-
-            sigArg = info.compCompHnd->getArgNext(sigArg);
             argUse = argUse->GetNext();
         }
+        sigArg = info.compCompHnd->getArgNext(sigArg);
     }
 
     // Note if the callee's return type is a value type
@@ -18998,6 +19014,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
         {
             inlineResult->Note(InlineObservation::CALLEE_CLASS_PROMOTABLE);
         }
+        inlineResult->Note(InlineObservation::CALLEE_CLASS_VALUETYPE);
     }
 
 #ifdef FEATURE_SIMD
@@ -19061,24 +19078,30 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     inlineResult->NoteInt(InlineObservation::CALLSITE_FREQUENCY, static_cast<int>(frequency));
     inlineResult->NoteInt(InlineObservation::CALLSITE_WEIGHT, (int)(weight));
 
+    bool   hasProfile  = false;
+    double profileFreq = 0.0;
+
     // If the call site has profile data, report the relative frequency of the site.
     //
-    if ((pInlineInfo != nullptr) && pInlineInfo->iciBlock->hasProfileWeight())
+    if ((pInlineInfo != nullptr) && rootCompiler->fgHaveSufficientProfileData())
     {
-        double callSiteWeight = (double)pInlineInfo->iciBlock->bbWeight;
-        double entryWeight    = (double)impInlineRoot()->fgFirstBB->bbWeight;
+        const BasicBlock::weight_t callSiteWeight = pInlineInfo->iciBlock->bbWeight;
+        const BasicBlock::weight_t entryWeight    = rootCompiler->fgFirstBB->bbWeight;
+        profileFreq                               = entryWeight == 0.0f ? 0.0 : callSiteWeight / entryWeight;
+        hasProfile                                = true;
 
         assert(callSiteWeight >= 0);
         assert(entryWeight >= 0);
-
-        if (entryWeight != 0)
-        {
-            inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, true);
-
-            double frequency = callSiteWeight / entryWeight;
-            inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, frequency);
-        }
     }
+    else if (pInlineInfo == nullptr)
+    {
+        // Simulate a hot callsite for PrejitRoot mode.
+        hasProfile  = true;
+        profileFreq = 1.0;
+    }
+
+    inlineResult->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE, hasProfile);
+    inlineResult->NoteDouble(InlineObservation::CALLSITE_PROFILE_FREQUENCY, profileFreq);
 }
 
 /*****************************************************************************
@@ -19224,6 +19247,10 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 goto _exit;
             }
 
+            // Profile data allows us to avoid early "too many IL bytes" outs.
+            pParam->result->NoteBool(InlineObservation::CALLSITE_HAS_PROFILE,
+                                     pParam->pThis->fgHaveSufficientProfileData());
+
             bool forceInline;
             forceInline = !!(pParam->methAttr & CORINFO_FLG_FORCEINLINE);
 
@@ -19233,6 +19260,19 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             {
                 assert(pParam->result->IsNever());
                 goto _exit;
+            }
+
+            // It's better for JIT to keep these methods not inlined for CQ.
+            NamedIntrinsic ni;
+            if (pParam->call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+            {
+                ni = pParam->pThis->lookupNamedIntrinsic(pParam->call->gtCallMethHnd);
+                if ((ni == NI_System_Collections_Generic_Comparer_get_Default) ||
+                    (ni == NI_System_Collections_Generic_EqualityComparer_get_Default))
+                {
+                    pParam->result->NoteFatal(InlineObservation::CALLEE_SPECIAL_INTRINSIC);
+                    goto _exit;
+                }
             }
 
             // Speculatively check if initClass() can be done.
@@ -19432,6 +19472,10 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
             return;
         }
     }
+
+    bool isExact              = false;
+    bool isNonNull            = false;
+    inlCurArgInfo->argIsExact = (gtGetClassHandle(curArgVal, &isExact, &isNonNull) != NO_CLASS_HANDLE) && isExact;
 
     // If the arg is a local that is address-taken, we can't safely
     // directly substitute it into the inlinee.
@@ -20626,14 +20670,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             return compOpportunisticallyDependsOn(InstructionSet_SSE41);
 
         case NI_System_Math_FusedMultiplyAdd:
-        {
-            // AMD64/x86 has FMA3 instructions to directly compute fma. However, in
-            // the scenario where it is supported we should have generated GT_HWINTRINSIC
-            // nodes in place of the GT_INTRINSIC node.
-
-            assert(!compIsaSupportedDebugOnly(InstructionSet_FMA));
-            return false;
-        }
+            return compOpportunisticallyDependsOn(InstructionSet_FMA);
 
         default:
             return false;
@@ -20649,14 +20686,7 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
             return true;
 
         case NI_System_Math_FusedMultiplyAdd:
-        {
-            // ARM64 has AdvSimd instructions to directly compute fma. However, in
-            // the scenario where it is supported we should have generated GT_HWINTRINSIC
-            // nodes in place of the GT_INTRINSIC node.
-
-            assert(!compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
-            return false;
-        }
+            return compOpportunisticallyDependsOn(InstructionSet_AdvSimd);
 
         default:
             return false;
@@ -20905,6 +20935,13 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         return;
     }
 
+    // Fetch information about the class that introduced the virtual method.
+    CORINFO_CLASS_HANDLE baseClass        = info.compCompHnd->getMethodClass(baseMethod);
+    const DWORD          baseClassAttribs = info.compCompHnd->getClassAttribs(baseClass);
+
+    // Is the call an interface call?
+    const bool isInterface = (baseClassAttribs & CORINFO_FLG_INTERFACE) != 0;
+
     // See what we know about the type of 'this' in the call.
     GenTree*             thisObj      = call->gtCallThisArg->GetNode()->gtEffectiveVal(false);
     bool                 isExact      = false;
@@ -20912,18 +20949,23 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     CORINFO_CLASS_HANDLE objClass     = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
 
     // Bail if we know nothing.
-    if (objClass == nullptr)
+    if (objClass == NO_CLASS_HANDLE)
     {
         JITDUMP("\nimpDevirtualizeCall: no type available (op=%s)\n", GenTree::OpName(thisObj->OperGet()));
+
+        // Don't try guarded devirtualiztion when we're doing late devirtualization.
+        //
+        if (isLateDevirtualization)
+        {
+            JITDUMP("No guarded devirt during late devirtualization\n");
+            return;
+        }
+
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass,
+                                        pContextHandle DEBUGARG(objClass) DEBUGARG("unknown"));
+
         return;
     }
-
-    // Fetch information about the class that introduced the virtual method.
-    CORINFO_CLASS_HANDLE baseClass        = info.compCompHnd->getMethodClass(baseMethod);
-    const DWORD          baseClassAttribs = info.compCompHnd->getClassAttribs(baseClass);
-
-    // Is the call an interface call?
-    const bool isInterface = (baseClassAttribs & CORINFO_FLG_INTERFACE) != 0;
 
     // If the objClass is sealed (final), then we may be able to devirtualize.
     const DWORD objClassAttribs = info.compCompHnd->getClassAttribs(objClass);
@@ -21486,79 +21528,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
     }
 #endif // FEATURE_READYTORUN_COMPILER
-}
-
-//------------------------------------------------------------------------
-// impGetSpecialIntrinsicExactReturnType: Look for special cases where a call
-//   to an intrinsic returns an exact type
-//
-// Arguments:
-//     methodHnd -- handle for the special intrinsic method
-//
-// Returns:
-//     Exact class handle returned by the intrinsic call, if known.
-//     Nullptr if not known, or not likely to lead to beneficial optimization.
-
-CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(CORINFO_METHOD_HANDLE methodHnd)
-{
-    JITDUMP("Special intrinsic: looking for exact type returned by %s\n", eeGetMethodFullName(methodHnd));
-
-    CORINFO_CLASS_HANDLE result = nullptr;
-
-    // See what intrinisc we have...
-    const NamedIntrinsic ni = lookupNamedIntrinsic(methodHnd);
-    switch (ni)
-    {
-        case NI_System_Collections_Generic_Comparer_get_Default:
-        case NI_System_Collections_Generic_EqualityComparer_get_Default:
-        {
-            // Expect one class generic parameter; figure out which it is.
-            CORINFO_SIG_INFO sig;
-            info.compCompHnd->getMethodSig(methodHnd, &sig);
-            assert(sig.sigInst.classInstCount == 1);
-            CORINFO_CLASS_HANDLE typeHnd = sig.sigInst.classInst[0];
-            assert(typeHnd != nullptr);
-
-            // Lookup can incorrect when we have __Canon as it won't appear
-            // to implement any interface types.
-            //
-            // And if we do not have a final type, devirt & inlining is
-            // unlikely to result in much simplification.
-            //
-            // We can use CORINFO_FLG_FINAL to screen out both of these cases.
-            const DWORD typeAttribs = info.compCompHnd->getClassAttribs(typeHnd);
-            const bool  isFinalType = ((typeAttribs & CORINFO_FLG_FINAL) != 0);
-
-            if (isFinalType)
-            {
-                if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
-                {
-                    result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
-                }
-                else
-                {
-                    assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
-                    result = info.compCompHnd->getDefaultComparerClass(typeHnd);
-                }
-                JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
-                        result != nullptr ? eeGetClassName(result) : "unknown");
-            }
-            else
-            {
-                JITDUMP("Special intrinsic for type %s: type not final, so deferring opt\n", eeGetClassName(typeHnd));
-            }
-
-            break;
-        }
-
-        default:
-        {
-            JITDUMP("This special intrinsic not handled, sorry...\n");
-            break;
-        }
-    }
-
-    return result;
 }
 
 //------------------------------------------------------------------------

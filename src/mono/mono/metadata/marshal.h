@@ -113,6 +113,7 @@ typedef enum {
 	WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL,
 	/* Subtypes of MONO_WRAPPER_MANAGED_TO_NATIVE */
 	WRAPPER_SUBTYPE_ICALL_WRAPPER, // specifically JIT icalls
+	WRAPPER_SUBTYPE_NATIVE_FUNC,
 	WRAPPER_SUBTYPE_NATIVE_FUNC_AOT,
 	WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT,
 	WRAPPER_SUBTYPE_PINVOKE,
@@ -403,7 +404,7 @@ mono_type_to_stind (MonoType *type);
 
 /* functions to create various architecture independent helper functions */
 
-MonoMethod *
+MONO_COMPONENT_API MonoMethod *
 mono_marshal_method_from_wrapper (MonoMethod *wrapper);
 
 WrapperInfo*

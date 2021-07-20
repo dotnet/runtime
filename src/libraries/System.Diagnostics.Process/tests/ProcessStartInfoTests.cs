@@ -1157,12 +1157,11 @@ namespace System.Diagnostics.Tests
             sb.AppendLine("------------------------------");
 
             string open = GetAssociationString(0, 1 /* ASSOCSTR_COMMAND */, ".txt", "open");
-            sb.AppendFormat("Open command: {0}", open);
-            sb.AppendLine();
+            sb.AppendLine($"Open command: {open}");
 
             string progId = GetAssociationString(0, 20 /* ASSOCSTR_PROGID */, ".txt", null);
-            sb.AppendFormat("ProgID: {0}", progId);
-            sb.AppendLine();
+            sb.AppendLine($"ProgID: {progId}");
+
             return sb.ToString();
         }
 

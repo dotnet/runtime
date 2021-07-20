@@ -153,7 +153,9 @@ void EEClass::Destruct(MethodTable * pOwningMT)
 
         if (pDelegateEEClass->m_pStaticCallStub)
         {
-            BOOL fStubDeleted = pDelegateEEClass->m_pStaticCallStub->DecRef();
+            ExecutableWriterHolder<Stub> stubWriterHolder(pDelegateEEClass->m_pStaticCallStub, sizeof(Stub));
+            BOOL fStubDeleted = stubWriterHolder.GetRW()->DecRef();
+
             if (fStubDeleted)
             {
                 DelegateInvokeStubManager::g_pManager->RemoveStub(pDelegateEEClass->m_pStaticCallStub);
@@ -167,7 +169,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
         // it is owned by the m_pMulticastStubCache, not by the class
         // - it is shared across classes. So we don't decrement
         // its ref count here
-        delete pDelegateEEClass->m_pUMThunkMarshInfo;
     }
 
 #ifdef FEATURE_COMINTEROP
@@ -1170,12 +1171,13 @@ void ClassLoader::ValidateMethodsWithCovariantReturnTypes(MethodTable* pMT)
                 continue;
 
             // Locate the MethodTable defining the pParentMD.
-            while (pParentMT->GetCanonicalMethodTable() != pParentMD->GetMethodTable())
+            MethodTable* pDefinitionParentMT = pParentMT;
+            while (pDefinitionParentMT->GetCanonicalMethodTable() != pParentMD->GetMethodTable())
             {
-                pParentMT = pParentMT->GetParentMethodTable();
+                pDefinitionParentMT = pDefinitionParentMT->GetParentMethodTable();
             }
 
-            SigTypeContext context1(pParentMT->GetInstantiation(), pMD->GetMethodInstantiation());
+            SigTypeContext context1(pDefinitionParentMT->GetInstantiation(), pMD->GetMethodInstantiation());
             MetaSig methodSig1(pParentMD);
             TypeHandle hType1 = methodSig1.GetReturnProps().GetTypeHandleThrowing(pParentMD->GetModule(), &context1, ClassLoader::LoadTypesFlag::LoadTypes, CLASS_LOAD_EXACTPARENTS);
 
@@ -1902,7 +1904,8 @@ TypeHandle MethodTable::GetDefItfForComClassItf()
     InterfaceMapIterator it = IterateInterfaceMap();
     if (it.Next())
     {
-        return TypeHandle(it.GetInterface());
+        // Can use GetInterfaceApprox, as there are no generic default interfaces
+        return TypeHandle(it.GetInterfaceApprox()); 
     }
     else
     {

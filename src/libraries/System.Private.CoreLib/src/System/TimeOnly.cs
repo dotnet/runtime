@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Runtime.Versioning;
 
 namespace System
 {
@@ -11,6 +12,14 @@ namespace System
     /// Represents a time of day, as would be read from a clock, within the range 00:00:00 to 23:59:59.9999999.
     /// </summary>
     public readonly struct TimeOnly : IComparable, IComparable<TimeOnly>, IEquatable<TimeOnly>, ISpanFormattable
+#if FEATURE_GENERIC_MATH
+#pragma warning disable SA1001
+        , IComparisonOperators<TimeOnly, TimeOnly>,
+          IMinMaxValue<TimeOnly>,
+          ISpanParseable<TimeOnly>,
+          ISubtractionOperators<TimeOnly, TimeOnly, TimeSpan>
+#pragma warning restore SA1001
+#endif // FEATURE_GENERIC_MATH
     {
         // represent the number of ticks map to the time of the day. 1 ticks = 100-nanosecond in time measurements.
         private readonly long _ticks;
@@ -896,5 +905,75 @@ namespace System
 
             return DateTimeFormat.TryFormat(ToDateTime(), destination, out charsWritten, format, provider);
         }
+
+#if FEATURE_GENERIC_MATH
+        //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeOnly, TimeOnly>.operator <(TimeOnly left, TimeOnly right)
+            => left < right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeOnly, TimeOnly>.operator <=(TimeOnly left, TimeOnly right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeOnly, TimeOnly>.operator >(TimeOnly left, TimeOnly right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeOnly, TimeOnly>.operator >=(TimeOnly left, TimeOnly right)
+            => left >= right;
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<TimeOnly, TimeOnly>.operator ==(TimeOnly left, TimeOnly right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<TimeOnly, TimeOnly>.operator !=(TimeOnly left, TimeOnly right)
+            => left != right;
+
+        //
+        // IParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeOnly IParseable<TimeOnly>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider, DateTimeStyles.None);
+
+        [RequiresPreviewFeatures]
+        static bool IParseable<TimeOnly>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out TimeOnly result)
+            => TryParse(s, provider, DateTimeStyles.None, out result);
+
+        //
+        // ISpanParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeOnly ISpanParseable<TimeOnly>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+            => Parse(s, provider, DateTimeStyles.None);
+
+        [RequiresPreviewFeatures]
+        static bool ISpanParseable<TimeOnly>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TimeOnly result)
+            => TryParse(s, provider, DateTimeStyles.None, out result);
+
+        //
+        // ISubtractionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeSpan ISubtractionOperators<TimeOnly, TimeOnly, TimeSpan>.operator -(TimeOnly left, TimeOnly right)
+            => left - right;
+
+        // [RequiresPreviewFeatures]
+        // static checked TimeSpan ISubtractionOperators<TimeOnly, TimeOnly, TimeSpan>.operator -(TimeOnly left, TimeOnly right)
+        //     => checked(left - right);
+#endif // FEATURE_GENERIC_MATH
     }
 }

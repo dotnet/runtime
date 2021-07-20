@@ -2454,7 +2454,8 @@ private:
         MethodTable *               pIntf,
         const Substitution *        pSubstForTypeLoad_OnStack,  // Allocated on stack!
         const Substitution *        pSubstForComparing_OnStack, // Allocated on stack!
-        StackingAllocator *         pStackingAllocator
+        StackingAllocator *         pStackingAllocator,
+        MethodTable *               pMTInterfaceMapOwner
         COMMA_INDEBUG(MethodTable * dbg_pClassMT));
 
 public:
@@ -2465,7 +2466,8 @@ public:
         mdToken                     typeDef,
         const Substitution *        pSubstForTypeLoad,
         Substitution *              pSubstForComparing,
-        StackingAllocator *     pStackingAllocator
+        StackingAllocator *         pStackingAllocator,
+        MethodTable *               pMTInterfaceMapOwner
         COMMA_INDEBUG(MethodTable * dbg_pClassMT));
 
     static void
@@ -2474,7 +2476,8 @@ public:
         MethodTable *           pParentMT,
         const Substitution *    pSubstForTypeLoad,
         Substitution *          pSubstForComparing,
-        StackingAllocator *     pStackingAllocator);
+        StackingAllocator *     pStackingAllocator,
+        MethodTable *           pMTInterfaceMapOwner);
 
 public:
     // --------------------------------------------------------------------------------------------

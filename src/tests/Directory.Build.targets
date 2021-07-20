@@ -265,7 +265,6 @@
 
   <PropertyGroup>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
-    <LibrariesConfiguration>Release</LibrariesConfiguration>
   </PropertyGroup>
 
   <ItemGroup>
@@ -377,6 +376,10 @@
         <RunTimeDependencyCopyLocal
           Include="$(ArtifactsBinDir)\MonoAOTCompiler\Debug\$(NetCoreAppToolCurrent)\**"
           TargetDir="MonoAOTCompiler/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\JsonToItemsTaskFactory\Debug\$(NetCoreAppToolCurrent)\**"
+          TargetDir="JsonToItemsTaskFactory/"/>
 
         <RunTimeDependencyCopyLocal
           Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
