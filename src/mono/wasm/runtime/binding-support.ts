@@ -15,7 +15,7 @@ var BindingSupportLib = {
 			BINDING.BINDING_ASM = binding_asm;
 		},
 
-		export_functions: function (module: object): void {
+		export_functions: function (module: typeof Module): void {
 			module ["mono_bindings_init"] = BINDING.mono_bindings_init.bind(BINDING);
 			module ["mono_bind_method"] = BINDING.bind_method.bind(BINDING);
 			module ["mono_method_invoke"] = BINDING.call_method.bind(BINDING);
@@ -112,7 +112,7 @@ var BindingSupportLib = {
 				return res;
 			};
 
-			var bind_runtime_method = function (method_name: string, signature: string): Function {
+			var bind_runtime_method = function (method_name: string, signature: ArgsMarshalString): Function {
 				var method = get_method (method_name);
 				return BINDING.bind_method (method, 0, signature, "BINDINGS_" + method_name);
 			};
@@ -366,7 +366,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		_unbox_delegate_root: function (root) {
+		_unbox_delegate_root: function (root: WasmRoot): () => number {
 			var obj = BINDING.extract_js_obj_root (root);
 			obj.__mono_delegate_alive__ = true;
 			// FIXME: Should we root the object as long as this function has not been GCd?
@@ -376,7 +376,7 @@ var BindingSupportLib = {
 			};
 		},
 
-		_unbox_task_root: function (root) {
+		_unbox_task_root: function (root: WasmRoot): Promise<unknown> {
 			if (!BINDING._are_promises_supported)
 				throw new Error ("Promises are not supported thus 'System.Threading.Tasks.Task' can not work in this context.");
 
@@ -411,7 +411,7 @@ var BindingSupportLib = {
 		},
 
 		/** @returns return type is determined by the type parameter */
-		_unbox_mono_obj_root_with_known_nonprimitive_type: function (root: WasmRoot, type: number): any {
+		_unbox_mono_obj_root_with_known_nonprimitive_type: function (root: WasmRoot, type: CNonPrimativeTypes): any {
 			if (root.value === undefined)
 				throw new Error(`Expected a root but got ${root}`);
 			
@@ -432,15 +432,15 @@ var BindingSupportLib = {
 					return BINDING._unbox_task_root (root);
 				case CNonPrimativeTypes.Ref:
 					return BINDING.extract_js_obj_root (root);
-				case 10: // arrays
-				case 11:
-				case 12:
-				case 13:
-				case 14:
-				case 15:
-				case 16:
-				case 17:
-				case 18:
+				case CNonPrimativeTypes.Int8Array:
+				case CNonPrimativeTypes.Uint8Array:
+				case CNonPrimativeTypes.Uint8ClampedArray:
+				case CNonPrimativeTypes.Int16Array:
+				case CNonPrimativeTypes.UInt16Array:
+				case CNonPrimativeTypes.Int32Array:
+				case CNonPrimativeTypes.UInt32Array:
+				case CNonPrimativeTypes.Float32Array:
+				case CNonPrimativeTypes.Float64Array:
 					throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
 				case CNonPrimativeTypes.DateTime: // clr .NET DateTime
 					var dateValue = BINDING.call_method(BINDING.get_date_value, null, "m", [ root.value ]);
@@ -530,7 +530,7 @@ var BindingSupportLib = {
 			return BINDING.mono_wasm_box_primitive (BINDING._class_boolean, BINDING._box_buffer, 4);
 		},
 
-		js_to_mono_obj: function (js_obj: any): any {
+		js_to_mono_obj: function (js_obj: any): number {
 			BINDING.bindings_lazy_init ();
 
 			// determines if the javascript object is a Promise or Promise like which can happen
@@ -589,7 +589,7 @@ var BindingSupportLib = {
 					return BINDING.extract_mono_obj (js_obj);
 			}
 		},
-		js_to_mono_uri: function (js_obj: any): any {
+		js_to_mono_uri: function (js_obj: any): number {
 			BINDING.bindings_lazy_init ();
 
 			switch (true) {
@@ -603,13 +603,13 @@ var BindingSupportLib = {
 					return BINDING.extract_mono_obj (js_obj);
 			}
 		},
-		has_backing_array_buffer: function (js_obj) {
+		has_backing_array_buffer: function (js_obj): boolean {
 			return typeof SharedArrayBuffer !== 'undefined'
 				? js_obj.buffer instanceof ArrayBuffer || js_obj.buffer instanceof SharedArrayBuffer
 				: js_obj.buffer instanceof ArrayBuffer;
 		},
 
-		js_typed_array_to_array : function (js_obj) {
+		js_typed_array_to_array : function (js_obj): number {
 
 			// JavaScript typed arrays are array-like objects and provide a mechanism for accessing
 			// raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays
@@ -635,7 +635,7 @@ var BindingSupportLib = {
 		},
 		// Copy the existing typed array to the heap pointed to by the pinned array address
 		// 	 typed array memory -> copy to heap -> address of managed pinned array
-		typedarray_copy_to : function (typed_array, pinned_array, begin, end, bytes_per_element): number {
+		typedarray_copy_to : function (typed_array, pinned_array: number, begin: number, end: number, bytes_per_element: number): number {
 
 			// JavaScript typed arrays are array-like objects and provide a mechanism for accessing
 			// raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays
@@ -678,7 +678,7 @@ var BindingSupportLib = {
 		},
 		// Copy the pinned array address from pinned_array allocated on the heap to the typed array.
 		// 	 adress of managed pinned array -> copy from heap -> typed array memory
-		typedarray_copy_from : function (typed_array, pinned_array, begin, end, bytes_per_element): number {
+		typedarray_copy_from : function (typed_array, pinned_array: number, begin: number, end: number, bytes_per_element: number): number {
 
 			// JavaScript typed arrays are array-like objects and provide a mechanism for accessing
 			// raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays
@@ -719,7 +719,7 @@ var BindingSupportLib = {
 		},
 		// Creates a new typed array from pinned array address from pinned_array allocated on the heap to the typed array.
 		// 	 adress of managed pinned array -> copy from heap -> typed array memory
-		typed_array_from : function (pinned_array, begin: number, end: number, bytes_per_element: number, type: number): ArrayBuffer {
+		typed_array_from: function (pinned_array, begin: number, end: number, bytes_per_element: number, type: JSTypedArrays): ArrayBuffer {
 
 			// typed array
 			var newTypedArray: ArrayBuffer;
@@ -758,7 +758,7 @@ var BindingSupportLib = {
 			BINDING.typedarray_copy_from(newTypedArray, pinned_array, begin, end, bytes_per_element);
 			return newTypedArray;
 		},
-		js_to_mono_enum: function (js_obj, method, parmIdx) {
+		js_to_mono_enum: function (js_obj, method?:  any/* todo unused var */, parmIdx?: any /* todo unused var */): number {
 			BINDING.bindings_lazy_init ();
 
 			if (typeof (js_obj) !== "number")
@@ -766,16 +766,16 @@ var BindingSupportLib = {
 
 			return js_obj | 0;
 		},
-		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type)
+		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type): Function
 		{
 			return BINDING._bind_js_obj (js_obj_id, ownsHandle, type);
 		},
-		wasm_bind_existing: function (mono_obj, js_id)
+		wasm_bind_existing: function (mono_obj, js_id): Function
 		{
 			return BINDING._bind_existing_obj (mono_obj, js_id);
 		},
 
-		wasm_bind_core_clr_obj: function (js_id, gc_handle)
+		wasm_bind_core_clr_obj: function (js_id, gc_handle): Function
 		{
 			return BINDING._bind_core_clr_obj (js_id, gc_handle);
 		},
@@ -796,13 +796,13 @@ var BindingSupportLib = {
 			return BINDING._get_raw_mono_obj (gchandle, should_add_in_flight ? 1 : 0);
 		},
 
-		try_extract_mono_obj:function (js_obj) {
+		try_extract_mono_obj: function (js_obj) {
 			if (js_obj === null || typeof js_obj === "undefined" || typeof js_obj.__mono_gchandle__ === "undefined")
 				return 0;
 			return BINDING.wasm_get_raw_obj (js_obj.__mono_gchandle__, true);
 		},
 
-		mono_method_get_call_signature: function(method, mono_obj): number {
+		mono_method_get_call_signature: function(method: number, mono_obj): number {
 			let instanceRoot = MONO.mono_wasm_new_root (mono_obj);
 			try {
 				BINDING.bindings_lazy_init ();
@@ -872,7 +872,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		extract_js_obj_root: function (root) {
+		extract_js_obj_root: function (root: WasmRoot) {
 			if (root.value === 0)
 				return null;
 
@@ -890,7 +890,7 @@ var BindingSupportLib = {
 			return js_obj;
 		},
 
-		_create_named_function: function (name, argumentNames, body, closure): any {
+		_create_named_function: function (name: string, argumentNames, body: string, closure): any {
 			var result = null, keys = null, closureArgumentList = null, closureArgumentNames = null;
 
 			if (closure) {
@@ -906,7 +906,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_create_rebindable_named_function: function (name, argumentNames, body, closureArgNames): any {
+		_create_rebindable_named_function: function (name: string, argumentNames, body: string, closureArgNames): any {
 			var strictPrefix = "\"use strict\";\r\n";
 			var uriPrefix = "", escapedFunctionIdentifier = "";
 
@@ -942,7 +942,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_create_primitive_converters: function () {
+		_create_primitive_converters: function (): Map<string, Converter> {
 			var result = new Map ();
 			result.set ('m', { steps: [{ }], size: 0});
 			result.set ('s', { steps: [{ convert: BINDING.js_string_to_mono_string.bind (this) }], size: 0, needs_root: true });
@@ -951,18 +951,18 @@ var BindingSupportLib = {
 			result.set ('u', { steps: [{ convert: BINDING.js_to_mono_uri.bind (this) }], size: 0, needs_root: true });
 
 			// result.set ('k', { steps: [{ convert: BINDING.js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
-			result.set ('j', { steps: [{ convert: BINDING.js_to_mono_enum.bind (this), indirect: 'i32'}], size: 8});
+			result.set ('j', { steps: [{ convert: BINDING.js_to_mono_enum.bind (this), indirect: ConverterStepIndirects.Int32}], size: 8});
 
-			result.set ('i', { steps: [{ indirect: 'i32'}], size: 8});
-			result.set ('l', { steps: [{ indirect: 'i64'}], size: 8});
-			result.set ('f', { steps: [{ indirect: 'float'}], size: 8});
-			result.set ('d', { steps: [{ indirect: 'double'}], size: 8});
+			result.set ('i', { steps: [{ indirect: ConverterStepIndirects.Int32}], size: 8});
+			result.set ('l', { steps: [{ indirect: ConverterStepIndirects.Int64}], size: 8});
+			result.set ('f', { steps: [{ indirect: ConverterStepIndirects.Float}], size: 8});
+			result.set ('d', { steps: [{ indirect: ConverterStepIndirects.Float64}], size: 8});
 
 			BINDING._primitive_converters = result;
 			return result;
 		},
 
-		_create_converter_for_marshal_string: function (args_marshal) {
+		_create_converter_for_marshal_string: function (args_marshal: ArgsMarshalString): Converter {
 			var primitiveConverters = BINDING._primitive_converters;
 			if (!primitiveConverters)
 				primitiveConverters = BINDING._create_primitive_converters ();
@@ -1011,7 +1011,7 @@ var BindingSupportLib = {
 			};
 		},
 
-		_get_converter_for_marshal_string: function (args_marshal) {
+		_get_converter_for_marshal_string: function (args_marshal: ArgsMarshalString): Converter {
 			if (!BINDING._signature_converters)
 				BINDING._signature_converters = new Map();
 
@@ -1024,7 +1024,7 @@ var BindingSupportLib = {
 			return converter;
 		},
 
-		_compile_converter_for_marshal_string: function (args_marshal) {
+		_compile_converter_for_marshal_string: function (args_marshal: ArgsMarshalString): Converter {
 			var converter = BINDING._get_converter_for_marshal_string (args_marshal);
 			if (typeof (converter.args_marshal) !== "string")
 				throw new Error ("Corrupt converter for '" + args_marshal + "'");
@@ -1157,7 +1157,7 @@ var BindingSupportLib = {
 			return converter;
 		},
 
-		_verify_args_for_method_call: function (args_marshal, args) {
+		_verify_args_for_method_call: function (args_marshal: ArgsMarshalString, args: any[]): boolean {
 			var has_args = args && (typeof args === "object") && args.length > 0;
 			var has_args_marshal = typeof args_marshal === "string";
 
@@ -1171,7 +1171,7 @@ var BindingSupportLib = {
 			return has_args_marshal && has_args;
 		},
 
-		_get_buffer_for_method_call: function (converter) {
+		_get_buffer_for_method_call: function (converter: Converter): number {
 			if (!converter)
 				return 0;
 
@@ -1180,7 +1180,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_get_args_root_buffer_for_method_call: function (converter) {
+		_get_args_root_buffer_for_method_call: function (converter: Converter): WasmRootBuffer | null {
 			if (!converter)
 				return null;
 
@@ -1202,7 +1202,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_release_args_root_buffer_from_method_call: function (converter, argsRootBuffer) {
+		_release_args_root_buffer_from_method_call: function (converter: Converter, argsRootBuffer): void {
 			if (!argsRootBuffer || !converter)
 				return;
 
@@ -1215,7 +1215,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		_release_buffer_from_method_call: function (converter, buffer) {
+		_release_buffer_from_method_call: function (converter: Converter, buffer: number): void {
 			if (!converter || !buffer)
 				return;
 
@@ -1225,7 +1225,7 @@ var BindingSupportLib = {
 				Module._free (buffer | 0);
 		},
 
-		_convert_exception_for_method_call: function (result, exception) {
+		_convert_exception_for_method_call: function (result: number, exception: number): Error | null {
 			if (exception === 0)
 				return null;
 
@@ -1235,7 +1235,7 @@ var BindingSupportLib = {
 			return err;
 		},
 
-		_maybe_produce_signature_warning: function (converter) {
+		_maybe_produce_signature_warning: function (converter: Converter): void {
 			if (converter.has_warned_about_signature)
 				return;
 
@@ -1243,7 +1243,7 @@ var BindingSupportLib = {
 			converter.has_warned_about_signature = true;
 		},
 
-		_decide_if_result_is_marshaled: function (converter, argc) {
+		_decide_if_result_is_marshaled: function (converter: Converter, argc: number): boolean {
 			if (!converter)
 				return true;
 
@@ -1264,21 +1264,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		/*
-		args_marshal is a string with one character per parameter that tells how to marshal it, here are the valid values:
-		i: int32
-		j: int32 - Enum with underlying type of int32
-		l: int64
-		k: int64 - Enum with underlying type of int64
-		f: float
-		d: double
-		s: string
-		S: interned string
-		o: js object will be converted to a C# object (this will box numbers/bool/promises)
-		m: raw mono object. Don't use it unless you know what you're doing
-		to suppress marshaling of the return value, place '!' at the end of args_marshal, i.e. 'ii!' instead of 'ii'
-		*/
-		call_method: function (method, this_arg, args_marshal, args): number {
+		call_method: function (method: number, this_arg, args_marshal: ArgsMarshalString, args: any[]): number {
 			BINDING.bindings_lazy_init ();
 
 			// HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
@@ -1312,8 +1298,8 @@ var BindingSupportLib = {
 		},
 
 		_handle_exception_for_call: function (
-			converter, buffer, resultRoot, exceptionRoot, argsRootBuffer
-		) {
+			converter: Converter, buffer, resultRoot, exceptionRoot, argsRootBuffer
+		): void {
 			var exc = BINDING._convert_exception_for_method_call (resultRoot.value, exceptionRoot.value);
 			if (!exc)
 				return;
@@ -1323,7 +1309,7 @@ var BindingSupportLib = {
 		},
 
 		_handle_exception_and_produce_result_for_call: function (
-			converter, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled
+			converter: Converter, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled: boolean
 		): number {
 			BINDING._handle_exception_for_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer);
 
@@ -1336,7 +1322,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_teardown_after_call: function (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer) {
+		_teardown_after_call: function (converter: Converter, buffer, resultRoot, exceptionRoot, argsRootBuffer): void {
 			BINDING._release_args_root_buffer_from_method_call (converter, argsRootBuffer);
 			BINDING._release_buffer_from_method_call (converter, buffer | 0);
 
@@ -1346,7 +1332,7 @@ var BindingSupportLib = {
 				exceptionRoot.release ();
 		},
 
-		_get_method_description: function (method) {
+		_get_method_description: function (method: number): string {
 			if (!BINDING._method_descriptions)
 				BINDING._method_descriptions = new Map();
 
@@ -1356,13 +1342,13 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_call_method_with_converted_args: function (method, this_arg, converter, buffer, is_result_marshaled, argsRootBuffer): number {
+		_call_method_with_converted_args: function (method: number, this_arg, converter, buffer, is_result_marshaled: boolean, argsRootBuffer): number {
 			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
 			resultRoot.value = BINDING.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());
 			return BINDING._handle_exception_and_produce_result_for_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled);
 		},
 
-		bind_method: function (method, this_arg, args_marshal, friendly_name) {
+		bind_method: function (method: number, this_arg, args_marshal: ArgsMarshalString, friendly_name: string): Function {
 			BINDING.bindings_lazy_init ();
 
 			this_arg = this_arg | 0;
@@ -1484,7 +1470,7 @@ var BindingSupportLib = {
 			return BINDING._create_named_function(displayName, argumentNames, bodyJs, closure);
 		},
 
-		invoke_delegate: function (delegate_obj, js_args) {
+		invoke_delegate: function (delegate_obj, js_args): number {
 			BINDING.bindings_lazy_init ();
 
 			// Check to make sure the delegate is still alive on the CLR side of things.
@@ -1495,7 +1481,7 @@ var BindingSupportLib = {
 					//  at a point where we've already disposed of the object the event handler is attached to.
 					// As such, we log here instead of throwing an error. We may want to not log at all...
 					console.log("The delegate target that is being invoked is no longer available.  Please check if it has been prematurely GC'd.");
-					return;
+					return; // TODO make this some number output
 				}
 			}
 
@@ -1515,7 +1501,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		resolve_method_fqn: function (fqn) {
+		resolve_method_fqn: function (fqn: string): number {
 			BINDING.bindings_lazy_init ();
 
 			var assembly = fqn.substring(fqn.indexOf ("[") + 1, fqn.indexOf ("]")).trim();
@@ -1553,7 +1539,7 @@ var BindingSupportLib = {
 			return method;
 		},
 
-		call_static_method: function (fqn: string, args: any[] | null, signature: string | null) {
+		call_static_method: function (fqn: string, args: any[] | null, signature: ArgsMarshalString | null): number {
 			BINDING.bindings_lazy_init ();
 
 			var method = BINDING.resolve_method_fqn (fqn);
@@ -1564,7 +1550,7 @@ var BindingSupportLib = {
 			return BINDING.call_method (method, null, signature, args);
 		},
 
-		bind_static_method: function (fqn, signature) {
+		bind_static_method: function (fqn: string, signature: ArgsMarshalString): Function {
 			BINDING.bindings_lazy_init ();
 
 			var method = BINDING.resolve_method_fqn (fqn);
@@ -1575,7 +1561,7 @@ var BindingSupportLib = {
 			return BINDING.bind_method (method, null, signature, fqn);
 		},
 
-		bind_assembly_entry_point: function (assembly, signature): (...args: any) => Promise<number> {
+		bind_assembly_entry_point: function (assembly: string, signature: ArgsMarshalString): (...args: any) => Promise<number> {
 			BINDING.bindings_lazy_init ();
 
 			var asm = BINDING.assembly_load (assembly);
@@ -1601,7 +1587,7 @@ var BindingSupportLib = {
 				}
 			};
 		},
-		call_assembly_entry_point: function (assembly, args, signature) {
+		call_assembly_entry_point: function (assembly: string, args: any[], signature: ArgsMarshalString) {
 			return BINDING.bind_assembly_entry_point (assembly, signature) (...args);
 		},
 		// Object wrapping helper functions to handle reference handles that will
@@ -1629,12 +1615,12 @@ var BindingSupportLib = {
 			// this is pre-existing instance, we need to add Inflight strong GCHandle before passing it to managed
 			return { gc_handle, should_add_in_flight: true };
 		},
-		mono_wasm_require_handle: function(handle) {
+		mono_wasm_require_handle: function(handle: number) {
 			if (handle > 0)
 				return BINDING.mono_wasm_object_registry[handle - 1];
 			return null;
 		},
-		mono_wasm_unregister_obj: function(js_id) {
+		mono_wasm_unregister_obj: function(js_id: number) {
 			var obj = BINDING.mono_wasm_object_registry[js_id - 1];
 			if (typeof obj  !== "undefined" && obj !== null) {
 				// if this is the global object then do not
@@ -1663,7 +1649,7 @@ var BindingSupportLib = {
 		mono_wasm_free_handle: function(handle) {
 			BINDING.mono_wasm_unregister_obj(handle);
 		},
-		mono_wasm_free_raw_object: function(js_id) {
+		mono_wasm_free_raw_object: function(js_id: number) {
 			var obj = BINDING.mono_wasm_object_registry[js_id - 1];
 			if (typeof obj  !== "undefined" && obj !== null) {
 				// if this is the global object then do not
@@ -1683,17 +1669,17 @@ var BindingSupportLib = {
 			}
 			return obj;
 		},
-		mono_wasm_parse_args_root : function (argsRoot) {
+		mono_wasm_parse_args_root: function (argsRoot) {
 			var js_args = BINDING._mono_array_root_to_js_array(argsRoot);
 			BINDING.mono_wasm_save_LMF();
 			return js_args;
 		},
-		mono_wasm_save_LMF : function () {
+		mono_wasm_save_LMF: function (): void {
 			//console.log("save LMF: " + BINDING.mono_wasm_owned_objects_frames.length)
 			BINDING.mono_wasm_owned_objects_frames.push(BINDING.mono_wasm_owned_objects_LMF);
 			BINDING.mono_wasm_owned_objects_LMF = undefined;
 		},
-		mono_wasm_unwind_LMF : function () {
+		mono_wasm_unwind_LMF: function (): void {
 			var __owned_objects__ = BINDING.mono_wasm_owned_objects_frames.pop();
 			// Release all managed objects that are loaded into the LMF
 			if (typeof __owned_objects__ !== "undefined")
@@ -1709,13 +1695,13 @@ var BindingSupportLib = {
 			//console.log("restore LMF: " + BINDING.mono_wasm_owned_objects_frames.length)
 
 		},
-		mono_wasm_convert_return_value: function (ret) {
+		mono_wasm_convert_return_value: function (ret): number {
 			BINDING.mono_wasm_unwind_LMF();
 			return BINDING.js_to_mono_obj (ret);
 		},
 	},
 
-	mono_wasm_invoke_js_with_args: function(js_handle, method_name, args, is_exception) {
+	mono_wasm_invoke_js_with_args: function(js_handle, method_name, args, is_exception): number {
 		let argsRoot = MONO.mono_wasm_new_root (args), nameRoot = MONO.mono_wasm_new_root (method_name);
 		try {
 			BINDING.bindings_lazy_init ();
@@ -1755,7 +1741,7 @@ var BindingSupportLib = {
 			nameRoot.release();
 		}
 	},
-	mono_wasm_get_object_property: function(js_handle, property_name, is_exception) {
+	mono_wasm_get_object_property: function(js_handle, property_name, is_exception): number {
 		BINDING.bindings_lazy_init ();
 
 		var nameRoot = MONO.mono_wasm_new_root (property_name);
@@ -1790,7 +1776,7 @@ var BindingSupportLib = {
 			nameRoot.release();
 		}
 	},
-    mono_wasm_set_object_property: function (js_handle, property_name, value, createIfNotExist, hasOwnProperty, is_exception) {
+    mono_wasm_set_object_property: function (js_handle, property_name, value, createIfNotExist, hasOwnProperty, is_exception): number | boolean {
 		var valueRoot = MONO.mono_wasm_new_root (value), nameRoot = MONO.mono_wasm_new_root (property_name);
 		try {
 			BINDING.bindings_lazy_init ();
@@ -1841,7 +1827,7 @@ var BindingSupportLib = {
 			valueRoot.release();
 		}
 	},
-	mono_wasm_get_by_index: function(js_handle, property_index, is_exception) {
+	mono_wasm_get_by_index: function(js_handle, property_index, is_exception): number {
 		BINDING.bindings_lazy_init ();
 
 		var obj = BINDING.mono_wasm_require_handle (js_handle);
@@ -1861,7 +1847,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string (res);
 		}
 	},
-	mono_wasm_set_by_index: function(js_handle, property_index, value, is_exception) {
+	mono_wasm_set_by_index: function(js_handle, property_index, value, is_exception): number | boolean {
 		var valueRoot = MONO.mono_wasm_new_root (value);
 		try {
 			BINDING.bindings_lazy_init ();
@@ -1890,7 +1876,7 @@ var BindingSupportLib = {
 			valueRoot.release();
 		}
 	},
-	mono_wasm_get_global_object: function(global_name, is_exception) {
+	mono_wasm_get_global_object: function(global_name, is_exception): number {
 		var nameRoot = MONO.mono_wasm_new_root (global_name);
 		try {
 			BINDING.bindings_lazy_init ();
@@ -1916,17 +1902,17 @@ var BindingSupportLib = {
 			nameRoot.release();
 		}
 	},
-	mono_wasm_release_handle: function(js_handle, is_exception) {
+	mono_wasm_release_handle: function(js_handle: number, is_exception?: any /* unused var */): void {
 		BINDING.bindings_lazy_init ();
 
 		BINDING.mono_wasm_free_handle(js_handle);
 	},
-	mono_wasm_release_object: function(js_handle, is_exception) {
+	mono_wasm_release_object: function(js_handle: number, is_exception?: any /* unused var */): void {
 		BINDING.bindings_lazy_init ();
 
 		BINDING.mono_wasm_free_raw_object(js_handle);
 	},
-	mono_wasm_bind_core_object: function(js_handle, gc_handle, is_exception) {
+	mono_wasm_bind_core_object: function(js_handle: number, gc_handle: number, is_exception): number {
 		BINDING.bindings_lazy_init ();
 
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
@@ -1935,12 +1921,12 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Invalid JS object handle '" + js_handle + "'");
 		}
 
-		BINDING.wasm_bind_core_clr_obj(js_handle, gc_handle );
+		BINDING.wasm_bind_core_clr_obj(js_handle, gc_handle);
 		requireObject.__mono_gchandle__ = gc_handle;
 		requireObject.__js_handle__ = js_handle;
 		return gc_handle;
 	},
-	mono_wasm_bind_host_object: function(js_handle, gc_handle, is_exception) {
+	mono_wasm_bind_host_object: function(js_handle: number, gc_handle: number, is_exception): number {
 		BINDING.bindings_lazy_init ();
 
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
@@ -1953,7 +1939,7 @@ var BindingSupportLib = {
 		requireObject.__mono_gchandle__ = gc_handle;
 		return gc_handle;
 	},
-	mono_wasm_new: function (core_name, args, is_exception) {
+	mono_wasm_new: function (core_name, args, is_exception): number {
 		var argsRoot = MONO.mono_wasm_new_root (args), nameRoot = MONO.mono_wasm_new_root (core_name);
 		try {
 			BINDING.bindings_lazy_init ();
@@ -2005,7 +1991,7 @@ var BindingSupportLib = {
 		}
 	},
 
-	mono_wasm_typed_array_to_array: function(js_handle, is_exception) {
+	mono_wasm_typed_array_to_array: function(js_handle: number, is_exception) {
 		BINDING.bindings_lazy_init ();
 
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
@@ -2016,7 +2002,7 @@ var BindingSupportLib = {
 
 		return BINDING.js_typed_array_to_array(requireObject);
 	},
-	mono_wasm_typed_array_copy_to: function(js_handle, pinned_array, begin, end, bytes_per_element, is_exception) {
+	mono_wasm_typed_array_copy_to: function(js_handle: number, pinned_array: number, begin: number, end: number, bytes_per_element: number, is_exception): number {
 		BINDING.bindings_lazy_init ();
 
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);
@@ -2028,12 +2014,12 @@ var BindingSupportLib = {
 		var res = BINDING.typedarray_copy_to(requireObject, pinned_array, begin, end, bytes_per_element);
 		return BINDING.js_to_mono_obj (res)
 	},
-	mono_wasm_typed_array_from: function(pinned_array, begin, end, bytes_per_element, type, is_exception) {
+	mono_wasm_typed_array_from: function(pinned_array: number, begin: number, end: number, bytes_per_element: number, type, is_exception): number {
 		BINDING.bindings_lazy_init ();
 		var res = BINDING.typed_array_from(pinned_array, begin, end, bytes_per_element, type);
 		return BINDING.js_to_mono_obj (res)
 	},
-	mono_wasm_typed_array_copy_from: function(js_handle, pinned_array, begin, end, bytes_per_element, is_exception) {
+	mono_wasm_typed_array_copy_from: function(js_handle: number, pinned_array: number, begin: number, end: number, bytes_per_element: number, is_exception): number {
 		BINDING.bindings_lazy_init ();
 
 		var requireObject = BINDING.mono_wasm_require_handle (js_handle);

@@ -33,7 +33,7 @@ var MonoSupportLib = {
 			}
 		},
 
-		export_functions: function (module) {
+		export_functions: function (module: typeof Module) {
 			module ["pump_message"] = MONO.pump_message.bind(MONO);
 			module ["mono_load_runtime_and_bcl"] = MONO.mono_load_runtime_and_bcl.bind(MONO);
 			module ["mono_load_runtime_and_bcl_args"] = MONO.mono_load_runtime_and_bcl_args.bind(MONO);
@@ -76,7 +76,7 @@ var MonoSupportLib = {
 				'+', '/'
 			],
 
-			_makeByteReader: function (bytes, index, count) {
+			_makeByteReader: function (bytes: Uint8Array, index?: number, count?: number): ByteReader {
 				var position = (typeof (index) === "number") ? index : 0;
 				var endpoint;
 
@@ -107,7 +107,7 @@ var MonoSupportLib = {
 				return result;
 			},
 
-			toBase64StringImpl: function (inArray, offset?, length?) {
+			toBase64StringImpl: function (inArray: Uint8Array, offset?: number, length?: number): string {
 				var reader = this._makeByteReader(inArray, offset, length);
 				var result = "";
 				var ch1 = 0, ch2 = 0, ch3 = 0, bits = 0, equalsCount = 0, sum = 0;
@@ -163,10 +163,10 @@ var MonoSupportLib = {
 		},
 
 		_mono_wasm_root_buffer_prototype: {
-			_throw_index_out_of_range: function () {
+			_throw_index_out_of_range: function (): void {
 				throw new Error ("index out of range");
 			},
-			_check_in_range: function (index) {
+			_check_in_range: function (index: number): void {
 				if ((index >= this.__count) || (index < 0))
 					this._throw_index_out_of_range();
 			},
@@ -182,21 +182,21 @@ var MonoSupportLib = {
 				this._check_in_range (index);
 				return Module.HEAP32[this.get_address_32 (index)];
 			},
-			set: function (index, value) {
+			set: function (index: number, value: number): number {
 				Module.HEAP32[this.get_address_32 (index)] = value;
 				return value;
 			},
-			_unsafe_get: function (index) {
+			_unsafe_get: function (index: number): number {
 				return Module.HEAP32[this.__offset32 + index];
 			},
-			_unsafe_set: function (index, value) {
+			_unsafe_set: function (index: number, value: number): void {
 				Module.HEAP32[this.__offset32 + index] = value;
 			},
-			clear: function () {
+			clear: function (): void {
 				if (this.__offset)
 					MONO._zero_region (this.__offset, this.__count * 4);
 			},
-			release: function () {
+			release: function (): void {
 				if (this.__offset && this.__ownsAllocation) {
 					MONO.mono_wasm_deregister_root (this.__offset);
 					MONO._zero_region (this.__offset, this.__count * 4);
@@ -205,7 +205,7 @@ var MonoSupportLib = {
 
 				this.__handle = this.__offset = this.__count = this.__offset32 = 0;
 			},
-			toString: function () {
+			toString: function (): string {
 				return "[root buffer @" + this.get_address (0) + ", size " + this.__count + "]";
 			}
 		},
@@ -226,17 +226,17 @@ var MonoSupportLib = {
 				var result = this.__buffer._unsafe_get (this.__index);
 				return result;
 			},
-			set: function (value) {
+			set: function (value: number): number {
 				this.__buffer._unsafe_set (this.__index, value);
 				return value;
 			},
 			valueOf: function (): ManagedPointer {
 				return this.get ();
 			},
-			clear: function () {
+			clear: function (): void  {
 				this.set (0);
 			},
-			release: function () {
+			release: function (): void {
 				const maxPooledInstances = 128;
 				if (MONO._scratch_root_free_instances.length > maxPooledInstances) {
 					MONO._mono_wasm_release_scratch_index (this.__index);
@@ -247,12 +247,12 @@ var MonoSupportLib = {
 					MONO._scratch_root_free_instances.push (this);
 				}
 			},
-			toString: function () {
+			toString: function (): string {
 				return "[root @" + this.get_address () + "]";
 			}
 		},
 
-		_mono_wasm_release_scratch_index: function (index) {
+		_mono_wasm_release_scratch_index: function (index: number): void {
 			if (index === undefined)
 				return;
 

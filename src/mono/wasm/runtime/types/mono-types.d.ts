@@ -99,3 +99,10 @@ type WasmRootBuffer = {
     set: (index: number, value: number) => void,
     release: () => void,
 }
+
+type ByteReader = {
+    read: () => number | false,
+    get?:  () => boolean,
+    configurable?: boolean,
+    enumerable?: boolean
+}

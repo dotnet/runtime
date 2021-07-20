@@ -31,7 +31,7 @@ interface BINDING_C_FUNCS {
     mono_wasm_register_bundled_satellite_assemblies (): void;
     mono_wasm_string_array_new (a: number): number;
     mono_wasm_string_from_utf16 (a: number, b: number): number;
-    mono_wasm_try_unbox_primitive_and_get_type (a: number, b: number): number;
+    mono_wasm_try_unbox_primitive_and_get_type (a: number, b: number): CPrimativeTypes;
     mono_typed_array_new (a: number, b: number, c: number, d: number): number;
 }
 
@@ -91,7 +91,7 @@ type Converter = {
         size: number;
     }[];
     size: number;
-    args_marshal?: any;
+    args_marshal?: ArgsMarshalString;
     is_result_definitely_unmarshaled?: boolean;
     is_result_possibly_unmarshaled?: boolean;
     result_unmarshaled_if_argc?: number;
@@ -100,8 +100,9 @@ type Converter = {
     needs_root?: boolean;
     compiled_variadic_function?: any;
     compiled_function?: any;
-    scratchRootBuffer?: any;
-    scratchBuffer?: any;
+    scratchRootBuffer?: WasmRootBuffer;
+    scratchBuffer?: number;
+    has_warned_about_signature?: boolean;
 }
 
 // Note that since these are annoated as `declare const enum` they are replaces by tsc with their raw value during compilation
@@ -111,7 +112,33 @@ declare const enum ConverterStepIndirects {
     Float = "float",
     Float64 = "double",
     Int64 = "i64",
-} 
+}
+
+declare const enum ArgsMarshal {
+    Int32 = "i", // int32
+    Int32Enum = "j", // int32 - Enum with underlying type of int32
+    Int64 = "l", // int64
+    Int64Enum = "k", // int64 - Enum with underlying type of int64
+    Float32 = "f", // float
+    Float64 = "d", // double
+    String = "s", // string
+    Char = "s", // interned string
+    JSObj = "o", // js object will be converted to a C# object (this will box numbers/bool/promises)
+    MONOObj = "m", // raw mono object. Don't use it unless you know what you're doing
+}
+
+// to suppress marshaling of the return value, place '!' at the end of args_marshal, i.e. 'ii!' instead of 'ii'
+type _ExtraArgsMarshalOperators = "!" | "";
+
+// TODO make this more efficient so we can add more parameters (currently it only checks up to 4). One option is to add a
+// blank to the ArgsMarshal enum but that doesn't solve the TS limit of number of options in 1 type
+// Take the 2 marshaling enums and convert to all the valid strings for type checking. 
+type ArgsMarshalString = 
+                      `${ArgsMarshal}${_ExtraArgsMarshalOperators}` 
+                    | `${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}` 
+                    | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`
+                    | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
+
 
 declare const enum CNonPrimativeTypes {
     String = 3,
@@ -119,6 +146,15 @@ declare const enum CNonPrimativeTypes {
     Delegate = 5,
     Task = 6,
     Ref = 7,
+    Int8Array = 10, // unimplemented
+    Uint8Array = 11, // unimplemented
+    Uint8ClampedArray = 12, // unimplemented
+    Int16Array = 13, // unimplemented
+    UInt16Array = 14, // unimplemented
+    Int32Array = 15, // unimplemented
+    UInt32Array = 16, // unimplemented
+    Float32Array = 17, // unimplemented
+    Float64Array = 18, // unimplemented
     DateTime = 20,
     DateTimeOffset = 21,
     Uri = 22,

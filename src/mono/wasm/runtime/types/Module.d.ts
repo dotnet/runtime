@@ -39,7 +39,7 @@ declare namespace Module {
     function _free (amn: number): void;
     function addRunDependency(id: string): void;
     function removeRunDependency(id: string): void;
-    function mono_method_get_call_signature (method: any, mono_obj?: any): string;
+    function mono_method_get_call_signature (method: any, mono_obj?: any): ArgsMarshalString;
     function print (message: string): void;
 
     function ccall <T extends Function> (ident: string, returnType?: string, argTypes?: string[], args?: any[] , opts?: any): T;
