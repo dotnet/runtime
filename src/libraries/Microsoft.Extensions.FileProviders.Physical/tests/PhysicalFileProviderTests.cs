@@ -1515,7 +1515,7 @@ namespace Microsoft.Extensions.FileProviders
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void UsePollingFileWatcher_UseActivePolling_HasChanged(bool useWildcard)
+        public async Task UsePollingFileWatcher_UseActivePolling_HasChanged(bool useWildcard)
         {
             // Arrange
             using var root = new DisposableFileSystem();
@@ -1528,19 +1528,18 @@ namespace Microsoft.Extensions.FileProviders
             Assert.False(token.HasChanged);
 
             // Act
-            Thread.Sleep(100); // Wait a bit before writing again, see https://github.com/dotnet/runtime/issues/55951.
+            await Task.Delay(200); // Wait a bit before writing again, see https://github.com/dotnet/runtime/issues/55951.
             File.WriteAllText(filePath, "v1.2");
-            int timeout = GetTokenPollingInterval(token);
-            Thread.Sleep(timeout);
+            await Task.Delay(GetTokenPollingInterval(token));
 
             // Assert
-            Assert.True(token.HasChanged);
+            Assert.True(token.HasChanged, $"Current time: {DateTime.UtcNow:O} file LastWriteTime: {File.GetLastWriteTimeUtc(filePath):O}");
         }
 
         [Theory]
-        [InlineData(false)]
+        //[InlineData(false)]
         [InlineData(true)]
-        public void UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeleted(bool useWildcard)
+        public async Task UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeleted(bool useWildcard)
         {
             // Arrange
             using var root = new DisposableFileSystem();
@@ -1555,10 +1554,10 @@ namespace Microsoft.Extensions.FileProviders
 
             // Act
             File.Delete(filePath);
-            Thread.Sleep(GetTokenPollingInterval(token));
+            await Task.Delay(GetTokenPollingInterval(token));
 
             // Assert
-            Assert.True(token.HasChanged);
+            Assert.True(token.HasChanged, $"Current time: {DateTime.UtcNow:O} file LastWriteTime: {File.GetLastWriteTimeUtc(filePath):O}");
         }
 
         private int GetTokenPollingInterval(IChangeToken changeToken)

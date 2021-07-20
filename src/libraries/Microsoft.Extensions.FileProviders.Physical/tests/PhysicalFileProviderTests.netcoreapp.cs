@@ -3,8 +3,7 @@
 
 using System;
 using System.IO;
-using System.Threading;
-using Microsoft.Extensions.FileProviders.Physical;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Primitives;
 using Xunit;
 
@@ -15,7 +14,7 @@ namespace Microsoft.Extensions.FileProviders
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void UsePollingFileWatcher_UseActivePolling_HasChanged_SymbolicLink(bool useWildcard)
+        public async Task UsePollingFileWatcher_UseActivePolling_HasChanged_SymbolicLink(bool useWildcard)
         {
             // Arrange
             using var rootOfFile = new DisposableFileSystem();
@@ -32,12 +31,12 @@ namespace Microsoft.Extensions.FileProviders
             Assert.False(token.HasChanged);
 
             // Act
-            Thread.Sleep(100); // Wait a bit before writing again, see https://github.com/dotnet/runtime/issues/55951.
+            await Task.Delay(200); // Wait a bit before writing again, see https://github.com/dotnet/runtime/issues/55951.
             File.WriteAllText(filePath, "v1.2");
-            Thread.Sleep(GetTokenPollingInterval(token));
+            await Task.Delay(GetTokenPollingInterval(token));
 
             // Assert
-            Assert.True(token.HasChanged);
+            Assert.True(token.HasChanged, $"Current time: {DateTime.UtcNow:O} file LastWriteTime: {File.GetLastWriteTimeUtc(filePath):O}");
         }
 
         [Theory]
@@ -64,7 +63,7 @@ namespace Microsoft.Extensions.FileProviders
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public void UsePollingFileWatcher_UseActivePolling_HasChanged_SymbolicLink_TargetChanged(bool useWildcard, bool fromTargetNonExistent)
+        public async Task UsePollingFileWatcher_UseActivePolling_HasChanged_SymbolicLink_TargetChanged(bool useWildcard, bool linkWasBroken)
         {
             // Arrange
             using var rootOfFile = new DisposableFileSystem();
@@ -73,9 +72,9 @@ namespace Microsoft.Extensions.FileProviders
             File.WriteAllText(file2Path, "v2.1");
 
             string file1Path = Path.Combine(rootOfFile.RootPath, Path.GetRandomFileName());
-            if (!fromTargetNonExistent)
+            if (!linkWasBroken)
             {
-                Thread.Sleep(100); // Wait a bit before writing again, see https://github.com/dotnet/runtime/issues/55951.
+                await Task.Delay(200); // Wait a bit before writing again, see https://github.com/dotnet/runtime/issues/55951.
                 File.WriteAllText(file1Path, "v1.1");
             }
 
@@ -92,16 +91,16 @@ namespace Microsoft.Extensions.FileProviders
             // Act - Change link target to file 2.
             File.Delete(linkPath);
             File.CreateSymbolicLink(linkPath, file2Path);
-            Thread.Sleep(GetTokenPollingInterval(token));
+            await Task.Delay(GetTokenPollingInterval(token));
 
-            // Assert
-            Assert.True(token.HasChanged); // It should report the change regardless of the timestamp being older.
+            // Assert - It should report the change regardless of the timestamp being older.
+            Assert.True(token.HasChanged, $"Current time: {DateTime.UtcNow:O} file 1 LastWriteTime: {File.GetLastWriteTimeUtc(file1Path):O} file 2 LastWriteTime: {File.GetLastWriteTimeUtc(file2Path):O}"); 
         }
 
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void UsePollingFileWatcher_UseActivePolling_HasChanged_SymbolicLink_TargetDeleted(bool useWildcard)
+        public async Task UsePollingFileWatcher_UseActivePolling_HasChanged_SymbolicLink_TargetDeleted(bool useWildcard)
         {
             // Arrange
             using var rootOfFile = new DisposableFileSystem();
@@ -121,10 +120,10 @@ namespace Microsoft.Extensions.FileProviders
 
             // Act
             File.Delete(linkPath);
-            Thread.Sleep(GetTokenPollingInterval(token));
+            await Task.Delay(GetTokenPollingInterval(token));
 
             // Assert
-            Assert.True(token.HasChanged);
+            Assert.True(token.HasChanged, $"Current time: {DateTime.UtcNow:O} file LastWriteTime: {File.GetLastWriteTimeUtc(filePath):O}");
         }
     }
 }
