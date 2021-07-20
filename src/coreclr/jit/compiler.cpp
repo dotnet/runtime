@@ -4519,11 +4519,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         };
 
         Validator(Compiler* comp) : GenTreeVisitor<Validator>(comp)
-        {}
+        {
+        }
 
         void VisitStmt(Statement* stmt)
         {
-            //m_compiler->gtDispStmt(stmt);
+            // m_compiler->gtDispStmt(stmt);
             WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
 

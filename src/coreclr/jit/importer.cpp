@@ -11953,7 +11953,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             ADRVAR:
 
-                op1 = impCreateLocalNode(lclNum, opcodeOffs + sz + 1);
+                op1 = impCreateLocalNode(lclNum DEBUGARG(opcodeOffs + sz + 1));
 
             _PUSH_ADRVAR:
                 assert(op1->gtOper == GT_LCL_VAR);
@@ -16729,7 +16729,7 @@ void Compiler::impPushVar(GenTree* op, typeInfo tiRetVal)
 // Returns:
 //     The node
 //
-GenTreeLclVar* Compiler::impCreateLocalNode(unsigned lclNum, IL_OFFSET offset)
+GenTreeLclVar* Compiler::impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET offset))
 {
     var_types lclTyp;
 
@@ -16749,7 +16749,7 @@ GenTreeLclVar* Compiler::impCreateLocalNode(unsigned lclNum, IL_OFFSET offset)
 // lclNum is an index into lvaTable *NOT* the arg/lcl index in the IL
 void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiRetVal)
 {
-    impPushVar(impCreateLocalNode(lclNum, offset), tiRetVal);
+    impPushVar(impCreateLocalNode(lclNum DEBUGARG(offset)), tiRetVal);
 }
 
 // Load an argument on the operand stack
@@ -20120,9 +20120,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
             assert(lclNum == op1->AsLclVar()->gtLclILoffs);
 
             // Create a new lcl var node - remember the argument lclNum
-            IL_OFFSET offs = BAD_IL_OFFSET;
-            INDEBUG(offs = op1->AsLclVar()->gtLclILoffs);
-            op1 = impCreateLocalNode(argLclNum, offs);
+            op1 = impCreateLocalNode(argLclNum DEBUGARG(op1->AsLclVar()->gtLclILoffs));
         }
     }
     else if (argInfo.argIsByRefToStructLocal && !argInfo.argHasStargOp)
