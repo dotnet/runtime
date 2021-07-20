@@ -986,13 +986,10 @@ g_rgWriteBarrierDescriptors:
     LEAF_ENTRY JIT_WriteBarrier_Callable
 
     // Branch to the write barrier
-    ldr     r2, 2f // or R3? See targetarm.h
+    ldr     r2, =JIT_WriteBarrier_Loc-(1f+4) // or R3? See targetarm.h
 1:
     add     r2, pc
-    ldr     r2, [r2]
     ldr     pc, [r2]
-2:
-    .long JIT_WriteBarrier_Loc(GOT_PREL)-((1b+4)-2b)
     LEAF_END JIT_WriteBarrier_Callable
 
 #ifdef FEATURE_READYTORUN

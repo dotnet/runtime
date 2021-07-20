@@ -94,7 +94,7 @@
         // r4 = pFrame
 
         // set first slot to the value of InlinedCallFrame::`vftable' (checked by runtime code)
-        ldr     r1, =_ZTV16InlinedCallFrame+8-2f
+        ldr     r1, =_ZTV16InlinedCallFrame+8-(2f+4)
 2:
         add     r1, pc
         str     r1, [r4]
