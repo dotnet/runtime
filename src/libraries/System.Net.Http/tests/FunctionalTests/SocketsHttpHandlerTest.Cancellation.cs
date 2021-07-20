@@ -94,7 +94,6 @@ namespace System.Net.Http.Functional.Tests
                 using (var handler = CreateHttpClientHandler())
                 using (var invoker = new HttpMessageInvoker(handler))
                 {
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                     var socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.ConnectTimeout = TimeSpan.FromSeconds(1);
                     socketsHandler.ConnectCallback = (context, token) => new ValueTask<Stream>(new MemoryStream());
