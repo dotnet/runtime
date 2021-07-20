@@ -45,6 +45,8 @@ namespace ABI
     struct ComInterfaceEntry;
 }
 
+static constexpr size_t ManagedObjectWrapperRefCountOffset();
+
 // Class for wrapping a managed object and projecting it in a non-managed environment
 class ManagedObjectWrapper
 {
@@ -172,7 +174,7 @@ public: // static
     static NativeObjectWrapperContext* MapFromRuntimeContext(_In_ void* cxt);
 
     // Create a NativeObjectWrapperContext instance
-    static HRESULT NativeObjectWrapperContext::Create(
+    static HRESULT Create(
         _In_ IUnknown* external,
         _In_opt_ IUnknown* nativeObjectAsInner,
         _In_ InteropLib::Com::CreateObjectFlags flags,
