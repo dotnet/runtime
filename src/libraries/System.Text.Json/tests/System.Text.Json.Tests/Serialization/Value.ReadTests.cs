@@ -346,6 +346,10 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData("")]
+        [InlineData("     ")]
+        [InlineData(" ")]
+        [InlineData("2147483648.2147483648.2147483648.2147483648")] //int.MaxValue + 1
+        [InlineData("2147483647.2147483647.2147483647.21474836477")] // Slightly bigger in size than max length of Version
         [InlineData("-2147483648.-2147483648")]
         [InlineData("-2147483648.-2147483648.-2147483648")]
         [InlineData("-2147483648.-2147483648.-2147483648.-2147483648")]
