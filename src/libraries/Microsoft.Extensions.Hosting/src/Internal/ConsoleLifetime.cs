@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Hosting.Internal
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("maccatalyst")]
     [UnsupportedOSPlatform("tvos")]
-    public class ConsoleLifetime : IHostLifetime, IDisposable
+    public partial class ConsoleLifetime : IHostLifetime, IDisposable
     {
         private readonly ManualResetEvent _shutdownBlock = new ManualResetEvent(false);
         private CancellationTokenRegistration _applicationStartedRegistration;
@@ -63,12 +63,14 @@ namespace Microsoft.Extensions.Hosting.Internal
                 this);
             }
 
-            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
             Console.CancelKeyPress += OnCancelKeyPress;
+            RegisterShutdownHandlers();
 
             // Console applications start immediately.
             return Task.CompletedTask;
         }
+
+        private partial void RegisterShutdownHandlers();
 
         private void OnApplicationStarted()
         {
@@ -82,25 +84,17 @@ namespace Microsoft.Extensions.Hosting.Internal
             Logger.LogInformation("Application is shutting down...");
         }
 
-        private void OnProcessExit(object sender, EventArgs e)
-        {
-            ApplicationLifetime.StopApplication();
-            if (!_shutdownBlock.WaitOne(HostOptions.ShutdownTimeout))
-            {
-                Logger.LogInformation("Waiting for the host to be disposed. Ensure all 'IHost' instances are wrapped in 'using' blocks.");
-            }
-            _shutdownBlock.WaitOne();
-            // On Linux if the shutdown is triggered by SIGTERM then that's signaled with the 143 exit code.
-            // Suppress that since we shut down gracefully. https://github.com/dotnet/aspnetcore/issues/6526
-            System.Environment.ExitCode = 0;
-        }
-
         private void OnCancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             e.Cancel = true;
+            OnExitSignal();
+        }
+
+        private void OnExitSignal()
+        {
             ApplicationLifetime.StopApplication();
 
-            // Don't block in process shutdown for CTRL+C/SIGINT since we can set e.Cancel to true
+            // Don't block in process shutdown for CTRL+C/SIGINT/SIGTERM since we can set e.Cancel to true
             // we assume that application code will unwind once StopApplication signals the token
             _shutdownBlock.Set();
         }
@@ -115,11 +109,13 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             _shutdownBlock.Set();
 
-            AppDomain.CurrentDomain.ProcessExit -= OnProcessExit;
+            UnregisterShutdownHandlers();
             Console.CancelKeyPress -= OnCancelKeyPress;
 
             _applicationStartedRegistration.Dispose();
             _applicationStoppingRegistration.Dispose();
         }
+
+        private partial void UnregisterShutdownHandlers();
     }
 }
