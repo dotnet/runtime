@@ -272,10 +272,10 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await server.AcceptConnectionAsync(async connection =>
                             {
+                                await connection.ReadRequestDataAsync();
                                 await WaitForEventCountersAsync(events);
                                 cts.Cancel();
                                 Assert.True(await semaphore.WaitAsync(TimeSpan.FromSeconds(30)));
-                                connection.Dispose();
                             });
                         });
 

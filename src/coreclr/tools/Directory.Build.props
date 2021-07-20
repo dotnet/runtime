@@ -4,6 +4,7 @@
     <IsShipping>false</IsShipping>
     <SignAssembly>false</SignAssembly>
     <RunAnalyzers>false</RunAnalyzers>
+    <DisableImplicitNamespaceImports_DotNet>true</DisableImplicitNamespaceImports_DotNet>
   </PropertyGroup>
   
   <!-- MSBuild doesn't understand the Checked configuration -->

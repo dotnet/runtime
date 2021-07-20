@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Tests;
 
-namespace System.Text.Json.Tests.Serialization
+namespace System.Text.Json.Serialization.Tests
 {
     public sealed class MetadataTests_Span : MetadataTests
     {
@@ -56,5 +57,10 @@ namespace System.Text.Json.Tests.Serialization
     {
         public int High { get; set; }
         public int Low { get; set; }
+    }
+
+    [JsonSerializable(typeof(WeatherForecastWithPOCOs))]
+    internal sealed partial class JsonContext : JsonSerializerContext
+    {
     }
 }
