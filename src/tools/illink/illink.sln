@@ -33,6 +33,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "tlens", "src\tlens\tlens.cs
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILLink.CodeFixProvider", "src\ILLink.CodeFix\ILLink.CodeFixProvider.csproj", "{6D20F334-B7E4-4585-854B-8A0E2B29B4AA}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ILLink.Shared", "src\ILLink.Shared\ILLink.Shared.shproj", "{92F5E753-2179-46DC-BDCE-736858C18DC7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

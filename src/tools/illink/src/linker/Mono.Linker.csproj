@@ -24,15 +24,6 @@
     <Compile Include="..\..\external\corert\**\*.cs" />
   </ItemGroup>
 
-  <!-- Shared files with analyzer -->
-  <ItemGroup>
-    <EmbeddedResource Include="../ILLink.Shared/SharedStrings.resx">
-      <GenerateSource>true</GenerateSource>
-      <Namespace>ILLink.Shared</Namespace>
-    </EmbeddedResource>
-    <Compile Include="../ILLink.Shared/**/*.cs" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Mono.Cecil" Version="$(MonoCecilVersion)" />
     <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="..\..\external\cecil\Mono.Cecil.csproj" />
@@ -63,5 +54,6 @@
       <ContentWithTargetPath Include="$(ProjectRuntimeConfigFilePath)" CopyToOutputDirectory="PreserveNewest" TargetPath="$(ProjectRuntimeConfigFileName)" />
     </ItemGroup>
   </Target>
+  <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
 
 </Project>
