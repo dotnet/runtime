@@ -80,6 +80,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55931")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectTimeout_PlaintextStreamFilterTimesOut_Throws(bool useSsl)
