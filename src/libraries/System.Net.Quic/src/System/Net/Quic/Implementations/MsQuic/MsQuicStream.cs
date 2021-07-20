@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -196,6 +197,47 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override bool CanRead => _disposed == 0 && _canRead;
 
         internal override bool CanWrite => _disposed == 0 && _canWrite;
+
+        internal override bool CanTimeout => true;
+
+        private int _readTimeout = -1;
+
+        internal override int ReadTimeout
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return _readTimeout;
+            }
+            set
+            {
+                ThrowIfDisposed();
+                if (value <= 0 && value != System.Threading.Timeout.Infinite)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_quic_timeout_use_gt_zero);
+                }
+                _readTimeout = value;
+            }
+        }
+
+        private int _writeTimeout = -1;
+        internal override int WriteTimeout
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return  _writeTimeout;
+            }
+            set
+            {
+                ThrowIfDisposed();
+                if (value <= 0 && value != System.Threading.Timeout.Infinite)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_quic_timeout_use_gt_zero);
+                }
+                _writeTimeout = value;
+            }
+        }
 
         internal override long StreamId
         {
@@ -409,7 +451,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                         {
                             var state = (State)obj!;
                             bool completePendingRead;
-
                             lock (state)
                             {
                                 completePendingRead = state.ReadState == ReadState.PendingRead;
@@ -648,28 +689,58 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
+            CancellationTokenSource? cts = null;
             try
             {
-                Task<int> t = ReadAsync(new Memory<byte>(rentedBuffer, 0, buffer.Length)).AsTask();
+                if (_readTimeout > 0)
+                {
+                    cts = new CancellationTokenSource(_readTimeout);
+                }
+                Task<int> t = ReadAsync(new Memory<byte>(rentedBuffer, 0, buffer.Length), cts != null ? cts.Token : default).AsTask();
                 ((IAsyncResult)t).AsyncWaitHandle.WaitOne();
                 int readLength = t.GetAwaiter().GetResult();
                 rentedBuffer.AsSpan(0, readLength).CopyTo(buffer);
                 return readLength;
             }
+            catch (OperationCanceledException) when (_readTimeout > 0)
+            {
+                // sync operations do not have Cancellation
+                throw new IOException(SR.net_quic_timeout);
+            }
             finally
             {
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
+                cts?.Dispose();
             }
         }
 
         internal override void Write(ReadOnlySpan<byte> buffer)
         {
             ThrowIfDisposed();
+            CancellationTokenSource? cts = null;
+
 
             // TODO: optimize this.
-            Task t = WriteAsync(buffer.ToArray()).AsTask();
-            ((IAsyncResult)t).AsyncWaitHandle.WaitOne();
-            t.GetAwaiter().GetResult();
+            if (_writeTimeout > 0)
+            {
+                cts = new CancellationTokenSource(_writeTimeout);
+            }
+            try
+            {
+                Task t = WriteAsync(buffer.ToArray(), cts != null ? cts.Token : default).AsTask();
+                ((IAsyncResult)t).AsyncWaitHandle.WaitOne();
+                t.GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException) when (_writeTimeout > 0)
+            {
+                // sync operations do not have Cancellation
+                throw new IOException(SR.net_quic_timeout);
+            }
+            finally
+            {
+                cts?.Dispose();
+            }
+
         }
 
         // MsQuic doesn't support explicit flushing
