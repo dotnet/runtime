@@ -356,6 +356,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("1.-1")]
         [InlineData("   1.2.3.4")] //Valid but has leading whitespace
         [InlineData("1.2.3.4    ")] //Valid but has trailing whitespace
+        [InlineData("  1.2.3.4  ")] //Valid but has trailing and leading whitespaces
         [InlineData("{}", false)]
         [InlineData("[]", false)]
         [InlineData("true", false)]

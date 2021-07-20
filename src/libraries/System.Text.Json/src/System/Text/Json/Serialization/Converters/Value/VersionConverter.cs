@@ -81,7 +81,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 #else
             string? versionString = reader.GetString();
-            if (!string.IsNullOrEmpty(versionString) && !char.IsDigit(versionString[0]) && !char.IsDigit(versionString[versionString.Length - 1]))
+            if (!string.IsNullOrEmpty(versionString) && (!char.IsDigit(versionString[0]) || !char.IsDigit(versionString[versionString.Length - 1])))
             {
                 throw ThrowHelper.GetFormatException(DataType.Version);
             }
