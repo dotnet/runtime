@@ -20120,7 +20120,9 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
             assert(lclNum == op1->AsLclVar()->gtLclILoffs);
 
             // Create a new lcl var node - remember the argument lclNum
-            op1 = impCreateLocalNode(argLclNum, op1->AsLclVar()->gtLclILoffs);
+            IL_OFFSET offs = BAD_IL_OFFSET;
+            INDEBUG(offs = op1->AsLclVar()->gtLclILoffs);
+            op1 = impCreateLocalNode(argLclNum, offs);
         }
     }
     else if (argInfo.argIsByRefToStructLocal && !argInfo.argHasStargOp)
