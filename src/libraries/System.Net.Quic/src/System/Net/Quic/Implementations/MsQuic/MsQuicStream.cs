@@ -647,7 +647,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
             try
             {
-                int readLength = ReadAsync(new Memory<byte>(rentedBuffer, 0, buffer.Length)).AsTask().GetAwaiter().GetResult();
+                Task<int> t = ReadAsync(new Memory<byte>(rentedBuffer, 0, buffer.Length)).AsTask();
+                ((IAsyncResult)t).AsyncWaitHandle.WaitOne();
+                int readLength = t.GetAwaiter().GetResult();
                 rentedBuffer.AsSpan(0, readLength).CopyTo(buffer);
                 return readLength;
             }
@@ -662,7 +664,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             ThrowIfDisposed();
 
             // TODO: optimize this.
-            WriteAsync(buffer.ToArray()).AsTask().GetAwaiter().GetResult();
+            Task t = WriteAsync(buffer.ToArray()).AsTask();
+            ((IAsyncResult)t).AsyncWaitHandle.WaitOne();
+            t.GetAwaiter().GetResult();
         }
 
         // MsQuic doesn't support explicit flushing
