@@ -18,11 +18,15 @@ if (CLR_CMAKE_TARGET_WIN32)
 
   else ()
 
-    set(ASM_OPTIONS /c /Zi /W3 /errorReport:prompt /guard:ehcont)
+    set(ASM_OPTIONS /c /Zi /W3 /errorReport:prompt)
 
     if (CLR_CMAKE_HOST_ARCH_I386)
       list (APPEND ASM_OPTIONS /safeseh)
     endif (CLR_CMAKE_HOST_ARCH_I386)
+
+    if (CLR_CMAKE_HOST_ARCH_AMD64)
+      list (APPEND ASM_OPTIONS /guard:ehcont)
+    endif (CLR_CMAKE_HOST_ARCH_AMD64)
 
     set_source_files_properties(${ASM_FILE} PROPERTIES COMPILE_OPTIONS "${ASM_OPTIONS}")
 
