@@ -8,8 +8,9 @@
     <PackageDescription>File provider for physical files for Microsoft.Extensions.FileProviders.</PackageDescription>
   </PropertyGroup>
   
-  <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsBrowser)' == 'true'">SR.FileProvidersPhysical_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.FileProvidersPhysical_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
 
   <ItemGroup>
