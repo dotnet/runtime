@@ -29,10 +29,10 @@ parameters:
   enableMicrobuild: ''
   gatherAssetManifests: false
   shouldContinueOnError: false
-
+  forNode: ''
 
 steps:
-  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:RuntimeVariant=monointerpreter /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -excludemonofailures os Browser wasm $(buildConfigUpper) /p:ForNode=$(ForNode)
+  - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:RuntimeVariant=monointerpreter /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -excludemonofailures os Browser wasm $(buildConfigUpper) /p:ForNode=true
     displayName: Build Tests
 
   #  Send tests to Helix

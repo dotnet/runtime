@@ -635,8 +635,6 @@ jobs:
         value: 10
       - name: timeoutPerTestCollectionInMinutes
         value: 200
-      - name: ForNode
-        value: true
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests_NodeJS
@@ -652,7 +650,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:ForNode=true
+        forNode: /p:ForNode=true
 
 #
 # Build the whole product using Mono for Android and run runtime tests with Android emulator
