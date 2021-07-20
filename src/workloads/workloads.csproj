@@ -57,12 +57,21 @@
                           Description="Build tools for Android compilation and native linking."/>
       <ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET Android Build Tools (AoT)"
                           Description="Build tools for Android ahead-of-time (AoT) compilation and native linking."/>
+      <ComponentResources Include="runtimes-ios" Title=".NET iOS Build Tools"
+                          Description="Build tools for iOS compilation and native linking."/>
+      <ComponentResources Include="runtimes-tvos" Title=".NET tvOS Build Tools"
+                          Description="Build tools for tvOS compilation and native linking."/>
+      <ComponentResources Include="runtimes-maccatalyst" Title=".NET Mac Catalyst Build Tools"
+                          Description="Build tools for Mac Catalyst compilation and native linking."/>
 
       <!-- Visual Studio components must be versioned. Build tasks will fall back to cobbling a version number from
            the manifest information unless it's overridden. -->
       <ComponentVersions Include="wasm-tools" Version="$(FileVersion)" />
       <ComponentVersions Include="microsoft-net-runtime-android" Version="$(FileVersion)" />
       <ComponentVersions Include="microsoft-net-runtime-android-aot" Version="$(FileVersion)" />
+      <ComponentVersions Include="runtimes-ios" Version="$(FileVersion)" />
+      <ComponentVersions Include="runtimes-tvos" Version="$(FileVersion)" />
+      <ComponentVersions Include="runtimes-maccatalyst" Version="$(FileVersion)" />
     </ItemGroup>
 
     <!-- BAR requires having version information in blobs -->
