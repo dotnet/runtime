@@ -141,7 +141,7 @@
           DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BundleTimeZones">
 
     <!-- Run TS -> JS compiler -->  
-    <Exec Command="tsc -p $(MonoProjectRoot)wasm\runtime\" IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="tsc -p ." IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
     <Exec Command="make -C $(MonoProjectRoot)wasm all SHELL=/bin/bash BINDIR=$(ArtifactsBinDir) MONO_BIN_DIR=$(MonoArtifactsPath) OBJDIR=$(ArtifactsObjDir) NATIVE_BIN_DIR=$(NativeBinDir) CONFIG=$(Configuration) PINVOKE_TABLE=$(WasmPInvokeTablePath) ICU_LIBDIR=$(ICULibDir)"
           IgnoreStandardErrorWarningFormat="true" />

@@ -66,7 +66,7 @@ type MonoConfig = {
 
 // Types of assets that can be in the mono-config.js/mono-config.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
 type AssetEntry = {
-    behavior: string,
+    behavior: AssetBehaviours,
     name: string
 }
 
@@ -87,4 +87,13 @@ interface VfsEntry extends AssetEntry {
 interface IcuData extends AssetEntry {
     name: "icu",
     load_remote: boolean
+}
+
+// Note that since these are annoated as `declare const enum` they are replaces by tsc with their raw value during compilation
+declare const enum AssetBehaviours {
+    Resource = "resource",
+    Assembly = "assembly",
+    Heap = "heap",
+    ICU = "icu",
+    VFS = "vfs",
 }

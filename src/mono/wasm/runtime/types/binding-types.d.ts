@@ -54,7 +54,7 @@ interface BINDING_VARS {
     _interned_string_full_root_buffers: WasmRootBuffer[];
     _interned_string_current_root_buffer: WasmRootBuffer;
     _interned_string_current_root_buffer_count: number;
-    _interned_js_string_table: Map<string, number>;
+    _interned_js_string_table: Map<string | Symbol, number>;
     _method_descriptions: Map<number, string>;
     _signature_converters: Map<string, Converter>;
     _primitive_converters: Map<string, Converter>;
@@ -84,7 +84,12 @@ declare var BINDING: typeof BindingSupportLib.$BINDING & BINDING_C_FUNCS & BINDI
 
 // OTHER TYPES ///////////////////////////////////////////////////////////////////////
 type Converter = {
-    steps: any[];
+    steps: {
+        convert: boolean;
+        needs_root: boolean;
+        indirect: ConverterStepIndirects;
+        size: number;
+    }[];
     size: number;
     args_marshal?: any;
     is_result_definitely_unmarshaled?: boolean;
@@ -97,4 +102,50 @@ type Converter = {
     compiled_function?: any;
     scratchRootBuffer?: any;
     scratchBuffer?: any;
+}
+
+// Note that since these are annoated as `declare const enum` they are replaces by tsc with their raw value during compilation
+declare const enum ConverterStepIndirects {
+    UInt32 = "u32",
+    Int32 = "i32",
+    Float = "float",
+    Float64 = "double",
+    Int64 = "i64",
+} 
+
+declare const enum CNonPrimativeTypes {
+    String = 3,
+    VTS = 4, // throws errors due to "no idea on how to unbox value types"
+    Delegate = 5,
+    Task = 6,
+    Ref = 7,
+    DateTime = 20,
+    DateTimeOffset = 21,
+    Uri = 22,
+    SafeHandle = 23,
+    Int64 = 26, // TODO: Fix this once emscripten offers HEAPI64/HEAPU64 or can return them, currently throws an error
+    UInt64 = 27, // TODO: Fix this once emscripten offers HEAPI64/HEAPU64 or can return them, currently throws an error
+    Char = 29,
+    Undefined = 30
+}
+
+declare const enum CPrimativeTypes {
+    Int = 1,
+    Float64 = 2,
+    Bool = 8,
+    Float32 = 24,
+    UInt32 = 25,
+    Char = 28
+}
+
+declare const enum JSTypedArrays {
+    Int8Array = 5,
+    Uint8Array = 6,
+    Int16Array = 7,
+    Uint16Array = 8,
+    Int32Array = 9,
+    Uint32Array = 10,
+    Float32Array = 13,
+    Float64Array = 14,
+    Uint8ClampedArray = 15,
 }

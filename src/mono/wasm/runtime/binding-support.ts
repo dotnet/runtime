@@ -168,7 +168,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_store_string_in_intern_table: function (string: string, ptr: number, internIt: boolean): number {
+		_store_string_in_intern_table: function (string: string | Symbol, ptr: number, internIt: boolean): number {
 			if (!ptr)
 				throw new Error ("null pointer passed to _store_string_in_intern_table");
 			else if (typeof (ptr) !== "number")
@@ -203,16 +203,20 @@ var BindingSupportLib = {
 				MONO.interned_string_table = new Map();
 			MONO.interned_string_table.set (ptr, string);
 
-			if ((string.length === 0) && !BINDING._empty_string_ptr)
+			var text = ((typeof (string) === "symbol")
+			? (string.description || Symbol.keyFor(string) || "<unknown Symbol>")
+			: string) as string;
+
+			if ((text.length === 0) && !BINDING._empty_string_ptr)
 				BINDING._empty_string_ptr = ptr;
 			
 			return ptr;
 		},
 
-		js_string_to_mono_string_interned: function (string) {
-			var text = (typeof (string) === "symbol")
+		js_string_to_mono_string_interned: function (string: string | Symbol): number {
+			var text = ((typeof (string) === "symbol")
 				? (string.description || Symbol.keyFor(string) || "<unknown Symbol>")
-				: string;
+				: string) as string;
 			
 			if ((text.length === 0) && BINDING._empty_string_ptr)
 				return BINDING._empty_string_ptr;
@@ -227,7 +231,7 @@ var BindingSupportLib = {
 			return ptr;
 		},
 
-		js_string_to_mono_string: function (string: string): number {
+		js_string_to_mono_string: function (string: string | Symbol): number {
 			if (string === null)
 				return null;
 			else if (typeof (string) === "symbol")
@@ -293,7 +297,7 @@ var BindingSupportLib = {
 			return BINDING._is_simple_array(ele);
 		},
 
-		mono_array_to_js_array: function (mono_array: number): any {
+		mono_array_to_js_array: function (mono_array: number): any[] | null {
 			if (mono_array === 0)
 				return null;
 
@@ -305,7 +309,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		_mono_array_root_to_js_array: function (arrayRoot){
+		_mono_array_root_to_js_array: function (arrayRoot): any[] | null {
 			if (arrayRoot.value === 0)
 				return null;
 
@@ -330,7 +334,7 @@ var BindingSupportLib = {
 			return res;
 		},
 
-		js_array_to_mono_array: function (js_array, asString = false) {
+		js_array_to_mono_array: function (js_array: any[], asString: boolean = false): number {
 			var mono_array = asString ? BINDING.mono_wasm_string_array_new (js_array.length) : BINDING.mono_obj_array_new (js_array.length);
 			let [arrayRoot, elemRoot] = MONO.mono_wasm_new_roots ([mono_array, 0]);
 
@@ -350,7 +354,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		unbox_mono_obj: function (mono_obj) {
+		unbox_mono_obj: function (mono_obj: number): number {
 			if (mono_obj === 0)
 				return undefined;
 
@@ -392,7 +396,7 @@ var BindingSupportLib = {
 			return promise;
 		},
 
-		_unbox_safehandle_root: function (root) {
+		_unbox_safehandle_root: function (root: WasmRoot) {
 			var addRef = true;
 			var js_handle = BINDING.call_method(BINDING.safehandle_get_handle, null, "mi", [ root.value, addRef ]);
 			var requiredObject = BINDING.mono_wasm_require_handle (js_handle);
@@ -406,26 +410,27 @@ var BindingSupportLib = {
 			return requiredObject;
 		},
 
-		_unbox_mono_obj_root_with_known_nonprimitive_type: function (root, type) {
+		/** @returns return type is determined by the type parameter */
+		_unbox_mono_obj_root_with_known_nonprimitive_type: function (root: WasmRoot, type: number): any {
 			if (root.value === undefined)
 				throw new Error(`Expected a root but got ${root}`);
 			
 			//See MARSHAL_TYPE_ defines in driver.c
 			switch (type) {
-				case 26: // int64
-				case 27: // uint64
+				case CNonPrimativeTypes.Int64:
+				case CNonPrimativeTypes.UInt64:
 					// TODO: Fix this once emscripten offers HEAPI64/HEAPU64 or can return them
 					throw new Error ("int64 not available");
-				case 3: // string
-				case 29: // interned string
+				case CNonPrimativeTypes.String:
+				case CNonPrimativeTypes.Char: // interned string
 					return BINDING.conv_string (root.value);
-				case 4: //vts
+				case CNonPrimativeTypes.VTS:
 					throw new Error ("no idea on how to unbox value types");
-				case 5: // delegate
+				case CNonPrimativeTypes.Delegate:
 					return BINDING._unbox_delegate_root (root);
-				case 6: // Task
+				case CNonPrimativeTypes.Task:
 					return BINDING._unbox_task_root (root);
-				case 7: // ref type
+				case CNonPrimativeTypes.Ref:
 					return BINDING.extract_js_obj_root (root);
 				case 10: // arrays
 				case 11:
@@ -437,59 +442,59 @@ var BindingSupportLib = {
 				case 17:
 				case 18:
 					throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
-				case 20: // clr .NET DateTime
+				case CNonPrimativeTypes.DateTime: // clr .NET DateTime
 					var dateValue = BINDING.call_method(BINDING.get_date_value, null, "m", [ root.value ]);
 					return new Date(dateValue);
-				case 21: // clr .NET DateTimeOffset
+				case CNonPrimativeTypes.DateTimeOffset: // clr .NET DateTimeOffset
 					var dateoffsetValue = BINDING._object_to_string (root.value);
 					return dateoffsetValue;
-				case 22: // clr .NET Uri
+				case CNonPrimativeTypes.Uri: // clr .NET Uri
 					var uriValue = BINDING._object_to_string (root.value);
 					return uriValue;
-				case 23: // clr .NET SafeHandle
+				case CNonPrimativeTypes.SafeHandle: // clr .NET SafeHandle
 					return BINDING._unbox_safehandle_root (root);
-				case 30:
+				case CNonPrimativeTypes.Undefined:
 					return undefined;
 				default:
 					throw new Error (`no idea on how to unbox object kind ${type} at offset ${root.value} (root address is ${root.get_address()})`);
 			}
 		},
 
-		_unbox_mono_obj_root: function (root) {
+		_unbox_mono_obj_root: function (root: WasmRoot): any {
 			if (root.value === 0)
 				return undefined;
 
 			var type = BINDING.mono_wasm_try_unbox_primitive_and_get_type (root.value, BINDING._unbox_buffer);
 			switch (type) {
-				case 1: // int
+				case CPrimativeTypes.Int:
 					return Module.HEAP32[BINDING._unbox_buffer / 4];
-				case 25: // uint32
+				case CPrimativeTypes.UInt32:
 					return Module.HEAPU32[BINDING._unbox_buffer / 4];
-				case 24: // float32
+				case CPrimativeTypes.Float32:
 					return Module.HEAPF32[BINDING._unbox_buffer / 4];
-				case 2: // float64
+				case CPrimativeTypes.Float64:
 					return Module.HEAPF64[BINDING._unbox_buffer / 8];
-				case 8: // boolean
+				case CPrimativeTypes.Bool:
 					return (Module.HEAP32[BINDING._unbox_buffer / 4]) !== 0;
-				case 28: // char
+				case CPrimativeTypes.Char:
 					return String.fromCharCode(Module.HEAP32[BINDING._unbox_buffer / 4]);
 				default:
 					return BINDING._unbox_mono_obj_root_with_known_nonprimitive_type (root, type);
 			}
 		},
 
-		create_task_completion_source: function () {
+		create_task_completion_source: function (): number {
 			return BINDING.call_method (BINDING.create_tcs, null, "i", [ -1 ]);
 		},
 
-		set_task_result: function (tcs, result) {
+		set_task_result: function (tcs, result: string): void {
 			tcs.is_mono_tcs_result_set = true;
 			BINDING.call_method (BINDING.set_tcs_result, null, "oo", [ tcs, result ]);
 			if (tcs.is_mono_tcs_task_bound)
 				BINDING.free_task_completion_source(tcs);
 		},
 
-		set_task_failure: function (tcs, reason) {
+		set_task_failure: function (tcs, reason): void {
 			tcs.is_mono_tcs_result_set = true;
 			BINDING.call_method (BINDING.set_tcs_failure, null, "os", [ tcs, reason.toString () ]);
 			if (tcs.is_mono_tcs_task_bound)
@@ -497,7 +502,7 @@ var BindingSupportLib = {
 		},
 
 		// https://github.com/Planeshifter/emscripten-examples/blob/master/01_PassingArrays/sum_post.js
-		js_typedarray_to_heap: function(typedArray){
+		js_typedarray_to_heap: function(typedArray): Uint8Array {
 			var numBytes = typedArray.length * typedArray.BYTES_PER_ELEMENT;
 			var ptr = Module._malloc(numBytes);
 			var heapBytes = new Uint8Array(Module.HEAPU8.buffer, ptr, numBytes);
@@ -505,27 +510,27 @@ var BindingSupportLib = {
 			return heapBytes;
 		},
 
-		_box_js_int: function (js_obj) {
+		_box_js_int: function (js_obj: number): number {
 			Module.HEAP32[BINDING._box_buffer / 4] = js_obj;
 			return BINDING.mono_wasm_box_primitive (BINDING._class_int32, BINDING._box_buffer, 4);
 		},
 
-		_box_js_uint: function (js_obj) {
+		_box_js_uint: function (js_obj: number): number {
 			Module.HEAPU32[BINDING._box_buffer / 4] = js_obj;
 			return BINDING.mono_wasm_box_primitive (BINDING._class_uint32, BINDING._box_buffer, 4);
 		},
 
-		_box_js_double: function (js_obj) {
+		_box_js_double: function (js_obj: number): number {
 			Module.HEAPF64[BINDING._box_buffer / 8] = js_obj;
 			return BINDING.mono_wasm_box_primitive (BINDING._class_double, BINDING._box_buffer, 8);
 		},
 
-		_box_js_bool: function (js_obj) {
+		_box_js_bool: function (js_obj: boolean): number {
 			Module.HEAP32[BINDING._box_buffer / 4] = js_obj ? 1 : 0;
 			return BINDING.mono_wasm_box_primitive (BINDING._class_boolean, BINDING._box_buffer, 4);
 		},
 
-		js_to_mono_obj: function (js_obj) {
+		js_to_mono_obj: function (js_obj: any): any {
 			BINDING.bindings_lazy_init ();
 
 			// determines if the javascript object is a Promise or Promise like which can happen
@@ -584,7 +589,7 @@ var BindingSupportLib = {
 					return BINDING.extract_mono_obj (js_obj);
 			}
 		},
-		js_to_mono_uri: function (js_obj) {
+		js_to_mono_uri: function (js_obj: any): any {
 			BINDING.bindings_lazy_init ();
 
 			switch (true) {
@@ -630,7 +635,7 @@ var BindingSupportLib = {
 		},
 		// Copy the existing typed array to the heap pointed to by the pinned array address
 		// 	 typed array memory -> copy to heap -> address of managed pinned array
-		typedarray_copy_to : function (typed_array, pinned_array, begin, end, bytes_per_element) {
+		typedarray_copy_to : function (typed_array, pinned_array, begin, end, bytes_per_element): number {
 
 			// JavaScript typed arrays are array-like objects and provide a mechanism for accessing
 			// raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays
@@ -673,7 +678,7 @@ var BindingSupportLib = {
 		},
 		// Copy the pinned array address from pinned_array allocated on the heap to the typed array.
 		// 	 adress of managed pinned array -> copy from heap -> typed array memory
-		typedarray_copy_from : function (typed_array, pinned_array, begin, end, bytes_per_element) {
+		typedarray_copy_from : function (typed_array, pinned_array, begin, end, bytes_per_element): number {
 
 			// JavaScript typed arrays are array-like objects and provide a mechanism for accessing
 			// raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays
@@ -714,38 +719,38 @@ var BindingSupportLib = {
 		},
 		// Creates a new typed array from pinned array address from pinned_array allocated on the heap to the typed array.
 		// 	 adress of managed pinned array -> copy from heap -> typed array memory
-		typed_array_from : function (pinned_array, begin, end, bytes_per_element, type) {
+		typed_array_from : function (pinned_array, begin: number, end: number, bytes_per_element: number, type: number): ArrayBuffer {
 
 			// typed array
 			var newTypedArray: ArrayBuffer;
 
 			switch (type)
 			{
-				case 5:
+				case JSTypedArrays.Int8Array:
 					newTypedArray = new Int8Array(end - begin);
 					break;
-				case 6:
+				case JSTypedArrays.Uint8Array:
 					newTypedArray = new Uint8Array(end - begin);
 					break;
-				case 7:
+				case JSTypedArrays.Int16Array:
 					newTypedArray = new Int16Array(end - begin);
 					break;
-				case 8:
+				case JSTypedArrays.Uint16Array:
 					newTypedArray = new Uint16Array(end - begin);
 					break;
-				case 9:
+				case JSTypedArrays.Int32Array:
 					newTypedArray = new Int32Array(end - begin);
 					break;
-				case 10:
+				case JSTypedArrays.Uint32Array:
 					newTypedArray = new Uint32Array(end - begin);
 					break;
-				case 13:
+				case JSTypedArrays.Float32Array:
 					newTypedArray = new Float32Array(end - begin);
 					break;
-				case 14:
+				case JSTypedArrays.Float64Array:
 					newTypedArray = new Float64Array(end - begin);
 					break;
-				case 15:  // This is a special case because the typed array is also byte[]
+				case JSTypedArrays.Uint8ClampedArray:  // This is a special case because the typed array is also byte[]
 					newTypedArray = new Uint8ClampedArray(end - begin);
 					break;
 			}
@@ -1072,19 +1077,19 @@ var BindingSupportLib = {
 					var heapArrayName = null;
 
 					switch (step.indirect) {
-						case "u32":
+						case ConverterStepIndirects.UInt32:
 							heapArrayName = "HEAPU32";
 							break;
-						case "i32":
+						case ConverterStepIndirects.Int32:
 							heapArrayName = "HEAP32";
 							break;
-						case "float":
+						case ConverterStepIndirects.Float:
 							heapArrayName = "HEAPF32";
 							break;
-						case "double":
+						case ConverterStepIndirects.Float64:
 							body.push (`Module.HEAPF64[indirect64 + ${(indirectLocalOffset / 8)}] = ${valueKey};`);
 							break;
-						case "i64":
+						case ConverterStepIndirects.Int64:
 							body.push (`Module.setValue (indirectStart + ${indirectLocalOffset}, ${valueKey}, 'i64');`);
 							break;
 						default:

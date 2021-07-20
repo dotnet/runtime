@@ -912,16 +912,16 @@ var MonoSupportLib = {
 			var offset = null;
 
 			switch (asset.behavior) {
-				case "resource":
-				case "assembly":
+				case AssetBehaviours.Resource:
+				case AssetBehaviours.Assembly:
 					ctx.loaded_files.push ({ url: url, file: virtualName});
-				case "heap":
-				case "icu":
+				case AssetBehaviours.Heap:
+				case AssetBehaviours.ICU:
 					offset = MONO.mono_wasm_load_bytes_into_heap (bytes);
 					ctx.loaded_assets[virtualName] = [offset, bytes.length];
 					break;
 
-				case "vfs":
+				case AssetBehaviours.VFS:
 					// FIXME
 					var lastSlash = virtualName.lastIndexOf("/");
 					var parentDirectory = (lastSlash > 0)
@@ -958,7 +958,7 @@ var MonoSupportLib = {
 					throw new Error (`Unrecognized asset behavior: ${asset.behavior} for asset ${asset.name}`);
 			}
 
-			if (asset.behavior === "assembly") {
+			if (asset.behavior === AssetBehaviours.Assembly) {
 				var hasPpdb = ctx.mono_wasm_add_assembly (virtualName, offset, bytes.length);
 
 				if (!hasPpdb) {
@@ -966,13 +966,13 @@ var MonoSupportLib = {
 					ctx.loaded_files.splice(index, 1);
 				}
 			}
-			else if (asset.behavior === "icu") {
+			else if (asset.behavior === AssetBehaviours.ICU) {
 				if (MONO.mono_wasm_load_icu_data (offset))
 					ctx.num_icu_assets_loaded_successfully += 1;
 				else
 					console.error ("Error loading ICU asset", asset.name);
 			}
-			else if (asset.behavior === "resource") {
+			else if (asset.behavior === AssetBehaviours.Resource) {
 				ctx.mono_wasm_add_satellite_assembly (virtualName, asset.culture, offset, bytes.length);
 			}
 		},
