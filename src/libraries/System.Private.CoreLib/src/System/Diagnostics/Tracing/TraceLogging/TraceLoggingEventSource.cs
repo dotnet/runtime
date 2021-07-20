@@ -365,7 +365,7 @@ namespace System.Diagnostics.Tracing
              Guid* childActivityID,
             params object?[] values)
         {
-            m_activeWritesCount++;
+            WriteGuardEnter();
             if (this.IsEnabled())
             {
                 try
@@ -384,7 +384,7 @@ namespace System.Diagnostics.Tracing
                 }
                 finally
                 {
-                    m_activeWritesCount--;
+                    WriteGuardExit();
                 }
             }
         }
@@ -557,7 +557,7 @@ namespace System.Diagnostics.Tracing
             EventData* data)
         {
 #if FEATURE_MANAGED_ETW
-            m_activeWritesCount++;
+            WriteGuardEnter();
             if (this.IsEnabled())
             {
                 try
@@ -620,7 +620,7 @@ namespace System.Diagnostics.Tracing
                 }
                 finally
                 {
-                    m_activeWritesCount--;
+                    WriteGuardExit();
                 }
             }
 
@@ -635,7 +635,7 @@ namespace System.Diagnostics.Tracing
             Guid* pRelatedActivityId,
             TraceLoggingEventTypes eventTypes)
         {
-            m_activeWritesCount++;
+            WriteGuardEnter();
             if (IsEnabled())
             {
                 try
@@ -760,7 +760,7 @@ namespace System.Diagnostics.Tracing
                 }
                 finally
                 {
-                    m_activeWritesCount--;
+                    WriteGuardExit();
                 }
             }
         }

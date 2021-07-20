@@ -1302,7 +1302,7 @@ namespace System.Diagnostics.Tracing
         [CLSCompliant(false)]
         protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, Guid* relatedActivityId, int eventDataCount, EventSource.EventData* data)
         {
-            m_activeWritesCount++;
+            WriteGuardEnter();
             if (IsEnabled())
             {
                 Debug.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.
@@ -1383,7 +1383,7 @@ namespace System.Diagnostics.Tracing
                 }
                 finally
                 {
-                    m_activeWritesCount--;
+                    WriteGuardExit();
                 }
             }
         }
@@ -1465,7 +1465,8 @@ namespace System.Diagnostics.Tracing
 
                 // Wait till active writes have finished (stop waiting at 1 second)
                 // TODO: determine appropriate break out mechanism. Is 1 second appropriate? Is a timeout appropriate at all?
-                SpinWait.SpinUntil(() => m_activeWritesCount == 0, 1000);
+                // TODO: use Volatile.Read instead? It's an int, so we shouldn't get tearing.
+                SpinWait.SpinUntil(() => Interlocked.CompareExchange(ref m_activeWritesCount, 0, 0) == 0, 1000);
 
                 if (m_etwProvider != null)
                 {
@@ -1902,7 +1903,7 @@ namespace System.Diagnostics.Tracing
 #endif
         private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object?[] args)
         {
-            m_activeWritesCount++;
+            WriteGuardEnter();
             if (IsEnabled())
             {
                 Debug.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.
@@ -2009,7 +2010,7 @@ namespace System.Diagnostics.Tracing
                 }
                 finally
                 {
-                    m_activeWritesCount--;
+                    WriteGuardExit();
                 }
             }
         }
@@ -3853,6 +3854,9 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        private void WriteGuardEnter() => Interlocked.Increment(ref m_activeWritesCount);
+        private void WriteGuardExit() => Interlocked.Decrement(ref m_activeWritesCount);
+
         // private instance state
         private string m_name = null!;                  // My friendly name (privided in ctor)
         internal int m_id;                              // A small integer that is unique to this instance.
@@ -3870,7 +3874,7 @@ namespace System.Diagnostics.Tracing
         private volatile bool m_eventSourceEnabled;              // am I enabled (any of my events are enabled for any dispatcher)
         internal EventLevel m_level;                    // highest level enabled by any output dispatcher
         internal EventKeywords m_matchAnyKeyword;       // the logical OR of all levels enabled by any output dispatcher (zero is a special case) meaning 'all keywords'
-        private volatile int m_activeWritesCount;       // The number of currently active calls to Write methods that have already checked m_eventSourceEnabled
+        private int m_activeWritesCount;       // The number of currently active calls to Write methods that have already checked m_eventSourceEnabled
 
         // Dispatching state
         internal volatile EventDispatcher? m_Dispatchers;    // Linked list of code:EventDispatchers we write the data to (we also do ETW specially)
