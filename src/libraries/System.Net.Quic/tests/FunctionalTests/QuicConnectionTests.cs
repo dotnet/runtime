@@ -162,8 +162,20 @@ namespace System.Net.Quic.Tests
         }
     }
 
-    public sealed class QuicConnectionTests_MockProvider : QuicConnectionTests<MockProviderFactory> { }
+    public sealed class QuicConnectionTests_MockProvider : QuicConnectionTests<MockProviderFactory>
+    {
+        public QuicConnectionTests_MockProvider(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+    }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
-    public sealed class QuicConnectionTests_MsQuicProvider : QuicConnectionTests<MsQuicProviderFactory> { }
+    public sealed class QuicConnectionTests_MsQuicProvider : QuicConnectionTests<MsQuicProviderFactory>
+    {
+        public QuicConnectionTests_MsQuicProvider(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+    }
 }

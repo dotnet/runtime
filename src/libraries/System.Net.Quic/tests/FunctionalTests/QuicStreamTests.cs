@@ -55,6 +55,8 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task MultipleReadsAndWrites()
         {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(PassingTestTimeout);
             const int sendCount = 5;
             int expectedBytesCount = s_data.Length * sendCount;
             byte[] expected = new byte[expectedBytesCount];
@@ -69,7 +71,7 @@ namespace System.Net.Quic.Tests
                 iterations: 100,
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await using QuicStream stream = await connection.AcceptStreamAsync(cts.Token);
 
                     byte[] buffer = new byte[expectedBytesCount];
                     int bytesRead = await ReadAll(stream, buffer);
@@ -80,9 +82,9 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WriteAsync(s_data);
                     }
-                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
+                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true, cts.Token);
 
-                    await stream.ShutdownCompleted();
+                    await stream.ShutdownCompleted(cts.Token);
                 },
                 clientFunction: async connection =>
                 {
@@ -90,16 +92,16 @@ namespace System.Net.Quic.Tests
 
                     for (int i = 0; i < sendCount; i++)
                     {
-                        await stream.WriteAsync(s_data);
+                        await stream.WriteAsync(s_data, cts.Token);
                     }
-                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
+                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true, cts.Token);
 
                     byte[] buffer = new byte[expectedBytesCount];
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(expectedBytesCount, bytesRead);
                     Assert.Equal(expected, buffer);
 
-                    await stream.ShutdownCompleted();
+                    await stream.ShutdownCompleted(cts.Token);
                 }
             );
         }
