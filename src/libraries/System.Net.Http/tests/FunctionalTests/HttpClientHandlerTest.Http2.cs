@@ -243,6 +243,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1581")]
         [ConditionalTheory(nameof(SupportsAlpn))]
         [InlineData(SettingId.MaxFrameSize, 16383)]
         [InlineData(SettingId.MaxFrameSize, 162777216)]
