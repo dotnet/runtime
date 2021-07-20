@@ -607,7 +607,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }
 
-            // TODO do anything to stop writes?
             using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
                 var state = (State)s!;
@@ -623,7 +622,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (shouldComplete)
                 {
-                    state.ShutdownWriteCompletionSource.SetException(
+                    state.ShutdownCompletionSource.SetException(
                         ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException("Wait for shutdown was canceled", token)));
                 }
             }, _state);
