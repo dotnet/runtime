@@ -14296,38 +14296,28 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
             GenTreeHWIntrinsic* hw = tree->AsHWIntrinsic();
             switch (hw->gtHWIntrinsicId)
             {
-                case NI_SSE_Xor:
                 case NI_SSE2_Xor:
-                case NI_AVX_Xor:
                 case NI_AVX2_Xor:
                 {
-                    // Optimize Xor(x, Vector_.Zero) to just x
+                    // Transform XOR(X, 0) to X for vectors
                     GenTree* op1 = hw->gtGetOp1();
                     GenTree* op2 = hw->gtGetOp2();
-
-                    // Is node - Vector_.Zero ?
-                    auto isHwZero = [](GenTree* node) -> bool {
-                        if (node->OperIs(GT_HWINTRINSIC))
+                    if (!gtIsActiveCSE_Candidate(tree))
+                    {
+                        if (op1->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op1))
                         {
-                            NamedIntrinsic ni = node->AsHWIntrinsic()->gtHWIntrinsicId;
-                            return (ni == NI_Vector128_get_Zero) || (ni == NI_Vector256_get_Zero);
+                            DEBUG_DESTROY_NODE(tree);
+                            DEBUG_DESTROY_NODE(op1);
+                            INDEBUG(op2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                            return op2;
                         }
-                        return false;
-                    };
-
-                    if (isHwZero(op1))
-                    {
-                        DEBUG_DESTROY_NODE(tree);
-                        DEBUG_DESTROY_NODE(op1);
-                        INDEBUG(op2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-                        return op2;
-                    }
-                    if (isHwZero(op2))
-                    {
-                        DEBUG_DESTROY_NODE(tree);
-                        DEBUG_DESTROY_NODE(op2);
-                        INDEBUG(op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-                        return op1;
+                        if (op2->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op2))
+                        {
+                            DEBUG_DESTROY_NODE(tree);
+                            DEBUG_DESTROY_NODE(op2);
+                            INDEBUG(op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                            return op1;
+                        }
                     }
                     break;
                 }
