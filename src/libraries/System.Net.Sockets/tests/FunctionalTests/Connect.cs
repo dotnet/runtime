@@ -84,6 +84,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55053", TestPlatforms.AnyUnix)]
         public async Task Connect_DualMode_MultiAddressFamilyConnect_RetrievedEndPoints_Success()
         {
             if (!SupportsMultiConnect)
