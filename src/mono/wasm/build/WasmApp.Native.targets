@@ -158,6 +158,8 @@
       <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''"   >$(EmccCompileOptimizationFlag)</EmccLinkOptimizationFlag>
 
       <_EmccCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_EmccCompileRsp>
+      <_EmccCompileOutputMessageImportance Condition="'$(EmccVerbose)' == 'true'">Normal</_EmccCompileOutputMessageImportance>
+      <_EmccCompileOutputMessageImportance Condition="'$(EmccVerbose)' != 'true'">Low</_EmccCompileOutputMessageImportance>
     </PropertyGroup>
 
     <ItemGroup>
@@ -241,7 +243,11 @@
     <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
 
     <Message Text="Compiling native assets with emcc. This may take a while ..." Importance="High" />
-    <EmccCompile SourceFiles="@(_WasmSourceFileToCompile)" Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <EmccCompile
+          SourceFiles="@(_WasmSourceFileToCompile)"
+          Arguments='"@$(_EmccDefaultFlagsRsp)" "@$(_EmccCompileRsp)"'
+          EnvironmentVariables="@(EmscriptenEnvVars)"
+          OutputMessageImportance="$(_EmccCompileOutputMessageImportance)" />
 
     <ItemGroup>
       <WasmNativeAsset Include="%(_WasmSourceFileToCompile.ObjectFile)" />
@@ -271,7 +277,8 @@
           Condition="@(_BitCodeFile->Count()) > 0"
           SourceFiles="@(_BitCodeFile)"
           Arguments="&quot;@$(_EmccDefaultFlagsRsp)&quot; &quot;@$(_EmccCompileRsp)&quot;"
-          EnvironmentVariables="@(EmscriptenEnvVars)" />
+          EnvironmentVariables="@(EmscriptenEnvVars)"
+          OutputMessageImportance="$(_EmccCompileOutputMessageImportance)" />
 
     <ItemGroup>
       <!-- order seems to matter -->
