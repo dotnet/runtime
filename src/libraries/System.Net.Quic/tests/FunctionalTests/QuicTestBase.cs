@@ -150,7 +150,7 @@ namespace System.Net.Quic.Tests
                 {
                     Task.Run(async () =>
                     {
-                        using QuicConnection serverConnection = await listener.AcceptConnectionAsync().AsTask().WaitAsync(PassingTestTimeout);
+                        using QuicConnection serverConnection = await listener.AcceptConnectionAsync().AsTask().WaitAsync(millisecondsTimeout);
                         await serverFunction(serverConnection);
 
                         serverFinished.Release();
@@ -175,7 +175,7 @@ namespace System.Net.Quic.Tests
                         await serverFinished.WaitAsync();
                         await clientConnection.CloseAsync(ClientCloseErrorCode);
                     })
-                }.WhenAllOrAnyFailed(PassingTestTimeout);
+                }.WhenAllOrAnyFailed(millisecondsTimeout);
             }
         }
 
