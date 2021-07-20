@@ -218,44 +218,50 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject.Int32Handle;
         }
 
-        private static int _NextJSLifetimeID = 0xFFFFFF;
-        private static object JSLifetimeLock = new object();
-        private static Dictionary<JSObject, object> ObjectFromJSLifetime = new Dictionary<JSObject, object>();
-        private static Dictionary<object, JSObject> JSLifetimeFromObject = new Dictionary<object, JSObject>();
-        private static Dictionary<int, JSObject> JSLifetimeFromID = new Dictionary<int, JSObject>();
+        private static int NextWeakDelegateID = 1;
+        private static object WeakDelegateLock = new object();
+        private static Dictionary<Delegate, int> IDFromWeakDelegate = new Dictionary<Delegate, int>();
+        private static Dictionary<int, Delegate> WeakDelegateFromID = new Dictionary<int, Delegate>();
 
-        public static JSObject GetJSLifetimeObject (object? rawObj) {
-            if (rawObj == null)
-                throw new ArgumentNullException(nameof(rawObj));
+        // A weak delegate (good name TBD) is a managed delegate that has its lifetime controlled
+        //  by JavaScript. The managed object will be freed once its js wrapper no longer exists.
+        public static int GetWeakDelegateHandle (Delegate del) {
+            if (del == null)
+                throw new ArgumentNullException(nameof(del));
 
-            JSObject result;
-            int id;
-            lock (JSLifetimeLock) {
-                if (JSLifetimeFromObject.TryGetValue(rawObj, out result))
+            int result;
+            lock (WeakDelegateLock) {
+                if (IDFromWeakDelegate.TryGetValue(del, out result))
                     return result;
-                id = _NextJSLifetimeID++;
-            }
-                
-            result = new JSObject(id, rawObj);
 
-            lock (JSLifetimeLock) {
-                ObjectFromJSLifetime.Add(result, rawObj);
-                JSLifetimeFromObject.Add(rawObj, result);
-                JSLifetimeFromID.Add(id, result);
+                result = NextWeakDelegateID++;
+                IDFromWeakDelegate[del] = result;
+                WeakDelegateFromID[result] = del;
+                return result;
             }
-
-            return result;
         }
 
-        public static void ReleaseJSLifetimeObject (int id) {
-            lock (JSLifetimeLock) {
-                var jsObject = JSLifetimeFromID[id];
-                var rawObj = ObjectFromJSLifetime[jsObject];
-                JSLifetimeFromID.Remove(id);
-                ObjectFromJSLifetime.Remove(jsObject);
-                JSLifetimeFromObject.Remove(rawObj);
-                jsObject.Dispose();
+        public static void ReleaseWeakDelegateByHandle (int id) {
+            lock (WeakDelegateLock) {
+                var del = WeakDelegateFromID[id];
+                IDFromWeakDelegate.Remove(del);
+                WeakDelegateFromID.Remove(id);
             }
+        }
+
+        public static bool TryInvokeWeakDelegateByHandle (int id, JSObject? arg1) {
+            Delegate del;
+            lock (WeakDelegateLock) {
+                if (!IDFromWeakDelegate.TryGetValue(id, out del))
+                    return false;
+            }
+
+            if (arg1 != null)
+                del.DynamicInvoke(new object[] { arg1 });
+            else
+                del.DynamicInvoke(Array.Empty<object>());
+
+            return true;
         }
 
         public static JSObject? TryGetJSObjectForCLRObject(object rawObj) {

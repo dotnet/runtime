@@ -26,7 +26,8 @@ var BindingSupportLib = {
 			module ["mono_bind_assembly_entry_point"] = BINDING.bind_assembly_entry_point.bind(BINDING);
 			module ["mono_call_assembly_entry_point"] = BINDING.call_assembly_entry_point.bind(BINDING);
 			module ["mono_intern_string"] = BINDING.mono_intern_string.bind(BINDING);
-			module ["mono_register_js_lifetime_object"] = BINDING.mono_register_js_lifetime_object.bind(BINDING);
+			module ["mono_wasm_add_event_listener"] = BINDING.mono_wasm_add_event_listener.bind(BINDING);
+			module ["mono_wasm_remove_event_listener"] = BINDING.mono_wasm_remove_event_listener.bind(BINDING);
 		},
 
 		bindings_lazy_init: function () {
@@ -147,7 +148,8 @@ var BindingSupportLib = {
 			this.safehandle_release = get_method ("SafeHandleRelease");
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
-			this.release_js_lifetime_object = bind_runtime_method ("ReleaseJSLifetimeObject", "i");
+			this.release_weak_delegate_by_handle = bind_runtime_method ("ReleaseWeakDelegateByHandle", "i");
+			this.try_invoke_weak_delegate_by_handle = bind_runtime_method ("TryInvokeWeakDelegateByHandle", "io");
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 
@@ -158,18 +160,30 @@ var BindingSupportLib = {
 			this._interned_string_current_root_buffer_count = 0;
 			this._interned_js_string_table = new Map ();
 
-			this._js_lifetime_object_registry = new FinalizationRegistry(this._js_lifetime_object_finalized.bind(this));
+			this._weak_delegate_table = new Map ();
+			this._weak_delegate_registry = new FinalizationRegistry(this._weak_delegate_finalized.bind(this));
 		},
 
-		mono_register_js_lifetime_object: function (id, obj) {
-			this.bindings_lazy_init();
-			console.log(`registering lifetime object ${id}`);
-			this._js_lifetime_object_registry.register(obj, id);
+		_get_weak_delegate_from_handle: function (id) {
+			var result = null;
+			if (this._weak_delegate_table.has(id)) {
+				var wr = this._weak_delegate_table.get(id);
+				result = wr.deref();				
+			}
+			if (!result) {
+				result = function () {
+					throw new Error("nyi: invoke weak delegate");
+				};
+				this._weak_delegate_table.set(id, new WeakRef(result));
+				this._weak_delegate_registry.register(result, id);
+			}
+			return result;
 		},
 
-		_js_lifetime_object_finalized: function (id) {
-			console.log(`releasing lifetime object ${id}`);
-			this.release_js_lifetime_object(id);
+		_weak_delegate_finalized: function (id) {
+			console.log(`releasing weak delegate ${id}`);
+			this._weak_delegate_table.remove(id);
+			this.release_weak_delegate_by_handle(id);
 		},
 
 		// Ensures the string is already interned on both the managed and JavaScript sides,
@@ -2058,6 +2072,13 @@ var BindingSupportLib = {
 		return BINDING.js_to_mono_obj (res)
 	},
 
+	mono_wasm_add_event_listener: function () {
+		throw new Error("nyi: add event listener");
+	},
+
+	mono_wasm_remove_event_listener: function () {
+		throw new Error("nyi: remove event listener");
+	},
 
 };
 

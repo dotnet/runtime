@@ -84,7 +84,7 @@ namespace System.Runtime.InteropServices.JavaScript
             public object? Signal;
         }
 
-        public JSObject AddEventListener(string name, Delegate listener, EventListenerOptions? options = null)
+        public int AddEventListener(string name, Delegate listener, EventListenerOptions? options = null)
         {
             var optionsDict = options.HasValue
                 ? new JSObject()
@@ -94,8 +94,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (options?.Signal != null)
                     throw new NotImplementedException("EventListenerOptions.Signal");
 
-                var jsfunc = Runtime.GetJSLifetimeObject(listener);
-                int exception;
+                var jsfunc = Runtime.GetWeakDelegateHandle(listener);
+                // int exception;
                 if (options.HasValue) {
                     // TODO: Optimize this
                     var _options = options.Value;
@@ -104,14 +104,9 @@ namespace System.Runtime.InteropServices.JavaScript
                     optionsDict?.SetObjectProperty("passive", _options.Passive, true, true);
                 }
 
-                // TODO: Unique optimized syscall
-                // Interop.Runtime.AddEventListener(JSHandle, name, listener, optionsDict);
-                var args = options.HasValue
-                    ? new object?[] { jsfunc, optionsDict }
-                    : new object?[] { jsfunc };
-                var res = Interop.Runtime.InvokeJSWithArgs(JSHandle, "addEventListener", args, out exception);
-                if (exception != 0)
-                    throw new JSException((string)res);
+                // TODO: Pass options explicitly instead of using the object
+                // FIXME: Exceptions
+                Interop.Runtime.AddEventListener(JSHandle, name, jsfunc, optionsDict?.JSHandle ?? 0);
                 return jsfunc;
             } finally {
                 optionsDict?.Dispose();
@@ -122,15 +117,13 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (listener == null)
                 return;
-            var jsfunc = Runtime.GetJSLifetimeObject(listener);
-            // TODO: Unique syscall
+            var jsfunc = Runtime.GetWeakDelegateHandle(listener);
             RemoveEventListener(name, jsfunc, options);
         }
 
-        public void RemoveEventListener(string name, JSObject listener, EventListenerOptions? options = null)
+        public void RemoveEventListener(string name, int listenerHandle, EventListenerOptions? options = null)
         {
-            // TODO: Unique syscall
-            Invoke("removeEventListener", listener, options?.Capture ?? false);
+            Interop.Runtime.RemoveEventListener(JSHandle, name, listenerHandle, (options?.Capture ?? false) ? 1 : 0);
         }
 
         /// <summary>
