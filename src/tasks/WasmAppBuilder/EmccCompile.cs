@@ -119,7 +119,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
                 try
                 {
-                    string command = $"emcc {Arguments} -c -o {objFile} {srcFile}";
+                    string command = $"emcc {Arguments} -c -o \"{objFile}\" \"{srcFile}\"";
 
                     // Log the command in a compact format which can be copy pasted
                     StringBuilder envStr = new StringBuilder(string.Empty);
