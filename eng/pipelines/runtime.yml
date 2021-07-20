@@ -635,6 +635,8 @@ jobs:
         value: 10
       - name: timeoutPerTestCollectionInMinutes
         value: 200
+      - name: ForNode
+        value: true
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests_NodeJS
