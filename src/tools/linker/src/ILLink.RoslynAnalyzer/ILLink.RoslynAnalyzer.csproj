@@ -16,14 +16,6 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
   </ItemGroup>
 
-  <!-- Shared files with the linker -->
-  <ItemGroup>
-    <EmbeddedResource Include="../ILLink.Shared/SharedStrings.resx">
-      <GenerateSource>true</GenerateSource>
-      <Namespace>ILLink.Shared</Namespace>
-    </EmbeddedResource>
-    <Compile Include="../ILLink.Shared/**/*.cs" />
-  </ItemGroup>
-
+  <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
 
 </Project>
