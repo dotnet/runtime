@@ -308,9 +308,7 @@ namespace System.Runtime.CompilerServices
                 else
                 {
                     // If we can't, then try to get a box from the per-core cache.
-                    Debug.Assert(s_perCoreCache.Length == Environment.ProcessorCount);
-                    int i = Thread.GetCurrentProcessorId() % Environment.ProcessorCount; // ProcessorCount is a const in tier 1
-                    ref StateMachineBox<TStateMachine>? slot = ref AsBox(ref s_perCoreCache[i]);
+                    ref StateMachineBox<TStateMachine>? slot = ref PerCoreCacheSlot;
                     if (slot is null ||
                         (box = Interlocked.Exchange<StateMachineBox<TStateMachine>?>(ref slot, null)) is null)
                     {
@@ -339,15 +337,34 @@ namespace System.Runtime.CompilerServices
                 else
                 {
                     // Otherwise, store it into the per-core cache.
-                    Debug.Assert(s_perCoreCache.Length == Environment.ProcessorCount);
-                    int i = Thread.GetCurrentProcessorId() % Environment.ProcessorCount; // ProcessorCount is a const in tier 1
-                    ref StateMachineBox<TStateMachine>? slot = ref AsBox(ref s_perCoreCache[i]);
+                    ref StateMachineBox<TStateMachine>? slot = ref PerCoreCacheSlot;
                     if (slot is null)
                     {
                         // Try to avoid the write if we know the slot isn't empty (we may still have a benign race condition and
                         // overwrite what's there if something arrived in the interim).
                         Volatile.Write(ref slot, this);
                     }
+                }
+            }
+
+            /// <summary>Gets the slot in <see cref="s_perCoreCache"/> for the current core.</summary>
+            private static ref StateMachineBox<TStateMachine>? PerCoreCacheSlot
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)] // only two callers are RentFrom/ReturnToCache
+                get
+                {
+                    // Get the current processor ID.  We need to ensure it fits within s_perCoreCache, so we
+                    // could % by its length, but we can do so instead by Environment.ProcessorCount, which will be a const
+                    // in tier 1, allowing better code gen, and then further use uints for even better code gen.
+                    Debug.Assert(s_perCoreCache.Length == Environment.ProcessorCount);
+                    int i = (int)((uint)Thread.GetCurrentProcessorId() % (uint)Environment.ProcessorCount);
+
+                    // We want an array of StateMachineBox<> objects, each consuming its own cache line so that
+                    // elements don't cause false sharing with each other.  But we can't use StructLayout.Explicit
+                    // with generics.  So we use object fields, but always reinterpret them (for all reads and writes
+                    // to avoid any safety issues) as StateMachineBox<> instances.
+                    Debug.Assert(s_perCoreCache[i].Object is null || s_perCoreCache[i].Object is StateMachineBox<TStateMachine>);
+                    return ref Unsafe.As<object?, StateMachineBox<TStateMachine>?>(ref s_perCoreCache[i].Object);
                 }
             }
 
@@ -385,7 +402,7 @@ namespace System.Runtime.CompilerServices
 
                 if (context is null)
                 {
-                    Debug.Assert(!(StateMachine is null));
+                    Debug.Assert(StateMachine is not null);
                     StateMachine.MoveNext();
                 }
                 else
@@ -422,18 +439,6 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
             IAsyncStateMachine IAsyncStateMachineBox.GetStateMachineObject() => StateMachine!; // likely boxes, only use for debugging
-
-            /// <summary>Reinterprets the PaddedReference as wrapping a <see cref="StateMachineBox{TStateMachine}"/>.</summary>
-            /// <remarks>Workaround for inability to use explicit layout with generics.</remarks>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static ref StateMachineBox<TStateMachine>? AsBox(ref PaddedReference paddedReference)
-            {
-#if DEBUG
-                object? o = paddedReference.Object;
-                Debug.Assert(o is null || o is StateMachineBox<TStateMachine>);
-#endif
-                return ref Unsafe.As<object?, StateMachineBox<TStateMachine>?>(ref paddedReference.Object);
-            }
         }
     }
 }
