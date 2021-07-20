@@ -252,14 +252,14 @@ namespace System.Runtime.InteropServices.JavaScript
         public static bool TryInvokeWeakDelegateByHandle (int id, JSObject? arg1) {
             Delegate del;
             lock (WeakDelegateLock) {
-                if (!IDFromWeakDelegate.TryGetValue(id, out del))
+                if (!WeakDelegateFromID.TryGetValue(id, out del))
                     return false;
             }
 
             if (arg1 != null)
                 del.DynamicInvoke(new object[] { arg1 });
             else
-                del.DynamicInvoke(Array.Empty<object>());
+                del.DynamicInvoke(new object[0]);
 
             return true;
         }
