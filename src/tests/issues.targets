@@ -2727,6 +2727,10 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/*">
             <Issue>https://github.com/dotnet/runtime/issues/41471</Issue>
         </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/**/*" Condition="'$(ForNode)' == 'true'">
+            <Issue>There is an intermittent issue with npm not finding a lock file</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition=" $(TargetOS) == 'Android' " >
