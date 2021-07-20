@@ -876,7 +876,7 @@ namespace System.Xml.Schema
 
         public override void Dump(StringBuilder bb, SymbolsDictionary symbols, Positions positions) {
             LeftChild.Dump(bb, symbols, positions);
-            bb.Append($"{{{Convert.ToString(min, NumberFormatInfo.InvariantInfo)}, {Convert.ToString(max, NumberFormatInfo.InvariantInfo)}}}");
+            bb.Append(NumberFormatInfo.InvariantInfo, $"{{{min}, {max}}}");
         }
 
     }
