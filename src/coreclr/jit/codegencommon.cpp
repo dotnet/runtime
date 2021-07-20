@@ -12641,7 +12641,23 @@ void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
     }
     else
     {
-        genBitCast(targetType, targetReg, op1->TypeGet(), op1->GetRegNum());
+#ifdef TARGET_ARM
+        if (compiler->opts.compUseSoftFP && (targetType == TYP_LONG))
+        {
+            // This is a special arm-softFP case when a TYP_LONG node was introduced during lowering
+            // for a call argument,  so it was not handled by decomposelongs phase as all other TYP_LONG nodes.
+            // Example foo(double LclVar V01), LclVar V01 has to be passed in general registers r0, r1,
+            // so lowering will add `BITCAST long(LclVar double V01)` and codegen has to support it here.
+            const regNumber srcReg   = op1->GetRegNum();
+            const regNumber otherReg = treeNode->AsMultiRegOp()->gtOtherReg;
+            assert(otherReg != REG_NA);
+            inst_RV_RV_RV(INS_vmov_d2i, targetReg, otherReg, srcReg, EA_8BYTE);
+        }
+        else
+#endif // TARGET_ARM
+        {
+            genBitCast(targetType, targetReg, op1->TypeGet(), op1->GetRegNum());
+        }
     }
     genProduceReg(treeNode);
 }
