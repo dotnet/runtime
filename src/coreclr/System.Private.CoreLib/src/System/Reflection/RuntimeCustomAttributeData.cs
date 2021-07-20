@@ -12,7 +12,7 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
-    public partial class CustomAttributeData
+    internal sealed class RuntimeCustomAttributeData : CustomAttributeData
     {
         #region Internal Static Members
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeType target)
@@ -103,7 +103,7 @@ namespace System.Reflection
             customAttributes.CopyTo(pca, pseudoAttributes.Count);
             for (int i = 0; i < pseudoAttributes.Count; i++)
             {
-                pca[i] = new CustomAttributeData(pseudoAttributes[i]);
+                pca[i] = new RuntimeCustomAttributeData(pseudoAttributes[i]);
             }
 
             return Array.AsReadOnly(pca);
@@ -181,7 +181,7 @@ namespace System.Reflection
         }
         private static CustomAttributeType InitCustomAttributeType(RuntimeType parameterType)
         {
-            CustomAttributeEncoding encodedType = CustomAttributeData.TypeToCustomAttributeEncoding(parameterType);
+            CustomAttributeEncoding encodedType = TypeToCustomAttributeEncoding(parameterType);
             CustomAttributeEncoding encodedArrayType = CustomAttributeEncoding.Undefined;
             CustomAttributeEncoding encodedEnumType = CustomAttributeEncoding.Undefined;
             string? enumName = null;
@@ -189,7 +189,7 @@ namespace System.Reflection
             if (encodedType == CustomAttributeEncoding.Array)
             {
                 parameterType = (RuntimeType)parameterType.GetElementType();
-                encodedArrayType = CustomAttributeData.TypeToCustomAttributeEncoding(parameterType);
+                encodedArrayType = TypeToCustomAttributeEncoding(parameterType);
             }
 
             if (encodedType == CustomAttributeEncoding.Enum || encodedArrayType == CustomAttributeEncoding.Enum)
@@ -210,7 +210,7 @@ namespace System.Reflection
 
             CustomAttributeData[] customAttributes = new CustomAttributeData[records.Length];
             for (int i = 0; i < records.Length; i++)
-                customAttributes[i] = new CustomAttributeData(module, records[i].tkCtor, in records[i].blob);
+                customAttributes[i] = new RuntimeCustomAttributeData(module, records[i].tkCtor, in records[i].blob);
 
             return Array.AsReadOnly(customAttributes);
         }
@@ -262,17 +262,13 @@ namespace System.Reflection
         private IList<CustomAttributeNamedArgument> m_namedArgs = null!;
 
         #region Constructor
-        protected CustomAttributeData()
-        {
-        }
-
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Property setters and fields which are accessed by any attribute instantiation which is present in the code linker has analyzed." +
                             "As such enumerating all fields and properties may return different results after trimming" +
                             "but all those which are needed to actually have data will be there.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
             Justification = "We're getting a MethodBase of a constructor that we found in the metadata. The attribute constructor won't be trimmed.")]
-        private CustomAttributeData(RuntimeModule scope, MetadataToken caCtorToken, in ConstArray blob)
+        private RuntimeCustomAttributeData(RuntimeModule scope, MetadataToken caCtorToken, in ConstArray blob)
         {
             m_scope = scope;
             m_ctor = (RuntimeConstructorInfo)RuntimeType.GetMethodBase(scope, caCtorToken)!;
@@ -301,7 +297,7 @@ namespace System.Reflection
         #endregion
 
         #region Pseudo Custom Attribute Constructor
-        internal CustomAttributeData(Attribute attribute)
+        internal RuntimeCustomAttributeData(Attribute attribute)
         {
             if (attribute is DllImportAttribute dllImportAttribute)
                 Init(dllImportAttribute);
@@ -415,9 +411,9 @@ namespace System.Reflection
         #endregion
 
         #region Public Members
-        public virtual ConstructorInfo Constructor => m_ctor;
+        public override ConstructorInfo Constructor => m_ctor;
 
-        public virtual IList<CustomAttributeTypedArgument> ConstructorArguments
+        public override IList<CustomAttributeTypedArgument> ConstructorArguments
         {
             get
             {
@@ -439,7 +435,7 @@ namespace System.Reflection
             }
         }
 
-        public virtual IList<CustomAttributeNamedArgument> NamedArguments
+        public override IList<CustomAttributeNamedArgument> NamedArguments
         {
             get
             {
@@ -557,17 +553,6 @@ namespace System.Reflection
         }
         #endregion
 
-        private static object CanonicalizeValue(object value)
-        {
-            Debug.Assert(value is not null);
-
-            if (value.GetType().IsEnum)
-            {
-                return ((Enum)value).GetValue();
-            }
-            return value;
-        }
-
         internal CustomAttributeTypedArgument(RuntimeModule scope, CustomAttributeEncodedArgument encodedArg)
         {
             CustomAttributeEncoding encodedType = encodedArg.CustomAttributeType.EncodedType;
@@ -577,22 +562,22 @@ namespace System.Reflection
 
             if (encodedType == CustomAttributeEncoding.Enum)
             {
-                m_argumentType = ResolveType(scope, encodedArg.CustomAttributeType.EnumName!);
-                m_value = EncodedValueToRawValue(encodedArg.PrimitiveValue, encodedArg.CustomAttributeType.EncodedEnumType);
+                _argumentType = ResolveType(scope, encodedArg.CustomAttributeType.EnumName!);
+                _value = EncodedValueToRawValue(encodedArg.PrimitiveValue, encodedArg.CustomAttributeType.EncodedEnumType);
             }
             else if (encodedType == CustomAttributeEncoding.String)
             {
-                m_argumentType = typeof(string);
-                m_value = encodedArg.StringValue;
+                _argumentType = typeof(string);
+                _value = encodedArg.StringValue;
             }
             else if (encodedType == CustomAttributeEncoding.Type)
             {
-                m_argumentType = typeof(Type);
+                _argumentType = typeof(Type);
 
-                m_value = null;
+                _value = null;
 
                 if (encodedArg.StringValue is not null)
-                    m_value = ResolveType(scope, encodedArg.StringValue);
+                    _value = ResolveType(scope, encodedArg.StringValue);
             }
             else if (encodedType == CustomAttributeEncoding.Array)
             {
@@ -608,11 +593,11 @@ namespace System.Reflection
                     elementType = CustomAttributeEncodingToType(encodedType);
                 }
 
-                m_argumentType = elementType.MakeArrayType();
+                _argumentType = elementType.MakeArrayType();
 
                 if (encodedArg.ArrayValue is null)
                 {
-                    m_value = null;
+                    _value = null;
                 }
                 else
                 {
@@ -620,13 +605,13 @@ namespace System.Reflection
                     for (int i = 0; i < arrayValue.Length; i++)
                         arrayValue[i] = new CustomAttributeTypedArgument(scope, encodedArg.ArrayValue[i]);
 
-                    m_value = Array.AsReadOnly(arrayValue);
+                    _value = Array.AsReadOnly(arrayValue);
                 }
             }
             else
             {
-                m_argumentType = CustomAttributeEncodingToType(encodedType);
-                m_value = EncodedValueToRawValue(encodedArg.PrimitiveValue, encodedType);
+                _argumentType = CustomAttributeEncodingToType(encodedType);
+                _value = EncodedValueToRawValue(encodedArg.PrimitiveValue, encodedType);
             }
         }
     }
@@ -1168,7 +1153,7 @@ namespace System.Reflection
             // The derivedAttributes list must be passed by value so that it is not modified with the discovered attributes
             RuntimeType.ListBuilder<object> derivedAttributes)
         {
-            CustomAttributeRecord[] car = CustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedMetadataToken);
+            CustomAttributeRecord[] car = RuntimeCustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedMetadataToken);
 
             if (attributeFilterType is null && car.Length == 0)
             {
@@ -1435,7 +1420,7 @@ namespace System.Reflection
         {
             RuntimeModule decoratedModule = decoratedAttribute.GetRuntimeModule();
             MetadataImport scope = decoratedModule.MetadataImport;
-            CustomAttributeRecord[] car = CustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedAttribute.MetadataToken);
+            CustomAttributeRecord[] car = RuntimeCustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedAttribute.MetadataToken);
 
             AttributeUsageAttribute? attributeUsageAttribute = null;
 
