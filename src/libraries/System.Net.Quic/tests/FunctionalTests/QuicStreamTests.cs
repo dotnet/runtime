@@ -617,6 +617,12 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task WriteCanceled_NextWriteThrows()
         {
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/55995")]
+            if (this.UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+            
             const long expectedErrorCode = 1234;
 
             await RunClientServer(
