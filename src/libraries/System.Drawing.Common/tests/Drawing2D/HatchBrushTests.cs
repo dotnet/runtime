@@ -54,6 +54,7 @@ namespace System.Drawing.Drawing2D.Tests
         [Theory]
         [InlineData(HatchStyle.Horizontal -1 )]
         [InlineData(HatchStyle.SolidDiamond + 1)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56048", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Ctor_InvalidHatchStyle_ThrowsArgumentException(HatchStyle hatchStyle)
         {
             AssertExtensions.Throws<ArgumentException>("hatchstyle", null, () => new HatchBrush(hatchStyle, Color.Empty));
