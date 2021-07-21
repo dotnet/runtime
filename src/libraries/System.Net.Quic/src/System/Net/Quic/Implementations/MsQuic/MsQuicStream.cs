@@ -780,11 +780,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                     // Peer has stopped receiving data, don't send anymore.
                     case QUIC_STREAM_EVENT_TYPE.PEER_RECEIVE_ABORTED:
                         return HandleEventPeerRecvAborted(state, ref evt);
-                    // Occurs when shutdown is completed for the send side.
-                    // This only happens for shutdown on sending, not receiving
-                    // Receive shutdown can only be abortive.
-                    case QUIC_STREAM_EVENT_TYPE.SEND_SHUTDOWN_COMPLETE:
-                        return HandleEventSendShutdownComplete(state, ref evt);
                     // Shutdown for both sending and receiving is completed.
                     case QUIC_STREAM_EVENT_TYPE.SHUTDOWN_COMPLETE:
                         return HandleEventShutdownComplete(state, ref evt);
@@ -916,11 +911,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             // TODO: We should probably check for a failure as indicated by the event data (or at least assert no failure if we aren't expecting it).
             // However, since there is no definition for START_COMPLETE event data currently, we can't do this right now.
 
-            return MsQuicStatusCodes.Success;
-        }
-
-        private static uint HandleEventSendShutdownComplete(State state, ref StreamEvent evt)
-        {
             return MsQuicStatusCodes.Success;
         }
 
