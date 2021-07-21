@@ -1312,12 +1312,12 @@ const char* Compiler::eeGetMethodName(CORINFO_METHOD_HANDLE method, const char**
     param.method       = method;
     param.classNamePtr = classNamePtr;
 
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>([](FilterSuperPMIExceptionsParam_ee_il *pParam)
-    {
-        pParam->fieldOrMethodOrClassNamePtr =
-            pParam->pJitInfo->compCompHnd->getMethodName(pParam->method, pParam->classNamePtr);
-    }
-    , &param);
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->fieldOrMethodOrClassNamePtr =
+                pParam->pJitInfo->compCompHnd->getMethodName(pParam->method, pParam->classNamePtr);
+        },
+        &param);
 
     if (!success)
     {
@@ -1341,11 +1341,12 @@ const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, const char** cl
     param.field        = field;
     param.classNamePtr = classNamePtr;
 
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>([](FilterSuperPMIExceptionsParam_ee_il *pParam)
-    {
-        pParam->fieldOrMethodOrClassNamePtr =
-            pParam->pJitInfo->compCompHnd->getFieldName(pParam->field, pParam->classNamePtr);
-    }, &param);
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->fieldOrMethodOrClassNamePtr =
+                pParam->pJitInfo->compCompHnd->getFieldName(pParam->field, pParam->classNamePtr);
+        },
+        &param);
 
     if (!success)
     {
@@ -1363,10 +1364,11 @@ const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
     param.pJitInfo = &info;
     param.clazz    = clsHnd;
 
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>([](FilterSuperPMIExceptionsParam_ee_il *pParam)
-    {
-        pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz);
-    }, &param);
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
+        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
+            pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz);
+        },
+        &param);
 
     if (!success)
     {
