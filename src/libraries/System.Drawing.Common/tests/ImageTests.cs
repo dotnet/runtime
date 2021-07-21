@@ -558,6 +558,7 @@ namespace System.Drawing.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56048", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void FromFile_NoSuchFile_ThrowsFileNotFoundException()
         {
             Assert.Throws<FileNotFoundException>(() => Image.FromFile("NoSuchFile"));
