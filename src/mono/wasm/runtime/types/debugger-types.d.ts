@@ -27,7 +27,7 @@ interface DEBUG_VARS {
     _call_function_res_cache: object;
     _next_call_function_res_id: number;
     _next_id_var: number;
-    var_info: []; // always an empty list - Can it be removed?
+    var_info: [];
 }
 
 // NAMESPACES ///////////////////////////////////////////////////////////////////////////////

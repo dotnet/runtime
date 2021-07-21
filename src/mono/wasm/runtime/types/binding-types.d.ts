@@ -109,8 +109,8 @@ type Converter = {
     needs_root_buffer?: boolean;
     name?: string;
     needs_root?: boolean;
-    compiled_variadic_function?: any;
-    compiled_function?: any;
+    compiled_variadic_function?: Function;
+    compiled_function?: Function;
     scratchRootBuffer?: WasmRootBuffer;
     scratchBuffer?: number;
     has_warned_about_signature?: boolean;

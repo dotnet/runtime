@@ -802,7 +802,7 @@ var BindingSupportLib = {
 			return BINDING.wasm_get_raw_obj (js_obj.__mono_gchandle__, true);
 		},
 
-		mono_method_get_call_signature: function(method: number, mono_obj): number {
+		mono_method_get_call_signature: function(method: number, mono_obj: number): number {
 			let instanceRoot = MONO.mono_wasm_new_root (mono_obj);
 			try {
 				BINDING.bindings_lazy_init ();

@@ -33,13 +33,12 @@ declare namespace Module {
     function locateFile (path: string, prefix: string): string;
     function onAbort (): void;
     function onRuntimeInitialized (): void;
-    function destroy (obj: any): void;
     function getPreloadedPackage (remotePackageName: string, remotePackageSize: number): void;
     function _malloc (amnt: number): number;
     function _free (amn: number): void;
     function addRunDependency(id: string): void;
     function removeRunDependency(id: string): void;
-    function mono_method_get_call_signature (method: any, mono_obj?: any): ArgsMarshalString;
+    function mono_method_get_call_signature (method: number, mono_obj?: number): ArgsMarshalString;
     function print (message: string): void;
 
     function ccall <T> (ident: string, returnType?: string, argTypes?: string[], args?: any[] , opts?: any): T;
