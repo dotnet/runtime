@@ -242,14 +242,15 @@ namespace System.IO
             return ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
         }
 
-        internal static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncReadFile(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
+        internal static unsafe (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) QueueAsyncReadFile(SafeFileHandle handle, Memory<byte> buffer, long fileOffset,
+            CancellationToken cancellationToken, AsyncWindowsFileStreamStrategy? strategy = null)
         {
             handle.EnsureThreadPoolBindingInitialized();
 
             SafeFileHandle.OverlappedValueTaskSource vts = handle.GetOverlappedValueTaskSource();
             try
             {
-                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset);
+                NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, strategy);
                 Debug.Assert(vts._memoryHandle.Pointer != null);
 
                 // Queue an async ReadFile operation.

@@ -35,27 +35,10 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnreadableStream();
             }
 
-            long positionBefore = _filePosition;
-            if (CanSeek)
-            {
-                long len = Length;
-                if (positionBefore + destination.Length > len)
-                {
-                    destination = positionBefore <= len ?
-                        destination.Slice(0, (int)(len - positionBefore)) :
-                        default;
-                }
-
-                // When using overlapped IO, the OS is not supposed to
-                // touch the file pointer location at all.  We will adjust it
-                // ourselves, but only in memory. This isn't threadsafe.
-                _filePosition += destination.Length;
-            }
-
-            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncReadFile(_fileHandle, destination, positionBefore, cancellationToken);
+            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncReadFile(_fileHandle, destination, _filePosition, cancellationToken, this);
             return vts != null
                 ? new ValueTask<int>(vts, vts.Version)
-                : (errorCode == 0) ? ValueTask.FromResult(0) : ValueTask.FromException<int>(HandleIOError(positionBefore, errorCode));
+                : (errorCode == 0) ? ValueTask.FromResult(0) : ValueTask.FromException<int>(SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, _fileHandle.Path));
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -149,5 +132,7 @@ namespace System.IO.Strategies
             TaskToApm.Begin(WriteAsync(buffer, offset, count), callback, state);
 
         public override void EndWrite(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
+
+        internal void UpdatePosition(uint numBytes) => _filePosition += numBytes;
     }
 }

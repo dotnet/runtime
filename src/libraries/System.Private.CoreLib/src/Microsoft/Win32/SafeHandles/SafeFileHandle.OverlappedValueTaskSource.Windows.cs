@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Strategies;
 using System.Threading;
 using System.Threading.Tasks.Sources;
 
@@ -49,6 +50,7 @@ namespace Microsoft.Win32.SafeHandles
             internal ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
             private NativeOverlapped* _overlapped;
             private CancellationTokenRegistration _cancellationRegistration;
+            private AsyncWindowsFileStreamStrategy? _strategy;
             /// <summary>
             /// 0 when the operation hasn't been scheduled, non-zero when either the operation has completed,
             /// in which case its value is a packed combination of the error code and number of bytes, or when
@@ -74,9 +76,10 @@ namespace Microsoft.Win32.SafeHandles
                     ? ThrowHelper.CreateEndOfFileException()
                     : Win32Marshal.GetExceptionForWin32Error(errorCode, path);
 
-            internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset)
+            internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset, AsyncWindowsFileStreamStrategy? strategy = null)
             {
                 _result = 0;
+                _strategy = strategy;
                 _memoryHandle = memory.Pin();
                 _overlapped = _fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
                 _overlapped->OffsetLow = (int)fileOffset;
@@ -132,8 +135,9 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            internal void ReleaseResources()
+            private void ReleaseResources()
             {
+                _strategy = null;
                 // Unpin any pinned buffer.
                 _memoryHandle.Dispose();
 
@@ -187,6 +191,7 @@ namespace Microsoft.Win32.SafeHandles
 
             internal void Complete(uint errorCode, uint numBytes)
             {
+                AsyncWindowsFileStreamStrategy? strategy = _strategy;
                 ReleaseResources();
 
                 switch (errorCode)
@@ -195,6 +200,11 @@ namespace Microsoft.Win32.SafeHandles
                     case Interop.Errors.ERROR_BROKEN_PIPE:
                     case Interop.Errors.ERROR_NO_DATA:
                     case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
+                        if (numBytes > 0)
+                        {
+                            // update the position before setting the result
+                            strategy?.UpdatePosition(numBytes);
+                        }
                         // Success
                         _source.SetResult((int)numBytes);
                         break;
