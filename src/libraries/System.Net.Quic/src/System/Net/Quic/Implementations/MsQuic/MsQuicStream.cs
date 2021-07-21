@@ -555,11 +555,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
                 var state = (State)s!;
+                bool shouldComplete = false;
                 lock (state)
                 {
                     if (state.ShutdownState == ShutdownState.None)
                     {
                         state.ShutdownState = ShutdownState.Canceled;
+                        shouldComplete = true;
                     }
                 }
 
