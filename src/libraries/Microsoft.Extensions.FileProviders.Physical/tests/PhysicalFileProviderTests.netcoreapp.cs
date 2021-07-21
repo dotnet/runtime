@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.FileProviders
 
             // Assert
             Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)),
-                $"Change event was not raised - current time: {DateTime.UtcNow}, file LastWriteTimeUtc: {File.GetLastWriteTimeUtc(filePath)}");
+                $"Change event was not raised - current time: {DateTime.UtcNow:O}, file LastWriteTimeUtc: {File.GetLastWriteTimeUtc(filePath):O}.");
         }
 
         [Theory]
@@ -60,7 +60,8 @@ namespace Microsoft.Extensions.FileProviders
             token.RegisterChangeCallback(_ => { tcs.TrySetResult(); }, null);
 
             // Assert
-            Assert.False(tcs.Task.Wait(TimeSpan.FromSeconds(30)));
+            Assert.False(tcs.Task.Wait(TimeSpan.FromSeconds(30)),
+                "Change event was raised when it was not expected.");
         }
 
         [Theory]
@@ -101,7 +102,7 @@ namespace Microsoft.Extensions.FileProviders
 
             // Assert - It should report the change regardless of the timestamp being older.
             Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)),
-                $"Change event was not raised - current time: {DateTime.UtcNow}, file1 LastWriteTimeUtc: {File.GetLastWriteTimeUtc(file1Path)}, file2 LastWriteTime: {File.GetLastWriteTimeUtc(file2Path)}");
+                $"Change event was not raised - current time: {DateTime.UtcNow:O}, file1 LastWriteTimeUtc: {File.GetLastWriteTimeUtc(file1Path):O}, file2 LastWriteTime: {File.GetLastWriteTimeUtc(file2Path):O}.");
         }
 
         [Theory]
@@ -132,7 +133,7 @@ namespace Microsoft.Extensions.FileProviders
 
             // Assert
             Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)),
-                $"Change event was not raised - current time: {DateTime.UtcNow}, file LastWriteTimeUtc: {File.GetLastWriteTimeUtc(filePath)}");
+                $"Change event was not raised - current time: {DateTime.UtcNow:O}, file LastWriteTimeUtc: {File.GetLastWriteTimeUtc(filePath):O}.");
         }
     }
 }

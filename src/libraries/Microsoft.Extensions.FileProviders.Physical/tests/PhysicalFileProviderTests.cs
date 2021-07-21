@@ -1535,7 +1535,7 @@ namespace Microsoft.Extensions.FileProviders
 
             // Assert
             Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)),
-                $"Change event was not raised - current time: {DateTime.UtcNow}, file LastWriteTimeUtc: {File.GetLastWriteTimeUtc(filePath)}");
+                $"Change event was not raised - current time: {DateTime.UtcNow:O}, file LastWriteTimeUtc: {File.GetLastWriteTimeUtc(filePath):O}");
         }
 
         [Theory]
@@ -1561,7 +1561,7 @@ namespace Microsoft.Extensions.FileProviders
 
             // Assert
             Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)),
-                $"Change event was not raised - current time: {DateTime.UtcNow}, file Exists: {File.Exists(filePath)}");
+                $"Change event was not raised - current time: {DateTime.UtcNow:O}, file Exists: {File.Exists(filePath)}.");
         }
 
         [Fact]
