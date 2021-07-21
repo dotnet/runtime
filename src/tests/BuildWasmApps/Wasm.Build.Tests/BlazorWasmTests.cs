@@ -16,10 +16,17 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        public void PublishTemplateProject()
+        // TODO: invariant case?
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [InlineData("Debug", false)]
+        [InlineData("Debug", true)] // just aot
+        [InlineData("Release", false)] // should re-link
+        [InlineData("Release", true)]
+        public void PublishTemplateProject(string config, bool aot)
         {
-            InitPaths("id");
+            string id = $"blazorwasm_{config}_aot_{aot}";
+            InitPaths(id);
             if (Directory.Exists(_projectDir))
                 Directory.Delete(_projectDir, recursive: true);
             Directory.CreateDirectory(_projectDir);
@@ -29,18 +36,23 @@ namespace Wasm.Build.Tests
             File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
             File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.targets"), Path.Combine(_projectDir, "Directory.Build.targets"));
 
-            new DotNetCommand(s_buildEnv)
+            string logPath = Path.Combine(s_buildEnv.LogRootPath, id);
+
+            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
                     .WithWorkingDirectory(_projectDir)
                     .ExecuteWithCapturedOutput("new blazorwasm")
                     .EnsureSuccessful();
 
+            string publishLogPath = Path.Combine(logPath, $"{id}.binlog");
             new DotNetCommand(s_buildEnv)
                     .WithWorkingDirectory(_projectDir)
-                    .ExecuteWithCapturedOutput("publish -bl -p:RunAOTCompilation=true")
+                    .ExecuteWithCapturedOutput("publish", $"-bl:{publishLogPath}", aot ? "-p:RunAOTCompilation=true" : "", $"-p:Configuration={config}")
                     .EnsureSuccessful();
 
             //TODO: validate the build somehow?
             // compare dotnet.wasm?
+            // relinking - dotnet.wasm should be smaller
+            //
             // playwright?
         }
     }

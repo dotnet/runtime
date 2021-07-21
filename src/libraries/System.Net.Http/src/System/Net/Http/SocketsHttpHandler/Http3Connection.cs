@@ -9,6 +9,7 @@ using System.Net.Quic;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Security;
 
@@ -17,7 +18,7 @@ namespace System.Net.Http
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
-    internal sealed class Http3Connection : HttpConnectionBase, IDisposable
+    internal sealed class Http3Connection : HttpConnectionBase
     {
         // TODO: once HTTP/3 is standardized, create APIs for this.
         public static readonly SslApplicationProtocol Http3ApplicationProtocol29 = new SslApplicationProtocol("h3-29");
@@ -78,7 +79,7 @@ namespace System.Net.Http
             _connection = connection;
 
             bool altUsedDefaultPort = pool.Kind == HttpConnectionKind.Http && authority.Port == HttpConnectionPool.DefaultHttpPort || pool.Kind == HttpConnectionKind.Https && authority.Port == HttpConnectionPool.DefaultHttpsPort;
-            string altUsedValue = altUsedDefaultPort ? authority.IdnHost : authority.IdnHost + ":" + authority.Port.ToString(Globalization.CultureInfo.InvariantCulture);
+            string altUsedValue = altUsedDefaultPort ? authority.IdnHost : string.Create(CultureInfo.InvariantCulture, $"{authority.IdnHost}:{authority.Port}");
             _altUsedEncodedHeader = QPack.QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReferenceToArray(KnownHeaders.AltUsed.Name, altUsedValue);
 
             // Errors are observed via Abort().
@@ -91,7 +92,7 @@ namespace System.Net.Http
         /// <summary>
         /// Starts shutting down the <see cref="Http3Connection"/>. Final cleanup will happen when there are no more active requests.
         /// </summary>
-        public void Dispose()
+        public override void Dispose()
         {
             lock (SyncObj)
             {
@@ -154,7 +155,7 @@ namespace System.Net.Http
             }
         }
 
-        public override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(async);
 
@@ -327,6 +328,8 @@ namespace System.Net.Http
                 }
             }
         }
+
+        public override long GetIdleTicks(long nowTicks) => throw new NotImplementedException("We aren't scavenging HTTP3 connections yet");
 
         public override void Trace(string message, [CallerMemberName] string? memberName = null) =>
             Trace(0, message, memberName);

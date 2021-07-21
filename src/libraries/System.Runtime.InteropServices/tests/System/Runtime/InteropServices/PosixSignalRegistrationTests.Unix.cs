@@ -25,12 +25,20 @@ namespace System.Tests
 
         public static IEnumerable<object[]> UnsupportedSignals()
         {
+            if (PlatformDetection.IsMobile)
+            {
+                foreach (PosixSignal value in Enum.GetValues(typeof(PosixSignal)))
+                    yield return new object[] { value };
+            }
+
             yield return new object[] { 0 };
             yield return new object[] { -1000 };
             yield return new object[] { 1000 };
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static bool NotMobileAndRemoteExecutable => PlatformDetection.IsNotMobile && RemoteExecutor.IsSupported;
+
+        [ConditionalTheory(nameof(NotMobileAndRemoteExecutable))]
         [MemberData(nameof(SupportedSignals))]
         public void SignalHandlerCalledForKnownSignals(PosixSignal s)
         {
@@ -55,7 +63,7 @@ namespace System.Tests
             }, s.ToString()).Dispose();
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(nameof(NotMobileAndRemoteExecutable))]
         [MemberData(nameof(PosixSignalAsRawValues))]
         public void SignalHandlerCalledForRawSignals(PosixSignal s)
         {
@@ -80,7 +88,7 @@ namespace System.Tests
             }, s.ToString()).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         public void SignalHandlerWorksForSecondRegistration()
         {
             PosixSignal signal = PosixSignal.SIGCONT;
@@ -104,7 +112,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         public void SignalHandlerNotCalledWhenDisposed()
         {
             PosixSignal signal = PosixSignal.SIGCONT;
@@ -118,7 +126,7 @@ namespace System.Tests
             Thread.Sleep(100);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         public void SignalHandlerNotCalledWhenFinalized()
         {
             PosixSignal signal = PosixSignal.SIGCONT;
@@ -140,7 +148,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(nameof(NotMobileAndRemoteExecutable))]
         [InlineData(PosixSignal.SIGINT, true, 0)]
         [InlineData(PosixSignal.SIGINT, false, 130)]
         [InlineData(PosixSignal.SIGTERM, true, 0)]

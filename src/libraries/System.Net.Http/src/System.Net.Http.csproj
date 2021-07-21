@@ -34,12 +34,16 @@
     <Compile Include="System\Net\Http\Headers\KnownHeaders.cs" />
     <Compile Include="System\Net\Http\HttpBaseStream.cs" />
     <Compile Include="System\Net\Http\HttpClient.cs" />
-    <Compile Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetsTVOS)' != 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.cs" />
-    <Compile Condition="'$(TargetsAndroid)' == 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.Android.cs" />
-    <Compile Condition="'$(TargetsiOS)' == 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.iOS.cs" />
-    <Compile Condition="'$(TargetsMacCatalyst)' == 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.MacCatalyst.cs" />
-    <Compile Condition="'$(TargetsTVOS)' == 'true'" Include="System\Net\Http\HttpClient.CreateDefaultHandler.tvOS.cs" />
-    <Compile Include="System\Net\Http\HttpClientHandler.cs" />
+    <Compile Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsTVOS)' == 'true'"
+             Include="System\Net\Http\HttpClientHandler.AnyMobile.cs" />
+    <Compile Condition="'$(TargetsiOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsTVOS)' == 'true'"
+             Include="System\Net\Http\HttpClientHandler.Apple.cs" />
+    <Compile Condition="'$(TargetsiOS)' == 'true'" Include="System\Net\Http\HttpClientHandler.iOS.cs" />
+    <Compile Condition="'$(TargetsMacCatalyst)' == 'true'" Include="System\Net\Http\HttpClientHandler.MacCatalyst.cs" />
+    <Compile Condition="'$(TargetsTVOS)' == 'true'" Include="System\Net\Http\HttpClientHandler.tvOS.cs" />
+    <Compile Condition="'$(TargetsAndroid)' == 'true'" Include="System\Net\Http\HttpClientHandler.Android.cs" />
+    <Compile Condition="'$(TargetsAndroid)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true' and '$(TargetsTVOS)' != 'true'"
+             Include="System\Net\Http\HttpClientHandler.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />
     <Compile Include="System\Net\Http\HttpContent.cs" />
     <Compile Include="System\Net\Http\HttpMessageHandler.cs" />
@@ -53,7 +57,6 @@
     <Compile Include="System\Net\Http\HttpResponseMessage.cs" />
     <Compile Include="System\Net\Http\HttpRuleParser.cs" />
     <Compile Include="System\Net\Http\HttpTelemetry.cs" />
-    <Compile Include="System\Net\Http\HttpUtilities.cs" />
     <Compile Include="System\Net\Http\HttpVersionPolicy.cs" />
     <Compile Include="System\Net\Http\MessageProcessingHandler.cs" />
     <Compile Include="System\Net\Http\MultipartContent.cs" />
@@ -180,6 +183,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentWriteStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpUtilities.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\IHttpTrace.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\MultiProxy.cs" />
@@ -188,7 +192,6 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpConnectionContext.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpHandler.cs" />
     <Compile Include="System\Net\Http\HttpTelemetry.AnyOS.cs" />
-    <Compile Include="System\Net\Http\HttpUtilities.AnyOS.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocksHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocksException.cs" />
@@ -397,10 +400,12 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\CurrentUserIdentityProvider.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
+             Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
-            Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
+             Link="Common\Interop\Windows\Interop.UNICODE_STRING.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_INFO.cs"
@@ -623,7 +628,6 @@
     <Compile Include="System\Net\Http\BrowserHttpHandler\SocketsHttpHandler.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\BrowserHttpHandler.cs" />
     <Compile Include="System\Net\Http\BrowserHttpHandler\HttpTelemetry.Browser.cs" />
-    <Compile Include="System\Net\Http\BrowserHttpHandler\HttpUtilities.Browser.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
              Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
   </ItemGroup>

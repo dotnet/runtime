@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using System.Reflection;
 
 namespace System.Globalization.Tests
 {
@@ -12,6 +13,9 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetUnicodeCategory()
         {
+            MethodInfo GetBidiCategory = Type.GetType("System.Globalization.CharUnicodeInfo").GetMethod("GetBidiCategoryNoBoundsChecks", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.InvokeMethod);
+            object [] parameters = new object [] { 0 };
+
             foreach (CharUnicodeInfoTestCase testCase in CharUnicodeInfoTestData.TestCases)
             {
                 if (testCase.Utf32CodeValue.Length == 1)
@@ -22,6 +26,9 @@ namespace System.Globalization.Tests
                 // Test the string overload for a surrogate pair or a single char
                 GetUnicodeCategoryTest_String(testCase.Utf32CodeValue, new UnicodeCategory[] { testCase.GeneralCategory });
                 Assert.Equal(testCase.GeneralCategory, CharUnicodeInfo.GetUnicodeCategory(testCase.CodePoint));
+
+                parameters[0] = (uint)testCase.CodePoint;
+                Assert.Equal(testCase.BidiCategory, (StrongBidiCategory)GetBidiCategory.Invoke(null, parameters));
             }
         }
 
@@ -122,7 +129,7 @@ namespace System.Globalization.Tests
 
         private static string ErrorMessage(char ch, object expected, object actual)
         {
-            return $"CodeValue: {((int)ch).ToString("X")}; Expected: {expected}; Actual: {actual}";
+            return $"CodeValue: {(int)ch:X}; Expected: {expected}; Actual: {actual}";
         }
 
         public static string s_numericsCodepoints =

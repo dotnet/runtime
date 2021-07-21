@@ -371,6 +371,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TrackDynamicMethodDebugInfo, W("TrackDynami
 RETAIL_CONFIG_STRING_INFO(INTERNAL_MultiCoreJitProfile, W("MultiCoreJitProfile"), "If set, use the file to store/control multi-core JIT.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_MultiCoreJitProfileWriteDelay, W("MultiCoreJitProfileWriteDelay"), 12, "Set the delay after which the multi-core JIT profile will be written to disk.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_MultiCoreJitMinNumCpus, W("MultiCoreJitMinNumCpus"), 2, "Minimum number of cpus that must be present to allow MultiCoreJit usage.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_MultiCoreJitNoProfileGather, W("MultiCoreJitNoProfileGather"), 0, "Set to 1 to disable profile gathering (but leave possibly enabled profile usage).")
 
 #endif
 
@@ -737,6 +738,10 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_DOTNET_DiagnosticPorts, W("DiagnosticPorts"),
 RETAIL_CONFIG_STRING_INFO(INTERNAL_LTTngConfig, W("LTTngConfig"), "Configuration for LTTng.")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_LTTng, W("LTTng"), 1, "If COMPlus_LTTng is set to 0, this will prevent the LTTng library from being loaded at runtime")
 
+//
+// Executable code
+//
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableWriteXorExecute, W("EnableWriteXorExecute"), 0, "Enable W^X for executable memory.");
 
 #ifdef FEATURE_GDBJIT
 ///

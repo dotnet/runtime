@@ -717,7 +717,7 @@ namespace System.Runtime.Caching
             if (_cEntriesInUse == 0)
                 return 0;
 
-            Debug.Assert(maxFlush > 0, "maxFlush is not greater than 0, instead is " + maxFlush);
+            Debug.Assert(maxFlush > 0, $"maxFlush is not greater than 0, instead is {maxFlush}");
             Debug.Assert(_cEntriesInFlush == 0, "_cEntriesInFlush == 0");
 
             UsageEntryRef inFlushHead = UsageEntryRef.INVALID;

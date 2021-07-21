@@ -263,9 +263,9 @@ namespace System.IO.Tests
                     {
                         return new FileStream(devicePath, FileMode.Open, FileAccess.Read, FileShare.Read, 0, FileOptions.Asynchronous);
                     }
-                    catch (IOException)
+                    catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
                     {
-                        continue; // device has been locked by another process
+                        continue; // device has been locked by another process or we don't have permissions to access it
                     }
                 }
             }

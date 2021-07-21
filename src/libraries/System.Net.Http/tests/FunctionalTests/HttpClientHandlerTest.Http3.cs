@@ -27,6 +27,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55774")]
         [InlineData(10)] // 2 bytes settings value.
         [InlineData(100)] // 4 bytes settings value.
         [InlineData(10_000_000)] // 8 bytes settings value.
@@ -84,6 +85,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task SendMoreThanStreamLimitRequests_Succeeds(int streamLimit)
         {
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/55957")]
+            if (this.UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
             using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options(){ MaxBidirectionalStreams = streamLimit });
 
             Task serverTask = Task.Run(async () =>
@@ -117,6 +124,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56000")]
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
@@ -166,6 +174,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55901")]
         public async Task SendMoreThanStreamLimitRequestsConcurrently_LastWaits(int streamLimit)
         {
             // This combination leads to a hang manifesting in CI only. Disabling it until there's more time to investigate.
@@ -314,6 +323,64 @@ namespace System.Net.Http.Functional.Tests
             await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
         }
 
+        [Fact]
+        public async Task ServerCertificateCustomValidationCallback_Succeeds()
+        {
+            // Mock doesn't make use of cart validation callback.
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
+            HttpRequestMessage? callbackRequest = null;
+            int invocationCount = 0;
+
+            var httpClientHandler = CreateHttpClientHandler();
+            httpClientHandler.ServerCertificateCustomValidationCallback = (request, _, _, _) =>
+            {
+                callbackRequest = request;
+                ++invocationCount;
+                return true;
+            };
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            using HttpClient client = CreateHttpClient(httpClientHandler);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await stream.HandleRequestAsync();
+                using Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
+                await stream2.HandleRequestAsync();
+            });
+
+            var request = new HttpRequestMessage(HttpMethod.Get, server.Address);
+            request.Version = HttpVersion.Version30;
+            request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+            var response = await client.SendAsync(request);
+
+            response.EnsureSuccessStatusCode();
+            Assert.Equal(HttpVersion.Version30, response.Version);
+            Assert.Same(request, callbackRequest);
+            Assert.Equal(1, invocationCount);
+
+            // Second request, the callback shouldn't be hit at all.
+            callbackRequest = null;
+
+            request = new HttpRequestMessage(HttpMethod.Get, server.Address);
+            request.Version = HttpVersion.Version30;
+            request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+            response = await client.SendAsync(request);
+
+            response.EnsureSuccessStatusCode();
+            Assert.Equal(HttpVersion.Version30, response.Version);
+            Assert.Null(callbackRequest);
+            Assert.Equal(1, invocationCount);
+        }
+
         [OuterLoop]
         [ConditionalTheory(nameof(IsMsQuicSupported))]
         [MemberData(nameof(InteropUris))]
@@ -381,6 +448,186 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Equal(HttpStatusCode.OK, responseB.StatusCode);
                 Assert.NotEqual(3, responseB.Version.Major);
+            }
+        }
+
+        public enum CancellationType
+        {
+            Dispose,
+            CancellationToken
+        }
+
+        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [InlineData(CancellationType.Dispose)]
+        [InlineData(CancellationType.CancellationToken)]
+        public async Task ResponseCancellation_ServerReceivesCancellation(CancellationType type)
+        {
+            if (UseQuicImplementationProvider != QuicImplementationProviders.MsQuic)
+            {
+                return;
+            }
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            using var clientDone = new SemaphoreSlim(0);
+            using var serverDone = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+
+                int contentLength = 2*1024*1024;
+                var headers = new List<HttpHeaderData>();
+                headers.Append(new HttpHeaderData("Content-Length", contentLength.ToString(CultureInfo.InvariantCulture)));
+
+                await stream.SendResponseHeadersAsync(HttpStatusCode.OK, headers).ConfigureAwait(false);
+                await stream.SendDataFrameAsync(new byte[1024]).ConfigureAwait(false);
+
+                await clientDone.WaitAsync();
+
+                // It is possible that PEER_RECEIVE_ABORTED event will arrive with a significant delay after peer calls AbortReceive
+                // In that case even with synchronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
+                // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
+
+                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(10)));
+                Assert.Equal((type == CancellationType.CancellationToken ? 268 : 0xffffffff), ex.ErrorCode);
+
+                serverDone.Release();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
+
+                Stream stream = await response.Content.ReadAsStreamAsync();
+
+                int bytesRead = await stream.ReadAsync(new byte[1024]);
+                Assert.Equal(1024, bytesRead);
+
+                var cts = new CancellationTokenSource(200);
+
+                if (type == CancellationType.Dispose)
+                {
+                    cts.Token.Register(() => response.Dispose());
+                }
+                CancellationToken readCt = type == CancellationType.CancellationToken ? cts.Token : default;
+
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => stream.ReadAsync(new byte[1024], cancellationToken: readCt).AsTask());
+
+                if (type == CancellationType.CancellationToken)
+                {
+                    Assert.IsType<OperationCanceledException>(ex);
+                }
+                else
+                {
+                    var ioe = Assert.IsType<IOException>(ex);
+                    var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
+                    Assert.IsType<QuicOperationAbortedException>(hre.InnerException);
+                }
+
+                clientDone.Release();
+                await serverDone.WaitAsync();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+        }
+
+        [Fact]
+        public async Task ResponseCancellation_BothCancellationTokenAndDispose_Success()
+        {
+            if (UseQuicImplementationProvider != QuicImplementationProviders.MsQuic)
+            {
+                return;
+            }
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+
+            using var clientDone = new SemaphoreSlim(0);
+            using var serverDone = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
+
+                int contentLength = 2*1024*1024;
+                var headers = new List<HttpHeaderData>();
+                headers.Append(new HttpHeaderData("Content-Length", contentLength.ToString(CultureInfo.InvariantCulture)));
+
+                await stream.SendResponseHeadersAsync(HttpStatusCode.OK, headers).ConfigureAwait(false);
+                await stream.SendDataFrameAsync(new byte[1024]).ConfigureAwait(false);
+
+                await clientDone.WaitAsync();
+
+                // It is possible that PEER_RECEIVE_ABORTED event will arrive with a significant delay after peer calls AbortReceive
+                // In that case even with synchronization via semaphores, first writes after peer aborting may "succeed" (get SEND_COMPLETE event)
+                // We are asserting that PEER_RECEIVE_ABORTED would still arrive eventually
+
+                var ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => SendDataForever(stream).WaitAsync(TimeSpan.FromSeconds(20)));
+                // exact error code depends on who won the race
+                Assert.True(ex.ErrorCode == 268 /* cancellation */ || ex.ErrorCode == 0xffffffff /* disposal */, $"Expected 268 or 0xffffffff, got {ex.ErrorCode}");
+
+                serverDone.Release();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(20));
+
+                Stream stream = await response.Content.ReadAsStreamAsync();
+
+                int bytesRead = await stream.ReadAsync(new byte[1024]);
+                Assert.Equal(1024, bytesRead);
+
+                var cts = new CancellationTokenSource(200);
+                cts.Token.Register(() => response.Dispose());
+
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => stream.ReadAsync(new byte[1024], cancellationToken: cts.Token).AsTask());
+
+                // exact exception depends on who won the race
+                if (ex is not OperationCanceledException and not ObjectDisposedException)
+                {
+                    var ioe = Assert.IsType<IOException>(ex);
+                    var hre = Assert.IsType<HttpRequestException>(ioe.InnerException);
+                    Assert.IsType<QuicOperationAbortedException>(hre.InnerException);
+                }
+
+                clientDone.Release();
+                await serverDone.WaitAsync();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+        }
+
+        private static async Task SendDataForever(Http3LoopbackStream stream)
+        {
+            var buf = new byte[100];
+            while (true)
+            {
+                await stream.SendDataFrameAsync(buf);
             }
         }
 

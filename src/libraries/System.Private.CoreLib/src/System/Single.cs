@@ -542,11 +542,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static float IDecrementOperators<float>.operator --(float value)
-            => value--;
+            => --value;
 
         // [RequiresPreviewFeatures]
         // static checked float IDecrementOperators<float>.operator --(float value)
-        //     => checked(value--);
+        //     => checked(--value);
 
         //
         // IDivisionOperators
@@ -820,11 +820,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static float IIncrementOperators<float>.operator ++(float value)
-            => value++;
+            => ++value;
 
         // [RequiresPreviewFeatures]
         // static checked float IIncrementOperators<float>.operator ++(float value)
-        //     => checked(value++);
+        //     => checked(++value);
 
         //
         // IMinMaxValue

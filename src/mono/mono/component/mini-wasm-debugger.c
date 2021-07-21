@@ -79,12 +79,6 @@ void wasm_debugger_log (int level, const gchar *format, ...)
 }
 
 static void
-jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
-{
-	mono_de_add_pending_breakpoints (method, jinfo);
-}
-
-static void
 appdomain_load (MonoProfiler *prof, MonoDomain *domain)
 {
 	mono_de_domain_add (domain);
@@ -149,9 +143,9 @@ handle_multiple_ss_requests (void) {
 static void
 mono_wasm_enable_debugging_internal (int debug_level)
 {
+	log_level = debug_level;
 	PRINT_DEBUG_MSG (1, "DEBUGGING ENABLED\n");
 	debugger_enabled = TRUE;
-	log_level = debug_level;
 }
 
 static void
@@ -186,7 +180,6 @@ mono_wasm_debugger_init (MonoDefaults *mono_defaults)
 	get_mini_debug_options ()->load_aot_jit_info_eagerly = TRUE;
 
 	MonoProfilerHandle prof = mono_profiler_create (NULL);
-	mono_profiler_set_jit_done_callback (prof, jit_done);
 	//FIXME support multiple appdomains
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
 	mono_profiler_set_assembly_loaded_callback (prof, assembly_loaded);
@@ -197,7 +190,7 @@ mono_wasm_debugger_init (MonoDefaults *mono_defaults)
 	trans.send = receive_debugger_agent_message;
 
 	mono_debugger_agent_register_transport (&trans);
-	mono_init_debugger_agent_for_wasm (log_level);
+	mono_init_debugger_agent_for_wasm (log_level, &prof);
 }
 
 static void

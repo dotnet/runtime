@@ -10,6 +10,7 @@ using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 #if MS_IO_REDIST
 using System;
@@ -373,19 +374,13 @@ namespace System.IO
             if (bytes == null)
                 throw new ArgumentNullException(nameof(bytes));
 
-            InternalWriteAllBytes(path, bytes);
-        }
-
-        private static void InternalWriteAllBytes(string path, byte[] bytes)
-        {
-            Debug.Assert(path != null);
-            Debug.Assert(path.Length != 0);
-            Debug.Assert(bytes != null);
-
-            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
-            {
-                fs.Write(bytes, 0, bytes.Length);
-            }
+#if MS_IO_REDIST
+            using FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
+            fs.Write(bytes, 0, bytes.Length);
+#else
+            using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read);
+            RandomAccess.WriteAtOffset(sfh, bytes, 0);
+#endif
         }
         public static string[] ReadAllLines(string path)
         {
@@ -836,22 +831,17 @@ namespace System.IO
 
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
-                : InternalWriteAllBytesAsync(path, bytes, cancellationToken);
-        }
+                : Core(path, bytes, cancellationToken);
 
-        private static async Task InternalWriteAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken)
-        {
-            Debug.Assert(!string.IsNullOrEmpty(path));
-            Debug.Assert(bytes != null);
-
-            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan))
+            static async Task Core(string path, byte[] bytes, CancellationToken cancellationToken)
             {
 #if MS_IO_REDIST
+                using FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, 1, FileOptions.Asynchronous | FileOptions.SequentialScan);
                 await fs.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
 #else
-                await fs.WriteAsync(new ReadOnlyMemory<byte>(bytes), cancellationToken).ConfigureAwait(false);
+                using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous | FileOptions.SequentialScan);
+                await RandomAccess.WriteAtOffsetAsync(sfh, bytes, 0, cancellationToken).ConfigureAwait(false);
 #endif
-                await fs.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -931,6 +921,7 @@ namespace System.IO
 
         private static async Task InternalWriteAllTextAsync(StreamWriter sw, string contents, CancellationToken cancellationToken)
         {
+#if MS_IO_REDIST
             char[]? buffer = null;
             try
             {
@@ -941,11 +932,7 @@ namespace System.IO
                 {
                     int batchSize = Math.Min(DefaultBufferSize, count - index);
                     contents.CopyTo(index, buffer, 0, batchSize);
-#if MS_IO_REDIST
                     await sw.WriteAsync(buffer, 0, batchSize).ConfigureAwait(false);
-#else
-                    await sw.WriteAsync(new ReadOnlyMemory<char>(buffer, 0, batchSize), cancellationToken).ConfigureAwait(false);
-#endif
                     index += batchSize;
                 }
 
@@ -960,6 +947,13 @@ namespace System.IO
                     ArrayPool<char>.Shared.Return(buffer);
                 }
             }
+#else
+            using (sw)
+            {
+                await sw.WriteAsync(contents.AsMemory(), cancellationToken).ConfigureAwait(false);
+                await sw.FlushAsync().ConfigureAwait(false);
+            }
+#endif
         }
 
         public static Task AppendAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default(CancellationToken))
@@ -1042,7 +1036,7 @@ namespace System.IO
         /// -or-
         /// Too many levels of symbolic links.</exception>
         /// <remarks>When <paramref name="returnFinalTarget"/> is <see langword="true"/>, the maximum number of symbolic links that are followed are 40 on Unix and 63 on Windows.</remarks>
-        public static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false)
+        public static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget)
         {
             FileSystem.VerifyValidPath(linkPath, nameof(linkPath));
             return FileSystem.ResolveLinkTarget(linkPath, returnFinalTarget, isDirectory: false);

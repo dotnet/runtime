@@ -1295,7 +1295,7 @@ namespace System.Data
                         {
 #if DEBUG
                             // enzol: TO DO: replace the constructor with IsEqual(XmlElement)
-                            //                        Debug.Assert(col.SimpleType.IsEqual(new SimpleType(elmSimpeType)), "simpleTypes with the same name have to be the same: "+name);
+                            //                        Debug.Assert(col.SimpleType.IsEqual(new SimpleType(elmSimpeType)), $"simpleTypes with the same name have to be the same: {name}");
 #endif
                         }
                     }

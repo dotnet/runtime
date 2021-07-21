@@ -2245,7 +2245,8 @@ public:
             {
                 if (pCurrentMethodTable->HasSameTypeDefAs(pMT) && 
                     pMT->HasInstantiation() && 
-                    pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() && 
+                    pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() &&
+                    !pMTOwner->ContainsGenericVariables() &&
                     pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
                 {
                     exactMatch = true;

@@ -160,6 +160,12 @@ namespace System.Diagnostics
     /// See the DiagnosticSourceEventSourceBridgeTest.cs for more explicit examples of using this bridge.
     /// </summary>
     [EventSource(Name = "Microsoft-Diagnostics-DiagnosticSource")]
+    // This coarse suppression silences all RequiresUnreferencedCode warnings in the class.
+    // https://github.com/mono/linker/issues/2136 tracks making it possible to add more granular suppressions at the member level, and with a different warning code.
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves all members, so " +
+                        "those that are marked with RequiresUnreferencedCode will warn. " +
+                        "This method will not access any of these members and is safe to call.")]
     internal sealed class DiagnosticSourceEventSource : EventSource
     {
         public static DiagnosticSourceEventSource Log = new DiagnosticSourceEventSource();
@@ -1099,7 +1105,7 @@ namespace System.Diagnostics
             {
                 TransformSpec? newSerializableArgs = null;
                 TypeInfo curTypeInfo = type.GetTypeInfo();
-                foreach (PropertyInfo property in curTypeInfo.DeclaredProperties)
+                foreach (PropertyInfo property in curTypeInfo.GetProperties(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
                 {
                     // prevent TransformSpec from attempting to implicitly transform index properties
                     if (property.GetMethod == null || property.GetMethod!.GetParameters().Length > 0)
@@ -1319,7 +1325,7 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            PropertyInfo? propertyInfo = typeInfo.GetDeclaredProperty(propertyName);
+                            PropertyInfo? propertyInfo = typeInfo.GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
                             if (propertyInfo == null)
                             {
                                 Log.Message($"Property {propertyName} not found on {type}. Ensure the name is spelled correctly. If you published the application with PublishTrimmed=true, ensure the property was not trimmed away.");

@@ -1,0 +1,86 @@
+<Project>
+  <Target Name="ProvisionSdkForWorkloadTesting" Condition="!Exists($(SdkForWorkloadTestingStampPath)) and '$(InstallWorkloadForTesting)' == 'true'">
+    <Error Text="%24(SdkPathForWorkloadTesting) is not set" Condition="'$(SdkPathForWorkloadTesting)' == ''" />
+    <Error Text="%24(SdkVersionForWorkloadTesting) is not set" Condition="'$(SdkVersionForWorkloadTesting)' == ''" />
+
+    <Message Text="** Installing sdk $(SdkVersionForWorkloadTesting) for workload based tests" Importance="High" />
+
+    <RemoveDir Directories="$(SdkPathForWorkloadTesting)" />
+    <MakeDir Directories="$(SdkPathForWorkloadTesting)" />
+
+    <PropertyGroup>
+      <_DotNetInstallScriptPath Condition="!$([MSBuild]::IsOSPlatform('windows'))">$(DOTNET_INSTALL_DIR)/dotnet-install.sh</_DotNetInstallScriptPath>
+      <_DotNetInstallScriptPath Condition=" $([MSBuild]::IsOSPlatform('windows'))">$(RepoRoot).dotnet\dotnet-install.ps1</_DotNetInstallScriptPath>
+    </PropertyGroup>
+
+    <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"
+          Command="chmod +x $(_DotNetInstallScriptPath); $(_DotNetInstallScriptPath) -i $(SdkPathForWorkloadTesting) -v $(SdkVersionForWorkloadTesting)" />
+
+    <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
+          Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallScriptPath) -InstallDir $(SdkPathForWorkloadTesting) -Version $(SdkVersionForWorkloadTesting)"' />
+
+    <WriteLinesToFile File="$(SdkForWorkloadTestingStampPath)" Lines="" Overwrite="true" />
+  </Target>
+
+  <Target Name="GetWorkloadInputs">
+    <ItemGroup>
+      <AvailableNuGetsInArtifacts Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
+    </ItemGroup>
+
+    <Error Text="Cannot find any nupkg files in $(LibrariesShippingPackagesDir), needed for workloads" Condition="@(AvailableNuGetsInArtifacts->Count()) == 0" />
+  </Target>
+
+  <UsingTask Condition="'$(InstallWorkloadForTesting)' == 'true'"
+             TaskName="Microsoft.Workload.Build.Tasks.InstallWorkloadFromArtifacts"
+             AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
+
+  <UsingTask Condition="'$(InstallWorkloadForTesting)' == 'true'"
+             TaskName="GenerateFileFromTemplate"
+             AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
+
+  <Target Name="InstallWorkloadUsingArtifacts"
+          AfterTargets="ArchiveTests"
+          DependsOnTargets="ProvisionSdkForWorkloadTesting;GetWorkloadInputs"
+          Inputs="@(AvailableNuGetsInArtifacts)"
+          Outputs="$(WorkloadStampFile)"
+          Condition="'$(InstallWorkloadForTesting)' == 'true'">
+
+    <ItemGroup>
+      <_PropsForAOTCrossBuild Include="TestingWorkloads=true" />
+      <_PropsForAOTCrossBuild Include="Configuration=$(Configuration)" />
+      <_PropsForAOTCrossBuild Include="TargetOS=Browser" />
+      <_PropsForAOTCrossBuild Include="TargetArchitecture=wasm" />
+      <_PropsForAOTCrossBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
+
+      <_PropsForAOTCrossBuild Include="RuntimeIdentifier=$(NETCoreSdkRuntimeIdentifier)" />
+      <_PropsForAOTCrossBuild Include="TargetCrossRid=$(RuntimeIdentifier)" />
+    </ItemGroup>
+
+    <Exec Command="dotnet build -bl -restore -t:Pack @(_PropsForAOTCrossBuild -> '-p:%(Identity)', ' ') Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
+          WorkingDirectory="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App" />
+
+    <ItemGroup>
+      <_NuGetSourceForWorkloads Include="dotnet6" Value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6/nuget/v3/index.json" />
+      <_BuiltNuGets Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <!-- Eg. Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm.6.0.0-dev.nupkg -->
+      <_AOTCrossNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RuntimeIdentifier).$(PackageVersion).nupkg</_AOTCrossNuGetPath>
+    </PropertyGroup>
+
+    <Error Text="Could not find cross compiler nupkg at $(_AOTCrossNuGetPath). Found packages: @(_BuiltNuGets)"
+           Condition="!Exists($(_AOTCrossNuGetPath))" />
+
+    <Message Text="Packages found in $(LibrariesShippingPackagesDir): @(_BuiltNuGets)" Importance="Low" />
+
+    <InstallWorkloadFromArtifacts
+                     WorkloadId="@(WorkloadIdForTesting)"
+                     VersionBand="$(SdkBandVersion)"
+                     LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
+                     ExtraNuGetSources="@(_NuGetSourceForWorkloads)"
+                     SdkDir="$(SdkPathForWorkloadTesting)" />
+
+    <WriteLinesToFile File="$(WorkloadStampFile)" Lines="" Overwrite="true" />
+  </Target>
+</Project>

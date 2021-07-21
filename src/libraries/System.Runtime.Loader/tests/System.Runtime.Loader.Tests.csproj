@@ -39,6 +39,7 @@
     <ProjectReference Include="LoaderLinkTest.Dynamic\LoaderLinkTest.Dynamic.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1\System.Reflection.Metadata.ApplyUpdate.Test.MethodBody1.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes\System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate.csproj" />
 
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
@@ -57,6 +58,9 @@
           Include="%(ResolvedFileToPublish.FullPath)" />
       <TrimmerRootAssembly
           Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributes.dll'))"
+          Include="%(ResolvedFileToPublish.FullPath)" />
+      <TrimmerRootAssembly
+          Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeUpdate.dll'))"
           Include="%(ResolvedFileToPublish.FullPath)" />
     </ItemGroup>
   </Target>

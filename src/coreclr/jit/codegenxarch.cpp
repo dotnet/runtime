@@ -4425,7 +4425,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
 #ifdef FEATURE_SIMD
     // storing of TYP_SIMD12 (i.e. Vector3) field
-    if (tree->TypeGet() == TYP_SIMD12)
+    if (targetType == TYP_SIMD12)
     {
         genStoreLclTypeSIMD12(tree);
         return;
@@ -4436,7 +4436,32 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     assert(genTypeSize(genActualType(targetType)) == genTypeSize(genActualType(op1->TypeGet())));
 
     genConsumeRegs(op1);
-    GetEmitter()->emitInsBinary(ins_Store(targetType), emitTypeSize(tree), tree, op1);
+
+    if (op1->OperIs(GT_BITCAST) && op1->isContained())
+    {
+        regNumber targetReg  = tree->GetRegNum();
+        GenTree*  bitCastSrc = op1->gtGetOp1();
+        var_types srcType    = bitCastSrc->TypeGet();
+        noway_assert(!bitCastSrc->isContained());
+
+        if (targetReg == REG_NA)
+        {
+            unsigned   lclNum = tree->GetLclNum();
+            LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+
+            GetEmitter()->emitIns_S_R(ins_Store(srcType, compiler->isSIMDTypeLocalAligned(lclNum)),
+                                      emitTypeSize(targetType), bitCastSrc->GetRegNum(), lclNum, 0);
+            varDsc->SetRegNum(REG_STK);
+        }
+        else
+        {
+            genBitCast(targetType, targetReg, srcType, bitCastSrc->GetRegNum());
+        }
+    }
+    else
+    {
+        GetEmitter()->emitInsBinary(ins_Store(targetType), emitTypeSize(tree), tree, op1);
+    }
 
     // Updating variable liveness after instruction was emitted
     genUpdateLife(tree);
@@ -7070,64 +7095,6 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
             unreached();
     }
 
-    genProduceReg(treeNode);
-}
-
-//----------------------------------------------------------------------
-// genBitCast - Generate the instruction to move a value between register files
-//
-// Arguments
-//    targetType - the destination type
-//    targetReg  - the destination register
-//    srcType    - the source type
-//    srcReg     - the source register
-//
-void CodeGen::genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg)
-{
-    const bool srcFltReg = varTypeUsesFloatReg(srcType) || varTypeIsSIMD(srcType);
-    assert(srcFltReg == genIsValidFloatReg(srcReg));
-
-    const bool dstFltReg = varTypeUsesFloatReg(targetType) || varTypeIsSIMD(targetType);
-    assert(dstFltReg == genIsValidFloatReg(targetReg));
-
-    inst_Mov(targetType, targetReg, srcReg, /* canSkip */ true);
-}
-
-//----------------------------------------------------------------------
-// genCodeForBitCast - Generate code for a GT_BITCAST that is not contained
-//
-// Arguments
-//    treeNode - the GT_BITCAST for which we're generating code
-//
-void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
-{
-    regNumber targetReg  = treeNode->GetRegNum();
-    var_types targetType = treeNode->TypeGet();
-    GenTree*  op1        = treeNode->gtGetOp1();
-    genConsumeRegs(op1);
-
-    if (op1->isContained())
-    {
-        assert(op1->IsLocal() || op1->isIndir());
-        if (genIsRegCandidateLocal(op1))
-        {
-            unsigned lclNum = op1->AsLclVar()->GetLclNum();
-            GetEmitter()->emitIns_R_S(ins_Load(treeNode->TypeGet(), compiler->isSIMDTypeLocalAligned(lclNum)),
-                                      emitTypeSize(treeNode), targetReg, lclNum, 0);
-        }
-        else
-        {
-            op1->gtType = treeNode->TypeGet();
-            op1->SetRegNum(targetReg);
-            op1->ClearContained();
-            JITDUMP("Changing type of BITCAST source to load directly.");
-            genCodeForTreeNode(op1);
-        }
-    }
-    else
-    {
-        genBitCast(targetType, targetReg, op1->TypeGet(), op1->GetRegNum());
-    }
     genProduceReg(treeNode);
 }
 

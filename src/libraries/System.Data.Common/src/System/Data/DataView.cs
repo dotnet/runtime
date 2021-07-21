@@ -1136,6 +1136,7 @@ namespace System.Data
         string? IBindingListView.Filter
         {
             get { return RowFilter; }
+            [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set { RowFilter = value; }
         }
 
