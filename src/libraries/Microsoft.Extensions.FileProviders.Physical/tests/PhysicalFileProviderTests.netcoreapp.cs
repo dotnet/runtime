@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.FileProviders
             token.RegisterChangeCallback(_ => { tcs.TrySetResult(); }, null);
 
             // Act
-            await Task.Delay(200); // Wait a bit before writing again, see https://github.com/dotnet/runtime/issues/55951.
+            await Task.Delay(1000); // Wait a second before writing again, see https://github.com/dotnet/runtime/issues/55951.
             File.WriteAllText(filePath, "v1.2");
 
             // Assert
@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.FileProviders
             string file1Path = Path.Combine(rootOfFile.RootPath, Path.GetRandomFileName());
             if (!linkWasBroken)
             {
-                await Task.Delay(200); // Wait a bit before writing again, see https://github.com/dotnet/runtime/issues/55951.
+                await Task.Delay(1000); // Wait a second before writing again, see https://github.com/dotnet/runtime/issues/55951.
                 File.WriteAllText(file1Path, "v1.1");
             }
 
