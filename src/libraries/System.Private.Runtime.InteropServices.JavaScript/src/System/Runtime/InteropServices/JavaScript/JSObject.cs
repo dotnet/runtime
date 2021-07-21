@@ -105,7 +105,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
 
                 // TODO: Pass options explicitly instead of using the object
-                // FIXME: Exceptions
+                // TODO: Handle errors
+                // We can't currently do this because adding any additional parameters or a return value causes
+                //  a signature mismatch at runtime
                 Interop.Runtime.AddEventListener(JSHandle, name, jsfunc, optionsDict?.JSHandle ?? 0);
                 return jsfunc;
             } finally {
