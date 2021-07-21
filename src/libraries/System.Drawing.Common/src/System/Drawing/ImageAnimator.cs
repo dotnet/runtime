@@ -35,6 +35,8 @@ namespace System.Drawing
     /// </summary>
     public sealed partial class ImageAnimator
     {
+        internal const int AnimationDelayMS = 40;
+
         /// <summary>
         ///     A list of images to be animated.
         /// </summary>
@@ -387,7 +389,7 @@ namespace System.Drawing
 
             while (true)
             {
-                Thread.Sleep(40);
+                Thread.Sleep(AnimationDelayMS);
 
                 // Because Thread.Sleep is not accurate, capture how much time has actually elapsed during the animation
                 long timeElapsed = stopwatch.ElapsedMilliseconds;
