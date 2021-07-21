@@ -823,6 +823,9 @@ namespace System.Text.RegularExpressions.Tests
             // Empty Match
             yield return new object[] { null, @"([a*]*)+?$", "ab", RegexOptions.None, new string[] { "", "" } };
             yield return new object[] { null, @"(a*)+?$", "b", RegexOptions.None, new string[] { "", "" } };
+
+            // A unit test from aspnetcore
+            yield return new object[] { null, @"(.*)/(.*).aspx", "/pages/homepage.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx", "/pages", "homepage", } };
         }
 
         public static IEnumerable<object[]> Groups_CustomCulture_TestData_enUS()
