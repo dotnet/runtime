@@ -119,6 +119,44 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        public async Task CertificateCallbackThrowPropagates()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource(PassingTestTimeout);
+            X509Certificate? receivedCertificate = null;
+
+            var quicOptions = new QuicListenerOptions();
+            quicOptions.ListenEndPoint = new IPEndPoint( Socket.OSSupportsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0);
+            quicOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
+
+            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, quicOptions);
+
+            QuicClientConnectionOptions options = new QuicClientConnectionOptions()
+            {
+                RemoteEndPoint = listener.ListenEndPoint,
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
+            };
+
+            options.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+            {
+                receivedCertificate = cert;
+                throw new ArithmeticException("foobar");
+            };
+
+            options.ClientAuthenticationOptions.TargetHost = "foobar1";
+
+            QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
+
+            Task<QuicConnection> serverTask = listener.AcceptConnectionAsync(cts.Token).AsTask();
+            await Assert.ThrowsAsync<ArithmeticException>(() => clientConnection.ConnectAsync(cts.Token).AsTask());
+            QuicConnection serverConnection = await serverTask;
+
+            Assert.Equal(quicOptions.ServerAuthenticationOptions.ServerCertificate, receivedCertificate);
+
+            clientConnection.Dispose();
+            serverConnection.Dispose();
+        }
+
+        [Fact]
         public async Task ConnectWithCertificateCallback()
         {
             X509Certificate2 c1 = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
@@ -166,9 +204,10 @@ namespace System.Net.Quic.Tests
             options.ClientAuthenticationOptions.TargetHost = "foobar1";
 
             QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
-            ValueTask clientTask = clientConnection.ConnectAsync(cts.Token);
-            QuicConnection serverConnection = await listener.AcceptConnectionAsync(cts.Token);
-            await clientTask;
+
+            Task<QuicConnection> serverTask = listener.AcceptConnectionAsync(cts.Token).AsTask();
+            await new Task[] { clientConnection.ConnectAsync().AsTask(), serverTask}.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+            QuicConnection serverConnection = serverTask.Result;
 
             Assert.Equal(options.ClientAuthenticationOptions.TargetHost, receivedHostName);
             Assert.Equal(c1, receivedCertificate);
@@ -178,19 +217,20 @@ namespace System.Net.Quic.Tests
             // This should fail when callback return null.
             options.ClientAuthenticationOptions.TargetHost = "foobar3";
             clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
-            clientTask = clientConnection.ConnectAsync(cts.Token);
+            Task clientTask = clientConnection.ConnectAsync(cts.Token).AsTask();
 
-            await Assert.ThrowsAsync<QuicException>(() => clientTask.AsTask());
+            await Assert.ThrowsAsync<QuicException>(() => clientTask);
             Assert.Equal(options.ClientAuthenticationOptions.TargetHost, receivedHostName);
+            clientConnection.Dispose();
 
             // Do this last to make sure Listener is still functional.
             options.ClientAuthenticationOptions.TargetHost = "foobar2";
             expectedCertificate = c2;
 
             clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
-            clientTask = clientConnection.ConnectAsync(cts.Token);
-            serverConnection = await listener.AcceptConnectionAsync(cts.Token);
-            await clientTask;
+            serverTask = listener.AcceptConnectionAsync(cts.Token).AsTask();
+            await new Task[] { clientConnection.ConnectAsync().AsTask(), serverTask}.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+            serverConnection = serverTask.Result;
 
             Assert.Equal(options.ClientAuthenticationOptions.TargetHost, receivedHostName);
             Assert.Equal(c2, receivedCertificate);

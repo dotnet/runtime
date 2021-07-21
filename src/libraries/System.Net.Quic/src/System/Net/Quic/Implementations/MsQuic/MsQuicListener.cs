@@ -64,7 +64,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (!delayConfiguration)
                 {
-                    ConnectionConfiguration = SafeMsQuicConfigurationHandle.Create(options);
+                    ConnectionConfiguration = SafeMsQuicConfigurationHandle.Create(options, options.ServerAuthenticationOptions);
                 }
 
                 AcceptConnectionQueue = Channel.CreateBounded<MsQuicConnection>(new BoundedChannelOptions(options.ListenBacklog)
