@@ -88,7 +88,6 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            var releaseServer = new TaskCompletionSource();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (var handler = CreateHttpClientHandler())
@@ -100,8 +99,6 @@ namespace System.Net.Http.Functional.Tests
                     socketsHandler.PlaintextStreamFilter = async (context, token) => { await Task.Delay(-1, token); return null; };
 
                     await ValidateConnectTimeout(invoker, uri, 500, 85_000);
-
-                    releaseServer.SetResult();
                 }
             }, server => Task.CompletedTask, // doesn't actually connect to server
             options: new GenericLoopbackOptions() { UseSsl = false });
