@@ -169,8 +169,9 @@ var BindingSupportLib = {
 				result = wr.deref();				
 			}
 			if (!result) {
-				result = function () {
-					throw new Error("nyi: invoke weak delegate");
+				result = (arg1) => {
+					if (!this.try_invoke_weak_delegate_by_handle(id, arg1))
+						throw new Error("Weak delegate invocation failed");
 				};
 				this._weak_delegate_table.set(id, new WeakRef(result));
 				this._weak_delegate_registry.register(result, id);
@@ -179,8 +180,8 @@ var BindingSupportLib = {
 		},
 
 		_weak_delegate_finalized: function (id) {
-			console.log(`releasing weak delegate ${id}`);
-			this._weak_delegate_table.remove(id);
+			// console.log(`releasing weak delegate ${id}`);
+			this._weak_delegate_table.delete(id);
 			this.release_weak_delegate_by_handle(id);
 		},
 
@@ -2071,28 +2072,49 @@ var BindingSupportLib = {
 	},
 
 	mono_wasm_add_event_listener: function (objHandle, name, listenerId, optionsHandle) {
-		BINDING.bindings_lazy_init ();
-		var obj = BINDING.mono_wasm_require_handle(objHandle);
-		if (!obj)
-			throw new Error("Invalid JS object handle");
-		var listener = BINDING._get_weak_delegate_from_handle(listenerId);
-		if (!listener)
-			throw new Error("Invalid listener ID");
+		var nameRoot = MONO.mono_wasm_new_root (name);
+		try {
+			BINDING.bindings_lazy_init ();
+			var obj = BINDING.mono_wasm_require_handle(objHandle);
+			if (!obj)
+				throw new Error("Invalid JS object handle");
+			var listener = BINDING._get_weak_delegate_from_handle(listenerId);
+			if (!listener)
+				throw new Error("Invalid listener ID");
+			var sName = BINDING.conv_string(nameRoot.value);
 
-		if (optionsHandle) {
-			var options = BINDING.mono_wasm_require_handle(optionsHandle);
-			console.log(`${obj}.addEventListener(${name}, ${listener}, ${options})`);
-			obj.addEventListener(name, listener, options);
-		} else {
-			console.log(`${obj}.addEventListener(${name}, ${listener})`);
-			obj.addEventListener(name, listener);
+			var options = optionsHandle
+				? BINDING.mono_wasm_require_handle(optionsHandle)
+				: null;
+			// console.log(`${obj}.addEventListener(${sName}, ${listener}, ${options})`);
+
+			if (options)
+				obj.addEventListener(sName, listener, options);
+			else
+				obj.addEventListener(sName, listener);			
+		} finally {
+			nameRoot.release();
 		}
-		throw new Error("nyi: add event listener");
 	},
 
 	mono_wasm_remove_event_listener: function (objHandle, name, listenerId, capture) {
-		BINDING.bindings_lazy_init ();
-		throw new Error("nyi: remove event listener");
+		var nameRoot = MONO.mono_wasm_new_root (name);
+		try {
+			BINDING.bindings_lazy_init ();
+			var obj = BINDING.mono_wasm_require_handle(objHandle);
+			if (!obj)
+				throw new Error("Invalid JS object handle");
+			var listener = BINDING._get_weak_delegate_from_handle(listenerId);
+			if (!listener)
+				throw new Error("Invalid listener ID");
+			var sName = BINDING.conv_string(nameRoot.value);
+
+			// console.log(`${obj}.removeEventListener(${sName}, ${listener}, ${capture})`);
+
+			obj.removeEventListener(sName, listener, !!capture);
+		} finally {
+			nameRoot.release();
+		}
 	},
 
 };
