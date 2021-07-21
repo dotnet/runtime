@@ -523,8 +523,7 @@ namespace System.Threading.Tasks.Tests
             TaskScheduler.UnobservedTaskException -= handler;
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/30122")]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static async Task AsyncMethodsDropsStateMachineAndExecutionContextUponCompletion()
         {
             // Create a finalizable object that'll be referenced by both an async method's
