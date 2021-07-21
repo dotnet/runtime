@@ -275,9 +275,9 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     mv $wasm_runtime_loc $wasm_dotnet_path
     if [[ "$wasmaot" == "true" ]]; then
         # install EMSDK if $EMSDK_PATH is not Set
-        pushd $wasm_dotnet_path/src/mono/wasm/
+        pushd $source_directory/src/mono/wasm/
         make provision-wasm
-        EMSDK_PATH = $wasm_dotnet_path/src/mono/wasm/emsdk
+        EMSDK_PATH = $source_directory/src/mono/wasm/emsdk
         echo "EMSDK_PATH=$EMSDK_PATH"
         # wasm aot needs some source code from dotnet\runtime repo
         rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj
