@@ -618,7 +618,7 @@ namespace System.Net.Quic.Tests
         public async Task WriteCanceled_NextWriteThrows()
         {
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/55995")]
-            if (this.UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            if (typeof(T) == typeof(MsQuicProviderFactory))
             {
                 return;
             }
