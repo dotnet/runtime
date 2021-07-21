@@ -119,14 +119,14 @@
     <SubsetName Include="Libs.PreTest" Description="Test assets which are necessary to run tests." />
     <SubsetName Include="Libs.Packages" Description="The projects that produce NuGet packages from libraries." />
     <SubsetName Include="Libs.Tests" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
-    
+
     <!-- Host -->
     <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests." />
     <SubsetName Include="Host.Native" Description="The .NET hosts." />
     <SubsetName Include="Host.Pkg" Description="The .NET host packages." />
     <SubsetName Include="Host.Tools" Description="The .NET hosting libraries." />
     <SubsetName Include="Host.Tests" Description="The .NET hosting tests." />
-    
+
     <!-- Packs -->
     <SubsetName Include="Packs" Description="Builds the shared framework packs, archives, bundles, installers, and the framework pack tests." />
     <SubsetName Include="Packs.Product" Description="Builds the shared framework packs, archives, bundles, and installers." />
