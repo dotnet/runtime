@@ -8574,9 +8574,7 @@ void gc_heap::get_card_table_element_layout (uint8_t* start, uint8_t* end, size_
     for (int element = brick_table_element; element <= total_bookkeeping_elements; element++)
     {
         layout[element] = layout[element - 1] + sizes[element - 1];
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        if (element != software_write_watch_table_element || gc_can_use_concurrent)
-#endif //FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        if (sizes[element] != 0)
         {
             layout[element] = ALIGN_UP(layout[element], alignment[element]);
         }
@@ -8709,11 +8707,8 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
             assert (required_begin <= required_end);
             commit_end = align_on_page(required_end);
 
-            if (i != seg_mapping_table_element)
-            {
-                commit_end = min (commit_end, align_lower_page(bookkeeping_covered_start + card_table_element_layout[i + 1]));
-                commit_begin = min (commit_begin, commit_end);
-            }
+            commit_end = min (commit_end, align_lower_page(bookkeeping_covered_start + card_table_element_layout[i + 1]));
+            commit_begin = min (commit_begin, commit_end);
             assert (commit_begin <= commit_end);
 
             dprintf (REGIONS_LOG, ("required = [%p, %p), size = %Id", required_begin, required_end, required_end - required_begin));
