@@ -519,8 +519,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56048", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromFile_NullFileName_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => Image.FromFile(null));
@@ -534,8 +533,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>("path", null, () => Image.FromFile(string.Empty, useEmbeddedColorManagement: true));
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56048", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromFile_LongSegment_ThrowsException()
         {
             // Throws PathTooLongException on Desktop and FileNotFoundException elsewhere.
@@ -557,8 +555,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56048", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromFile_NoSuchFile_ThrowsFileNotFoundException()
         {
             Assert.Throws<FileNotFoundException>(() => Image.FromFile("NoSuchFile"));
