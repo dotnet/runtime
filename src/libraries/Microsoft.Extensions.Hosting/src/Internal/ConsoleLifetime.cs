@@ -21,7 +21,6 @@ namespace Microsoft.Extensions.Hosting.Internal
     [UnsupportedOSPlatform("tvos")]
     public partial class ConsoleLifetime : IHostLifetime, IDisposable
     {
-        private readonly ManualResetEvent _shutdownBlock = new ManualResetEvent(false);
         private CancellationTokenRegistration _applicationStartedRegistration;
         private CancellationTokenRegistration _applicationStoppingRegistration;
 
@@ -63,7 +62,6 @@ namespace Microsoft.Extensions.Hosting.Internal
                 this);
             }
 
-            Console.CancelKeyPress += OnCancelKeyPress;
             RegisterShutdownHandlers();
 
             // Console applications start immediately.
@@ -84,21 +82,6 @@ namespace Microsoft.Extensions.Hosting.Internal
             Logger.LogInformation("Application is shutting down...");
         }
 
-        private void OnCancelKeyPress(object sender, ConsoleCancelEventArgs e)
-        {
-            e.Cancel = true;
-            OnExitSignal();
-        }
-
-        private void OnExitSignal()
-        {
-            ApplicationLifetime.StopApplication();
-
-            // Don't block in process shutdown for CTRL+C/SIGINT/SIGTERM since we can set e.Cancel to true
-            // we assume that application code will unwind once StopApplication signals the token
-            _shutdownBlock.Set();
-        }
-
         public Task StopAsync(CancellationToken cancellationToken)
         {
             // There's nothing to do here
@@ -107,10 +90,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         public void Dispose()
         {
-            _shutdownBlock.Set();
-
             UnregisterShutdownHandlers();
-            Console.CancelKeyPress -= OnCancelKeyPress;
 
             _applicationStartedRegistration.Dispose();
             _applicationStoppingRegistration.Dispose();

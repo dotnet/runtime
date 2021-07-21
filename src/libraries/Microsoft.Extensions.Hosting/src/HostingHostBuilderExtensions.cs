@@ -226,7 +226,12 @@ namespace Microsoft.Extensions.Hosting
             })
             .ConfigureLogging((hostingContext, logging) =>
             {
-                bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+                bool isWindows =
+#if NET6_0_OR_GREATER
+                    OperatingSystem.IsWindows();
+#else
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#endif
 
                 // IMPORTANT: This needs to be added *before* configuration is loaded, this lets
                 // the defaults be overridden by the configuration.

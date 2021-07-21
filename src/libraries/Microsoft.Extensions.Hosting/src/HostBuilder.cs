@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Hosting
     /// <summary>
     /// A program initialization utility.
     /// </summary>
-    public class HostBuilder : IHostBuilder
+    public partial class HostBuilder : IHostBuilder
     {
         private List<Action<IConfigurationBuilder>> _configureHostConfigActions = new List<Action<IConfigurationBuilder>>();
         private List<Action<HostBuilderContext, IConfigurationBuilder>> _configureAppConfigActions = new List<Action<HostBuilderContext, IConfigurationBuilder>>();
@@ -245,12 +245,9 @@ namespace Microsoft.Extensions.Hosting
             services.AddSingleton<IApplicationLifetime>(s => (IApplicationLifetime)s.GetService<IHostApplicationLifetime>());
 #pragma warning restore CS0618 // Type or member is obsolete
             services.AddSingleton<IHostApplicationLifetime, ApplicationLifetime>();
-#if NET6_0_OR_GREATER
-            if (!OperatingSystem.IsAndroid() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst() && !OperatingSystem.IsTvOS())
-#endif
-            {
-                services.AddSingleton<IHostLifetime, ConsoleLifetime>();
-            }
+
+            AddLifetime(services);
+
             services.AddSingleton<IHost>(_ =>
             {
                 return new Internal.Host(_appServices,

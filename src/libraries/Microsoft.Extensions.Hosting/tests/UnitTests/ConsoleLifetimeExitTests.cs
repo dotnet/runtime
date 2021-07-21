@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 // adding this delay ensures the "main" method loses in a race with the normal process exit
                 // and can cause the below message not to be written when the normal process exit isn't canceled by the
                 // SIGTERM handler
-                await Task.Delay(20);
+                await Task.Delay(100);
 
                 Console.WriteLine("Run has completed");
                 return 123;

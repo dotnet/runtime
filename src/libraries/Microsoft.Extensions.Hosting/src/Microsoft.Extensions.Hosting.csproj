@@ -9,10 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+    <Compile Remove="HostBuilder.netcoreapp.cs" />
     <Compile Remove="Internal\ConsoleLifetime.netcoreapp.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+    <Compile Remove="HostBuilder.notnetcoreapp.cs" />
     <Compile Remove="Internal\ConsoleLifetime.notnetcoreapp.cs" />
   </ItemGroup>
 
