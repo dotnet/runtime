@@ -278,7 +278,7 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
         pushd $source_directory/src/mono/wasm/
         make provision-wasm
         EMSDK_PATH = $source_directory/src/mono/wasm/emsdk
-        echo "EMSDK_PATH=$EMSDK_PATH"
+        popd
         # wasm aot needs some source code from dotnet\runtime repo
         rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj
         # copy wasm build drop to the location that aot build expects
