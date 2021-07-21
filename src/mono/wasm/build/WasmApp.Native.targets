@@ -265,11 +265,13 @@
 
   <Target Name="_WasmLinkDotNet" DependsOnTargets="_WasmLinkDotNetSelectComponents">
     <ItemGroup>
+      <EmccTotalMemory Condition="'$(EmccTotalMemory)' == ''">536870912</EmccTotalMemory>
+
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
 
-      <_EmccLDFlags Include="-s TOTAL_MEMORY=536870912" />
+      <_EmccLDFlags Include="-s TOTAL_MEMORY=$(EmccTotalMemory)" />
       <_EmccLDFlags Include="$(EmccExtraLDFlags)" />
     </ItemGroup>
 
