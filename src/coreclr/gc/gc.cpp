@@ -8551,19 +8551,21 @@ void gc_heap::get_card_table_element_layout (uint8_t* start, uint8_t* end, size_
     get_card_table_element_sizes(start, end, sizes);
 
     size_t alignment[total_bookkeeping_elements + 1];
-    alignment[card_table_element] = 1;
-    alignment[brick_table_element] = 2;
+    alignment[card_table_element] = sizeof (uint32_t);
+    alignment[brick_table_element] = sizeof (short);
 #ifdef CARD_BUNDLE
-    alignment[card_bundle_table_element] = 1;
+    alignment[card_bundle_table_element] = sizeof (uint32_t);
 #endif //CARD_BUNDLE
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     alignment[software_write_watch_table_element] = sizeof(size_t);
 #endif //FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     alignment[seg_mapping_table_element] = sizeof (uint8_t*);
+#ifdef BACKGROUND_GC
     // In order to avoid a dependency between commit_mark_array_by_range and this logic, it is easier to make sure
     // pages for mark array never overlaps with pages in the seg mapping table. That way commit_mark_array_by_range
     // will never commit a page that is already committed here for the seg mapping table.
     alignment[mark_array_element] = OS_PAGE_SIZE;
+#endif //BACKGROUND_GC
     // commit_mark_array_by_range extends the end pointer of the commit to the next page boundary, we better make sure it
     // is reserved
     alignment[total_bookkeeping_elements] = OS_PAGE_SIZE;
@@ -8974,7 +8976,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 
         {
             // mark array will be committed separately (per segment).
-            size_t commit_size = card_table_element_layout[mark_array_element];
+            size_t commit_size = card_table_element_layout[total_bookkeeping_elements - 1];
 
             if (!virtual_commit (mem, commit_size, gc_oh_num::none))
             {

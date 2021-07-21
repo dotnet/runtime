@@ -1196,7 +1196,9 @@ enum bookkeeping_element
     software_write_watch_table_element,
 #endif
     seg_mapping_table_element,
+#ifdef BACKGROUND_GC
     mark_array_element,
+#endif
     total_bookkeeping_elements
 };
 
