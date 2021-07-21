@@ -212,7 +212,7 @@ ep_provider_callback_data_queue_fini (EventPipeProviderCallbackDataQueue *provid
 
 EventPipeProviderCallbackData *
 ep_provider_callback_data_alloc (
-	const ep_char8_t *filter_data,
+	ep_char8_t *filter_data,
 	EventPipeCallback callback_function,
 	void *callback_data,
 	int64_t keywords,
@@ -224,7 +224,7 @@ ep_provider_callback_data_alloc (
 
 	ep_raise_error_if_nok (ep_provider_callback_data_init (
 		instance,
-		ep_rt_ut8_string_dup (filter_data),
+		ep_rt_utf8_string_dup (filter_data),
 		callback_function,
 		callback_data,
 		keywords,
@@ -263,7 +263,7 @@ ep_on_error:
 EventPipeProviderCallbackData *
 ep_provider_callback_data_init (
 	EventPipeProviderCallbackData *provider_callback_data,
-	const ep_char8_t *filter_data,
+	ep_char8_t *filter_data,
 	EventPipeCallback callback_function,
 	void *callback_data,
 	int64_t keywords,
