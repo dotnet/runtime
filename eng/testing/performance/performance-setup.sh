@@ -274,9 +274,11 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     wasm_dotnet_path=$payload_directory/dotnet-wasm
     mv $wasm_runtime_loc $wasm_dotnet_path
     if [[ "$wasmaot" == "true" ]]; then
-        # copy $(EMSDK_PATH) to the expect location in helix payload
+        # install EMSDK if $EMSDK_PATH is not Set
+        pushd $wasm_dotnet_path/src/mono/wasm/
+        make provision-wasm
+        EMSDK_PATH = $wasm_dotnet_path/src/mono/wasm/emsdk
         echo "EMSDK_PATH=$EMSDK_PATH"
-        rsync -a --progress $EMSDK_PATH/* $wasm_dotnet_path/src/mono/wasm/emsdk
         # wasm aot needs some source code from dotnet\runtime repo
         rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj
         # copy wasm build drop to the location that aot build expects
