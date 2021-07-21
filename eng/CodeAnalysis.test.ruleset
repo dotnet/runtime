@@ -172,7 +172,8 @@
     <Rule Id="CA2248" Action="None" />          <!-- Provide correct 'enum' argument to 'Enum.HasFlag' -->
     <Rule Id="CA2249" Action="None" />          <!-- Consider using 'string.Contains' instead of 'string.IndexOf' -->
     <Rule Id="CA2250" Action="None" />          <!-- Use 'ThrowIfCancellationRequested' -->
-	  <Rule Id="CA2251" Action="None" />          <!-- Use 'string.Equals' -->
+    <Rule Id="CA2251" Action="None" />          <!-- Use 'string.Equals' -->
+    <Rule Id="CA2252" Action="None" />          <!-- This API requires opting into preview features -->
     <Rule Id="CA2300" Action="None" />          <!-- Do not use insecure deserializer BinaryFormatter -->
     <Rule Id="CA2301" Action="None" />          <!-- Do not call BinaryFormatter.Deserialize without first setting BinaryFormatter.Binder -->
     <Rule Id="CA2302" Action="None" />          <!-- Ensure BinaryFormatter.Binder is set before calling BinaryFormatter.Deserialize -->

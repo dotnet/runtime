@@ -176,6 +176,7 @@
     <Rule Id="CA2249" Action="Warning" />       <!-- Consider using 'string.Contains' instead of 'string.IndexOf' -->
     <Rule Id="CA2250" Action="Warning" />       <!-- Use 'ThrowIfCancellationRequested' -->
     <Rule Id="CA2251" Action="Warning" />       <!-- Use 'string.Equals' -->
+    <Rule Id="CA2252" Action="None" />          <!-- This API requires opting into preview features -->
     <Rule Id="CA2300" Action="None" />          <!-- Do not use insecure deserializer BinaryFormatter -->
     <Rule Id="CA2301" Action="None" />          <!-- Do not call BinaryFormatter.Deserialize without first setting BinaryFormatter.Binder -->
     <Rule Id="CA2302" Action="None" />          <!-- Ensure BinaryFormatter.Binder is set before calling BinaryFormatter.Deserialize -->
