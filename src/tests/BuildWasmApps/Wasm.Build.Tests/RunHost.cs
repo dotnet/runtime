@@ -13,8 +13,8 @@ namespace Wasm.Build.Tests
         Chrome = 2,
         Safari = 4,
         Firefox = 8,
-        NodeJS = 16,
+        // NodeJS = 16,
 
-        All = V8 | Chrome | NodeJS//| Firefox//Safari
+        All = V8 | Chrome //| NodeJS//| Firefox//Safari
     }
 }

@@ -22,23 +22,16 @@ namespace Wasm.Build.Tests
         [BuildAndRun(host: RunHost.V8, aot: false, parameters: false)]
         [BuildAndRun(host: RunHost.V8, aot: false, parameters: true)]
         [BuildAndRun(host: RunHost.V8, aot: true,  parameters: false)]
-        [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: false)]
-        [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: true)]
-        [BuildAndRun(host: RunHost.NodeJS, aot: true,  parameters: false)]
+        // [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: false)]
+        // [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: true)]
+        // [BuildAndRun(host: RunHost.NodeJS, aot: true,  parameters: false)]
         public void NoOpRebuild(BuildArgs buildArgs, bool nativeRelink, RunHost host, string id)
         {
             string projectName = $"rebuild_{buildArgs.Config}_{buildArgs.AOT}";
             bool dotnetWasmFromRuntimePack = !nativeRelink && !buildArgs.AOT;
 
             buildArgs = buildArgs with { ProjectName = projectName };
-            
-            string buildNative = $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>";
-
-            string nodeArgs = "";
-            if (host == RunHost.NodeJS) {
-                nodeArgs = $"\n<ForNode>true</ForNode>\n<JSEngine>NodeJS</JSEngine>";
-            }
-            buildArgs = ExpandBuildArgs(buildArgs, $"{buildNative}{nodeArgs}");
+            buildArgs = ExpandBuildArgs(buildArgs, $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>");
 
             BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),

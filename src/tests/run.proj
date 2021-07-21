@@ -164,7 +164,7 @@ $(_XunitEpilog)
   </Target>
 
   <Target Name="BuildXunitWrapper">
-    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Restore;Build"/>
+    <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Restore;Build" />
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)Common/testgrouping.proj" />
