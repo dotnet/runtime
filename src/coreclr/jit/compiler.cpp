@@ -4510,48 +4510,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
-    class Validator : public GenTreeVisitor<Validator>
-    {
-    public:
-        enum
-        {
-            DoPreOrder = true,
-        };
-
-        Validator(Compiler* comp) : GenTreeVisitor<Validator>(comp)
-        {
-        }
-
-        void VisitStmt(Statement* stmt)
-        {
-            // m_compiler->gtDispStmt(stmt);
-            WalkTree(stmt->GetRootNodePointer(), nullptr);
-        }
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            GenTree* node = *use;
-            if (!node->IsLocal())
-                return WALK_CONTINUE;
-
-            LclVarDsc* dsc = m_compiler->lvaGetDesc(node->AsLclVarCommon());
-            if (!dsc->lvNormalizeOnLoad() || user->OperIs(GT_ADDR))
-                return WALK_CONTINUE;
-
-            assert(node->TypeGet() == dsc->TypeGet());
-            return WALK_CONTINUE;
-        }
-    };
-
-    Validator visitor(this);
-    for (BasicBlock* const block : Blocks())
-    {
-        for (Statement* const stmt : block->Statements())
-        {
-            visitor.VisitStmt(stmt);
-        }
-    }
-
     // If instrumenting, add block and class probes.
     //
     if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
