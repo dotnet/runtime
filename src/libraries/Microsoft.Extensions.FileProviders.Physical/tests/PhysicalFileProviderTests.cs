@@ -1525,21 +1525,22 @@ namespace Microsoft.Extensions.FileProviders
 
             using var provider = new PhysicalFileProvider(root.RootPath) { UsePollingFileWatcher = true, UseActivePolling = true };
             IChangeToken token = provider.Watch(useWildcard ? "*" : fileName);
-            Assert.False(token.HasChanged);
+
+            var tcs = new TaskCompletionSource<object>();
+            token.RegisterChangeCallback(_ => { tcs.TrySetResult(null); }, null);
 
             // Act
             await Task.Delay(200); // Wait a bit before writing again, see https://github.com/dotnet/runtime/issues/55951.
             File.WriteAllText(filePath, "v1.2");
-            await Task.Delay(GetTokenPollingInterval(token));
 
             // Assert
-            Assert.True(token.HasChanged, $"Current time: {DateTime.UtcNow:O} file LastWriteTime: {File.GetLastWriteTimeUtc(filePath):O}");
+            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)));
         }
 
         [Theory]
-        //[InlineData(false)]
+        [InlineData(false)]
         [InlineData(true)]
-        public async Task UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeleted(bool useWildcard)
+        public void UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeleted(bool useWildcard)
         {
             // Arrange
             using var root = new DisposableFileSystem();
@@ -1550,26 +1551,15 @@ namespace Microsoft.Extensions.FileProviders
             string filter = useWildcard ? "*" : fileName;
             using var provider = new PhysicalFileProvider(root.RootPath) { UsePollingFileWatcher = true, UseActivePolling = true };
             IChangeToken token = provider.Watch(filter);
-            Assert.False(token.HasChanged);
+
+            var tcs = new TaskCompletionSource<object>();
+            token.RegisterChangeCallback(_ => { tcs.TrySetResult(null); }, null);
 
             // Act
             File.Delete(filePath);
-            await Task.Delay(GetTokenPollingInterval(token));
 
             // Assert
-            Assert.True(token.HasChanged, $"Current time: {DateTime.UtcNow:O} file LastWriteTime: {File.GetLastWriteTimeUtc(filePath):O}");
-        }
-
-        private int GetTokenPollingInterval(IChangeToken changeToken)
-        {
-            TimeSpan pollingInterval = (changeToken as CompositeChangeToken).ChangeTokens[1] switch
-            {
-                PollingWildCardChangeToken wildcardChangeToken => wildcardChangeToken.PollingInterval,
-                PollingFileChangeToken => PollingFileChangeToken.PollingInterval,
-                _ => throw new InvalidOperationException()
-            };
-
-            return (int)pollingInterval.TotalMilliseconds;
+            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)));
         }
 
         [Fact]

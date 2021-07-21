@@ -28,15 +28,16 @@ namespace Microsoft.Extensions.FileProviders
 
             using var provider = new PhysicalFileProvider(rootOfLink.RootPath) { UsePollingFileWatcher = true, UseActivePolling = true };
             IChangeToken token = provider.Watch(useWildcard ? "*" : linkName);
-            Assert.False(token.HasChanged);
+
+            var tcs = new TaskCompletionSource();
+            token.RegisterChangeCallback(_ => { tcs.TrySetResult(); }, null);
 
             // Act
             await Task.Delay(200); // Wait a bit before writing again, see https://github.com/dotnet/runtime/issues/55951.
             File.WriteAllText(filePath, "v1.2");
-            await Task.Delay(GetTokenPollingInterval(token));
 
             // Assert
-            Assert.True(token.HasChanged, $"Current time: {DateTime.UtcNow:O} file LastWriteTime: {File.GetLastWriteTimeUtc(filePath):O}");
+            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)));
         }
 
         [Theory]
@@ -54,8 +55,11 @@ namespace Microsoft.Extensions.FileProviders
             using var provider = new PhysicalFileProvider(rootOfLink.RootPath) { UsePollingFileWatcher = true, UseActivePolling = true };
             IChangeToken token = provider.Watch(useWildcard ? "*" : linkName);
 
+            var tcs = new TaskCompletionSource();
+            token.RegisterChangeCallback(_ => { tcs.TrySetResult(); }, null);
+
             // Assert
-            Assert.False(token.HasChanged);
+            Assert.False(tcs.Task.Wait(TimeSpan.FromSeconds(30)));
         }
 
         [Theory]
@@ -86,21 +90,22 @@ namespace Microsoft.Extensions.FileProviders
             string filter = useWildcard ? "*" : linkName;
             using var provider = new PhysicalFileProvider(rootOfLink.RootPath) { UsePollingFileWatcher = true, UseActivePolling = true };
             IChangeToken token = provider.Watch(filter);
-            Assert.False(token.HasChanged);
+
+            var tcs = new TaskCompletionSource();
+            token.RegisterChangeCallback(_ => { tcs.TrySetResult(); }, null);
 
             // Act - Change link target to file 2.
             File.Delete(linkPath);
             File.CreateSymbolicLink(linkPath, file2Path);
-            await Task.Delay(GetTokenPollingInterval(token));
 
             // Assert - It should report the change regardless of the timestamp being older.
-            Assert.True(token.HasChanged, $"Current time: {DateTime.UtcNow:O} file 1 LastWriteTime: {File.GetLastWriteTimeUtc(file1Path):O} file 2 LastWriteTime: {File.GetLastWriteTimeUtc(file2Path):O}"); 
+            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)));
         }
 
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task UsePollingFileWatcher_UseActivePolling_HasChanged_SymbolicLink_TargetDeleted(bool useWildcard)
+        public void UsePollingFileWatcher_UseActivePolling_HasChanged_SymbolicLink_TargetDeleted(bool useWildcard)
         {
             // Arrange
             using var rootOfFile = new DisposableFileSystem();
@@ -116,14 +121,15 @@ namespace Microsoft.Extensions.FileProviders
             string filter = useWildcard ? "*" : linkName;
             using var provider = new PhysicalFileProvider(rootOfLink.RootPath) { UsePollingFileWatcher = true, UseActivePolling = true };
             IChangeToken token = provider.Watch(filter);
-            Assert.False(token.HasChanged);
+
+            var tcs = new TaskCompletionSource();
+            token.RegisterChangeCallback(_ => { tcs.TrySetResult(); }, null);
 
             // Act
             File.Delete(linkPath);
-            await Task.Delay(GetTokenPollingInterval(token));
 
             // Assert
-            Assert.True(token.HasChanged, $"Current time: {DateTime.UtcNow:O} file LastWriteTime: {File.GetLastWriteTimeUtc(filePath):O}");
+            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)));
         }
     }
 }
