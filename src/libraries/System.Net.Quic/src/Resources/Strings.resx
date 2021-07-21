@@ -155,6 +155,7 @@
   </data>
   <data name="net_quic_timeout" xml:space="preserve">
     <value>Connection timed out.</value>
+  </data>
   <data name="net_quic_ssl_option" xml:space="preserve">
     <value>The '{0}' is not supported by System.Net.Quic.</value>
   </data>
