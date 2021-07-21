@@ -8,6 +8,7 @@ namespace System.Drawing.Tests
     public class BrushTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56048", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SetNativeBrush_Brush_Success()
         {
             using (var brush = new SubBrush())
