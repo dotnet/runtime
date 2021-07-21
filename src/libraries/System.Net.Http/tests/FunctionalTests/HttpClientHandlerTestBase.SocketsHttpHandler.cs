@@ -50,6 +50,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
                 SetQuicImplementationProvider(socketsHttpHandler, quicImplementationProvider);
+                socketsHttpHandler.SslOptions.LocalCertificateSelectionCallback = null;
                 socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true;
             }
 
