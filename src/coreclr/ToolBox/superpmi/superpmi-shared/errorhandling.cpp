@@ -122,8 +122,8 @@ LONG FilterSuperPMIExceptions_CatchNonSuperPMIException(PEXCEPTION_POINTERS pExc
 }
 
 
-// This filter function executes the handler only for non-SuperPMI generated exceptions, otherwise it continues the
-// handler search. This allows for SuperPMI-thrown exceptions to pass through the JIT and be caught by the outer
+// This filter function executes the handler only for SuperPMI generated exceptions, otherwise it continues the
+// handler search. This allows for SuperPMI-thrown exceptions to be caught by the JIT and not be caught by the outer
 // SuperPMI handler.
 LONG FilterSuperPMIExceptions_CatchSuperPMIException(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
 {
@@ -195,10 +195,13 @@ void RunWithErrorExceptionCodeCaptureAndContinueImp(void* param, void (*function
     paramStruct.finallyFunction = finallyFunction;
 
 #ifdef HOST_UNIX
-    // We can't capture the exception code in as a PAL exceptions when thrown
-    // from crossgen2 on Linux as the jitinteface dll does not use the PAL. So 
+    // We can't capture the exception code as a PAL exceptions when the exception is
+    // thrown from crossgen2 on Linux as the jitinterface dll does not use the PAL. So
     // assume there will be some error, then set it to zero (no error)
     // if the called function doesn't throw.
+    //
+    // While not quite matching the behavior on Windows, for C++ exceptions this will
+    // be equivalent. (All C++ exceptions on Windows have the same exception code.)
     paramStruct.exceptionCode = 1;
 #endif // HOST_UNIX
 
