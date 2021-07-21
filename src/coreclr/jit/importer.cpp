@@ -20105,9 +20105,9 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
         // Directly substitute unaliased caller locals for args that cannot be modified
         //
         // Use the caller-supplied node if this is the first use.
-        op1               = argNode;
+        op1                = argNode;
         unsigned argLclNum = op1->AsLclVarCommon()->GetLclNum();
-        argInfo.argTmpNum = argLclNum;
+        argInfo.argTmpNum  = argLclNum;
 
         // Use an equivalent copy if this is the second or subsequent
         // use, or if we need to retype.
