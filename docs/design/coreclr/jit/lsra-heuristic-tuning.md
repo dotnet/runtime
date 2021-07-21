@@ -7,7 +7,7 @@
   * [Outcome](#outcome)
 - [Conclusion](#conclusion)
 
-## Background 
+## Background
 
 RyuJIT's implements [linear scan register allocation](https://en.wikipedia.org/wiki/Register_allocation#Linear_scan) (LSRA) algorithm to perform the register assignment of generated code. During register selection, LSRA has various heuristics (17 to be precise) to pick the best register candidate at a given point. Each register candidate falls in one of the two categories. Either they do not contain any variable value and so are "free" to get assigned to hold a variable value. Otherwise, they already hold some variable value and hence, are "busy". If one of the busy registers is selected during assignment, the value it currently holds needs to be first stored into memory (also called "spilling the variable") before they are assigned to something else. RyuJIT's LSRA has the heuristics (14 of them) to pick one of the free registers first, and if none found, has heuristics (4 of them) to select one of the busy registers. Busy register is selected depending on which register is cheaper to spill.
 
