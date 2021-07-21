@@ -1251,31 +1251,31 @@
 
                     <template tid="GCPerHeapHistory_V3">
                         <data name="ClrInstanceID" inType="win:UInt16" />
-     					<data name="FreeListAllocated" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="FreeListRejected" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="EndOfSegAllocated" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="CondemnedAllocated" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="PinnedAllocated" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="PinnedAllocatedAdvance" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="RunningFreeListEfficiency" inType="win:UInt32" />
-     					<data name="CondemnReasons0" inType="win:UInt32" />
-     					<data name="CondemnReasons1" inType="win:UInt32" />
-     					<data name="CompactMechanisms" inType="win:UInt32" />
-     					<data name="ExpandMechanisms" inType="win:UInt32" />
-     					<data name="HeapIndex" inType="win:UInt32" />
-     					<data name="ExtraGen0Commit" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="FreeListAllocated" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="FreeListRejected" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="EndOfSegAllocated" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="CondemnedAllocated" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="PinnedAllocated" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="PinnedAllocatedAdvance" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="RunningFreeListEfficiency" inType="win:UInt32" />
+                        <data name="CondemnReasons0" inType="win:UInt32" />
+                        <data name="CondemnReasons1" inType="win:UInt32" />
+                        <data name="CompactMechanisms" inType="win:UInt32" />
+                        <data name="ExpandMechanisms" inType="win:UInt32" />
+                        <data name="HeapIndex" inType="win:UInt32" />
+                        <data name="ExtraGen0Commit" inType="win:Pointer" outType="win:HexInt64" />
                         <data name="Count" inType="win:UInt32"    />
                         <struct name="Values"   count="Count"  >
-							<data name="SizeBefore" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="FreeListBefore" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="FreeObjBefore" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="SizeAfter" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="FreeListAfter" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="FreeObjAfter" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="In" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="PinnedSurv" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="NonePinnedSurv" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="NewAllocation" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="SizeBefore" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="FreeListBefore" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="FreeObjBefore" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="SizeAfter" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="FreeListAfter" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="FreeObjAfter" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="In" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="PinnedSurv" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="NonePinnedSurv" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="NewAllocation" inType="win:Pointer" outType="win:HexInt64" />
                         </struct>
                         <UserData>
                             <GCPerHeapHistory_V3 xmlns="myNs">
@@ -1368,7 +1368,7 @@
                         <data name="CondemnReasons1" inType="win:UInt32" />
                         <data name="Count" inType="win:UInt32"  />
                         <struct name="Values"   count="Count"  >
-							<data name="Time" inType="win:UInt32" />
+                            <data name="Time" inType="win:UInt32" />
                         </struct>
 
                         <UserData>
@@ -1393,11 +1393,11 @@
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="Count" inType="win:UInt16"  />
                         <struct name="Values"   count="Count"  >
-							<data name="TimePlan" inType="win:UInt32" />
-							<data name="TimeCompact" inType="win:UInt32" />
-							<data name="TimeRelocate" inType="win:UInt32" />
-							<data name="TotalRefs" inType="win:Pointer" />
-							<data name="ZeroRefs" inType="win:Pointer" />
+                            <data name="TimePlan" inType="win:UInt32" />
+                            <data name="TimeCompact" inType="win:UInt32" />
+                            <data name="TimeRelocate" inType="win:UInt32" />
+                            <data name="TotalRefs" inType="win:Pointer" />
+                            <data name="ZeroRefs" inType="win:Pointer" />
                         </struct>
 
                         <UserData>
@@ -1414,7 +1414,9 @@
                         <data name="TotalSize" inType="win:UInt64" />
                         <data name="Count" inType="win:UInt16"  />
                         <struct name="Values"   count="Count"  >
-							<data name="RecordedCount" inType="win:UInt32" />
+                            <data name="Index" inType="win:UInt16" />
+                            <data name="Count" inType="win:UInt32" />
+                            <data name="Size" inType="win:Pointer" outType="win:HexInt64" /> 
                         </struct>
 
                         <UserData>
@@ -5154,7 +5156,7 @@
                     <keyword name="PerfTrackPrivateKeyword" mask="0x20000000"
                       message="$(string.PrivatePublisher.PerfTrackKeywordMessage)" symbol="CLR_PERFTRACK_PRIVATE_KEYWORD"/>
 
-	            <!-- NOTE: This is not used anymore. They are kept around for backcompat with traces that might have already contained these -->
+                <!-- NOTE: This is not used anymore. They are kept around for backcompat with traces that might have already contained these -->
                     <keyword name="DynamicTypeUsageKeyword" mask="0x00000020"
                              message="$(string.PrivatePublisher.DynamicTypeUsageMessage)" symbol="CLR_PRIVATE_DYNAMICTYPEUSAGE_KEYWORD"/>
                 </keywords>
@@ -8510,7 +8512,7 @@
                 <string id="RuntimePublisher.ExecutionCheckpointTaskMessage" value="ExecutionCheckpoint" />
                 <string id="RuntimePublisher.ProfilerTaskMessage" value="Profiler" />
 
-				<string id="RundownPublisher.GCTaskMessage" value="GC" />
+                <string id="RundownPublisher.GCTaskMessage" value="GC" />
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
                 <string id="RundownPublisher.MethodTaskMessage" value="Method" />
                 <string id="RundownPublisher.LoaderTaskMessage" value="Loader" />

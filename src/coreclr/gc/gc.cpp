@@ -2739,7 +2739,7 @@ size_t gc_heap::saved_pinned_plug_index = 0;
 #endif //DOUBLY_LINKED_FL
 
 #ifdef FEATURE_EVENT_TRACE
-uint32_t    gc_heap::bucket_info[NUM_GEN2_ALIST];
+etw_bucket_info gc_heap::bucket_info[NUM_GEN2_ALIST];
 #endif //FEATURE_EVENT_TRACE
 
 dynamic_data gc_heap::dynamic_data_table [total_generation_count];
@@ -2954,6 +2954,12 @@ void gc_history_global::print()
 #endif //DT_LOG
 }
 
+uint32_t limit_time_to_uint32 (uint64_t time)
+{
+    time = min (time, UINT32_MAX);
+    return (uint32_t)time;
+}
+
 void gc_heap::fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per_heap, int heap_num)
 {
     maxgen_size_increase* maxgen_size_info = &(current_gc_data_per_heap->maxgen_size_info);
@@ -2998,7 +3004,7 @@ void gc_heap::fire_pevents()
     uint32_t* time_info_32 = (uint32_t*)time_info;
     for (uint32_t i = 0; i < count_time_info; i++)
     {
-        time_info_32[i] = ((time_info[i] > UINT32_MAX) ? UINT32_MAX : (uint32_t)time_info[i]);
+        time_info_32[i] = limit_time_to_uint32 (time_info[i]);
     }
 
     FIRE_EVENT(GCGlobalHeapHistory_V4,
@@ -14221,7 +14227,7 @@ void allocator::thread_sip_fl (heap_segment* region)
 #endif //USE_REGIONS
 
 #ifdef FEATURE_EVENT_TRACE
-uint16_t allocator::count_largest_items (uint32_t* bucket_info, 
+uint16_t allocator::count_largest_items (etw_bucket_info* bucket_info, 
                                          size_t max_size, 
                                          size_t max_item_count,
                                          size_t* recorded_fl_info_size)
@@ -14230,9 +14236,11 @@ uint16_t allocator::count_largest_items (uint32_t* bucket_info,
 
     size_t size_counted_total = 0;
     size_t items_counted_total = 0;
+    uint16_t bucket_info_index = 0;
     for (int i = (num_buckets - 1); i >= 0; i--)
     {
         uint32_t items_counted = 0;
+        size_t size_counted = 0;
         uint8_t* free_item = alloc_list_head_of ((unsigned int)i);
         while (free_item)
         {
@@ -14240,23 +14248,28 @@ uint16_t allocator::count_largest_items (uint32_t* bucket_info,
 
             size_t free_item_size = Align (size (free_item));
             size_counted_total += free_item_size;
+            size_counted += free_item_size;
             items_counted_total++;
             items_counted++;
 
             if ((size_counted_total > max_size) || (items_counted > max_item_count))
             {
-                bucket_info[i] = items_counted;
+                bucket_info[bucket_info_index++].set ((uint16_t)i, items_counted, size_counted);
                 *recorded_fl_info_size = size_counted_total;
-                return (uint16_t)(num_buckets - i);
+                return bucket_info_index;
             }
 
             free_item = free_list_slot (free_item);
         }
-        bucket_info[i] = items_counted;
+
+        if (items_counted)
+        {
+            bucket_info[bucket_info_index++].set ((uint16_t)i, items_counted, size_counted);
+        }
     }
 
     *recorded_fl_info_size = size_counted_total;
-    return num_buckets;
+    return bucket_info_index;
 }
 #endif //FEATURE_EVENT_TRACE
 
@@ -23782,8 +23795,7 @@ void gc_heap::record_mark_time (uint64_t& mark_time,
     if (informational_event_enabled_p)
     {
         current_mark_time = GetHighPrecisionTimeStamp();
-        mark_time = (uint32_t)(((current_mark_time - last_mark_time) > UINT32_MAX) ? 
-                               UINT32_MAX : (current_mark_time - last_mark_time));
+        mark_time = limit_time_to_uint32 (current_mark_time - last_mark_time);
         dprintf (3, ("%I64d - %I64d = %I64d",
             current_mark_time, last_mark_time, (current_mark_time - last_mark_time)));
         last_mark_time = current_mark_time;
@@ -25502,8 +25514,7 @@ BOOL gc_heap::plan_loh()
     if (informational_event_enabled_p)
     {
         end_time = GetHighPrecisionTimeStamp();
-        loh_compact_info[heap_number].time_plan = (uint32_t)(((end_time - start_time) > UINT32_MAX) ? 
-                                                              UINT32_MAX : (end_time - start_time));
+        loh_compact_info[heap_number].time_plan = limit_time_to_uint32 (end_time - start_time);
     }
 #endif //FEATURE_EVENT_TRACE
 
@@ -25644,8 +25655,7 @@ void gc_heap::compact_loh()
     if (informational_event_enabled_p)
     {
         end_time = GetHighPrecisionTimeStamp();
-        loh_compact_info[heap_number].time_compact = (uint32_t)(((end_time - start_time) > UINT32_MAX) ? 
-                                                                 UINT32_MAX : (end_time - start_time));
+        loh_compact_info[heap_number].time_compact = limit_time_to_uint32 (end_time - start_time);
     }
 #endif //FEATURE_EVENT_TRACE
 
@@ -25742,9 +25752,7 @@ void gc_heap::relocate_in_loh_compact()
     if (informational_event_enabled_p)
     {
         end_time = GetHighPrecisionTimeStamp();
-        loh_compact_info[heap_number].time_relocate = (uint32_t)(((end_time - start_time) > UINT32_MAX) ? 
-                                                                  UINT32_MAX : (end_time - start_time));
-
+        loh_compact_info[heap_number].time_relocate = limit_time_to_uint32 (end_time - start_time);
         loh_compact_info[heap_number].total_refs = total_refs;
         loh_compact_info[heap_number].zero_refs = zero_refs;
     }
@@ -26413,7 +26421,8 @@ void gc_heap::init_bucket_info()
 void gc_heap::add_plug_in_condemned_info (generation* gen, size_t plug_size)
 {
     uint32_t bucket_index = generation_allocator (gen)->first_suitable_bucket (plug_size);
-    (bucket_info[bucket_index])++;
+    (bucket_info[bucket_index].count)++;
+    bucket_info[bucket_index].size += plug_size;
 }
 #endif //FEATURE_EVENT_TRACE
 
@@ -27467,43 +27476,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
     print_free_and_plug ("AP");
 
-#ifdef FEATURE_EVENT_TRACE
-    if (record_fl_info_p)
-    {
-        // For plugs allocated in condemned we keep track of each one so fire an event 
-        // that has the complete info.
-        FIRE_EVENT(GCFitBucketInfo,
-                (uint16_t)etw_bucket_kind::plugs_in_condemned,
-                recorded_fl_info_size,
-                NUM_GEN2_ALIST,
-                (uint32_t)(sizeof (uint32_t)),
-                (void *)bucket_info);
-        init_bucket_info();
-        assert (condemned_gen_number == (max_generation - 1));
-
-        // We want to get an idea of the sizes of free items in the top 25% of the free list
-        // for gen2 (to be accurate - we stop as soon as the size we count exceeds 25%. This 
-        // is just so that if we have a really big free item we will still count that one).
-        // The idea is we want to see if they all in a few big ones or many smaller ones? 
-        // To limit the amount of time we spend counting, we stop till we have counted the 
-        // top percentage, or exceeded max_etw_item_count items.
-        size_t max_size_to_count = generation_free_list_space (older_gen) / 4;
-        uint16_t num_buckets_counted = 
-            generation_allocator (older_gen)->count_largest_items (bucket_info, 
-                                                                   max_size_to_count, 
-                                                                   max_etw_item_count,
-                                                                   &recorded_fl_info_size);
-        // For free items we don't keep all this info so we calculate it as needed and only
-        // calculate enough for the instrumentation purpose.
-        FIRE_EVENT(GCFitBucketInfo,
-                (uint16_t)etw_bucket_kind::largest_fl_items,
-                recorded_fl_info_size,
-                num_buckets_counted,
-                (uint32_t)(sizeof (uint32_t)),
-                (void *)bucket_info);
-    }
-#endif //FEATURE_EVENT_TRACE
-
     {
 #ifdef SIMPLE_DPRINTF
         for (int gen_idx = 0; gen_idx <= max_generation; gen_idx++)
@@ -27967,6 +27939,65 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
             // Fix the allocation area of the older generation
             fix_older_allocation_area (older_gen);
+
+#ifdef FEATURE_EVENT_TRACE
+            if (record_fl_info_p)
+            {
+                // For plugs allocated in condemned we kept track of each one but only fire the
+                // event for buckets with non zero items.
+                uint16_t non_zero_buckets = 0;
+                for (uint16_t bucket_index = 0; bucket_index < NUM_GEN2_ALIST; bucket_index++)
+                {
+                    if (bucket_info[bucket_index].count != 0)
+                    {
+                        if (bucket_index != non_zero_buckets)
+                        {
+                            bucket_info[non_zero_buckets].set (bucket_index, 
+                                                            bucket_info[bucket_index].count,
+                                                            bucket_info[bucket_index].size);
+                        }
+                        else
+                        {
+                            bucket_info[bucket_index].index = bucket_index;
+                        }
+                        non_zero_buckets++;
+                    }
+                }
+
+                if (non_zero_buckets)
+                {
+                    FIRE_EVENT(GCFitBucketInfo,
+                            (uint16_t)etw_bucket_kind::plugs_in_condemned,
+                            recorded_fl_info_size,
+                            non_zero_buckets,
+                            (uint32_t)(sizeof (etw_bucket_info)),
+                            (void *)bucket_info);
+                    init_bucket_info();
+                }
+
+                // We want to get an idea of the sizes of free items in the top 25% of the free list
+                // for gen2 (to be accurate - we stop as soon as the size we count exceeds 25%. This 
+                // is just so that if we have a really big free item we will still count that one).
+                // The idea is we want to see if they all in a few big ones or many smaller ones? 
+                // To limit the amount of time we spend counting, we stop till we have counted the 
+                // top percentage, or exceeded max_etw_item_count items.
+                size_t max_size_to_count = generation_free_list_space (older_gen) / 4;
+                non_zero_buckets = 
+                    generation_allocator (older_gen)->count_largest_items (bucket_info, 
+                                                                        max_size_to_count, 
+                                                                        max_etw_item_count,
+                                                                        &recorded_fl_info_size);
+                if (non_zero_buckets)
+                {
+                    FIRE_EVENT(GCFitBucketInfo,
+                            (uint16_t)etw_bucket_kind::largest_fl_items,
+                            recorded_fl_info_size,
+                            non_zero_buckets,
+                            (uint32_t)(sizeof (etw_bucket_info)),
+                            (void *)bucket_info);
+                }
+            }
+#endif //FEATURE_EVENT_TRACE
         }
 #ifndef USE_REGIONS
         assert (generation_allocation_segment (consing_gen) ==

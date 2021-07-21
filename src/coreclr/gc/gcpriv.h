@@ -646,6 +646,24 @@ public:
     }
 };
 
+#ifdef FEATURE_EVENT_TRACE
+struct etw_bucket_info
+{
+    uint16_t index;
+    uint32_t count;
+    size_t size;
+
+    etw_bucket_info() {}
+
+    void set (uint16_t _index, uint32_t _count, size_t _size)
+    {
+        index = _index;
+        count = _count;
+        size = _size;
+    }
+};
+#endif //FEATURE_EVENT_TRACE
+
 class allocator
 {
     int first_bucket_bits;
@@ -766,7 +784,7 @@ public:
 #endif //USE_REGIONS
 
 #ifdef FEATURE_EVENT_TRACE
-    uint16_t count_largest_items (uint32_t* bucket_info, 
+    uint16_t count_largest_items (etw_bucket_info* bucket_info, 
                                   size_t max_size,
                                   size_t max_item_count,
                                   size_t* recorded_fl_info_size);
@@ -4512,7 +4530,7 @@ protected:
     // items or plugs that we had to allocate in condemned. We only fire
     // these events on verbose level and stop at max_etw_item_count items.
     PER_HEAP
-    uint32_t bucket_info[NUM_GEN2_ALIST];
+    etw_bucket_info bucket_info[NUM_GEN2_ALIST];
     
     PER_HEAP
     void init_bucket_info();
