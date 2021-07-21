@@ -85,6 +85,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task SendMoreThanStreamLimitRequests_Succeeds(int streamLimit)
         {
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/55957")]
+            if (this.UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
             using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options(){ MaxBidirectionalStreams = streamLimit });
 
             Task serverTask = Task.Run(async () =>
