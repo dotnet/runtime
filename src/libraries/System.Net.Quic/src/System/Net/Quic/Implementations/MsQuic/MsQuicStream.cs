@@ -607,7 +607,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             }
 
-            // TODO do anything to stop writes?
             using CancellationTokenRegistration registration = cancellationToken.UnsafeRegister(static (s, token) =>
             {
                 var state = (State)s!;
@@ -623,7 +622,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (shouldComplete)
                 {
-                    state.ShutdownWriteCompletionSource.SetException(
+                    state.ShutdownCompletionSource.SetException(
                         ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException("Wait for shutdown was canceled", token)));
                 }
             }, _state);
@@ -651,7 +650,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
             try
             {
-                int readLength = ReadAsync(new Memory<byte>(rentedBuffer, 0, buffer.Length)).AsTask().GetAwaiter().GetResult();
+                Task<int> t = ReadAsync(new Memory<byte>(rentedBuffer, 0, buffer.Length)).AsTask();
+                ((IAsyncResult)t).AsyncWaitHandle.WaitOne();
+                int readLength = t.GetAwaiter().GetResult();
                 rentedBuffer.AsSpan(0, readLength).CopyTo(buffer);
                 return readLength;
             }
@@ -666,7 +667,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             ThrowIfDisposed();
 
             // TODO: optimize this.
-            WriteAsync(buffer.ToArray()).AsTask().GetAwaiter().GetResult();
+            Task t = WriteAsync(buffer.ToArray()).AsTask();
+            ((IAsyncResult)t).AsyncWaitHandle.WaitOne();
+            t.GetAwaiter().GetResult();
         }
 
         // MsQuic doesn't support explicit flushing
@@ -715,6 +718,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             bool callShutdown = false;
             bool abortRead = false;
+            bool completeRead = false;
             bool releaseHandles = false;
             lock (_state)
             {
@@ -723,9 +727,13 @@ namespace System.Net.Quic.Implementations.MsQuic
                     callShutdown = true;
                 }
 
-                if (_state.ReadState < ReadState.ReadsCompleted)
+                // We can enter Aborted state from both AbortRead call (aborts on the wire) and a Cancellation callback (only changes state)
+                // We need to ensure read is aborted on the wire here. We let msquic handle a second call to abort as a no-op
+                if (_state.ReadState < ReadState.ReadsCompleted || _state.ReadState == ReadState.Aborted)
                 {
                     abortRead = true;
+                    completeRead = _state.ReadState == ReadState.PendingRead;
+                    _state.Stream = null;
                     _state.ReadState = ReadState.Aborted;
                 }
 
@@ -757,6 +765,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.ABORT_RECEIVE, 0xffffffff);
                 } catch (ObjectDisposedException) { };
+            }
+
+            if (completeRead)
+            {
+                _state.ReceiveResettableCompletionSource.CompleteException(
+                    ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException("Read was canceled")));
             }
 
             if (releaseHandles)
@@ -940,7 +954,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     shouldComplete = true;
                 }
                 state.SendState = SendState.Aborted;
-                state.SendErrorCode = (long)evt.Data.PeerSendAborted.ErrorCode;
+                state.SendErrorCode = (long)evt.Data.PeerReceiveAborted.ErrorCode;
             }
 
             if (shouldComplete)
