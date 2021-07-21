@@ -979,8 +979,6 @@ g_rgWriteBarrierDescriptors:
 
     .global g_rgWriteBarrierDescriptors
 
-    .text
-
 // ------------------------------------------------------------------
 // __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
     LEAF_ENTRY JIT_WriteBarrier_Callable
@@ -990,6 +988,7 @@ g_rgWriteBarrierDescriptors:
 1:
     add     r2, pc
     ldr     pc, [r2]
+
     LEAF_END JIT_WriteBarrier_Callable
 
 #ifdef FEATURE_READYTORUN

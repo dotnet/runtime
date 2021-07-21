@@ -24,11 +24,6 @@ CC=
 CXX=
 LDFLAGS=
 
-#    if [[ "$targetOS" == "Linux" && "$__DistroRid" != "linux-musl-"* ]]; then
-        # When building on Linux, use the LLD linker
-#        cmakeArgs="-DCMAKE_EXE_LINKER_FLAGS_INIT=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS_INIT=-fuse-ld=lld $cmakeArgs"
-#    fi
-
 if [[ "$compiler" == "gcc" ]]; then cxxCompiler="g++"; fi
 
 check_version_exists() {

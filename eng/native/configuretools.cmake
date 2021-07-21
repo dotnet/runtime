@@ -64,7 +64,6 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
 endif()
 
 if (NOT CLR_CMAKE_HOST_WIN32)
-
   # detect linker
   separate_arguments(ldVersion UNIX_COMMAND "${CMAKE_C_COMPILER} ${CMAKE_SHARED_LINKER_FLAGS} -Wl,--version")
   execute_process(COMMAND ${ldVersion}
@@ -80,5 +79,4 @@ if (NOT CLR_CMAKE_HOST_WIN32)
   else(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
     set(LD_OSX 1)
   endif()
-
 endif()
