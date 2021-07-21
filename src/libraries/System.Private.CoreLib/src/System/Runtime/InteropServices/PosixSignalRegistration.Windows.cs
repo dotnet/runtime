@@ -6,59 +6,51 @@ using System.IO;
 
 namespace System.Runtime.InteropServices
 {
-    public sealed unsafe partial class PosixSignalRegistration
+    public sealed partial class PosixSignalRegistration
     {
-        private static readonly HashSet<Token> s_handlers = new();
+        private static readonly HashSet<Token> s_registrations = new();
 
-        private Token? _token;
-
-        private PosixSignalRegistration(Token token) => _token = token;
-
-        private static object SyncObj => s_handlers;
-
-        public static partial PosixSignalRegistration Create(PosixSignal signal, Action<PosixSignalContext> handler)
+        private static unsafe PosixSignalRegistration Register(PosixSignal signal, Action<PosixSignalContext> handler)
         {
-            if (handler is null)
+            switch (signal)
             {
-                throw new ArgumentNullException(nameof(handler));
+                case PosixSignal.SIGINT:
+                case PosixSignal.SIGQUIT:
+                case PosixSignal.SIGTERM:
+                case PosixSignal.SIGHUP:
+                    break;
+
+                default:
+                    throw new PlatformNotSupportedException();
             }
 
-            lock (SyncObj)
+            var token = new Token(signal, handler);
+            var registration = new PosixSignalRegistration(token);
+
+            lock (s_registrations)
             {
-                switch (signal)
-                {
-                    case PosixSignal.SIGINT:
-                    case PosixSignal.SIGQUIT:
-                    case PosixSignal.SIGTERM:
-                    case PosixSignal.SIGHUP:
-                        break;
-
-                    default:
-                        throw new PlatformNotSupportedException();
-                }
-
-                if (s_handlers.Count == 0 &&
+                if (s_registrations.Count == 0 &&
                     !Interop.Kernel32.SetConsoleCtrlHandler(&HandlerRoutine, Add: true))
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
 
-                var token = new Token(signal, handler);
-                s_handlers.Add(token);
-                return new PosixSignalRegistration(token);
+                s_registrations.Add(token);
             }
+
+            return registration;
         }
 
-        public partial void Dispose()
+        private unsafe void Unregister()
         {
-            lock (SyncObj)
+            lock (s_registrations)
             {
                 if (_token is Token token)
                 {
                     _token = null;
 
-                    s_handlers.Remove(token);
-                    if (s_handlers.Count == 0 &&
+                    s_registrations.Remove(token);
+                    if (s_registrations.Count == 0 &&
                         !Interop.Kernel32.SetConsoleCtrlHandler(&HandlerRoutine, Add: false))
                     {
                         throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -94,9 +86,9 @@ namespace System.Runtime.InteropServices
             }
 
             List<Token>? tokens = null;
-            lock (SyncObj)
+            lock (s_registrations)
             {
-                foreach (Token token in s_handlers)
+                foreach (Token token in s_registrations)
                 {
                     if (token.Signal == signal)
                     {
@@ -117,18 +109,6 @@ namespace System.Runtime.InteropServices
             }
 
             return context.Cancel ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-        }
-
-        private sealed class Token
-        {
-            public Token(PosixSignal signal, Action<PosixSignalContext> handler)
-            {
-                Signal = signal;
-                Handler = handler;
-            }
-
-            public PosixSignal Signal { get; }
-            public Action<PosixSignalContext> Handler { get; }
         }
     }
 }

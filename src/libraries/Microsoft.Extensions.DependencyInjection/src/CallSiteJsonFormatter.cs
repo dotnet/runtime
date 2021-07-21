@@ -183,7 +183,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
                 else
                 {
-                    Builder.AppendFormat( "null");
+                    Builder.Append( "null");
                 }
             }
 

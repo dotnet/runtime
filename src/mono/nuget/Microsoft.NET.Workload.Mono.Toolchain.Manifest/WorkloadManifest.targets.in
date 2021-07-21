@@ -100,7 +100,7 @@
         android-x64;
         android-x86;
         " />
-      
+
       <KnownRuntimePack Remove="Microsoft.NETCore.App" />
       <KnownRuntimePack Include="Microsoft.NETCore.App"
                         TargetFramework="net6.0"

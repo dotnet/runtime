@@ -36,7 +36,7 @@ namespace System.Net.Mime
 
         private void SetType(MimeMultiPartType type)
         {
-            ContentType.MediaType = "multipart" + "/" + type.ToString().ToLowerInvariant();
+            ContentType.MediaType = "multipart/" + type.ToString().ToLowerInvariant();
             ContentType.Boundary = GetNextBoundary();
         }
 
@@ -249,10 +249,7 @@ namespace System.Net.Mime
         internal string GetNextBoundary()
         {
             int b = Interlocked.Increment(ref s_boundary) - 1;
-            string boundaryString = "--boundary_" + b.ToString(CultureInfo.InvariantCulture) + "_" + Guid.NewGuid().ToString(null, CultureInfo.InvariantCulture);
-
-
-            return boundaryString;
+            return $"--boundary_{(uint)b}_{Guid.NewGuid()}";
         }
     }
 }

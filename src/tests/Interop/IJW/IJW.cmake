@@ -22,6 +22,11 @@ if (CLR_CMAKE_HOST_WIN32)
     string(REPLACE "/guard:cf" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   endif()
 
+  # IJW isn't compatible with EHCONT, which requires CFG
+  if(CMAKE_CXX_FLAGS MATCHES "/guard:ehcont")
+    string(REPLACE "/guard:ehcont" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  endif()
+
   # IJW isn't compatible with GR-
   if(CMAKE_CXX_FLAGS MATCHES "/GR-")
     string(REPLACE "/GR-" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")

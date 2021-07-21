@@ -3458,9 +3458,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				 * every time based on the signature.
 				 */
 				if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-					WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-					if (info) {
-						MonoMethod *pinvoke_method = info->d.managed_to_native.method;
+					MonoMethod *pinvoke_method = mono_marshal_method_from_wrapper (method);
+					if (pinvoke_method) {
 						imethod = mono_interp_get_imethod (pinvoke_method, error);
 						return_val_if_nok (error, FALSE);
 					}
@@ -9758,8 +9757,10 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 	jit_mm_lock (jit_mm);
-	if (!g_hash_table_lookup (jit_mm->seq_points, imethod->method))
-		g_hash_table_insert (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
+	gpointer seq_points = g_hash_table_lookup (jit_mm->seq_points, imethod->method);
+	if (!seq_points || seq_points != imethod->jinfo->seq_points)
+		g_hash_table_replace (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
+
 	jit_mm_unlock (jit_mm);
 
 	// FIXME: Add a different callback ?

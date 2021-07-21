@@ -504,7 +504,7 @@ namespace System.Data
 
         internal void CheckCanRemoveParentRow(DataRow row)
         {
-            Debug.Assert(Table?.DataSet != null, "Relation " + ConstraintName + " isn't part of a DataSet, so this check shouldn't be happening.");
+            Debug.Assert(Table?.DataSet != null, $"Relation {ConstraintName} isn't part of a DataSet, so this check shouldn't be happening.");
             if (!Table.DataSet.EnforceConstraints)
             {
                 return;
@@ -517,7 +517,7 @@ namespace System.Data
 
         internal void CheckCascade(DataRow row, DataRowAction action)
         {
-            Debug.Assert(Table?.DataSet != null, "ForeignKeyConstraint " + ConstraintName + " isn't part of a DataSet, so this check shouldn't be happening.");
+            Debug.Assert(Table?.DataSet != null, $"ForeignKeyConstraint {ConstraintName} isn't part of a DataSet, so this check shouldn't be happening.");
 
             if (row._inCascade)
             {

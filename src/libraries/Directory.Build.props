@@ -163,6 +163,13 @@
     <MonoEnvOptions Condition="'$(MonoEnvOptions)' == '' and '$(TargetsMobile)' != 'true' and '$(MonoForceInterpreter)' == 'true'">--interpreter</MonoEnvOptions>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+    <SdkPathForWorkloadTesting Condition="'$(SdkPathForWorkloadTesting)' == ''">$(ArtifactsBinDir)dotnet-workload\</SdkPathForWorkloadTesting>
+    <SdkPathForWorkloadTesting>$([MSBuild]::NormalizeDirectory($(SdkPathForWorkloadTesting)))</SdkPathForWorkloadTesting>
+
+    <SdkForWorkloadTestingStampPath>$(SdkPathForWorkloadTesting)version-$(SdkVersionForWorkloadTesting).stamp</SdkForWorkloadTestingStampPath>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props" Condition="'$(EnableTestSupport)' == 'true'" />
 
   <!-- Use msbuild path functions as that property is used in bash scripts. -->

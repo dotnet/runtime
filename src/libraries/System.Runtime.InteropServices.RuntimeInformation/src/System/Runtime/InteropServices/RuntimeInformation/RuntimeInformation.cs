@@ -17,19 +17,16 @@ namespace System.Runtime.InteropServices
             {
                 if (s_frameworkDescription == null)
                 {
-                    string? versionString = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+                    ReadOnlySpan<char> versionString = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
                     // Strip the git hash if there is one
-                    if (versionString != null)
+                    int plusIndex = versionString.IndexOf('+');
+                    if (plusIndex != -1)
                     {
-                        int plusIndex = versionString.IndexOf('+');
-                        if (plusIndex != -1)
-                        {
-                            versionString = versionString.Substring(0, plusIndex);
-                        }
+                        versionString = versionString.Slice(0, plusIndex);
                     }
 
-                    s_frameworkDescription = !string.IsNullOrWhiteSpace(versionString) ? $"{FrameworkName} {versionString}" : FrameworkName;
+                    s_frameworkDescription = !versionString.Trim().IsEmpty ? $"{FrameworkName} {versionString}" : FrameworkName;
                 }
 
                 return s_frameworkDescription;

@@ -22,14 +22,6 @@
              Link="Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoGetObjectContext.cs"
              Link="Common\Interop\Windows\Ole32\Interop.CoGetObjectContext.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoMarshalInterface.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.CoMarshalInterface.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoUnmarshalInterface.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.CoUnmarshalInterface.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CreateStreamOnHGlobal.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.CreateStreamOnHGlobal.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.GetHGlobalFromStream.cs"
-             Link="Common\Interop\Windows\Ole32\Interop.GetHGlobalFromStream.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
     <Compile Include="System\Management\ManagementBaseObject.cs" />

@@ -226,8 +226,7 @@ namespace System.Transactions
                                 temp = new EnlistmentTraceIdentifier(
                                     Guid.Empty,
                                     new TransactionTraceIdentifier(
-                                        InternalTransaction.InstanceIdentifier +
-                                            Convert.ToString(Interlocked.Increment(ref InternalTransaction._nextHash), CultureInfo.InvariantCulture),
+                                        string.Create(CultureInfo.InvariantCulture, $"{InternalTransaction.InstanceIdentifier}{Interlocked.Increment(ref InternalTransaction._nextHash)}"),
                                         0),
                                     _enlistmentId);
                             }

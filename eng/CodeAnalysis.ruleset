@@ -176,6 +176,7 @@
     <Rule Id="CA2249" Action="Warning" />       <!-- Consider using 'string.Contains' instead of 'string.IndexOf' -->
     <Rule Id="CA2250" Action="Warning" />       <!-- Use 'ThrowIfCancellationRequested' -->
     <Rule Id="CA2251" Action="Warning" />       <!-- Use 'string.Equals' -->
+    <Rule Id="CA2252" Action="None" />          <!-- This API requires opting into preview features -->
     <Rule Id="CA2300" Action="None" />          <!-- Do not use insecure deserializer BinaryFormatter -->
     <Rule Id="CA2301" Action="None" />          <!-- Do not call BinaryFormatter.Deserialize without first setting BinaryFormatter.Binder -->
     <Rule Id="CA2302" Action="None" />          <!-- Ensure BinaryFormatter.Binder is set before calling BinaryFormatter.Deserialize -->
@@ -478,9 +479,6 @@
     <Rule Id="IDE0064" Action="Hidden" />       <!-- MakeStructFieldsWritable -->
     <Rule Id="IDE0065" Action="Hidden" />       <!-- MoveMisplacedUsingDirectives -->
     <Rule Id="IDE0066" Action="Hidden" />       <!-- ConvertSwitchStatementToExpression -->
-    <Rule Id="IDE0067" Action="Hidden" />       <!-- DisposeObjectsBeforeLosingScope -->
-    <Rule Id="IDE0068" Action="Hidden" />       <!-- UseRecommendedDisposePattern -->
-    <Rule Id="IDE0069" Action="Hidden" />       <!-- DisposableFieldsShouldBeDisposed -->
     <Rule Id="IDE0070" Action="Hidden" />       <!-- UseSystemHashCode -->
     <Rule Id="IDE0071" Action="Hidden" />       <!-- SimplifyInterpolation -->
     <Rule Id="IDE0072" Action="Hidden" />       <!-- PopulateSwitchExpression -->
@@ -501,6 +499,8 @@
     <Rule Id="IDE0110" Action="Hidden" />       <!-- RemoveUnnecessaryDiscard -->
     <Rule Id="IDE0120" Action="Hidden" />       <!-- SimplifyLINQExpression -->
     <Rule Id="IDE0130" Action="Hidden" />       <!-- NamespaceDoesNotMatchFolderStructure -->
+    <Rule Id="IDE0140" Action="Hidden" />       <!-- SimplifyObjectCreationDiagnosticId -->
+    <Rule Id="IDE0150" Action="Hidden" />       <!-- UseNullCheckOverTypeCheckDiagnosticId -->
     <Rule Id="IDE1001" Action="Hidden" />       <!-- AnalyzerChanged -->
     <Rule Id="IDE1002" Action="Hidden" />       <!-- AnalyzerDependencyConflict -->
     <Rule Id="IDE1003" Action="Hidden" />       <!-- MissingAnalyzerReference -->
