@@ -8574,7 +8574,7 @@ void gc_heap::get_card_table_element_layout (uint8_t* start, uint8_t* end, size_
     for (int element = brick_table_element; element <= total_bookkeeping_elements; element++)
     {
         layout[element] = layout[element - 1] + sizes[element - 1];
-        if (sizes[element] != 0)
+        if ((element != total_bookkeeping_elements) && (sizes[element] != 0))
         {
             layout[element] = ALIGN_UP(layout[element], alignment[element]);
         }
