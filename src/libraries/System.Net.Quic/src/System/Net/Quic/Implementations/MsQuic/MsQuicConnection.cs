@@ -712,10 +712,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Stream disposing {disposing}");
 
             // If we haven't already shutdown gracefully (via a successful CloseAsync call), then force an abortive shutdown.
-            MsQuicApi.Api.ConnectionShutdownDelegate(
-                _state.Handle,
-                QUIC_CONNECTION_SHUTDOWN_FLAGS.SILENT,
-                0);
+            if (_state.Handle != null)
+            {
+                // Handle can be null if outbound constructor failed and we are called from finalizer.
+                MsQuicApi.Api.ConnectionShutdownDelegate(
+                    _state.Handle,
+                    QUIC_CONNECTION_SHUTDOWN_FLAGS.SILENT,
+                    0);
+            }
 
             bool releaseHandles = false;
             lock (_state)

@@ -337,6 +337,12 @@ namespace Microsoft.WebAssembly.Diagnostics
         DebuggerNonUserCode = 8
     }
 
+    internal enum StepSize
+    {
+        Minimal,
+        Line
+    }
+
     internal class MonoBinaryReader : BinaryReader
     {
         public MonoBinaryReader(Stream stream) : base(stream) {}
@@ -897,7 +903,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((byte)1);
             commandParamsWriter.Write((byte)ModifierKind.Step);
             commandParamsWriter.Write(thread_id);
-            commandParamsWriter.Write((int)0);
+            commandParamsWriter.Write((int)StepSize.Line);
             commandParamsWriter.Write((int)kind);
             commandParamsWriter.Write((int)(StepFilter.StaticCtor | StepFilter.DebuggerHidden)); //filter
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdEventRequest>(sessionId, CmdEventRequest.Set, commandParams, token);

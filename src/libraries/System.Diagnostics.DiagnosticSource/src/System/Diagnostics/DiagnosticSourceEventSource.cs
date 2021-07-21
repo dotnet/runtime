@@ -160,6 +160,12 @@ namespace System.Diagnostics
     /// See the DiagnosticSourceEventSourceBridgeTest.cs for more explicit examples of using this bridge.
     /// </summary>
     [EventSource(Name = "Microsoft-Diagnostics-DiagnosticSource")]
+    // This coarse suppression silences all RequiresUnreferencedCode warnings in the class.
+    // https://github.com/mono/linker/issues/2136 tracks making it possible to add more granular suppressions at the member level, and with a different warning code.
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves all members, so " +
+                        "those that are marked with RequiresUnreferencedCode will warn. " +
+                        "This method will not access any of these members and is safe to call.")]
     internal sealed class DiagnosticSourceEventSource : EventSource
     {
         public static DiagnosticSourceEventSource Log = new DiagnosticSourceEventSource();
