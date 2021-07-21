@@ -293,7 +293,7 @@ static InterpInst*
 interp_prev_ins (InterpInst *ins)
 {
 	ins = ins->prev;
-	while (ins && ins->opcode == MINT_NOP)
+	while (ins && (ins->opcode == MINT_NOP || ins->opcode == MINT_IL_SEQ_POINT))
 		ins = ins->prev;
 	return ins;
 }
@@ -3798,7 +3798,7 @@ save_seq_points (TransformData *td, MonoJitInfo *jinfo)
 	GSList **next = NULL;
 	GList *bblist;
 
-	if (!td->gen_sdb_seq_points)
+	if (!td->gen_seq_points)
 		return;
 
 	/*
@@ -4580,10 +4580,14 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				(td->sp > td->stack && (td->sp [-1].type == STACK_TYPE_O || td->sp [-1].type == STACK_TYPE_VT)) ? (td->sp [-1].klass == NULL ? "?" : m_class_get_name (td->sp [-1].klass)) : "");
 		}
 
-		if (td->gen_sdb_seq_points && ((!sym_seq_points && td->stack == td->sp) || (sym_seq_points && mono_bitset_test_fast (seq_point_locs, td->ip - header->code)))) {
-			if (in_offset == 0 || (header->num_clauses && !td->cbb->last_ins))
-				interp_add_ins (td, MINT_SDB_INTR_LOC);
-			last_seq_point = interp_add_ins (td, MINT_SDB_SEQ_POINT);
+		if (td->gen_seq_points && ((!sym_seq_points && td->stack == td->sp) || (sym_seq_points && mono_bitset_test_fast (seq_point_locs, td->ip - header->code)))) {
+			if (td->gen_sdb_seq_points) {
+				if (in_offset == 0 || (header->num_clauses && !td->cbb->last_ins))
+					interp_add_ins (td, MINT_SDB_INTR_LOC);
+				last_seq_point = interp_add_ins (td, MINT_SDB_SEQ_POINT);
+			} else {
+				last_seq_point = interp_add_ins (td, MINT_IL_SEQ_POINT);
+			}
 		}
 
 		if (td->prof_coverage) {
@@ -7644,7 +7648,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		}
 		if (opcode == MINT_CALL_HANDLER)
 			*ip++ = ins->data [2];
-	} else if (opcode == MINT_SDB_SEQ_POINT) {
+	} else if (opcode == MINT_SDB_SEQ_POINT || opcode == MINT_IL_SEQ_POINT) {
 		SeqPoint *seqp = (SeqPoint*)mono_mempool_alloc0 (td->mempool, sizeof (SeqPoint));
 		InterpBasicBlock *cbb;
 
@@ -7667,6 +7671,9 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 
 		cbb->seq_points = g_slist_prepend_mempool (td->mempool, cbb->seq_points, seqp);
 		cbb->last_seq_point = seqp;
+		// IL_SEQ_POINT shouldn't exist in the emitted code, we undo the ip position
+		if (opcode == MINT_IL_SEQ_POINT)
+			return ip - 1;
 	} else if (opcode == MINT_MOV_OFF) {
 		int foff = ins->data [0];
 		int mt = ins->data [1];
@@ -9433,6 +9440,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 #ifdef ENABLE_EXPERIMENT_TIERED
 	td->patchsite_hash = g_hash_table_new (NULL, NULL);
 #endif
+	td->gen_seq_points = !mini_debug_options.no_seq_points_compact_data || mini_debug_options.gen_sdb_seq_points;
 	td->gen_sdb_seq_points = mini_debug_options.gen_sdb_seq_points;
 	td->seq_points = g_ptr_array_new ();
 	td->verbose_level = mono_interp_traceopt;

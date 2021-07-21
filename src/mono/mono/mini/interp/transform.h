@@ -191,6 +191,7 @@ typedef struct
 #endif
 	int *clause_indexes;
 	int *clause_vars;
+	gboolean gen_seq_points;
 	gboolean gen_sdb_seq_points;
 	GPtrArray *seq_points;
 	InterpBasicBlock **offset_to_bb;
