@@ -647,6 +647,20 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public async Task SendPingWithIPAddressAndTooBigSize_MacOS()
+        {
+            IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
+
+            using (Ping p = new Ping())
+            {
+                PingReply pingReply = await p.SendPingAsync(localIpAddress, TestSettings.PingTimeout, new byte[10001]);
+                Assert.Equal(IPStatus.PacketTooBig, pingReply.Status);
+            }
+        }
+
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendPings_ReuseInstance_Hostname()
