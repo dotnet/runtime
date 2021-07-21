@@ -200,7 +200,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override bool CanTimeout => true;
 
-        private int _readTimeout = -1;
+        private int _readTimeout = Timeout.Infinite;
 
         internal override int ReadTimeout
         {
@@ -220,7 +220,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        private int _writeTimeout = -1;
+        private int _writeTimeout = Timeout.Infinite;
         internal override int WriteTimeout
         {
             get
@@ -702,7 +702,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 rentedBuffer.AsSpan(0, readLength).CopyTo(buffer);
                 return readLength;
             }
-            catch (OperationCanceledException) when (_readTimeout > 0)
+            catch (OperationCanceledException) when (cts != null && cts.IsCancellationRequested)
             {
                 // sync operations do not have Cancellation
                 throw new IOException(SR.net_quic_timeout);
@@ -731,7 +731,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 ((IAsyncResult)t).AsyncWaitHandle.WaitOne();
                 t.GetAwaiter().GetResult();
             }
-            catch (OperationCanceledException) when (_writeTimeout > 0)
+            catch (OperationCanceledException) when (cts != null && cts.IsCancellationRequested)
             {
                 // sync operations do not have Cancellation
                 throw new IOException(SR.net_quic_timeout);
