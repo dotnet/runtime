@@ -110,7 +110,7 @@
 
     <!-- Build the Visual Studio manifest project. -->
     <ItemGroup>
-      <VisualStudioManifestProjects Include="OptionalWorkloads.vsmanproj" />
+      <VisualStudioManifestProjects Include="mono_wasm_mobile.vsmanproj" />
     </ItemGroup>
 
     <MSBuild Projects="@(VisualStudioManifestProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath);OutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
