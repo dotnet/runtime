@@ -186,7 +186,6 @@
   <ItemGroup>
     <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
     <HelixProperties Condition="'$(Scenario)' != ''" Include="scenario" Value="$(Scenario)" />
-    <HelixProperties Condition="'$(ForNode)' != ''" Include="fornode" Value="$(ForNode)" />
   </ItemGroup>
 
   <ItemDefinitionGroup Condition="'$(TargetOS)' == 'MacCatalyst'">

@@ -11,13 +11,13 @@
     <MSBuild Targets="$(DefaultBuildAllTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'=='true'"
-             Properties="Dummy=%(Identity);DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;ForNode=$(ForNode)"
+             Properties="Dummy=%(Identity);DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="$(DefaultBuildAllTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'!='true'"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;ForNode=$(ForNode)"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 
@@ -61,13 +61,13 @@
     <MSBuild Targets="$(DefaultRestoreAllPackagesTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'=='true'"
-             Properties="Dummy=%(Identity);RestoreAllPackages=true;ForNode=$(ForNode)"
+             Properties="Dummy=%(Identity);RestoreAllPackages=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="$(DefaultRestoreAllPackagesTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'!='true'"
-             Properties="RestoreAllPackages=true;ForNode=$(ForNode)"
+             Properties="RestoreAllPackages=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 
@@ -87,13 +87,13 @@
     <MSBuild Targets="$(DefaultCopyAllNativeTestProjectBinariesTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'=='true'"
-             Properties="Dummy=%(Identity);BuildAllProjects=true;ForNode=$(ForNode)"
+             Properties="Dummy=%(Identity);BuildAllProjects=true"
              ContinueOnError="ErrorAndContinue" />
 
     <MSBuild Targets="$(DefaultCopyAllNativeTestProjectBinariesTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'!='true'"
-             Properties="BuildAllProjects=true;ForNode=$(ForNode)"
+             Properties="BuildAllProjects=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 

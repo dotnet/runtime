@@ -132,10 +132,10 @@
     </ItemGroup>
     
     <MSBuild Projects="@(TestProject)"
-             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());ForNode=$(ForNode)"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
              Targets="Restore" />
 
-    <MSBuild Projects="@(TestProject)" Properties="ForNode=$(ForNode)" />
+    <MSBuild Projects="@(TestProject)" />
   </Target>
 
   <Target Name="Test" />
