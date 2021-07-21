@@ -4607,11 +4607,6 @@ register_icalls (void)
 	mono_add_internal_call_internal ("Mono.Runtime::mono_runtime_install_handlers",
 				mono_runtime_install_handlers);
 
-#if defined(HOST_ANDROID) || defined(TARGET_ANDROID)
-	mono_add_internal_call_internal ("System.Diagnostics.Debugger::Mono_UnhandledException_internal",
-							mono_component_debugger ()->unhandled_exception);
-#endif
-
 	/*
 	 * It's important that we pass `TRUE` as the last argument here, as
 	 * it causes the JIT to omit a wrapper for these icalls. If the JIT
