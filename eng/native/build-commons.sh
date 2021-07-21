@@ -94,6 +94,12 @@ build_native()
         cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
     fi
 
+    if [[ "$__HostOS" == "Linux" && "$__DistroRid" != "linux-musl-"* ]]; then
+        # When building on Linux, use the LLD linker
+        cmakeArgs="-DCMAKE_EXE_LINKER_FLAGS_INIT=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS_INIT=-fuse-ld=lld $cmakeArgs"
+    fi
+
+
     if [[ "$__UseNinja" == 1 ]]; then
         generator="ninja"
         buildTool="$(command -v ninja || command -v ninja-build)"
