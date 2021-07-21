@@ -159,7 +159,7 @@ var BindingSupportLib = {
 
 		// Ensures the string is already interned on both the managed and JavaScript sides,
 		//  then returns the interned string value (to provide fast reference comparisons like C#)
-		mono_intern_string: function (string: string): string {
+		mono_intern_string: function (string: string): string | Symbol {
 			if (string.length === 0)
 				return BINDING._empty_string;
 
@@ -283,7 +283,7 @@ var BindingSupportLib = {
 			return null;
 		},
 
-		_get_string_from_intern_table: function (mono_obj: number): string {
+		_get_string_from_intern_table: function (mono_obj: number): string | Symbol {
 			if (!MONO.interned_string_table)
 				return undefined;
 			return MONO.interned_string_table.get (mono_obj);

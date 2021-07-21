@@ -23,29 +23,39 @@ interface MONO_C_FUNCS {
     mono_wasm_load_runtime (a: string, b: number): void;
     wasm_parse_runtime_options (a: number, b:number): void;
     mono_wasm_register_root (a: number, b: number, c: string | 0): number;
-    mono_wasm_send_dbg_command (a: number, b:number, c: number, d: number, e: number): boolean;
-    mono_wasm_send_dbg_command_with_parms (a: number, b:number, c: number, d: number, e: number, f: number, g: string): boolean;
-    mono_wasm_set_is_debugger_attached (a: boolean): void;
     wasm_setenv (a: string, b: string): void;
     mono_wasm_strdup (a: string): number;
     mono_wasm_string_get_data (a: number, b: number, c: number, d: number): void;
 }
 
 interface MONO_VARS {
-    _base64Table: string[];
-    mono_wasm_string_decoder_buffer: number;
-    mono_wasm_empty_string: string;
-    _next_call_function_res_id: number;
-    _next_id_var: number;
-    _call_function_res_cache: any;
+    interned_string_table: Map<number, string | Symbol>;
+    _scratch_root_free_indices: Int32Array,
+    _scratch_root_free_indices_count: number;
+    _mono_wasm_root_prototype: WasmRoot;
+    _mono_wasm_root_buffer_prototype: WasmRootBuffer;
+    _scratch_root_buffer: WasmRootBuffer,
+    _scratch_root_free_instances: WasmRoot[],
+    loaded_files: string[];
+    loaded_assets: string[];
 }
 
 // NAMESPACES ///////////////////////////////////////////////////////////////////////////////
-declare var MONO: typeof MonoSupportLib.$MONO & MONO_C_FUNCS & MONO_VARS;
+declare var MONO: typeof MonoSupportLib.$MONO & MONO_C_FUNCS & MONO_VARS & DEBUG_C_FUNCS & DEBUG_VARS; // Debug ones are from debugger-types.d.ts
 
 // OTHER TYPES ///////////////////////////////////////////////////////////////////////
 
-type GlobalizationMode = "icu" | "invarient" | "auto";
+type FetchRequest = (asset: string) => Promise<{
+    ok: boolean,
+    url: string,
+    arrayBuffer: () => Promise<Uint8Array>
+}>;
+
+declare const enum GlobalizationMode {
+    ICU = "icu",
+    INVARIANT = "invariant",
+    AUTO = "auto"
+}
 
 type LoadedFiles = { 
     url: string,
@@ -55,14 +65,18 @@ type LoadedFiles = {
 type ManagedPointer = number; // - address in the managed heap
 
 type MonoRuntimeArgs = {
-    fetch_file_cb: (asset: string) => void,
+    fetch_file_cb: FetchRequest,
     loaded_cb: () => void,
     debug_level: number,
     assembly_root: string,
-    assets: {
-        name: string,
-        behavior: string,
-    }[],
+    assets: AssetEntry[],
+    globalization_mode?: GlobalizationMode,
+    enable_debugging?: number,
+    assembly_list?: any,
+    runtime_assets?: any,
+    runtime_asset_sources?: any,
+    diagnostic_tracing?: any
+    remote_sources?: string[]
 }
 
 type NativePointer = number; // - address in wasm memory

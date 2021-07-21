@@ -9,13 +9,6 @@ var MonoSupportLib = {
 		_vt_stack: [],
 		mono_wasm_runtime_is_ready : false,
 		mono_wasm_ignore_pdb_load_errors: true,
-		interned_string_table: undefined,
-		mono_wasm_deregister_root: undefined, // becomes a function later
-		commands_received: undefined,
-		var_info: undefined,
-		loaded_assets: undefined,
-		loaded_files: undefined,
-		_c_fn_table: undefined,
 
 		/** @type {object.<string, object>} */
 		_id_table: {},
@@ -286,7 +279,7 @@ var MonoSupportLib = {
 			return result;
 		},
 
-		_zero_region: function (byteOffset, sizeBytes) {
+		_zero_region: function (byteOffset: number, sizeBytes: number): void {
 			if (((byteOffset % 4) === 0) && ((sizeBytes % 4) === 0))
 				Module.HEAP32.fill(0, byteOffset / 4, sizeBytes / 4);
 			else
@@ -446,7 +439,7 @@ var MonoSupportLib = {
 
 		mono_text_decoder: undefined,
 		string_decoder: {
-			copy: function (mono_string) {
+			copy: function (mono_string: number): string {
 				if (mono_string === 0)
 					return null;
 
@@ -497,7 +490,7 @@ var MonoSupportLib = {
 				this.mono_wasm_string_root.value = 0;
 				return result;
 			},
-			decode: function (start, end, save) {
+			decode: function (start: number, end: number, save: boolean): string {
 				if (!MONO.mono_text_decoder) {
 					MONO.mono_text_decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-16le') : undefined;
 				}
@@ -524,7 +517,7 @@ var MonoSupportLib = {
 			},
 		},
 
-		mono_wasm_add_dbg_command_received: function(res_ok, id, buffer, buffer_len) {
+		mono_wasm_add_dbg_command_received: function(res_ok: number, id: number, buffer: number, buffer_len: number): void {
 			const assembly_data = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
 			const base64String = MONO._base64Converter.toBase64StringImpl(assembly_data);
 			const buffer_obj = {
@@ -537,7 +530,7 @@ var MonoSupportLib = {
 			MONO.commands_received = buffer_obj;
 		},
 
-		mono_wasm_send_dbg_command_with_parms: function (id: number, command_set: number, command: number, command_parameters: string, length: number, valtype: number, newvalue: string)
+		mono_wasm_send_dbg_command_with_parms: function (id: number, command_set: number, command: number, command_parameters: string, length: number, valtype: number, newvalue: string): CommandResult
 		{
 			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters.length);
 			dataHeap.set (new Uint8Array (MONO._base64_to_uint8 (command_parameters)));
@@ -548,7 +541,7 @@ var MonoSupportLib = {
 			return res;
 		},
 
-		mono_wasm_send_dbg_command: function (id: number, command_set: number, command: number, command_parameters: string)
+		mono_wasm_send_dbg_command: function (id: number, command_set: number, command: number, command_parameters: string): CommandResult
 		{
 			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters.length);
 			dataHeap.set (new Uint8Array (MONO._base64_to_uint8 (command_parameters)));
@@ -562,7 +555,7 @@ var MonoSupportLib = {
 
 		},
 
-		mono_wasm_get_dbg_command_info: function ()
+		mono_wasm_get_dbg_command_info: function (): CommandResult
 		{
 			let { res_ok, res } =  MONO.commands_received;
 			if (!res_ok)
@@ -570,7 +563,7 @@ var MonoSupportLib = {
 			return res;
 		},
 
-		_get_cfo_res_details: function (objectId, args) {
+		_get_cfo_res_details: function (objectId: string, args: ChromeDevToolsArgs): { __value_as_json_string__: string } {
 			if (!(objectId in MONO._call_function_res_cache))
 				throw new Error(`Could not find any object with id ${objectId}`);
 
@@ -628,22 +621,22 @@ var MonoSupportLib = {
 			return { __value_as_json_string__: JSON.stringify (res_details) };
 		},
 
-		mono_wasm_get_details: function (objectId, args={}) {
+		mono_wasm_get_details: function (objectId: string, args: ChromeDevToolsArgs ={}) {
 				return MONO._get_cfo_res_details (`dotnet:cfo_res:${objectId}`, args);
 		},
 
-		_cache_call_function_res: function (obj) {
+		_cache_call_function_res: function (obj): string {
 			const id = `dotnet:cfo_res:${MONO._next_call_function_res_id++}`;
 			MONO._call_function_res_cache[id] = obj;
 			return id;
 		},
 
-		mono_wasm_release_object: function (objectId) {
+		mono_wasm_release_object: function (objectId: string): void {
 			if (objectId in MONO._cache_call_function_res)
 				delete MONO._cache_call_function_res[objectId];
 		},
 
-		_create_proxy_from_object_id: function (objectId, details) {
+		_create_proxy_from_object_id: function (objectId: string, details: CallDetails[]): Proxy | string[] | {} {
 			if (objectId.startsWith ('dotnet:array:'))
 			{
 				let ret = details.map (p => p.value);
@@ -672,7 +665,7 @@ var MonoSupportLib = {
 			return proxy;
 		},
 
-		mono_wasm_call_function_on: function (request) {
+		mono_wasm_call_function_on: function (request: CallRequest): CallResult {
 			if (request.arguments != undefined && !Array.isArray (request.arguments))
 				throw new Error (`"arguments" should be an array, but was ${request.arguments}`);
 
@@ -727,22 +720,22 @@ var MonoSupportLib = {
 			return { type: "object", className: "Object", description: "Object", objectId: fn_res_id };
 		},
 
-		_clear_per_step_state: function () {
+		_clear_per_step_state: function (): void {
 			MONO._next_id_var = 0;
 			MONO._id_table = {};
 		},
 
-		mono_wasm_debugger_resume: function () {
+		mono_wasm_debugger_resume: function (): void {
 			MONO._clear_per_step_state ();
 		},
 
-		mono_wasm_detach_debugger: function () {
+		mono_wasm_detach_debugger: function (): void {
 			if (!MONO.mono_wasm_set_is_debugger_attached)
 				MONO.mono_wasm_set_is_debugger_attached = Module.cwrap ('mono_wasm_set_is_debugger_attached', 'void', ['bool']);
 			MONO.mono_wasm_set_is_debugger_attached(false);
 		},
 
-		_register_c_fn: function (name: string, ...args: any[]) {
+		_register_c_fn: function (name: string, ...args: any[]): void {
 			Object.defineProperty (MONO._c_fn_table, name + '_wrapper', { value: Module.cwrap (name, ...args) });
 		},
 
@@ -778,7 +771,7 @@ var MonoSupportLib = {
 			});
 		},
 
-		mono_wasm_runtime_ready: function () {
+		mono_wasm_runtime_ready: function (): void {
 			MONO.mono_wasm_runtime_is_ready = true;
 			MONO._clear_per_step_state ();
 
@@ -799,13 +792,13 @@ var MonoSupportLib = {
 
 		// Set environment variable NAME to VALUE
 		// Should be called before mono_load_runtime_and_bcl () in most cases
-		mono_wasm_setenv: function (name, value) {
+		mono_wasm_setenv: function (name: string, value: string): void {
 			if (!MONO.wasm_setenv)
 				MONO.wasm_setenv = Module.cwrap ('mono_wasm_setenv', null, ['string', 'string']);
 			MONO.wasm_setenv (name, value);
 		},
 
-		mono_wasm_set_runtime_options: function (options) {
+		mono_wasm_set_runtime_options: function (options): void {
 			if (!MONO.wasm_parse_runtime_options)
 				MONO.wasm_parse_runtime_options = Module.cwrap ('mono_wasm_parse_runtime_options', null, ['number', 'number']);
 			var argv = Module._malloc (options.length * 4);
@@ -827,7 +820,7 @@ var MonoSupportLib = {
 		// send_to defaults to 'WebAssembly.Runtime::DumpAotProfileData'.
 		// DumpAotProfileData stores the data into Module.aot_profile_data.
 		//
-		mono_wasm_init_aot_profiler: function (options) {
+		mono_wasm_init_aot_profiler: function (options): void {
 			if (options == null)
 				options = {}
 			if (!('write_at' in options))
@@ -843,7 +836,7 @@ var MonoSupportLib = {
 		// write_at defaults to 'WebAssembly.Runtime::StopProfile'.
 		// send_to defaults to 'WebAssembly.Runtime::DumpCoverageProfileData'.
 		// DumpCoverageProfileData stores the data into Module.coverage_profile_data.
-		mono_wasm_init_coverage_profiler: function (options) {
+		mono_wasm_init_coverage_profiler: function (options): void {
 			if (options == null)
 				options = {}
 			if (!('write_at' in options))
@@ -854,7 +847,7 @@ var MonoSupportLib = {
 			Module.ccall ('mono_wasm_load_profiler_coverage', null, ['string'], [arg]);
 		},
 
-		_apply_configuration_from_args: function (args) {
+		_apply_configuration_from_args: function (args): void {
 			for (var k in (args.environment_variables || {}))
 				MONO.mono_wasm_setenv (k, args.environment_variables[k]);
 
@@ -868,7 +861,7 @@ var MonoSupportLib = {
 				MONO.mono_wasm_init_coverage_profiler (args.coverage_profiler_options);
 		},
 
-		_get_fetch_file_cb_from_args: function (args) {
+		_get_fetch_file_cb_from_args: function (args?: {fetch_file_cb: FetchRequest}): FetchRequest {
 			if (typeof (args.fetch_file_cb) === "function")
 				return args.fetch_file_cb;
 
@@ -896,14 +889,14 @@ var MonoSupportLib = {
 				};
 			} else if (typeof (fetch) === "function") {
 				return function (asset) {
-					return fetch (asset, { credentials: 'same-origin' });
-				};
+					return fetch (asset, { credentials: 'same-origin' }) as any; // this any forces TS to abide by our rules
+				} as FetchRequest;
 			} else {
 				throw new Error ("No fetch_file_cb was provided and this environment does not expose 'fetch'.");
 			}
 		},
 
-		_handle_loaded_asset: function (ctx, asset, url, blob) {
+		_handle_loaded_asset: function (ctx, asset: AssetEntry, url: string, blob: Iterable<number>): void {
 			var bytes = new Uint8Array (blob);
 			if (ctx.tracing)
 				console.log ("MONO_WASM: Loaded:", asset.name, "size", bytes.length, "from", url);
@@ -979,9 +972,9 @@ var MonoSupportLib = {
 
 		// deprecated
 		mono_load_runtime_and_bcl: function (
-			unused_vfs_prefix, deploy_prefix, debug_level, file_list, loaded_cb, fetch_file_cb
+			unused_vfs_prefix: any /* unused var */, deploy_prefix: string, debug_level: number, file_list: string[], loaded_cb: () => void, fetch_file_cb: FetchRequest
 		) {
-			var args = {
+			var args: MonoRuntimeArgs = {
 				fetch_file_cb: fetch_file_cb,
 				loaded_cb: loaded_cb,
 				debug_level: debug_level,
@@ -1058,7 +1051,7 @@ var MonoSupportLib = {
 
 		// @bytes must be a typed array. space is allocated for it in the native heap
 		//  and it is copied to that location. returns the address of the allocation.
-		mono_wasm_load_bytes_into_heap: function (bytes) {
+		mono_wasm_load_bytes_into_heap: function (bytes: Uint8Array): number {
 			var memoryOffset = Module._malloc (bytes.length);
 			var heapBytes = new Uint8Array (Module.HEAPU8.buffer, memoryOffset, bytes.length);
 			heapBytes.set (bytes);
@@ -1069,7 +1062,7 @@ var MonoSupportLib = {
 
 		// @offset must be the address of an ICU data archive in the native heap.
 		// returns true on success.
-		mono_wasm_load_icu_data: function (offset) {
+		mono_wasm_load_icu_data: function (offset: number): boolean {
 			var fn = Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number']);
 			var ok = (fn (offset)) === 1;
 			if (ok)
@@ -1081,11 +1074,11 @@ var MonoSupportLib = {
 		//   "ja" -> "icudt_CJK.dat"
 		//   "en_US" (or "en-US" or just "en") -> "icudt_EFIGS.dat"
 		// etc, see "mono_wasm_get_icudt_name" implementation in pal_icushim_static.c
-		mono_wasm_get_icudt_name: function (culture) {
+		mono_wasm_get_icudt_name: function (culture: Culture): string {
 			return Module.ccall ('mono_wasm_get_icudt_name', 'string', ['string'], [culture]);
 		},
 
-		_finalize_startup: function (args, ctx) {
+		_finalize_startup: function (args: MonoRuntimeArgs, ctx): void {
 			var loaded_files_with_debug_info = [];
 
 			MONO.loaded_assets = ctx.loaded_assets;
@@ -1126,7 +1119,7 @@ var MonoSupportLib = {
 			args.loaded_cb ();
 		},
 
-		_load_assets_and_runtime: function (args) {
+		_load_assets_and_runtime: function (args: MonoRuntimeArgs): void {
 			if (args.enable_debugging)
 				args.debug_level = args.enable_debugging;
 			if (args.assembly_list)
@@ -1236,7 +1229,7 @@ var MonoSupportLib = {
 						if (asset.behavior === "assembly")
 							attemptUrl = locateFile (args.assembly_root + "/" + asset.name);
 						else if (asset.behavior === "resource") {
-							var path = asset.culture !== '' ? `${asset.culture}/${asset.name}` : asset.name;
+							var path = asset.culture.length > 0 ? `${asset.culture}/${asset.name}` : asset.name;
 							attemptUrl = locateFile (args.assembly_root + "/" + path);
 						}
 						else
@@ -1269,10 +1262,10 @@ var MonoSupportLib = {
 		// @globalization_mode is one of "icu", "invariant", or "auto".
 		// "auto" will use "icu" if any ICU data archives have been loaded,
 		//  otherwise "invariant".
-		mono_wasm_globalization_init: function (globalization_mode) {
+		mono_wasm_globalization_init: function (globalization_mode: GlobalizationMode): void {
 			var invariantMode = false;
 
-			if (globalization_mode === "invariant")
+			if (globalization_mode === GlobalizationMode.INVARIANT)
 				invariantMode = true;
 
 			if (!invariantMode) {
@@ -1296,19 +1289,19 @@ var MonoSupportLib = {
 		},
 
 		// Used by the debugger to enumerate loaded dlls and pdbs
-		mono_wasm_get_loaded_files: function() {
+		mono_wasm_get_loaded_files: function(): string[] {
 			if (!MONO.mono_wasm_set_is_debugger_attached)
 				MONO.mono_wasm_set_is_debugger_attached = Module.cwrap ('mono_wasm_set_is_debugger_attached', 'void', ['bool']);
 			MONO.mono_wasm_set_is_debugger_attached (true);
 			return MONO.loaded_files;
 		},
 
-		mono_wasm_get_loaded_asset_table: function() {
+		mono_wasm_get_loaded_asset_table: function(): string[] {
 			return MONO.loaded_assets;
 		},
 
 		// FIXME: improve
-		_base64_to_uint8: function (base64String) {
+		_base64_to_uint8: function (base64String: string): Uint8Array {
 			const byteCharacters = atob (base64String);
 			const byteNumbers = new Array(byteCharacters.length);
 			for (let i = 0; i < byteCharacters.length; i++) {
@@ -1318,7 +1311,7 @@ var MonoSupportLib = {
 			return new Uint8Array (byteNumbers);
 		},
 
-		mono_wasm_load_data_archive: function (data, prefix) {
+		mono_wasm_load_data_archive: function (data, prefix): boolean {
 			if (data.length < 8)
 				return false;
 
@@ -1418,14 +1411,14 @@ var MonoSupportLib = {
 			}
 		}
 	},
-	schedule_background_exec: function () {
+	schedule_background_exec: function (): void {
 		++MONO.pump_count;
 		if (typeof globalThis.setTimeout === 'function') {
 			globalThis.setTimeout (MONO.pump_message, 0);
 		}
 	},
 
-	mono_set_timeout: function (timeout, id) {
+	mono_set_timeout: function (timeout: number, id: number): void {
 		if (!MONO.mono_set_timeout_exec)
 			MONO.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
 
@@ -1441,12 +1434,12 @@ var MonoSupportLib = {
 		}
 	},
 
-	mono_wasm_fire_debugger_agent_message: function () {
+	mono_wasm_fire_debugger_agent_message: function (): void {
 		// eslint-disable-next-line no-debugger
 		debugger;
 	},
 
-	mono_wasm_asm_loaded: function (assembly_name, assembly_ptr, assembly_len, pdb_ptr, pdb_len) {
+	mono_wasm_asm_loaded: function (assembly_name: number, assembly_ptr: number, assembly_len: number, pdb_ptr: number, pdb_len: number): void {
 		// Only trigger this codepath for assemblies loaded after app is ready
 		if (MONO.mono_wasm_runtime_is_ready !== true)
 			return;

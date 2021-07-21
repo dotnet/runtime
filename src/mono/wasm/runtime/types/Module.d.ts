@@ -42,7 +42,7 @@ declare namespace Module {
     function mono_method_get_call_signature (method: any, mono_obj?: any): ArgsMarshalString;
     function print (message: string): void;
 
-    function ccall <T extends Function> (ident: string, returnType?: string, argTypes?: string[], args?: any[] , opts?: any): T;
+    function ccall <T> (ident: string, returnType?: string, argTypes?: string[], args?: any[] , opts?: any): T;
     function cwrap <T extends Function> (ident: string, returnType: string, argTypes?: string[], opts?: any): T;
     function cwrap <T extends Function> (ident: string, ...args: any[]): T;
 
@@ -67,7 +67,11 @@ type MonoConfig = {
 // Types of assets that can be in the mono-config.js/mono-config.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
 type AssetEntry = {
     behavior: AssetBehaviours,
-    name: string
+    name: string,
+    virtual_path?: string,
+    culture?: Culture,
+    load_remote?: boolean,
+    is_optional?: boolean
 }
 
 interface AssemblyEntry extends AssetEntry {
@@ -76,7 +80,7 @@ interface AssemblyEntry extends AssetEntry {
 
 interface SatelliteAssemblyEntry extends AssetEntry {
     name: "resource",
-    culture: string
+    culture: Culture
 }
 
 interface VfsEntry extends AssetEntry {
@@ -97,3 +101,23 @@ declare const enum AssetBehaviours {
     ICU = "icu",
     VFS = "vfs",
 }
+
+type Culture = "ar_SA" | "am_ET" | "bg_BG" | "bn_BD" | "bn_IN" | "ca_AD" | "ca_ES" | "cs_CZ" | "da_DK" |
+"de_AT" | "de_BE" | "de_CH" | "de_DE" | "de_IT" | "de_LI" | "de_LU" | "el_CY" | "el_GR" | "en_AE" |
+"en_AG" | "en_AI" | "en_AS" | "en_AT" | "en_AU" | "en_BB" | "en_BE" | "en_BI" | "en_BM" | "en_BS" |
+"en_BW" | "en_BZ" | "en_CA" | "en_CC" | "en_CH" | "en_CK" | "en_CM" | "en_CX" | "en_CY" | "en_DE" |
+"en_DK" | "en_DM" | "en_ER" | "en_FI" | "en_FJ" | "en_FK" | "en_FM" | "en_GB" | "en_GD" | "en_GG" |
+"en_GH" | "en_GI" | "en_GM" | "en_GU" | "en_GY" | "en_HK" | "en_IE" | "en_IL" | "en_IM" | "en_IN" |
+"en_IO" | "en_JE" | "en_JM" | "en_KE" | "en_KI" | "en_KN" | "en_KY" | "en_LC" | "en_LR" | "en_LS" |
+"en_MG" | "en_MH" | "en_MO" | "en_MP" | "en_MS" | "en_MT" | "en_MU" | "en_MW" | "en_MY" | "en_NA" |
+"en_NF" | "en_NG" | "en_NL" | "en_NR" | "en_NU" | "en_NZ" | "en_PG" | "en_PH" | "en_PK" | "en_PN" |
+"en_PR" | "en_PW" | "en_RW" | "en_SB" | "en_SC" | "en_SD" | "en_SE" | "en_SG" | "en_SH" | "en_SI" |
+"en_SL" | "en_SS" | "en_SX" | "en_SZ" | "en_TC" | "en_TK" | "en_TO" | "en_TT" | "en_TV" | "en_TZ" |
+"en_UG" | "en_UM" | "en_US" | "en_VC" | "en_VG" | "en_VI" | "en_VU" | "en_WS" | "en_ZA" | "en_ZM" |
+"en_ZW" | "en_US" | "es_419" | "es_ES" | "es_MX" | "et_EE" | "fa_IR" | "fi_FI" | "fil_PH" | "fr_BE" |
+"fr_CA" | "fr_CH" | "fr_FR" | "gu_IN" | "he_IL" | "hi_IN" | "hr_BA" | "hr_HR" | "hu_HU" | "id_ID" |
+"it_CH" | "it_IT" | "ja_JP" | "kn_IN" | "ko_KR" | "lt_LT" | "lv_LV" | "ml_IN" | "mr_IN" | "ms_BN" |
+"ms_MY" | "ms_SG" | "nl_AW" | "nl_BE" | "nl_NL" | "pl_PL" | "pt_BR" | "pt_PT" | "ro_RO" | "ru_RU" |
+"sk_SK" | "sl_SI" | "sr_Cyrl_RS" | "sr_Latn_RS" | "sv_AX" | "sv_SE" | "sw_CD" | "sw_KE" | "sw_TZ" |
+"sw_UG" | "ta_IN" | "ta_LK" | "ta_MY" | "ta_SG" | "te_IN" | "th_TH" | "tr_CY" | "tr_TR" | "uk_UA" |
+"vi_VN" | "zh_CN" | "zh_Hans_HK" | "zh_SG" | "zh_HK" | "zh_TW";
