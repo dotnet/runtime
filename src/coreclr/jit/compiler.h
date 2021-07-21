@@ -5057,7 +5057,7 @@ public:
     // The map provides the entry block of the most closely enclosing loop that
     // defines the memory region accessed when defining the nodes's VN.
     //
-    // This information should consulted when considering hoisting node out of a loop, as the VN
+    // This information should be consulted when considering hoisting node out of a loop, as the VN
     // for the node will only be valid within the indicated loop.
     //
     // It is not fine-grained enough to track memory dependence within loops, so cannot be used

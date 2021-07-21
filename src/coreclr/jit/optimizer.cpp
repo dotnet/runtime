@@ -6227,29 +6227,27 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
         //
         bool IsTreeLoopMemoryInvariant(GenTree* tree)
         {
-            if (tree->OperIsIndir() && ((tree->gtFlags & GTF_IND_INVARIANT) != 0))
+            if (tree->IsCall())
             {
+                // Calls are handled specially by hoisting, and loop memory dependence
+                // must be checked by other means.
+                //
                 return true;
             }
 
-            // Todo: other operators that read memory
-            //
-            if (tree->OperIsIndir() || tree->OperIs(GT_CLS_VAR))
+            NodeToLoopMemoryBlockMap* const map            = m_compiler->GetNodeToLoopMemoryBlockMap();
+            BasicBlock*                     loopEntryBlock = nullptr;
+            if (map->Lookup(tree, &loopEntryBlock))
             {
-                NodeToLoopMemoryBlockMap* const map            = m_compiler->GetNodeToLoopMemoryBlockMap();
-                BasicBlock*                     loopEntryBlock = nullptr;
-                if (map->Lookup(tree, &loopEntryBlock))
+                for (MemoryKind memoryKind : allMemoryKinds())
                 {
-                    for (MemoryKind memoryKind : allMemoryKinds())
+                    ValueNum loopMemoryVN =
+                        m_compiler->GetMemoryPerSsaData(loopEntryBlock->bbMemorySsaNumIn[memoryKind])
+                            ->m_vnPair.GetLiberal();
+                    if (!m_compiler->optVNIsLoopInvariant(loopMemoryVN, m_loopNum,
+                                                          &m_hoistContext->m_curLoopVnInvariantCache))
                     {
-                        ValueNum loopMemoryVN =
-                            m_compiler->GetMemoryPerSsaData(loopEntryBlock->bbMemorySsaNumIn[memoryKind])
-                                ->m_vnPair.GetLiberal();
-                        if (!m_compiler->optVNIsLoopInvariant(loopMemoryVN, m_loopNum,
-                                                              &m_hoistContext->m_curLoopVnInvariantCache))
-                        {
-                            return false;
-                        }
+                        return false;
                     }
                 }
             }
