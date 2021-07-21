@@ -32,6 +32,8 @@ WARNING:   When setting properties based on their current state (for example:
   -->
   <Target Name="GetCrossgenBashScript">
 
+    <Error Text="Setting both AlwaysUseCrossGen2 to true and CrossGenTest to false is non-sensical" Condition="'$(CrossGenTest)' == 'false' and '$(AlwaysUseCrossGen2)' == 'true'"/>
+
     <PropertyGroup>
       <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
         <![CDATA[
@@ -40,31 +42,6 @@ if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
     unset RunCrossGen
     export RunCrossGen2=1
     export CompositeBuildMode=1
-fi
-
-# CrossGen Script
-if [ ! -z ${RunCrossGen+x} ]%3B then
-    export COMPlus_ZapRequire=$(ZapRequire)
-    export COMPlus_ZapRequireList=$(MSBuildProjectName)
-    if [ ! -f $(MSBuildProjectName).org ]%3B then
-        TakeLock
-        if [ ! -f $(MSBuildProjectName).org ]%3B then
-          mkdir IL
-          cp $(MSBuildProjectName).dll IL/$(MSBuildProjectName).dll
-          mv $(MSBuildProjectName).dll $(MSBuildProjectName).org
-          __Command=$_DebuggerFullPath "$CORE_ROOT/crossgen" /Platform_Assemblies_Paths $CORE_ROOT%3A$PWD /in $(MSBuildProjectName).org /out $(MSBuildProjectName).dll
-          echo $__Command
-          $__Command
-          __cgExitCode=$?
-          if [ $__cgExitCode -ne 0 ]
-          then
-            echo Crossgen failed with exitcode: $__cgExitCode
-            ReleaseLock
-            exit 1
-          fi
-        fi
-        ReleaseLock
-    fi
 fi
 
 # CrossGen2 Script
@@ -166,6 +143,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     fi
     ReleaseLock
   fi
+
+  export COMPlus_ZapRequire=$(ZapRequire)
+  export COMPlus_ZapRequireList=$(MSBuildProjectName)
 fi
         ]]>
       </CrossgenBashScript>
@@ -183,31 +163,6 @@ if /i "$(AlwaysUseCrossGen2)" == "true" (
     set RunCrossGen=
     set RunCrossGen2=1
     set CompositeBuildMode=1
-)
-
-REM CrossGen Script
-if defined RunCrossGen (
-    if defined LargeVersionBubble ( set OptionalArguments=!OptionalArguments! /largeversionbubble)
-    set COMPlus_ZapRequire=$(ZapRequire)
-    set COMPlus_ZapRequireList=$(MSBuildProjectName)
-    if not exist "$(MSBuildProjectName).org" (
-        call :TakeLock
-        set CrossGenStatus=0
-        if not exist "$(MSBuildProjectName).org" (
-            mkdir IL
-            copy $(MSBuildProjectName).dll IL\$(MSBuildProjectName).dll
-            ren $(MSBuildProjectName).dll $(MSBuildProjectName).org
-            set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen.exe" !OptionalArguments! /Platform_Assemblies_Paths !CORE_ROOT!%3B%25cd%25 /in %21scriptPath%21$(MSBuildProjectName).org /out %21scriptPath%21\$(MSBuildProjectName).dll
-            echo "!__Command!"
-            call !__Command!
-            set CrossGenStatus=!ERRORLEVEL!
-        )
-        call :ReleaseLock
-        IF NOT !CrossGenStatus!==0 (
-            ECHO Crossgen failed with exitcode - !CrossGenStatus!
-            Exit /b 1
-        )
-    )
 )
 
 REM CrossGen2 Script
@@ -309,6 +264,9 @@ if defined RunCrossGen2 (
         ECHO Crossgen2 failed with exitcode - !CrossGen2Status!
         Exit /b 1
     )
+
+  set COMPlus_ZapRequire=$(ZapRequire)
+  set COMPlus_ZapRequireList=$(MSBuildProjectName)
 )
         ]]>
       </CrossgenBatchScript>
