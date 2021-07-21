@@ -384,6 +384,7 @@ namespace System.Net.Sockets.Tests
             Assert.Null(args.ConnectByNameError);
             Assert.NotNull(args.ConnectSocket);
             Assert.True(args.ConnectSocket.Connected);
+            args.ConnectSocket.Dispose();
         }
 
         [OuterLoop]
