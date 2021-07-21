@@ -14,13 +14,14 @@ namespace Microsoft.Extensions.Hosting.Tests
     public class ConsoleLifetimeExitTests
     {
         /// <summary>
-        /// Tests that a Hosted process that receives SIGTERM/SIGINT completes successfully
+        /// Tests that a Hosted process that receives SIGTERM/SIGINT/SIGQUIT completes successfully
         /// and the rest of "main" gets executed.
         /// </summary>
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData(SIGTERM)]
         [InlineData(SIGINT)]
+        [InlineData(SIGQUIT)]
         public async Task EnsureSignalContinuesMainMethod(int signal)
         {
             using var remoteHandle = RemoteExecutor.Invoke(async () =>
@@ -51,7 +52,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 await Task.Delay(20);
             }
 
-            // send SIGTERM/SIGINT to the process
+            // send the signal to the process
             kill(remoteHandle.Process.Id, signal);
 
             remoteHandle.Process.WaitForExit();
@@ -62,6 +63,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         private const int SIGINT = 2;
+        private const int SIGQUIT = 3;
         private const int SIGTERM = 15;
 
         [DllImport("libc", SetLastError = true)]
