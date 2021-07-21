@@ -94,7 +94,7 @@ build_native()
         cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
     fi
 
-    if [[ "$__HostOS" == "Linux" && "$__DistroRid" != "linux-musl-"* ]]; then
+    if [[ "$targetOS" == "Linux" && "$__DistroRid" != "linux-musl-"* ]]; then
         # When building on Linux, use the LLD linker
         cmakeArgs="-DCMAKE_EXE_LINKER_FLAGS_INIT=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS_INIT=-fuse-ld=lld $cmakeArgs"
     fi
