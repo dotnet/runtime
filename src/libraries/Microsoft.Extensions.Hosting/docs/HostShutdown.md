@@ -29,7 +29,7 @@ in the application calling `Environment.Exit`. `Environment.Exit` isn't a gracef
 It raises the `ProcessExit` event and then exits the process. The end of the Main method doesn't get executed. However,
 since ConsoleLifetime blocked `ProcessExit` waiting for the Host to shutdown, this behavior also lead to [deadlocks][deadlocks]
 due to `Environment.Exit` also blocking waiting for `ProcessExit` to return. Additionally, since SIGTERM handling was attempting
-to gracefully shut down the process, ConsoleLifetime would set the ExitCode to `0`, which [clobbered][clobbered] the user's 
+to gracefully shut down the process, ConsoleLifetime would set the ExitCode to `0`, which [clobbered][clobbered] the user's
 exit code passed to `Environment.Exit`.
 
 [deadlocks]: https://github.com/dotnet/runtime/issues/50397
@@ -58,7 +58,7 @@ When a signal is sent to the process, it kicks off the following sequence.
 ![image](images/HostShutdownSequence.png)
 
 The control flows from `ConsoleLifetime` to `ApplicationLifetime` to raise the `ApplicationStopping` event. This signals
-`WaitForShutdownAsync` to unblock the "Main" execution code. In the meantime, the POSIX signal handler returns with 
+`WaitForShutdownAsync` to unblock the "Main" execution code. In the meantime, the POSIX signal handler returns with
 `Cancel = true` since this POSIX signal has been handled.
 
 The "Main" execution code starts executing again and tells the Host to `StopAsync()`, which in turn stops all the Hosted
