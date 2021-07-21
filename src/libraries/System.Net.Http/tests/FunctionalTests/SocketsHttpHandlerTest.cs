@@ -2163,12 +2163,12 @@ namespace System.Net.Http.Functional.Tests
             (int finalStreamId, _) = await c3.ReadAndParseRequestHeaderAsync();
             acceptedRequests.Add((c3, finalStreamId));
 
-            foreach (var request in acceptedRequests)
+            foreach ((Http2LoopbackConnection connection, int streamId) request in acceptedRequests)
             {
                 await request.connection.SendDefaultResponseAsync(request.streamId);
             }
 
-            foreach (var t in sendTasks)
+            foreach (Task<HttpResponseMessage> t in sendTasks)
             {
                 HttpResponseMessage response = await t;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
