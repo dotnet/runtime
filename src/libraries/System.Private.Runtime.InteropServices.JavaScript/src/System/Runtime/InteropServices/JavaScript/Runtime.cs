@@ -250,16 +250,24 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         public static bool TryInvokeWeakDelegateByHandle (int id, JSObject? arg1) {
-            Delegate del;
+            Delegate? del;
             lock (WeakDelegateLock) {
                 if (!WeakDelegateFromID.TryGetValue(id, out del))
                     return false;
             }
 
+            if (del == null)
+                return false;
+
+// error CS0117: 'Array' does not contain a definition for 'Empty' [/home/kate/Projects/dotnet-runtime-wasm/src/libraries/System.Private.Runtime.InteropServices.JavaScript/src/System.Private.Runtime.InteropServices.JavaScript.csproj]
+#pragma warning disable CA1825
+
             if (arg1 != null)
                 del.DynamicInvoke(new object[] { arg1 });
             else
                 del.DynamicInvoke(new object[0]);
+
+#pragma warning restore CA1825
 
             return true;
         }

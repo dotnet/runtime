@@ -123,7 +123,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public void RemoveEventListener(string name, int listenerHandle, EventListenerOptions? options = null)
         {
-            Interop.Runtime.RemoveEventListener(JSHandle, name, listenerHandle, (options?.Capture ?? false) ? 1 : 0);
+            Interop.Runtime.RemoveEventListener(JSHandle, name, listenerHandle, options?.Capture ?? false);
         }
 
         /// <summary>

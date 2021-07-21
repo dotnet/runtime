@@ -26,8 +26,6 @@ var BindingSupportLib = {
 			module ["mono_bind_assembly_entry_point"] = BINDING.bind_assembly_entry_point.bind(BINDING);
 			module ["mono_call_assembly_entry_point"] = BINDING.call_assembly_entry_point.bind(BINDING);
 			module ["mono_intern_string"] = BINDING.mono_intern_string.bind(BINDING);
-			module ["mono_wasm_add_event_listener"] = BINDING.mono_wasm_add_event_listener.bind(BINDING);
-			module ["mono_wasm_remove_event_listener"] = BINDING.mono_wasm_remove_event_listener.bind(BINDING);
 		},
 
 		bindings_lazy_init: function () {
@@ -2072,11 +2070,28 @@ var BindingSupportLib = {
 		return BINDING.js_to_mono_obj (res)
 	},
 
-	mono_wasm_add_event_listener: function () {
+	mono_wasm_add_event_listener: function (objHandle, name, listenerId, optionsHandle) {
+		BINDING.bindings_lazy_init ();
+		var obj = BINDING.mono_wasm_require_handle(objHandle);
+		if (!obj)
+			throw new Error("Invalid JS object handle");
+		var listener = BINDING._get_weak_delegate_from_handle(listenerId);
+		if (!listener)
+			throw new Error("Invalid listener ID");
+
+		if (optionsHandle) {
+			var options = BINDING.mono_wasm_require_handle(optionsHandle);
+			console.log(`${obj}.addEventListener(${name}, ${listener}, ${options})`);
+			obj.addEventListener(name, listener, options);
+		} else {
+			console.log(`${obj}.addEventListener(${name}, ${listener})`);
+			obj.addEventListener(name, listener);
+		}
 		throw new Error("nyi: add event listener");
 	},
 
-	mono_wasm_remove_event_listener: function () {
+	mono_wasm_remove_event_listener: function (objHandle, name, listenerId, capture) {
+		BINDING.bindings_lazy_init ();
 		throw new Error("nyi: remove event listener");
 	},
 
