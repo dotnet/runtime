@@ -1702,13 +1702,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private int _x64WindowsCurOfs;           // Current position of the stack iterator
 
         private int _armIdxGenReg;        // Next general register to be assigned a value
-        private int _armOfsStack;         // Offset of next stack slot to be assigned a value
+        private int _armOfsStack;         // Offset of next stack location to be assigned a value
 
         private ushort _armWFPRegs;          // Bitmask of available floating point argument registers (s0-s15/d0-d7)
         private bool _armRequires64BitAlignment; // Cached info about the current arg
 
         private int _arm64IdxGenReg;        // Next general register to be assigned a value
-        private int _arm64OfsStack;         // Offset of next stack slot to be assigned a value
+        private int _arm64OfsStack;         // Offset of next stack location to be assigned a value
         private int _arm64IdxFPReg;         // Next FP register to be assigned a value
 
         // These are enum flags in CallingConventions.h, but that's really ugly in C#, so I've changed them to bools.

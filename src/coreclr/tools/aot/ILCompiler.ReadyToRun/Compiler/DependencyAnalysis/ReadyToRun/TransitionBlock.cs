@@ -467,7 +467,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 #endif
             }
 
-            public override int StackElemSize(int parmSize, bool isValueType = false, bool isFloatHfa = false) => throw new NotImplementedException();
+            public override int StackElemSize(int parmSize, bool isValueType = false, bool isFloatHfa = false)
+            {
+                int stackSlotSize = 4;
+                return ALIGN_UP(parmSize, stackSlotSize);
+            }
         }
 
         public const int SizeOfM128A = 16;
