@@ -20935,6 +20935,13 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         return;
     }
 
+    // Fetch information about the class that introduced the virtual method.
+    CORINFO_CLASS_HANDLE baseClass        = info.compCompHnd->getMethodClass(baseMethod);
+    const DWORD          baseClassAttribs = info.compCompHnd->getClassAttribs(baseClass);
+
+    // Is the call an interface call?
+    const bool isInterface = (baseClassAttribs & CORINFO_FLG_INTERFACE) != 0;
+
     // See what we know about the type of 'this' in the call.
     GenTree*             thisObj      = call->gtCallThisArg->GetNode()->gtEffectiveVal(false);
     bool                 isExact      = false;
@@ -20942,18 +20949,23 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     CORINFO_CLASS_HANDLE objClass     = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
 
     // Bail if we know nothing.
-    if (objClass == nullptr)
+    if (objClass == NO_CLASS_HANDLE)
     {
         JITDUMP("\nimpDevirtualizeCall: no type available (op=%s)\n", GenTree::OpName(thisObj->OperGet()));
+
+        // Don't try guarded devirtualiztion when we're doing late devirtualization.
+        //
+        if (isLateDevirtualization)
+        {
+            JITDUMP("No guarded devirt during late devirtualization\n");
+            return;
+        }
+
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass,
+                                        pContextHandle DEBUGARG(objClass) DEBUGARG("unknown"));
+
         return;
     }
-
-    // Fetch information about the class that introduced the virtual method.
-    CORINFO_CLASS_HANDLE baseClass        = info.compCompHnd->getMethodClass(baseMethod);
-    const DWORD          baseClassAttribs = info.compCompHnd->getClassAttribs(baseClass);
-
-    // Is the call an interface call?
-    const bool isInterface = (baseClassAttribs & CORINFO_FLG_INTERFACE) != 0;
 
     // If the objClass is sealed (final), then we may be able to devirtualize.
     const DWORD objClassAttribs = info.compCompHnd->getClassAttribs(objClass);

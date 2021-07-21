@@ -43,9 +43,38 @@ namespace System.Text.Json.Reflection
                 {
                     StringBuilder sb = new();
 
-                    AssemblyIdentity identity = _typeSymbol.ContainingAssembly.Identity;
+                    AssemblyIdentity identity;
 
-                    sb.Append(FullName);
+                    if (_arrayTypeSymbol == null)
+                    {
+                        identity = _typeSymbol.ContainingAssembly.Identity;
+                        sb.Append(FullName);
+                    }
+                    else
+                    {
+                        TypeWrapper currentType = this;
+                        int nestCount = 1;
+
+                        while (true)
+                        {
+                            currentType = (TypeWrapper)currentType.GetElementType();
+
+                            if (!currentType.IsArray)
+                            {
+                                break;
+                            }
+
+                            nestCount++;
+                        }
+
+                        identity = currentType._typeSymbol.ContainingAssembly.Identity;
+                        sb.Append(currentType.FullName);
+
+                        for (int i = 0; i < nestCount; i++)
+                        {
+                            sb.Append("[]");
+                        }
+                    }
 
                     sb.Append(", ");
                     sb.Append(identity.Name);
@@ -97,6 +126,10 @@ namespace System.Text.Json.Reflection
                         sb.Append(underlyingType.AssemblyQualifiedName);
                         sb.Append("]]");
                     }
+                    else if (IsArray)
+                    {
+                        sb.Append(GetElementType().FullName + "[]");
+                    }
                     else
                     {
                         sb.Append(Name);
@@ -110,7 +143,22 @@ namespace System.Text.Json.Reflection
                         {
                             sb.Insert(0, $"{Namespace}.");
                         }
+
+                        if (this.IsGenericType && !ContainsGenericParameters)
+                        {
+                            sb.Append("[");
+
+                            foreach (Type genericArg in GetGenericArguments())
+                            {
+                                sb.Append("[");
+                                sb.Append(genericArg.AssemblyQualifiedName);
+                                sb.Append("]");
+                            }
+
+                            sb.Append("]");
+                        }
                     }
+                    
 
                     _fullName = sb.ToString();
                 }
@@ -143,6 +191,8 @@ namespace System.Text.Json.Reflection
                 return elementType.Name + "[]";
             }
         }
+
+        public string SimpleName => _typeSymbol.Name;
 
         private Type _enumType;
 
@@ -190,11 +240,21 @@ namespace System.Text.Json.Reflection
 
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
-            var ctors = new List<ConstructorInfo>();
+            if (_namedTypeSymbol == null)
+            {
+                return Array.Empty<ConstructorInfo>();
+            }
+
+            List<ConstructorInfo> ctors = new();
+
             foreach (IMethodSymbol c in _namedTypeSymbol.Constructors)
             {
-                ctors.Add(new ConstructorInfoWrapper(c, _metadataLoadContext));
+                if (c.DeclaredAccessibility == Accessibility.Public)
+                {
+                    ctors.Add(new ConstructorInfoWrapper(c, _metadataLoadContext));
+                }
             }
+
             return ctors.ToArray();
         }
 
@@ -268,7 +328,7 @@ namespace System.Text.Json.Reflection
         public override Type[] GetInterfaces()
         {
             var interfaces = new List<Type>();
-            foreach (INamedTypeSymbol i in _typeSymbol.Interfaces)
+            foreach (INamedTypeSymbol i in _typeSymbol.AllInterfaces)
             {
                 interfaces.Add(i.AsType(_metadataLoadContext));
             }
@@ -483,6 +543,16 @@ namespace System.Text.Json.Reflection
 #pragma warning disable RS1024 // Compare symbols correctly
         public override int GetHashCode() => _typeSymbol.GetHashCode();
 #pragma warning restore RS1024 // Compare symbols correctly
+
+        public override int GetArrayRank()
+        {
+            if (_arrayTypeSymbol == null)
+            {
+                throw new ArgumentException("Must be an array type.");
+            }
+
+            return _arrayTypeSymbol.Rank;
+        }
 
         public override bool Equals(object o)
         {

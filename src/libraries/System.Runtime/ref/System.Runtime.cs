@@ -10268,7 +10268,7 @@ namespace System.IO
         public static string[] GetLogicalDrives() { throw null; }
         public static System.IO.DirectoryInfo? GetParent(string path) { throw null; }
         public static void Move(string sourceDirName, string destDirName) { }
-        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false) { throw null; }
+        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget) { throw null; }
         public static void SetCreationTime(string path, System.DateTime creationTime) { }
         public static void SetCreationTimeUtc(string path, System.DateTime creationTimeUtc) { }
         public static void SetCurrentDirectory(string path) { }
@@ -10423,7 +10423,7 @@ namespace System.IO
         public static System.Collections.Generic.IEnumerable<string> ReadLines(string path, System.Text.Encoding encoding) { throw null; }
         public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName) { }
         public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors) { }
-        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false) { throw null; }
+        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget) { throw null; }
         public static void SetAttributes(string path, System.IO.FileAttributes fileAttributes) { }
         public static void SetCreationTime(string path, System.DateTime creationTime) { }
         public static void SetCreationTimeUtc(string path, System.DateTime creationTimeUtc) { }

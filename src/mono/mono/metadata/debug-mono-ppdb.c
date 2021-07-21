@@ -543,19 +543,29 @@ mono_ppdb_get_seq_points_internal (const char* ptr, MonoSymSeqPoint **seq_points
 
 	if (n_seq_points) {
 		*n_seq_points = sps->len;
-		g_assert (seq_points);
-		*seq_points = g_new (MonoSymSeqPoint, sps->len);
-		memcpy (*seq_points, sps->data, sps->len * sizeof (MonoSymSeqPoint));
+		if (seq_points)	{
+			*seq_points = g_new (MonoSymSeqPoint, sps->len);
+			memcpy (*seq_points, sps->data, sps->len * sizeof (MonoSymSeqPoint));
+		}
 	}
 	int sps_len = sps->len;
 	g_array_free (sps, TRUE);
 	return sps_len;
 }
 
-void 
-mono_ppdb_get_seq_points_enc (const char* ptr, MonoSymSeqPoint **seq_points, int *n_seq_points)
+gboolean 
+mono_ppdb_get_seq_points_enc (MonoImage *image, int idx, MonoSymSeqPoint **seq_points, int *n_seq_points)
 {
+	guint32 cols [MONO_METHODBODY_SIZE];
+	MonoTableInfo *tables = image->tables;
+	MonoTableInfo *methodbody_table = &tables [MONO_TABLE_METHODBODY];
+	mono_metadata_decode_row (methodbody_table, idx, cols, MONO_METHODBODY_SIZE);
+	if (!cols [MONO_METHODBODY_SEQ_POINTS])
+		return FALSE;
+
+	const char *ptr = mono_metadata_blob_heap (image, cols [MONO_METHODBODY_SEQ_POINTS]);
 	mono_ppdb_get_seq_points_internal (ptr, seq_points, n_seq_points, 0, NULL, NULL, NULL, NULL, NULL, NULL, FALSE);
+	return TRUE;
 }
 
 void
@@ -619,27 +629,16 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 
 }
 
-MonoDebugLocalsInfo*
-mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
+static MonoDebugLocalsInfo*
+mono_ppdb_lookup_locals_internal (MonoImage *image, int method_idx, gboolean is_enc)
 {
-	MonoPPDBFile *ppdb = minfo->handle->ppdb;
-	MonoImage *image = ppdb->image;
+	MonoDebugLocalsInfo *res;
 	MonoTableInfo *tables = image->tables;
-	MonoMethod *method = minfo->method;
+
 	guint32 cols [MONO_LOCALSCOPE_SIZE];
 	guint32 locals_cols [MONO_LOCALVARIABLE_SIZE];
-	int i, lindex, sindex, method_idx, start_scope_idx, scope_idx, locals_idx, locals_end_idx, nscopes;
-	MonoDebugLocalsInfo *res;
-	MonoMethodSignature *sig;
-
-	if (!method->token)
-		return NULL;
-
-	sig = mono_method_signature_internal (method);
-	if (!sig)
-		return NULL;
-
-	method_idx = mono_metadata_token_index (method->token);
+	
+	int i, lindex, sindex, locals_idx, locals_end_idx, nscopes, start_scope_idx, scope_idx;
 
 	start_scope_idx = mono_metadata_localscope_from_methoddef (image, method_idx);
 
@@ -723,6 +722,34 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 	}
 
 	return res;
+}
+
+MonoDebugLocalsInfo*
+mono_ppdb_lookup_locals_enc (MonoImage *image, int method_idx)
+{
+	return mono_ppdb_lookup_locals_internal (image, method_idx + 1, TRUE);
+}
+
+MonoDebugLocalsInfo*
+mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
+{
+	MonoPPDBFile *ppdb = minfo->handle->ppdb;
+	MonoImage *image = ppdb->image;
+	MonoMethod *method = minfo->method;
+	int method_idx;
+	MonoMethodSignature *sig;
+
+	if (!method->token)
+		return NULL;
+
+	sig = mono_method_signature_internal (method);
+	if (!sig)
+		return NULL;
+
+	method_idx = mono_metadata_token_index (method->token);
+
+	
+	return mono_ppdb_lookup_locals_internal (image, method_idx, FALSE);
 }
 
 /*

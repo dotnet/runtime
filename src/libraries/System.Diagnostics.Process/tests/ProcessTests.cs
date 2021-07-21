@@ -220,6 +220,8 @@ namespace System.Diagnostics.Tests
 
                 Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(psi));
                 Assert.NotEqual(0, e.NativeErrorCode);
+                Assert.Contains(program, e.Message);
+                Assert.Contains(workingDirectory, e.Message);
             }
             else
             {
@@ -232,7 +234,9 @@ namespace System.Diagnostics.Tests
         public void ProcessStart_UseShellExecute_OnWindows_OpenMissingFile_Throws()
         {
             string fileToOpen = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
-            Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }));
+            AssertExtensions.ThrowsContains<Win32Exception>(
+                () => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }),
+                fileToOpen);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasWindowsShell))]
@@ -1170,10 +1174,10 @@ namespace System.Diagnostics.Tests
                 StringBuilder builder = new StringBuilder();
                 foreach (Process process in Process.GetProcesses())
                 {
-                    builder.AppendFormat("Pid: '{0}' Name: '{1}'", process.Id, process.ProcessName);
+                    builder.Append($"Pid: '{process.Id}' Name: '{process.ProcessName}'");
                     try
                     {
-                        builder.AppendFormat(" Main module: '{0}'", process.MainModule.FileName);
+                        builder.Append($" Main module: '{process.MainModule.FileName}'");
                     }
                     catch
                     {
@@ -1182,7 +1186,7 @@ namespace System.Diagnostics.Tests
                     builder.AppendLine();
                 }
 
-                builder.AppendFormat("Current process id: {0} Process name: '{1}'", currentProcess.Id, currentProcess.ProcessName);
+                builder.Append($"Current process id: {currentProcess.Id} Process name: '{currentProcess.ProcessName}'");
                 return builder.ToString();
             }
         }
@@ -1398,6 +1402,7 @@ namespace System.Diagnostics.Tests
 
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
             Assert.NotEqual(0, e.NativeErrorCode);
+            Assert.Contains(path, e.Message);
         }
 
         [Fact]

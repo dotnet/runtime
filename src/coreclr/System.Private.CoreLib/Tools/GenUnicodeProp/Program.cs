@@ -11,8 +11,8 @@ namespace GenUnicodeProp
 {
     internal static class Program
     {
-        internal static bool Verbose = false;
-        internal static bool IncludeCasingData = false;
+        internal static bool Verbose;
+        internal static bool IncludeCasingData;
 
         private const string SOURCE_NAME = "CharUnicodeInfoData.cs";
 

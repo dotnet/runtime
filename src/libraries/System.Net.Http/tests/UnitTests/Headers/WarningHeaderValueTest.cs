@@ -147,7 +147,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void GetWarningLength_DifferentValidScenarios_AllReturnNonZero()
         {
-            CheckGetWarningLength(" 199 .host \r\n \"Miscellaneous warning\"  ", 1, 38,
+            CheckGetWarningLength(" 199 .host \"Miscellaneous warning\"  ", 1, 35,
                 new WarningHeaderValue(199, ".host", "\"Miscellaneous warning\""));
             CheckGetWarningLength("987 [FE18:AB64::156]:80 \"\" \"Tue, 20 Jul 2010 01:02:03 GMT\"", 0, 58,
                 new WarningHeaderValue(987, "[FE18:AB64::156]:80", "\"\"",
@@ -196,6 +196,8 @@ namespace System.Net.Http.Tests
             CheckInvalidWarningViaLength("123 host \"t\" \"Tue, 20 Jul 2010 01:02:03 GMT", 0);
             CheckInvalidWarningViaLength("123 host \"t\" \"Tue, 200 Jul 2010 01:02:03 GMT\"", 0);
             CheckInvalidWarningViaLength("123 host \"t\" \"\"", 0);
+
+            CheckInvalidWarningViaLength(" 199 .host \r\n \"Miscellaneous warning\" \r\n ", 0);
         }
 
         [Fact]
@@ -236,68 +238,22 @@ namespace System.Net.Http.Tests
             CheckInvalidParse("  ,,");
         }
 
-        [Fact]
-        public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
-        {
-            CheckValidTryParse(" 123   host \"text\"", new WarningHeaderValue(123, "host", "\"text\""));
-            CheckValidTryParse(" 50  192.168.0.1  \"text  \"  \"Tue, 20 Jul 2010 01:02:03 GMT\" ",
-                new WarningHeaderValue(50, "192.168.0.1", "\"text  \"",
-                    new DateTimeOffset(2010, 7, 20, 1, 2, 3, TimeSpan.Zero)));
-            CheckValidTryParse(" 123 h \"t\"", new WarningHeaderValue(123, "h", "\"t\""));
-            CheckValidTryParse("1 h \"t\"", new WarningHeaderValue(1, "h", "\"t\""));
-            CheckValidTryParse("1 h \"t\" \"Tue, 20 Jul 2010 01:02:03 GMT\"",
-                new WarningHeaderValue(1, "h", "\"t\"",
-                    new DateTimeOffset(2010, 7, 20, 1, 2, 3, TimeSpan.Zero)));
-            CheckValidTryParse("1 \u4F1A \"t\" ", new WarningHeaderValue(1, "\u4F1A", "\"t\""));
-        }
-
-        [Fact]
-        public void TryParse_SetOfInvalidValueStrings_ReturnsFalse()
-        {
-            CheckInvalidTryParse("1.1 host \"text\"");
-            CheckInvalidTryParse("11 host text");
-            CheckInvalidTryParse("11 host \"text\" Tue, 20 Jul 2010 01:02:03 GMT");
-            CheckInvalidTryParse("11 host \"text\" 123 next \"text\"");
-            CheckInvalidTryParse("\u4F1A");
-            CheckInvalidTryParse("123 \u4F1A");
-            CheckInvalidTryParse("111 [::1]:80\r(comment) \"text\"");
-            CheckInvalidTryParse("111 [::1]:80\n(comment) \"text\"");
-
-            CheckInvalidTryParse("X , , 123   host \"text\", ,next");
-            CheckInvalidTryParse("X 50  192.168.0.1  \"text  \"  \"Tue, 20 Jul 2010 01:02:03 GMT\" , ,next");
-            CheckInvalidTryParse(" ,123 h \"t\",");
-            CheckInvalidTryParse("1 \u4F1A \"t\" ,,");
-
-            CheckInvalidTryParse(null);
-            CheckInvalidTryParse(string.Empty);
-            CheckInvalidTryParse("  ");
-            CheckInvalidTryParse("  ,,");
-        }
-
         #region Helper methods
 
         private void CheckValidParse(string input, WarningHeaderValue expectedResult)
         {
             WarningHeaderValue result = WarningHeaderValue.Parse(input);
             Assert.Equal(expectedResult, result);
+
+            Assert.True(WarningHeaderValue.TryParse(input, out result));
+            Assert.Equal(expectedResult, result);
         }
 
         private void CheckInvalidParse(string input)
         {
             Assert.Throws<FormatException>(() => { WarningHeaderValue.Parse(input); });
-        }
 
-        private void CheckValidTryParse(string input, WarningHeaderValue expectedResult)
-        {
-            WarningHeaderValue result = null;
-            Assert.True(WarningHeaderValue.TryParse(input, out result));
-            Assert.Equal(expectedResult, result);
-        }
-
-        private void CheckInvalidTryParse(string input)
-        {
-            WarningHeaderValue result = null;
-            Assert.False(WarningHeaderValue.TryParse(input, out result));
+            Assert.False(WarningHeaderValue.TryParse(input, out WarningHeaderValue result));
             Assert.Null(result);
         }
 

@@ -5367,7 +5367,7 @@ namespace System.Text.RegularExpressions
             var sb = new StringBuilder();
             if (_backpos > 0)
             {
-                sb.AppendFormat("{0:D6} ", _backpos);
+                sb.Append($"{_backpos:D6} ");
             }
             else
             {

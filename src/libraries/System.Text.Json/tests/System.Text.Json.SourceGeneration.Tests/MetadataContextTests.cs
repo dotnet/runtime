@@ -17,6 +17,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyType), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(MyType2), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(MyTypeWithCallbacks), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(MyTypeWithPropertyOrdering), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(MyIntermediateType), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(HighLowTempsImmutable), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -67,6 +68,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyType))]
     [JsonSerializable(typeof(MyType2))]
     [JsonSerializable(typeof(MyTypeWithCallbacks))]
+    [JsonSerializable(typeof(MyTypeWithPropertyOrdering))]
     [JsonSerializable(typeof(MyIntermediateType))]
     [JsonSerializable(typeof(HighLowTempsImmutable))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass))]
@@ -96,6 +98,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.MyType.Serialize);
             Assert.Null(MetadataContext.Default.MyType2.Serialize);
             Assert.Null(MetadataContext.Default.MyTypeWithCallbacks.Serialize);
+            Assert.Null(MetadataContext.Default.MyTypeWithPropertyOrdering.Serialize);
             Assert.Null(MetadataContext.Default.MyIntermediateType.Serialize);
             Assert.Null(MetadataContext.Default.HighLowTempsImmutable.Serialize);
             Assert.Null(MetadataContext.Default.MyNestedClass.Serialize);

@@ -27,7 +27,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         // TODO: remove this.
         // This is only used for client-initiated connections, and isn't needed even then once Connect() has been called.
-        private readonly SafeMsQuicConfigurationHandle? _configuration;
+        private SafeMsQuicConfigurationHandle? _configuration;
 
         private readonly State _state = new State();
         private int _disposed;
@@ -190,9 +190,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             _state.StateGCHandle = GCHandle.Alloc(_state);
             try
             {
-                // this handle is ref counted by MsQuic, so safe to dispose here.
-                using SafeMsQuicConfigurationHandle config = SafeMsQuicConfigurationHandle.Create(options);
-
                 uint status = MsQuicApi.Api.ConnectionOpenDelegate(
                     MsQuicApi.Api.Registration,
                     s_connectionDelegate,
@@ -599,6 +596,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                     (ushort)port);
 
                 QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");
+
+                // this handle is ref counted by MsQuic, so safe to dispose here.
+                _configuration.Dispose();
+                _configuration = null;
             }
             catch
             {
@@ -734,6 +735,16 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Stream disposing {disposing}");
 
+            // If we haven't already shutdown gracefully (via a successful CloseAsync call), then force an abortive shutdown.
+            if (_state.Handle != null)
+            {
+                // Handle can be null if outbound constructor failed and we are called from finalizer.
+                MsQuicApi.Api.ConnectionShutdownDelegate(
+                    _state.Handle,
+                    QUIC_CONNECTION_SHUTDOWN_FLAGS.SILENT,
+                    0);
+            }
+
             bool releaseHandles = false;
             lock (_state)
             {
@@ -764,7 +775,10 @@ namespace System.Net.Quic.Implementations.MsQuic
         // It's unclear how to gracefully wait for a connection to be 100% done.
         internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
-            ThrowIfDisposed();
+            if (_disposed == 1)
+            {
+                return default;
+            }
 
             return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAGS.NONE, errorCode);
         }

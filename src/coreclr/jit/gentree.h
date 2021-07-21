@@ -1251,7 +1251,7 @@ public:
         return OperIsInitVal(OperGet());
     }
 
-    bool IsConstInitVal()
+    bool IsConstInitVal() const
     {
         return (gtOper == GT_CNS_INT) || (OperIsInitVal() && (gtGetOp1()->gtOper == GT_CNS_INT));
     }

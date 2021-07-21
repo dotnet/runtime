@@ -241,7 +241,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52048")]
         public async Task WaitForAvailableUnidirectionStreamsAsyncWorks()
         {
             using QuicListener listener = CreateQuicListener(maxUnidirectionalStreams: 1);

@@ -297,6 +297,13 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     JITDUMP("Both successors of %sdom " FMT_BB " reach " FMT_BB " -- attempting jump threading\n", isIDom ? "i" : "",
             domBlock->bbNum, block->bbNum);
 
+    // If the block is the first block of try-region, then skip jump threading
+    if (bbIsTryBeg(block))
+    {
+        JITDUMP(FMT_BB " is first block of try-region; no threading\n", block->bbNum);
+        return false;
+    }
+
     // Since flow is going to bypass block, make sure there
     // is nothing in block that can cause a side effect.
     //

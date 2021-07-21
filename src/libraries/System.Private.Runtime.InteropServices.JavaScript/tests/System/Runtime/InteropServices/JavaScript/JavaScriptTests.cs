@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices.JavaScript;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
@@ -114,6 +117,111 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             minValue = (int)mathMin.Call(null, 5, 6, 2, 3, 7);
             Assert.Equal(2, minValue);
+        }
+
+        [Fact]
+        public static async Task BagIterator()
+        {
+            await Task.Delay(1);
+
+            var bagFn = new Function(@"
+                    var same = {
+                        x:1
+                    };
+                    return Object.entries({
+                        a:1,
+                        b:'two',
+                        c:{fold:{}},
+                        d:same,
+                        e:same,
+                        f:same
+                    });
+                ");
+
+            for (int attempt = 0; attempt < 100_000; attempt++)
+            {
+                try
+                {
+                    using var bag = (JSObject)bagFn.Call(null);
+                    using var entriesIterator = (JSObject)bag.Invoke("entries");
+
+                    var cnt = entriesIterator.ToEnumerable().Count();
+                    Assert.Equal(6, cnt);
+
+                    // fill GC helps to repro
+                    var x = new byte[100 + attempt / 100];
+                    if (attempt % 1000 == 0)
+                    {
+                        GC.Collect();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(ex.Message + " At attempt=" + attempt, ex);
+                }
+            }
+        }
+
+        [Fact]
+        public static async Task Iterator()
+        {
+            await Task.Delay(1);
+
+            var makeRangeIterator = new Function("start", "end", "step", @"
+                    let nextIndex = start;
+                    let iterationCount = 0;
+
+                    const rangeIterator = {
+                       next: function() {
+                           let result;
+                           if (nextIndex < end) {
+                               result = { value: {}, done: false }
+                               nextIndex += step;
+                               iterationCount++;
+                               return result;
+                           }
+                           return { value: {}, done: true }
+                       }
+                    };
+                    return rangeIterator;
+                ");
+
+            for (int attempt = 0; attempt < 100_000; attempt++)
+            {
+                try
+                {
+                    using (var entriesIterator = (JSObject)makeRangeIterator.Call(null, 0, 500))
+                    {
+                        var cnt = entriesIterator.ToEnumerable().Count();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(ex.Message + " At attempt=" + attempt, ex);
+                }
+            }
+        }
+
+        public static IEnumerable<object> ToEnumerable(this JSObject iterrator)
+        {
+            JSObject nextResult = null;
+            try
+            {
+                nextResult = (JSObject)iterrator.Invoke("next");
+                var done = (bool)nextResult.GetObjectProperty("done");
+                while (!done)
+                {
+                    object value = nextResult.GetObjectProperty("value");
+                    nextResult.Dispose();
+                    yield return value;
+                    nextResult = (JSObject)iterrator.Invoke("next");
+                    done = (bool)nextResult.GetObjectProperty("done");
+                }
+            }
+            finally
+            {
+                nextResult?.Dispose();
+            }
         }
     }
 }

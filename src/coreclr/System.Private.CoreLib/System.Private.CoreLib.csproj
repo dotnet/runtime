@@ -155,7 +155,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Associates.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInfo.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.cs" />
@@ -194,6 +193,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RtFieldInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeConstructorInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeCustomAttributeData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeEventInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeExceptionHandlingClause.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeFieldInfo.cs" />
