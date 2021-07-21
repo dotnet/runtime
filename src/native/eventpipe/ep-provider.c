@@ -76,7 +76,7 @@ provider_prepare_callback_data (
 
 	return ep_provider_callback_data_init (
 		provider_callback_data,
-		filter_data,
+		ep_rt_utf8_string_dup (filter_data),
 		provider->callback_func,
 		provider->callback_data,
 		keywords,

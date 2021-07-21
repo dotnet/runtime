@@ -224,7 +224,7 @@ ep_provider_callback_data_alloc (
 
 	ep_raise_error_if_nok (ep_provider_callback_data_init (
 		instance,
-		filter_data,
+		ep_rt_ut8_string_dup (filter_data),
 		callback_function,
 		callback_data,
 		keywords,
@@ -246,8 +246,10 @@ ep_provider_callback_data_alloc_copy (EventPipeProviderCallbackData *provider_ca
 	EventPipeProviderCallbackData *instance = ep_rt_object_alloc (EventPipeProviderCallbackData);
 	ep_raise_error_if_nok (instance != NULL);
 
-	if (provider_callback_data_src)
+	if (provider_callback_data_src != NULL) {
 		*instance = *provider_callback_data_src;
+		instance->filter_data = ep_rt_utf8_string_dup (provider_callback_data_src->filter_data);
+	}
 
 ep_on_exit:
 	return instance;
@@ -289,6 +291,7 @@ ep_provider_callback_data_init_copy (
 	EP_ASSERT (provider_callback_data_src != NULL);
 
 	*provider_callback_data_dst = *provider_callback_data_src;
+	provider_callback_data_dst->filter_data = ep_rt_utf8_string_dup (provider_callback_data_src->filter_data);
 	return provider_callback_data_dst;
 }
 
@@ -302,6 +305,7 @@ void
 ep_provider_callback_data_free (EventPipeProviderCallbackData *provider_callback_data)
 {
 	ep_return_void_if_nok (provider_callback_data != NULL);
+	ep_rt_utf8_string_free (provider_callback_data->filter_data);
 	ep_rt_object_free (provider_callback_data);
 }
 
