@@ -1940,6 +1940,13 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
         assert(data->IsIntegralConst(0));
         dataReg = REG_ZR;
     }
+    else if (data->isContained())
+    {
+        assert(data->OperIs(GT_BITCAST));
+        const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
+        assert(!bitcastSrc->isContained());
+        dataReg = bitcastSrc->GetRegNum();
+    }
     else
     {
         assert(!data->isContained());
@@ -2015,10 +2022,11 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         regNumber dataReg = REG_NA;
         if (data->isContained())
         {
-            // This is only possible for a zero-init.
-            assert(data->IsIntegralConst(0) || data->IsSIMDZero());
+            // This is only possible for a zero-init or bitcast.
+            const bool zeroInit = (data->IsIntegralConst(0) || data->IsSIMDZero());
+            assert(zeroInit || data->OperIs(GT_BITCAST));
 
-            if (varTypeIsSIMD(targetType))
+            if (zeroInit && varTypeIsSIMD(targetType))
             {
                 if (targetReg != REG_NA)
                 {
@@ -2040,8 +2048,16 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                 }
                 return;
             }
-
-            dataReg = REG_ZR;
+            if (zeroInit)
+            {
+                dataReg = REG_ZR;
+            }
+            else
+            {
+                const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
+                assert(!bitcastSrc->isContained());
+                dataReg = bitcastSrc->GetRegNum();
+            }
         }
         else
         {
