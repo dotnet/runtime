@@ -37,7 +37,8 @@ namespace Microsoft.Extensions.FileProviders
             File.WriteAllText(filePath, "v1.2");
 
             // Assert
-            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)));
+            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)),
+                $"Change event was not raised - current time: {DateTime.UtcNow}, file LastWriteTimeUtc: {File.GetLastWriteTimeUtc(filePath)}");
         }
 
         [Theory]
@@ -99,7 +100,8 @@ namespace Microsoft.Extensions.FileProviders
             File.CreateSymbolicLink(linkPath, file2Path);
 
             // Assert - It should report the change regardless of the timestamp being older.
-            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)));
+            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)),
+                $"Change event was not raised - current time: {DateTime.UtcNow}, file1 LastWriteTimeUtc: {File.GetLastWriteTimeUtc(file1Path)}, file2 LastWriteTime: {File.GetLastWriteTimeUtc(file2Path)}");
         }
 
         [Theory]
@@ -129,7 +131,8 @@ namespace Microsoft.Extensions.FileProviders
             File.Delete(linkPath);
 
             // Assert
-            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)));
+            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)),
+                $"Change event was not raised - current time: {DateTime.UtcNow}, file LastWriteTimeUtc: {File.GetLastWriteTimeUtc(filePath)}");
         }
     }
 }

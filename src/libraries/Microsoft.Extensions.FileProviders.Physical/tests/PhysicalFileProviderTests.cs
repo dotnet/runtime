@@ -1534,7 +1534,8 @@ namespace Microsoft.Extensions.FileProviders
             File.WriteAllText(filePath, "v1.2");
 
             // Assert
-            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)));
+            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)),
+                $"Change event was not raised - current time: {DateTime.UtcNow}, file LastWriteTimeUtc: {File.GetLastWriteTimeUtc(filePath)}");
         }
 
         [Theory]
@@ -1559,7 +1560,8 @@ namespace Microsoft.Extensions.FileProviders
             File.Delete(filePath);
 
             // Assert
-            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)));
+            Assert.True(tcs.Task.Wait(TimeSpan.FromSeconds(30)),
+                $"Change event was not raised - current time: {DateTime.UtcNow}, file Exists: {File.Exists(filePath)}");
         }
 
         [Fact]
