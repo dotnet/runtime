@@ -15,8 +15,6 @@
     <TargetingPackDir>{TargetingPackDir}</TargetingPackDir>
     <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
     <MicrosoftNETCoreAppVersion>{MicrosoftNETCoreAppVersion}</MicrosoftNETCoreAppVersion>
-    <!-- Workaround issue: https://github.com/dotnet/runtime/issues/55600 -->
-    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 
     <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
   </PropertyGroup>
