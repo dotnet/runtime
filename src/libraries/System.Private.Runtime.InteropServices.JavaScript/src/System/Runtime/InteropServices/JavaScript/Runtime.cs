@@ -272,14 +272,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return true;
         }
 
-        public static JSObject? TryGetJSObjectForCLRObject(object rawObj) {
-            lock (_rawToJS)
-            {
-                _rawToJS.TryGetValue(rawObj, out JSObject? jsObject);
-                return jsObject;
-            }
-        }
-
         public static int GetJSObjectId(object rawObj)
         {
             JSObject? jsObject;
