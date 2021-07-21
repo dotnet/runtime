@@ -14,6 +14,7 @@ declare var ENVIRONMENT_IS_WEB: boolean;
 declare var ENVIRONMENT_IS_SHELL: boolean;
 declare var ENVIRONMENT_IS_NODE: boolean;
 declare var ENVIRONMENT_IS_WORKER: boolean;
+declare var LibraryManager: any;
 
 declare function locateFile(path: string): string;
 
@@ -21,6 +22,8 @@ declare function locateFile(path: string): string;
 declare function read (path: string): string;
 declare function load (path: string): string;
 declare function require (path: string): object;
+declare function autoAddDeps(a: object, b: string);
+declare function mergeInto(a: object, b: object);
 
 // Joins the various file specific C functions into 1 interface for easier access
 interface C_FUNCS extends BINDING_C_FUNCS, DOTNET_C_FUNCS, MONO_C_FUNCS {}

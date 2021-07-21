@@ -35,6 +35,10 @@ interface DEBUG_VARS {
 
 // OTHER TYPES ///////////////////////////////////////////////////////////////////////
 
+type CFOResultDetails = {
+    __value_as_json_string__: string;
+}
+
 type Proxy = {
     name: string,
     get: () => ((id: number, command_set: number, command: number, command_parameters: string) => CommandResult),

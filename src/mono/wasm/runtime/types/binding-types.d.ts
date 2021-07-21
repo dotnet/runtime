@@ -59,15 +59,6 @@ interface BINDING_VARS {
     _signature_converters: Map<string, Converter>;
     _primitive_converters: Map<string, Converter>;
     scratchBuffer: number;
-
-    _bind_js_obj: Function;
-    _bind_core_clr_obj: Function;
-    _bind_existing_obj: Function;
-    _unbind_raw_obj_and_free: Function;
-    _get_js_id: Function;
-    _get_raw_mono_obj: Function;
-    _is_simple_array: Function;
-    _object_to_string: Function;
     setup_js_cont: number;
     create_tcs: number;
     set_tcs_result: number;
@@ -77,12 +68,32 @@ interface BINDING_VARS {
     get_date_value: number;
     create_date_time: number;
     create_uri: number;
+    mono_wasm_object_registry: JSObject[];
+
+    _unbind_raw_obj_and_free: (handle: number) => void;
+    _get_raw_mono_obj: (gchandle: number, should_add_in_flight: number) => number;
+    _get_js_id: (mono_id: number) => number;
+    _bind_existing_obj: (mono_obj: number, js_id: number) => number;
+    _bind_js_obj: (js_obj_id: number, ownsHandle: boolean, type: number) => number;
+    _bind_core_clr_obj: (js_id: number, gc_handle: number) => number;
+    _object_to_string: (obj: number) => any;
+    _is_simple_array: (obj: any) => boolean;
 }
 
 // NAMESPACES ///////////////////////////////////////////////////////////////////////////////
 declare var BINDING: typeof BindingSupportLib.$BINDING & BINDING_C_FUNCS & BINDING_VARS;
 
 // OTHER TYPES ///////////////////////////////////////////////////////////////////////
+type JSObject = {
+    __mono_gchandle__?: number, 
+    __mono_jshandle__?: number,
+    __mono_bound_tcs__?: number,
+    __owns_handle__?: boolean,
+    __mono_delegate_alive__?: boolean,
+    __mono_js_cont__?: number,
+    is_mono_bridged_obj?: boolean,
+}
+
 type Converter = {
     steps: {
         convert: boolean;

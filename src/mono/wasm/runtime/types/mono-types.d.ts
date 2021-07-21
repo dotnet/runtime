@@ -76,7 +76,11 @@ type MonoRuntimeArgs = {
     runtime_assets?: any,
     runtime_asset_sources?: any,
     diagnostic_tracing?: any
-    remote_sources?: string[]
+    remote_sources?: string[],
+    environment_variables?: object,
+    runtime_options?: object,
+    aot_profiler_options?: object,
+    coverage_profiler_options?: object,
 }
 
 type NativePointer = number; // - address in wasm memory

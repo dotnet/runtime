@@ -203,10 +203,10 @@ var MonoSupportLib = {
 			}
 		},
 
-		_scratch_root_buffer: null,
-		_scratch_root_free_indices: null,
+		_scratch_root_buffer: null as WasmRootBuffer,
+		_scratch_root_free_indices: null as Int32Array,
 		_scratch_root_free_indices_count: 0,
-		_scratch_root_free_instances: [],
+		_scratch_root_free_instances: [] as number[],
 
 		_mono_wasm_root_prototype: {
 			get_address: function (): NativePointer {
@@ -254,7 +254,7 @@ var MonoSupportLib = {
 			MONO._scratch_root_free_indices_count++;
 		},
 
-		_mono_wasm_claim_scratch_index: function () {
+		_mono_wasm_claim_scratch_index: function (): number {
 			if (!MONO._scratch_root_buffer) {
 				const maxScratchRoots = 8192;
 				MONO._scratch_root_buffer = MONO.mono_wasm_new_root_buffer (maxScratchRoots, "js roots");
@@ -563,7 +563,7 @@ var MonoSupportLib = {
 			return res;
 		},
 
-		_get_cfo_res_details: function (objectId: string, args: ChromeDevToolsArgs): { __value_as_json_string__: string } {
+		_get_cfo_res_details: function (objectId: string, args: ChromeDevToolsArgs): CFOResultDetails {
 			if (!(objectId in MONO._call_function_res_cache))
 				throw new Error(`Could not find any object with id ${objectId}`);
 
@@ -621,11 +621,11 @@ var MonoSupportLib = {
 			return { __value_as_json_string__: JSON.stringify (res_details) };
 		},
 
-		mono_wasm_get_details: function (objectId: string, args: ChromeDevToolsArgs ={}) {
+		mono_wasm_get_details: function (objectId: string, args: ChromeDevToolsArgs = {}): CFOResultDetails {
 				return MONO._get_cfo_res_details (`dotnet:cfo_res:${objectId}`, args);
 		},
 
-		_cache_call_function_res: function (obj): string {
+		_cache_call_function_res: function (obj: object): string {
 			const id = `dotnet:cfo_res:${MONO._next_call_function_res_id++}`;
 			MONO._call_function_res_cache[id] = obj;
 			return id;
@@ -847,7 +847,7 @@ var MonoSupportLib = {
 			Module.ccall ('mono_wasm_load_profiler_coverage', null, ['string'], [arg]);
 		},
 
-		_apply_configuration_from_args: function (args): void {
+		_apply_configuration_from_args: function (args?: MonoRuntimeArgs): void {
 			for (var k in (args.environment_variables || {}))
 				MONO.mono_wasm_setenv (k, args.environment_variables[k]);
 
@@ -861,7 +861,7 @@ var MonoSupportLib = {
 				MONO.mono_wasm_init_coverage_profiler (args.coverage_profiler_options);
 		},
 
-		_get_fetch_file_cb_from_args: function (args?: {fetch_file_cb: FetchRequest}): FetchRequest {
+		_get_fetch_file_cb_from_args: function (args?: MonoRuntimeArgs): FetchRequest {
 			if (typeof (args.fetch_file_cb) === "function")
 				return args.fetch_file_cb;
 
@@ -1464,7 +1464,5 @@ var MonoSupportLib = {
 	}
 };
 
-// @ts-ignore: TS2304
-autoAddDeps(MonoSupportLib, '$MONO')
-// @ts-ignore: TS2304
-mergeInto(LibraryManager.library, MonoSupportLib)
+autoAddDeps(MonoSupportLib, '$MONO');
+mergeInto(LibraryManager.library, MonoSupportLib);

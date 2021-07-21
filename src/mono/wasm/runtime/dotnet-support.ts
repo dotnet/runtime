@@ -3,11 +3,11 @@
 
 var DotNetSupportLib = {
 	$DOTNET: {
-		conv_string: function (mono_obj) {
+		conv_string: function (mono_obj: number): string {
 			return MONO.string_decoder.copy (mono_obj);
 		}
 	},
-	mono_wasm_invoke_js_blazor: function (exceptionMessage: number, callInfo, arg0, arg1, arg2)	{
+	mono_wasm_invoke_js_blazor: function (exceptionMessage: number, callInfo, arg0, arg1, arg2): number	{
 		var mono_string = globalThis._mono_string_cached
 			|| (globalThis._mono_string_cached = Module.cwrap('mono_wasm_string_from_js', 'number', ['string']));
 
@@ -27,7 +27,7 @@ var DotNetSupportLib = {
 	},
 
 	// This is for back-compat only and will eventually be removed
-	mono_wasm_invoke_js_marshalled: function (exceptionMessage: number, asyncHandleLongPtr, functionName, argsJson, treatResultAsVoid) {
+	mono_wasm_invoke_js_marshalled: function (exceptionMessage: number, asyncHandleLongPtr, functionName, argsJson, treatResultAsVoid): number {
 
 		var mono_string = globalThis._mono_string_cached
 			|| (globalThis._mono_string_cached = Module.cwrap('mono_wasm_string_from_js', 'number', ['string']));
@@ -67,7 +67,7 @@ var DotNetSupportLib = {
 	},
 
 	// This is for back-compat only and will eventually be removed
-	mono_wasm_invoke_js_unmarshalled: function (exceptionMessage: number, funcName, arg0, arg1, arg2) {
+	mono_wasm_invoke_js_unmarshalled: function (exceptionMessage: number, funcName, arg0, arg1, arg2): number {
 		try {
 			// Get the function you're trying to invoke
 			var funcNameJsString = DOTNET.conv_string(funcName);
@@ -88,7 +88,5 @@ var DotNetSupportLib = {
 	}
 }
 
-// @ts-ignore: TS2304
 autoAddDeps(DotNetSupportLib, '$DOTNET');
-// @ts-ignore: TS2304
 mergeInto(LibraryManager.library, DotNetSupportLib);

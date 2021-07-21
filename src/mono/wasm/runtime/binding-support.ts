@@ -112,7 +112,7 @@ var BindingSupportLib = {
 				return res;
 			};
 
-			var bind_runtime_method = function (method_name: string, signature: ArgsMarshalString): Function {
+			var bind_runtime_method = function <T extends Function> (method_name: string, signature: ArgsMarshalString): T {
 				var method = get_method (method_name);
 				return BINDING.bind_method (method, 0, signature, "BINDINGS_" + method_name);
 			};
@@ -396,7 +396,7 @@ var BindingSupportLib = {
 			return promise;
 		},
 
-		_unbox_safehandle_root: function (root: WasmRoot) {
+		_unbox_safehandle_root: function (root: WasmRoot): number {
 			var addRef = true;
 			var js_handle = BINDING.call_method(BINDING.safehandle_get_handle, null, "mi", [ root.value, addRef ]);
 			var requiredObject = BINDING.mono_wasm_require_handle (js_handle);
@@ -766,28 +766,28 @@ var BindingSupportLib = {
 
 			return js_obj | 0;
 		},
-		wasm_binding_obj_new: function (js_obj_id, ownsHandle, type): Function
+		wasm_binding_obj_new: function (js_obj_id: number, ownsHandle: boolean, type)
 		{
 			return BINDING._bind_js_obj (js_obj_id, ownsHandle, type);
 		},
-		wasm_bind_existing: function (mono_obj, js_id): Function
+		wasm_bind_existing: function (mono_obj: number, js_id: number): number
 		{
 			return BINDING._bind_existing_obj (mono_obj, js_id);
 		},
 
-		wasm_bind_core_clr_obj: function (js_id, gc_handle): Function
+		wasm_bind_core_clr_obj: function (js_id: number, gc_handle: number): number
 		{
 			return BINDING._bind_core_clr_obj (js_id, gc_handle);
 		},
 
-		wasm_get_js_id: function (mono_obj)
+		wasm_get_js_id: function (mono_obj: number): number
 		{
 			return BINDING._get_js_id (mono_obj);
 		},
 
 		// when should_add_in_flight === true, the JSObject would be temporarily hold by Normal GCHandle, so that it would not get collected during transition to the managed stack.
 		// its InFlight handle would be freed when the instance arrives to managed side via Interop.Runtime.ReleaseInFlight
-		wasm_get_raw_obj: function (gchandle, should_add_in_flight)
+		wasm_get_raw_obj: function (gchandle: number, should_add_in_flight)
 		{
 			if(!gchandle){
 				return 0;
@@ -796,7 +796,7 @@ var BindingSupportLib = {
 			return BINDING._get_raw_mono_obj (gchandle, should_add_in_flight ? 1 : 0);
 		},
 
-		try_extract_mono_obj: function (js_obj) {
+		try_extract_mono_obj: function (js_obj: JSObject) {
 			if (js_obj === null || typeof js_obj === "undefined" || typeof js_obj.__mono_gchandle__ === "undefined")
 				return 0;
 			return BINDING.wasm_get_raw_obj (js_obj.__mono_gchandle__, true);
@@ -813,7 +813,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		get_task_and_bind: function (tcs, js_obj) {
+		get_task_and_bind: function (tcs, js_obj: JSObject) {
 			var gc_handle = BINDING.mono_wasm_free_list.length ? BINDING.mono_wasm_free_list.pop() : BINDING.mono_wasm_ref_counter++;
 			var task_gchandle = BINDING.call_method (BINDING.tcs_get_task_and_bind, null, "oi", [ tcs, gc_handle + 1 ]);
 			js_obj.__mono_gchandle__ = task_gchandle;
@@ -836,7 +836,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		extract_mono_obj: function (js_obj) {
+		extract_mono_obj: function (js_obj: JSObject) {
 			if (js_obj === null || typeof js_obj === "undefined")
 				return 0;
 
@@ -861,7 +861,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		extract_js_obj: function (mono_obj) {
+		extract_js_obj: function (mono_obj: number): JSObject {
 			if (mono_obj === 0)
 				return null;
 			var root = MONO.mono_wasm_new_root (mono_obj);
@@ -872,7 +872,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		extract_js_obj_root: function (root: WasmRoot) {
+		extract_js_obj_root: function (root: WasmRoot): JSObject {
 			if (root.value === 0)
 				return null;
 
@@ -890,7 +890,7 @@ var BindingSupportLib = {
 			return js_obj;
 		},
 
-		_create_named_function: function (name: string, argumentNames, body: string, closure): any {
+		_create_named_function: function <T extends Function> (name: string, argumentNames, body: string, closure): T {
 			var result = null, keys = null, closureArgumentList = null, closureArgumentNames = null;
 
 			if (closure) {
@@ -906,7 +906,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_create_rebindable_named_function: function (name: string, argumentNames, body: string, closureArgNames): any {
+		_create_rebindable_named_function: function <T extends Function> (name: string, argumentNames, body: string, closureArgNames): T {
 			var strictPrefix = "\"use strict\";\r\n";
 			var uriPrefix = "", escapedFunctionIdentifier = "";
 
@@ -1348,7 +1348,7 @@ var BindingSupportLib = {
 			return BINDING._handle_exception_and_produce_result_for_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled);
 		},
 
-		bind_method: function (method: number, this_arg, args_marshal: ArgsMarshalString, friendly_name: string): Function {
+		bind_method: function <T extends Function> (method: number, this_arg, args_marshal: ArgsMarshalString, friendly_name: string): T {
 			BINDING.bindings_lazy_init ();
 
 			this_arg = this_arg | 0;
@@ -1550,7 +1550,7 @@ var BindingSupportLib = {
 			return BINDING.call_method (method, null, signature, args);
 		},
 
-		bind_static_method: function (fqn: string, signature: ArgsMarshalString): Function {
+		bind_static_method: function <T extends Function> (fqn: string, signature: ArgsMarshalString): T {
 			BINDING.bindings_lazy_init ();
 
 			var method = BINDING.resolve_method_fqn (fqn);
@@ -1592,7 +1592,7 @@ var BindingSupportLib = {
 		},
 		// Object wrapping helper functions to handle reference handles that will
 		// be used in managed code.
-		mono_wasm_register_obj: function(js_obj) {
+		mono_wasm_register_obj: function(js_obj: JSObject): { gc_handle: number, should_add_in_flight: boolean } {
 
 			var gc_handle = undefined;
 			if (js_obj !== null && typeof js_obj !== "undefined")
@@ -1646,7 +1646,7 @@ var BindingSupportLib = {
 			}
 			return obj;
 		},
-		mono_wasm_free_handle: function(handle) {
+		mono_wasm_free_handle: function(handle: number): void {
 			BINDING.mono_wasm_unregister_obj(handle);
 		},
 		mono_wasm_free_raw_object: function(js_id: number) {
@@ -1669,7 +1669,7 @@ var BindingSupportLib = {
 			}
 			return obj;
 		},
-		mono_wasm_parse_args_root: function (argsRoot) {
+		mono_wasm_parse_args_root: function (argsRoot): any[] {
 			var js_args = BINDING._mono_array_root_to_js_array(argsRoot);
 			BINDING.mono_wasm_save_LMF();
 			return js_args;
@@ -1701,7 +1701,7 @@ var BindingSupportLib = {
 		},
 	},
 
-	mono_wasm_invoke_js_with_args: function(js_handle, method_name, args, is_exception): number {
+	mono_wasm_invoke_js_with_args: function(js_handle: number, method_name, args, is_exception): number {
 		let argsRoot = MONO.mono_wasm_new_root (args), nameRoot = MONO.mono_wasm_new_root (method_name);
 		try {
 			BINDING.bindings_lazy_init ();
@@ -1741,7 +1741,7 @@ var BindingSupportLib = {
 			nameRoot.release();
 		}
 	},
-	mono_wasm_get_object_property: function(js_handle, property_name, is_exception): number {
+	mono_wasm_get_object_property: function(js_handle: number, property_name, is_exception): number {
 		BINDING.bindings_lazy_init ();
 
 		var nameRoot = MONO.mono_wasm_new_root (property_name);
@@ -1776,7 +1776,7 @@ var BindingSupportLib = {
 			nameRoot.release();
 		}
 	},
-    mono_wasm_set_object_property: function (js_handle, property_name, value, createIfNotExist, hasOwnProperty, is_exception): number | boolean {
+    mono_wasm_set_object_property: function (js_handle: number, property_name, value, createIfNotExist, hasOwnProperty, is_exception): number | boolean {
 		var valueRoot = MONO.mono_wasm_new_root (value), nameRoot = MONO.mono_wasm_new_root (property_name);
 		try {
 			BINDING.bindings_lazy_init ();
@@ -1827,7 +1827,7 @@ var BindingSupportLib = {
 			valueRoot.release();
 		}
 	},
-	mono_wasm_get_by_index: function(js_handle, property_index, is_exception): number {
+	mono_wasm_get_by_index: function(js_handle: number, property_index, is_exception): number {
 		BINDING.bindings_lazy_init ();
 
 		var obj = BINDING.mono_wasm_require_handle (js_handle);
@@ -1847,7 +1847,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string (res);
 		}
 	},
-	mono_wasm_set_by_index: function(js_handle, property_index, value, is_exception): number | boolean {
+	mono_wasm_set_by_index: function(js_handle: number, property_index, value, is_exception): number | boolean {
 		var valueRoot = MONO.mono_wasm_new_root (value);
 		try {
 			BINDING.bindings_lazy_init ();
@@ -2029,11 +2029,9 @@ var BindingSupportLib = {
 		}
 
 		var res = BINDING.typedarray_copy_from(requireObject, pinned_array, begin, end, bytes_per_element);
-		return BINDING.js_to_mono_obj (res)
+		return BINDING.js_to_mono_obj (res);
 	},
 };
 
-// @ts-ignore: TS2304
-autoAddDeps(BindingSupportLib, '$BINDING')
-// @ts-ignore: TS2304
-mergeInto(LibraryManager.library, BindingSupportLib)
+autoAddDeps(BindingSupportLib, '$BINDING');
+mergeInto(LibraryManager.library, BindingSupportLib);
