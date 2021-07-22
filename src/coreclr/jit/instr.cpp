@@ -2051,7 +2051,7 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
                 break;
 #endif // TARGET_64BIT
             default:
-                assert("unexpected write to the stack.");
+                assert(!"unexpected write to the stack.");
                 break;
         }
         return ins_Store(srcTypeForStore, aligned);
