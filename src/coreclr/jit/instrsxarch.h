@@ -686,11 +686,11 @@ INST1(nop,              "nop",              IUM_RD, 0x000090,                   
 INST1(lock,             "lock",             IUM_RD, 0x0000F0,                                                            INS_FLAGS_None )
 INST1(leave,            "leave",            IUM_RD, 0x0000C9,                                                            INS_FLAGS_None )
 
-
 INST1(neg,              "neg",              IUM_RW, 0x0018F6,                                                            Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
 INST1(not,              "not",              IUM_RW, 0x0010F6,                                                            INS_FLAGS_None )
 
-INST1(cdq,              "cdq",              IUM_RD, 0x000099,                                                            INS_FLAGS_None)
+INST1(cwde,             "cwde",             IUM_RD, 0x000098,                                                            INS_FLAGS_None )
+INST1(cdq,              "cdq",              IUM_RD, 0x000099,                                                            INS_FLAGS_None )
 INST1(idiv,             "idiv",             IUM_RD, 0x0038F6,                                                            Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  )
 INST1(imulEAX,          "imul",             IUM_RD, 0x0028F6,                                                            Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
 INST1(div,              "div",              IUM_RD, 0x0030F6,                                                            Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  )

@@ -2903,13 +2903,13 @@ void emitter::emitIns(instruction ins)
 }
 
 // Add an instruction with no operands, but whose encoding depends on the size
-// (Only CDQ/CQO currently)
+// (Only CDQ/CQO/CWDE/CDQE currently)
 void emitter::emitIns(instruction ins, emitAttr attr)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id   = emitNewInstr(attr);
     code_t         code = insCodeMR(ins);
-    assert(ins == INS_cdq);
+    assert((ins == INS_cdq) || (ins == INS_cwde));
     assert((code & 0xFFFFFF00) == 0);
     sz = 1;
 
@@ -13277,7 +13277,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // Support only scalar AVX instructions and hence size is hard coded to 4-byte.
             code = AddVexPrefixIfNeeded(ins, code, EA_4BYTE);
 
-            if (ins == INS_cdq && TakesRexWPrefix(ins, id->idOpSize()))
+            if (((ins == INS_cdq) || (ins == INS_cwde)) && TakesRexWPrefix(ins, id->idOpSize()))
             {
                 code = AddRexWPrefix(ins, code);
             }
@@ -14758,6 +14758,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_mov:
         case INS_movsx:
         case INS_movzx:
+        case INS_cwde:
         case INS_cmp:
         case INS_test:
             if (memFmt == IF_NONE)
