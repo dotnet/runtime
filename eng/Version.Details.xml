@@ -58,6 +58,10 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>6a8491b61e0c243cbb6a7ff4966b48e6d1e075b1</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="6.0.0-beta.21369.3">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>e97027cf100d2b532adce387e5cb93a373de93c9</Sha>
+    </Dependency>
     <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Version="6.0.0-beta.21364.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>6a8491b61e0c243cbb6a7ff4966b48e6d1e075b1</Sha>
