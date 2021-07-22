@@ -193,7 +193,7 @@ namespace System
             uint i = BitConverter.SingleToUInt32Bits(x);
             int e = (int)((i >> 23) & 0xFF);
 
-            if (e != 0)
+            if (e == 0)
             {
                 i <<= 9;
                 if (i == 0)
