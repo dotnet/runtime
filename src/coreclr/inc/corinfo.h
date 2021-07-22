@@ -2780,15 +2780,11 @@ public:
     // returns EXCEPTION_CONTINUE_SEARCH if exception must always be handled by the EE
     //                    things like ThreadStoppedException ...
     // returns EXCEPTION_CONTINUE_EXECUTION if exception is fixed up by the EE
-
+    // Only used as a contract between the Zapper and the VM.
     virtual int FilterException(
             struct _EXCEPTION_POINTERS *pExceptionPointers
             ) = 0;
 
-    // Cleans up internal EE tracking when an exception is caught.
-    virtual void HandleException(
-            struct _EXCEPTION_POINTERS *pExceptionPointers
-            ) = 0;
 
     virtual void ThrowExceptionForJitResult(
             JITINTERFACE_HRESULT result) = 0;
@@ -2803,6 +2799,15 @@ public:
     // successfully and false otherwise.
     typedef void (*errorTrapFunction)(void*);
     virtual bool runWithErrorTrap(
+        errorTrapFunction function, // The function to run
+        void* parameter          // The context parameter that will be passed to the function and the handler
+        ) = 0;
+
+    // Runs the given function under an error trap. This allows the JIT to make calls
+    // to interface functions that may throw exceptions without needing to be aware of
+    // the EH ABI, exception types, etc. Returns true if the given function completed
+    // successfully and false otherwise. This error trap checks for SuperPMI exceptions
+    virtual bool runWithSPMIErrorTrap(
         errorTrapFunction function, // The function to run
         void* parameter          // The context parameter that will be passed to the function and the handler
         ) = 0;

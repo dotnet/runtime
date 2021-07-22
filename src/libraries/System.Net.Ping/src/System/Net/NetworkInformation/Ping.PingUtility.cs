@@ -47,7 +47,7 @@ namespace System.Net.NetworkInformation
                 p.Start();
                 if (!p.WaitForExit(timeout) || p.ExitCode == 1 || p.ExitCode == 2)
                 {
-                    return CreateTimedOutPingReply();
+                    return CreatePingReply(IPStatus.TimedOut);
                 }
 
                 try
@@ -79,13 +79,13 @@ namespace System.Net.NetworkInformation
                 catch (TimeoutException)
                 {
                     p.Kill();
-                    return CreateTimedOutPingReply();
+                    return CreatePingReply(IPStatus.TimedOut);
                 }
 
                 if (p.ExitCode == 1 || p.ExitCode == 2)
                 {
                     // Throw timeout for known failure return codes from ping functions.
-                    return CreateTimedOutPingReply();
+                    return CreatePingReply(IPStatus.TimedOut);
                 }
 
                 try

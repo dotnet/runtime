@@ -137,7 +137,6 @@ LWM(GetUnboxedEntry, DWORDLONG, DLD);
 LWM(GetUnBoxHelper, DWORDLONG, DWORD)
 LWM(GetVarArgsHandle, GetVarArgsHandleValue, DLDL)
 LWM(GetVars, DWORDLONG, Agnostic_GetVars)
-DENSELWM(HandleException, DWORD)
 LWM(InitClass, Agnostic_InitClass, DWORD)
 LWM(IsCompatibleDelegate, Agnostic_IsCompatibleDelegate, DD)
 LWM(IsDelegateCreationAllowed, DLDL, DWORD)

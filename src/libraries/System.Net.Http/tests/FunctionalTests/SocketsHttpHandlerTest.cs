@@ -2119,6 +2119,63 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_MultipleConnectionsEnabled_ManyRequestsEnqueuedSimultaneously_SufficientConnectionsCreated()
+        {
+            // This is equal to Http2Connection.InitialMaxConcurrentStreams, which is the limit we impose before we have received the peer's initial SETTINGS frame.
+            // Setting it to this value avoids any complexity that would occur from having to retry requests if the actual limit from the peer is lower.
+            const int MaxConcurrentStreams = 100;
+
+            const int ConnectionCount = 3;
+
+            // Just enough to force the third connection to be created.
+            const int RequestCount = (ConnectionCount - 1) * MaxConcurrentStreams + 1;
+
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            server.AllowMultipleConnections = true;
+
+            using SocketsHttpHandler handler = CreateHandler();
+            using HttpClient client = CreateHttpClient(handler);
+
+            List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
+            for (int i = 0; i < RequestCount; i++)
+            {
+                var sendTask = client.GetAsync(server.Address);
+                sendTasks.Add(sendTask);
+            }
+
+            List<(Http2LoopbackConnection connection, int streamId)> acceptedRequests = new List<(Http2LoopbackConnection connection, int streamId)>();
+
+            using Http2LoopbackConnection c1 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+            for (int i = 0; i < MaxConcurrentStreams; i++)
+            {
+                (int streamId, _) = await c1.ReadAndParseRequestHeaderAsync();
+                acceptedRequests.Add((c1, streamId));
+            }
+
+            using Http2LoopbackConnection c2 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+            for (int i = 0; i < MaxConcurrentStreams; i++)
+            {
+                (int streamId, _) = await c2.ReadAndParseRequestHeaderAsync();
+                acceptedRequests.Add((c2, streamId));
+            }
+
+            using Http2LoopbackConnection c3 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+            (int finalStreamId, _) = await c3.ReadAndParseRequestHeaderAsync();
+            acceptedRequests.Add((c3, finalStreamId));
+
+            foreach ((Http2LoopbackConnection connection, int streamId) request in acceptedRequests)
+            {
+                await request.connection.SendDefaultResponseAsync(request.streamId);
+            }
+
+            foreach (Task<HttpResponseMessage> t in sendTasks)
+            {
+                HttpResponseMessage response = await t;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/45204")]
         public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemaningRequestsAreHandledByNewConnection()
         {

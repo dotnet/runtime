@@ -10936,6 +10936,23 @@ static LONG RunWithErrorTrapFilter(struct _EXCEPTION_POINTERS* exceptionPointers
 
 #endif // !defined(TARGET_UNIX)
 
+bool CEEInfo::runWithSPMIErrorTrap(void (*function)(void*), void* param)
+{
+    // No dynamic contract here because SEH is used
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_PREEMPTIVE;
+
+    // NOTE: the lack of JIT/EE transition markers in this method is intentional. Any
+    //       transitions into the EE proper should occur either via JIT/EE
+    //       interface calls made by `function`.
+
+    // As we aren't SPMI, we don't need to do anything other than call the function.
+
+    function(param);
+    return true;
+}
+
 bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
 {
     // No dynamic contract here because SEH is used

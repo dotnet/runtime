@@ -95,6 +95,9 @@ namespace Wasm.Build.Tests
                     DefaultBuildArgs = $" /p:RuntimeSrcDir={solutionRoot.FullName} /p:RuntimeConfig={s_runtimeConfig} /p:EMSDK_PATH={emsdkPath} ";
                 }
 
+                // for EMSDK runs, we don't want to get the dependencies from workloads
+                DefaultBuildArgs += " /p:MSBuildEnableWorkloadResolver=false";
+
                 IsWorkload = false;
                 DotNet = "dotnet";
                 EnvVars = new Dictionary<string, string>()
