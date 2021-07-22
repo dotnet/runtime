@@ -7,9 +7,6 @@
 
  THIS FILE IS NOT INCLUDED IN DOTNET.JS. ALL CODE HERE WILL BE IGNORED DURING THE BUILD
 ********************************************************************************************/
-
-// TODO PROPERLY SET THESE ANYS
-
 declare namespace Module {
     let config: MonoConfig;
     let HEAP8: Int8Array;
@@ -45,13 +42,13 @@ declare namespace Module {
     function cwrap <T extends Function> (ident: string, returnType: string, argTypes?: string[], opts?: any): T;
     function cwrap <T extends Function> (ident: string, ...args: any[]): T;
 
-    function FS_createPath (parent: string | any, path: string, canRead?: boolean /* unused */, canWrite?: boolean /* unused */): string;
-    function FS_createDataFile (parent: string | any, name: string, data: string, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
+    function FS_createPath (parent: string, path: string, canRead?: boolean /* unused */, canWrite?: boolean /* unused */): string;
+    function FS_createDataFile (parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     function setValue (ptr: number, value: number, type: string, noSafe?: number | boolean): void;
     function getValue (ptr: number, type: string, noSafe?: number | boolean ): number;
     function UTF8ToString (ptr: number, maxBytesToRead?: number): string;
     function UTF8ToString (arg: string): string;
-    function UTF8ArrayToString (str: string, heap: number[] | number, outIdx: number, maxBytesToWrite?: number): string;
+    function UTF8ArrayToString (str: TypedArray, heap: number[] | number, outIdx: number, maxBytesToWrite?: number): string;
     function addFunction (func: Function, sig: string): void;
 }
 
@@ -120,3 +117,15 @@ type Culture = "ar_SA" | "am_ET" | "bg_BG" | "bn_BD" | "bn_IN" | "ca_AD" | "ca_E
 "sk_SK" | "sl_SI" | "sr_Cyrl_RS" | "sr_Latn_RS" | "sv_AX" | "sv_SE" | "sw_CD" | "sw_KE" | "sw_TZ" |
 "sw_UG" | "ta_IN" | "ta_LK" | "ta_MY" | "ta_SG" | "te_IN" | "th_TH" | "tr_CY" | "tr_TR" | "uk_UA" |
 "vi_VN" | "zh_CN" | "zh_Hans_HK" | "zh_SG" | "zh_HK" | "zh_TW";
+
+type Context = {
+    tracing: boolean,
+    pending_count: number,
+    num_icu_assets_loaded_successfully?: number,
+    mono_wasm_add_assembly: (a: string, b: number, c:number) => number,
+    mono_wasm_add_satellite_assembly: (a: string, b:string, c:number, d:number) => void,
+    loaded_files: {url: string, file: string}[],
+    loaded_assets: string[],
+    createPath: Function,
+    createDataFile: Function
+}

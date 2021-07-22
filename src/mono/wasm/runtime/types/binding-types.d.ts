@@ -92,7 +92,8 @@ type JSObject = {
     __mono_delegate_alive__?: boolean,
     __mono_js_cont__?: number,
     is_mono_bridged_obj?: boolean,
-}
+    then?: Function
+};
 
 type Converter = {
     steps: {
@@ -124,32 +125,6 @@ declare const enum ConverterStepIndirects {
     Float64 = "double",
     Int64 = "i64",
 }
-
-declare const enum ArgsMarshal {
-    Int32 = "i", // int32
-    Int32Enum = "j", // int32 - Enum with underlying type of int32
-    Int64 = "l", // int64
-    Int64Enum = "k", // int64 - Enum with underlying type of int64
-    Float32 = "f", // float
-    Float64 = "d", // double
-    String = "s", // string
-    Char = "s", // interned string
-    JSObj = "o", // js object will be converted to a C# object (this will box numbers/bool/promises)
-    MONOObj = "m", // raw mono object. Don't use it unless you know what you're doing
-}
-
-// to suppress marshaling of the return value, place '!' at the end of args_marshal, i.e. 'ii!' instead of 'ii'
-type _ExtraArgsMarshalOperators = "!" | "";
-
-// TODO make this more efficient so we can add more parameters (currently it only checks up to 4). One option is to add a
-// blank to the ArgsMarshal enum but that doesn't solve the TS limit of number of options in 1 type
-// Take the 2 marshaling enums and convert to all the valid strings for type checking. 
-type ArgsMarshalString = 
-                      `${ArgsMarshal}${_ExtraArgsMarshalOperators}` 
-                    | `${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}` 
-                    | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`
-                    | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
-
 
 declare const enum CNonPrimativeTypes {
     String = 3,
@@ -196,3 +171,34 @@ declare const enum JSTypedArrays {
     Float64Array = 14,
     Uint8ClampedArray = 15,
 }
+
+declare const enum ArgsMarshal {
+    Int32 = "i", // int32
+    Int32Enum = "j", // int32 - Enum with underlying type of int32
+    Int64 = "l", // int64
+    Int64Enum = "k", // int64 - Enum with underlying type of int64
+    Float32 = "f", // float
+    Float64 = "d", // double
+    String = "s", // string
+    Char = "s", // interned string
+    JSObj = "o", // js object will be converted to a C# object (this will box numbers/bool/promises)
+    MONOObj = "m", // raw mono object. Don't use it unless you know what you're doing
+}
+
+// to suppress marshaling of the return value, place '!' at the end of args_marshal, i.e. 'ii!' instead of 'ii'
+type _ExtraArgsMarshalOperators = "!" | "";
+
+// TODO make this more efficient so we can add more parameters (currently it only checks up to 4). One option is to add a
+// blank to the ArgsMarshal enum but that doesn't solve the TS limit of number of options in 1 type
+// Take the marshaling enums and convert to all the valid strings for type checking. 
+type ArgsMarshalString = `${ArgsMarshal}${_ExtraArgsMarshalOperators}` 
+                        | `${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}` 
+                        | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`
+                        | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
+
+type TaskCompletionSource = { // TODO what should this be called?
+    is_mono_tcs_result_set: boolean;
+    is_mono_tcs_task_bound: boolean;
+    __mono_bound_task__: number;
+    __mono_gchandle__: number;
+};

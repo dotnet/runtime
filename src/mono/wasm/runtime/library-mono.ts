@@ -5,17 +5,21 @@ var MonoSupportLib = {
 	$MONO__postset: 'MONO.export_functions (Module);',
 	$MONO: {
 		pump_count: 0,
-		timeout_queue: [],
-		_vt_stack: [],
+		timeout_queue: [] as ((id?: number) => void)[],
 		mono_wasm_runtime_is_ready : false,
 		mono_wasm_ignore_pdb_load_errors: true,
-
-		/** @type {object.<string, object>} */
+		mono_text_decoder: undefined,
+		num_icu_assets_loaded_successfully: 0,
+		_vt_stack: [],
+		_scratch_root_buffer: null as WasmRootBuffer,
+		_scratch_root_free_indices: null as Int32Array,
+		_scratch_root_free_indices_count: 0,
+		_scratch_root_free_instances: [] as number[],
 		_id_table: {},
-
-		pump_message: function () {
+		
+		pump_message: function (): void {
 			if (!MONO.mono_background_exec)
-				MONO.mono_background_exec = Module.cwrap ("mono_background_exec", null);
+			MONO.mono_background_exec = Module.cwrap ("mono_background_exec", null);
 			while (MONO.timeout_queue.length > 0) {
 				--MONO.pump_count;
 				MONO.timeout_queue.shift()();
@@ -26,7 +30,7 @@ var MonoSupportLib = {
 			}
 		},
 
-		export_functions: function (module: typeof Module) {
+		export_functions: function (module: typeof Module): void {
 			module ["pump_message"] = MONO.pump_message.bind(MONO);
 			module ["mono_load_runtime_and_bcl"] = MONO.mono_load_runtime_and_bcl.bind(MONO);
 			module ["mono_load_runtime_and_bcl_args"] = MONO.mono_load_runtime_and_bcl_args.bind(MONO);
@@ -203,11 +207,6 @@ var MonoSupportLib = {
 			}
 		},
 
-		_scratch_root_buffer: null as WasmRootBuffer,
-		_scratch_root_free_indices: null as Int32Array,
-		_scratch_root_free_indices_count: 0,
-		_scratch_root_free_instances: [] as number[],
-
 		_mono_wasm_root_prototype: {
 			get_address: function (): NativePointer {
 				return this.__buffer.get_address (this.__index);
@@ -243,6 +242,85 @@ var MonoSupportLib = {
 			toString: function (): string {
 				return "[root @" + this.get_address () + "]";
 			}
+		},
+		
+		string_decoder: {
+			copy: function (mono_string: number): string {
+				if (mono_string === 0)
+					return null;
+
+				if (!this.mono_wasm_string_root)
+					this.mono_wasm_string_root = MONO.mono_wasm_new_root ();
+				this.mono_wasm_string_root.value = mono_string;
+
+				if (!this.mono_wasm_string_get_data)
+					this.mono_wasm_string_get_data = Module.cwrap ("mono_wasm_string_get_data", null, ['number', 'number', 'number', 'number']);
+				
+				if (!this.mono_wasm_string_decoder_buffer)
+					this.mono_wasm_string_decoder_buffer = Module._malloc(12);
+				
+				let ppChars = this.mono_wasm_string_decoder_buffer + 0,
+					pLengthBytes = this.mono_wasm_string_decoder_buffer + 4,
+					pIsInterned = this.mono_wasm_string_decoder_buffer + 8;
+				
+				this.mono_wasm_string_get_data (mono_string, ppChars, pLengthBytes, pIsInterned);
+
+				// TODO: Is this necessary?
+				if (!this.mono_wasm_empty_string)
+					this.mono_wasm_empty_string = "";
+
+				let result = this.mono_wasm_empty_string;
+				let lengthBytes = Module.HEAP32[pLengthBytes / 4],
+					pChars = Module.HEAP32[ppChars / 4],
+					isInterned = Module.HEAP32[pIsInterned / 4];
+
+				if (pLengthBytes && pChars) {
+					if (
+						isInterned && 
+						MONO.interned_string_table && 
+						MONO.interned_string_table.has(mono_string)
+					) {
+						result = MONO.interned_string_table.get(mono_string);
+						// console.log("intern table cache hit", mono_string, result.length);
+					} else {
+						result = this.decode(pChars, pChars + lengthBytes, false);
+						if (isInterned) {
+							if (!MONO.interned_string_table)
+								MONO.interned_string_table = new Map();
+							// console.log("interned", mono_string, result.length);
+							MONO.interned_string_table.set(mono_string, result);
+						}
+					}						
+				}
+
+				this.mono_wasm_string_root.value = 0;
+				return result;
+			},
+			decode: function (start: number, end: number, save: boolean): string {
+				if (!MONO.mono_text_decoder) {
+					MONO.mono_text_decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-16le') : undefined;
+				}
+
+				var str = "";
+				if (MONO.mono_text_decoder) {
+					// When threading is enabled, TextDecoder does not accept a view of a
+					// SharedArrayBuffer, we must make a copy of the array first.
+					var subArray = typeof SharedArrayBuffer !== 'undefined' && Module.HEAPU8.buffer instanceof SharedArrayBuffer
+						? Module.HEAPU8.slice(start, end)
+						: Module.HEAPU8.subarray(start, end);
+
+					str = MONO.mono_text_decoder.decode(subArray);
+				} else {
+					for (var i = 0; i < end - start; i+=2) {
+						var char = Module.getValue (start + i, 'i16');
+						str += String.fromCharCode (char);
+					}
+				}
+				if (save)
+					this.result = str;
+
+				return str;
+			},
 		},
 
 		_mono_wasm_release_scratch_index: function (index: number): void {
@@ -403,7 +481,7 @@ var MonoSupportLib = {
 		 * @param {(number | ManagedPointer[])} count_or_values - either a number of roots or an array of pointers
 		 * @returns {WasmRoot[]}
 		 */
-		mono_wasm_new_roots: function (count_or_values: number | ManagedPointer[]): WasmRoot[] {
+		mono_wasm_new_roots: function (count_or_values: ManagedPointer[]): WasmRoot[] {
 			var result;
 
 			if (Array.isArray (count_or_values)) {
@@ -437,85 +515,6 @@ var MonoSupportLib = {
 			}
 		},
 
-		mono_text_decoder: undefined,
-		string_decoder: {
-			copy: function (mono_string: number): string {
-				if (mono_string === 0)
-					return null;
-
-				if (!this.mono_wasm_string_root)
-					this.mono_wasm_string_root = MONO.mono_wasm_new_root ();
-				this.mono_wasm_string_root.value = mono_string;
-
-				if (!this.mono_wasm_string_get_data)
-					this.mono_wasm_string_get_data = Module.cwrap ("mono_wasm_string_get_data", null, ['number', 'number', 'number', 'number']);
-				
-				if (!this.mono_wasm_string_decoder_buffer)
-					this.mono_wasm_string_decoder_buffer = Module._malloc(12);
-				
-				let ppChars = this.mono_wasm_string_decoder_buffer + 0,
-					pLengthBytes = this.mono_wasm_string_decoder_buffer + 4,
-					pIsInterned = this.mono_wasm_string_decoder_buffer + 8;
-				
-				this.mono_wasm_string_get_data (mono_string, ppChars, pLengthBytes, pIsInterned);
-
-				// TODO: Is this necessary?
-				if (!this.mono_wasm_empty_string)
-					this.mono_wasm_empty_string = "";
-
-				let result = this.mono_wasm_empty_string;
-				let lengthBytes = Module.HEAP32[pLengthBytes / 4],
-					pChars = Module.HEAP32[ppChars / 4],
-					isInterned = Module.HEAP32[pIsInterned / 4];
-
-				if (pLengthBytes && pChars) {
-					if (
-						isInterned && 
-						MONO.interned_string_table && 
-						MONO.interned_string_table.has(mono_string)
-					) {
-						result = MONO.interned_string_table.get(mono_string);
-						// console.log("intern table cache hit", mono_string, result.length);
-					} else {
-						result = this.decode(pChars, pChars + lengthBytes, false);
-						if (isInterned) {
-							if (!MONO.interned_string_table)
-								MONO.interned_string_table = new Map();
-							// console.log("interned", mono_string, result.length);
-							MONO.interned_string_table.set(mono_string, result);
-						}
-					}						
-				}
-
-				this.mono_wasm_string_root.value = 0;
-				return result;
-			},
-			decode: function (start: number, end: number, save: boolean): string {
-				if (!MONO.mono_text_decoder) {
-					MONO.mono_text_decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-16le') : undefined;
-				}
-
-				var str = "";
-				if (MONO.mono_text_decoder) {
-					// When threading is enabled, TextDecoder does not accept a view of a
-					// SharedArrayBuffer, we must make a copy of the array first.
-					var subArray = typeof SharedArrayBuffer !== 'undefined' && Module.HEAPU8.buffer instanceof SharedArrayBuffer
-						? Module.HEAPU8.slice(start, end)
-						: Module.HEAPU8.subarray(start, end);
-
-					str = MONO.mono_text_decoder.decode(subArray);
-				} else {
-					for (var i = 0; i < end - start; i+=2) {
-						var char = Module.getValue (start + i, 'i16');
-						str += String.fromCharCode (char);
-					}
-				}
-				if (save)
-					this.result = str;
-
-				return str;
-			},
-		},
 
 		mono_wasm_add_dbg_command_received: function(res_ok: number, id: number, buffer: number, buffer_len: number): void {
 			const assembly_data = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
@@ -896,13 +895,13 @@ var MonoSupportLib = {
 			}
 		},
 
-		_handle_loaded_asset: function (ctx, asset: AssetEntry, url: string, blob: Iterable<number>): void {
+		_handle_loaded_asset: function (ctx: Context, asset: AssetEntry, url: string, blob: Iterable<number>): void {
 			var bytes = new Uint8Array (blob);
 			if (ctx.tracing)
 				console.log ("MONO_WASM: Loaded:", asset.name, "size", bytes.length, "from", url);
 
 			var virtualName = asset.virtual_path || asset.name;
-			var offset = null;
+			var offset: number = null;
 
 			switch (asset.behavior) {
 				case AssetBehaviours.Resource:
@@ -1040,7 +1039,7 @@ var MonoSupportLib = {
 		//      "invariant": operate in invariant globalization mode.
 		//      "auto" (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
 		//    diagnostic_tracing: (optional) enables diagnostic log messages during startup
-		mono_load_runtime_and_bcl_args: function (args) {
+		mono_load_runtime_and_bcl_args: function (args: MonoRuntimeArgs): void {
 			try {
 				return MONO._load_assets_and_runtime (args);
 			} catch (exc) {
@@ -1057,8 +1056,6 @@ var MonoSupportLib = {
 			heapBytes.set (bytes);
 			return memoryOffset;
 		},
-
-		num_icu_assets_loaded_successfully: 0,
 
 		// @offset must be the address of an ICU data archive in the native heap.
 		// returns true on success.
@@ -1078,7 +1075,7 @@ var MonoSupportLib = {
 			return Module.ccall ('mono_wasm_get_icudt_name', 'string', ['string'], [culture]);
 		},
 
-		_finalize_startup: function (args: MonoRuntimeArgs, ctx): void {
+		_finalize_startup: function (args: MonoRuntimeArgs, ctx: Context): void {
 			var loaded_files_with_debug_info = [];
 
 			MONO.loaded_assets = ctx.loaded_assets;
@@ -1131,7 +1128,7 @@ var MonoSupportLib = {
 			if (!args.loaded_cb)
 				throw new Error ("loaded_cb not provided");
 
-			var ctx = {
+			var ctx: Context = {
 				tracing: args.diagnostic_tracing || false,
 				pending_count: args.assets.length,
 				mono_wasm_add_assembly: Module.cwrap ('mono_wasm_add_assembly', 'number', ['string', 'number', 'number']),
@@ -1311,7 +1308,7 @@ var MonoSupportLib = {
 			return new Uint8Array (byteNumbers);
 		},
 
-		mono_wasm_load_data_archive: function (data, prefix): boolean {
+		mono_wasm_load_data_archive: function (data: TypedArray, prefix: string): boolean {
 			if (data.length < 8)
 				return false;
 

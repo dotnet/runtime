@@ -309,7 +309,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		_mono_array_root_to_js_array: function (arrayRoot): any[] | null {
+		_mono_array_root_to_js_array: function (arrayRoot: WasmRoot): any[] | null {
 			if (arrayRoot.value === 0)
 				return null;
 
@@ -354,7 +354,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		unbox_mono_obj: function (mono_obj: number): number {
+		unbox_mono_obj: function (mono_obj: number): any {
 			if (mono_obj === 0)
 				return undefined;
 
@@ -398,7 +398,7 @@ var BindingSupportLib = {
 
 		_unbox_safehandle_root: function (root: WasmRoot): number {
 			var addRef = true;
-			var js_handle = BINDING.call_method(BINDING.safehandle_get_handle, null, "mi", [ root.value, addRef ]);
+			var js_handle = BINDING.call_method<number>(BINDING.safehandle_get_handle, null, "mi", [ root.value, addRef ]);
 			var requiredObject = BINDING.mono_wasm_require_handle (js_handle);
 			if (addRef)
 			{
@@ -411,7 +411,7 @@ var BindingSupportLib = {
 		},
 
 		/** @returns return type is determined by the type parameter */
-		_unbox_mono_obj_root_with_known_nonprimitive_type: function (root: WasmRoot, type: CNonPrimativeTypes): any {
+		_unbox_mono_obj_root_with_known_nonprimitive_type: function (root: WasmRoot, type: CNonPrimativeTypes): number | string | boolean | JSObject | Promise<any> | Date | Function {
 			if (root.value === undefined)
 				throw new Error(`Expected a root but got ${root}`);
 			
@@ -443,7 +443,7 @@ var BindingSupportLib = {
 				case CNonPrimativeTypes.Float64Array:
 					throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
 				case CNonPrimativeTypes.DateTime: // clr .NET DateTime
-					var dateValue = BINDING.call_method(BINDING.get_date_value, null, "m", [ root.value ]);
+					var dateValue = BINDING.call_method<number>(BINDING.get_date_value, null, "m", [ root.value ]);
 					return new Date(dateValue);
 				case CNonPrimativeTypes.DateTimeOffset: // clr .NET DateTimeOffset
 					var dateoffsetValue = BINDING._object_to_string (root.value);
@@ -460,7 +460,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		_unbox_mono_obj_root: function (root: WasmRoot): any {
+		_unbox_mono_obj_root: function (root: WasmRoot): number | string | boolean | JSObject | Promise<any> | Date | Function {
 			if (root.value === 0)
 				return undefined;
 
@@ -483,18 +483,18 @@ var BindingSupportLib = {
 			}
 		},
 
-		create_task_completion_source: function (): number {
+		create_task_completion_source: function (): TaskCompletionSource {
 			return BINDING.call_method (BINDING.create_tcs, null, "i", [ -1 ]);
 		},
 
-		set_task_result: function (tcs, result: string): void {
+		set_task_result: function (tcs: TaskCompletionSource, result: string): void {
 			tcs.is_mono_tcs_result_set = true;
 			BINDING.call_method (BINDING.set_tcs_result, null, "oo", [ tcs, result ]);
 			if (tcs.is_mono_tcs_task_bound)
 				BINDING.free_task_completion_source(tcs);
 		},
 
-		set_task_failure: function (tcs, reason): void {
+		set_task_failure: function (tcs: TaskCompletionSource, reason): void {
 			tcs.is_mono_tcs_result_set = true;
 			BINDING.call_method (BINDING.set_tcs_failure, null, "os", [ tcs, reason.toString () ]);
 			if (tcs.is_mono_tcs_task_bound)
@@ -502,7 +502,7 @@ var BindingSupportLib = {
 		},
 
 		// https://github.com/Planeshifter/emscripten-examples/blob/master/01_PassingArrays/sum_post.js
-		js_typedarray_to_heap: function(typedArray): Uint8Array {
+		js_typedarray_to_heap: function(typedArray: TypedArray): Uint8Array {
 			var numBytes = typedArray.length * typedArray.BYTES_PER_ELEMENT;
 			var ptr = Module._malloc(numBytes);
 			var heapBytes = new Uint8Array(Module.HEAPU8.buffer, ptr, numBytes);
@@ -584,12 +584,12 @@ var BindingSupportLib = {
 					return BINDING.get_task_and_bind (tcs, js_obj);
 				case js_obj.constructor.name === "Date":
 					// We may need to take into account the TimeZone Offset
-					return BINDING.call_method(BINDING.create_date_time, null, "d!", [ js_obj.getTime() ]);
+					return BINDING.call_method(BINDING.create_date_time, null, "d!", [ (js_obj as Date).getTime() ]);
 				default:
-					return BINDING.extract_mono_obj (js_obj);
+					return BINDING.extract_mono_obj (js_obj as JSObject);
 			}
 		},
-		js_to_mono_uri: function (js_obj: any): number {
+		js_to_mono_uri: function (js_obj: null | undefined |  symbol | string | JSObject): number {
 			BINDING.bindings_lazy_init ();
 
 			switch (true) {
@@ -600,7 +600,7 @@ var BindingSupportLib = {
 				case typeof js_obj === "string":
 					return BINDING.call_method(BINDING.create_uri, null, "s!", [ js_obj ])
 				default:
-					return BINDING.extract_mono_obj (js_obj);
+					return BINDING.extract_mono_obj (js_obj as JSObject);
 			}
 		},
 		has_backing_array_buffer: function (js_obj): boolean {
@@ -635,7 +635,7 @@ var BindingSupportLib = {
 		},
 		// Copy the existing typed array to the heap pointed to by the pinned array address
 		// 	 typed array memory -> copy to heap -> address of managed pinned array
-		typedarray_copy_to : function (typed_array, pinned_array: number, begin: number, end: number, bytes_per_element: number): number {
+		typedarray_copy_to : function (typed_array: TypedArray, pinned_array: number, begin: number, end: number, bytes_per_element: number): number {
 
 			// JavaScript typed arrays are array-like objects and provide a mechanism for accessing
 			// raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays
@@ -678,7 +678,7 @@ var BindingSupportLib = {
 		},
 		// Copy the pinned array address from pinned_array allocated on the heap to the typed array.
 		// 	 adress of managed pinned array -> copy from heap -> typed array memory
-		typedarray_copy_from : function (typed_array, pinned_array: number, begin: number, end: number, bytes_per_element: number): number {
+		typedarray_copy_from : function (typed_array: TypedArray, pinned_array: number, begin: number, end: number, bytes_per_element: number): number {
 
 			// JavaScript typed arrays are array-like objects and provide a mechanism for accessing
 			// raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays
@@ -719,10 +719,10 @@ var BindingSupportLib = {
 		},
 		// Creates a new typed array from pinned array address from pinned_array allocated on the heap to the typed array.
 		// 	 adress of managed pinned array -> copy from heap -> typed array memory
-		typed_array_from: function (pinned_array, begin: number, end: number, bytes_per_element: number, type: JSTypedArrays): ArrayBuffer {
+		typed_array_from: function (pinned_array: number, begin: number, end: number, bytes_per_element: number, type: JSTypedArrays): TypedArray {
 
 			// typed array
-			var newTypedArray: ArrayBuffer;
+			var newTypedArray: TypedArray;
 
 			switch (type)
 			{
@@ -758,7 +758,7 @@ var BindingSupportLib = {
 			BINDING.typedarray_copy_from(newTypedArray, pinned_array, begin, end, bytes_per_element);
 			return newTypedArray;
 		},
-		js_to_mono_enum: function (js_obj, method?:  any/* todo unused var */, parmIdx?: any /* todo unused var */): number {
+		js_to_mono_enum: function (js_obj: number, method?:  any/* todo unused var */, parmIdx?: any /* todo unused var */): number {
 			BINDING.bindings_lazy_init ();
 
 			if (typeof (js_obj) !== "number")
@@ -766,7 +766,7 @@ var BindingSupportLib = {
 
 			return js_obj | 0;
 		},
-		wasm_binding_obj_new: function (js_obj_id: number, ownsHandle: boolean, type)
+		wasm_binding_obj_new: function (js_obj_id: number, ownsHandle: boolean, type: number): number
 		{
 			return BINDING._bind_js_obj (js_obj_id, ownsHandle, type);
 		},
@@ -787,7 +787,7 @@ var BindingSupportLib = {
 
 		// when should_add_in_flight === true, the JSObject would be temporarily hold by Normal GCHandle, so that it would not get collected during transition to the managed stack.
 		// its InFlight handle would be freed when the instance arrives to managed side via Interop.Runtime.ReleaseInFlight
-		wasm_get_raw_obj: function (gchandle: number, should_add_in_flight)
+		wasm_get_raw_obj: function (gchandle: number, should_add_in_flight: boolean): number
 		{
 			if(!gchandle){
 				return 0;
@@ -813,9 +813,9 @@ var BindingSupportLib = {
 			}
 		},
 
-		get_task_and_bind: function (tcs, js_obj: JSObject) {
+		get_task_and_bind: function (tcs: TaskCompletionSource, js_obj: JSObject): number {
 			var gc_handle = BINDING.mono_wasm_free_list.length ? BINDING.mono_wasm_free_list.pop() : BINDING.mono_wasm_ref_counter++;
-			var task_gchandle = BINDING.call_method (BINDING.tcs_get_task_and_bind, null, "oi", [ tcs, gc_handle + 1 ]);
+			var task_gchandle = BINDING.call_method<number> (BINDING.tcs_get_task_and_bind, null, "oi", [ tcs, gc_handle + 1 ]);
 			js_obj.__mono_gchandle__ = task_gchandle;
 			BINDING.mono_wasm_object_registry[gc_handle] = js_obj;
 			BINDING.free_task_completion_source(tcs);
@@ -825,7 +825,7 @@ var BindingSupportLib = {
 			return BINDING.wasm_get_raw_obj (js_obj.__mono_gchandle__, true);
 		},
 
-		free_task_completion_source: function (tcs) {
+		free_task_completion_source: function (tcs: TaskCompletionSource): void {
 			if (tcs.is_mono_tcs_result_set)
 			{
 				BINDING._unbind_raw_obj_and_free (tcs.__mono_gchandle__);
@@ -836,7 +836,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		extract_mono_obj: function (js_obj: JSObject) {
+		extract_mono_obj: function (js_obj: JSObject): number {
 			if (js_obj === null || typeof js_obj === "undefined")
 				return 0;
 
@@ -1264,7 +1264,7 @@ var BindingSupportLib = {
 			}
 		},
 
-		call_method: function (method: number, this_arg, args_marshal: ArgsMarshalString, args: any[]): number {
+		call_method: function <T> (method: number, this_arg, args_marshal: ArgsMarshalString, args: any[]): T {
 			BINDING.bindings_lazy_init ();
 
 			// HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
@@ -1308,9 +1308,9 @@ var BindingSupportLib = {
 			throw exc;
 		},
 
-		_handle_exception_and_produce_result_for_call: function (
-			converter: Converter, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled: boolean
-		): number {
+		_handle_exception_and_produce_result_for_call: function <T> (
+			converter: Converter, buffer, resultRoot, exceptionRoot, argsRootBuffer: WasmRootBuffer, is_result_marshaled: boolean
+		): T {
 			BINDING._handle_exception_for_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer);
 
 			let result = resultRoot.value;
@@ -1322,7 +1322,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_teardown_after_call: function (converter: Converter, buffer, resultRoot, exceptionRoot, argsRootBuffer): void {
+		_teardown_after_call: function (converter: Converter, buffer, resultRoot, exceptionRoot, argsRootBuffer: WasmRootBuffer): void {
 			BINDING._release_args_root_buffer_from_method_call (converter, argsRootBuffer);
 			BINDING._release_buffer_from_method_call (converter, buffer | 0);
 
@@ -1342,7 +1342,7 @@ var BindingSupportLib = {
 			return result;
 		},
 
-		_call_method_with_converted_args: function (method: number, this_arg, converter, buffer, is_result_marshaled: boolean, argsRootBuffer): number {
+		_call_method_with_converted_args: function <T> (method: number, this_arg, converter: Converter, buffer, is_result_marshaled: boolean, argsRootBuffer: WasmRootBuffer): T {
 			var resultRoot = MONO.mono_wasm_new_root (), exceptionRoot = MONO.mono_wasm_new_root ();
 			resultRoot.value = BINDING.invoke_method (method, this_arg, buffer, exceptionRoot.get_address ());
 			return BINDING._handle_exception_and_produce_result_for_call (converter, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled);
@@ -1539,7 +1539,7 @@ var BindingSupportLib = {
 			return method;
 		},
 
-		call_static_method: function (fqn: string, args: any[] | null, signature: ArgsMarshalString | null): number {
+		call_static_method: function (fqn: string, args: any[], signature: ArgsMarshalString | null): number {
 			BINDING.bindings_lazy_init ();
 
 			var method = BINDING.resolve_method_fqn (fqn);
@@ -1561,7 +1561,7 @@ var BindingSupportLib = {
 			return BINDING.bind_method (method, null, signature, fqn);
 		},
 
-		bind_assembly_entry_point: function (assembly: string, signature: ArgsMarshalString): (...args: any) => Promise<number> {
+		bind_assembly_entry_point: function (assembly: string, signature: ArgsMarshalString): (...args: any) => Promise<unknown> {
 			BINDING.bindings_lazy_init ();
 
 			var asm = BINDING.assembly_load (assembly);
@@ -2014,7 +2014,7 @@ var BindingSupportLib = {
 		var res = BINDING.typedarray_copy_to(requireObject, pinned_array, begin, end, bytes_per_element);
 		return BINDING.js_to_mono_obj (res)
 	},
-	mono_wasm_typed_array_from: function(pinned_array: number, begin: number, end: number, bytes_per_element: number, type, is_exception): number {
+	mono_wasm_typed_array_from: function(pinned_array: number, begin: number, end: number, bytes_per_element: number, type, is_exception?: any /* unused */): number {
 		BINDING.bindings_lazy_init ();
 		var res = BINDING.typed_array_from(pinned_array, begin, end, bytes_per_element, type);
 		return BINDING.js_to_mono_obj (res)
