@@ -162,7 +162,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var fixture = sharedTestState.PortableAppFixture_Built
                 .Copy();
 
+            // Move the .deps.json to a subdirectory, note that in this case we have to move all of the app's dependencies
+            // along with it - in this case Newtonsoft.Json.dll
+            // For framework dependent apps (dotnet build produces those) the probing directories are:
+            // - The directory where the .deps.json is
+            // - Any framework directory
             var depsJson = MoveDepsJsonToSubdirectory(fixture);
+            File.Move(
+                Path.Combine(Path.GetDirectoryName(fixture.TestProject.AppDll), "Newtonsoft.Json.dll"),
+                Path.Combine(Path.GetDirectoryName(depsJson), "Newtonsoft.Json.dll"));
 
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
