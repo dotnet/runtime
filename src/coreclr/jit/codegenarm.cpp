@@ -998,11 +998,24 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     // Ensure that lclVar nodes are typed correctly.
     assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
 
-    GenTree* data = tree->gtOp1;
-
-    assert(!data->isContained());
+    GenTree*  data    = tree->gtOp1;
+    regNumber dataReg = REG_NA;
     genConsumeReg(data);
-    regNumber dataReg = data->GetRegNum();
+
+    if (data->isContained())
+    {
+        assert(data->OperIs(GT_BITCAST));
+        const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
+        assert(!bitcastSrc->isContained());
+        dataReg = bitcastSrc->GetRegNum();
+    }
+    else
+    {
+
+        dataReg = data->GetRegNum();
+    }
+    assert(dataReg != REG_NA);
+
     if (tree->IsOffsetMisaligned())
     {
         // Arm supports unaligned access only for integer types,
@@ -1073,8 +1086,19 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
         {
             genConsumeRegs(data);
 
-            assert(!data->isContained());
-            regNumber dataReg = data->GetRegNum();
+            regNumber dataReg = REG_NA;
+
+            if (data->isContained())
+            {
+                assert(data->OperIs(GT_BITCAST));
+                const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
+                assert(!bitcastSrc->isContained());
+                dataReg = bitcastSrc->GetRegNum();
+            }
+            else
+            {
+                dataReg = data->GetRegNum();
+            }
             assert(dataReg != REG_NA);
 
             regNumber targetReg = tree->GetRegNum();
