@@ -189,11 +189,11 @@ namespace System.Net.NetworkInformation
                 }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize)
                 {
-                    return new PingReply(new IPAddress(0), null, IPStatus.PacketTooBig, 0, Array.Empty<byte>());
+                    return CreatePingReply(IPStatus.PacketTooBig);
                 }
 
                 // We have exceeded our timeout duration, and no reply has been received.
-                return CreateTimedOutPingReply();
+                return CreatePingReply(IPStatus.TimedOut);
             }
         }
 
@@ -245,7 +245,7 @@ namespace System.Net.NetworkInformation
                 }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.MessageSize)
                 {
-                    return new PingReply(new IPAddress(0), null, IPStatus.PacketTooBig, 0, Array.Empty<byte>());
+                    return CreatePingReply(IPStatus.PacketTooBig);
                 }
                 catch (OperationCanceledException)
                 {
@@ -256,15 +256,15 @@ namespace System.Net.NetworkInformation
                 }
 
                 // We have exceeded our timeout duration, and no reply has been received.
-                return CreateTimedOutPingReply();
+                return CreatePingReply(IPStatus.TimedOut);
             }
         }
 
-        private static PingReply CreateTimedOutPingReply()
+        private static PingReply CreatePingReply(IPStatus status)
         {
             // Documentation indicates that you should only pay attention to the IPStatus value when
             // its value is not "Success", but the rest of these values match that of the Windows implementation.
-            return new PingReply(new IPAddress(0), null, IPStatus.TimedOut, 0, Array.Empty<byte>());
+            return new PingReply(new IPAddress(0), null, status, 0, Array.Empty<byte>());
         }
 
 #if DEBUG
