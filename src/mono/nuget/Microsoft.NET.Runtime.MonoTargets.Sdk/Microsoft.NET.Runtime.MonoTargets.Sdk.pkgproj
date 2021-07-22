@@ -5,10 +5,6 @@
     <PackageDescription>Provides the tasks+targets, for consumption by mono-based workloads</PackageDescription>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != 'net6.0'">
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" PrivateAssets="All" />
-  </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="$(RepoTasksDir)RuntimeConfigParser\RuntimeConfigParser.csproj" />
     <ProjectReference Include="$(RepoTasksDir)JsonToItemsTaskFactory\JsonToItemsTaskFactory.csproj" />
