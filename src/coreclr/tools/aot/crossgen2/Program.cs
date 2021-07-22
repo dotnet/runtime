@@ -983,7 +983,14 @@ namespace ILCompiler
 #if DEBUG
             try
             {
-                return new Program().Run(args);
+                try
+                {
+                    return new Program().Run(args);
+                }
+                finally
+                {
+                    ReadyToRunCodegenCompilationBuilder.ShutdownJit();
+                }
             }
             catch (CodeGenerationFailedException ex) when (DumpReproArguments(ex))
             {
@@ -992,7 +999,14 @@ namespace ILCompiler
 #else
             try
             {
-                return new Program().Run(args);
+                try
+                {
+                    return new Program().Run(args);
+                }
+                finally
+                {
+                    ReadyToRunCodegenCompilationBuilder.ShutdownJit();
+                }
             }
             catch (Exception e)
             {
@@ -1001,6 +1015,7 @@ namespace ILCompiler
                 return 1;
             }
 #endif
+
         }
     }
 }
