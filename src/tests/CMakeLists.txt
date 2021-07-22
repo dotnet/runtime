@@ -8,6 +8,7 @@ project(Tests)
 
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configurecet.cmake)
 
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(../coreclr/pal/prebuilt/inc ../coreclr/pal/prebuilt/inc)
