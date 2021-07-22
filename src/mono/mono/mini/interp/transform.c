@@ -2475,9 +2475,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib && target_method->klass == mono_defaults.enum_class && !strcmp (tm, "HasFlag")) {
 		gboolean intrinsify = FALSE;
 		MonoClass *base_klass = NULL;
+		InterpInst *prev_ins = interp_prev_ins (td->last_ins);
+		InterpInst *prev_prev_ins = prev_ins ? interp_prev_ins (prev_ins) : NULL;
 		if (td->last_ins && td->last_ins->opcode == MINT_BOX &&
-				td->last_ins->prev && interp_ins_is_ldc (td->last_ins->prev) &&
-				td->last_ins->prev->prev && td->last_ins->prev->prev->opcode == MINT_BOX &&
+				prev_ins && interp_ins_is_ldc (prev_ins) &&
+				prev_prev_ins && prev_prev_ins->opcode == MINT_BOX &&
 				td->sp [-2].klass == td->sp [-1].klass &&
 				interp_ip_in_cbb (td, td->ip - td->il_code)) {
 			// csc pattern : box, ldc, box, call HasFlag
@@ -2486,12 +2488,12 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			base_klass = mono_class_from_mono_type_internal (base_type);
 
 			// Remove the boxing of valuetypes, by replacing them with moves
-			td->last_ins->prev->prev->opcode = get_mov_for_type (mint_type (base_type), FALSE);
+			prev_prev_ins->opcode = get_mov_for_type (mint_type (base_type), FALSE);
 			td->last_ins->opcode = get_mov_for_type (mint_type (base_type), FALSE);
 
 			intrinsify = TRUE;
 		} else if (td->last_ins && td->last_ins->opcode == MINT_BOX &&
-				td->last_ins->prev && interp_ins_is_ldc (td->last_ins->prev) &&
+				prev_ins && interp_ins_is_ldc (prev_ins) && prev_prev_ins &&
 				constrained_class && td->sp [-1].klass == constrained_class &&
 				interp_ip_in_cbb (td, td->ip - td->il_code)) {
 			// mcs pattern : ldc, box, constrained Enum, call HasFlag
@@ -2502,7 +2504,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 
 			// Remove boxing and load the value of this
 			td->last_ins->opcode = get_mov_for_type (mt, FALSE);
-			InterpInst *ins = interp_insert_ins (td, td->last_ins->prev->prev, interp_get_ldind_for_mt (mt));
+			InterpInst *ins = interp_insert_ins (td, prev_prev_ins, interp_get_ldind_for_mt (mt));
 			interp_ins_set_sreg (ins, td->sp [-2].local);
 			interp_ins_set_dreg (ins, td->sp [-2].local);
 			intrinsify = TRUE;
