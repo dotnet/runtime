@@ -31,11 +31,11 @@ namespace System.Net.Http
             {
                 throw new ArgumentNullException(nameof(content));
             }
-            if ((offset < 0) || (offset > content.Length))
+            if ((uint)offset > (uint)content.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
-            if ((count < 0) || (count > (content.Length - offset)))
+            if ((uint)count > (uint)(content.Length - offset))
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
