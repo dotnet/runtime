@@ -37172,6 +37172,15 @@ void gc_heap::init_static_data()
             max (6*1024*1024, Align(soh_segment_size/2)));
 #endif //MULTIPLE_HEAPS
 
+    size_t gen1_max_size_config = (size_t)GCConfig::GetGCGen1MaxBudget();
+
+    if (gen1_max_size_config)
+    {
+        gen1_max_size = min (gen1_max_size, gen1_max_size_config);
+    }
+
+    gen1_max_size = Align (gen1_max_size);
+
     dprintf (GTC_LOG, ("gen0 min: %Id, max: %Id, gen1 max: %Id",
         gen0_min_size, gen0_max_size, gen1_max_size));
 
