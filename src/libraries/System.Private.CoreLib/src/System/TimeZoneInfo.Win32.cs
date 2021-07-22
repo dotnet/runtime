@@ -35,8 +35,6 @@ namespace System
         private const int MaxKeyLength = 255;
         private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
 
-        private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone();
-
         private sealed partial class CachedData
         {
             private static TimeZoneInfo GetCurrentOneYearLocal()
@@ -739,7 +737,7 @@ namespace System
 
 
         /// <summary>
-        /// Try to find the time zone resources Dll matching the CurrentUICulture or on eof its parent cultures.
+        /// Try to find the time zone resources Dll matching the CurrentUICulture or one of its parent cultures.
         /// We try to check of such resource module e.g. %windir%\system32\[UI Culture Name]\tzres.dll.mui exist.
         /// If a localized resource file exists, we LoadString resource with the id specified inside resource input
         /// string and and return it to our caller.
@@ -775,8 +773,8 @@ namespace System
             // get the path to Windows\System32
             string system32 = Environment.SystemDirectory;
 
-            // trim the string "@tzres.dll" => "tzres.dll"
-            string tzresDll = resources[0].TrimStart('@') + ".mui";
+            // trim the string "@tzres.dll" to "tzres.dll" and append the "mui" file extension to it.
+            string tzresDll = $"{resources[0].AsSpan().TrimStart('@')}.mui";
 
             try
             {
