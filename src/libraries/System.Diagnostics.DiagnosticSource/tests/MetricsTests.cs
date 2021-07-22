@@ -158,6 +158,41 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ThrowingExceptionsFromObservableInstrumentCallbacks()
+        {
+            RemoteExecutor.Invoke(() => {
+                using Meter meter = new Meter("ThrowingExceptionsFromObservableInstrumentCallbacks");
+
+                using (MeterListener listener = new MeterListener())
+                {
+                    ObservableCounter<int>  counter1 = meter.CreateObservableCounter<int>("observableCounter1", (Func<int>) (() => throw new ArgumentOutOfRangeException()));
+                    ObservableGauge<int>    gauge1   = meter.CreateObservableGauge<int>("observableGauge1", (Func<int>)(() => throw new ArgumentException()));
+                    ObservableCounter<int>  counter2 = meter.CreateObservableCounter<int>("observableCounter2", (Func<int>)(() => throw new PlatformNotSupportedException()));
+                    ObservableGauge<int>    gauge2   = meter.CreateObservableGauge<int>("observableGauge2", (Func<int>)(() => throw new NullReferenceException()));
+
+                    listener.EnableMeasurementEvents(counter1, null);
+                    listener.EnableMeasurementEvents(gauge1, null);
+                    listener.EnableMeasurementEvents(counter2, null);
+                    listener.EnableMeasurementEvents(gauge2, null);
+
+                    listener.SetMeasurementEventCallback<int>((inst, measurement, tags, state) => { });
+
+                    Exception exception = Record.Exception(() => listener.RecordObservableInstruments());
+                    Assert.NotNull(exception);
+                    Assert.IsType<AggregateException>(exception);
+                    AggregateException ae = exception as AggregateException;
+                    Assert.Equal(4, ae.InnerExceptions.Count);
+
+                    Assert.IsType<ArgumentOutOfRangeException>(ae.InnerExceptions[0]);
+                    Assert.IsType<ArgumentException>(ae.InnerExceptions[1]);
+                    Assert.IsType<PlatformNotSupportedException>(ae.InnerExceptions[2]);
+                    Assert.IsType<NullReferenceException>(ae.InnerExceptions[3]);
+                }
+
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void InstrumentMeasurementTest()
         {
             RemoteExecutor.Invoke(() => {
