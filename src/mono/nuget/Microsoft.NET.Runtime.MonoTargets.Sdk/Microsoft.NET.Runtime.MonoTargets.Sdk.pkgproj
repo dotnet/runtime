@@ -5,7 +5,7 @@
     <PackageDescription>Provides the tasks+targets, for consumption by mono-based workloads</PackageDescription>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'net6.0'">
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" PrivateAssets="All" />
   </ItemGroup>
 
