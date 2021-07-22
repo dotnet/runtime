@@ -318,7 +318,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         public static void EnormousRead()
         {
             // 0x6000_0000 / 3 => 0x2000_0000 * 4 => 0x8000_0000 (overflow)
@@ -352,7 +352,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         public static void EnormousWrite()
         {
             // 0x6000_0000 / 3 => 0x2000_0000 * 4 => 0x8000_0000 (overflow)
