@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Xml;
 using System.Xml;
-using System.Linq;
 
 namespace System.Configuration
 {
@@ -14,17 +14,34 @@ namespace System.Configuration
     //
     internal sealed class FipsAwareEncryptedXml : EncryptedXml
     {
+
         public FipsAwareEncryptedXml(XmlDocument doc)
             : base(doc)
         {
         }
 
+        // Override EncryptedXml.GetDecryptionKey to avoid calling into CryptoConfig.CreateFromName
+        // When detect AES, we need to return AesCryptoServiceProvider (FIPS certified) instead of AesManaged (FIPS obsolated)
         public override SymmetricAlgorithm GetDecryptionKey(EncryptedData encryptedData, string symmetricAlgorithmUri)
         {
-            if (IsAES256(encryptedData, symmetricAlgorithmUri))
+
+            // If AES is used then assume FIPS is required
+            bool fipsRequired = IsAesDetected(encryptedData, symmetricAlgorithmUri);
+
+            if (fipsRequired)
             {
                 // Obtain the EncryptedKey
-                EncryptedKey ek = encryptedData.KeyInfo.OfType<KeyInfoEncryptedKey>().FirstOrDefault()?.EncryptedKey;
+                EncryptedKey ek = null;
+
+                foreach (var ki in encryptedData.KeyInfo)
+                {
+                    KeyInfoEncryptedKey kiEncKey = ki as KeyInfoEncryptedKey;
+                    if (kiEncKey != null)
+                    {
+                        ek = kiEncKey.EncryptedKey;
+                        break;
+                    }
+                }
 
                 // Got an EncryptedKey, decrypt it to get the AES key
                 if (ek != null)
@@ -46,17 +63,20 @@ namespace System.Configuration
             return base.GetDecryptionKey(encryptedData, symmetricAlgorithmUri);
         }
 
-        private static bool IsAES256(EncryptedData encryptedData, string algorithmUri)
+        private static bool IsAesDetected(EncryptedData encryptedData, string symmetricAlgorithmUri)
         {
-            if (encryptedData != null && encryptedData.KeyInfo != null && (algorithmUri != null || encryptedData.EncryptionMethod != null))
+            if (encryptedData != null &&
+                encryptedData.KeyInfo != null &&
+                (symmetricAlgorithmUri != null || encryptedData.EncryptionMethod != null))
             {
-                if (algorithmUri == null)
+
+                if (symmetricAlgorithmUri == null)
                 {
-                    algorithmUri = encryptedData.EncryptionMethod.KeyAlgorithm;
+                    symmetricAlgorithmUri = encryptedData.EncryptionMethod.KeyAlgorithm;
                 }
 
                 // Check if the Uri matches AES256
-                return string.Equals(algorithmUri, XmlEncAES256Url, StringComparison.InvariantCultureIgnoreCase);
+                return string.Equals(symmetricAlgorithmUri, EncryptedXml.XmlEncAES256Url, StringComparison.InvariantCultureIgnoreCase);
             }
 
             return false;
