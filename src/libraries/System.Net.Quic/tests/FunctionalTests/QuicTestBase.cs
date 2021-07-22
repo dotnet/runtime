@@ -23,6 +23,9 @@ namespace System.Net.Quic.Tests
         public static QuicImplementationProvider ImplementationProvider { get; } = s_factory.GetProvider();
         public static bool IsSupported => ImplementationProvider.IsSupported;
 
+        public static bool IsMockProvider => typeof(T) == typeof(MockProviderFactory);
+        public static bool IsMsQuicProvider => typeof(T) == typeof(MsQuicProviderFactory);
+
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
         public X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
