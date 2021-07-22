@@ -80,7 +80,6 @@ public:
     INT_CONFIG   (HeapVerifyLevel,        "HeapVerify",             NULL,                             HEAPVERIFY_NONE,   "When set verifies the integrity of the managed heap on entry and exit of each GC")       \
     INT_CONFIG   (LOHCompactionMode,      "GCLOHCompact",           NULL,                             0,                 "Specifies the LOH compaction mode")                                                      \
     INT_CONFIG   (LOHThreshold,           "GCLOHThreshold",         NULL,                             LARGE_OBJECT_SIZE, "Specifies the size that will make objects go on LOH")                                    \
-    INT_CONFIG   (AllocTickThreshold,     "AllocTickThreshold",     "System.GC.AllocTick",            102400,            "Specifies the size of allocations that causes an AllocTick event fired")                 \
     INT_CONFIG   (BGCSpinCount,           "BGCSpinCount",           NULL,                             140,               "Specifies the bgc spin count")                                                           \
     INT_CONFIG   (BGCSpin,                "BGCSpin",                NULL,                             2,                 "Specifies the bgc spin time")                                                            \
     INT_CONFIG   (HeapCount,              "GCHeapCount",            "System.GC.HeapCount",            0,                 "Specifies the number of server GC heaps")                                                \

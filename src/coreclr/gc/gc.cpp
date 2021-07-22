@@ -1903,7 +1903,7 @@ size_t align_on_segment_hard_limit (size_t add)
 
 #endif //SERVER_GC
 
-size_t etw_allocation_tick = 0;
+const size_t etw_allocation_tick = 100*1024;
 
 const size_t low_latency_alloc = 256*1024;
 
@@ -12437,8 +12437,6 @@ gc_heap::init_semi_shared()
 #endif //SHORT_PLUGS
 
     generation_skip_ratio_threshold = (int)GCConfig::GetGCLowSkipRatio();
-
-    etw_allocation_tick = (int)GCConfig::GetAllocTickThreshold();
 
 #ifdef FEATURE_EVENT_TRACE
     gc_time_info = new (nothrow) uint64_t[max_compact_time_type];
