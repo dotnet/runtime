@@ -8,7 +8,7 @@ const is_browser = typeof window != "undefined";
 const is_node = !is_browser && typeof process != 'undefined';
 
 // setup the globalThis pollyfill as it is not defined on older versions of node
-if (is_node) {
+if (is_node && !global.globalThis) {
 	global.globalThis = global;
 }
 
