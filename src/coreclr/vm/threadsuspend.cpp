@@ -4992,8 +4992,8 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 
     Thread         *thread = GetThread();
 
+    thread->ResetThreadState(Thread::TS_Hijacked);
     pArgs->ReturnAddress = (size_t)thread->m_pvHJRetAddr;
-    thread->UnhijackThreadNoAlloc();
 
     // Build a frame so that stack crawling can proceed from here back to where
     // we will resume execution.

@@ -7197,7 +7197,9 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
         HijackArgs hijackArgs;
         hijackArgs.Rax = pExceptionInfo->ContextRecord->Rax;
         hijackArgs.Rsp = pExceptionInfo->ContextRecord->Rsp;
-        if (Thread::AreCetShadowStacksEnabled())
+
+        bool areCetShadowStacksEnabled = Thread::AreCetShadowStacksEnabled();
+        if (areCetShadowStacksEnabled)
         {
             // When the CET is enabled, the return address is still on stack, so we need to set the Rsp as
             // if it was popped.
@@ -7213,8 +7215,19 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
         #define CALLEE_SAVED_REGISTER(regname) pExceptionInfo->ContextRecord->regname = hijackArgs.Regs.regname;
         ENUM_CALLEE_SAVED_REGISTERS();
         #undef CALLEE_SAVED_REGISTER
-
         pExceptionInfo->ContextRecord->Rax = hijackArgs.Rax;
+
+        if (areCetShadowStacksEnabled)
+        {
+            // The context refers to the return instruction
+            // Set the return address on the stack to the original one
+            *(size_t *)pExceptionInfo->ContextRecord->Rsp = hijackArgs.ReturnAddress;
+        }
+        else
+        {
+            // The context refers to the location after the return was processed
+            pExceptionInfo->ContextRecord->Rip = hijackArgs.ReturnAddress;
+        }
 
         return EXCEPTION_CONTINUE_EXECUTION;
     }
