@@ -150,8 +150,5 @@
   <data name="net_quic_writing_notallowed" xml:space="preserve">
     <value>Writing is not allowed on stream.</value>
   </data>
-  <data name="net_quic_ssl_option" xml:space="preserve">
-    <value>The '{0}' is not supported by System.Net.Quic.</value>
-  </data>
 </root>
 

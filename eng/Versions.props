@@ -60,8 +60,9 @@
     <MicrosoftDotNetXUnitExtensionsVersion>6.0.0-beta.21370.12</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.21370.12</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <MicrosoftDotNetBuildTasksArchivesVersion>6.0.0-beta.21370.12</MicrosoftDotNetBuildTasksArchivesVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>6.0.0-beta.21370.12</MicrosoftDotNetBuildTasksPackagingVersion>
     <MicrosoftDotNetBuildTasksInstallersVersion>6.0.0-beta.21370.12</MicrosoftDotNetBuildTasksInstallersVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>6.0.0-beta.21370.12</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>6.0.0-beta.21369.3</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
     <MicrosoftDotNetRemoteExecutorVersion>6.0.0-beta.21370.12</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>6.0.0-beta.21370.12</MicrosoftDotNetVersionToolsTasksVersion>
     <MicrosoftDotNetPackageTestingVersion>6.0.0-beta.21370.12</MicrosoftDotNetPackageTestingVersion>
@@ -161,11 +162,11 @@
     <SQLitePCLRawbundle_greenVersion>2.0.4</SQLitePCLRawbundle_greenVersion>
     <MoqVersion>4.12.0</MoqVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
-    <SdkVersionForWorkloadTesting>6.0.100-preview.7.21362.5</SdkVersionForWorkloadTesting>
+    <SdkVersionForWorkloadTesting>6.0.100-rc.1.21370.2</SdkVersionForWorkloadTesting>
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>5.0.0-preview-20201009.2</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.6.21369.3</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.6.21370.1</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-rc.1.21369.1</MicrosoftNETCoreRuntimeICUTransportVersion>
@@ -183,5 +184,9 @@
     <!-- emscripten / Node -->
     <MicrosoftNETWorkloadEmscriptenManifest60100Version>6.0.0-rc.1.21369.1</MicrosoftNETWorkloadEmscriptenManifest60100Version>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenManifest60100Version)</MicrosoftNETRuntimeEmscriptenVersion>
+    <!-- workloads -->
+    <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
+    <WixPackageVersion>3.14.0-dotnet</WixPackageVersion>
+    <MonoWorkloadManifestVersion>6.0.0-preview.5.21275.7</MonoWorkloadManifestVersion>
   </PropertyGroup>
 </Project>
