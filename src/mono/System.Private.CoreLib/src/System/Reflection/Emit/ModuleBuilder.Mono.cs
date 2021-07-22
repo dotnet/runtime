@@ -118,11 +118,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        public bool IsTransient()
-        {
-            return true;
-        }
-
         public void CreateGlobalFunctions()
         {
             if (global_type_created != null)

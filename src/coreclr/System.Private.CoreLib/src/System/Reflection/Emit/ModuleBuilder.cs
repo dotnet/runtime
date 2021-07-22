@@ -1623,8 +1623,6 @@ namespace System.Reflection.Emit
             return _iSymWriter.DefineDocument(url, language, languageVendor, documentType);
         }
 
-        public bool IsTransient() => InternalModule.IsTransientInternal();
-
         #endregion
 
         #endregion
