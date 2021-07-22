@@ -1954,7 +1954,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     }
     assert(dataReg != REG_NA);
 
-    instruction ins = ins_Store(targetType);
+    instruction ins = ins_StoreFromSrc(dataReg, targetType);
 
     emitAttr attr = emitActualTypeSize(targetType);
 
@@ -2070,7 +2070,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         {
             inst_set_SV_var(lclNode);
 
-            instruction ins  = ins_Store(targetType);
+            instruction ins  = ins_StoreFromSrc(dataReg, targetType);
             emitAttr    attr = emitActualTypeSize(targetType);
 
             emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);

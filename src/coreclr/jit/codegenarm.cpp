@@ -1040,7 +1040,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     else
     {
         emitAttr    attr = emitTypeSize(targetType);
-        instruction ins  = ins_Store(targetType);
+        instruction ins  = ins_StoreFromSrc(dataReg, targetType);
         emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
     }
 
@@ -1107,7 +1107,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
             {
                 inst_set_SV_var(tree);
 
-                instruction ins  = ins_Store(targetType);
+                instruction ins  = ins_StoreFromSrc(dataReg, targetType);
                 emitAttr    attr = emitTypeSize(targetType);
 
                 emitter* emit = GetEmitter();
