@@ -199,6 +199,7 @@ namespace System.Configuration
             throw new ConfigurationErrorsException(SR.Format(SR.Config_invalid_boolean_attribute, valueName));
         }
 
+#pragma warning disable CA5350
         private SymmetricAlgorithm GetSymAlgorithmProvider()
         {
             SymmetricAlgorithm symAlg;
@@ -221,6 +222,7 @@ namespace System.Configuration
 
             return symAlg;
         }
+#pragma warning restore CA5350
 
         private EncryptionMethod GetSymEncryptionMethod()
         {
