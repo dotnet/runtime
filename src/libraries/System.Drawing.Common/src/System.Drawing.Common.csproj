@@ -170,6 +170,8 @@
              Link="Common\Interop\Windows\User32\Interop.LOGFONT.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.RasterOp.cs"
              Link="Common\Interop\Windows\Gdi32\Interop.RasterOp.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
+             Link="System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
@@ -207,7 +209,7 @@
     <Compile Include="System\Drawing\Internal\GpPathData.cs" />
     <Compile Include="System\Drawing\Internal\GPStream.cs" />
     <Compile Include="System\Drawing\Internal\SystemColorTracker.cs" />
-    <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
+    <Compile Include="System\Drawing\LocalAppContextSwitches.Windows.cs" />
     <Compile Include="System\Drawing\Pen.Windows.cs" />
     <Compile Include="System\Drawing\Printing\DefaultPrintController.cs" />
     <Compile Include="System\Drawing\Printing\ModeField.cs" />
@@ -243,8 +245,6 @@
     <Compile Include="Interop\Windows\Interop.Shell32.cs" />
     <Compile Include="Interop\Windows\Interop.User32.cs" />
     <Compile Include="Interop\Windows\Interop.Winspool.cs" />
-    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
-             Link="System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Gdi32\Interop.CombineRgn.cs"
@@ -359,6 +359,7 @@
     <Compile Include="System\Drawing\GdiplusNative.Unix.cs" />
     <Compile Include="System\Drawing\GdiPlusStreamHelper.Unix.cs" />
     <Compile Include="System\Drawing\LibX11Functions.cs" />
+    <Compile Include="System\Drawing\LocalAppContextSwitches.Unix.cs" />
     <Compile Include="System\Drawing\MarshallingHelpers.cs" />
     <Compile Include="System\Drawing\Image.Unix.cs" />
     <Compile Include="System\Drawing\Pen.Unix.cs" />

@@ -1223,12 +1223,12 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
                 *pb = ELEMENT_TYPE_TYPEDEF;
                 memcpy(++pb,pTDD->m_szName,namesize);
                 pTDD->m_tkTypeSpec = ResolveLocalMemberRef(pTDD->m_tkTypeSpec);
-                memcpy(pb+namesize,&(pTDD->m_tkTypeSpec),sizeof(mdToken));
+                SET_UNALIGNED_VAL32(pb+namesize, pTDD->m_tkTypeSpec);
                 if(TypeFromToken(pTDD->m_tkTypeSpec)==mdtCustomAttribute)
                 {
                     CustomDescr* pCA = pTDD->m_pCA;
-                    pbs->appendInt32(pCA->tkType);
-                    pbs->appendInt32(pCA->tkOwner);
+                    pbs->appendInt32(VAL32(pCA->tkType));
+                    pbs->appendInt32(VAL32(pCA->tkOwner));
                     if(pCA->pBlob) pbs->append(pCA->pBlob);
                 }
                 ResolveTypeSpec(pbs);
@@ -1314,9 +1314,9 @@ HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
             {
                 Method* pMD;
                 Class* pClass;
-                m_pVTable->appendInt32(pGlobalLabel->m_GlobalOffset);
-                m_pVTable->appendInt16(pVTFEntry->m_wCount);
-                m_pVTable->appendInt16(pVTFEntry->m_wType);
+                m_pVTable->appendInt32(VAL32(pGlobalLabel->m_GlobalOffset));
+                m_pVTable->appendInt16(VAL16(pVTFEntry->m_wCount));
+                m_pVTable->appendInt16(VAL16(pVTFEntry->m_wType));
                 for(int i=0; (pClass = m_lstClass.PEEK(i)); i++)
                 {
                     for(WORD j = 0; (pMD = pClass->m_MethodList.PEEK(j)); j++)

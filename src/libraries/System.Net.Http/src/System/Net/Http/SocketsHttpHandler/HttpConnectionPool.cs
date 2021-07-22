@@ -1822,6 +1822,9 @@ namespace System.Net.Http
                     if (NetEventSource.Log.IsEnabled()) connection.Trace("Dequeued waiting HTTP/2 request.");
                 }
 
+                // Since we only inject one connection at a time, we may want to inject another now.
+                CheckForHttp2ConnectionInjection();
+
                 if (_disposed)
                 {
                     // If the pool has been disposed of, we want to dispose the connection being returned, as the pool is being deactivated.

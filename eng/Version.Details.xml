@@ -54,6 +54,10 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>e97027cf100d2b532adce387e5cb93a373de93c9</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="6.0.0-beta.21369.3">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>e97027cf100d2b532adce387e5cb93a373de93c9</Sha>
+    </Dependency>
     <Dependency Name="Microsoft.DotNet.CodeAnalysis" Version="6.0.0-beta.21369.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>e97027cf100d2b532adce387e5cb93a373de93c9</Sha>
@@ -182,9 +186,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>f7e4c261815c66fde2c1e750b744f193e236c17e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21369.3">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21370.1">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>8d49e169d872d6225bcf73ae14ae50b002f39319</Sha>
+      <Sha>6eae01980dc694107bdee0bc723d75a0dd601f0e</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21364.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
