@@ -83,7 +83,7 @@ namespace System.Reflection
             return null;
         }
 
-        [RequiresAssemblyFiles(Message = "The code will throw for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
         public override string? CodeBase
         {
             get
@@ -322,7 +322,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributesInternal(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
 
         internal static RuntimeAssembly InternalLoad(string assemblyName, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)

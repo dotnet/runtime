@@ -37,7 +37,12 @@ namespace System.Net.Http
     }
     public partial class FormUrlEncodedContent : System.Net.Http.ByteArrayContent
     {
-        public FormUrlEncodedContent(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string?, string?>> nameValueCollection) : base (default(byte[])) { }
+        public FormUrlEncodedContent(
+            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<
+                #nullable disable
+                string, string
+                #nullable restore
+            >> nameValueCollection) : base (default(byte[])) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public delegate System.Text.Encoding? HeaderEncodingSelector<TContext>(string headerName, TContext context);
@@ -109,35 +114,87 @@ namespace System.Net.Http
         public HttpClientHandler() { }
         public bool AllowAutoRedirect { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public System.Net.DecompressionMethods AutomaticDecompression { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public bool CheckCertificateRevocationList { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public System.Net.Http.ClientCertificateOption ClientCertificateOptions { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.CookieContainer CookieContainer { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.ICredentials? Credentials { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public static System.Func<System.Net.Http.HttpRequestMessage, System.Security.Cryptography.X509Certificates.X509Certificate2?, System.Security.Cryptography.X509Certificates.X509Chain?, System.Net.Security.SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public System.Net.ICredentials? DefaultProxyCredentials { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public int MaxAutomaticRedirections { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public int MaxConnectionsPerServer { get { throw null; } set { } }
         public long MaxRequestContentBufferSize { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public int MaxResponseHeadersLength { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public bool PreAuthenticate { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public System.Net.IWebProxy? Proxy { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public System.Func<System.Net.Http.HttpRequestMessage, System.Security.Cryptography.X509Certificates.X509Certificate2?, System.Security.Cryptography.X509Certificates.X509Chain?, System.Net.Security.SslPolicyErrors, bool>? ServerCertificateCustomValidationCallback { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public System.Security.Authentication.SslProtocols SslProtocols { get { throw null; } set { } }
         public virtual bool SupportsAutomaticDecompression { get { throw null; } }
         public virtual bool SupportsProxy { get { throw null; } }
@@ -147,9 +204,20 @@ namespace System.Net.Http
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool UseDefaultCredentials { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         public bool UseProxy { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
+        //
+        // Attributes are commented out due to https://github.com/dotnet/arcade/issues/7585
+        // API compat will fail until this is fixed
+        //
+        //[System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        //[System.Runtime.Versioning.UnsupportedOSPlatformAttributeUnsupportedOSPlatform("ios")]
+        //[System.Runtime.Versioning.UnsupportedOSPlatformAttributeUnsupportedOSPlatform("tvos")]
+        //[System.Runtime.Versioning.UnsupportedOSPlatformAttributeUnsupportedOSPlatform("maccatalyst")]
         protected internal override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
@@ -353,6 +421,7 @@ namespace System.Net.Http
     public sealed partial class SocketsHttpHandler : System.Net.Http.HttpMessageHandler
     {
         public SocketsHttpHandler() { }
+        public int InitialHttp2StreamWindowSize { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("browser")]
         public static bool IsSupported { get { throw null; } }
         public bool AllowAutoRedirect { get { throw null; } set { } }
@@ -388,6 +457,8 @@ namespace System.Net.Http
         public bool EnableMultipleHttp2Connections { get { throw null; } set { } }
         public Func<SocketsHttpConnectionContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.IO.Stream>>? ConnectCallback { get { throw null; } set { } }
         public Func<SocketsHttpPlaintextStreamFilterContext, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<System.IO.Stream>>? PlaintextStreamFilter { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Diagnostics.DistributedContextPropagator? ActivityHeadersPropagator { get { throw null; } set { } }
     }
     public sealed class SocketsHttpConnectionContext
     {

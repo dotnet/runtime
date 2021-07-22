@@ -109,7 +109,8 @@
     <SubsetName Include="Mono.Packages" Description="The projects that produce NuGet packages for the Mono runtime." />
     <SubsetName Include="Mono.WasmRuntime" Description="The WebAssembly runtime." />
     <SubsetName Include="Mono.MsCorDbi" Description="The implementation of ICorDebug interface." />
-
+    <SubsetName Include="Mono.Workloads" OnDemand="true" Description="Builds the installers and the insertion metadata for Blazor workloads." />
+    
     <!-- Libs -->
     <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly)" />
     <SubsetName Include="Libs.Native" Description="The native libraries used in the shared framework." />
@@ -247,6 +248,10 @@
   <ItemGroup Condition="$(_subset.Contains('+mono.corelib+'))">
     <ProjectToBuild Include="$(MonoProjectRoot)System.Private.CoreLib\System.Private.CoreLib.csproj" Category="mono" />
   </ItemGroup>
+  
+  <ItemGroup Condition="$(_subset.Contains('+mono.workloads+'))">
+    <ProjectToBuild Include="$(WorkloadsProjectRoot)\workloads.csproj" Category="mono" />
+  </ItemGroup>
 
   <!-- Libraries sets -->
   <ItemGroup Condition="$(_subset.Contains('+libs.native+'))">
@@ -317,7 +322,7 @@
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-host.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-hostfxr.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-runtime-deps\*.proj" />
-        <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" />
+        <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" Pack="true" />
       </ItemGroup>
       <ItemGroup>
         <SharedFrameworkProjectToBuild Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" />

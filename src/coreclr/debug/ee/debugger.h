@@ -1054,6 +1054,8 @@ constexpr uint64_t CHUNKS_PER_DEBUGGERHEAP=(DEBUGGERHEAP_PAGESIZE / EXPECTED_CHU
 constexpr uint64_t MAX_CHUNK_MASK=((1ull << CHUNKS_PER_DEBUGGERHEAP) - 1);
 constexpr uint64_t BOOKKEEPING_CHUNK_MASK (1ull << (CHUNKS_PER_DEBUGGERHEAP - 1));
 
+#ifndef DACCESS_COMPILE
+
 // Forward declaration
 struct DebuggerHeapExecutableMemoryPage;
 
@@ -1110,8 +1112,13 @@ struct DECLSPEC_ALIGN(DEBUGGERHEAP_PAGESIZE) DebuggerHeapExecutableMemoryPage
 
     inline void SetNextPage(DebuggerHeapExecutableMemoryPage* nextPage)
     {
+#if defined(HOST_OSX) && defined(HOST_ARM64)
         ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
-        debuggerHeapPageWriterHolder.GetRW()->chunks[0].bookkeeping.nextPage = nextPage;
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = debuggerHeapPageWriterHolder.GetRW();
+#else
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = this;
+#endif
+        pHeapPageRW->chunks[0].bookkeeping.nextPage = nextPage;
     }
 
     inline uint64_t GetPageOccupancy() const
@@ -1124,8 +1131,13 @@ struct DECLSPEC_ALIGN(DEBUGGERHEAP_PAGESIZE) DebuggerHeapExecutableMemoryPage
         // Can't unset the bookmark chunk!
         ASSERT((newOccupancy & BOOKKEEPING_CHUNK_MASK) != 0);
         ASSERT(newOccupancy <= MAX_CHUNK_MASK);
+#if defined(HOST_OSX) && defined(HOST_ARM64)
         ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
-        debuggerHeapPageWriterHolder.GetRW()->chunks[0].bookkeeping.pageOccupancy = newOccupancy;
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = debuggerHeapPageWriterHolder.GetRW();
+#else
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = this;
+#endif
+        pHeapPageRW->chunks[0].bookkeeping.pageOccupancy = newOccupancy;
     }
 
     inline void* GetPointerToChunk(int chunkNum) const
@@ -1136,14 +1148,18 @@ struct DECLSPEC_ALIGN(DEBUGGERHEAP_PAGESIZE) DebuggerHeapExecutableMemoryPage
 
     DebuggerHeapExecutableMemoryPage()
     {
-        ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
-
         SetPageOccupancy(BOOKKEEPING_CHUNK_MASK); // only the first bit is set.
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = debuggerHeapPageWriterHolder.GetRW();
+#else
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = this;
+#endif
         for (uint8_t i = 1; i < CHUNKS_PER_DEBUGGERHEAP; i++)
         {
             ASSERT(i != 0);
-            debuggerHeapPageWriterHolder.GetRW()->chunks[i].data.startOfPage = this;
-            debuggerHeapPageWriterHolder.GetRW()->chunks[i].data.chunkNumber = i;
+            pHeapPageRW->chunks[i].data.startOfPage = this;
+            pHeapPageRW->chunks[i].data.chunkNumber = i;
         }
     }
 
@@ -1190,6 +1206,8 @@ private:
     Crst m_execMemAllocMutex;
 };
 
+#endif // DACCESS_COMPILE
+
 // ------------------------------------------------------------------------ *
 // DebuggerHeap class
 // For interop debugging, we need a heap that:
@@ -1200,6 +1218,8 @@ private:
 #ifdef FEATURE_INTEROP_DEBUGGING
     #define USE_INTEROPSAFE_HEAP
 #endif
+
+class DebuggerHeapExecutableMemoryAllocator;
 
 class DebuggerHeap
 {
@@ -2485,7 +2505,7 @@ public:
                                  SIZE_T                     *rgVal2,
                                  BYTE                      **rgpVCs);
 
-    BOOL IsThreadContextInvalid(Thread *pThread);
+    BOOL IsThreadContextInvalid(Thread *pThread, T_CONTEXT *pCtx);
 
     // notification for SQL fiber debugging support
     void CreateConnection(CONNID dwConnectionId, __in_z WCHAR *wzName);
@@ -2855,6 +2875,9 @@ private:
 #if defined(HAVE_GCCOVER) && defined(TARGET_AMD64)
         kRedirectedForGCStress,
 #endif // HAVE_GCCOVER && TARGET_AMD64
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+        kRedirectedForApcActivation,
+#endif // FEATURE_SPECIAL_USER_MODE_APC
         kMaxHijackFunctions,
     };
 
@@ -2956,6 +2979,11 @@ void RedirectedHandledJITCaseForUserSuspend_StubEnd();
 void RedirectedHandledJITCaseForGCStress_Stub();
 void RedirectedHandledJITCaseForGCStress_StubEnd();
 #endif // HAVE_GCCOVER && TARGET_AMD64
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+void NTAPI ApcActivationCallbackStub(ULONG_PTR Parameter);
+void ApcActivationCallbackStubEnd();
+#endif // FEATURE_SPECIAL_USER_MODE_APC
 };
 
 

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -44,11 +45,14 @@ namespace Wasm.Build.Tests
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs,
                                         projectTemplate: s_resourcesProjectTemplate,
-                                        extraProperties: $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>",
-                                        extraItems: $"<EmbeddedResource Include=\"..\\resx\\*\" />");
+                                        extraProperties: $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>");
 
             BuildProject(buildArgs,
-                        initProject: () => CreateProgramForCultureTest($"{projectName}.words", "TestClass"),
+                        initProject: () =>
+                        {
+                            Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "resx"), Path.Combine(_projectDir!, "resx"));
+                            CreateProgramForCultureTest(_projectDir!, $"{projectName}.resx.words", "TestClass");
+                        },
                         dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                         id: id);
 
@@ -71,7 +75,7 @@ namespace Wasm.Build.Tests
                                                   RunHost host,
                                                   string id)
         {
-            string projectName = $"sat_asm_proj_ref";
+            string projectName = $"SatelliteAssemblyFromProjectRef";
             bool dotnetWasmFromRuntimePack = !nativeRelink && !buildArgs.AOT;
 
             buildArgs = buildArgs with { ProjectName = projectName };
@@ -81,9 +85,17 @@ namespace Wasm.Build.Tests
                                         extraItems: $"<ProjectReference Include=\"..\\LibraryWithResources\\LibraryWithResources.csproj\" />");
 
             BuildProject(buildArgs,
-                        initProject: () => CreateProgramForCultureTest("LibraryWithResources.words", "LibraryWithResources.Class1"),
                         dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
-                        id: id);
+                        id: id,
+                        initProject: () =>
+                        {
+                            string rootDir = _projectDir!;
+                            _projectDir = Path.Combine(rootDir, projectName);
+
+                            Directory.CreateDirectory(_projectDir);
+                            Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "SatelliteAssemblyFromProjectRef"), rootDir);
+                            CreateProgramForCultureTest(_projectDir, "LibraryWithResources.resx.words", "LibraryWithResources.Class1");
+                        });
 
             string output = RunAndTestWasmApp(buildArgs,
                                               expectedExitCode: 42,
@@ -105,11 +117,10 @@ namespace Wasm.Build.Tests
                                         extraProperties: $@"
                                             <EmccCompileOptimizationFlag>-O0</EmccCompileOptimizationFlag>
                                             <EmccLinkOptimizationFlag>-O0</EmccLinkOptimizationFlag>",
-                                        extraItems: $"<EmbeddedResource Include=\"..\\resx\\*\" />");
+                                        extraItems: $"<EmbeddedResource Include=\"{BuildEnvironment.RelativeTestAssetsPath}resx\\*\" />");
 
-            System.Console.WriteLine ($"--- aot: {buildArgs.AOT}");
             BuildProject(buildArgs,
-                        initProject: () => CreateProgramForCultureTest($"{projectName}.words", "TestClass"),
+                        initProject: () => CreateProgramForCultureTest(_projectDir!, $"{projectName}.words", "TestClass"),
                         dotnetWasmFromRuntimePack: false,
                         id: id);
 
@@ -124,8 +135,8 @@ namespace Wasm.Build.Tests
         }
 #pragma warning restore xUnit1026
 
-        private void CreateProgramForCultureTest(string resourceName, string typeName)
-            => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"),
+        private void CreateProgramForCultureTest(string dir, string resourceName, string typeName)
+            => File.WriteAllText(Path.Combine(dir, "Program.cs"),
                                 s_cultureResourceTestProgram
                                     .Replace("##RESOURCE_NAME##", resourceName)
                                     .Replace("##TYPE_NAME##", typeName));

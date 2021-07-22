@@ -121,7 +121,7 @@ namespace System.Data
                 }
             }
 
-            string tempStr = XSDSchema.GetMsdataAttribute(node, Keywords.TARGETNAMESPACE);
+            string? tempStr = XSDSchema.GetMsdataAttribute(node, Keywords.TARGETNAMESPACE);
             if (tempStr != null)
                 _ns = tempStr;
         }
@@ -129,7 +129,7 @@ namespace System.Data
         internal bool IsPlainString()
         {
             return (
-                XSDSchema.QualifiedName(_baseType) == XSDSchema.QualifiedName("string") &&
+                XSDSchema.QualifiedName(_baseType!) == XSDSchema.QualifiedName("string") &&
                 string.IsNullOrEmpty(_name) &&
                 _length == -1 &&
                 _minLength == -1 &&

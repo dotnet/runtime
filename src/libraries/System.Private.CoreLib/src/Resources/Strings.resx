@@ -2659,6 +2659,9 @@
   <data name="IO_BindHandleFailed" xml:space="preserve">
     <value>BindHandle for ThreadPool failed on this handle.</value>
   </data>
+  <data name="IO_InconsistentLinkType" xml:space="preserve">
+    <value>The link's file system entry type is inconsistent with that of its target: {0}</value>
+  </data>
   <data name="IO_FileExists_Name" xml:space="preserve">
     <value>The file '{0}' already exists.</value>
   </data>
@@ -2709,6 +2712,9 @@
   </data>
   <data name="IO_PathTooLong_Path" xml:space="preserve">
     <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_TooManySymbolicLinkLevels" xml:space="preserve">
+    <value>Too many levels of symbolic links in '{0}'.</value>
   </data>
   <data name="IO_UnknownFileName" xml:space="preserve">
     <value>[Unknown]</value>
@@ -2838,9 +2844,6 @@
   </data>
   <data name="NotSupported_DynamicModule" xml:space="preserve">
     <value>The invoked member is not supported in a dynamic module.</value>
-  </data>
-  <data name="NotSupported_FileStreamOnNonFiles" xml:space="preserve">
-    <value>FileStream was asked to open a device that was not a file. For support for devices like 'com1:' or 'lpt1:', call CreateFile, then use the FileStream constructors that take an OS handle as an IntPtr.</value>
   </data>
   <data name="NotSupported_FixedSizeCollection" xml:space="preserve">
     <value>Collection was of a fixed size.</value>
@@ -3775,6 +3778,12 @@
   <data name="IO_CannotCreateDirectory" xml:space="preserve">
     <value>The specified directory '{0}' cannot be created.</value>
   </data>
+  <data name="IO_CannotReplaceSameFile" xml:space="preserve">
+    <value>The source '{0}' and destination '{1}' are the same file.</value>
+  </data>
+  <data name="IO_NotAFile" xml:space="preserve">
+    <value>The specified path '{0}' is not a file.</value>
+  </data>
   <data name="IO_SourceDestMustBeDifferent" xml:space="preserve">
     <value>Source and destination path must be different.</value>
   </data>
@@ -3792,5 +3801,17 @@
   </data>
   <data name="Arg_MemberInfoNotFound" xml:space="preserve">
     <value>A MemberInfo that matches '{0}' could not be found.</value>
+  </data>
+  <data name="InvalidOperation_BadTZHeader" xml:space="preserve">
+    <value>Bad magic in '{0}': Header starts with '{1}' instead of 'tzdata'</value>
+  </data>
+  <data name="InvalidOperation_ReadTZError" xml:space="preserve">
+    <value>Unable to fully read from file '{0}' at offset {1} length {2}; read {3} bytes expected {4}.</value>
+  </data>
+  <data name="InvalidOperation_BadIndexLength" xml:space="preserve">
+    <value>Length in index file less than AndroidTzDataHeader</value>
+  </data>
+  <data name="TimeZoneNotFound_ValidTimeZoneFileMissing" xml:space="preserve">
+    <value>Unable to properly load any time zone data files.</value>
   </data>
 </root>

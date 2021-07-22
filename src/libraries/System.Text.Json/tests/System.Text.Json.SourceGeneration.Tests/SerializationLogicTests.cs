@@ -52,8 +52,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public static void DictionaryFastPathPrimitiveValueSupported()
         {
-            Assert.NotNull(DictionaryTypeContext.Default.DictionarySystemStringSystemString.Serialize);
-            Assert.NotNull(DictionaryTypeContext.Default.DictionarySystemStringSystemTextJsonSourceGenerationTestsJsonMessage.Serialize);
+            Assert.NotNull(DictionaryTypeContext.Default.DictionaryStringString.Serialize);
+            Assert.NotNull(DictionaryTypeContext.Default.DictionaryStringJsonMessage.Serialize);
             Assert.NotNull(DictionaryTypeContext.Default.JsonMessage.Serialize);
             Assert.Null(DictionaryTypeContext.Default.String.Serialize);
             Assert.Null(DictionaryTypeContext.Default.Int32.Serialize);

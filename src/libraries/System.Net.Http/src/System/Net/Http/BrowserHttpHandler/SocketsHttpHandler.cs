@@ -3,13 +3,12 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Quic;
-using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 
 namespace System.Net.Http
 {
@@ -135,6 +134,12 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public int InitialHttp2StreamWindowSize
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
         public TimeSpan KeepAlivePingDelay
         {
             get => throw new PlatformNotSupportedException();
@@ -146,7 +151,6 @@ namespace System.Net.Http
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
-
 
         public HttpKeepAlivePingPolicy KeepAlivePingPolicy
         {
@@ -163,6 +167,13 @@ namespace System.Net.Http
         }
 
         public HeaderEncodingSelector<HttpRequestMessage>? ResponseHeaderEncodingSelector
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        [CLSCompliant(false)]
+        public DistributedContextPropagator? ActivityHeadersPropagator
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

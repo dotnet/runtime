@@ -275,7 +275,7 @@ else
   __Command+=" dotnet"
 fi
 
-$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` || exit $?
+$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` $(CLRTestMSBuildArgs) || exit $?
 
    ]]>
       </BashCLRTestPreCommands>

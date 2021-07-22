@@ -713,8 +713,10 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 
         return pItfMT;
     }
-#endif
     MethodTable * pItfMT = m_pMethodTable.GetValue();
+#else
+    MethodTable * pItfMT = GetMethodTable();
+#endif
     ClassLoader::EnsureLoaded(TypeHandle(pItfMT), CLASS_LOAD_APPROXPARENTS);
     return pItfMT;
 }
@@ -1575,6 +1577,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
 
     // Shortcut for generic approx type scenario
     if (pMTInterfaceMapOwner != NULL &&
+        !pMTInterfaceMapOwner->ContainsGenericVariables() &&
         IsSpecialMarkerTypeForGenericCasting() &&
         GetTypeDefRid() == pTargetMT->GetTypeDefRid() &&
         GetModule() == pTargetMT->GetModule() &&
@@ -1601,7 +1604,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
             TypeHandle thArg = inst[i];
-            if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner)
+            if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner && !pMTInterfaceMapOwner->ContainsGenericVariables())
             {
                 thArg = pMTInterfaceMapOwner;
             }
@@ -9269,7 +9272,7 @@ MethodTable::ResolveVirtualStaticMethod(MethodTable* pInterfaceType, MethodDesc*
                     {
                         if (it.CurrentInterfaceMatches(this, pInterfaceType))
                         {
-                            // This is the variant interface check logic, skip the 
+                            // This is the variant interface check logic, skip the exact matches as they were handled above
                             continue;
                         }
 
@@ -9818,7 +9821,7 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
     CONTRACT_END;
 
     MethodTable *pResult = m_pMap->GetMethodTable();
-    if (pResult->IsSpecialMarkerTypeForGenericCasting())
+    if (pResult->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->ContainsGenericVariables())
     {
         TypeHandle ownerAsInst[MaxGenericParametersForSpecialMarkerType];
         for (DWORD i = 0; i < MaxGenericParametersForSpecialMarkerType; i++)

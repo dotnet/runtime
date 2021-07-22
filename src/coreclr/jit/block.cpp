@@ -1431,6 +1431,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     /* Give the block a number, set the ancestor count and weight */
 
     ++fgBBcount;
+    ++fgBBNumMax;
 
     if (compIsForInlining())
     {
@@ -1438,7 +1439,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     }
     else
     {
-        block->bbNum = ++fgBBNumMax;
+        block->bbNum = fgBBNumMax;
     }
 
     if (compRationalIRForm)
@@ -1503,7 +1504,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     }
 
     // Make sure we reserve a NOT_IN_LOOP value that isn't a legal table index.
-    static_assert_no_msg(MAX_LOOP_NUM < BasicBlock::NOT_IN_LOOP);
+    static_assert_no_msg(BasicBlock::MAX_LOOP_NUM < BasicBlock::NOT_IN_LOOP);
 
     block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
 

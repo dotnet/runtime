@@ -35,7 +35,7 @@ namespace System.Net
         }
 
         public WebProxy(string Host, int Port)
-            : this(new Uri("http://" + Host + ":" + Port.ToString(CultureInfo.InvariantCulture)), false, null, null)
+            : this(new Uri(string.Create(CultureInfo.InvariantCulture, $"http://{Host}:{Port}")), false, null, null)
         {
         }
 
@@ -142,9 +142,10 @@ namespace System.Net
 
             if (_regexBypassList != null)
             {
+                Span<char> stackBuffer = stackalloc char[128];
                 string matchUriString = input.IsDefaultPort ?
-                    $"{input.Scheme}://{input.Host}" :
-                    $"{input.Scheme}://{input.Host}:{(uint)input.Port}";
+                    string.Create(null, stackBuffer, $"{input.Scheme}://{input.Host}") :
+                    string.Create(null, stackBuffer, $"{input.Scheme}://{input.Host}:{(uint)input.Port}");
 
                 foreach (Regex r in _regexBypassList)
                 {

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Linq.Expressions;
 using System.Security;
 using System.Security.Authentication;
 using System.Reflection;
@@ -26,6 +27,7 @@ namespace System
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
+        public static bool IsNotMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") != "aot";
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
@@ -36,7 +38,8 @@ namespace System
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsNotBrowser => !IsBrowser;
-        public static bool IsNotMobile => IsNotBrowser && !IsMacCatalyst && !IsiOS && !IstvOS && !IsAndroid;
+        public static bool IsMobile => IsBrowser || IsMacCatalyst || IsiOS || IstvOS || IsAndroid;
+        public static bool IsNotMobile => !IsMobile;
         public static bool IsNotNetFramework => !IsNetFramework;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
@@ -65,6 +68,22 @@ namespace System
 
         public static bool IsUsingLimitedCultures => !IsNotMobile;
         public static bool IsNotUsingLimitedCultures => IsNotMobile;
+
+        public static bool IsLinqExpressionsBuiltWithIsInterpretingOnly => s_LinqExpressionsBuiltWithIsInterpretingOnly.Value;
+        public static bool IsNotLinqExpressionsBuiltWithIsInterpretingOnly => !IsLinqExpressionsBuiltWithIsInterpretingOnly;
+        private static readonly Lazy<bool> s_LinqExpressionsBuiltWithIsInterpretingOnly = new Lazy<bool>(GetLinqExpressionsBuiltWithIsInterpretingOnly);
+        private static bool GetLinqExpressionsBuiltWithIsInterpretingOnly()
+        {
+            Type type = typeof(LambdaExpression);
+            if (type != null)
+            {
+                // The "Accept" method is under FEATURE_COMPILE conditional so it should not exist
+                MethodInfo methodInfo = type.GetMethod("Accept", BindingFlags.NonPublic | BindingFlags.Static);
+                return methodInfo == null;
+            }
+
+            return false;
+        }
 
         // Please make sure that you have the libgdiplus dependency installed.
         // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
@@ -225,14 +244,9 @@ namespace System
 
         private static bool GetStaticNonPublicBooleanPropertyValue(string typeName, string propertyName)
         {
-            Type globalizationMode = Type.GetType(typeName);
-            if (globalizationMode != null)
+            if (Type.GetType(typeName)?.GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod is MethodInfo mi)
             {
-                MethodInfo methodInfo = globalizationMode.GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Static)?.GetMethod;
-                if (methodInfo != null)
-                {
-                    return (bool)methodInfo.Invoke(null, null);
-                }
+                return (bool)mi.Invoke(null, null);
             }
 
             return false;
@@ -272,6 +286,10 @@ namespace System
         private static readonly Lazy<bool> _net5CompatFileStream = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("System.IO.FileStreamHelpers", "UseNet5CompatStrategy"));
 
         public static bool IsNet5CompatFileStreamEnabled => _net5CompatFileStream.Value;
+
+        private static readonly Lazy<bool> s_fileLockingDisabled = new Lazy<bool>(() => GetStaticNonPublicBooleanPropertyValue("Microsoft.Win32.SafeHandles.SafeFileHandle", "DisableFileLocking"));
+
+        public static bool IsFileLockingEnabled => IsWindows || !s_fileLockingDisabled.Value;
 
         private static bool GetIsInContainer()
         {

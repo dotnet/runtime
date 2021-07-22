@@ -1,0 +1,290 @@
+﻿<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Arg_FileIsDirectory_Name" xml:space="preserve">
+    <value>The target file '{0}' is a directory, not a file.</value>
+  </data>
+  <data name="Arg_HandleNotAsync" xml:space="preserve">
+    <value>Handle does not support asynchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened synchronously (that is, it was not opened for overlapped I/O).</value>
+  </data>
+  <data name="Arg_HandleNotSync" xml:space="preserve">
+    <value>Handle does not support synchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened asynchronously (that is, it was opened explicitly for overlapped I/O).</value>
+  </data>
+  <data name="Arg_InvalidFileAttrs" xml:space="preserve">
+    <value>Invalid File or Directory attributes value.</value>
+  </data>
+  <data name="Arg_InvalidHandle" xml:space="preserve">
+    <value>Invalid handle.</value>
+  </data>
+  <data name="Arg_MustBeDriveLetterOrRootDir" xml:space="preserve">
+    <value>Drive name must be a root directory (i.e. 'C:\') or a drive letter ('C').</value>
+  </data>
+  <data name="Arg_Path2IsRooted" xml:space="preserve">
+    <value>Second path fragment must not be a drive or UNC name.</value>
+  </data>
+  <data name="Arg_PathIsVolume" xml:space="preserve">
+    <value>Path must not be a drive.</value>
+  </data>
+  <data name="ArgumentNull_Buffer" xml:space="preserve">
+    <value>Buffer cannot be null.</value>
+  </data>
+  <data name="ArgumentNull_FileName" xml:space="preserve">
+    <value>File name cannot be null.</value>
+  </data>
+  <data name="ArgumentNull_Path" xml:space="preserve">
+    <value>Path cannot be null.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Enum" xml:space="preserve">
+    <value>Enum value was out of legal range.</value>
+  </data>
+  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
+    <value>Specified file length was too large for the file system.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="Argument_EmptyFileName" xml:space="preserve">
+    <value>Empty file name is not legal.</value>
+  </data>
+  <data name="Argument_EmptyPath" xml:space="preserve">
+    <value>Empty path name is not legal.</value>
+  </data>
+  <data name="Argument_FileNotResized" xml:space="preserve">
+    <value>The stream's length cannot be changed.</value>
+  </data>
+  <data name="Argument_InvalidAppendMode" xml:space="preserve">
+    <value>Append access can be requested only in write-only mode.</value>
+  </data>
+  <data name="Argument_InvalidFileModeAndAccessCombo" xml:space="preserve">
+    <value>Combining FileMode: {0} with FileAccess: {1} is invalid.</value>
+  </data>
+  <data name="Argument_InvalidPathChars" xml:space="preserve">
+    <value>Illegal characters in path '{0}'.</value>
+  </data>
+  <data name="Argument_InvalidSeekOrigin" xml:space="preserve">
+    <value>Invalid seek origin.</value>
+  </data>
+  <data name="Argument_InvalidSubPath" xml:space="preserve">
+    <value>The directory specified, '{0}', is not a subdirectory of '{1}'.</value>
+  </data>
+  <data name="Argument_PathEmpty" xml:space="preserve">
+    <value>Path cannot be the empty string or all whitespace.</value>
+  </data>
+  <data name="IO_AlreadyExists_Name" xml:space="preserve">
+    <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
+  </data>
+  <data name="IO_BindHandleFailed" xml:space="preserve">
+    <value>BindHandle for ThreadPool failed on this handle.</value>
+  </data>
+  <data name="IO_CannotCreateDirectory" xml:space="preserve">
+    <value>The specified directory '{0}' cannot be created.</value>
+  </data>
+  <data name="IO_CannotReplaceSameFile" xml:space="preserve">
+    <value>The source '{0}' and destination '{1}' are the same file.</value>
+  </data>
+  <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
+    <value>Unable to read beyond the end of the stream.</value>
+  </data>
+  <data name="IO_FileExists_Name" xml:space="preserve">
+    <value>The file '{0}' already exists.</value>
+  </data>
+  <data name="IO_FileNotFound" xml:space="preserve">
+    <value>Unable to find the specified file.</value>
+  </data>
+  <data name="IO_FileNotFound_FileName" xml:space="preserve">
+    <value>Could not find file '{0}'.</value>
+  </data>
+  <data name="IO_FileStreamHandlePosition" xml:space="preserve">
+    <value>The OS handle's position is not what FileStream expected. Do not use a handle simultaneously in one FileStream and in Win32 code or another FileStream. This may cause data loss.</value>
+  </data>
+  <data name="IO_FileTooLong2GB" xml:space="preserve">
+    <value>The file is too long. This operation is currently limited to supporting files less than 2 gigabytes in size.</value>
+  </data>
+  <data name="IO_FileTooLongOrHandleNotSync" xml:space="preserve">
+    <value>IO operation will not work. Most likely the file will become too long or the handle was not opened to support synchronous IO operations.</value>
+  </data>
+  <data name="IO_NotAFile" xml:space="preserve">
+    <value>The specified path '{0}' is not a file.</value>
+  </data>
+  <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
+    <value>Could not find a part of the path.</value>
+  </data>
+  <data name="IO_PathNotFound_Path" xml:space="preserve">
+    <value>Could not find a part of the path '{0}'.</value>
+  </data>
+  <data name="IO_PathTooLong" xml:space="preserve">
+    <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_SeekAppendOverwrite" xml:space="preserve">
+    <value>Unable seek backward to overwrite data that previously existed in a file opened in Append mode.</value>
+  </data>
+  <data name="IO_SetLengthAppendTruncate" xml:space="preserve">
+    <value>Unable to truncate data that previously existed in a file opened in Append mode.</value>
+  </data>
+  <data name="IO_SharingViolation_File" xml:space="preserve">
+    <value>The process cannot access the file '{0}' because it is being used by another process.</value>
+  </data>
+  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
+    <value>The process cannot access the file because it is being used by another process.</value>
+  </data>
+  <data name="IO_SourceDestMustBeDifferent" xml:space="preserve">
+    <value>Source and destination path must be different.</value>
+  </data>
+  <data name="IO_SourceDestMustHaveSameRoot" xml:space="preserve">
+    <value>Source and destination path must have identical roots. Move will not work across volumes.</value>
+  </data>
+  <data name="IO_SyncOpOnUIThread" xml:space="preserve">
+    <value>Synchronous operations should not be performed on the UI thread.  Consider wrapping this method in Task.Run.</value>
+  </data>
+  <data name="IO_UnknownFileName" xml:space="preserve">
+    <value>[Unknown]</value>
+  </data>
+  <data name="IndexOutOfRange_IORaceCondition" xml:space="preserve">
+    <value>Probable I/O race condition detected while copying memory. The I/O package is not thread safe by default. In multithreaded applications, a stream must be accessed in a thread-safe way, such as a thread-safe wrapper returned by TextReader's or TextWriter's Synchronized methods. This also applies to classes like StreamWriter and StreamReader.</value>
+  </data>
+  <data name="NotSupported_UnreadableStream" xml:space="preserve">
+    <value>Stream does not support reading.</value>
+  </data>
+  <data name="NotSupported_UnseekableStream" xml:space="preserve">
+    <value>Stream does not support seeking.</value>
+  </data>
+  <data name="NotSupported_UnwritableStream" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="ObjectDisposed_FileClosed" xml:space="preserve">
+    <value>Cannot access a closed file.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
+    <value>Access to the path is denied.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
+    <value>Access to the path '{0}' is denied.</value>
+  </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Cannot access a closed stream.</value>
+  </data>
+  <data name="PlatformNotSupported_FileEncryption" xml:space="preserve">
+    <value>File encryption is not supported on this platform.</value>
+  </data>
+  <data name="IO_PathTooLong_Path" xml:space="preserve">
+    <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
+  </data>
+</root>

@@ -2526,7 +2526,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                sb.Append("{" + particle.MinOccurs.ToString(NumberFormatInfo.InvariantInfo) + ", " + particle.MaxOccurs.ToString(NumberFormatInfo.InvariantInfo) + "}");
+                sb.Append($"{{{particle.MinOccurs.ToString(NumberFormatInfo.InvariantInfo)}, {particle.MaxOccurs.ToString(NumberFormatInfo.InvariantInfo)}}}");
             }
         }
 #endif

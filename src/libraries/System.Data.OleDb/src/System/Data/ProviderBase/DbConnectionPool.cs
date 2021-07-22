@@ -233,7 +233,7 @@ namespace System.Data.ProviderBase
 
             private readonly int _releaseFlags;
 
-            internal PoolWaitHandles() : base(3 * IntPtr.Size)
+            public PoolWaitHandles() : base(3 * IntPtr.Size)
             {
                 bool mustRelease1 = false, mustRelease2 = false, mustRelease3 = false;
 

@@ -138,9 +138,9 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(9, Keywords = Keywords.TimeSeriesValues | Keywords.Messages | Keywords.InstrumentPublishing)]
-        public void Error(string sessionId, string errorMessage, string errorStack)
+        public void Error(string sessionId, string errorMessage)
         {
-            WriteEvent(9, sessionId, errorMessage, errorStack);
+            WriteEvent(9, sessionId, errorMessage);
         }
 
         [Event(10, Keywords = Keywords.TimeSeriesValues | Keywords.InstrumentPublishing)]
@@ -167,6 +167,18 @@ namespace System.Diagnostics.Metrics
         public void HistogramLimitReached(string sessionId)
         {
             WriteEvent(13, sessionId);
+        }
+
+        [Event(14, Keywords = Keywords.TimeSeriesValues)]
+        public void ObservableInstrumentCallbackError(string sessionId, string errorMessage)
+        {
+            WriteEvent(14, sessionId, errorMessage);
+        }
+
+        [Event(15, Keywords = Keywords.TimeSeriesValues | Keywords.Messages | Keywords.InstrumentPublishing)]
+        public void MultipleSessionsNotSupportedError(string runningSessionId)
+        {
+            WriteEvent(15, runningSessionId);
         }
 
         /// <summary>
@@ -203,7 +215,7 @@ namespace System.Diagnostics.Metrics
                         // This limitation shouldn't really matter because browser also doesn't support out-of-proc EventSource communication
                         // which is the intended scenario for this EventSource. If it matters in the future AggregationManager can be
                         // modified to have some other fallback path that works for browser.
-                        Log.Error("", "System.Diagnostics.Metrics EventSource not supported on browser", "");
+                        Log.Error("", "System.Diagnostics.Metrics EventSource not supported on browser");
                         return;
                     }
 #endif
@@ -212,6 +224,19 @@ namespace System.Diagnostics.Metrics
                     {
                         if (_aggregationManager != null)
                         {
+                            if (command.Command == EventCommand.Enable || command.Command == EventCommand.Update)
+                            {
+                                // trying to add more sessions is not supported
+                                // EventSource doesn't provide an API that allows us to enumerate the listeners'
+                                // filter arguments independently or to easily track them ourselves. For example
+                                // removing a listener still shows up as EventCommand.Enable as long as at least
+                                // one other listener is active. In the future we might be able to figure out how
+                                // to infer the changes from the info we do have or add a better API but for now
+                                // I am taking the simple route  and not supporting it.
+                                Log.MultipleSessionsNotSupportedError(_sessionId);
+                                return;
+                            }
+
                             _aggregationManager.Dispose();
                             _aggregationManager = null;
                             Log.Message($"Previous session with id {_sessionId} is stopped");
@@ -301,9 +326,10 @@ namespace System.Diagnostics.Metrics
                             i => Log.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
                             i => Log.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
                             () => Log.InitialInstrumentEnumerationComplete(sessionId),
-                            e => Log.Error(sessionId, e.Message, e.StackTrace?.ToString() ?? ""),
+                            e => Log.Error(sessionId, e.ToString()),
                             () => Log.TimeSeriesLimitReached(sessionId),
-                            () => Log.HistogramLimitReached(sessionId));
+                            () => Log.HistogramLimitReached(sessionId),
+                            e => Log.ObservableInstrumentCallbackError(sessionId, e.ToString()));
 
                         _aggregationManager.SetCollectionPeriod(TimeSpan.FromSeconds(refreshIntervalSecs));
 
@@ -328,7 +354,7 @@ namespace System.Diagnostics.Metrics
 
             private bool LogError(Exception e)
             {
-                Log.Error(_sessionId, e.Message, e.StackTrace?.ToString() ?? "");
+                Log.Error(_sessionId, e.ToString());
                 // this code runs as an exception filter
                 // returning false ensures the catch handler isn't run
                 return false;

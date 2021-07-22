@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
 using System.IO;
@@ -13,6 +14,7 @@ using Encoder = System.Drawing.Imaging.Encoder;
 
 namespace System.Drawing.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection),nameof(PlatformDetection.IsDrawingSupported))]
     public class ImageTests
     {
         private const int PropertyTagLuminanceTable = 0x5090;
@@ -22,7 +24,7 @@ namespace System.Drawing.Tests
         private const int PropertyTagTypeShort = 3;
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [Fact]
         public void PropertyIdList_GetBitmapJpg_Success()
         {
             using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
@@ -30,7 +32,7 @@ namespace System.Drawing.Tests
             Assert.NotSame(bitmap.PropertyIdList, bitmap.PropertyIdList);
         }
 
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Returns new int[0] in .NET Framework.")]
         public void PropertyIdList_GetEmptyMemoryBitmap_ReturnsExpected()
         {
@@ -40,7 +42,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [Fact]
         public void PropertyItems_GetBitmapJpg_Success()
         {
             using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
@@ -82,7 +84,7 @@ namespace System.Drawing.Tests
             Assert.NotSame(items, bitmap.PropertyItems);
         }
 
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Returns new PropertyItem[0] in .NET Framework.")]
         public void PropertyItems_GetEmptyBitmapBmp_Success()
         {
@@ -91,7 +93,7 @@ namespace System.Drawing.Tests
             Assert.Same(bitmap.PropertyItems, bitmap.PropertyItems);
         }
 
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Returns new PropertyItem[0] in .NET Framework.")]
         public void PropertyItems_GetEmptyMemoryBitmap_ReturnsExpected()
         {
@@ -101,7 +103,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [Fact]
         public void GetPropertyItem_InvokeExistsBitmapBmp_Success()
         {
             using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
@@ -112,7 +114,7 @@ namespace System.Drawing.Tests
             Assert.Equal("LEAD Technologies Inc. V1.01\0", Encoding.ASCII.GetString(item.Value));
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(-1)]
@@ -122,7 +124,7 @@ namespace System.Drawing.Tests
             Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(propid));
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(-1)]
@@ -133,7 +135,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [Fact]
         public void RemovePropertyItem_InvokeMemoryBitmap_Success()
         {
             using var source = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
@@ -162,7 +164,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [Fact]
         public void RemovePropertyItem_InvokeBitmapJpg_Success()
         {
             using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
@@ -183,7 +185,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(-1)]
@@ -194,7 +196,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(-1)]
@@ -205,7 +207,7 @@ namespace System.Drawing.Tests
         }
   
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(-1)]
@@ -224,7 +226,7 @@ namespace System.Drawing.Tests
         }
   
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(-1)]
@@ -235,7 +237,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(-1)]
@@ -295,7 +297,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(-1)]
@@ -438,7 +440,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(-1)]
@@ -508,7 +510,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [Theory]
         [MemberData(nameof(InvalidBytes_TestData))]
         public void FromFile_InvalidBytes_ThrowsOutOfMemoryException(byte[] bytes)
         {
@@ -564,7 +566,7 @@ namespace System.Drawing.Tests
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34591", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [Theory]
         [MemberData(nameof(InvalidBytes_TestData))]
         public void FromStream_InvalidBytes_ThrowsArgumentException(byte[] bytes)
         {
@@ -686,7 +688,7 @@ namespace System.Drawing.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws ExternalException")]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [Fact]
         public void Save_InvalidDirectory_ThrowsDirectoryNotFoundException()
         {
             using (var bitmap = new Bitmap(1, 1))

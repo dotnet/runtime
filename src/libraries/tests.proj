@@ -52,6 +52,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Csp\tests\System.Security.Cryptography.Csp.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Thread\tests\System.Threading.Thread.Tests.csproj" />
 
+    <!-- Crash https://github.com/dotnet/runtime/issues/55823 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Experimental\tests\System.Runtime.Experimental.Tests.csproj" />
+
     <!-- Crashes on x64 and x86, but not arm64 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Pkcs\tests\System.Security.Cryptography.Pkcs.Tests.csproj" />
 
@@ -61,9 +64,6 @@
 
     <!-- Runs an fails on arm64 https://github.com/dotnet/runtime/issues/37094 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Pkcs\tests\System.Security.Cryptography.Pkcs.Tests.csproj" />
-
-    <!-- https://github.com/dotnet/runtime/issues/50864 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp\tests\Microsoft.CSharp.Tests.csproj" />
 
     <!-- https://github.com/dotnet/runtime/issues/50871 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
@@ -193,6 +193,9 @@
     <!-- https://github.com/dotnet/runtime/issues/52120 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/FunctionalTests/System.Net.Security.Tests.csproj" />
 
+    <!-- Crash https://github.com/dotnet/runtime/issues/55823 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Experimental\tests\System.Runtime.Experimental.Tests.csproj" />
+
     <!-- Crashes on CI but passes locally https://github.com/dotnet/runtime/issues/52615 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Http/tests/Microsoft.Extensions.Http.Tests/Microsoft.Extensions.Http.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging/tests/Common/Microsoft.Extensions.Logging.Tests.csproj" />
@@ -205,6 +208,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Csp/tests/System.Security.Cryptography.Csp.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow/tests/System.Threading.Tasks.Dataflow.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks/tests/System.Threading.Tasks.Tests.csproj" />
+
+    <!-- App Crash https://github.com/dotnet/runtime/issues/53624 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp/tests/Microsoft.CSharp.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(RunDisablediOSTests)' != 'true'">
@@ -222,10 +228,13 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
 
+    <!-- Crash https://github.com/dotnet/runtime/issues/56085 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Tests.csproj" />
+
     <!-- Crashes on CI but passes locally https://github.com/dotnet/runtime/issues/52615 -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\Interpreter\iOS.Simulator.Interpreter.Test.csproj" />
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\InvariantCultureOnlyMode\iOS.Simulator.InvariantCultureOnlyMode.Test.csproj" />
-  
+
     <!-- No current support for AOT+LLVM on catalyst, so skip functional test -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\AOT-LLVM\**\*.Test.csproj" />
   </ItemGroup>
@@ -275,6 +284,9 @@
 
     <!-- https://github.com/dotnet/runtime/issues/38433 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource/tests/TestWithConfigSwitches/System.Diagnostics.DiagnosticSource.Switches.Tests.csproj" />
+
+    <!-- Issue: https://github.com/dotnet/runtime/issues/55767 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Experimental\tests\System.Runtime.Experimental.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
@@ -315,6 +327,18 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Compression.ZipFile\tests\System.IO.Compression.ZipFile.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console\Wasm.Console.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser\Wasm.Browser.Sample.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' == 'windows' and '$(Scenario)' == 'WasmTestOnBrowser' and '$(RunDisabledWasmTestsOnWindows)' != 'true'">
+    <!-- Issue: https://github.com/dotnet/runtime/issues/55429 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\tests\Microsoft.VisualBasic.Core.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO\tests\System.IO.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory\tests\System.Memory.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Writers\XmlWriterApi\System.Xml.RW.XmlWriterApi.Tests.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\BuildWasmApps\Wasm.Build.Tests\Wasm.Build.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'OSX' and '$(TargetArchitecture)' == 'arm64' and '$(RunDisabledAppleSiliconTests)' != 'true'">
@@ -344,9 +368,11 @@
                       Condition="'$(TestTrimming)' == 'true'"
                       AdditionalProperties="%(AdditionalProperties);SkipTrimmingProjectsRestore=true" />
     <ProjectReference Include="@(TrimmingTestProjects)" />
+
+    <!-- wasm.build.tests are run on non-aot regular run -->
     <ProjectReference Include="$(RepoRoot)\src\tests\BuildWasmApps\**\*.Tests.csproj"
                       Exclude="@(ProjectExclusions)"
-                      Condition="'$(TargetOS)' == 'Browser' and '$(RunAOTCompilation)' != 'true'"
+                      Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' != 'true' and '$(TestAssemblies)' == 'true'"
                       BuildInParallel="false" />
   </ItemGroup>
 
@@ -373,10 +399,11 @@
                       BuildInParallel="false" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser'">
+  <!-- Don't build samples, and functional tests on EAT, and AOT lanes -->
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' != 'true'">
     <ProjectReference Include="$(MonoProjectRoot)sample\wasm\**\*.Sample.csproj"
                       Exclude="@(ProjectExclusions)"
-                      BuildInParallel="false" />
+                      BuildInParallel="true" />
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\WebAssembly\**\*.Test.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="false" />
