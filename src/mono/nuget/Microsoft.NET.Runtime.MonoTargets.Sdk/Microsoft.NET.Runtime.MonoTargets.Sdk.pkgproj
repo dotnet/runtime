@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="$(RepoTasksDir)RuntimeConfigParser\RuntimeConfigParser.csproj" />
     <ProjectReference Include="$(RepoTasksDir)JsonToItemsTaskFactory\JsonToItemsTaskFactory.csproj" />
   </ItemGroup>
