@@ -665,7 +665,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
-        [Theory]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(GetEncoderParameterList_ReturnsExpected_TestData))]
         public void GetEncoderParameterList_ReturnsExpected(ImageFormat format, Guid[] expectedParameters)
         {
