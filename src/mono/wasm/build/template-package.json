@@ -1,0 +1,17 @@
+{
+    "name": "wasm-in-node",
+    "version": "1.0.0",
+    "description": "Minimum requirements to fully run MONO WASM in the NodeJS environment",
+    "main": "runtime.js",
+    "scripts": {
+      "test": "node --trace-warnings runtime.js --run Wasm.Console.Sample.dll"
+    },
+    "author": "Microsoft",
+    "license": "MIT",
+    "dependencies": {
+      "node-gyp-build": "^4.2.0",
+      "bufferutil": "^4.0.1",
+      "utf-8-validate": "^5.0.2",
+      "ws": "^7.5.0"
+    }
+}

@@ -255,25 +255,11 @@
         SkipUnchangedFiles="true" 
         Condition="Exists('package.json')"/>
 
-    <!-- Otherwise create a new file in the output directory with the defaults -->
-     <WriteLinesToFile
-      File="$(WasmAppDir)\package.json"
-      Lines='{
-  "name": "mono-wasm-test",
-  "version": "1.0.0",
-  "main": "runtime.js",
-  "author": "Microsoft",
-  "license": "MIT",
-  "dependencies": {
-    "node-gyp-build": "^4.2.0",
-    "bufferutil": "^4.0.1",
-    "utf-8-validate": "^5.0.2",
-    "ws": "^7.5.0"
-  }
-}'
-      Overwrite="true"
-      Condition="!Exists('package.json')">
-    </WriteLinesToFile>
+    <!-- Otherwise copy the default template into the output directory -->
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)\template-package.json"
+        DestinationFiles="$(WasmAppDir)\package.json"
+        SkipUnchangedFiles="true" 
+        Condition="!Exists('package.json')"/>
     
     <!-- npm install -->
     <Exec Command="npm install"
