@@ -39,6 +39,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         private bool _remoteCertificateRequired;
         private X509RevocationMode _revocationMode = X509RevocationMode.Offline;
         private RemoteCertificateValidationCallback? _remoteCertificateValidationCallback;
+        private string? _targetHost;
+
+        private string TargetHost => _targetHost ?? (_targetHost = _remoteEndPoint switch
+            {
+                DnsEndPoint dnsEp => dnsEp.Host,
+                IPEndPoint ipEp => ipEp.Address.ToString(),
+                _ => throw new Exception($"Unsupported remote endpoint type '{_remoteEndPoint.GetType()}'.")
+            });
 
         internal sealed class State
         {
@@ -183,6 +191,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 _revocationMode = options.ClientAuthenticationOptions.CertificateRevocationCheckMode;
                 _remoteCertificateValidationCallback = options.ClientAuthenticationOptions.RemoteCertificateValidationCallback;
+                _targetHost = options.ClientAuthenticationOptions.TargetHost;
             }
 
             _state.StateGCHandle = GCHandle.Alloc(_state);
@@ -401,10 +410,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                         chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
                     }
 
-                    if (!chain.Build(certificate))
-                    {
-                        sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
-                    }
+                    sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(chain, certificate, true, connection._isServer, connection.TargetHost);
                 }
 
                 if (!connection._remoteCertificateRequired)
