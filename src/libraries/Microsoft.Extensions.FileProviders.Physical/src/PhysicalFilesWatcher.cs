@@ -88,6 +88,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             if (fileSystemWatcher != null)
             {
+#if NETCOREAPP
+                if (OperatingSystem.IsBrowser())
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.FileSystemWatcher_PlatformNotSupported, typeof(FileSystemWatcher)));
+                }
+#endif
+
                 _fileWatcher = fileSystemWatcher;
                 _fileWatcher.IncludeSubdirectories = true;
                 _fileWatcher.Created += OnChanged;
@@ -264,6 +271,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
+// We made sure that browser never uses FileSystemWatcher.
+#pragma warning disable CA1416 // Validate platform compatibility
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
             // For a file name change or a directory's name change notify registered tokens.
@@ -400,6 +409,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 }
             }
         }
+#pragma warning restore CA1416 // Validate platform compatibility
 
         private static string NormalizePath(string filter) => filter = filter.Replace('\\', '/');
 
