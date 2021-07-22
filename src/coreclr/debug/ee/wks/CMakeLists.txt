@@ -24,10 +24,6 @@ if (CLR_CMAKE_TARGET_WIN32)
       list (APPEND ASM_OPTIONS /safeseh)
     endif (CLR_CMAKE_HOST_ARCH_I386)
 
-    if (CLR_CMAKE_HOST_ARCH_AMD64)
-      list (APPEND ASM_OPTIONS /guard:ehcont)
-    endif (CLR_CMAKE_HOST_ARCH_AMD64)
-
     set_source_files_properties(${ASM_FILE} PROPERTIES COMPILE_OPTIONS "${ASM_OPTIONS}")
 
     add_library_clr(cordbee_wks_obj OBJECT ${CORDBEE_SOURCES_WKS} ${ASM_FILE})

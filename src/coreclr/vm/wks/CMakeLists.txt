@@ -33,10 +33,6 @@ if (CLR_CMAKE_TARGET_WIN32)
         set_source_files_properties(${VM_SOURCES_WKS_ARCH_ASM} PROPERTIES COMPILE_FLAGS "/Zm /safeseh")
     endif (CLR_CMAKE_HOST_ARCH_I386)
 
-    if (CLR_CMAKE_HOST_ARCH_AMD64)
-      set_source_files_properties(${VM_SOURCES_WKS_ARCH_ASM} PROPERTIES COMPILE_FLAGS "/guard:ehcont")
-    endif (CLR_CMAKE_HOST_ARCH_AMD64)
-
     # Convert AsmConstants.h into AsmConstants.inc
     find_program(POWERSHELL powershell)
     if (POWERSHELL STREQUAL "POWERSHELL-NOTFOUND")
