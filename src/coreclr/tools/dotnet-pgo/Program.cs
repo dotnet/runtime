@@ -999,13 +999,23 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 {
                     foreach (FileInfo fileReference in commandLineOptions.Reference)
                     {
-                        if (!File.Exists(fileReference.FullName))
+                        try
                         {
-                            PrintError($"Unable to find reference '{fileReference.FullName}'");
-                            filePathError = true;
+                            if (!File.Exists(fileReference.FullName))
+                            {
+                                PrintError($"Unable to find reference '{fileReference.FullName}'");
+                                filePathError = true;
+                            }
+                            else
+                                tsc.GetModuleFromPath(fileReference.FullName);
                         }
-                        else
-                            tsc.GetModuleFromPath(fileReference.FullName);
+                        catch (Internal.TypeSystem.TypeSystemException.BadImageFormatException)
+                        {
+                            // Ignore BadImageFormat in order to allow users to use '-r *.dll'
+                            // in a folder with native dynamic libraries (which have the same extension on Windows).
+
+                            // We don't need to log a warning here - it's already logged in GetModuleFromPath
+                        }
                     }
                 }
 
