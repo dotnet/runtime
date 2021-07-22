@@ -107,10 +107,12 @@ if [[ -z "$CC" ]]; then
     exit 1
 fi
 
-if command -v "lld$desired_version" > /dev/null; then
-    # Only lld version >= 9 can be considered stable
-    if [[ "$majorVersion" -ge 9 ]]; then
-        LDFLAGS="-fuse-ld=lld"
+if [[ "$compiler" == "clang" ]]; then
+    if command -v "lld$desired_version" > /dev/null; then
+        # Only lld version >= 9 can be considered stable
+        if [[ "$majorVersion" -ge 9 ]]; then
+            LDFLAGS="-fuse-ld=lld"
+        fi
     fi
 fi
 
