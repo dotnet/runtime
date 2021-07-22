@@ -36,39 +36,20 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         public static SafeMsQuicConfigurationHandle Create(QuicClientConnectionOptions options)
         {
             X509Certificate? certificate = null;
-
-            if (options.ClientAuthenticationOptions != null)
+            if (options.ClientAuthenticationOptions?.ClientCertificates != null)
             {
-                if (options.ClientAuthenticationOptions.CipherSuitesPolicy != null)
+                foreach (var cert in options.ClientAuthenticationOptions.ClientCertificates)
                 {
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.CipherSuitesPolicy)));
-                }
-
-                if (options.ClientAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.NoEncryption)
-                {
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.EncryptionPolicy)));
-                }
-
-                if (options.ClientAuthenticationOptions.LocalCertificateSelectionCallback != null)
-                {
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_quic_ssl_option, nameof(options.ClientAuthenticationOptions.LocalCertificateSelectionCallback)));
-                }
-
-                if (options.ClientAuthenticationOptions.ClientCertificates != null)
-                {
-                    foreach (var cert in options.ClientAuthenticationOptions.ClientCertificates)
+                    try
                     {
-                        try
+                        if (((X509Certificate2)cert).HasPrivateKey)
                         {
-                            if (((X509Certificate2)cert).HasPrivateKey)
-                            {
-                                // Pick first certificate with private key.
-                                certificate = cert;
-                                break;
-                            }
+                            // Pick first certificate with private key.
+                            certificate = cert;
+                            break;
                         }
-                        catch { }
                     }
+                    catch { }
                 }
             }
 

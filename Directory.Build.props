@@ -59,6 +59,7 @@
     <CoreClrProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'coreclr'))</CoreClrProjectRoot>
     <MonoProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'mono'))</MonoProjectRoot>
     <InstallerProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'installer'))</InstallerProjectRoot>
+    <WorkloadsProjectRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'workloads'))</WorkloadsProjectRoot>
     <SharedNativeRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'native'))</SharedNativeRoot>
     <RepoToolsLocalDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'tools-local'))</RepoToolsLocalDir>
     <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'tasks'))</RepoTasksDir>
