@@ -2125,7 +2125,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
 //
 // Return Value:     - Returns the ValueNum associated with 'func'('arg0VN','arg1VN','arg2VN','arg3VN')
 //
-// Note:   Currently the only four operand func is the VNF_PtrToArrElem operation
+// Note:   Currently the only four operand funcs are VNF_PtrToArrElem and VNF_MapStore.
 //
 ValueNum ValueNumStore::VNForFunc(
     var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN, ValueNum arg3VN)
@@ -4351,8 +4351,9 @@ var_types ValueNumStore::TypeOfVN(ValueNum vn)
 }
 
 //------------------------------------------------------------------------
-// LoopOfVN: If the given value number is VNF_MemOpaque or VNF_MapStore, return
-//    the loop number where the memory update occurs, otherwise returns MAX_LOOP_NUM.
+// LoopOfVN: If the given value number is VNF_MemOpaque, VNF_MapStore, or
+//    VNF_MemoryPhiDef, return the loop number where the memory update occurs,
+//    otherwise returns MAX_LOOP_NUM.
 //
 // Arguments:
 //    vn - Value number to query
@@ -4373,6 +4374,11 @@ BasicBlock::loopNumber ValueNumStore::LoopOfVN(ValueNum vn)
         else if (funcApp.m_func == VNF_MapStore)
         {
             return (BasicBlock::loopNumber)funcApp.m_args[3];
+        }
+        else if (funcApp.m_func == VNF_PhiMemoryDef)
+        {
+            BasicBlock* const block = reinterpret_cast<BasicBlock*>(ConstantValue<ssize_t>(funcApp.m_args[0]));
+            return block->bbNatLoopNum;
         }
     }
 
