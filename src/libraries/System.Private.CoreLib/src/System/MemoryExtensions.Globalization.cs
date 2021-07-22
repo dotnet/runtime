@@ -385,7 +385,7 @@ namespace System
         /// Returns an enumeration of lines over the provided span.
         /// </summary>
         /// <remarks>
-        /// It is not recommended that protocol parsers utilize this API. See the documentation
+        /// It is recommended that protocol parsers not utilize this API. See the documentation
         /// for <see cref="string.ReplaceLineEndings"/> for more information on how newline
         /// sequences are detected.
         /// </remarks>
@@ -398,7 +398,7 @@ namespace System
         /// Returns an enumeration of lines over the provided span.
         /// </summary>
         /// <remarks>
-        /// It is not recommended that protocol parsers utilize this API. See the documentation
+        /// It is recommended that protocol parsers not utilize this API. See the documentation
         /// for <see cref="string.ReplaceLineEndings"/> for more information on how newline
         /// sequences are detected.
         /// </remarks>
