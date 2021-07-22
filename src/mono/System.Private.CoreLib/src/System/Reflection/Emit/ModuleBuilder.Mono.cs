@@ -591,8 +591,6 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(type));
             if (type.IsByRef)
                 throw new ArgumentException("type can't be a byref type", nameof(type));
-            if (!IsTransient() && (type.Module is ModuleBuilder) && ((ModuleBuilder)type.Module).IsTransient())
-                throw new InvalidOperationException("a non-transient module can't reference a transient module");
             return type.MetadataToken;
         }
 
