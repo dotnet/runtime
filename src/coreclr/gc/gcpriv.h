@@ -4627,16 +4627,14 @@ protected:
     PER_HEAP_ISOLATED
     heap_segment* segment_standby_list;
 
-#if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
+#ifdef USE_REGIONS
     PER_HEAP_ISOLATED
     heap_segment* regions_to_decommit;
     PER_HEAP_ISOLATED
     heap_segment* large_regions_to_decommit;
-#endif //USE_REGIONS && MULTIPLE_HEAPS
-#ifdef USE_REGIONS
     PER_HEAP_ISOLATED
     heap_segment* free_huge_regions;
-#endif
+#endif //USE_REGIONS
     PER_HEAP
     size_t ordered_free_space_indices[MAX_NUM_BUCKETS];
 
