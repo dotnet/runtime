@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -147,7 +148,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
 
             IChangeToken changeToken = GetOrAddChangeToken(filter);
+// We made sure that browser never uses FileSystemWatcher.
+#pragma warning disable CA1416 // Validate platform compatibility
             TryEnableFileSystemWatcher();
+#pragma warning restore CA1416 // Validate platform compatibility
 
             return changeToken;
         }
@@ -271,8 +275,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
-// We made sure that browser never uses FileSystemWatcher.
-#pragma warning disable CA1416 // Validate platform compatibility
+        [UnsupportedOSPlatform("browser")]
         private void OnRenamed(object sender, RenamedEventArgs e)
         {
             // For a file name change or a directory's name change notify registered tokens.
@@ -305,11 +308,13 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         private void OnChanged(object sender, FileSystemEventArgs e)
         {
             OnFileSystemEntryChange(e.FullPath);
         }
 
+        [UnsupportedOSPlatform("browser")]
         private void OnError(object sender, ErrorEventArgs e)
         {
             // Notify all cache entries on error.
@@ -319,6 +324,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         private void OnFileSystemEntryChange(string fullPath)
         {
             try
@@ -341,6 +347,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         private void ReportChangeForMatchedEntries(string path)
         {
             if (string.IsNullOrEmpty(path))
@@ -377,6 +384,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         private void TryDisableFileSystemWatcher()
         {
             if (_fileWatcher != null)
@@ -394,6 +402,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         private void TryEnableFileSystemWatcher()
         {
             if (_fileWatcher != null)
@@ -409,7 +418,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 }
             }
         }
-#pragma warning restore CA1416 // Validate platform compatibility
 
         private static string NormalizePath(string filter) => filter = filter.Replace('\\', '/');
 
