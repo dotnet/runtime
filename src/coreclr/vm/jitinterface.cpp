@@ -10162,6 +10162,20 @@ bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
 #endif
     }
 
+    PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
+    if (config != nullptr && config->IsForMulticoreJit())
+    {
+        bool suppressGCTransition = false;
+        CorInfoCallConvExtension unmanagedCallConv = getUnmanagedCallConv(method, callSiteSig, &suppressGCTransition);
+
+        if (suppressGCTransition)
+        {
+            // MultiCoreJit thread can't inline PInvoke with SuppressGCTransitionAttribute,
+            // because it can't be resolved in mcj thread
+            result = TRUE;
+        }
+    }
+
     EE_TO_JIT_TRANSITION();
 
     return result;
