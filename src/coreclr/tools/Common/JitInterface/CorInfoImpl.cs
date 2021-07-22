@@ -2853,20 +2853,20 @@ namespace Internal.JitInterface
             throw new NotSupportedException("FilterException");
         }
 
-        private void HandleException(_EXCEPTION_POINTERS* pExceptionPointers)
-        {
-            // This method is completely handled by the C++ wrapper to the JIT-EE interface,
-            // and should never reach the managed implementation.
-            Debug.Fail("CorInfoImpl.HandleException should not be called");
-            throw new NotSupportedException("HandleException");
-        }
-
         private bool runWithErrorTrap(void* function, void* parameter)
         {
             // This method is completely handled by the C++ wrapper to the JIT-EE interface,
             // and should never reach the managed implementation.
             Debug.Fail("CorInfoImpl.runWithErrorTrap should not be called");
             throw new NotSupportedException("runWithErrorTrap");
+        }
+
+        private bool runWithSPMIErrorTrap(void* function, void* parameter)
+        {
+            // This method is completely handled by the C++ wrapper to the JIT-EE interface,
+            // and should never reach the managed implementation.
+            Debug.Fail("CorInfoImpl.runWithSPMIErrorTrap should not be called");
+            throw new NotSupportedException("runWithSPMIErrorTrap");
         }
 
         private void ThrowExceptionForJitResult(HRESULT result)
