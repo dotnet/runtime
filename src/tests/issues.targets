@@ -1174,6 +1174,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/doublinknoleak2/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/dlcollect/**">
+            <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/FinalNStruct/nstructtun/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
