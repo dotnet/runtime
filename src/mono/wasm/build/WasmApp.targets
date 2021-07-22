@@ -136,7 +136,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="GenerateRuntimeConfig">
+  <Target Name="WasmGenerateRuntimeConfig">
     <PropertyGroup>
       <RuntimeConfigFilePath>$(TargetDir)publish\$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).runtimeconfig.json</RuntimeConfigFilePath>
       <ParsedRuntimeConfigFilePath>$(TargetDir)publish\runtimeconfig.bin</ParsedRuntimeConfigFilePath>
@@ -155,7 +155,7 @@
     </RuntimeConfigParserTask>
   </Target>
 
-  <Target Name="_WasmGenerateAppBundle" Condition="'$(WasmGenerateAppBundle)' == 'true'" DependsOnTargets="GenerateRuntimeConfig">
+  <Target Name="_WasmGenerateAppBundle" Condition="'$(WasmGenerateAppBundle)' == 'true'" DependsOnTargets="WasmGenerateRuntimeConfig">
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
 
     <PropertyGroup>
