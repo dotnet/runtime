@@ -365,7 +365,7 @@ namespace System.Net.Security
 
             ValidateCreateContext(sslClientAuthenticationOptions, _userCertificateValidationCallback, _certSelectionDelegate);
 
-            return ProcessAuthenticationAsync(true, false, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, isApm: false, cancellationToken);
         }
 
         private Task AuthenticateAsClientApm(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken = default)
@@ -375,7 +375,7 @@ namespace System.Net.Security
 
             ValidateCreateContext(sslClientAuthenticationOptions, _userCertificateValidationCallback, _certSelectionDelegate);
 
-            return ProcessAuthenticationAsync(true, true, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, isApm: true, cancellationToken);
         }
 
         public virtual Task AuthenticateAsServerAsync(X509Certificate serverCertificate) =>
@@ -418,7 +418,7 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
-            return ProcessAuthenticationAsync(true, false, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, isApm: false, cancellationToken);
         }
 
         private Task AuthenticateAsServerApm(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken = default)
@@ -426,7 +426,7 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
-            return ProcessAuthenticationAsync(true, true, cancellationToken);
+            return ProcessAuthenticationAsync(isAsync: true, isApm: true, cancellationToken);
         }
 
         public Task AuthenticateAsServerAsync(ServerOptionsSelectionCallback optionsCallback, object? state, CancellationToken cancellationToken = default)
