@@ -27,4 +27,5 @@ declare function mergeInto(a: object, b: object);
 
 // Joins the various file specific C functions into 1 interface for easier access
 interface C_FUNCS extends BINDING_C_FUNCS, DOTNET_C_FUNCS, MONO_C_FUNCS {}
-type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array
+
+type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;

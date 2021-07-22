@@ -44,44 +44,57 @@ interface MONO_VARS {
 declare var MONO: typeof MonoSupportLib.$MONO & MONO_C_FUNCS & MONO_VARS & DEBUG_C_FUNCS & DEBUG_VARS; // Debug ones are from debugger-types.d.ts
 
 // OTHER TYPES ///////////////////////////////////////////////////////////////////////
+type RuntimeOptions = string[];
+type EnvVars = {
+    [i: string]: string;
+}
+type AOTProfilerOptions = { 
+    write_at?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
+    send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpAotProfileData' (DumpAotProfileData stores the data into Module.aot_profile_data.)
+}
+type CoverageProfilerOptions = { 
+    write_at?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
+    send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into Module.coverage_profile_data.)
+}
 
 type FetchRequest = (asset: string) => Promise<{
     ok: boolean,
     url: string,
     arrayBuffer: () => Promise<Uint8Array>
-}>;
+}>
 
 declare const enum GlobalizationMode {
-    ICU = "icu",
-    INVARIANT = "invariant",
-    AUTO = "auto"
+    ICU = "icu", // load ICU globalization data from any runtime assets with behavior "icu".
+    INVARIANT = "invariant", //  operate in invariant globalization mode.
+    AUTO = "auto" // (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
+}
+
+
+type ManagedPointer = number; // - address in the managed heap
+
+type MonoRuntimeArgs = {
+    assembly_root: string, // the subfolder containing managed assemblies and pdbs
+    assets: AssetEntry[], // a list of assets to load along with the runtime. each asset is a dictionary-style Object with the following properties:
+    loaded_cb: () => void, // a function invoked when loading has completed
+    debug_level?: number, // Either this or the next one needs to be set
+    enable_debugging?: number, // Either this or the previous one needs to be set
+    fetch_file_cb?: FetchRequest, // a function (string) invoked to fetch a given file. If no callback is provided a default implementation appropriate for the current environment will be selected (readFileSync in node, fetch elsewhere). If no default implementation is available this call will fail.
+    globalization_mode?: GlobalizationMode, // configures the runtime's globalization mode
+    assembly_list?: any, // obsolete but necessary for the check
+    runtime_assets?: any, // obsolete but necessary for the check
+    runtime_asset_sources?: any, // obsolete but necessary for the check
+    diagnostic_tracing?: boolean // enables diagnostic log messages during startup
+    remote_sources?: string[], // additional search locations for assets. Sources will be checked in sequential order until the asset is found. The string "./" indicates to load from the application directory (as with the files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates that asset loads can be attempted from a remote server. Sources must end with a "/".
+    environment_variables?: EnvVars, // dictionary-style Object containing environment variables
+    runtime_options?: RuntimeOptions, // array of runtime options as strings
+    aot_profiler_options?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
+    coverage_profiler_options?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
 }
 
 type LoadedFiles = { 
     url: string,
     file: string,
 }[];
-
-type ManagedPointer = number; // - address in the managed heap
-
-type MonoRuntimeArgs = {
-    fetch_file_cb: FetchRequest,
-    loaded_cb: () => void,
-    debug_level: number,
-    assembly_root: string,
-    assets: AssetEntry[],
-    globalization_mode?: GlobalizationMode,
-    enable_debugging?: number,
-    assembly_list?: any,
-    runtime_assets?: any,
-    runtime_asset_sources?: any,
-    diagnostic_tracing?: any
-    remote_sources?: string[],
-    environment_variables?: object,
-    runtime_options?: object,
-    aot_profiler_options?: object,
-    coverage_profiler_options?: object,
-}
 
 type NativePointer = number; // - address in wasm memory
 
@@ -116,6 +129,7 @@ type WasmRootBuffer = {
     get: (index: number) => ManagedPointer,
     set: (index: number, value: number) => void,
     release: () => void,
+    clear: () => void,
 }
 
 type ByteReader = {

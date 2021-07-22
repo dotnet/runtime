@@ -8,14 +8,14 @@ var MonoSupportLib = {
 		timeout_queue: [] as ((id?: number) => void)[],
 		mono_wasm_runtime_is_ready : false,
 		mono_wasm_ignore_pdb_load_errors: true,
-		mono_text_decoder: undefined,
+		mono_text_decoder: undefined as TextDecoder,
 		num_icu_assets_loaded_successfully: 0,
-		_vt_stack: [],
 		_scratch_root_buffer: null as WasmRootBuffer,
 		_scratch_root_free_indices: null as Int32Array,
 		_scratch_root_free_indices_count: 0,
 		_scratch_root_free_instances: [] as number[],
-		_id_table: {},
+		_vt_stack: [], // TODO what are the types of these?
+		_id_table: {}, // TODO what are the types of these?
 		
 		pump_message: function (): void {
 			if (!MONO.mono_background_exec)
@@ -797,11 +797,11 @@ var MonoSupportLib = {
 			MONO.wasm_setenv (name, value);
 		},
 
-		mono_wasm_set_runtime_options: function (options): void {
+		mono_wasm_set_runtime_options: function (options: RuntimeOptions): void {
 			if (!MONO.wasm_parse_runtime_options)
 				MONO.wasm_parse_runtime_options = Module.cwrap ('mono_wasm_parse_runtime_options', null, ['number', 'number']);
 			var argv = Module._malloc (options.length * 4);
-			var wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
+			var wasm_strdup = Module.cwrap<(a: string) => number> ('mono_wasm_strdup', 'number', ['string']);
 			let aindex = 0;
 			for (var i = 0; i < options.length; ++i) {
 				Module.setValue (argv + (aindex * 4), wasm_strdup (options [i]), "i32");
@@ -810,16 +810,8 @@ var MonoSupportLib = {
 			MONO.wasm_parse_runtime_options (options.length, argv);
 		},
 
-		//
-		// Initialize the AOT profiler with OPTIONS.
-		// Requires the AOT profiler to be linked into the app.
-		// options = { write_at: "<METHODNAME>", send_to: "<METHODNAME>" }
-		// <METHODNAME> should be in the format <CLASS>::<METHODNAME>.
-		// write_at defaults to 'WebAssembly.Runtime::StopProfile'.
-		// send_to defaults to 'WebAssembly.Runtime::DumpAotProfileData'.
 		// DumpAotProfileData stores the data into Module.aot_profile_data.
-		//
-		mono_wasm_init_aot_profiler: function (options): void {
+		mono_wasm_init_aot_profiler: function (options: AOTProfilerOptions): void {
 			if (options == null)
 				options = {}
 			if (!('write_at' in options))
@@ -830,12 +822,9 @@ var MonoSupportLib = {
 			Module.ccall ('mono_wasm_load_profiler_aot', null, ['string'], [arg]);
 		},
 
-		// options = { write_at: "<METHODNAME>", send_to: "<METHODNAME>" }
-		// <METHODNAME> should be in the format <CLASS>::<METHODNAME>.
-		// write_at defaults to 'WebAssembly.Runtime::StopProfile'.
-		// send_to defaults to 'WebAssembly.Runtime::DumpCoverageProfileData'.
+		
 		// DumpCoverageProfileData stores the data into Module.coverage_profile_data.
-		mono_wasm_init_coverage_profiler: function (options): void {
+		mono_wasm_init_coverage_profiler: function (options: AOTProfilerOptions): void {
 			if (options == null)
 				options = {}
 			if (!('write_at' in options))
@@ -1001,44 +990,6 @@ var MonoSupportLib = {
 		},
 
 		// Initializes the runtime and loads assemblies, debug information, and other files.
-		// @args is a dictionary-style Object with the following properties:
-		//    assembly_root: (required) the subfolder containing managed assemblies and pdbs
-		//    debug_level or enable_debugging: (required)
-		//    assets: (required) a list of assets to load along with the runtime. each asset
-		//     is a dictionary-style Object with the following properties:
-		//        name: (required) the name of the asset, including extension.
-		//        behavior: (required) determines how the asset will be handled once loaded:
-		//          "heap": store asset into the native heap
-		//          "assembly": load asset as a managed assembly (or debugging information)
-		//          "resource": load asset as a managed resource assembly
-		//          "icu": load asset as an ICU data archive
-		//          "vfs": load asset into the virtual filesystem (for fopen, File.Open, etc)
-		//        load_remote: (optional) if true, an attempt will be made to load the asset
-		//          from each location in @args.remote_sources.
-		//        virtual_path: (optional) if specified, overrides the path of the asset in
-		//          the virtual filesystem and similar data structures once loaded.
-		//        is_optional: (optional) if true, any failure to load this asset will be ignored.
-		//    loaded_cb: (required) a function () invoked when loading has completed.
-		//    fetch_file_cb: (optional) a function (string) invoked to fetch a given file.
-		//      If no callback is provided a default implementation appropriate for the current
-		//      environment will be selected (readFileSync in node, fetch elsewhere).
-		//      If no default implementation is available this call will fail.
-		//    remote_sources: (optional) additional search locations for assets.
-		//      sources will be checked in sequential order until the asset is found.
-		//      the string "./" indicates to load from the application directory (as with the
-		//      files in assembly_list), and a fully-qualified URL like "https://example.com/" indicates
-		//      that asset loads can be attempted from a remote server. Sources must end with a "/".
-		//    environment_variables: (optional) dictionary-style Object containing environment variables
-		//    runtime_options: (optional) array of runtime options as strings
-		//    aot_profiler_options: (optional) dictionary-style Object. see the comments for
-		//      mono_wasm_init_aot_profiler. If omitted, aot profiler will not be initialized.
-		//    coverage_profiler_options: (optional) dictionary-style Object. see the comments for
-		//      mono_wasm_init_coverage_profiler. If omitted, coverage profiler will not be initialized.
-		//    globalization_mode: (optional) configures the runtime's globalization mode:
-		//      "icu": load ICU globalization data from any runtime assets with behavior "icu".
-		//      "invariant": operate in invariant globalization mode.
-		//      "auto" (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
-		//    diagnostic_tracing: (optional) enables diagnostic log messages during startup
 		mono_load_runtime_and_bcl_args: function (args: MonoRuntimeArgs): void {
 			try {
 				return MONO._load_assets_and_runtime (args);

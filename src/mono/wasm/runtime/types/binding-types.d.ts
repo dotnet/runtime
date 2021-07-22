@@ -85,14 +85,18 @@ declare var BINDING: typeof BindingSupportLib.$BINDING & BINDING_C_FUNCS & BINDI
 
 // OTHER TYPES ///////////////////////////////////////////////////////////////////////
 type JSObject = {
+    __js_handle__?: number,
+    __mono_js_cont__?: number,
     __mono_gchandle__?: number, 
     __mono_jshandle__?: number,
     __mono_bound_tcs__?: number,
+    __mono_delegate_invoke__?: number,
     __owns_handle__?: boolean,
-    __mono_delegate_alive__?: boolean,
-    __mono_js_cont__?: number,
+    __is_mono_proxied__?: boolean,
     is_mono_bridged_obj?: boolean,
-    then?: Function
+    __mono_delegate_alive__?: boolean,
+    __mono_delegate_invoke_sig__?: ArgsMarshalString
+    then?: Function,
 };
 
 type Converter = {

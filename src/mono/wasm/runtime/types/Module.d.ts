@@ -62,12 +62,12 @@ type MonoConfig = {
 
 // Types of assets that can be in the mono-config.js/mono-config.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
 type AssetEntry = {
-    behavior: AssetBehaviours,
-    name: string,
-    virtual_path?: string,
+    name: string, // the name of the asset, including extension.
+    behavior: AssetBehaviours, // determines how the asset will be handled once loaded
+    virtual_path?: string, // if specified, overrides the path of the asset in the virtual filesystem and similar data structures once loaded.
     culture?: Culture,
-    load_remote?: boolean,
-    is_optional?: boolean
+    load_remote?: boolean, // if true, an attempt will be made to load the asset from each location in @args.remote_sources.
+    is_optional?: boolean // if true, any failure to load this asset will be ignored.
 }
 
 interface AssemblyEntry extends AssetEntry {
@@ -91,11 +91,11 @@ interface IcuData extends AssetEntry {
 
 // Note that since these are annoated as `declare const enum` they are replaces by tsc with their raw value during compilation
 declare const enum AssetBehaviours {
-    Resource = "resource",
-    Assembly = "assembly",
-    Heap = "heap",
-    ICU = "icu",
-    VFS = "vfs",
+    Resource = "resource", // load asset as a managed resource assembly
+    Assembly = "assembly", // load asset as a managed assembly (or debugging information)
+    Heap = "heap", // store asset into the native heap
+    ICU = "icu", // load asset as an ICU data archive
+    VFS = "vfs", // load asset into the virtual filesystem (for fopen, File.Open, etc)
 }
 
 type Culture = "ar_SA" | "am_ET" | "bg_BG" | "bn_BD" | "bn_IN" | "ca_AD" | "ca_ES" | "cs_CZ" | "da_DK" |
