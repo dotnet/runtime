@@ -788,6 +788,39 @@ namespace System
             }
         }
 
+        private const int ILogB_NaN = 0x7fffffff;
+        private const int ILogB_Zero = (-1 - 0x7fffffff);
+
+        public static int ILogB(double x)
+        {
+            if (double.IsNaN(x))
+            {
+                return ILogB_NaN;
+            }
+
+            ulong i = BitConverter.DoubleToUInt64Bits(x);
+            int e = (int)((i >> 52) & 0x7FF);
+
+            if (e == 0)
+            {
+                i <<= 12;
+                if (i == 0)
+                {
+                    return ILogB_Zero;
+                }
+
+                for (e = -0x3FF; (i >> 63) == 0; e--, i <<= 1) ;
+                return e;
+            }
+
+            if (e == 0x7FF)
+            {
+                return (i << 12) != 0 ? ILogB_Zero : int.MaxValue;
+            }
+
+            return e - 0x3FF;
+        }
+
         public static double Log(double a, double newBase)
         {
             if (double.IsNaN(a))

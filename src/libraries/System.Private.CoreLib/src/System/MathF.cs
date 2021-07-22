@@ -180,6 +180,39 @@ namespace System
             }
         }
 
+        private const int ILogB_NaN = 0x7fffffff;
+        private const int ILogB_Zero = (-1 - 0x7fffffff);
+
+        public static int ILogB(float x)
+        {
+            if (float.IsNaN(x))
+            {
+                return ILogB_NaN;
+            }
+
+            uint i = BitConverter.SingleToUInt32Bits(x);
+            int e = (int)((i >> 23) & 0xFF);
+
+            if (e != 0)
+            {
+                i <<= 9;
+                if (i == 0)
+                {
+                    return ILogB_Zero;
+                }
+
+                for (e = -0x7F; (i >> 31) == 0; e--, i <<= 1) ;
+                return e;
+            }
+
+            if (e == 0xFF)
+            {
+                return i << 9 != 0 ? ILogB_Zero : int.MaxValue;
+            }
+
+            return e - 0x7F;
+        }
+
         public static float Log(float x, float y)
         {
             if (float.IsNaN(x))

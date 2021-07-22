@@ -82,10 +82,6 @@ namespace System
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int ILogB(double x);
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Log(double d);
 
         [Intrinsic]
