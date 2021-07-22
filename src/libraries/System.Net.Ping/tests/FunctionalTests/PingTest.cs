@@ -671,7 +671,6 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SendPings_ReuseInstance_Hostname()
