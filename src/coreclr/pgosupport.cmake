@@ -20,6 +20,13 @@ function(add_pgo TargetName)
         if(CLR_CMAKE_HOST_WIN32)
             set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE        " /LTCG /GENPROFILE")
             set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS_RELWITHDEBINFO " /LTCG /GENPROFILE")
+
+            if (CLR_CMAKE_HOST_ARCH_AMD64)
+                # The /guard:ehcont and /CETCOMPAT switches here are temporary and will be moved to a more global location once
+                # new profile data is published
+                set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE        " /guard:ehcont /CETCOMPAT")
+                set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS_RELWITHDEBINFO " /guard:ehcont /CETCOMPAT")
+            endif (CLR_CMAKE_HOST_ARCH_AMD64)
         else(CLR_CMAKE_HOST_WIN32)
             if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
                 target_compile_options(${TargetName} PRIVATE -flto -fprofile-instr-generate)

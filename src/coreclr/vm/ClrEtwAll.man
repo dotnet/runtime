@@ -139,6 +139,8 @@
                             <opcode name="GCGlobalHeapHistory" message="$(string.RuntimePublisher.GCGlobalHeapHistoryOpcodeMessage)" symbol="CLR_GC_GCGLOBALHEAPHISTORY_OPCODE" value="205"> </opcode>
                             <opcode name="GenAwareBegin" message="$(string.RuntimePublisher.GenAwareBeginOpcodeMessage)" symbol="CLR_GC_GENAWAREBEGIN_OPCODE" value="206"> </opcode>
                             <opcode name="GenAwareEnd" message="$(string.RuntimePublisher.GenAwareEndOpcodeMessage)" symbol="CLR_GC_GENAWAREEND_OPCODE" value="207"> </opcode>
+                            <opcode name="GCLOHCompact" message="$(string.RuntimePublisher.GCLOHCompactOpcodeMessage)" symbol="CLR_GC_GCLOHCOMPACT_OPCODE" value="208"> </opcode>
+                            <opcode name="GCFitBucketInfo" message="$(string.RuntimePublisher.GCFitBucketInfoOpcodeMessage)" symbol="CLR_GC_GCFITBUCKETINFO_OPCODE" value="209"> </opcode>
                         </opcodes>
                     </task>
 
@@ -453,10 +455,16 @@
                         <map value="0x0" message="$(string.RuntimePublisher.GCSegment.SmallObjectHeapMapMessage)"/>
                         <map value="0x1" message="$(string.RuntimePublisher.GCSegment.LargeObjectHeapMapMessage)"/>
                         <map value="0x2" message="$(string.RuntimePublisher.GCSegment.ReadOnlyHeapMapMessage)"/>
+                        <map value="0x3" message="$(string.RuntimePublisher.GCSegment.PinnedObjectHeapMapMessage)"/>
                     </valueMap>
                     <valueMap name="GCAllocationKindMap">
                         <map value="0x0" message="$(string.RuntimePublisher.GCAllocation.SmallMapMessage)"/>
                         <map value="0x1" message="$(string.RuntimePublisher.GCAllocation.LargeMapMessage)"/>
+                        <map value="0x2" message="$(string.RuntimePublisher.GCAllocation.PinnedMapMessage)"/>
+                    </valueMap>
+                    <valueMap name="GCBucketKindMap">
+                        <map value="0x0" message="$(string.RuntimePublisher.GCBucket.FLItemMapMessage)"/>
+                        <map value="0x1" message="$(string.RuntimePublisher.GCBucket.PlugMessage)"/>
                     </valueMap>
                     <valueMap name="GCTypeMap">
                         <map value="0x0" message="$(string.RuntimePublisher.GCType.NonConcurrentGCMapMessage)"/>
@@ -511,6 +519,10 @@
                         <map value="3" message="$(string.RuntimePublisher.GCRootKind.Older)"/>
                         <map value="4" message="$(string.RuntimePublisher.GCRootKind.SizedRef)"/>
                         <map value="5" message="$(string.RuntimePublisher.GCRootKind.Overflow)"/>
+                        <map value="6" message="$(string.RuntimePublisher.GCRootKind.DependentHandle)"/>
+                        <map value="7" message="$(string.RuntimePublisher.GCRootKind.NewFQ)"/>
+                        <map value="8" message="$(string.RuntimePublisher.GCRootKind.Steal)"/>
+                        <map value="9" message="$(string.RuntimePublisher.GCRootKind.BGC)"/>
                     </valueMap>
                     <valueMap name="GCHandleKindMap">
                         <map value="0x0" message="$(string.RuntimePublisher.GCHandleKind.WeakShortMessage)"/>
@@ -1133,6 +1145,32 @@
                       </UserData>
                   </template>
 
+                    <template tid="GCAllocationTick_V4">
+                      <data name="AllocationAmount" inType="win:UInt32" outType="win:HexInt32" />
+                      <data name="AllocationKind" inType="win:UInt32" map="GCAllocationKindMap" />
+                      <data name="ClrInstanceID" inType="win:UInt16" />
+                      <data name="AllocationAmount64" inType="win:UInt64" outType="win:HexInt64" />
+                      <data name="TypeID" inType="win:Pointer" />
+                      <data name="TypeName" inType="win:UnicodeString" />
+                      <data name="HeapIndex" inType="win:UInt32" />
+                      <data name="Address" inType="win:Pointer" />
+                      <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
+
+                      <UserData>
+                        <GCAllocationTick_V4 xmlns="myNs">
+                          <AllocationAmount> %1 </AllocationAmount>
+                          <AllocationKind> %2 </AllocationKind>
+                          <ClrInstanceID> %3 </ClrInstanceID>
+                          <AllocationAmount64> %4 </AllocationAmount64>
+                          <TypeID> %5 </TypeID>
+                          <TypeName> %6 </TypeName>
+                          <HeapIndex> %7 </HeapIndex>
+                          <Address> %8 </Address>
+                          <ObjectSize> %9 </ObjectSize>
+                        </GCAllocationTick_V4>
+                      </UserData>
+                  </template>
+
                   <template tid="GCCreateConcurrentThread">
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <UserData>
@@ -1219,31 +1257,31 @@
 
                     <template tid="GCPerHeapHistory_V3">
                         <data name="ClrInstanceID" inType="win:UInt16" />
-     					<data name="FreeListAllocated" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="FreeListRejected" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="EndOfSegAllocated" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="CondemnedAllocated" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="PinnedAllocated" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="PinnedAllocatedAdvance" inType="win:Pointer" outType="win:HexInt64" />
-     					<data name="RunningFreeListEfficiency" inType="win:UInt32" />
-     					<data name="CondemnReasons0" inType="win:UInt32" />
-     					<data name="CondemnReasons1" inType="win:UInt32" />
-     					<data name="CompactMechanisms" inType="win:UInt32" />
-     					<data name="ExpandMechanisms" inType="win:UInt32" />
-     					<data name="HeapIndex" inType="win:UInt32" />
-     					<data name="ExtraGen0Commit" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="FreeListAllocated" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="FreeListRejected" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="EndOfSegAllocated" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="CondemnedAllocated" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="PinnedAllocated" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="PinnedAllocatedAdvance" inType="win:Pointer" outType="win:HexInt64" />
+                        <data name="RunningFreeListEfficiency" inType="win:UInt32" />
+                        <data name="CondemnReasons0" inType="win:UInt32" />
+                        <data name="CondemnReasons1" inType="win:UInt32" />
+                        <data name="CompactMechanisms" inType="win:UInt32" />
+                        <data name="ExpandMechanisms" inType="win:UInt32" />
+                        <data name="HeapIndex" inType="win:UInt32" />
+                        <data name="ExtraGen0Commit" inType="win:Pointer" outType="win:HexInt64" />
                         <data name="Count" inType="win:UInt32"    />
                         <struct name="Values"   count="Count"  >
-							<data name="SizeBefore" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="FreeListBefore" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="FreeObjBefore" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="SizeAfter" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="FreeListAfter" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="FreeObjAfter" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="In" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="PinnedSurv" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="NonePinnedSurv" inType="win:Pointer" outType="win:HexInt64" />
-							<data name="NewAllocation" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="SizeBefore" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="FreeListBefore" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="FreeObjBefore" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="SizeAfter" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="FreeListAfter" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="FreeObjAfter" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="In" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="PinnedSurv" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="NonePinnedSurv" inType="win:Pointer" outType="win:HexInt64" />
+                            <data name="NewAllocation" inType="win:Pointer" outType="win:HexInt64" />
                         </struct>
                         <UserData>
                             <GCPerHeapHistory_V3 xmlns="myNs">
@@ -1319,6 +1357,81 @@
                                 <CondemnReasons0> %10 </CondemnReasons0>
                                 <CondemnReasons1> %11 </CondemnReasons1>
                             </GCGlobalHeap_V3>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCGlobalHeap_V4">
+                        <data name="FinalYoungestDesired" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="NumHeaps" inType="win:Int32" />
+                        <data name="CondemnedGeneration" inType="win:UInt32" />
+                        <data name="Gen0ReductionCount" inType="win:UInt32" />
+                        <data name="Reason" inType="win:UInt32" />
+                        <data name="GlobalMechanisms" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="PauseMode" inType="win:UInt32" />
+                        <data name="MemoryPressure" inType="win:UInt32" />
+                        <data name="CondemnReasons0" inType="win:UInt32" />
+                        <data name="CondemnReasons1" inType="win:UInt32" />
+                        <data name="Count" inType="win:UInt32"  />
+                        <struct name="Values"   count="Count"  >
+                            <data name="Time" inType="win:UInt32" />
+                        </struct>
+
+                        <UserData>
+                            <GCGlobalHeap_V4 xmlns="myNs">
+                                <FinalYoungestDesired> %1 </FinalYoungestDesired>
+                                <NumHeaps> %2 </NumHeaps>
+                                <CondemnedGeneration> %3 </CondemnedGeneration>
+                                <Gen0ReductionCount> %4 </Gen0ReductionCount>
+                                <Reason> %5 </Reason>
+                                <GlobalMechanisms> %6 </GlobalMechanisms>
+                                <ClrInstanceID> %7 </ClrInstanceID>
+                                <PauseMode> %8 </PauseMode>
+                                <MemoryPressure> %9 </MemoryPressure>
+                                <CondemnReasons0> %10 </CondemnReasons0>
+                                <CondemnReasons1> %11 </CondemnReasons1>
+                                <Count> %12 </Count>
+                            </GCGlobalHeap_V4>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCLOHCompact">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="Count" inType="win:UInt16"  />
+                        <struct name="Values"   count="Count"  >
+                            <data name="TimePlan" inType="win:UInt32" />
+                            <data name="TimeCompact" inType="win:UInt32" />
+                            <data name="TimeRelocate" inType="win:UInt32" />
+                            <data name="TotalRefs" inType="win:Pointer" />
+                            <data name="ZeroRefs" inType="win:Pointer" />
+                        </struct>
+
+                        <UserData>
+                            <GCLOHCompact xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <Count> %2 </Count>
+                            </GCLOHCompact>
+                        </UserData>
+                    </template>
+
+                    <template tid="GCFitBucketInfo">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="BucketKind" inType="win:UInt16" map="GCBucketKindMap" />
+                        <data name="TotalSize" inType="win:UInt64" />
+                        <data name="Count" inType="win:UInt16"  />
+                        <struct name="Values"   count="Count"  >
+                            <data name="Index" inType="win:UInt16" />
+                            <data name="Count" inType="win:UInt32" />
+                            <data name="Size" inType="win:Pointer" outType="win:HexInt64" /> 
+                        </struct>
+
+                        <UserData>
+                            <GCFitBucketInfo xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <BucketKind> %2 </BucketKind>
+                                <TotalSize> %3 </TotalSize>
+                                <Count> %4 </Count>
+                            </GCFitBucketInfo>
                         </UserData>
                     </template>
 
@@ -3061,6 +3174,11 @@
                            task="GarbageCollection"
                            symbol="GCAllocationTick_V3" message="$(string.RuntimePublisher.GCAllocationTick_V3EventMessage)"/>
 
+                    <event value="10" version="4" level="win:Verbose"  template="GCAllocationTick_V4"
+                           keywords="GCKeyword"  opcode="GCAllocationTick"
+                           task="GarbageCollection"
+                           symbol="GCAllocationTick_V4" message="$(string.RuntimePublisher.GCAllocationTick_V4EventMessage)"/>
+
                     <event value="11" version="0" level="win:Informational"
                            keywords ="GCKeyword"  opcode="GCCreateConcurrentThread"
                            task="GarbageCollection"
@@ -3863,6 +3981,11 @@
                            task="GarbageCollection"
                            symbol="GCGlobalHeapHistory_V3" message="$(string.RuntimePublisher.GCGlobalHeap_V3EventMessage)"/>
 
+                    <event value="205" version="4" level="win:Informational"  template="GCGlobalHeap_V4"
+                           keywords ="GCKeyword"  opcode="GCGlobalHeapHistory"
+                           task="GarbageCollection"
+                           symbol="GCGlobalHeapHistory_V4" message="$(string.RuntimePublisher.GCGlobalHeap_V4EventMessage)"/>
+
                     <event value="206" version="0" level="win:Informational"  template="GenAwareTemplate"
                            keywords ="GCHeapDumpKeyword"  opcode="GenAwareBegin"
                            task="GarbageCollection"
@@ -3872,6 +3995,16 @@
                            keywords ="GCHeapDumpKeyword"  opcode="GenAwareEnd"
                            task="GarbageCollection"
                            symbol="GenAwareEnd" message="$(string.RuntimePublisher.GenAwareEndEventMessage)"/>
+
+                    <event value="208" version="0" level="win:Informational"  template="GCLOHCompact"
+                           keywords ="GCKeyword"  opcode="GCLOHCompact"
+                           task="GarbageCollection"
+                           symbol="GCLOHCompact" message="$(string.RuntimePublisher.GCLOHCompactEventMessage)"/>
+
+                    <event value="209" version="0" level="win:Verbose"  template="GCFitBucketInfo"
+                           keywords ="GCKeyword"  opcode="GCFitBucketInfo"
+                           task="GarbageCollection"
+                           symbol="GCFitBucketInfo" message="$(string.RuntimePublisher.GCFitBucketInfoEventMessage)"/>
 
                     <!-- CLR Debugger events 240-249 -->
                     <event value="240" version="0" level="win:Informational"
@@ -3986,6 +4119,8 @@
 
                 <!--Keywords-->
                 <keywords>
+                    <keyword name="GCRundownKeyword" mask="0x1"
+                             message="$(string.RundownPublisher.GCKeywordMessage)" symbol="CLR_RUNDOWNGC_KEYWORD"/>
                     <keyword name="LoaderRundownKeyword" mask="0x8"
                              message="$(string.RundownPublisher.LoaderKeywordMessage)" symbol="CLR_RUNDOWNLOADER_KEYWORD"/>
                     <keyword name="JitRundownKeyword" mask="0x10"
@@ -4087,6 +4222,14 @@
                             <opcode name="ExecutionCheckpointDCEnd" message="$(string.RundownPublisher.ExecutionCheckpointDCEndOpcodeMessage)" symbol="CLR_EXECUTIONCHECKPOINT_DCSTART_OPCODE" value="11"/>
                         </opcodes>
                     </task>
+                    
+                    <task name="CLRGCRundown" symbol="CLR_GC_RUNDOWN_TASK"
+                          value="40" eventGUID="{51B6C146-777F-4375-A0F8-1349D076E215}"
+                          message="$(string.RundownPublisher.GCTaskMessage)">
+                        <opcodes>
+                            <opcode name="GCSettingsRundown" message="$(string.RundownPublisher.GCSettingsOpcodeMessage)" symbol="CLR_GC_GCSETTINGS_OPCODE" value="10"> </opcode>
+                        </opcodes>
+                    </task>                    
                 </tasks>
 
                 <maps>
@@ -4167,6 +4310,29 @@
 
                 <!--Templates-->
                 <templates>
+                    <template tid="GCSettingsRundown">
+                        <data name="HardLimit" inType="win:UInt64" />
+                        <data name="LOHThreshold" inType="win:UInt64" />
+                        <data name="PhysicalMemoryConfig" inType="win:UInt64" />
+                        <data name="Gen0MinBudgetConfig" inType="win:UInt64" />
+                        <data name="Gen0MaxBudgetConfig" inType="win:UInt64" />
+                        <data name="HighMemPercentConfig" inType="win:UInt32" />
+                        <data name="BitSettings" inType="win:UInt32" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+
+                        <UserData>
+                            <GCSettingsRundown xmlns="myNs">
+                                <HardLimit> %1 </HardLimit>
+                                <LOHThreshold> %2 </LOHThreshold>
+                                <PhysicalMemoryConfig> %3 </PhysicalMemoryConfig>
+                                <Gen0MinBudgetConfig> %4 </Gen0MinBudgetConfig>
+                                <Gen0MaxBudgetConfig> %5 </Gen0MaxBudgetConfig>
+                                <HighMemPercentConfig> %6 </HighMemPercentConfig>
+                                <BitSettings> %7 </BitSettings>
+                                <ClrInstanceID> %8 </ClrInstanceID>
+                            </GCSettingsRundown>
+                        </UserData>
+                    </template>
                     <template tid="RuntimeInformationRundown">
                         <data name="ClrInstanceID" inType="win:UInt16" />
                         <data name="Sku" inType="win:UInt16" map="RuntimeSkuMap" />
@@ -4643,6 +4809,12 @@
                            task="CLRStackRundown"
                            symbol="CLRStackWalkDCStart" message="$(string.RundownPublisher.StackEventMessage)"/>
 
+                    <!-- CLR GC events for rundown -->
+                    <event value="10" version="0" level="win:Informational"  template="GCSettingsRundown"
+                           opcode="GCSettingsRundown"
+                           task="CLRGCRundown"
+                           symbol="GCSettingsRundown" message="$(string.RundownPublisher.GCSettingsRundownEventMessage)"/>
+
                     <!-- CLR Method Rundown Events -->
                     <event value="141" version="0" level="win:Informational"  template="MethodLoadUnloadRundown"
                            keywords ="JitRundownKeyword NGenRundownKeyword" opcode="MethodDCStart"
@@ -5007,7 +5179,7 @@
                     <keyword name="PerfTrackPrivateKeyword" mask="0x20000000"
                       message="$(string.PrivatePublisher.PerfTrackKeywordMessage)" symbol="CLR_PERFTRACK_PRIVATE_KEYWORD"/>
 
-	            <!-- NOTE: This is not used anymore. They are kept around for backcompat with traces that might have already contained these -->
+                <!-- NOTE: This is not used anymore. They are kept around for backcompat with traces that might have already contained these -->
                     <keyword name="DynamicTypeUsageKeyword" mask="0x00000020"
                              message="$(string.PrivatePublisher.DynamicTypeUsageMessage)" symbol="CLR_PRIVATE_DYNAMICTYPEUSAGE_KEYWORD"/>
                 </keywords>
@@ -8031,6 +8203,7 @@
                 <string id="RuntimePublisher.GCAllocationTick_V1EventMessage" value="Amount=%1;%nKind=%2;%nClrInstanceID=%3" />
                 <string id="RuntimePublisher.GCAllocationTick_V2EventMessage" value="Amount=%1;%nKind=%2;%nClrInstanceID=%3;Amount64=%4;%nTypeID=%5;%nTypeName=%6;%nHeapIndex=%7" />
                 <string id="RuntimePublisher.GCAllocationTick_V3EventMessage" value="Amount=%1;%nKind=%2;%nClrInstanceID=%3;Amount64=%4;%nTypeID=%5;%nTypeName=%6;%nHeapIndex=%7;%nAddress=%8" />
+                <string id="RuntimePublisher.GCAllocationTick_V4EventMessage" value="Amount=%1;%nKind=%2;%nClrInstanceID=%3;Amount64=%4;%nTypeID=%5;%nTypeName=%6;%nHeapIndex=%7;%nAddress=%8;%nObjectSize=%9" />
                 <string id="RuntimePublisher.GCCreateConcurrentThreadEventMessage" value="NONE" />
                 <string id="RuntimePublisher.GCCreateConcurrentThread_V1EventMessage" value="ClrInstanceID=%1" />
                 <string id="RuntimePublisher.GCTerminateConcurrentThreadEventMessage" value="NONE" />
@@ -8059,9 +8232,12 @@
                 <string id="RuntimePublisher.GCMarkOlderGenerationRootsEventMessage" value="HeapNum=%1;%nClrInstanceID=%2"/>
                 <string id="RuntimePublisher.GCMarkWithTypeEventMessage" value="HeapNum=%1;%nClrInstanceID=%2;%nType=%3;%nBytes=%4"/>
                 <string id="RuntimePublisher.GCJoin_V2EventMessage" value="Heap=%1;%nJoinTime=%2;%nJoinType=%3;%nClrInstanceID=%4;%nJoinID=%5"/>
-                <string id="RuntimePublisher.GCPerHeapHistory_V3EventMessage" value="ClrInstanceID=%1;%nFreeListAllocated=%2;%nFreeListRejected=%3;%nEndOfSegAllocated=%4;%nCondemnedAllocated=%5;%nPinnedAllocated=%6;%nPinnedAllocatedAdvance=%7;%RunningFreeListEfficiency=%8;%nCondemnReasons0=%9;%nCondemnReasons1=%10;%nCompactMechanisms=%11;%nExpandMechanisms=%12;%nHeapIndex=%13;%nExtraGen0Commit=%14;%nCount=%15"/>
+                <string id="RuntimePublisher.GCPerHeapHistory_V3EventMessage" value="ClrInstanceID=%1;%nFreeListAllocated=%2;%nFreeListRejected=%3;%nEndOfSegAllocated=%4;%nCondemnedAllocated=%5;%nPinnedAllocated=%6;%nPinnedAllocatedAdvance=%7;%nRunningFreeListEfficiency=%8;%nCondemnReasons0=%9;%nCondemnReasons1=%10;%nCompactMechanisms=%11;%nExpandMechanisms=%12;%nHeapIndex=%13;%nExtraGen0Commit=%14;%nCount=%15"/>
                 <string id="RuntimePublisher.GCGlobalHeap_V2EventMessage" value="FinalYoungestDesired=%1;%nNumHeaps=%2;%nCondemnedGeneration=%3;%nGen0ReductionCountD=%4;%nReason=%5;%nGlobalMechanisms=%6;%nClrInstanceID=%7;%nPauseMode=%8;%nMemoryPressure=%9"/>
-                <string id="RuntimePublisher.GCGlobalHeap_V3EventMessage" value="FinalYoungestDesired=%1;%nNumHeaps=%2;%nCondemnedGeneration=%3;%nGen0ReductionCountD=%4;%nReason=%5;%nGlobalMechanisms=%6;%nClrInstanceID=%7;%nPauseMode=%8;%nMemoryPressure=%9;%CondemnReasons0=%10;%CondemnReasons1=%11"/>
+                <string id="RuntimePublisher.GCGlobalHeap_V3EventMessage" value="FinalYoungestDesired=%1;%nNumHeaps=%2;%nCondemnedGeneration=%3;%nGen0ReductionCountD=%4;%nReason=%5;%nGlobalMechanisms=%6;%nClrInstanceID=%7;%nPauseMode=%8;%nMemoryPressure=%9;%nCondemnReasons0=%10;%nCondemnReasons1=%11"/>
+                <string id="RuntimePublisher.GCGlobalHeap_V4EventMessage" value="FinalYoungestDesired=%1;%nNumHeaps=%2;%nCondemnedGeneration=%3;%nGen0ReductionCountD=%4;%nReason=%5;%nGlobalMechanisms=%6;%nClrInstanceID=%7;%nPauseMode=%8;%nMemoryPressure=%9;%nCondemnReasons0=%10;%nCondemnReasons1=%11;%nCount=%12"/>
+                <string id="RuntimePublisher.GCLOHCompactEventMessage" value="ClrInstanceID=%1;%nCount=%2" />
+                <string id="RuntimePublisher.GCFitBucketInfoEventMessage" value="ClrInstanceID=%1;%nBucketKind=%2;%nTotalSize=%3;%nCount=%4" />
                 <string id="RuntimePublisher.FinalizeObjectEventMessage" value="TypeID=%1;%nObjectID=%2;%nClrInstanceID=%3" />
                 <string id="RuntimePublisher.GCTriggeredEventMessage" value="Reason=%1" />
                 <string id="RuntimePublisher.PinObjectAtGCTimeEventMessage" value="HandleID=%1;%nObjectID=%2;%nObjectSize=%3;%nTypeName=%4;%n;%nClrInstanceID=%5" />
@@ -8231,6 +8407,7 @@
                 <string id="RundownPublisher.ThreadCreatedEventMessage" value="ManagedThreadID=%1;%nAppDomainID=%2;%nFlags=%3;%nManagedThreadIndex=%4;%nOSThreadID=%5;%nClrInstanceID=%6" />
                 <string id="RundownPublisher.RuntimeInformationEventMessage" value="ClrInstanceID=%1;%nSKU=%2;%nBclMajorVersion=%3;%nBclMinorVersion=%4;%nBclBuildNumber=%5;%nBclQfeNumber=%6;%nVMMajorVersion=%7;%nVMMinorVersion=%8;%nVMBuildNumber=%9;%nVMQfeNumber=%10;%nStartupFlags=%11;%nStartupMode=%12;%nCommandLine=%13;%nComObjectGUID=%14;%nRuntimeDllPath=%15"/>
                 <string id="RundownPublisher.StackEventMessage" value="ClrInstanceID=%1;%nReserved1=%2;%nReserved2=%3;%nFrameCount=%4;%nStack=%5" />
+                <string id="RundownPublisher.GCSettingsRundownEventMessage" value="HardLimit=%1;%nLOHThreshold=%2;%nPhysicalMemoryConfig=%3;%nGen0MinBudgetConfig=%4;%nGen0MaxBudgetConfig=%5;%nHighMemPercentConfig=%6;%nBitSettings=%7;%nClrInstanceID=%8" />                
                 <string id="RundownPublisher.ModuleRangeDCStartEventMessage" value="ClrInstanceID=%1;%ModuleID=%2;%nRangeBegin=%3;%nRangeSize=%4;%nRangeType=%5" />
                 <string id="RundownPublisher.ModuleRangeDCEndEventMessage" value= "ClrInstanceID=%1;%ModuleID=%2;%nRangeBegin=%3;%nRangeSize=%4;%nRangeType=%5" />
                 <string id="RundownPublisher.TieredCompilationSettingsDCStartEventMessage" value="ClrInstanceID=%1;%nFlags=%2" />
@@ -8360,6 +8537,7 @@
                 <string id="RuntimePublisher.ProfilerTaskMessage" value="Profiler" />
                 <string id="RuntimePublisher.YieldProcessorMeasurementTaskMessage" value="YieldProcessorMeasurement" />
 
+                <string id="RundownPublisher.GCTaskMessage" value="GC" />
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
                 <string id="RundownPublisher.MethodTaskMessage" value="Method" />
                 <string id="RundownPublisher.LoaderTaskMessage" value="Loader" />
@@ -8410,8 +8588,12 @@
                 <string id="RuntimePublisher.GCSegment.SmallObjectHeapMapMessage" value="SmallObjectHeap" />
                 <string id="RuntimePublisher.GCSegment.LargeObjectHeapMapMessage" value="LargeObjectHeap" />
                 <string id="RuntimePublisher.GCSegment.ReadOnlyHeapMapMessage" value="ReadOnlyHeap" />
+                <string id="RuntimePublisher.GCSegment.PinnedObjectHeapMapMessage" value="PinnedHeap" />
                 <string id="RuntimePublisher.GCAllocation.SmallMapMessage" value="Small" />
                 <string id="RuntimePublisher.GCAllocation.LargeMapMessage" value="Large" />
+                <string id="RuntimePublisher.GCAllocation.PinnedMapMessage" value="Pinned" />
+                <string id="RuntimePublisher.GCBucket.FLItemMapMessage" value="FLItem" />
+                <string id="RuntimePublisher.GCBucket.PlugMessage" value="Plug" />
                 <string id="RuntimePublisher.GCType.NonConcurrentGCMapMessage" value="NonConcurrentGC" />
                 <string id="RuntimePublisher.GCType.BackgroundGCMapMessage" value="BackgroundGC" />
                 <string id="RuntimePublisher.GCType.ForegroundGCMapMessage" value="ForegroundGC" />
@@ -8471,6 +8653,10 @@
                 <string id="RuntimePublisher.GCRootKind.Older" value="Older" />
                 <string id="RuntimePublisher.GCRootKind.SizedRef" value="SizedRef" />
                 <string id="RuntimePublisher.GCRootKind.Overflow" value="Overflow" />
+                <string id="RuntimePublisher.GCRootKind.DependentHandle" value="DependentHandle" />
+                <string id="RuntimePublisher.GCRootKind.NewFQ" value="NewFQ" />
+                <string id="RuntimePublisher.GCRootKind.Steal" value="Steal" />
+                <string id="RuntimePublisher.GCRootKind.BGC" value="BGC" />
                 <string id="RuntimePublisher.Startup.CONCURRENT_GCMapMessage" value="CONCURRENT_GC" />
                 <string id="RuntimePublisher.Startup.LOADER_OPTIMIZATION_SINGLE_DOMAINMapMessage" value="LOADER_OPTIMIZATION_SINGLE_DOMAIN" />
                 <string id="RuntimePublisher.Startup.LOADER_OPTIMIZATION_MULTI_DOMAINMapMessage" value="LOADER_OPTIMIZATION_MULTI_DOMAIN" />
@@ -8691,6 +8877,7 @@
                 <string id="RuntimePublisher.ProfilerKeywordMessage" value="Profiler" />
                 <string id="RuntimePublisher.GenAwareBeginEventMessage" value="NONE" />
                 <string id="RuntimePublisher.GenAwareEndEventMessage" value="NONE" />
+                <string id="RundownPublisher.GCKeywordMessage" value="GC" />
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
                 <string id="RundownPublisher.JitKeywordMessage" value="Jit" />
                 <string id="RundownPublisher.JittedMethodILToNativeMapRundownKeywordMessage" value="JittedMethodILToNativeMapRundown" />
@@ -8752,6 +8939,8 @@
                 <string id="RuntimePublisher.GCMarkOpcodeMessage" value="Mark" />
                 <string id="RuntimePublisher.GCJoinOpcodeMessage" value="GCJoin" />
                 <string id="RuntimePublisher.GCPerHeapHistoryOpcodeMessage" value="PerHeapHistory" />
+                <string id="RuntimePublisher.GCLOHCompactOpcodeMessage" value="GCLOHCompact" />
+                <string id="RuntimePublisher.GCFitBucketInfoOpcodeMessage" value="GCFitBucketInfo" />
                 <string id="RuntimePublisher.GCGlobalHeapHistoryOpcodeMessage" value="GlobalHeapHistory" />
                 <string id="RuntimePublisher.GenAwareBeginOpcodeMessage" value="GenAwareBegin" />
                 <string id="RuntimePublisher.GenAwareEndOpcodeMessage" value="GenAwareEnd" />
@@ -8833,6 +9022,8 @@
                 <string id="RuntimePublisher.ExecutionCheckpointOpcodeMessage" value="ExecutionCheckpoint" />
 
                 <string id="RuntimePublisher.ProfilerOpcodeMessage" value="ProfilerMessage" />
+
+                <string id="RundownPublisher.GCSettingsOpcodeMessage" value="GCSettingsRundown" />
 
                 <string id="RundownPublisher.MethodDCStartOpcodeMessage" value="DCStart" />
                 <string id="RundownPublisher.MethodDCEndOpcodeMessage" value="DCStop" />

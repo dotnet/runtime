@@ -79,10 +79,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ConnectTimeout_PlaintextStreamFilterTimesOut_Throws(bool useSsl)
+        [Fact]
+        public async Task ConnectTimeout_PlaintextStreamFilterTimesOut_Throws()
         {
             if (UseVersion == HttpVersion.Version30)
             {
@@ -90,33 +88,20 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            var releaseServer = new TaskCompletionSource();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (var handler = CreateHttpClientHandler())
                 using (var invoker = new HttpMessageInvoker(handler))
                 {
-                    handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                     var socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.ConnectTimeout = TimeSpan.FromSeconds(1);
+                    socketsHandler.ConnectCallback = (context, token) => new ValueTask<Stream>(new MemoryStream());
                     socketsHandler.PlaintextStreamFilter = async (context, token) => { await Task.Delay(-1, token); return null; };
 
                     await ValidateConnectTimeout(invoker, uri, 500, 85_000);
-
-                    releaseServer.SetResult();
                 }
-            },
-            async server =>
-            {
-                try
-                {
-                    await server.AcceptConnectionAsync(async c =>
-                    {
-                        await releaseServer.Task;
-                    });
-                }
-                catch (Exception) { } // Eat exception from client timing out
-            }, options: new GenericLoopbackOptions() { UseSsl = useSsl });
+            }, server => Task.CompletedTask, // doesn't actually connect to server
+            options: new GenericLoopbackOptions() { UseSsl = false });
         }
 
         [OuterLoop("Incurs significant delay")]

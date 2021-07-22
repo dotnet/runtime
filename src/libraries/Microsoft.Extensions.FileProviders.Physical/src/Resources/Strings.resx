@@ -129,4 +129,7 @@
   <data name="UnexpectedFileSystemInfo" xml:space="preserve">
     <value>Unexpected type of FileSystemInfo</value>
   </data>
+  <data name="FileProvidersPhysical_PlatformNotSupported" xml:space="preserve">
+    <value>Microsoft.Extensions.FileProviders.Physical is not supported on this platform.</value>
+  </data>
 </root>

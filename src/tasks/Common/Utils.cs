@@ -38,7 +38,7 @@ internal static class Utils
                                                     : ("/bin/sh", $"\"{scriptFileName}\"");
 
         string msgPrefix = label == null ? string.Empty : $"[{label}] ";
-        logger.LogMessage(debugMessageImportance, $"Running {command} via script {scriptFileName}:", msgPrefix);
+        logger.LogMessage(debugMessageImportance, $"{msgPrefix}Running {command} via script {scriptFileName}:", msgPrefix);
         logger.LogMessage(debugMessageImportance, File.ReadAllText(scriptFileName), msgPrefix);
 
         return TryRunProcess(logger,
@@ -111,7 +111,7 @@ internal static class Utils
         string? label=null)
     {
         string msgPrefix = label == null ? string.Empty : $"[{label}] ";
-        logger.LogMessage(debugMessageImportance, $"Running: {path} {args}", msgPrefix);
+        logger.LogMessage(debugMessageImportance, $"{msgPrefix}Running: {path} {args}");
         var outputBuilder = new StringBuilder();
         var processStartInfo = new ProcessStartInfo
         {
@@ -126,12 +126,12 @@ internal static class Utils
         if (workingDir != null)
             processStartInfo.WorkingDirectory = workingDir;
 
-        logger.LogMessage(debugMessageImportance, $"Using working directory: {workingDir ?? Environment.CurrentDirectory}", msgPrefix);
+        logger.LogMessage(debugMessageImportance, $"{msgPrefix}Using working directory: {workingDir ?? Environment.CurrentDirectory}", msgPrefix);
 
         if (envVars != null)
         {
             if (envVars.Count > 0)
-                logger.LogMessage(MessageImportance.Low, $"Setting environment variables for execution:", msgPrefix);
+                logger.LogMessage(MessageImportance.Low, $"{msgPrefix}Setting environment variables for execution:", msgPrefix);
 
             foreach (KeyValuePair<string, string> envVar in envVars)
             {
