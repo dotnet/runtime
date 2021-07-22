@@ -6971,13 +6971,31 @@ void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
     WRAPPER_NO_CONTRACT;
 
     // Ok.  Now we have a brand new fault in jitted code.
-    g_SavedExceptionInfo.Enter();
-    g_SavedExceptionInfo.SaveExceptionRecord(pExceptionRecord);
-    g_SavedExceptionInfo.SaveContext(pContext);
+    if (!Thread::UseContextBasedThreadRedirection())
+    {
+        // Once this code path gets enough bake time, perhaps this path could always be used instead of the alternative path to
+        // redirect the thread
+        FrameWithCookie<FaultingExceptionFrame> frameWithCookie;
+        FaultingExceptionFrame *frame = &frameWithCookie;
+    #if defined(FEATURE_EH_FUNCLETS)
+        *frame->GetGSCookiePtr() = GetProcessGSCookie();
+    #endif // FEATURE_EH_FUNCLETS
+        frame->InitAndLink(pContext);
 
-    SetNakedThrowHelperArgRegistersInContext(pContext);
+        SEHException exception(pExceptionRecord);
+        OBJECTREF managedException = CLRException::GetThrowableFromException(&exception);
+        RaiseTheExceptionInternalOnly(managedException, FALSE);
+    }
+    else
+    {
+        g_SavedExceptionInfo.Enter();
+        g_SavedExceptionInfo.SaveExceptionRecord(pExceptionRecord);
+        g_SavedExceptionInfo.SaveContext(pContext);
 
-    SetIP(pContext, GetEEFuncEntryPoint(NakedThrowHelper));
+        SetNakedThrowHelperArgRegistersInContext(pContext);
+
+        SetIP(pContext, GetEEFuncEntryPoint(NakedThrowHelper));
+    }
 }
 
 #else // USE_FEF && !TARGET_UNIX

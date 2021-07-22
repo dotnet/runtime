@@ -349,12 +349,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern long GetILBytesJitted();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetMethodsJittedCount();
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.

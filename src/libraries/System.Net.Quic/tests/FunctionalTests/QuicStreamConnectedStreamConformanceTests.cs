@@ -23,10 +23,6 @@ namespace System.Net.Quic.Tests
         protected override QuicImplementationProvider Provider => QuicImplementationProviders.MsQuic;
         protected override bool UsableAfterCanceledReads => false;
         protected override bool BlocksOnZeroByteReads => true;
-
-        // TODO: new additions, find out the actual reason for hanging
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadAsync_DuringReadAsync_ThrowsIfUnsupported() => base.ReadAsync_DuringReadAsync_ThrowsIfUnsupported();
     }
 
     public abstract class QuicStreamConformanceTests : ConnectedStreamConformanceTests

@@ -15,7 +15,8 @@ namespace System.Text.Json.Serialization.Tests
             public int A { get; set; }
 
             [JsonPropertyOrder(-1)]
-            public int C { get; set; }
+            [JsonInclude]
+            public int C = 0;
         }
 
         [Fact]
@@ -28,7 +29,8 @@ namespace System.Text.Json.Serialization.Tests
         private class MyPoco_After
         {
             [JsonPropertyOrder(2)]
-            public int C { get; set; }
+            [JsonInclude]
+            public int C = 0;
 
             public int B { get; set; }
             public int D { get; set; }
@@ -48,7 +50,8 @@ namespace System.Text.Json.Serialization.Tests
         private class MyPoco_Before
         {
             [JsonPropertyOrder(-1)]
-            public int C { get; set; }
+            [JsonInclude]
+            public int C = 0;
 
             public int B { get; set; }
             public int D { get; set; }

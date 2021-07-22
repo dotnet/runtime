@@ -540,9 +540,9 @@ namespace System.Text.Json
 
         private bool CheckLiteralMultiSegment(ReadOnlySpan<byte> span, ReadOnlySpan<byte> literal, out int consumed)
         {
-            Debug.Assert(span.Length > 0 && span[0] == literal[0]);
+            Debug.Assert(span.Length > 0 && span[0] == literal[0] && literal.Length <= JsonConstants.MaximumLiteralLength);
 
-            Span<byte> readSoFar = stackalloc byte[literal.Length];
+            Span<byte> readSoFar = stackalloc byte[JsonConstants.MaximumLiteralLength];
             int written = 0;
 
             long prevTotalConsumed = _totalConsumed;

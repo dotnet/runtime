@@ -7863,11 +7863,32 @@ void Compiler::impInsertHelperCall(CORINFO_HELPER_DESC* helperInfo)
     impAppendTree(callout, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
 }
 
-// Checks whether the return types of caller and callee are compatible
-// so that callee can be tail called. Note that here we don't check
-// compatibility in IL Verifier sense, but on the lines of return type
-// sizes are equal and get returned in the same return register.
-bool Compiler::impTailCallRetTypeCompatible(var_types                callerRetType,
+//------------------------------------------------------------------------
+// impTailCallRetTypeCompatible: Checks whether the return types of caller
+//    and callee are compatible so that calle can be tail called.
+//    sizes are not supported integral type sizes return values to temps.
+//
+// Arguments:
+//     allowWidening -- whether to allow implicit widening by the callee.
+//                      For instance, allowing int32 -> int16 tailcalls.
+//                      The managed calling convention allows this, but
+//                      we don't want explicit tailcalls to depend on this
+//                      detail of the managed calling convention.
+//     callerRetType -- the caller's return type
+//     callerRetTypeClass - the caller's return struct type
+//     callerCallConv -- calling convention of the caller
+//     calleeRetType -- the callee's return type
+//     calleeRetTypeClass - the callee return struct type
+//     calleeCallConv -- calling convention of the callee
+//
+// Returns:
+//     True if the tailcall types are compatible.
+//
+// Remarks:
+//     Note that here we don't check compatibility in IL Verifier sense, but on the
+//     lines of return types getting returned in the same return register.
+bool Compiler::impTailCallRetTypeCompatible(bool                     allowWidening,
+                                            var_types                callerRetType,
                                             CORINFO_CLASS_HANDLE     callerRetTypeClass,
                                             CorInfoCallConvExtension callerCallConv,
                                             var_types                calleeRetType,
@@ -7886,7 +7907,7 @@ bool Compiler::impTailCallRetTypeCompatible(var_types                callerRetTy
     bool isManaged =
         (callerCallConv == CorInfoCallConvExtension::Managed) && (calleeCallConv == CorInfoCallConvExtension::Managed);
 
-    if (isManaged && varTypeIsIntegral(callerRetType) && varTypeIsIntegral(calleeRetType) &&
+    if (allowWidening && isManaged && varTypeIsIntegral(callerRetType) && varTypeIsIntegral(calleeRetType) &&
         (genTypeSize(callerRetType) <= 4) && (genTypeSize(calleeRetType) <= genTypeSize(callerRetType)))
     {
         return true;
@@ -9096,13 +9117,14 @@ DONE:
             BADCODE("Stack should be empty after tailcall");
         }
 
-        // Note that we can not relax this condition with genActualType() as
-        // the calling convention dictates that the caller of a function with
-        // a small-typed return value is responsible for normalizing the return val
-
+        // For opportunistic tailcalls we allow implicit widening, i.e. tailcalls from int32 -> int16, since the
+        // managed calling convention dictates that the callee widens the value. For explicit tailcalls we don't
+        // want to require this detail of the calling convention to bubble up to the tailcall helpers
+        bool allowWidening = isImplicitTailCall;
         if (canTailCall &&
-            !impTailCallRetTypeCompatible(info.compRetType, info.compMethodInfo->args.retTypeClass, info.compCallConv,
-                                          callRetTyp, sig->retTypeClass, call->AsCall()->GetUnmanagedCallConv()))
+            !impTailCallRetTypeCompatible(allowWidening, info.compRetType, info.compMethodInfo->args.retTypeClass,
+                                          info.compCallConv, callRetTyp, sig->retTypeClass,
+                                          call->AsCall()->GetUnmanagedCallConv()))
         {
             canTailCall             = false;
             szCanTailCallFailReason = "Return types are not tail call compatible";
@@ -20935,6 +20957,13 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         return;
     }
 
+    // Fetch information about the class that introduced the virtual method.
+    CORINFO_CLASS_HANDLE baseClass        = info.compCompHnd->getMethodClass(baseMethod);
+    const DWORD          baseClassAttribs = info.compCompHnd->getClassAttribs(baseClass);
+
+    // Is the call an interface call?
+    const bool isInterface = (baseClassAttribs & CORINFO_FLG_INTERFACE) != 0;
+
     // See what we know about the type of 'this' in the call.
     GenTree*             thisObj      = call->gtCallThisArg->GetNode()->gtEffectiveVal(false);
     bool                 isExact      = false;
@@ -20942,18 +20971,23 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     CORINFO_CLASS_HANDLE objClass     = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
 
     // Bail if we know nothing.
-    if (objClass == nullptr)
+    if (objClass == NO_CLASS_HANDLE)
     {
         JITDUMP("\nimpDevirtualizeCall: no type available (op=%s)\n", GenTree::OpName(thisObj->OperGet()));
+
+        // Don't try guarded devirtualiztion when we're doing late devirtualization.
+        //
+        if (isLateDevirtualization)
+        {
+            JITDUMP("No guarded devirt during late devirtualization\n");
+            return;
+        }
+
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass,
+                                        pContextHandle DEBUGARG(objClass) DEBUGARG("unknown"));
+
         return;
     }
-
-    // Fetch information about the class that introduced the virtual method.
-    CORINFO_CLASS_HANDLE baseClass        = info.compCompHnd->getMethodClass(baseMethod);
-    const DWORD          baseClassAttribs = info.compCompHnd->getClassAttribs(baseClass);
-
-    // Is the call an interface call?
-    const bool isInterface = (baseClassAttribs & CORINFO_FLG_INTERFACE) != 0;
 
     // If the objClass is sealed (final), then we may be able to devirtualize.
     const DWORD objClassAttribs = info.compCompHnd->getClassAttribs(objClass);

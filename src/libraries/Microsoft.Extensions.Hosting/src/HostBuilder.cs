@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Hosting
     /// <summary>
     /// A program initialization utility.
     /// </summary>
-    public class HostBuilder : IHostBuilder
+    public partial class HostBuilder : IHostBuilder
     {
         private List<Action<IConfigurationBuilder>> _configureHostConfigActions = new List<Action<IConfigurationBuilder>>();
         private List<Action<HostBuilderContext, IConfigurationBuilder>> _configureAppConfigActions = new List<Action<HostBuilderContext, IConfigurationBuilder>>();
@@ -192,7 +192,9 @@ namespace Microsoft.Extensions.Hosting
                 _hostingEnvironment.ApplicationName = Assembly.GetEntryAssembly()?.GetName().Name;
             }
 
+#pragma warning disable CA1416 // 'PhysicalFileProvider' is unsupported on: 'browser' https://github.com/dotnet/runtime/issues/56178
             _hostingEnvironment.ContentRootFileProvider = _defaultProvider = new PhysicalFileProvider(_hostingEnvironment.ContentRootPath);
+#pragma warning restore CA1416 // 'PhysicalFileProvider' is unsupported on: 'browser'
         }
 
         private string ResolveContentRootPath(string contentRootPath, string basePath)
@@ -245,7 +247,9 @@ namespace Microsoft.Extensions.Hosting
             services.AddSingleton<IApplicationLifetime>(s => (IApplicationLifetime)s.GetService<IHostApplicationLifetime>());
 #pragma warning restore CS0618 // Type or member is obsolete
             services.AddSingleton<IHostApplicationLifetime, ApplicationLifetime>();
-            services.AddSingleton<IHostLifetime, ConsoleLifetime>();
+
+            AddLifetime(services);
+
             services.AddSingleton<IHost>(_ =>
             {
                 return new Internal.Host(_appServices,

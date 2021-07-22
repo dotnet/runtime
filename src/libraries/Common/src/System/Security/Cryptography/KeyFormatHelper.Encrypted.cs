@@ -189,20 +189,19 @@ namespace System.Security.Cryptography
                 out string encryptionAlgorithmOid,
                 out bool isPkcs12);
 
-            byte[]? encryptedRent = null;
             Span<byte> encryptedSpan = default;
             AsnWriter? writer = null;
 
+            Debug.Assert(cipher.BlockSize <= 128, $"Encountered unexpected block size: {cipher.BlockSize}");
+            Span<byte> iv = stackalloc byte[cipher.BlockSize / 8];
+            Span<byte> salt = stackalloc byte[16];
+
+            // We need at least one block size beyond the input data size.
+            byte[] encryptedRent = CryptoPool.Rent(
+                checked(pkcs8Writer.GetEncodedLength() + (cipher.BlockSize / 8)));
+
             try
             {
-                Debug.Assert(cipher.BlockSize <= 128, $"Encountered unexpected block size: {cipher.BlockSize}");
-                Span<byte> iv = stackalloc byte[cipher.BlockSize / 8];
-                Span<byte> salt = stackalloc byte[16];
-
-                // We need at least one block size beyond the input data size.
-                encryptedRent = CryptoPool.Rent(
-                    checked(pkcs8Writer.GetEncodedLength() + (cipher.BlockSize / 8)));
-
                 RandomNumberGenerator.Fill(salt);
 
                 int written = PasswordBasedEncryption.Encrypt(
@@ -242,7 +241,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(encryptedSpan);
-                CryptoPool.Return(encryptedRent!, clearSize: 0);
+                CryptoPool.Return(encryptedRent, clearSize: 0);
 
                 cipher.Dispose();
             }
@@ -348,8 +347,7 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                CryptographicOperations.ZeroMemory(decrypted);
-                CryptoPool.Return(decrypted.Array!, clearSize: 0);
+                CryptoPool.Return(decrypted);
             }
         }
 
@@ -385,8 +383,7 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                CryptographicOperations.ZeroMemory(decrypted);
-                CryptoPool.Return(decrypted.Array!, clearSize: 0);
+                CryptoPool.Return(decrypted);
             }
         }
     }

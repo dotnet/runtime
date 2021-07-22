@@ -12,10 +12,10 @@
     <TestConsoleAppSourceFiles Include="InheritedAttributeTests.cs" />
     <TestConsoleAppSourceFiles Include="InterfacesOnArrays.cs" />
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
-      <ExtraTrimmerArgs>--feature System.Globalization.Invariant false</ExtraTrimmerArgs>
+      <DisabledFeatureSwitches>System.Globalization.Invariant</DisabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
-      <ExtraTrimmerArgs>--feature System.Globalization.Invariant true --feature System.Globalization.PredefinedCulturesOnly true</ExtraTrimmerArgs>
+      <EnabledFeatureSwitches>System.Globalization.Invariant;System.Globalization.PredefinedCulturesOnly</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
       <!-- There is a bug with the linker where it is corrupting the pdbs while trimming
@@ -33,7 +33,10 @@
     <TestConsoleAppSourceFiles Include="VerifyResourcesGetTrimmedTest.cs">
       <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the linker
       as this test will ensure exceptions are using Resource keys -->
-      <ExtraTrimmerArgs>--feature System.Resources.UseSystemResourceKeys true</ExtraTrimmerArgs>
+      <EnabledFeatureSwitches>System.Resources.UseSystemResourceKeys</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="TypeBuilderComDisabled.cs">
+      <DisabledFeatureSwitches>System.Runtime.InteropServices.BuiltInComInterop.IsSupported</DisabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

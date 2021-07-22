@@ -292,7 +292,7 @@ namespace System.Text.RegularExpressions
             var sb = new StringBuilder();
             int opcode = Codes[offset];
 
-            sb.AppendFormat("{0:D6} ", offset);
+            sb.Append($"{offset:D6} ");
             sb.Append(OpcodeBacktracks(opcode & Mask) ? '*' : ' ');
             sb.Append(OperatorDescription(opcode));
             sb.Append(Indent());

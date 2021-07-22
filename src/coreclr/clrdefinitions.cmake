@@ -228,6 +228,10 @@ if (NOT CLR_CMAKE_TARGET_ARCH_I386 OR NOT CLR_CMAKE_TARGET_WIN32)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_EH_FUNCLETS>)
 endif (NOT CLR_CMAKE_TARGET_ARCH_I386 OR NOT CLR_CMAKE_TARGET_WIN32)
 
+if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
+  add_definitions(-DFEATURE_SPECIAL_USER_MODE_APC)
+endif()
+
 
 # Use this function to enable building with a specific target OS and architecture set of defines
 # This is known to work for the set of defines used by the JIT and gcinfo, it is not likely correct for

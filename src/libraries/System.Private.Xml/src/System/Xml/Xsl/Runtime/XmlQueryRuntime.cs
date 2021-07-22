@@ -884,7 +884,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public string GenerateId(XPathNavigator navigator)
         {
-            return string.Concat("ID", _docOrderCmp.GetDocumentIndex(navigator).ToString(CultureInfo.InvariantCulture), navigator.UniqueId);
+            return string.Create(CultureInfo.InvariantCulture, $"ID{_docOrderCmp.GetDocumentIndex(navigator)}{navigator.UniqueId}");
         }
 
 

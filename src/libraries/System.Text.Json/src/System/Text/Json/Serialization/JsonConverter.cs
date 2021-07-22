@@ -114,7 +114,9 @@ namespace System.Text.Json.Serialization
 
         internal ConstructorInfo? ConstructorInfo { get; set; }
 
-        internal virtual void Initialize(JsonSerializerOptions options) { }
+        internal virtual bool RequiresDynamicMemberAccessors { get; }
+
+        internal virtual void Initialize(JsonSerializerOptions options, JsonTypeInfo? jsonTypeInfo = null) { }
 
         /// <summary>
         /// Creates the instance and assigns it to state.Current.ReturnValue.

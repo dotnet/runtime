@@ -921,6 +921,7 @@ namespace System.IO
 
         private static async Task InternalWriteAllTextAsync(StreamWriter sw, string contents, CancellationToken cancellationToken)
         {
+#if MS_IO_REDIST
             char[]? buffer = null;
             try
             {
@@ -931,11 +932,7 @@ namespace System.IO
                 {
                     int batchSize = Math.Min(DefaultBufferSize, count - index);
                     contents.CopyTo(index, buffer, 0, batchSize);
-#if MS_IO_REDIST
                     await sw.WriteAsync(buffer, 0, batchSize).ConfigureAwait(false);
-#else
-                    await sw.WriteAsync(new ReadOnlyMemory<char>(buffer, 0, batchSize), cancellationToken).ConfigureAwait(false);
-#endif
                     index += batchSize;
                 }
 
@@ -950,6 +947,13 @@ namespace System.IO
                     ArrayPool<char>.Shared.Return(buffer);
                 }
             }
+#else
+            using (sw)
+            {
+                await sw.WriteAsync(contents.AsMemory(), cancellationToken).ConfigureAwait(false);
+                await sw.FlushAsync().ConfigureAwait(false);
+            }
+#endif
         }
 
         public static Task AppendAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default(CancellationToken))
@@ -1032,7 +1036,7 @@ namespace System.IO
         /// -or-
         /// Too many levels of symbolic links.</exception>
         /// <remarks>When <paramref name="returnFinalTarget"/> is <see langword="true"/>, the maximum number of symbolic links that are followed are 40 on Unix and 63 on Windows.</remarks>
-        public static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget = false)
+        public static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget)
         {
             FileSystem.VerifyValidPath(linkPath, nameof(linkPath));
             return FileSystem.ResolveLinkTarget(linkPath, returnFinalTarget, isDirectory: false);

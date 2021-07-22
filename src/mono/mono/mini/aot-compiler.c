@@ -6237,6 +6237,18 @@ get_file_index (MonoAotCompile *acfg, const char *source_file)
 #define INST_LEN 1
 #endif
 
+static gboolean
+never_direct_pinvoke (const char *pinvoke_symbol)
+{
+#if defined(TARGET_IOS) || defined (TARGET_TVOS) || defined (TARGET_OSX) || defined (TARGET_WATCHOS)
+	/* XI must be able to override the functions that start with objc_msgSend.
+	 * (there are a few variants with the same prefix) */
+	return !strncmp (pinvoke_symbol, "objc_msgSend", 12);
+#else
+	return FALSE;
+#endif
+}
+
 /*
  * emit_and_reloc_code:
  *
@@ -6388,7 +6400,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 							direct_pinvoke = lookup_icall_symbol_name_aot (patch_info->data.method);
 						else
 							direct_pinvoke = get_pinvoke_import (acfg, patch_info->data.method);
-						if (direct_pinvoke) {
+						if (direct_pinvoke && !never_direct_pinvoke (direct_pinvoke)) {
 							direct_call = TRUE;
 							g_assert (strlen (direct_pinvoke) < 1000);
 							direct_call_target = g_strdup_printf ("%s%s", acfg->user_symbol_prefix, direct_pinvoke);

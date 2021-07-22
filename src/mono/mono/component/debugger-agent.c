@@ -6575,7 +6575,7 @@ module_apply_changes (MonoImage *image, MonoArray *dmeta, MonoArray *dil, MonoAr
 	int32_t dil_len = mono_array_length_internal (dil);
 	gpointer dpdb_bytes = !dpdb ? NULL : (gpointer)mono_array_addr_internal (dpdb, char, 0);
 	int32_t dpdb_len = !dpdb ? 0 : mono_array_length_internal (dpdb);
-	mono_image_load_enc_delta (image, dmeta_bytes, dmeta_len, dil_bytes, dil_len, dpdb_bytes, dpdb_len, error);
+	mono_image_load_enc_delta (MONO_ENC_DELTA_DBG, image, dmeta_bytes, dmeta_len, dil_bytes, dil_len, dpdb_bytes, dpdb_len, error);
 	return is_ok (error);
 }
 	
@@ -8449,7 +8449,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		ERROR_DECL (error);
 		MonoDebugMethodInfo *minfo;
 		char *source_file;
-		int i, j, n_il_offsets;
+		int i, j, n_il_offsets, n_il_offsets_original;
 		int *source_files;
 		GPtrArray *source_file_list;
 		MonoSymSeqPoint *sym_seq_points;
@@ -8472,7 +8472,8 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			break;
 		}
 
-		mono_debug_get_seq_points (minfo, &source_file, &source_file_list, &source_files, &sym_seq_points, &n_il_offsets);
+		mono_debug_get_seq_points (minfo, &source_file, &source_file_list, &source_files, NULL, &n_il_offsets_original);
+		mono_debug_get_seq_points (minfo, NULL, NULL, NULL, &sym_seq_points, &n_il_offsets);
 		buffer_add_int (buf, header->code_size);
 		if (CHECK_PROTOCOL_VERSION (2, 13)) {
 			buffer_add_int (buf, source_file_list->len);
@@ -8494,14 +8495,17 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			const char *srcfile = "";
 
 			if (source_files [i] != -1) {
-				MonoDebugSourceInfo *sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, source_files [i]);
+				int idx = i;
+				if (i >= n_il_offsets_original)
+					idx = 0;
+				MonoDebugSourceInfo *sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, source_files [idx]);
 				srcfile = sinfo->source_file;
 			}
 			PRINT_DEBUG_MSG (10, "IL%x -> %s:%d %d %d %d\n", sp->il_offset, srcfile, sp->line, sp->column, sp->end_line, sp->end_column);
 			buffer_add_int (buf, sp->il_offset);
 			buffer_add_int (buf, sp->line);
 			if (CHECK_PROTOCOL_VERSION (2, 13))
-				buffer_add_int (buf, source_files [i]);
+				buffer_add_int (buf, i >= n_il_offsets_original ? source_files [0] : source_files [i]);
 			if (CHECK_PROTOCOL_VERSION (2, 19))
 				buffer_add_int (buf, sp->column);
 			if (CHECK_PROTOCOL_VERSION (2, 32)) {
@@ -10199,6 +10203,18 @@ debugger_thread (void *arg)
 		mono_set_is_debugger_attached (TRUE);
 	}
 	
+#ifndef HOST_WASM
+        if (!attach_failed) {
+                if (mono_metadata_has_updates_api ()) {
+                        PRINT_DEBUG_MSG (1, "[dbg] Cannot attach after System.Reflection.Metadata.MetadataUpdater.ApplyChanges has been called.\n");
+                        attach_failed = TRUE;
+                        command_set = (CommandSet)0;
+                        command = 0;
+                        dispose_vm ();
+                }
+        }
+#endif
+
 	while (!attach_failed) {
 		res = transport_recv (header, HEADER_LENGTH);
 

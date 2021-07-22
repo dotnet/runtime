@@ -57,13 +57,43 @@ namespace System.Text.Json.SourceGeneration
 
         public string? ConverterInstantiationLogic { get; private set; }
 
+        public string FastPathSerializeMethodName
+        {
+            get
+            {
+                Debug.Assert(GenerateSerializationLogic);
+                return $"{TypeInfoPropertyName}Serialize";
+            }
+        }
+
+        public string? ImmutableCollectionBuilderName
+        {
+            get
+            {
+                string builderName;
+
+                if (CollectionType == CollectionType.ImmutableDictionary)
+                {
+                    builderName = Type.GetImmutableDictionaryConstructingTypeName(sourceGenType: true);
+                }
+                else if (CollectionType == CollectionType.ImmutableEnumerable)
+                {
+                    builderName = Type.GetImmutableEnumerableConstructingTypeName(sourceGenType: true);
+                }
+                else
+                {
+                    return null;
+                }
+
+                Debug.Assert(builderName != null);
+                return $"global::{builderName}.{ReflectionExtensions.CreateRangeMethodName}";
+            }
+        }
+
         public void Initialize(
             JsonSourceGenerationMode generationMode,
-            string typeRef,
-            string typeInfoPropertyName,
             Type type,
             ClassType classType,
-            bool isValueType,
             JsonNumberHandling? numberHandling,
             List<PropertyGenerationSpec>? propertyGenSpecList,
             CollectionType collectionType,
@@ -76,12 +106,12 @@ namespace System.Text.Json.SourceGeneration
             bool implementsIJsonOnSerializing)
         {
             GenerationMode = generationMode;
-            TypeRef = $"global::{typeRef}";
-            TypeInfoPropertyName = typeInfoPropertyName;
+            TypeRef = type.GetCompilableName();
+            TypeInfoPropertyName = type.GetTypeInfoPropertyName();
             Type = type;
             ClassType = classType;
-            IsValueType = isValueType;
-            CanBeNull = !isValueType || nullableUnderlyingTypeMetadata != null;
+            IsValueType = type.IsValueType;
+            CanBeNull = !IsValueType || nullableUnderlyingTypeMetadata != null;
             NumberHandling = numberHandling;
             PropertyGenSpecList = propertyGenSpecList;
             CollectionType = collectionType;
@@ -178,20 +208,31 @@ ReturnFalse:
         {
             if (ClassType == ClassType.Object)
             {
+                foreach (PropertyGenerationSpec property in PropertyGenSpecList)
+                {
+                    if (property.TypeGenerationSpec.Type.IsObjectType())
+                    {
+                        return false;
+                    }
+                }
+
                 return true;
             }
 
-            if (CollectionType == CollectionType.Array || CollectionType == CollectionType.List)
+            switch (CollectionType)
             {
-                return !CollectionValueTypeMetadata!.Type.IsObjectType();
+                case CollectionType.NotApplicable:
+                    return false;
+                case CollectionType.IDictionary:
+                case CollectionType.Dictionary:
+                case CollectionType.ImmutableDictionary:
+                case CollectionType.IDictionaryOfTKeyTValue:
+                case CollectionType.IReadOnlyDictionary:
+                    return CollectionKeyTypeMetadata!.Type.IsStringType() && !CollectionValueTypeMetadata!.Type.IsObjectType();
+                default:
+                    // Non-dictionary collections
+                    return !CollectionValueTypeMetadata!.Type.IsObjectType();
             }
-
-            if (CollectionType == CollectionType.Dictionary)
-            {
-                return CollectionKeyTypeMetadata!.Type.IsStringType() && !CollectionValueTypeMetadata!.Type.IsObjectType();
-            }
-
-            return false;
         }
 
         private bool GenerationModeIsSpecified(JsonSourceGenerationMode mode) => GenerationMode == JsonSourceGenerationMode.Default || (mode & GenerationMode) != 0;
