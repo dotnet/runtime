@@ -136,7 +136,26 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmGenerateAppBundle" Condition="'$(WasmGenerateAppBundle)' == 'true'">
+  <Target Name="GenerateRuntimeConfig">
+    <PropertyGroup>
+      <RuntimeConfigFilePath>$(TargetDir)publish\$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).runtimeconfig.json</RuntimeConfigFilePath>
+      <ParsedRuntimeConfigFilePath>$(TargetDir)publish\runtimeconfig.bin</ParsedRuntimeConfigFilePath>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
+      <RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
+      <RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
+    </ItemGroup>
+
+    <!-- Parse runtimeconfig.template.json file -->
+    <RuntimeConfigParserTask
+        RuntimeConfigFile="$(RuntimeConfigFilePath)"
+        OutputFile="$(ParsedRuntimeConfigFilePath)"
+        RuntimeConfigReservedProperties="@(RuntimeConfigReservedProperties)">
+    </RuntimeConfigParserTask>
+  </Target>
+
+  <Target Name="_WasmGenerateAppBundle" Condition="'$(WasmGenerateAppBundle)' == 'true'" DependsOnTargets="GenerateRuntimeConfig">
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
 
     <PropertyGroup>
@@ -153,6 +172,9 @@
 
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
+
+      <WasmExtraFilesToDeploy Include="$(TargetDir)publish\runtimeconfig.bin" TargetPath="managed" />
+      <WasmFilesToIncludeInFileSystem Include="$(TargetDir)publish\runtimeconfig.bin" />
     </ItemGroup>
 
     <WasmAppBuilder

@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <dlfcn.h>
+#include <sys/stat.h>
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/tokentype.h>
@@ -517,7 +518,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
     int num_char = snprintf (file_path, (str_len + 1), "/%s", file_name);
     struct stat buffer;
 
-    //LOG_INFO ("file_path: %s\n", file_path);
     assert (num_char > 0 && num_char == str_len);
 
     if (stat (file_path, &buffer) == 0) {
