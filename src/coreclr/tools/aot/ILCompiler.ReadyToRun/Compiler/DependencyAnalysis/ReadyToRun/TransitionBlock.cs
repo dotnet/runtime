@@ -39,7 +39,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
 
                 case TargetArchitecture.ARM64:
-                    return Arm64TransitionBlock.Instance;
+                    return target.OperatingSystem == TargetOS.OSX ?
+                        AppleArm64TransitionBlock.Instance :
+                        Arm64TransitionBlock.Instance;
 
                 default:
                     throw new NotImplementedException(target.Architecture.ToString());
