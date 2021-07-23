@@ -6,6 +6,7 @@ using System.Diagnostics.Tracing;
 using System.Net.Sockets;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.NameResolution.Tests
 {
@@ -144,6 +145,81 @@ namespace System.Net.NameResolution.Tests
             {
                 Assert.DoesNotContain(events, e => e.Event.EventName == "ResolutionFailed");
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void ResolutionsWaitingOnQueue_ResolutionStartCalledBeforeEnqueued()
+        {
+            // Some platforms (non-Windows) don't have proper support for GetAddrInfoAsync.
+            // Instead we perform async-over-sync with a per-host queue.
+            // This test ensures that ResolutionStart events are written before waiting on the queue.
+
+            // We do this by blocking the first ResolutionStart event.
+            // If the event was logged after waiting on the queue, the second request would never complete.
+            RemoteExecutor.Invoke(async () =>
+            {
+                using var listener = new TestEventListener("System.Net.NameResolution", EventLevel.Informational);
+                listener.AddActivityTracking();
+
+                TaskCompletionSource firstResolutionStart = new();
+                TaskCompletionSource secondResolutionStop = new();
+
+                List<(string EventName, Guid ActivityId)> events = new();
+
+                await listener.RunWithCallbackAsync(e =>
+                {
+                    if (e.EventName == "ResolutionStart" || e.EventName == "ResolutionStop")
+                    {
+                        Assert.NotEqual(Guid.Empty, e.ActivityId);
+                        events.Add((e.EventName, e.ActivityId));
+                    }
+
+                    if (e.EventName == "ResolutionStart" && firstResolutionStart.TrySetResult())
+                    {
+                        secondResolutionStop.Task.Wait();
+                    }
+                },
+                async () =>
+                {
+                    Task first = DoResolutionAsync();
+
+                    await firstResolutionStart.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+                    Task second = DoResolutionAsync();
+
+                    await Task.WhenAny(first, second).WaitAsync(TimeSpan.FromSeconds(30));
+                    Assert.False(first.IsCompleted);
+
+                    await second;
+                    secondResolutionStop.SetResult();
+
+                    await first.WaitAsync(TimeSpan.FromSeconds(30));
+
+                    static Task DoResolutionAsync()
+                    {
+                        return Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await Dns.GetHostAddressesAsync("microsoft.com");
+                            }
+                            catch (AggregateException ex) when (ex.InnerException is not XunitException)
+                            {
+                                // We don't care if the request failed, just that events were written properly
+                            }
+                        });
+                    }
+                });
+
+                Assert.Equal(4, events.Count);
+                Assert.Equal("ResolutionStart", events[0].EventName);
+                Assert.Equal("ResolutionStart", events[1].EventName);
+                Assert.Equal("ResolutionStop", events[2].EventName);
+                Assert.Equal("ResolutionStop", events[3].EventName);
+                Assert.Equal(events[0].ActivityId, events[3].ActivityId);
+                Assert.Equal(events[1].ActivityId, events[2].ActivityId);
+                Assert.NotEqual(events[0].ActivityId, events[1].ActivityId);
+            }).Dispose();
         }
     }
 }
