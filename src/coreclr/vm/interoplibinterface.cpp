@@ -288,9 +288,6 @@ namespace
         // The collection should respect the supplied arguments.
         //        withFlags - If Flag_None, then ignore. Otherwise objects must have these flags.
         //    threadContext - The object must be associated with the supplied thread context.
-        //
-        // [TODO] Performance improvement should be made here to provide a custom IEnumerable
-        // instead of a managed array.
         OBJECTREF CreateManagedEnumerable(_In_ DWORD withFlags, _In_opt_ void* threadContext)
         {
             CONTRACT(OBJECTREF)
@@ -334,18 +331,30 @@ namespace
             // Allocate enumerable type to return.
             gc.arrRef = (PTRARRAYREF)AllocateObjectArray((DWORD)localList.Size(), g_pObjectClass);
 
-            // Separate wrappers and insert object into enumerable.
+            // Insert objects into enumerable.
+            // The ExternalObjectContexts in the hashmap are only
+            // removed and associated objects collected during a GC. Since
+            // this code is running in Cooperative mode they will never
+            // be null.
             for (SIZE_T i = 0; i < localList.Size(); i++)
             {
                 ExternalObjectContext* inst = localList[i];
+                gc.arrRef->SetAt(i, inst->GetObjectRef());
+            }
+
+            {
+                // Separate the wrapper from the tracker runtime prior to
+                // passing them onto the caller. This call is okay to make
+                // even if the instance isn't from the tracker runtime.
+                // We switch to Preemptive mode since seperating a wrapper
+                // requires us to call out to non-runtime code which could
+                // call back into the runtime and/or trigger a GC.
+                GCX_PREEMP();
+                for (SIZE_T i = 0; i < localList.Size(); i++)
                 {
-                    // Separate the wrapper from the tracker runtime prior to
-                    // passing this onto the caller. This call is okay to make
-                    // even if the instance isn't from the tracker runtime.
-                    GCX_PREEMP();
+                    ExternalObjectContext* inst = localList[i];
                     InteropLib::Com::SeparateWrapperFromTrackerRuntime(inst);
                 }
-                gc.arrRef->SetAt(i, inst->GetObjectRef());
             }
 
             GCPROTECT_END();
