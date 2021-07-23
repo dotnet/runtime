@@ -8971,11 +8971,24 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // Interface call devirtualization.
         //
         // We must ensure that pObjMT actually implements the
-        // interface corresponding to pBaseMD.
+        // interface corresponding to pBaseMD. If it's 
         if (!pObjMT->CanCastToInterface(pBaseMT))
         {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
-            return false;
+            if ((info->context != nullptr) && !pObjMT->IsSharedByGenericInstantiations())
+            {
+                // If it's "Interface<__Canon>  <-  ConcreteImpl" - try again using current context.
+                pBaseMT = GetTypeFromContext(info->context).GetMethodTable();
+                if (!pObjMT->CanCastToInterface(pBaseMT))
+                {
+                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
+                    return false;
+                }
+            }
+            else
+            {
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CAST;
+                return false;
+            }
         }
 
         // For generic interface methods we must have context to
