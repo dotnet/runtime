@@ -17,7 +17,6 @@ project(CoreCLR)
 
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
-include(${CLR_ENG_NATIVE_DIR}/configurecet.cmake)
 
 if(MSVC)
   set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i.e. kernel32, uuid, user32, etc.

@@ -8,7 +8,6 @@ project(corehost)
 
 include(../../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
-include(${CLR_ENG_NATIVE_DIR}/configurecet.cmake)
 
 if (MSVC)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4996>)
