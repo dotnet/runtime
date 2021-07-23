@@ -3972,7 +3972,7 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
 
 #ifndef TARGET_XARCH
     // These are less useful for xarch:
-    if (flag == GTF_ICON_CONST_PTR)
+    else if (flag == GTF_ICON_CONST_PTR)
     {
         str = "const ptr";
     }
