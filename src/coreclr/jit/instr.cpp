@@ -2036,25 +2036,25 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
     }
     else
     {
-        // We know that we are writing to memory, so we can treat destination as any type,
-        // so we will treat it as the source type.
-        var_types srcTypeForStore = TYP_UNDEF;
+        // We know that we are writing to memory, so make the destination type same
+        // as the source type.
+        var_types dstTypeForStore = TYP_UNDEF;
         unsigned  dstSize         = genTypeSize(dstType);
         switch (dstSize)
         {
             case 4:
-                srcTypeForStore = srcIsFloatReg ? TYP_FLOAT : TYP_INT;
+                dstTypeForStore = srcIsFloatReg ? TYP_FLOAT : TYP_INT;
                 break;
 #if defined(TARGET_64BIT)
             case 8:
-                srcTypeForStore = srcIsFloatReg ? TYP_DOUBLE : TYP_LONG;
+                dstTypeForStore = srcIsFloatReg ? TYP_DOUBLE : TYP_LONG;
                 break;
 #endif // TARGET_64BIT
             default:
                 assert(!"unexpected write to the stack.");
                 break;
         }
-        return ins_Store(srcTypeForStore, aligned);
+        return ins_Store(dstTypeForStore, aligned);
     }
 }
 
