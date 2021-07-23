@@ -95,16 +95,10 @@ namespace System.Net.Sockets.Tests
             {
                 Assert.True(client.DualMode);
 
-                Task connectTask = MultiConnectAsync(client, new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback }, port);
-                await connectTask;
+                await MultiConnectAsync(client, new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback }, port);
 
-                var localEndPoint = client.LocalEndPoint as IPEndPoint;
-                Assert.NotNull(localEndPoint);
-                Assert.Equal(IPAddress.Loopback.MapToIPv6(), localEndPoint.Address);
-
-                var remoteEndPoint = client.RemoteEndPoint as IPEndPoint;
-                Assert.NotNull(remoteEndPoint);
-                Assert.Equal(IPAddress.Loopback.MapToIPv6(), remoteEndPoint.Address);
+                CheckIsIpv6LoopbackEndPoint(client.LocalEndPoint);
+                CheckIsIpv6LoopbackEndPoint(client.RemoteEndPoint);
             }
         }
 
@@ -124,17 +118,18 @@ namespace System.Net.Sockets.Tests
             {
                 Assert.True(client.DualMode);
 
-                Task connectTask = ConnectAsync(client, new DnsEndPoint("localhost", port));
-                await connectTask;
+                await ConnectAsync(client, new DnsEndPoint("localhost", port));
 
-                var localEndPoint = client.LocalEndPoint as IPEndPoint;
-                Assert.NotNull(localEndPoint);
-                Assert.True(localEndPoint.Address.Equals(IPAddress.IPv6Loopback) || localEndPoint.Address.Equals(IPAddress.Loopback.MapToIPv6()));
-
-                var remoteEndPoint = client.RemoteEndPoint as IPEndPoint;
-                Assert.NotNull(remoteEndPoint);
-                Assert.Equal(IPAddress.Loopback.MapToIPv6(), remoteEndPoint.Address);
+                CheckIsIpv6LoopbackEndPoint(client.LocalEndPoint);
+                CheckIsIpv6LoopbackEndPoint(client.RemoteEndPoint);
             }
+        }
+
+        private static void CheckIsIpv6LoopbackEndPoint(EndPoint endPoint)
+        {
+            IPEndPoint ep = endPoint as IPEndPoint;
+            Assert.NotNull(ep);
+            Assert.True(ep.Address.Equals(IPAddress.IPv6Loopback) || ep.Address.Equals(IPAddress.Loopback.MapToIPv6()));
         }
 
         [Fact]
