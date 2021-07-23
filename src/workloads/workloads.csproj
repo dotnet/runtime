@@ -5,7 +5,7 @@
     <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">netcoreapp3.1</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
     <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(DotNetBuildFromSource)' == 'true'">net5.0</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
     <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">net472</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
-    <MicrosoftDotNetBuildTasksInstallersTaskAssembly>$(NuGetPackageRoot)microsoft.dotnet.build.tasks.installers\$(MicrosoftDotNetBuildTasksInstallersPackageVersion)\tools\$(MicrosoftDotNetBuildTasksInstallersTaskTargetFramework)\Microsoft.DotNet.Build.Tasks.Installers.dll</MicrosoftDotNetBuildTasksInstallersTaskAssembly>
+    <MicrosoftDotNetBuildTasksInstallersTaskAssembly>$(NuGetPackageRoot)microsoft.dotnet.build.tasks.installers\$(MicrosoftDotNetBuildTasksInstallersVersion)\tools\$(MicrosoftDotNetBuildTasksInstallersTaskTargetFramework)\Microsoft.DotNet.Build.Tasks.Installers.dll</MicrosoftDotNetBuildTasksInstallersTaskAssembly>
   </PropertyGroup>
 
   <UsingTask AssemblyFile="$(PkgMicrosoft_DotNet_Build_Tasks_Workloads)\tools\net472\Microsoft.DotNet.Build.Tasks.Workloads.dll" TaskName="GenerateVisualStudioWorkload" />
