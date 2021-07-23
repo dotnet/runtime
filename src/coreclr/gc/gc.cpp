@@ -20566,6 +20566,7 @@ void gc_heap::check_and_set_no_gc_oom()
 #endif //MULTIPLE_HEAPS
 }
 
+#ifdef USE_REGIONS
 int gc_heap::extend_soh_for_no_gc()
 {
     size_t required = soh_allocation_no_gc;
@@ -20598,6 +20599,7 @@ int gc_heap::extend_soh_for_no_gc()
     }
     return false;
 }
+#endif //USE_REGIONS
 
 void gc_heap::allocate_for_no_gc_after_gc()
 {
