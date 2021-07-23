@@ -159,7 +159,7 @@
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(_toolRuntimeRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
     <_packageRID Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</_packageRID>
-    <_packageRID Condition="'$(CrossBuild)' == 'true'">$(_runtimeOS.ToLowerInvariant)-$(TargetArchitecture)</_packageRID>
+    <_packageRID Condition="'$(CrossBuild)' == 'true' and '$(_packageRID)' == ''">$(_hostOS.ToLowerInvariant)-$(TargetArchitecture)</_packageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(_packageRID)</PackageRID>
     <PackageRID Condition="'$(PackageRID)' == ''">$(_runtimeOS)-$(TargetArchitecture)</PackageRID>
 
