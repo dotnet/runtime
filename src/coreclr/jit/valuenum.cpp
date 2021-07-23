@@ -2282,7 +2282,7 @@ TailCall:
     else
     {
         // Give up if we've run out of budget.
-        if (--(*pBudget) <= 0)
+        if (*pBudget == 0)
         {
             // We have to use 'nullptr' for the basic block here, because subsequent expressions
             // in different blocks may find this result in the VNFunc2Map -- other expressions in
@@ -2292,6 +2292,9 @@ TailCall:
             GetVNFunc2Map()->Set(fstruct, res);
             return res;
         }
+
+        // Reduce our budget by one
+        (*pBudget)--;
 
         // If it's recursive, stop the recursion.
         if (SelectIsBeingEvaluatedRecursively(arg0VN, arg1VN))
@@ -2329,9 +2332,9 @@ TailCall:
                     assert(funcApp.m_args[1] != arg1VN); // we already checked this above.
 #if FEATURE_VN_TRACE_APPLY_SELECTORS
                     JITDUMP("      AX2: " FMT_VN " != " FMT_VN " ==> select([" FMT_VN "]store(" FMT_VN ", " FMT_VN
-                            ", " FMT_VN "), " FMT_VN ") ==> select(" FMT_VN ", " FMT_VN ").\n",
+                            ", " FMT_VN "), " FMT_VN ") ==> select(" FMT_VN ", " FMT_VN ") remaining budget is %d.\n",
                             arg1VN, funcApp.m_args[1], arg0VN, funcApp.m_args[0], funcApp.m_args[1], funcApp.m_args[2],
-                            arg1VN, funcApp.m_args[0], arg1VN);
+                            arg1VN, funcApp.m_args[0], arg1VN, *pBudget);
 #endif
                     // This is the equivalent of the recursive tail call:
                     // return VNForMapSelect(vnk, typ, funcApp.m_args[0], arg1VN);
