@@ -3933,12 +3933,10 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
     if (flag == GTF_ICON_STR_HDL)
     {
         const WCHAR* wstr = emitComp->eeGetCPString(handle);
-        // Note that eGetCPString isn't currently implemented on Linux/ARM
-        // and instead always returns nullptr. However, use it here, so in
-        // future, once it is is implemented, no changes will be needed here.
+        // NOTE: eGetCPString always returns nullptr on Linux/ARM
         if (wstr == nullptr)
         {
-            wstr = L"string handle";
+            printf("%s string handle", commentPrefix);
         }
         else
         {
@@ -3946,14 +3944,15 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
             const size_t maxLength = 63;
             const size_t newLen    = min(maxLength, actualLen);
 
-            WCHAR buf[maxLength + 1 /*for null terminator*/] = {0};
+            // +1 for null terminator
+            const WCHAR buf[maxLength + 1] = {0};
             wcsncpy(buf, wstr, newLen);
             for (size_t i = 0; i < newLen; i++)
             {
                 // Escape \n and \r symbols
                 if (buf[i] == L'\n' || buf[i] == L'\r')
                 {
-                    buf[i] = ' ';
+                    buf[i] = L' ';
                 }
             }
             if (actualLen > maxLength)
@@ -3963,9 +3962,8 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
                 buf[maxLength - 2] = L'.';
                 buf[maxLength - 1] = L'.';
             }
-            wstr = buf;
+            printf("%s \"%S\"", commentPrefix, buf);
         }
-        printf("%s \"%S\"", commentPrefix, wstr);
     }
     else if (flag == GTF_ICON_CLASS_HDL)
     {
