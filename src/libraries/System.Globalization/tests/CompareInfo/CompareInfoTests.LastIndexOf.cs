@@ -54,14 +54,22 @@ namespace System.Globalization.Tests
 
             // Slovak
             yield return new object[] { s_slovakCompare, "ch", "h", 0, 1, CompareOptions.None, -1, 0 };
-            yield return new object[] { s_slovakCompare, "hore chodit", "HO", 11, 12, CompareOptions.IgnoreCase, 0, 2 };
+            // Android has its own ICU, which doesn't work well with slovak
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { s_slovakCompare, "hore chodit", "HO", 11, 12, CompareOptions.IgnoreCase, 0, 2 };
+            }
             yield return new object[] { s_slovakCompare, "chh", "h", 2, 2, CompareOptions.None, 2, 1 };
 
             // Turkish
+            // Android has its own ICU, which doesn't work well with tr
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { s_turkishCompare, "Hi", "I", 1, 2, CompareOptions.IgnoreCase, -1, 0 };
+                yield return new object[] { s_turkishCompare, "Hi", "\u0130", 1, 2, CompareOptions.IgnoreCase, 1, 1 };
+            }
             yield return new object[] { s_turkishCompare, "Hi", "I", 1, 2, CompareOptions.None, -1, 0 };
-            yield return new object[] { s_turkishCompare, "Hi", "I", 1, 2, CompareOptions.IgnoreCase, -1, 0 };
             yield return new object[] { s_turkishCompare, "Hi", "\u0130", 1, 2, CompareOptions.None, -1, 0 };
-            yield return new object[] { s_turkishCompare, "Hi", "\u0130", 1, 2, CompareOptions.IgnoreCase, 1, 1 };
 
             yield return new object[] { s_invariantCompare, "Hi", "I", 1, 2, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "Hi", "I", 1, 2, CompareOptions.IgnoreCase, 1, 1 };
@@ -151,7 +159,6 @@ namespace System.Globalization.Tests
         [Theory]
         [MemberData(nameof(LastIndexOf_TestData))]
         [MemberData(nameof(LastIndexOf_U_WithDiaeresis_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void LastIndexOf_String(CompareInfo compareInfo, string source, string value, int startIndex, int count, CompareOptions options, int expected, int expectedMatchLength)
         {
             if (value.Length == 1)
