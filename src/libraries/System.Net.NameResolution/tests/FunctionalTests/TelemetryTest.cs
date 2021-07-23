@@ -173,7 +173,6 @@ namespace System.Net.NameResolution.Tests
                 {
                     if (e.EventName == "ResolutionStart" || e.EventName == "ResolutionStop")
                     {
-                        Assert.NotEqual(Guid.Empty, e.ActivityId);
                         events.Add((e.EventName, e.ActivityId));
                     }
 
@@ -206,10 +205,7 @@ namespace System.Net.NameResolution.Tests
                             {
                                 await Dns.GetHostAddressesAsync("microsoft.com");
                             }
-                            catch (AggregateException ex) when (ex.InnerException is not XunitException)
-                            {
-                                // We don't care if the request failed, just that events were written properly
-                            }
+                            catch { } // We don't care if the request failed, just that events were written properly
                         });
                     }
                 });
@@ -219,6 +215,7 @@ namespace System.Net.NameResolution.Tests
                 Assert.Equal("ResolutionStart", events[1].EventName);
                 Assert.Equal("ResolutionStop", events[2].EventName);
                 Assert.Equal("ResolutionStop", events[3].EventName);
+                Assert.All(events, e => Assert.NotEqual(Guid.Empty, e.ActivityId));
                 Assert.Equal(events[0].ActivityId, events[3].ActivityId);
                 Assert.Equal(events[1].ActivityId, events[2].ActivityId);
                 Assert.NotEqual(events[0].ActivityId, events[1].ActivityId);
