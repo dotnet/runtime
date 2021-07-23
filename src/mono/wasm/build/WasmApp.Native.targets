@@ -251,6 +251,7 @@
 
     <!-- warm up the cache -->
     <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="High" StandardErrorImportance="High" />
+    <Exec Command="$(_EmBuilder) build zlib" EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="High" StandardErrorImportance="High" />
     <!--<MakeDir Directories="$(WasmCachePath)" />-->
     <ItemGroup>
       <EmscriptenEnvVars Include="FROZEN_CACHE=true" />
