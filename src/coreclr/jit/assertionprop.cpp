@@ -763,7 +763,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 break;
 
             case O2K_SUBRANGE:
-                printf("[%d..%d]", curAssertion->op2.u2.loBound, curAssertion->op2.u2.hiBound);
+                printf("[%u..%u]", curAssertion->op2.u2.loBound, curAssertion->op2.u2.hiBound);
                 break;
 
             default:
@@ -2338,7 +2338,7 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
 /*****************************************************************************
  *
  *  Given a lclNum, a fromType and a toType, return assertion index of the assertion that
- *  claims that a variable's value is always a valid subrange of the formType.
+ *  claims that a variable's value is always a valid subrange of the fromType.
  *  Thus we can discard or omit a cast to fromType. Returns NO_ASSERTION_INDEX
  *  if one such assertion could not be found in "assertions."
  */
@@ -4843,6 +4843,15 @@ public:
     //   It means we can propagate only assertions that are valid for the whole try region.
     void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
     {
+        if (VerboseDataflow())
+        {
+            JITDUMP("Merge     : " FMT_BB " ", block->bbNum);
+            Compiler::optDumpAssertionIndices("in -> ", block->bbAssertionIn, "; ");
+            JITDUMP("firstTryBlock " FMT_BB " ", firstTryBlock->bbNum);
+            Compiler::optDumpAssertionIndices("in -> ", firstTryBlock->bbAssertionIn, "; ");
+            JITDUMP("lastTryBlock " FMT_BB " ", lastTryBlock->bbNum);
+            Compiler::optDumpAssertionIndices("out -> ", lastTryBlock->bbAssertionOut, "\n");
+        }
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, firstTryBlock->bbAssertionIn);
         BitVecOps::IntersectionD(apTraits, block->bbAssertionIn, lastTryBlock->bbAssertionOut);
     }
@@ -4946,8 +4955,8 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
                 }
                 else // is jump edge assertion
                 {
-                    valueAssertionIndex    = optFindComplementary(info.GetAssertionIndex());
                     jumpDestAssertionIndex = info.GetAssertionIndex();
+                    valueAssertionIndex    = optFindComplementary(jumpDestAssertionIndex);
                 }
 
                 if (valueAssertionIndex != NO_ASSERTION_INDEX)

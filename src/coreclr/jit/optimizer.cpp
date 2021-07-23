@@ -5486,6 +5486,9 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
     // so clear the RegNum if it was set in the original expression
     hoistExpr->ClearRegNum();
 
+    // Copy any loop memory dependence.
+    optCopyLoopMemoryDependence(origExpr, hoistExpr);
+
     // At this point we should have a cloned expression, marked with the GTF_MAKE_CSE flag
     assert(hoistExpr != origExpr);
     assert(hoistExpr->gtFlags & GTF_MAKE_CSE);
@@ -6037,6 +6040,106 @@ bool Compiler::optIsProfitableToHoistableTree(GenTree* tree, unsigned lnum)
 }
 
 //------------------------------------------------------------------------
+// optRecordLoopMemoryDependence: record that tree's value number
+//   is dependent on a particular memory VN
+//
+// Arguments:
+//   tree -- tree in question
+//   block -- block containing tree
+//   memoryVN -- VN for a "map" from a select operation encounterd
+//     while computing the tree's VN
+//
+// Notes:
+//   Only tracks trees in loops, and memory updates in the same loop nest.
+//   So this is a coarse-grained dependence that is only usable for
+//   hoisting tree out of its enclosing loops.
+//
+void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN)
+{
+    // If tree is not in a loop, we don't need to track its loop dependence.
+    //
+    unsigned const loopNum = block->bbNatLoopNum;
+
+    if (loopNum == BasicBlock::NOT_IN_LOOP)
+    {
+        return;
+    }
+
+    // Find the loop associated with this memory VN.
+    //
+    unsigned const updateLoopNum = vnStore->LoopOfVN(memoryVN);
+
+    if (updateLoopNum == BasicBlock::NOT_IN_LOOP)
+    {
+        // memoryVN defined outside of any loop, we can ignore.
+        //
+        JITDUMP("      ==> Not updating loop memory dependence of [%06u], memory " FMT_VN " not defined in a loop\n",
+                dspTreeID(tree), memoryVN);
+        return;
+    }
+
+    // If the update block is not the the header of a loop containing
+    // block, we can also ignore the update.
+    //
+    if (!optLoopContains(updateLoopNum, loopNum))
+    {
+        JITDUMP("      ==> Not updating loop memory dependence of [%06u]/" FMT_LP ", memory " FMT_VN "/" FMT_LP
+                " is not defined in an enclosing loop\n",
+                dspTreeID(tree), loopNum, memoryVN, updateLoopNum);
+        return;
+    }
+
+    // If we already have a recorded a loop entry block for this
+    // tree, see if the new update is for a more closely nested
+    // loop.
+    //
+    NodeToLoopMemoryBlockMap* const map      = GetNodeToLoopMemoryBlockMap();
+    BasicBlock*                     mapBlock = nullptr;
+
+    if (map->Lookup(tree, &mapBlock))
+    {
+        unsigned const mapLoopNum = mapBlock->bbNatLoopNum;
+
+        // If the update loop contains the existing map loop,
+        // the existing map loop is more constraining. So no
+        // update needed.
+        //
+        if (optLoopContains(updateLoopNum, mapLoopNum))
+        {
+            JITDUMP("      ==> Not updating loop memory dependence of [%06u]; alrady constrained to " FMT_LP
+                    " nested in " FMT_LP "\n",
+                    dspTreeID(tree), mapLoopNum, updateLoopNum);
+            return;
+        }
+    }
+
+    // MemoryVN now describes the most constraining loop memory dependence
+    // we know of. Update the map.
+    //
+    JITDUMP("      ==> Updating loop memory dependence of [%06u] to " FMT_LP "\n", dspTreeID(tree), updateLoopNum);
+    map->Set(tree, optLoopTable[updateLoopNum].lpEntry);
+}
+
+//------------------------------------------------------------------------
+// optCopyLoopMemoryDependence: record that tree's loop memory dependence
+//   is the same as some other tree.
+//
+// Arguments:
+//   fromTree -- tree to copy dependence from
+//   toTree -- tree in question
+//
+void Compiler::optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree)
+{
+    NodeToLoopMemoryBlockMap* const map      = GetNodeToLoopMemoryBlockMap();
+    BasicBlock*                     mapBlock = nullptr;
+
+    if (map->Lookup(fromTree, &mapBlock))
+    {
+        map->Set(toTree, mapBlock);
+    }
+}
+
+//------------------------------------------------------------------------
 // optHoistLoopBlocks: Hoist invariant expression out of the loop.
 //
 // Arguments:
@@ -6093,19 +6196,63 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
         bool IsTreeVNInvariant(GenTree* tree)
         {
             ValueNum vn = tree->gtVNPair.GetLiberal();
-            if (m_compiler->vnStore->IsVNConstant(vn))
+            bool     vnIsInvariant =
+                m_compiler->optVNIsLoopInvariant(vn, m_loopNum, &m_hoistContext->m_curLoopVnInvariantCache);
+
+            // Even though VN is invariant in the loop (say a constant) its value may depend on position
+            // of tree, so for loop hoisting we must also check that any memory read by tree
+            // is also invariant in the loop.
+            //
+            if (vnIsInvariant)
             {
-                // It is unsafe to allow a GT_CLS_VAR that has been assigned a constant.
-                // The logic in optVNIsLoopInvariant would consider it to be loop-invariant, even
-                // if the assignment of the constant to the GT_CLS_VAR was inside the loop.
+                vnIsInvariant = IsTreeLoopMemoryInvariant(tree);
+            }
+            return vnIsInvariant;
+        }
+
+        //------------------------------------------------------------------------
+        // IsTreeLoopMemoryInvariant: determine if the value number of tree
+        //   is dependent on the tree being executed within the current loop
+        //
+        // Arguments:
+        //   tree -- tree in question
+        //
+        // Returns:
+        //   true if tree could be evaluated just before loop and get the
+        //   same value.
+        //
+        // Note:
+        //   Calls are optimistically assumed to be invariant.
+        //   Caller must do their own analysis for these tree types.
+        //
+        bool IsTreeLoopMemoryInvariant(GenTree* tree)
+        {
+            if (tree->IsCall())
+            {
+                // Calls are handled specially by hoisting, and loop memory dependence
+                // must be checked by other means.
                 //
-                if (tree->OperIs(GT_CLS_VAR))
+                return true;
+            }
+
+            NodeToLoopMemoryBlockMap* const map            = m_compiler->GetNodeToLoopMemoryBlockMap();
+            BasicBlock*                     loopEntryBlock = nullptr;
+            if (map->Lookup(tree, &loopEntryBlock))
+            {
+                for (MemoryKind memoryKind : allMemoryKinds())
                 {
-                    return false;
+                    ValueNum loopMemoryVN =
+                        m_compiler->GetMemoryPerSsaData(loopEntryBlock->bbMemorySsaNumIn[memoryKind])
+                            ->m_vnPair.GetLiberal();
+                    if (!m_compiler->optVNIsLoopInvariant(loopMemoryVN, m_loopNum,
+                                                          &m_hoistContext->m_curLoopVnInvariantCache))
+                    {
+                        return false;
+                    }
                 }
             }
 
-            return m_compiler->optVNIsLoopInvariant(vn, m_loopNum, &m_hoistContext->m_curLoopVnInvariantCache);
+            return true;
         }
 
     public:
@@ -6567,10 +6714,29 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNToBoolMap* loo
             BasicBlock* defnBlk = reinterpret_cast<BasicBlock*>(vnStore->ConstantValue<ssize_t>(funcApp.m_args[0]));
             res                 = !optLoopContains(lnum, defnBlk->bbNatLoopNum);
         }
+        else if (funcApp.m_func == VNF_MemOpaque)
+        {
+            const unsigned vnLoopNum = funcApp.m_args[0];
+            res                      = !optLoopContains(lnum, vnLoopNum);
+        }
         else
         {
             for (unsigned i = 0; i < funcApp.m_arity; i++)
             {
+                // 4th arg of mapStore identifies the loop where the store happens.
+                //
+                if (funcApp.m_func == VNF_MapStore)
+                {
+                    assert(funcApp.m_arity == 4);
+
+                    if (i == 3)
+                    {
+                        const unsigned vnLoopNum = funcApp.m_args[3];
+                        res                      = !optLoopContains(lnum, vnLoopNum);
+                        break;
+                    }
+                }
+
                 // TODO-CQ: We need to either make sure that *all* VN functions
                 // always take VN args, or else have a list of arg positions to exempt, as implicitly
                 // constant.
@@ -6580,21 +6746,6 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNToBoolMap* loo
                     break;
                 }
             }
-        }
-    }
-    else
-    {
-        // Non-function "new, unique" VN's may be annotated with the loop nest where
-        // their definition occurs.
-        BasicBlock::loopNumber vnLoopNum = vnStore->LoopOfVN(vn);
-
-        if (vnLoopNum == BasicBlock::MAX_LOOP_NUM)
-        {
-            res = false;
-        }
-        else
-        {
-            res = !optLoopContains(lnum, vnLoopNum);
         }
     }
 

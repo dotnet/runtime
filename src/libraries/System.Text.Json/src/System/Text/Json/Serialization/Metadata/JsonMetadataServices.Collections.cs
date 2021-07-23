@@ -124,7 +124,7 @@ namespace System.Text.Json.Serialization.Metadata
             => new JsonTypeInfoInternal<TCollection>(
                 options,
                 createObjectFunc,
-                () => new ImmutableDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>(dummy: false),
+                () => new ImmutableDictionaryOfTKeyTValueConverter<TCollection, TKey, TValue>(),
                 keyInfo,
                 valueInfo,
                 numberHandling,
@@ -224,7 +224,7 @@ namespace System.Text.Json.Serialization.Metadata
             => new JsonTypeInfoInternal<TCollection>(
                 options,
                 createObjectFunc,
-                () => new ImmutableEnumerableOfTConverter<TCollection, TElement>(dummy: false),
+                () => new ImmutableEnumerableOfTConverter<TCollection, TElement>(),
                 elementInfo,
                 numberHandling,
                 serializeFunc,
@@ -525,7 +525,7 @@ namespace System.Text.Json.Serialization.Metadata
             => new JsonTypeInfoInternal<TCollection>(
                 options,
                 createObjectFunc,
-                () => new IEnumerableWithAddMethodConverter<TCollection>(dummy: false),
+                () => new StackOrQueueConverter<TCollection>(),
                 elementInfo,
                 numberHandling,
                 serializeFunc,

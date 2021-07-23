@@ -5991,17 +5991,23 @@ GenTree* Compiler::fgMorphLocalVar(GenTree* tree, bool forceRemorph)
     if (!varAddr && varTypeIsSmall(varDsc->TypeGet()) && varDsc->lvNormalizeOnLoad())
     {
 #if LOCAL_ASSERTION_PROP
-        /* Assertion prop can tell us to omit adding a cast here */
+        // Assertion prop can tell us to omit adding a cast here
         if (optLocalAssertionProp && optAssertionIsSubrange(tree, TYP_INT, varType, apFull) != NO_ASSERTION_INDEX)
         {
+            // The previous assertion can guarantee us that if this node gets
+            // assigned a register, it will be normalized already. It is still
+            // possible that this node ends up being in memory, in which case
+            // normalization will still be needed, so we better have the right
+            // type.
+            assert(tree->TypeGet() == varDsc->TypeGet());
             return tree;
         }
 #endif
-        /* Small-typed arguments and aliased locals are normalized on load.
-           Other small-typed locals are normalized on store.
-           Also, under the debugger as the debugger could write to the variable.
-           If this is one of the former, insert a narrowing cast on the load.
-                   ie. Convert: var-short --> cast-short(var-int) */
+        // Small-typed arguments and aliased locals are normalized on load.
+        // Other small-typed locals are normalized on store.
+        // Also, under the debugger as the debugger could write to the variable.
+        // If this is one of the former, insert a narrowing cast on the load.
+        //         ie. Convert: var-short --> cast-short(var-int)
 
         tree->gtType = TYP_INT;
         fgMorphTreeDone(tree);
@@ -6872,7 +6878,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     if (callee->IsTailPrefixedCall())
     {
         var_types retType = info.compRetType;
-        assert(impTailCallRetTypeCompatible(retType, info.compMethodInfo->args.retTypeClass, info.compCallConv,
+        assert(impTailCallRetTypeCompatible(false, retType, info.compMethodInfo->args.retTypeClass, info.compCallConv,
                                             (var_types)callee->gtReturnType, callee->gtRetClsHnd,
                                             callee->GetUnmanagedCallConv()));
     }

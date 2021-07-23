@@ -186,7 +186,7 @@ namespace System.Transactions
                         if (!_traceIdentifierInited)
                         {
                             TransactionTraceIdentifier temp = new TransactionTraceIdentifier(
-                                InstanceIdentifier + Convert.ToString(_transactionHash, CultureInfo.InvariantCulture),
+                                string.Create(CultureInfo.InvariantCulture, $"{InstanceIdentifier}{_transactionHash}"),
                                 0);
                             _traceIdentifier = temp;
                             _traceIdentifierInited = true;

@@ -1697,7 +1697,7 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                return _streamsInUse == 0 ? _idleSinceTickCount - nowTicks : 0;
+                return _streamsInUse == 0 ? nowTicks - _idleSinceTickCount : 0;
             }
         }
 

@@ -148,7 +148,7 @@ namespace System.IO
                         totalBytesToWrite += buffer.Length;
 
                         MemoryHandle memoryHandle = buffer.Pin();
-                        vectors[i] = new Interop.Sys.IOVector { Base = firstBufferOffset + (byte*)memoryHandle.Pointer, Count = (UIntPtr)buffer.Length };
+                        vectors[i] = new Interop.Sys.IOVector { Base = firstBufferOffset + (byte*)memoryHandle.Pointer, Count = (UIntPtr)(buffer.Length - firstBufferOffset) };
                         handles[i] = memoryHandle;
 
                         firstBufferOffset = 0;

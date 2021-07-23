@@ -102,8 +102,6 @@ namespace System.Net.Http
         private void DisposeSyncHelper()
         {
             _connection.RemoveStream(_stream);
-            _connection = null!;
-            _stream = null!;
 
             _sendBuffer.Dispose();
             _recvBuffer.Dispose();
@@ -1107,7 +1105,10 @@ namespace System.Net.Http
         {
             switch (ex)
             {
+                // Peer aborted the stream
                 case QuicStreamAbortedException _:
+                // User aborted the stream
+                case QuicOperationAbortedException _:
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
                 case QuicConnectionAbortedException _:
                     // Our connection was reset. Start aborting the connection.
@@ -1118,11 +1119,11 @@ namespace System.Net.Http
                     _connection.Abort(ex);
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
                 case OperationCanceledException oce when oce.CancellationToken == cancellationToken:
-                    _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
+                    _stream.AbortRead((long)Http3ErrorCode.RequestCancelled);
                     ExceptionDispatchInfo.Throw(ex); // Rethrow.
                     return; // Never reached.
                 default:
-                    _stream.AbortWrite((long)Http3ErrorCode.InternalError);
+                    _stream.AbortRead((long)Http3ErrorCode.InternalError);
                     throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
             }
         }

@@ -388,8 +388,8 @@ namespace System.Text.Json
                     do
                     {
                         bufferState = await ReadFromStreamAsync(utf8Json, bufferState, cancellationToken).ConfigureAwait(false);
-                        Queue<TValue>? queue = ContinueDeserialize<Queue<TValue>>(ref bufferState, ref jsonReaderState, ref readStack, converter, options);
-                        if (queue is not null)
+                        ContinueDeserialize<Queue<TValue>>(ref bufferState, ref jsonReaderState, ref readStack, converter, options);
+                        if (readStack.Current.ReturnValue is Queue<TValue> queue)
                         {
                             while (queue.Count > 0)
                             {

@@ -69,6 +69,7 @@ namespace Wasm.Build.Tests
 
         public BuildTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         {
+            Console.WriteLine($"{Environment.NewLine}-------- New test --------{Environment.NewLine}");
             _buildContext = buildContext;
             _testOutput = output;
             _logPath = s_buildEnv.LogRootPath; // FIXME:
@@ -216,7 +217,8 @@ namespace Wasm.Build.Tests
         [MemberNotNull(nameof(_projectDir), nameof(_logPath))]
         protected void InitPaths(string id)
         {
-            _projectDir = Path.Combine(AppContext.BaseDirectory, id);
+            if (_projectDir == null)
+                _projectDir = Path.Combine(AppContext.BaseDirectory, id);
             _logPath = Path.Combine(s_buildEnv.LogRootPath, id);
 
             Directory.CreateDirectory(_logPath);
@@ -330,10 +332,7 @@ namespace Wasm.Build.Tests
                 }
 
                 if (useCache)
-                {
                     _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, true));
-                    Console.WriteLine($"caching build for {buildArgs}");
-                }
 
                 return (_projectDir, result.buildOutput);
             }
@@ -539,7 +538,6 @@ namespace Wasm.Build.Tests
                         var lastLines = outputBuilder.ToString().Split('\r', '\n').TakeLast(20);
                         throw new XunitException($"Process timed out, output: {string.Join(Environment.NewLine, lastLines)}");
                     }
-
                 }
 
                 lock (syncObj)

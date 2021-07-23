@@ -646,6 +646,24 @@ public:
     }
 };
 
+#ifdef FEATURE_EVENT_TRACE
+struct etw_bucket_info
+{
+    uint16_t index;
+    uint32_t count;
+    size_t size;
+
+    etw_bucket_info() {}
+
+    void set (uint16_t _index, uint32_t _count, size_t _size)
+    {
+        index = _index;
+        count = _count;
+        size = _size;
+    }
+};
+#endif //FEATURE_EVENT_TRACE
+
 class allocator
 {
     int first_bucket_bits;
@@ -764,6 +782,13 @@ public:
 #ifdef USE_REGIONS
     void thread_sip_fl (heap_segment* region);
 #endif //USE_REGIONS
+
+#ifdef FEATURE_EVENT_TRACE
+    uint16_t count_largest_items (etw_bucket_info* bucket_info, 
+                                  size_t max_size,
+                                  size_t max_item_count,
+                                  size_t* recorded_fl_info_size);
+#endif //FEATURE_EVENT_TRACE
 };
 
 #define NUM_GEN_POWER2 (20)
@@ -1667,10 +1692,9 @@ protected:
     void handle_failure_for_no_gc();
 
     PER_HEAP
-    void fire_etw_allocation_event (size_t allocation_amount, int gen_number, uint8_t* object_address);
-
-    PER_HEAP
-    void fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject);
+    void fire_mark_event (int root_type, 
+                          size_t& current_promoted_bytes, 
+                          size_t& last_promoted_bytes);
 
     PER_HEAP
     size_t limit_from_size (size_t size, uint32_t flags, size_t room, int gen_number,
@@ -1707,6 +1731,7 @@ protected:
                             size_t size,
                             alloc_context* acontext,
                             uint32_t flags,
+                            int gen_number,
                             int align_const,
                             int lock_index,
                             BOOL check_used_p,
@@ -2660,6 +2685,9 @@ protected:
     PER_HEAP_ISOLATED
     size_t get_total_pinned_objects();
 
+    PER_HEAP_ISOLATED
+    void reinit_pinned_objects();
+
     PER_HEAP
     void reset_mark_stack ();
     PER_HEAP
@@ -2712,6 +2740,9 @@ protected:
                               size_t last_plug_len);
     PER_HEAP
     void plan_phase (int condemned_gen_number);
+
+    PER_HEAP
+    void add_alloc_in_condemned_bucket (size_t plug_size);
 
     PER_HEAP
     uint8_t* find_next_marked (uint8_t* x, uint8_t* end,
@@ -3118,6 +3149,10 @@ protected:
     size_t generation_size (int gen_number);
     PER_HEAP_ISOLATED
     size_t get_total_survived_size();
+    PER_HEAP
+    bool update_alloc_info (int gen_number, 
+                            size_t allocated_size, 
+                            size_t* etw_allocation_amount);
     // this also resets allocated_since_last_gc
     PER_HEAP_ISOLATED
     size_t get_total_allocated_since_last_gc();
@@ -3684,7 +3719,7 @@ public:
     gen_to_condemn_tuning gen_to_condemn_reasons;
 
     PER_HEAP
-    size_t etw_allocation_running_amount[2];
+    size_t etw_allocation_running_amount[gc_oh_num::total_oh_count - 1];
 
     PER_HEAP
     uint64_t total_alloc_bytes_soh;
@@ -4443,6 +4478,123 @@ protected:
     size_t saved_pinned_plug_index;
 #endif //DOUBLY_LINKED_FL
 
+#ifdef FEATURE_EVENT_TRACE
+    PER_HEAP_ISOLATED
+    bool informational_event_enabled_p;
+
+    // Time is all in microseconds here. These are times recorded during STW.
+    //
+    // Note that the goal of this is not to show every single type of roots
+    // For that you have the per heap MarkWithType events. This takes advantage
+    // of the joins we already have and naturally gets the time between each 
+    // join.
+    enum etw_gc_time_info
+    {
+        time_mark_sizedref = 0,
+        // Note time_mark_roots does not include scanning sizedref handles.
+        time_mark_roots = 1,
+        time_mark_short_weak = 2,
+        time_mark_scan_finalization = 3,
+        time_mark_long_weak = 4,
+        max_bgc_time_type = 5,
+        time_plan = 5,
+        time_relocate = 6,
+        time_sweep = 6,
+        max_sweep_time_type = 7,
+        time_compact = 7,
+        max_compact_time_type = 8
+    };
+
+    PER_HEAP_ISOLATED
+    uint64_t* gc_time_info;
+
+#ifdef BACKGROUND_GC
+    PER_HEAP_ISOLATED
+    uint64_t* bgc_time_info;
+#endif //BACKGROUND_GC
+
+    PER_HEAP_ISOLATED
+    void record_mark_time (uint64_t& mark_time, 
+                           uint64_t& current_mark_time,
+                           uint64_t& last_mark_time);
+
+#define max_etw_item_count 2000
+
+    enum etw_bucket_kind
+    {
+        largest_fl_items = 0,
+        plugs_in_condemned = 1
+    };
+
+    // This is for gen2 FL purpose so it would use sizes for gen2 buckets.
+    // This event is only to give us a rough idea of the largest gen2 fl
+    // items or plugs that we had to allocate in condemned. We only fire
+    // these events on verbose level and stop at max_etw_item_count items.
+    PER_HEAP
+    etw_bucket_info bucket_info[NUM_GEN2_ALIST];
+    
+    PER_HEAP
+    void init_bucket_info();
+
+    PER_HEAP
+    void add_plug_in_condemned_info (generation* gen, size_t plug_size);
+
+    PER_HEAP
+    void fire_etw_allocation_event (size_t allocation_amount, 
+                                    int gen_number, 
+                                    uint8_t* object_address,
+                                    size_t object_size);
+
+    PER_HEAP
+    void fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject);
+
+    // config stuff
+    PER_HEAP_ISOLATED
+    size_t physical_memory_from_config;
+
+    PER_HEAP_ISOLATED
+    size_t gen0_min_budget_from_config;
+
+    PER_HEAP_ISOLATED
+    size_t gen0_max_budget_from_config;
+
+    PER_HEAP_ISOLATED
+    int high_mem_percent_from_config;
+
+    PER_HEAP_ISOLATED
+    bool use_frozen_segments_p;
+
+    PER_HEAP_ISOLATED
+    bool hard_limit_config_p;
+
+#ifdef FEATURE_LOH_COMPACTION
+    // This records the LOH compaction info -
+    // time it takes to plan, relocate and compact.
+    // We want to see how reference rich large objects are so
+    // we also record ref info. Survived bytes are already recorded
+    // in gc_generation_data of the perheap history event.
+    //
+    // If we don't end up actually doing LOH compaction because plan
+    // failed, the time would all be 0s.
+    struct etw_loh_compact_info
+    {
+        uint32_t time_plan;
+        uint32_t time_compact;
+        uint32_t time_relocate;
+        size_t total_refs;
+        size_t zero_refs;
+    };
+
+    PER_HEAP_ISOLATED
+    etw_loh_compact_info* loh_compact_info;
+
+    PER_HEAP
+    void loh_reloc_survivor_helper (uint8_t** pval, 
+                                    size_t& total_refs, 
+                                    size_t& zero_refs);
+#endif //FEATURE_LOH_COMPACTION
+#endif //FEATURE_EVENT_TRACE
+
     PER_HEAP
     dynamic_data dynamic_data_table [total_generation_count];
 
@@ -4571,7 +4723,7 @@ protected:
     size_t num_provisional_triggered;
 
     PER_HEAP
-    size_t allocated_since_last_gc[2];
+    size_t allocated_since_last_gc[gc_oh_num::total_oh_count - 1];
 
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED

@@ -1965,19 +1965,6 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 			g_free (err);
 		}
 		g_free (aot_name);
-#if !defined(HOST_ANDROID) && !defined(HOST_WASM)
-		if (!sofile) {
-			char *basename = g_path_get_basename (assembly->image->name);
-			aot_name = g_strdup_printf ("%s/mono/aot-cache/%s/%s%s", mono_assembly_getrootdir(), MONO_ARCHITECTURE, basename, MONO_SOLIB_EXT);
-			g_free (basename);
-			sofile = mono_dl_open (aot_name, MONO_DL_LAZY, &err);
-			if (!sofile) {
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' not found: %s", aot_name, err);
-				g_free (err);
-			}
-			g_free (aot_name);
-		}
-#endif
 		if (!sofile) {
 			GList *l;
 

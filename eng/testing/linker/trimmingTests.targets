@@ -42,6 +42,7 @@
       <TestConsoleApps Include="@(TestConsoleAppSourceFiles->'%(ProjectFile)')" Condition="!$([System.String]::Copy('%(TestConsoleAppSourceFiles.SkipOnTestRuntimes)').Contains('$(PackageRID)'))">
         <ProjectCompileItems>%(Identity)</ProjectCompileItems>
       </TestConsoleApps>
+      <TestConsoleApps AdditionalProperties="MSBuildEnableWorkloadResolver=$(MSBuildEnableWorkloadResolver)" Condition="'$(MSBuildEnableWorkloadResolver)' != ''" />
     </ItemGroup>
   </Target>
 
@@ -68,6 +69,15 @@
       <_additionalProjectSourceFiles Include="%(TestConsoleApps.AdditionalSourceFiles)" />
     </ItemGroup>
 
+    <ItemGroup>
+      <_switchesAsItems Include="%(TestConsoleApps.DisabledFeatureSwitches)" Value="false" />
+      <_switchesAsItems Include="%(TestConsoleApps.EnabledFeatureSwitches)" Value="true" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_runtimeHostConfigurationOptionsString>@(_switchesAsItems->'&lt;RuntimeHostConfigurationOption Include=&quot;%(Identity)&quot; Value=&quot;%(Value)&quot; Trim=&quot;true&quot; /&gt;', '%0a    ')</_runtimeHostConfigurationOptionsString>
+    </PropertyGroup>
+
     <MakeDir Directories="$(_projectDir)" />
     <WriteLinesToFile File="$(_projectFile)"
                       Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)')
@@ -79,6 +89,7 @@
                                                  .Replace('{UseMonoRuntime}','$(UseMonoRuntime)')
                                                  .Replace('{MicrosoftNETILLinkTasksVersion}', '$(MicrosoftNETILLinkTasksVersion)')
                                                  .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)')
+                                                 .Replace('{RuntimeHostConfigurationOptions}', '$(_runtimeHostConfigurationOptionsString)')
                                                  .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
                                                  .Replace('{RepositoryEngineeringDir}', '$(RepositoryEngineeringDir)')
                                                  .Replace('{MonoAOTCompilerDir}', '$(MonoAOTCompilerDir)')
