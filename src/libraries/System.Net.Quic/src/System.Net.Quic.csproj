@@ -121,12 +121,9 @@
     <Reference Include="System.Threading.Channels" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.OpenSsl\src\System.Security.Cryptography.OpenSsl.csproj" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Reference Include="System.Diagnostics.StackTrace" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.OpenSsl\src\System.Security.Cryptography.OpenSsl.csproj" />
+    <Reference Include="System.Diagnostics.StackTrace" Condition="'$(Configuration)' == 'Debug'" />
   </ItemGroup>
 
   <!-- Support for deploying msquic -->
