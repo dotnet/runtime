@@ -72,7 +72,7 @@ namespace System.Reflection.TypeLoading
 
     internal static class CoreTypeHelpers
     {
-        public static void GetFullName(this CoreType coreType, out byte[] ns, out byte[] name)
+        public static void GetFullName(this CoreType coreType, out ReadOnlySpan<byte> ns, out ReadOnlySpan<byte> name)
         {
             switch (coreType)
             {
