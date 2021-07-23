@@ -77,7 +77,7 @@ struct _EventPipeProviderCallbackData {
 };
 #endif
 
-EP_DEFINE_GETTER(EventPipeProviderCallbackData *, provider_callback_data, ep_char8_t *, filter_data)
+EP_DEFINE_GETTER(EventPipeProviderCallbackData *, provider_callback_data, const ep_char8_t *, filter_data)
 EP_DEFINE_GETTER(EventPipeProviderCallbackData *, provider_callback_data, EventPipeCallback, callback_function)
 EP_DEFINE_GETTER(EventPipeProviderCallbackData *, provider_callback_data, void *, callback_data)
 EP_DEFINE_GETTER(EventPipeProviderCallbackData *, provider_callback_data, int64_t, keywords)
@@ -86,7 +86,7 @@ EP_DEFINE_GETTER(EventPipeProviderCallbackData *, provider_callback_data, bool, 
 
 EventPipeProviderCallbackData *
 ep_provider_callback_data_alloc (
-	ep_char8_t *filter_data,
+	const ep_char8_t *filter_data,
 	EventPipeCallback callback_function,
 	void *callback_data,
 	int64_t keywords,
@@ -99,7 +99,7 @@ ep_provider_callback_data_alloc_copy (EventPipeProviderCallbackData *provider_ca
 EventPipeProviderCallbackData *
 ep_provider_callback_data_init (
 	EventPipeProviderCallbackData *provider_callback_data,
-	ep_char8_t *filter_data,
+	const ep_char8_t *filter_data,
 	EventPipeCallback callback_function,
 	void *callback_data,
 	int64_t keywords,

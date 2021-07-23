@@ -212,7 +212,7 @@ ep_provider_callback_data_queue_fini (EventPipeProviderCallbackDataQueue *provid
 
 EventPipeProviderCallbackData *
 ep_provider_callback_data_alloc (
-	ep_char8_t *filter_data,
+	const ep_char8_t *filter_data,
 	EventPipeCallback callback_function,
 	void *callback_data,
 	int64_t keywords,
@@ -224,7 +224,7 @@ ep_provider_callback_data_alloc (
 
 	ep_raise_error_if_nok (ep_provider_callback_data_init (
 		instance,
-		ep_rt_utf8_string_dup (filter_data),
+		filter_data,
 		callback_function,
 		callback_data,
 		keywords,
@@ -246,7 +246,7 @@ ep_provider_callback_data_alloc_copy (EventPipeProviderCallbackData *provider_ca
 	EventPipeProviderCallbackData *instance = ep_rt_object_alloc (EventPipeProviderCallbackData);
 	ep_raise_error_if_nok (instance != NULL);
 
-	if (provider_callback_data_src != NULL) {
+	if (provider_callback_data_src) {
 		*instance = *provider_callback_data_src;
 		instance->filter_data = ep_rt_utf8_string_dup (provider_callback_data_src->filter_data);
 	}
@@ -263,7 +263,7 @@ ep_on_error:
 EventPipeProviderCallbackData *
 ep_provider_callback_data_init (
 	EventPipeProviderCallbackData *provider_callback_data,
-	ep_char8_t *filter_data,
+	const ep_char8_t *filter_data,
 	EventPipeCallback callback_function,
 	void *callback_data,
 	int64_t keywords,
@@ -272,7 +272,7 @@ ep_provider_callback_data_init (
 {
 	EP_ASSERT (provider_callback_data != NULL);
 
-	provider_callback_data->filter_data = filter_data;
+	provider_callback_data->filter_data = ep_rt_utf8_string_dup (filter_data);
 	provider_callback_data->callback_function = callback_function;
 	provider_callback_data->callback_data = callback_data;
 	provider_callback_data->keywords = keywords;
@@ -298,14 +298,14 @@ ep_provider_callback_data_init_copy (
 void
 ep_provider_callback_data_fini (EventPipeProviderCallbackData *provider_callback_data)
 {
-	;
+	ep_return_void_if_nok (provider_callback_data != NULL);
+	ep_rt_utf8_string_free (provider_callback_data->filter_data);
 }
 
 void
 ep_provider_callback_data_free (EventPipeProviderCallbackData *provider_callback_data)
 {
 	ep_return_void_if_nok (provider_callback_data != NULL);
-	ep_rt_utf8_string_free (provider_callback_data->filter_data);
 	ep_rt_object_free (provider_callback_data);
 }
 
