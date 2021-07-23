@@ -3969,7 +3969,6 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
     {
         str = emitComp->eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(handle));
     }
-
 #ifndef TARGET_XARCH
     // These are less useful for xarch:
     else if (flag == GTF_ICON_CONST_PTR)
@@ -4000,11 +3999,15 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
     {
         str = "token handle";
     }
+    else
+    {
+        str = "unknown";
+    }
 #endif // TARGET_XARCH
 
     if (str != nullptr)
     {
-        printf("%s %.64s", commentPrefix, str);
+        printf("%s %s", commentPrefix, str);
     }
 #endif // DEBUG
 }
