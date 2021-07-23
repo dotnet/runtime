@@ -998,11 +998,24 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     // Ensure that lclVar nodes are typed correctly.
     assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
 
-    GenTree* data = tree->gtOp1;
-
-    assert(!data->isContained());
+    GenTree*  data    = tree->gtOp1;
+    regNumber dataReg = REG_NA;
     genConsumeReg(data);
-    regNumber dataReg = data->GetRegNum();
+
+    if (data->isContained())
+    {
+        assert(data->OperIs(GT_BITCAST));
+        const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
+        assert(!bitcastSrc->isContained());
+        dataReg = bitcastSrc->GetRegNum();
+    }
+    else
+    {
+
+        dataReg = data->GetRegNum();
+    }
+    assert(dataReg != REG_NA);
+
     if (tree->IsOffsetMisaligned())
     {
         // Arm supports unaligned access only for integer types,
@@ -1027,7 +1040,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     else
     {
         emitAttr    attr = emitTypeSize(targetType);
-        instruction ins  = ins_Store(targetType);
+        instruction ins  = ins_StoreFromSrc(dataReg, targetType);
         emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
     }
 
@@ -1073,8 +1086,19 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
         {
             genConsumeRegs(data);
 
-            assert(!data->isContained());
-            regNumber dataReg = data->GetRegNum();
+            regNumber dataReg = REG_NA;
+
+            if (data->isContained())
+            {
+                assert(data->OperIs(GT_BITCAST));
+                const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
+                assert(!bitcastSrc->isContained());
+                dataReg = bitcastSrc->GetRegNum();
+            }
+            else
+            {
+                dataReg = data->GetRegNum();
+            }
             assert(dataReg != REG_NA);
 
             regNumber targetReg = tree->GetRegNum();
@@ -1083,7 +1107,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
             {
                 inst_set_SV_var(tree);
 
-                instruction ins  = ins_Store(targetType);
+                instruction ins  = ins_StoreFromSrc(dataReg, targetType);
                 emitAttr    attr = emitTypeSize(targetType);
 
                 emitter* emit = GetEmitter();
