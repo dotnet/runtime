@@ -3965,7 +3965,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val DEBUGARG(unsigned gtFlags))
+void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val DEBUGARG(GenTreeFlags gtFlags))
 {
     emitAttr size = EA_SIZE(attr);
 
@@ -8873,41 +8873,7 @@ void emitter::emitDispIns(
                     printf("-0x%IX", -val);
                 }
 
-                unsigned iconType = id->idDebugOnlyInfo()->idFlags & GTF_ICON_HDL_MASK;
-                if ((val != 0) && id->idIsLargeCns())
-                {
-                    if (iconType == GTF_ICON_CLASS_HDL)
-                    {
-                        printf(" ; %.32s", emitComp->eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(val)));
-                    }
-                    else if (iconType == GTF_ICON_STR_HDL)
-                    {
-                        const WCHAR* str = emitComp->eeGetCPString(static_cast<size_t>(val));
-                        if (str != nullptr)
-                        {
-                            size_t    len            = wcslen(str);
-                            const int maxLength      = 32;
-                            WCHAR     buf[maxLength] = {0};
-                            wcsncpy(buf, str, min(maxLength, len));
-                            for (size_t i = 0; i < min(maxLength, len); i++)
-                            {
-                                // Escape \n and \r symbols
-                                if (buf[i] == L'\n' || buf[i] == L'\r')
-                                {
-                                    buf[i] = ' ';
-                                }
-                            }
-                            if (len > maxLength)
-                            {
-                                // Append "..." for long strings
-                                buf[maxLength - 3] = L'.';
-                                buf[maxLength - 2] = L'.';
-                                buf[maxLength - 1] = L'.';
-                            }
-                            printf(" ; \"%.32ls\"", buf);
-                        }
-                    }
-                }
+                emitDispCommentForHandle(val, id->idDebugOnlyInfo()->idFlags & GTF_ICON_HDL_MASK);
             }
             break;
 

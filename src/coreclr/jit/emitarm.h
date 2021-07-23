@@ -224,7 +224,7 @@ void emitIns_R_I(instruction    ins,
                  emitAttr       attr,
                  regNumber      reg,
                  target_ssize_t imm,
-                 insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(unsigned gtFlags = 0));
+                 insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 void emitIns_MovRelocatableImmediate(instruction ins, emitAttr attr, regNumber reg, BYTE* addr);
 
 void emitIns_Mov(instruction ins,

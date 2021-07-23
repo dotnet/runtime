@@ -1705,7 +1705,7 @@ void emitter::emitIns_R_I(instruction    ins,
                           emitAttr       attr,
                           regNumber      reg,
                           target_ssize_t imm,
-                          insFlags flags /* = INS_FLAGS_DONT_CARE */ DEBUGARG(unsigned gtFlags))
+                          insFlags flags /* = INS_FLAGS_DONT_CARE */ DEBUGARG(GenTreeFlags gtFlags))
 
 {
     insFormat fmt = IF_NONE;
