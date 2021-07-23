@@ -207,6 +207,118 @@ namespace SlowPathELTTests
         }
     }
 
+    // The following structs are to test correctness of how ProfileArgIterator works with
+    // multi-reg return values when running on a System V ABI OS (e.g. Linux and macOS x64).
+    // A struct up to 16 bytes (inclusive) can be returned in (rax, rdx), (rax, xmm0), (xmm0, rax), (xmm0, xmm1).
+    // We already have a comprehensive set of Fp{n}x{m}Struct above that covers the last variant,
+    // so there is no need to duplicate them here.
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct IntegerSseStruct
+    {
+        public int x;
+        public int y;
+        public double z;
+
+        public IntegerSseStruct(int x, int y, double z)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        public override String ToString()
+        {
+            return $"x={x} y={y} z={z}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SseIntegerStruct
+    {
+        public float x;
+        public float y;
+        public int z;
+
+        public SseIntegerStruct(float x, float y, int z)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        public override String ToString()
+        {
+            return $"x={x} y={y} z={z}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MixedSseStruct
+    {
+        public float x;
+        public int y;
+        public float z;
+        public float w;
+
+        public MixedSseStruct(float x, int y, float z, float w)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.w = w;
+        }
+
+        public override String ToString()
+        {
+            return $"x={x} y={y} z={z} w={w}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SseMixedStruct
+    {
+        public float x;
+        public float y;
+        public int z;
+        public float w;
+
+        public SseMixedStruct(float x, float y, int z, float w)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.w = w;
+        }
+
+        public override String ToString()
+        {
+            return $"x={x} y={y} z={z} w={w}";
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MixedMixedStruct
+    {
+        public float x;
+        public int y;
+        public int z;
+        public float w;
+
+        public MixedMixedStruct(float x, int y, int z, float w)
+        {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.w = w;
+        }
+
+        public override String ToString()
+        {
+            return $"x={x} y={y} z={z} w={w}";
+        }
+    }
+
     public class SlowPathELTHelpers
     {
         public static int RunTest()
@@ -256,6 +368,16 @@ namespace SlowPathELTTests
             Console.WriteLine($"Fp64x4StructFp64x4StructFunc returned {Fp64x4StructFp64x4StructFunc(fp64x4, fp64x4)}");
 
             Console.WriteLine($"DoubleRetFunc returned {DoubleRetFunc()}");
+
+            Console.WriteLine($"IntegerSseStructFunc returned {IntegerSseStructFunc()}");
+
+            Console.WriteLine($"SseIntegerStructFunc returned {SseIntegerStructFunc()}");
+
+            Console.WriteLine($"MixedSseStructFunc returned {MixedSseStructFunc()}");
+
+            Console.WriteLine($"SseMixedStructFunc returned {SseMixedStructFunc()}");
+
+            Console.WriteLine($"MixedMixedStructFunc returned {MixedMixedStructFunc()}");
 
             return 100;
         }
@@ -395,6 +517,36 @@ namespace SlowPathELTTests
         public static double DoubleRetFunc()
         {
             return 13.0;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static IntegerSseStruct IntegerSseStructFunc()
+        {
+            return new IntegerSseStruct(1, 2, 3.5);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static SseIntegerStruct SseIntegerStructFunc()
+        {
+            return new SseIntegerStruct(1.2f, 3.5f, 6);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static MixedSseStruct MixedSseStructFunc()
+        {
+            return new MixedSseStruct(1.2f, 3, 5.6f, 7.10f);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static SseMixedStruct SseMixedStructFunc()
+        {
+            return new SseMixedStruct(1.2f, 3.5f, 6, 7.10f);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static MixedMixedStruct MixedMixedStructFunc()
+        {
+            return new MixedMixedStruct(1.2f, 3, 5, 6.7f);
         }
     }
 }

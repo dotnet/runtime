@@ -84,6 +84,44 @@ typedef struct
     double w;
 } Fp64x4Struct;
 
+typedef struct
+{
+    int x;
+    int y;
+    double z;
+} IntegerSseStruct;
+
+typedef struct
+{
+    float x;
+    float y;
+    int z;
+} SseIntegerStruct;
+
+typedef struct
+{
+    float x;
+    int y;
+    float z;
+    float w;
+} MixedSseStruct;
+
+typedef struct
+{
+    float x;
+    float y;
+    int z;
+    float w;
+} SseMixedStruct;
+
+typedef struct
+{
+    float x;
+    int y;
+    int z;
+    float w;
+} MixedMixedStruct;
+
 class SlowPathELTProfiler : public Profiler
 {
 public:
@@ -120,6 +158,11 @@ public:
         _sawFuncLeave[L"Fp64x3StructFunc"] = false;
         _sawFuncLeave[L"Fp64x4StructFunc"] = false;
         _sawFuncLeave[L"DoubleRetFunc"] = false;
+        _sawFuncLeave[L"IntegerSseStructFunc"] = false;
+        _sawFuncLeave[L"SseIntegerStructFunc"] = false;
+        _sawFuncLeave[L"MixedSseStructFunc"] = false;
+        _sawFuncLeave[L"SseMixedStructFunc"] = false;
+        _sawFuncLeave[L"MixedMixedStructFunc"] = false;
     }
 
     static GUID GetClsid();
@@ -159,6 +202,11 @@ private:
     bool ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x3Struct expected);
     bool ValidateFloatingPointStruct(UINT_PTR ptr, Fp64x4Struct expected);
     bool ValidateIntegerStruct(UINT_PTR ptr, IntegerStruct expected);
+    bool ValidateIntegerSseStruct(UINT_PTR ptr, IntegerSseStruct expected);
+    bool ValidateSseIntegerStruct(UINT_PTR ptr, SseIntegerStruct expected);
+    bool ValidateMixedSseStruct(UINT_PTR ptr, MixedSseStruct expected);
+    bool ValidateSseMixedStruct(UINT_PTR ptr, SseMixedStruct expected);
+    bool ValidateMixedMixedStruct(UINT_PTR ptr, MixedMixedStruct expected);
 
     HRESULT ValidateOneArgument(COR_PRF_FUNCTION_ARGUMENT_RANGE *pArgRange,
                                 String functionName,

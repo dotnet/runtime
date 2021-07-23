@@ -433,63 +433,123 @@ HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::LeaveCallback(FunctionIDOrClientI
 
         ExpectedArgValue simpleRetValue = { sizeof(UINT_PTR), (void *)str, [&](UINT_PTR ptr){ return ValidateString(ptr, str); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, simpleRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("MixedStructFunc"))
     {
         MixedStruct ss = { 4, 1.0 };
         ExpectedArgValue MixedStructRetValue = { sizeof(MixedStruct), (void *)&ss, [&](UINT_PTR ptr){ return ValidateMixedStruct(ptr, ss); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, MixedStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("LargeStructFunc"))
     {
         int32_t val = 3;
         ExpectedArgValue largeStructRetValue = { sizeof(int32_t), (void *)&val, [&](UINT_PTR ptr){ return ValidateInt(ptr, val); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, largeStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("IntegerStructFunc"))
     {
         IntegerStruct is = { 21, 256 };
         ExpectedArgValue integerStructRetValue = { sizeof(IntegerStruct), (void *)&is, [&](UINT_PTR ptr){ return ValidateIntegerStruct(ptr, is); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, integerStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("Fp32x2StructFunc"))
     {
         ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp32x2Struct), (void *)&fp32x2, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x2); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("Fp32x3StructFunc"))
     {
         ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp32x3Struct), (void *)&fp32x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x3); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("Fp32x4StructFunc"))
     {
         ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp32x4Struct), (void *)&fp32x4, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp32x4); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("Fp64x2StructFunc"))
     {
         ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp64x2Struct), (void *)&fp64x2, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x2); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("Fp64x3StructFunc"))
     {
         ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp64x3Struct), (void *)&fp64x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x3); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("Fp64x4StructFunc"))
     {
         ExpectedArgValue floatingPointStructRetValue = { sizeof(Fp64x4Struct), (void *)&fp64x4, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x4); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, floatingPointStructRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
     }
     else if (functionName == WCHAR("DoubleRetFunc"))
     {
         double d = 13.0;
         ExpectedArgValue doubleRetValue = { sizeof(double), (void *)&d, [&](UINT_PTR ptr){ return ValidateDouble(ptr, d); } };
         hr = ValidateOneArgument(pRetvalRange, functionName, 0, doubleRetValue);
-    }
 
-    _sawFuncLeave[functionName.ToWString()] = true;
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("IntegerSseStructFunc"))
+    {
+        IntegerSseStruct val = { 1, 2, 3.5 };
+        ExpectedArgValue expectedRetValue = { sizeof(IntegerSseStruct), (void*)&val, [&](UINT_PTR ptr) { return ValidateIntegerSseStruct(ptr, val); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, expectedRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("SseIntegerStructFunc"))
+    {
+        SseIntegerStruct val = { 1.2f, 3.5f, 6 };
+        ExpectedArgValue expectedRetValue = { sizeof(SseIntegerStruct), (void*)&val, [&](UINT_PTR ptr) { return ValidateSseIntegerStruct(ptr, val); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, expectedRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("MixedSseStructFunc"))
+    {
+        MixedSseStruct val = { 1.2f, 3, 5.6f, 7.10f };
+        ExpectedArgValue expectedRetValue = { sizeof(MixedSseStruct), (void*)&val, [&](UINT_PTR ptr) { return ValidateMixedSseStruct(ptr, val); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, expectedRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("SseMixedStructFunc"))
+    {
+        SseMixedStruct val = { 1.2f, 3.5f, 6, 7.10f };
+        ExpectedArgValue expectedRetValue = { sizeof(SseMixedStruct), (void*)&val, [&](UINT_PTR ptr) { return ValidateSseMixedStruct(ptr, val); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, expectedRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
+    else if (functionName == WCHAR("MixedMixedStructFunc"))
+    {
+        MixedMixedStruct val = { 1.2f, 3, 5, 6.7f };
+        ExpectedArgValue expectedRetValue = { sizeof(MixedMixedStruct), (void*)&val, [&](UINT_PTR ptr) { return ValidateMixedMixedStruct(ptr, val); } };
+        hr = ValidateOneArgument(pRetvalRange, functionName, 0, expectedRetValue);
+
+        _sawFuncLeave[functionName.ToWString()] = true;
+    }
 
     return hr;
 }
@@ -695,6 +755,73 @@ bool SlowPathELTProfiler::ValidateIntegerStruct(UINT_PTR ptr, IntegerStruct expe
     return lhs.x == expected.x && lhs.y == expected.y;
 }
 
+bool SlowPathELTProfiler::ValidateIntegerSseStruct(UINT_PTR ptr, IntegerSseStruct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    IntegerSseStruct lhs = *(IntegerSseStruct*)ptr;
+    return lhs.x == expected.x
+        && lhs.y == expected.y
+        && lhs.z == expected.z;
+}
+
+bool SlowPathELTProfiler::ValidateSseIntegerStruct(UINT_PTR ptr, SseIntegerStruct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    SseIntegerStruct lhs = *(SseIntegerStruct*)ptr;
+    return lhs.x == expected.x
+        && lhs.y == expected.y
+        && lhs.z == expected.z;
+}
+
+bool SlowPathELTProfiler::ValidateMixedSseStruct(UINT_PTR ptr, MixedSseStruct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    MixedSseStruct lhs = *(MixedSseStruct*)ptr;
+    return lhs.x == expected.x
+        && lhs.y == expected.y
+        && lhs.z == expected.z
+        && lhs.w == expected.w;
+}
+
+bool SlowPathELTProfiler::ValidateSseMixedStruct(UINT_PTR ptr, SseMixedStruct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    SseMixedStruct lhs = *(SseMixedStruct*)ptr;
+    return lhs.x == expected.x
+        && lhs.y == expected.y
+        && lhs.z == expected.z
+        && lhs.w == expected.w;
+}
+
+bool SlowPathELTProfiler::ValidateMixedMixedStruct(UINT_PTR ptr, MixedMixedStruct expected)
+{
+    if (ptr == NULL)
+    {
+        return false;
+    }
+
+    MixedMixedStruct lhs = *(MixedMixedStruct*)ptr;
+    return lhs.x == expected.x
+        && lhs.y == expected.y
+        && lhs.z == expected.z
+        && lhs.w == expected.w;
+}
 
 HRESULT SlowPathELTProfiler::ValidateOneArgument(COR_PRF_FUNCTION_ARGUMENT_RANGE *pArgRange,
                                         String functionName,
