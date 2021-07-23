@@ -126,6 +126,13 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Fact]
+        public void _STRESS_Connect_DualMode_DnsConnect_RetrievedEndPoints_Success(){
+            System.Threading.Tasks.Parallel.For(0, 10_000, async _ => {
+                await Connect_DualMode_DnsConnect_RetrievedEndPoints_Success();
+            });
+        }
+
         private static void CheckIsIpv6LoopbackEndPoint(EndPoint endPoint)
         {
             IPEndPoint ep = endPoint as IPEndPoint;
