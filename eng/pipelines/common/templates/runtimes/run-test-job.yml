@@ -482,7 +482,7 @@ jobs:
           - normal
         ${{ if in(parameters.testGroup, 'gc-standalone') }}:
           scenarios:
-          - gcregions
+          - gcstandalone
         ${{ if in(parameters.testGroup, 'jitelthookenabled') }}:
           scenarios:
           - jitelthookenabled
