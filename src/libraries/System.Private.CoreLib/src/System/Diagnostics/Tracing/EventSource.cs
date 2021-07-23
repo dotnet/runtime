@@ -2121,7 +2121,7 @@ namespace System.Diagnostics.Tracing
                 }
             }
 
-            if (lastThrownException != null)
+            if (lastThrownException != null && ThrowOnEventWriteErrors)
             {
                 throw new EventSourceException(lastThrownException);
             }
