@@ -121,7 +121,7 @@ namespace System.Reflection.TypeLoading
                 case CoreType.FieldOffsetAttribute: ns = Utf8Constants.SystemRuntimeInteropServices; name = Utf8Constants.FieldOffsetAttribute; return;
                 default:
                     Debug.Fail("Unexpected coreType passed to GetCoreTypeFullName: " + coreType);
-                    ns = name = null;
+                    ns = name = default;
                     return;
             }
         }
