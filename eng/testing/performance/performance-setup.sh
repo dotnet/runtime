@@ -287,9 +287,10 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
         # copy wasm build drop to the location that aot build expects
         rsync -a --progress $wasm_dotnet_path/artifacts/BrowserWasm/artifacts/* $wasm_dotnet_path/artifacts
         rm -r $wasm_dotnet_path/artifacts/BrowserWasm/artifacts
-        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --aotcompilermode wasm --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --buildTimeout 3600 --keepfiles" 
+        # temprary testing only: add --BenchmarkDotNetSources $benchmark_directory to build and use latest benchmarkdotnet from source code,  --keepfiles to keep temparary files for diagnostic. Should be removed before merging PR
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --aotcompilermode wasm --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --buildTimeout 3600 --BenchmarkDotNetSources $benchmark_directory --keepfiles " 
     else
-        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --keepfiles"
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --BenchmarkDotNetSources $benchmark_directory --keepfiles"
     fi
 fi
 
