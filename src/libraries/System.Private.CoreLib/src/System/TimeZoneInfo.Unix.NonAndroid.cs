@@ -181,10 +181,9 @@ namespace System
             List<string>? toExplore = null; // List used as a stack
 
             int bufferSize = Interop.Sys.GetReadDirRBufferSize();
-            byte[]? dirBuffer = null;
+            byte[] dirBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             try
             {
-                dirBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
                 string currentPath = path;
 
                 fixed (byte* dirBufferPtr = dirBuffer)
@@ -266,8 +265,7 @@ namespace System
             }
             finally
             {
-                if (dirBuffer != null)
-                    ArrayPool<byte>.Shared.Return(dirBuffer);
+                ArrayPool<byte>.Shared.Return(dirBuffer);
             }
         }
 
