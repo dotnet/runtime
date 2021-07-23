@@ -3945,7 +3945,7 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
             const size_t newLen    = min(maxLength, actualLen);
 
             // +1 for null terminator
-            const WCHAR buf[maxLength + 1] = {0};
+            WCHAR buf[maxLength + 1] = {0};
             wcsncpy(buf, wstr, newLen);
             for (size_t i = 0; i < newLen; i++)
             {
