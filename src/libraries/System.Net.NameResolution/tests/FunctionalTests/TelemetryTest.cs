@@ -3,7 +3,6 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics.Tracing;
-using System.Linq;
 using System.Net.Sockets;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -34,9 +33,10 @@ namespace System.Net.NameResolution.Tests
                 const string ValidHostName = "microsoft.com";
 
                 using var listener = new TestEventListener("System.Net.NameResolution", EventLevel.Informational);
+                listener.AddActivityTracking();
 
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     await Dns.GetHostEntryAsync(ValidHostName);
                     await Dns.GetHostAddressesAsync(ValidHostName);
@@ -48,16 +48,7 @@ namespace System.Net.NameResolution.Tests
                     Dns.EndGetHostAddresses(Dns.BeginGetHostAddresses(ValidHostName, null, null));
                 });
 
-                Assert.DoesNotContain(events, e => e.EventId == 0); // errors from the EventSource itself
-
-                EventWrittenEventArgs[] starts = events.Where(e => e.EventName == "ResolutionStart").ToArray();
-                Assert.Equal(6, starts.Length);
-                Assert.All(starts, s => Assert.Equal(ValidHostName, Assert.Single(s.Payload).ToString()));
-
-                EventWrittenEventArgs[] stops = events.Where(e => e.EventName == "ResolutionStop").ToArray();
-                Assert.Equal(6, stops.Length);
-
-                Assert.DoesNotContain(events, e => e.EventName == "ResolutionFailed");
+                VerifyEvents(events, ValidHostName, 6);
             }).Dispose();
         }
 
@@ -70,9 +61,10 @@ namespace System.Net.NameResolution.Tests
                 const string InvalidHostName = "invalid...example.com";
 
                 using var listener = new TestEventListener("System.Net.NameResolution", EventLevel.Informational);
+                listener.AddActivityTracking();
 
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     await Assert.ThrowsAnyAsync<SocketException>(async () => await Dns.GetHostEntryAsync(InvalidHostName));
                     await Assert.ThrowsAnyAsync<SocketException>(async () => await Dns.GetHostAddressesAsync(InvalidHostName));
@@ -84,17 +76,7 @@ namespace System.Net.NameResolution.Tests
                     Assert.ThrowsAny<SocketException>(() => Dns.EndGetHostAddresses(Dns.BeginGetHostAddresses(InvalidHostName, null, null)));
                 });
 
-                Assert.DoesNotContain(events, e => e.EventId == 0); // errors from the EventSource itself
-
-                EventWrittenEventArgs[] starts = events.Where(e => e.EventName == "ResolutionStart").ToArray();
-                Assert.Equal(6, starts.Length);
-                Assert.All(starts, s => Assert.Equal(InvalidHostName, Assert.Single(s.Payload).ToString()));
-
-                EventWrittenEventArgs[] failures = events.Where(e => e.EventName == "ResolutionFailed").ToArray();
-                Assert.Equal(6, failures.Length);
-
-                EventWrittenEventArgs[] stops = events.Where(e => e.EventName == "ResolutionStop").ToArray();
-                Assert.Equal(6, stops.Length);
+                VerifyEvents(events, InvalidHostName, 6, shouldHaveFailures: true);
             }).Dispose();
         }
 
@@ -107,9 +89,10 @@ namespace System.Net.NameResolution.Tests
                 const string ValidIPAddress = "8.8.4.4";
 
                 using var listener = new TestEventListener("System.Net.NameResolution", EventLevel.Informational);
+                listener.AddActivityTracking();
 
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     IPAddress ipAddress = IPAddress.Parse(ValidIPAddress);
 
@@ -123,18 +106,44 @@ namespace System.Net.NameResolution.Tests
                     Dns.EndGetHostEntry(Dns.BeginGetHostEntry(ipAddress, null, null));
                 });
 
-                Assert.DoesNotContain(events, e => e.EventId == 0); // errors from the EventSource itself
-
                 // Each GetHostEntry over an IP will yield 2 resolutions
-                EventWrittenEventArgs[] starts = events.Where(e => e.EventName == "ResolutionStart").ToArray();
-                Assert.Equal(12, starts.Length);
-                Assert.Equal(6, starts.Count(s => Assert.Single(s.Payload).ToString() == ValidIPAddress));
-
-                EventWrittenEventArgs[] stops = events.Where(e => e.EventName == "ResolutionStop").ToArray();
-                Assert.Equal(12, stops.Length);
-
-                Assert.DoesNotContain(events, e => e.EventName == "ResolutionFailed");
+                VerifyEvents(events, ValidIPAddress, 12, isHostEntryForIp: true);
             }).Dispose();
+        }
+
+        private static void VerifyEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, string hostname, int expectedNumber, bool shouldHaveFailures = false, bool isHostEntryForIp = false)
+        {
+            Assert.DoesNotContain(events, e => e.Event.EventId == 0); // errors from the EventSource itself
+
+            (EventWrittenEventArgs Event, Guid ActivityId)[] starts = events.Where(e => e.Event.EventName == "ResolutionStart").ToArray();
+            Assert.Equal(expectedNumber, starts.Length);
+
+            int expectedHostnameStarts = isHostEntryForIp ? expectedNumber / 2 : expectedNumber;
+            Assert.Equal(expectedHostnameStarts, starts.Count(s => Assert.Single(s.Event.Payload).ToString() == hostname));
+
+            (EventWrittenEventArgs Event, Guid ActivityId)[] stops = events.Where(e => e.Event.EventName == "ResolutionStop").ToArray();
+            Assert.Equal(expectedNumber, stops.Length);
+
+            for (int i = 0; i < starts.Length; i++)
+            {
+                Assert.NotEqual(Guid.Empty, starts[i].ActivityId);
+                Assert.Equal(starts[i].ActivityId, stops[i].ActivityId);
+            }
+
+            if (shouldHaveFailures)
+            {
+                (EventWrittenEventArgs Event, Guid ActivityId)[] failures = events.Where(e => e.Event.EventName == "ResolutionFailed").ToArray();
+                Assert.Equal(expectedNumber, failures.Length);
+
+                for (int i = 0; i < starts.Length; i++)
+                {
+                    Assert.Equal(starts[i].ActivityId, failures[i].ActivityId);
+                }
+            }
+            else
+            {
+                Assert.DoesNotContain(events, e => e.Event.EventName == "ResolutionFailed");
+            }
         }
     }
 }
