@@ -106,6 +106,7 @@ namespace System.Reflection.Emit
             set_wrappers_type(this, type);
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string FullyQualifiedName
         {
             get
@@ -823,6 +824,7 @@ namespace System.Reflection.Emit
             get { return assemblyb; }
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string Name
         {
             get { return name; }

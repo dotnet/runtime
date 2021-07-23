@@ -56,6 +56,7 @@ namespace System.Reflection
             get { return assembly; }
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public
         override
         // Note: we do not ask for PathDiscovery because no path is returned here.
@@ -94,6 +95,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override
         string FullyQualifiedName
         {
