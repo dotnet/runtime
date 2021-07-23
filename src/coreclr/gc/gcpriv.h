@@ -1667,6 +1667,12 @@ protected:
     PER_HEAP
     void allocate_for_no_gc_after_gc();
 
+#ifdef USE_REGIONS
+    // TODO, enum
+    PER_HEAP
+    int extend_soh_for_no_gc();
+#endif //USE_REGIONS
+
     PER_HEAP
     void set_loh_allocations_for_no_gc();
 
