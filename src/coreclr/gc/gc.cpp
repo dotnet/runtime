@@ -20570,10 +20570,10 @@ int gc_heap::extend_soh_for_no_gc()
 {
     size_t required = soh_allocation_no_gc;
     heap_segment* region = generation_allocation_segment (generation_of (0));
-    // TODO: Do we need to worry about alloc_allocated here?
-    size_t available = heap_segment_reserved (region) - heap_segment_allocated (region);
+    uint8_t* allocated = (region == ephemeral_heap_segment) ? alloc_allocated : heap_segment_allocated (region);
+    size_t available = heap_segment_reserved (region) - allocated;
     size_t commit = min (available, required);
-    if (grow_heap_segment (region, heap_segment_allocated (region) + commit))
+    if (grow_heap_segment (region, allocated + commit))
     {
         required -= commit;
         while (required > 0)
