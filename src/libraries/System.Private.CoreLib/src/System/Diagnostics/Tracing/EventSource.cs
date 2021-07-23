@@ -1302,7 +1302,7 @@ namespace System.Diagnostics.Tracing
         [CLSCompliant(false)]
         protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, Guid* relatedActivityId, int eventDataCount, EventSource.EventData* data)
         {
-            WriteGuardEnter();
+            using var writeGuard = new WriteGuard(this);
             if (IsEnabled())
             {
                 Debug.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.
@@ -1380,10 +1380,6 @@ namespace System.Diagnostics.Tracing
                         throw;
                     else
                         ThrowEventSourceException(m_eventData[eventId].Name, ex);
-                }
-                finally
-                {
-                    WriteGuardExit();
                 }
             }
         }
@@ -1903,7 +1899,7 @@ namespace System.Diagnostics.Tracing
 #endif
         private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object?[] args)
         {
-            WriteGuardEnter();
+            using var writeGuard = new WriteGuard(this);
             if (IsEnabled())
             {
                 Debug.Assert(m_eventData != null);  // You must have initialized this if you enabled the source.
@@ -2007,10 +2003,6 @@ namespace System.Diagnostics.Tracing
                         throw;
                     else
                         ThrowEventSourceException(m_eventData[eventId].Name, ex);
-                }
-                finally
-                {
-                    WriteGuardExit();
                 }
             }
         }
@@ -3854,8 +3846,22 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private void WriteGuardEnter() => Interlocked.Increment(ref m_activeWritesCount);
-        private void WriteGuardExit() => Interlocked.Decrement(ref m_activeWritesCount);
+        // Helper class for guarding writes to prevent Dispose from happening while we are writing
+        private ref struct WriteGuard
+        {
+            private EventSource _source;
+
+            public WriteGuard(EventSource source)
+            {
+                _source = source;
+                Interlocked.Increment(ref _source.m_activeWritesCount);
+            }
+
+            public void Dispose()
+            {
+                Interlocked.Decrement(ref _source.m_activeWritesCount);
+            }
+        }
 
         // private instance state
         private string m_name = null!;                  // My friendly name (privided in ctor)

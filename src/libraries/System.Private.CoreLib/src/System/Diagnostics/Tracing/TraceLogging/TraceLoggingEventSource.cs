@@ -365,27 +365,23 @@ namespace System.Diagnostics.Tracing
              Guid* childActivityID,
             params object?[] values)
         {
-            WriteGuardEnter();
-            if (this.IsEnabled())
-            {
-                try
-                {
-                    byte level = (options.valuesSet & EventSourceOptions.levelSet) != 0
-                        ? options.level
-                        : eventTypes.level;
-                    EventKeywords keywords = (options.valuesSet & EventSourceOptions.keywordsSet) != 0
-                        ? options.keywords
-                        : eventTypes.keywords;
+            using var writeGuard = new WriteGuard(this);
 
-                    if (this.IsEnabled((EventLevel)level, keywords))
-                    {
-                        WriteMultiMergeInner(eventName, ref options, eventTypes, activityID, childActivityID, values);
-                    }
-                }
-                finally
-                {
-                    WriteGuardExit();
-                }
+            if (!this.IsEnabled())
+            {
+                return;
+            }
+
+            byte level = (options.valuesSet & EventSourceOptions.levelSet) != 0
+                ? options.level
+                : eventTypes.level;
+            EventKeywords keywords = (options.valuesSet & EventSourceOptions.keywordsSet) != 0
+                ? options.keywords
+                : eventTypes.keywords;
+
+            if (this.IsEnabled((EventLevel)level, keywords))
+            {
+                WriteMultiMergeInner(eventName, ref options, eventTypes, activityID, childActivityID, values);
             }
         }
 
@@ -557,73 +553,67 @@ namespace System.Diagnostics.Tracing
             EventData* data)
         {
 #if FEATURE_MANAGED_ETW
-            WriteGuardEnter();
-            if (this.IsEnabled())
+            using var writeGuard = new WriteGuard(this);
+            if (!this.IsEnabled())
             {
-                try
-                {
-                    fixed (EventSourceOptions* pOptions = &options)
-                    {
-                        NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out EventDescriptor descriptor);
-                        if (nameInfo == null)
-                        {
-                            return;
-                        }
-
-#if FEATURE_PERFTRACING
-                        IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
-                        Debug.Assert(eventHandle != IntPtr.Zero);
-#else
-                        IntPtr eventHandle = IntPtr.Zero;
-#endif
-
-                        // We make a descriptor for each EventData, and because we morph strings to counted strings
-                        // we may have 2 for each arg, so we allocate enough for this.
-                        int descriptorsLength = eventTypes.dataCount + eventTypes.typeInfos.Length * 2 + 3;
-                        EventData* descriptors = stackalloc EventData[descriptorsLength];
-                        for (int i = 0; i < descriptorsLength; i++)
-                            descriptors[i] = default;
-
-                        var providerMetadata = ProviderMetadata;
-                        fixed (byte*
-                            pMetadata0 = providerMetadata,
-                            pMetadata1 = nameInfo.nameMetadata,
-                            pMetadata2 = eventTypes.typeMetadata)
-                        {
-                            descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
-                            descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
-                            descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
-                            int numDescrs = 3;
-
-                            for (int i = 0; i < eventTypes.typeInfos.Length; i++)
-                            {
-                                descriptors[numDescrs].m_Ptr = data[i].m_Ptr;
-                                descriptors[numDescrs].m_Size = data[i].m_Size;
-
-                                // old conventions for bool is 4 bytes, but meta-data assumes 1.
-                                if (data[i].m_Size == 4 && eventTypes.typeInfos[i].DataType == typeof(bool))
-                                    descriptors[numDescrs].m_Size = 1;
-
-                                numDescrs++;
-                            }
-
-                            this.WriteEventRaw(
-                                eventName,
-                                ref descriptor,
-                                eventHandle,
-                                activityID,
-                                childActivityID,
-                                numDescrs,
-                                (IntPtr)descriptors);
-                        }
-                    }
-                }
-                finally
-                {
-                    WriteGuardExit();
-                }
+                return;
             }
 
+            fixed (EventSourceOptions* pOptions = &options)
+            {
+                NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out EventDescriptor descriptor);
+                if (nameInfo == null)
+                {
+                    return;
+                }
+
+#if FEATURE_PERFTRACING
+                IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_eventPipeProvider, m_eventHandleTable, descriptor, eventTypes);
+                Debug.Assert(eventHandle != IntPtr.Zero);
+#else
+                IntPtr eventHandle = IntPtr.Zero;
+#endif
+
+                // We make a descriptor for each EventData, and because we morph strings to counted strings
+                // we may have 2 for each arg, so we allocate enough for this.
+                int descriptorsLength = eventTypes.dataCount + eventTypes.typeInfos.Length * 2 + 3;
+                EventData* descriptors = stackalloc EventData[descriptorsLength];
+                for (int i = 0; i < descriptorsLength; i++)
+                    descriptors[i] = default;
+
+                var providerMetadata = ProviderMetadata;
+                fixed (byte*
+                    pMetadata0 = providerMetadata,
+                    pMetadata1 = nameInfo.nameMetadata,
+                    pMetadata2 = eventTypes.typeMetadata)
+                {
+                    descriptors[0].SetMetadata(pMetadata0, providerMetadata.Length, 2);
+                    descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
+                    descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
+                    int numDescrs = 3;
+
+                    for (int i = 0; i < eventTypes.typeInfos.Length; i++)
+                    {
+                        descriptors[numDescrs].m_Ptr = data[i].m_Ptr;
+                        descriptors[numDescrs].m_Size = data[i].m_Size;
+
+                        // old conventions for bool is 4 bytes, but meta-data assumes 1.
+                        if (data[i].m_Size == 4 && eventTypes.typeInfos[i].DataType == typeof(bool))
+                            descriptors[numDescrs].m_Size = 1;
+
+                        numDescrs++;
+                    }
+
+                    this.WriteEventRaw(
+                        eventName,
+                        ref descriptor,
+                        eventHandle,
+                        activityID,
+                        childActivityID,
+                        numDescrs,
+                        (IntPtr)descriptors);
+                }
+            }
 #endif // FEATURE_MANAGED_ETW
         }
 
@@ -635,7 +625,7 @@ namespace System.Diagnostics.Tracing
             Guid* pRelatedActivityId,
             TraceLoggingEventTypes eventTypes)
         {
-            WriteGuardEnter();
+            using var writeGuard = new WriteGuard(this);
             if (IsEnabled())
             {
                 try
@@ -757,10 +747,6 @@ namespace System.Diagnostics.Tracing
                         throw;
                     else
                         ThrowEventSourceException(eventName, ex);
-                }
-                finally
-                {
-                    WriteGuardExit();
                 }
             }
         }
