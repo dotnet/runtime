@@ -53,12 +53,11 @@ class GCScan
     static void GcScanDependentHandlesForProfilerAndETW (int max_gen, ScanContext* sc, handle_scan_fn fn);
 
     // scan for dead weak pointers
-    static void GcWeakPtrScan (promote_func* fn, int condemned, int max_gen, ScanContext*sc );
-    static void GcWeakPtrScanBySingleThread (int condemned, int max_gen, ScanContext*sc );
+    static void GcWeakPtrScan (int condemned, int max_gen, ScanContext*sc);
+    static void GcWeakPtrScanBySingleThread (int condemned, int max_gen, ScanContext*sc);
 
     // scan for dead weak pointers
-    static void GcShortWeakPtrScan (promote_func* fn, int condemned, int max_gen,
-                                    ScanContext* sc);
+    static void GcShortWeakPtrScan (int condemned, int max_gen, ScanContext* sc);
 
     //
     // Dependent handle promotion scan support
