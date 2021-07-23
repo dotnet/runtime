@@ -5039,18 +5039,6 @@ int MethodContext::repFilterException(struct _EXCEPTION_POINTERS* pExceptionPoin
     }
 }
 
-void MethodContext::recHandleException(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    if (HandleException == nullptr)
-        HandleException = new DenseLightWeightMap<DWORD>();
-
-    HandleException->Append(pExceptionPointers->ExceptionRecord->ExceptionCode);
-}
-void MethodContext::dmpHandleException(DWORD key, DWORD value)
-{
-    printf("HandleException key %u, value %u", key, value);
-}
-
 void MethodContext::recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup)
 {
     if (GetAddressOfPInvokeTarget == nullptr)

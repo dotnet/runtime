@@ -25,10 +25,12 @@ This would allow for the clean up code in the application to run - for example, 
 `Host.Run` in the Main method.
 
 This caused other issues because SIGTERM wasn't the only way `ProcessExit` was raised. It is also raised by code
-in the application calling `Environment.Exit`. `Environment.Exit` isn't a graceful way of shutting down a process.
-It raises the `ProcessExit` event and then exits the process. The end of the Main method doesn't get executed. However,
-since ConsoleLifetime blocked `ProcessExit` waiting for the Host to shutdown, this behavior also lead to [deadlocks][deadlocks]
-due to `Environment.Exit` also blocking waiting for `ProcessExit` to return. Additionally, since SIGTERM handling was attempting
+in the application calling `Environment.Exit`. `Environment.Exit` isn't a graceful way of shutting down a process
+in the `Microsoft.Extensions.Hosting` app model. It raises the `ProcessExit` event and then exits the process. The end of the
+Main method doesn't get executed. Background and foreground threads are terminated. `finally` blocks are not executed.
+
+Since ConsoleLifetime blocked `ProcessExit` waiting for the Host to shutdown, this behavior lead to [deadlocks][deadlocks]
+due to `Environment.Exit` also blocking waiting for `ProcessExit` to return. Additionally, since the SIGTERM handling was attempting
 to gracefully shut down the process, ConsoleLifetime would set the ExitCode to `0`, which [clobbered][clobbered] the user's
 exit code passed to `Environment.Exit`.
 
@@ -41,6 +43,11 @@ has logic to handle scenario (5) above. Apps that call `Environment.Exit`, and n
 `ProcessExit` themselves. Hosting will no longer attempt to gracefully stop the Host in this scenario.
 
 [POSIX signals]: https://github.com/dotnet/runtime/issues/50527
+
+If your application uses Hosting, and you want to gracefully stop the host, you can call
+[`IHostApplicationLifetime.StopApplication()`][StopApplication] instead of `Environment.Exit`.
+
+[StopApplication]: https://docs.microsoft.com/dotnet/api/microsoft.extensions.hosting.ihostapplicationlifetime.stopapplication
 
 ### Hosting Shutdown Process
 
