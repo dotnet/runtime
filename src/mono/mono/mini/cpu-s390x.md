@@ -163,6 +163,7 @@ r4_clt_un: dest:i src1:f src2:f len:42
 r4_cneq: dest:i src1:f src2:f len:42
 r4_cge: dest:i src1:f src2:f len:35
 r4_cle: dest:i src1:f src2:f len:35
+rmove: dest:f src1:f len:4
 
 fmove: dest:f src1:f len:4
 move_f_to_i4: dest:i src1:f len:14

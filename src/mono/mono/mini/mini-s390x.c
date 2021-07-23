@@ -3453,9 +3453,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
                        s390_ldebr (code, ins->dreg, ins->sreg1);
                        break;
 		case OP_FMOVE:
-			if (ins->dreg != ins->sreg1) {
+			if (ins->dreg != ins->sreg1)
 				s390_ldr   (code, ins->dreg, ins->sreg1);
-			}
+			break;
+		case OP_RMOVE:
+			if (ins->dreg != ins->sreg1) 
+				s390_ler   (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_MOVE_F_TO_I8: 
 			s390_lgdr (code, ins->dreg, ins->sreg1);
@@ -5706,7 +5709,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
     			   cfg->rgctx_var->inst_offset);
 	}
 
-#if 1
+#if 0
 char *methodName = getenv("MONO_TRACE_METHOD");
 if (methodName != NULL) {
 printf("ns: %s k: %s m: %s\n",method->klass->name_space,method->klass->name,method->name);fflush(stdout);
