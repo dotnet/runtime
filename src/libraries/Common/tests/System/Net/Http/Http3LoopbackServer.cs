@@ -34,9 +34,7 @@ namespace System.Net.Test.Common
                     EnabledSslProtocols = options.SslProtocols,
                     ApplicationProtocols = new List<SslApplicationProtocol>
                     {
-                        new SslApplicationProtocol("h3-31"),
-                        new SslApplicationProtocol("h3-30"),
-                        new SslApplicationProtocol("h3-29")
+                        new SslApplicationProtocol("h3")
                     },
                     ServerCertificate = _cert,
                     ClientCertificateRequired = false
