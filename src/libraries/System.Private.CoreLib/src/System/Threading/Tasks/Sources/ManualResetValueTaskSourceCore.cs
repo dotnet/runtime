@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
@@ -91,14 +90,24 @@ namespace System.Threading.Tasks.Sources
         [StackTraceHidden]
         public TResult GetResult(short token)
         {
-            ValidateToken(token);
-            if (!_completed)
+            if (token != _version || !_completed || _error is not null)
+            {
+                ThrowForFailedGetResult(token);
+            }
+
+            return _result!;
+        }
+
+        [StackTraceHidden]
+        private void ThrowForFailedGetResult(short token)
+        {
+            if (token != _version || !_completed)
             {
                 ThrowHelper.ThrowInvalidOperationException();
             }
 
             _error?.Throw();
-            return _result!;
+            Debug.Fail("Should not get here");
         }
 
         /// <summary>Schedules the continuation action for this operation.</summary>

@@ -46,36 +46,40 @@ namespace ILCompiler
         {
         }
 
-        private void InitializeDefaultOptions()
+        public static void ComputeDefaultOptions(out TargetOS os, out TargetArchitecture arch)
         {
-            // We could offer this as a command line option, but then we also need to
-            // load a different RyuJIT, so this is a future nice to have...
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                _targetOS = TargetOS.Windows;
+                os = TargetOS.Windows;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                _targetOS = TargetOS.Linux;
+                os = TargetOS.Linux;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                _targetOS = TargetOS.OSX;
+                os = TargetOS.OSX;
             else
                 throw new NotImplementedException();
 
             switch (RuntimeInformation.ProcessArchitecture)
             {
                 case Architecture.X86:
-                    _targetArchitecture = TargetArchitecture.X86;
+                    arch = TargetArchitecture.X86;
                     break;
                 case Architecture.X64:
-                    _targetArchitecture = TargetArchitecture.X64;
+                    arch = TargetArchitecture.X64;
                     break;
                 case Architecture.Arm:
-                    _targetArchitecture = TargetArchitecture.ARM;
+                    arch = TargetArchitecture.ARM;
                     break;
                 case Architecture.Arm64:
-                    _targetArchitecture = TargetArchitecture.ARM64;
+                    arch = TargetArchitecture.ARM64;
                     break;
                 default:
                     throw new NotImplementedException();
             }
+
+        }
+
+        private void InitializeDefaultOptions()
+        {
+            ComputeDefaultOptions(out _targetOS, out _targetArchitecture);
         }
 
         private void ProcessCommandLine(string[] args)
@@ -167,6 +171,26 @@ namespace ILCompiler
 
         }
 
+        public static TargetArchitecture GetTargetArchitectureFromArg(string archArg, out bool armelAbi)
+        {
+            armelAbi = false;
+            if (archArg.Equals("x86", StringComparison.OrdinalIgnoreCase))
+                return TargetArchitecture.X86;
+            else if (archArg.Equals("x64", StringComparison.OrdinalIgnoreCase))
+                return  TargetArchitecture.X64;
+            else if (archArg.Equals("arm", StringComparison.OrdinalIgnoreCase))
+                return  TargetArchitecture.ARM;
+            else if (archArg.Equals("armel", StringComparison.OrdinalIgnoreCase))
+            {
+                armelAbi = true;
+                return TargetArchitecture.ARM;
+            }
+            else if (archArg.Equals("arm64", StringComparison.OrdinalIgnoreCase))
+                return TargetArchitecture.ARM64;
+            else
+                throw new CommandLineException(SR.TargetArchitectureUnsupported);
+        }
+
         private void ConfigureTarget()
         {
             //
@@ -174,21 +198,7 @@ namespace ILCompiler
             //
             if (_commandLineOptions.TargetArch != null)
             {
-                if (_commandLineOptions.TargetArch.Equals("x86", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.X86;
-                else if (_commandLineOptions.TargetArch.Equals("x64", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.X64;
-                else if (_commandLineOptions.TargetArch.Equals("arm", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.ARM;
-                else if (_commandLineOptions.TargetArch.Equals("armel", StringComparison.OrdinalIgnoreCase))
-                {
-                    _targetArchitecture = TargetArchitecture.ARM;
-                    _armelAbi = true;
-                }
-                else if (_commandLineOptions.TargetArch.Equals("arm64", StringComparison.OrdinalIgnoreCase))
-                    _targetArchitecture = TargetArchitecture.ARM64;
-                else
-                    throw new CommandLineException(SR.TargetArchitectureUnsupported);
+                _targetArchitecture = GetTargetArchitectureFromArg(_commandLineOptions.TargetArch, out _armelAbi);
             }
             if (_commandLineOptions.TargetOS != null)
             {
@@ -983,7 +993,14 @@ namespace ILCompiler
 #if DEBUG
             try
             {
-                return new Program().Run(args);
+                try
+                {
+                    return new Program().Run(args);
+                }
+                finally
+                {
+                    ReadyToRunCodegenCompilationBuilder.ShutdownJit();
+                }
             }
             catch (CodeGenerationFailedException ex) when (DumpReproArguments(ex))
             {
@@ -992,7 +1009,14 @@ namespace ILCompiler
 #else
             try
             {
-                return new Program().Run(args);
+                try
+                {
+                    return new Program().Run(args);
+                }
+                finally
+                {
+                    ReadyToRunCodegenCompilationBuilder.ShutdownJit();
+                }
             }
             catch (Exception e)
             {
@@ -1001,6 +1025,7 @@ namespace ILCompiler
                 return 1;
             }
 #endif
+
         }
     }
 }

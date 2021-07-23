@@ -33,6 +33,8 @@
     </AllPackagesFilePath>
     <AllPackages Include="@(AllPackagesFilePath->'%(PackageName)')" />
 
+    <!-- runtime.native.System.IO.Ports requires all runtime legs to be built in order to test -->
+    <ExcludePackages Include="runtime.native.System.IO.Ports" />
     <ExcludePackages Condition="'$(PackagesToTest)' != ''" Include="@(AllPackages)" Exclude="@(PackagesToTest)" />
     <TestPackages Include="@(AllPackages)" Exclude="@(ExcludePackages)" />
     <TestPackagesPath Include="@(TestPackages->'%(PackagePath)')" />

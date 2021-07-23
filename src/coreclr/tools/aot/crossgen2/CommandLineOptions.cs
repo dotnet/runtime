@@ -5,8 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text;
 
 using Internal.CommandLine;
+using Internal.TypeSystem;
 
 namespace ILCompiler
 {
@@ -88,6 +90,23 @@ namespace ILCompiler
             Parallelism = Environment.ProcessorCount;
             SingleMethodGenericArg = null;
 
+            bool forceHelp = false;
+            if (args.Length == 0)
+            {
+                forceHelp = true;
+            }
+
+            foreach (string arg in args)
+            {
+                if (arg == "-?")
+                    forceHelp = true;
+            }
+
+            if (forceHelp)
+            {
+                args = new string[] {"--help"};
+            }
+
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
             {
                 syntax.ApplicationName = typeof(Program).Assembly.GetName().Name.ToString();
@@ -157,6 +176,58 @@ namespace ILCompiler
 
             if (Help)
             {
+                List<string> extraHelp = new List<string>();
+                extraHelp.Add(SR.OptionPassingHelp);
+                extraHelp.Add("");
+                extraHelp.Add(SR.DashDashHelp);
+                extraHelp.Add("");
+
+                string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64"};
+                string[] ValidOS = new string[] {"windows", "linux", "osx"};
+                TargetOS defaultOs;
+                TargetArchitecture defaultArch;
+                Program.ComputeDefaultOptions(out defaultOs, out defaultArch);
+
+                extraHelp.Add(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), defaultOs.ToString().ToLowerInvariant()));
+
+                extraHelp.Add("");
+
+                extraHelp.Add(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", ValidArchitectures), defaultArch.ToString().ToLowerInvariant()));
+
+                extraHelp.Add("");
+
+                extraHelp.Add(SR.InstructionSetHelp);
+                foreach (string arch in ValidArchitectures)
+                {
+                    StringBuilder archString = new StringBuilder();
+
+                    archString.Append(arch);
+                    archString.Append(": ");
+
+                    TargetArchitecture targetArch = Program.GetTargetArchitectureFromArg(arch, out _);
+                    bool first = true;
+                    foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
+                    {
+                        // Only instruction sets with are specifiable should be printed to the help text
+                        if (instructionSet.Specifiable)
+                        {
+                            if (first)
+                            {
+                                first = false;
+                            }
+                            else
+                            {
+                                archString.Append(", ");
+                            }
+                            archString.Append(instructionSet.Name);
+                        }
+                    }
+
+                    extraHelp.Add(archString.ToString());
+                }
+
+                argSyntax.ExtraHelpParagraphs = extraHelp;
+
                 HelpText = argSyntax.GetHelpText();
             }
         }

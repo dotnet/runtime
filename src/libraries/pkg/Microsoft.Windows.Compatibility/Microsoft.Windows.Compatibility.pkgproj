@@ -44,9 +44,6 @@
     <NS21PrereleaseLibraryPackage Include="System.ComponentModel.Composition.Registration" />
     <NS21PrereleaseLibraryPackage Include="System.Reflection.Context" />
 
-    <!-- Packages we don't build in main anymore -->
-    <LibraryPackage Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
-
     <!-- Packages which are inbox in NET6 and don't need to be referenced. -->
     <BeforeNET6LibraryPackage Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
     <BeforeNET6LibraryPackage Include="System.Data.DataSetExtensions" Version="$(SystemDataDataSetExtensionsVersion)" />
@@ -59,7 +56,8 @@
     <BeforeNET6LibraryPackage Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />
     <BeforeNET6LibraryPackage Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
 
-    <!-- Service model packages -->
+    <!-- External packages -->
+    <ExternalLibraryPackage Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />  
     <ExternalLibraryPackage Include="System.ServiceModel.Primitives;
                                      System.ServiceModel.Duplex;
                                      System.ServiceModel.Http;
@@ -69,22 +67,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <IndexedDependency Include="@(LibraryPackage);
-                                @(PrereleaseLibraryPackage);
+    <IndexedDependency Include="@(PrereleaseLibraryPackage);
                                 @(NS21PrereleaseLibraryPackage)"
                        TargetFramework="net6.0" />
     <IndexedDependency Include="@(BeforeNET6LibraryPackage);
-                                @(LibraryPackage);
                                 @(PrereleaseLibraryPackage);
                                 @(NS21PrereleaseLibraryPackage)"
                        TargetFramework="netcoreapp3.1" />
     <IndexedDependency Include="@(BeforeNET6LibraryPackage);
-                                @(LibraryPackage);
                                 @(PrereleaseLibraryPackage);
                                 @(NS21PrereleaseLibraryPackage)"
                        TargetFramework="netstandard2.1" />
     <IndexedDependency Include="@(BeforeNET6LibraryPackage);
-                                @(LibraryPackage);
                                 @(PrereleaseLibraryPackage)"
                        TargetFramework="netstandard2.0" />
   </ItemGroup>

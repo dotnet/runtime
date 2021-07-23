@@ -685,10 +685,8 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
         {
             if (!ComparePgoSchemaEquals(existingData->header.GetData(), existingData->header.countsOffset, pSchema, countSchemaItems))
             {
-                printf("@@@ Alloc failing, existing schema clash...\n");
                 return E_NOTIMPL;
             }
-            printf("@@@ Alloc returning existing schema + data...\n");
             *pInstrumentationData = existingData->header.GetData();
             return S_OK;
         }

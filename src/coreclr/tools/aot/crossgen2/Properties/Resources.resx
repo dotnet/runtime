@@ -348,4 +348,16 @@
   <data name="PerfMapFormatVersionOption" xml:space="preserve">
     <value>Explicitly request a particular PerfMap format version</value>
   </data>
+  <data name="OptionPassingHelp" xml:space="preserve">
+    <value>Options may be passed on the command line, or via response file. On the command line switch values may be specified by passing the option followed by a space followed by the value of the option, or by specifying a : between option and switch value. A response file is specified by passing the @ symbol before the response file name. In a response file all options must be specified on their own lines, and only the : syntax for switches is supported.</value>
+  </data>
+  <data name="DashDashHelp" xml:space="preserve">
+    <value>Use the '--' option to disambiguate between input files that have begin with -- and options. After a '--' option, all arguments are considered to be input files. If no input files begin with '--' then this option is not necessary.</value>
+  </data>
+  <data name="SwitchWithDefaultHelp" xml:space="preserve">
+    <value>Valid switches for {0} are: '{1}'. The default value is '{2}'.</value>
+  </data>
+  <data name="InstructionSetHelp" xml:space="preserve">
+    <value>The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. For example 'avx2,bmi,lzcnt'</value>
+  </data>
 </root>

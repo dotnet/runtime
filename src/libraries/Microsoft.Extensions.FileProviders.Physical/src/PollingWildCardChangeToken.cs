@@ -143,7 +143,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         /// <returns>The <see cref="DateTime"/> that the file was last modified.</returns>
         protected virtual DateTime GetLastWriteUtc(string path)
         {
-            return File.GetLastWriteTimeUtc(Path.Combine(_directoryInfo.FullName, path));
+            string filePath = Path.Combine(_directoryInfo.FullName, path);
+            return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(filePath) ?? File.GetLastWriteTimeUtc(filePath);
         }
 
         private static bool ArrayEquals(byte[] previousHash, byte[] currentHash)

@@ -471,6 +471,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55948")]
         public async Task ReadOutstanding_ReadAborted_Throws()
         {
             // aborting doesn't work properly on mock
@@ -568,7 +569,8 @@ namespace System.Net.Quic.Tests
                     await using QuicStream stream = await connection.AcceptStreamAsync();
 
                     QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => WriteForever(stream));
-                    Assert.Equal(expectedErrorCode, ex.ErrorCode);
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/55746")]
+                    //Assert.Equal(expectedErrorCode, ex.ErrorCode);
 
                     // We should still return true from CanWrite, even though the write has been aborted.
                     Assert.True(stream.CanWrite);
@@ -615,6 +617,12 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task WriteCanceled_NextWriteThrows()
         {
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/55995")]
+            if (typeof(T) == typeof(MockProviderFactory))
+            {
+                return;
+            }
+            
             const long expectedErrorCode = 1234;
 
             await RunClientServer(

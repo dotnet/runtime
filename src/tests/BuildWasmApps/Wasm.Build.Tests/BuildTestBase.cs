@@ -331,10 +331,7 @@ namespace Wasm.Build.Tests
                 }
 
                 if (useCache)
-                {
                     _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, true));
-                    Console.WriteLine($"caching build for {buildArgs}");
-                }
 
                 return (_projectDir, result.buildOutput);
             }
