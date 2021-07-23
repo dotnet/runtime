@@ -11058,17 +11058,15 @@ namespace System.Reflection
     }
     public abstract partial class Assembly : System.Reflection.ICustomAttributeProvider, System.Runtime.Serialization.ISerializable
     {
-        internal const string ThrowingMessageInRAF = "This member throws an exception for assemblies embedded in a single-file app";
-
         protected Assembly() { }
         [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles(ThrowingMessageInRAF)]
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles("This member throws an exception for assemblies embedded in a single-file app")]
         public virtual string? CodeBase { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData> CustomAttributes { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.TypeInfo> DefinedTypes { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")] get { throw null; } }
         public virtual System.Reflection.MethodInfo? EntryPoint { get { throw null; } }
         [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles(ThrowingMessageInRAF)]
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles("This member throws an exception for assemblies embedded in a single-file app")]
         public virtual string EscapedCodeBase { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Type> ExportedTypes { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")] get { throw null; } }
         public virtual string? FullName { get { throw null; } }
@@ -11102,11 +11100,11 @@ namespace System.Reflection
         public static System.Reflection.Assembly GetExecutingAssembly() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public virtual System.Type[] GetExportedTypes() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles(ThrowingMessageInRAF)]
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles("This member throws an exception for assemblies embedded in a single-file app")]
         public virtual System.IO.FileStream? GetFile(string name) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles(ThrowingMessageInRAF)]
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles("This member throws an exception for assemblies embedded in a single-file app")]
         public virtual System.IO.FileStream[] GetFiles() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles(ThrowingMessageInRAF)]
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles("This member throws an exception for assemblies embedded in a single-file app")]
         public virtual System.IO.FileStream[] GetFiles(bool getResourceModules) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public virtual System.Type[] GetForwardedTypes() { throw null; }
