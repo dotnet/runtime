@@ -450,6 +450,7 @@ namespace System.Reflection
             return retType;
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         internal string GetFullyQualifiedName()
         {
             string? fullyQualifiedName = null;
@@ -458,9 +459,10 @@ namespace System.Reflection
             return fullyQualifiedName!;
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string FullyQualifiedName => GetFullyQualifiedName();
 
-      [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetTypes()
         {
             return GetTypes(this);
@@ -527,6 +529,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override string Name
         {
             get

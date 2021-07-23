@@ -74,7 +74,7 @@ namespace System.Reflection
 
         public override bool ReflectionOnly => false;
 
-        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override string? CodeBase
         {
             get
