@@ -333,6 +333,36 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        public void RuntimeConfig_FilePath_Breaks_MAX_PATH_Threshold()
+        {
+            var project = sharedTestState.PortableAppFixture_Published
+                .Copy();
+
+            var appExeName = Path.GetFileName(project.TestProject.AppExe);
+            var outputDir = project.TestProject.OutputDirectory;
+
+            // Move the portable app to a path such that the length of the executable's fullpath
+            // is just 1 char behind MAX_PATH (260) so that the runtimeconfig(.dev).json files
+            // break this threshold. This will cause hostfxr to normalize these paths -- here we
+            // are checking that the updated paths are used.
+            var dirName = new string('a', 259 - outputDir.Length - appExeName.Length - 2);
+            var newDir = Path.Combine(outputDir, dirName);
+            var appExe = Path.Combine(newDir, appExeName);
+            Debug.Assert(appExe.Length == 259);
+            Directory.CreateDirectory(newDir);
+            foreach (var file in Directory.GetFiles(outputDir, "*.*", SearchOption.TopDirectoryOnly))
+                File.Copy(file, Path.Combine(newDir, Path.GetFileName(file)));
+
+            Command.Create(appExe)
+                .DotNetRoot(project.BuiltDotnet.BinPath)
+                .EnableTracingAndCaptureOutputs()
+                .MultilevelLookup(false)
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
         public void ComputedTPADoesntEndWithPathSeparator()
         {
             var fixture = sharedTestState.PortableAppFixture_Built
