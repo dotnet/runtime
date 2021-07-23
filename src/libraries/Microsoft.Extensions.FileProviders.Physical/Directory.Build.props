@@ -2,6 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <IsAspNetCoreApp>true</IsAspNetCoreApp>
-    <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
 </Project>
