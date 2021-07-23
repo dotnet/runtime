@@ -49,6 +49,10 @@ namespace System
 
         private const double SCALEB_C3 = 9007199254740992; // 0x1p53
 
+        private const int ILogB_NaN = 0x7fffffff;
+
+        private const int ILogB_Zero = (-1 - 0x7fffffff);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
         {
@@ -788,11 +792,10 @@ namespace System
             }
         }
 
-        private const int ILogB_NaN = 0x7fffffff;
-        private const int ILogB_Zero = (-1 - 0x7fffffff);
-
         public static int ILogB(double x)
         {
+            // Implementation based on https://github.com/ifduyue/musl/blob/cfdfd5ea3ce14c6abf7fb22a531f3d99518b5a1b/src/math/ilogb.c
+
             if (double.IsNaN(x))
             {
                 return ILogB_NaN;

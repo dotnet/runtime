@@ -43,6 +43,10 @@ namespace System
 
         private const float SCALEB_C3 = 16777216f; // 0x1p24f
 
+        private const int ILogB_NaN = 0x7fffffff;
+
+        private const int ILogB_Zero = (-1 - 0x7fffffff);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Abs(float x)
         {
@@ -180,11 +184,11 @@ namespace System
             }
         }
 
-        private const int ILogB_NaN = 0x7fffffff;
-        private const int ILogB_Zero = (-1 - 0x7fffffff);
 
         public static int ILogB(float x)
         {
+            // Implementation based on https://github.com/ifduyue/musl/blob/cfdfd5ea3ce14c6abf7fb22a531f3d99518b5a1b/src/math/ilogbf.c
+
             if (float.IsNaN(x))
             {
                 return ILogB_NaN;
