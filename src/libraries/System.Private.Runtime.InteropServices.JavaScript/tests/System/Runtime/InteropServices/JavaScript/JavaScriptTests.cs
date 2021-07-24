@@ -223,5 +223,77 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 nextResult?.Dispose();
             }
         }
+
+        private static JSObject SetupListenerTest (string prefix) {
+            Runtime.InvokeJS($"globalThis.{prefix} = {{" + @"
+    listeners: [],
+    addEventListener: function (name, listener, options) {
+        for (var i = 0; i < this.listeners.length; i++) {
+            var item = this.listeners[i];
+            if (item[0] !== name)
+                continue;
+            if (item[1] === listener)
+                return;
+        }        
+        this.listeners.push([name, listener, options || null]);
+    },
+    removeEventListener: function (name, listener, capture) {
+        for (var i = 0; i < this.listeners.length; i++) {
+            var item = this.listeners[i];
+            if (item[0] !== name)
+                continue;
+            if (item[1] !== listener)
+                continue;
+            if (item[2] === null)
+                continue;
+            this.listeners.splice(i, 1);
+            return;
+        }
+    },
+    fireEvent: function (name, evt) {
+        this._fireEventImpl(name, true, evt);
+        this._fireEventImpl(name, false, evt);
+    },
+    _fireEventImpl: function (name, capture, evt) {
+        for (var i = 0; i < this.listeners.length; i++) {
+            var item = this.listeners[i];
+            if (item[0] !== name)
+                continue;
+            var itemCapture = (item[2] === null) ? false : (item[2].capture || false);
+            if (itemCapture !== capture)
+                continue;
+            item[1].call(this, evt);
+        }
+    },
+};
+");
+            return (JSObject)Runtime.GetGlobalObject(prefix);
+        }
+
+        [Fact]
+        public static void AddEventListenerWorks () {
+            var temp = new bool[1];
+            var obj = SetupListenerTest("addEventListenerWorks");
+            obj.AddEventListener("test", () => {
+                temp[0] = true;
+            });
+            obj.Invoke("fireEvent", "test");
+            Assert.True(temp[0]);
+        }
+
+        [Fact]
+        public static void AddEventListenerPassesOptions () {
+            var log = new List<string>();
+            var obj = SetupListenerTest("addEventListenerWorks");
+            obj.AddEventListener("test", () => {
+                log.Add("Capture");
+            }, new JSObject.EventListenerOptions { Capture = true });
+            obj.AddEventListener("test", () => {
+                log.Add("Non-capture");
+            }, new JSObject.EventListenerOptions { Capture = false });
+            obj.Invoke("fireEvent", "test");
+            Assert.Equal("Capture", log[0]);
+            Assert.Equal("Non-capture", log[1]);
+        }
     }
 }
