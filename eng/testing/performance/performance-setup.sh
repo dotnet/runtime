@@ -189,7 +189,7 @@ fi
 
 payload_directory=$source_directory/Payload
 performance_directory=$payload_directory/performance
-benchmark_directory=$payload_directory/BenchmarkDotNet
+benchmark_directory=$source_directory/BenchmarkDotNet
 workitem_directory=$source_directory/workitem
 extra_benchmark_dotnet_arguments="--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --stopOnFirstError true"
 perflab_arguments=
@@ -287,8 +287,10 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
         popd
         rm -r $source_directory/__download__
         # wasm aot needs some source code from dotnet\runtime repo
-        rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj --exclude artifacts/log --exclude artifacts/tests
+        echo "copy source code from dotnet\runtime repo"
+        rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude Payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj --exclude artifacts/log --exclude artifacts/tests
         # copy wasm build drop to the location that aot build expects
+        echo "copy BrowserWasm/artifacts"
         rsync -a --progress $wasm_dotnet_path/artifacts/BrowserWasm/artifacts/* $wasm_dotnet_path/artifacts
         rm -r $wasm_dotnet_path/artifacts/BrowserWasm/artifacts
         # temprary testing only: add --BenchmarkDotNetSources $benchmark_directory to build and use latest benchmarkdotnet from source code,  --keepfiles to keep temparary files for diagnostic. Should be removed before merging PR
