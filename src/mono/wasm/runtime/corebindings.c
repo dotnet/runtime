@@ -25,8 +25,8 @@ extern MonoObject* mono_wasm_typed_array_to_array (int js_handle, int *is_except
 extern MonoObject* mono_wasm_typed_array_copy_to (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception);
 extern MonoObject* mono_wasm_typed_array_from (int ptr, int begin, int end, int bytes_per_element, int type, int *is_exception);
 extern MonoObject* mono_wasm_typed_array_copy_from (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception);
-extern void mono_wasm_add_event_listener (int jsObjHandle, MonoString *name, int weakDelegateHandle, int optionsObjHandle);
-extern void mono_wasm_remove_event_listener (int jsObjHandle, MonoString *name, int weakDelegateHandle, int capture);
+extern MonoString* mono_wasm_add_event_listener (int jsObjHandle, MonoString *name, int weakDelegateHandle, int optionsObjHandle);
+extern MonoString* mono_wasm_remove_event_listener (int jsObjHandle, MonoString *name, int weakDelegateHandle, int capture);
 
 // Compiles a JavaScript function from the function data passed.
 // Note: code snippet is not a function definition. Instead it must create and return a function instance.

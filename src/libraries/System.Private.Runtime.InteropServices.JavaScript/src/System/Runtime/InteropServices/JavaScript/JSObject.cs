@@ -108,7 +108,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 // TODO: Handle errors
                 // We can't currently do this because adding any additional parameters or a return value causes
                 //  a signature mismatch at runtime
-                Interop.Runtime.AddEventListener(JSHandle, name, jsfunc, optionsDict?.JSHandle ?? 0);
+                var ret = Interop.Runtime.AddEventListener(JSHandle, name, jsfunc, optionsDict?.JSHandle ?? 0);
+                if (ret != null)
+                    throw new JSException(ret);
                 return jsfunc;
             } finally {
                 optionsDict?.Dispose();
@@ -125,7 +127,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public void RemoveEventListener(string name, int listenerHandle, EventListenerOptions? options = null)
         {
-            Interop.Runtime.RemoveEventListener(JSHandle, name, listenerHandle, options?.Capture ?? false);
+            var ret = Interop.Runtime.RemoveEventListener(JSHandle, name, listenerHandle, options?.Capture ?? false);
+            if (ret != null)
+                throw new JSException(ret);
         }
 
         /// <summary>

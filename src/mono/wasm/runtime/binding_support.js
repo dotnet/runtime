@@ -2091,7 +2091,10 @@ var BindingSupportLib = {
 			if (options)
 				obj.addEventListener(sName, listener, options);
 			else
-				obj.addEventListener(sName, listener);			
+				obj.addEventListener(sName, listener);
+			return 0;
+		} catch (exc) {
+			return BINDING.js_string_to_mono_string(exc.message);
 		} finally {
 			nameRoot.release();
 		}
@@ -2112,6 +2115,9 @@ var BindingSupportLib = {
 			// console.log(`${obj}.removeEventListener(${sName}, ${listener}, ${capture})`);
 
 			obj.removeEventListener(sName, listener, !!capture);
+			return 0;
+		} catch (exc) {
+			return BINDING.js_string_to_mono_string(exc.message);
 		} finally {
 			nameRoot.release();
 		}
