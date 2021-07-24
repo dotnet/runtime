@@ -228,6 +228,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Runtime.InvokeJS($"globalThis.{prefix} = {{" + @"
     listeners: [],
     addEventListener: function (name, listener, options) {
+        if (name === 'throwError')
+            throw new Error('throwError throwing');
         for (var i = 0; i < this.listeners.length; i++) {
             var item = this.listeners[i];
             if (item[0] !== name)
@@ -294,6 +296,26 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             obj.Invoke("fireEvent", "test");
             Assert.Equal("Capture", log[0]);
             Assert.Equal("Non-capture", log[1]);
+        }
+
+        [Fact]
+        public static void AddEventListenerForwardsExceptions () {
+            var obj = SetupListenerTest("addEventListenerWorks");
+            obj.AddEventListener("test", () => {
+                throw new Exception("Test exception");
+            });
+            var exc = Assert.Throws<JSException>(() => {
+                obj.Invoke("fireEvent", "test");
+            });
+            Assert.Contains("Test exception", exc.Message);
+
+            exc = Assert.Throws<JSException>(() => {
+                obj.AddEventListener("throwError", () => {
+                    throw new Exception("Should not be called");
+                });
+            });
+            Assert.Contains("throwError throwing", exc.Message);
+            obj.Invoke("fireEvent", "throwError");
         }
     }
 }
