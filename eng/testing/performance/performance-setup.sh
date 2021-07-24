@@ -259,13 +259,17 @@ common_setup_arguments="--channel main --queue $queue --build-number $build_numb
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
 
 if [[ "$run_from_perf_repo" = true ]]; then
+    echo "Running from perf repo"
     payload_directory=
     workitem_directory=$source_directory
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
+    echo "Not running from perf repo"
     git clone --branch alicial/hackbenchmarkdotnet --depth 1 --quiet https://github.com/dotnet/performance $performance_directory
     git clone --branch master --quiet https://github.com/Lxiamail/BenchmarkDotNet.git $benchmark_directory
+
+    ls $payload_directory
     
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory
