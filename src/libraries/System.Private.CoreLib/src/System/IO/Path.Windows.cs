@@ -50,7 +50,7 @@ namespace System.IO
             if (path.Contains('\0'))
                 throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
 
-            return GetFullQualifiedPath(path);
+            return GetFullyQualifiedPath(path);
         }
 
         public static string GetFullPath(string path, string basePath)
@@ -68,7 +68,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidPathChars);
 
             if (IsPathFullyQualified(path))
-                return GetFullQualifiedPath(path);
+                return GetFullyQualifiedPath(path);
 
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 return basePath;
@@ -120,10 +120,10 @@ namespace System.IO
 
             return PathInternal.IsDevice(combinedPath.AsSpan())
                 ? PathInternal.RemoveRelativeSegments(combinedPath, PathInternal.GetRootLength(combinedPath.AsSpan()))
-                : GetFullQualifiedPath(combinedPath);
+                : GetFullyQualifiedPath(combinedPath);
         }
 
-        internal static string GetFullQualifiedPath(string path)
+        internal static string GetFullyQualifiedPath(string path)
         {
             if (PathInternal.IsExtended(path.AsSpan()))
             {
