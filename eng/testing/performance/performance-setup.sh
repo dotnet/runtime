@@ -266,7 +266,7 @@ if [[ "$run_from_perf_repo" = true ]]; then
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
     echo "Not running from perf repo"
-    git clone --branch alicial/hackbenchmarkdotnet --depth 1 --quiet https://github.com/dotnet/performance $performance_directory
+    git clone --branch pr-alicias-branch --depth 1 https://github.com/radekdoulik/performance.git $performance_directory
     git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 
     ls $payload_directory
