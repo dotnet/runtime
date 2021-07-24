@@ -372,6 +372,11 @@ namespace System.Reflection.TypeLoading
 #else
         public static unsafe string ToUtf16(this ReadOnlySpan<byte> utf8)
         {
+            if (utf8.IsEmpty)
+            {
+                return string.Empty;
+            }
+
             fixed (byte* ptr = utf8)
             {
                 return Encoding.UTF8.GetString(ptr, utf8.Length);
