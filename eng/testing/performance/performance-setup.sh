@@ -189,7 +189,7 @@ fi
 
 payload_directory=$source_directory/Payload
 performance_directory=$payload_directory/performance
-benchmark_directory=$source_directory/BenchmarkDotNet
+benchmark_directory=$payload_directory/BenchmarkDotNet
 workitem_directory=$source_directory/workitem
 extra_benchmark_dotnet_arguments="--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --stopOnFirstError true"
 perflab_arguments=
@@ -267,7 +267,7 @@ if [[ "$run_from_perf_repo" = true ]]; then
 else
     echo "Not running from perf repo"
     git clone --branch alicial/hackbenchmarkdotnet --depth 1 --quiet https://github.com/dotnet/performance $performance_directory
-    git clone --branch master --quiet https://github.com/Lxiamail/BenchmarkDotNet.git $benchmark_directory
+    git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 
     ls $payload_directory
     
