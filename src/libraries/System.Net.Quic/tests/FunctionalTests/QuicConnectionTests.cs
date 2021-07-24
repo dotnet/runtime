@@ -64,7 +64,7 @@ namespace System.Net.Quic.Tests
                     Task<QuicStream> acceptTask = serverConnection.AcceptStreamAsync().AsTask();
                     Assert.False(acceptTask.IsCompleted);
                     Task<QuicStream> connectTask = OpenAndUseStreamAsync(serverConnection);
-                    Assert.False(acceptTask.IsCompleted);
+                    Assert.False(connectTask.IsCompleted);
 
                     await serverConnection.CloseAsync(ExpectedErrorCode);
 
@@ -88,6 +88,7 @@ namespace System.Net.Quic.Tests
                         // TODO: ActiveIssue https://github.com/dotnet/runtime/issues/56133
                         // MsQuic fails with System.Net.Quic.QuicException: Failed to open stream to peer. Error Code: INVALID_STATE
                         //await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await OpenAndUseStreamAsync(serverConnection));
+                        await Assert.ThrowsAsync<QuicException>(() => OpenAndUseStreamAsync(serverConnection));
                     }
                 });
         }
@@ -109,7 +110,7 @@ namespace System.Net.Quic.Tests
                     Task<QuicStream> acceptTask = serverConnection.AcceptStreamAsync().AsTask();
                     Assert.False(acceptTask.IsCompleted);
                     Task<QuicStream> connectTask = OpenAndUseStreamAsync(serverConnection);
-                    Assert.False(acceptTask.IsCompleted);
+                    Assert.False(connectTask.IsCompleted);
 
                     serverConnection.Dispose();
 
@@ -150,7 +151,7 @@ namespace System.Net.Quic.Tests
                     Task<QuicStream> acceptTask = serverConnection.AcceptStreamAsync().AsTask();
                     Assert.False(acceptTask.IsCompleted);
                     Task<QuicStream> connectTask = OpenAndUseStreamAsync(serverConnection);
-                    Assert.False(acceptTask.IsCompleted);
+                    Assert.False(connectTask.IsCompleted);
 
                     sync.Release();
 
@@ -167,7 +168,11 @@ namespace System.Net.Quic.Tests
                     Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
                     // TODO: ActiveIssue https://github.com/dotnet/runtime/issues/56133
                     // MsQuic fails with System.Net.Quic.QuicException: Failed to open stream to peer. Error Code: INVALID_STATE
-                    if (!IsMsQuicProvider)
+                    if (IsMsQuicProvider)
+                    {
+                        await Assert.ThrowsAsync<QuicException>(() => OpenAndUseStreamAsync(serverConnection));
+                    }
+                    else
                     {
                         ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => OpenAndUseStreamAsync(serverConnection));
                         Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
