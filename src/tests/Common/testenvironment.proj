@@ -158,7 +158,7 @@
     <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsOSX)' == 'true'" GCName="libclrgc.dylib"/>
-    <TestEnvironment Include="gcstandalone" Condition="'$(TargetsLinux)' == 'true'" GCName="libclrgc.so"/>
+    <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true' and '$(TargetsOSX)' != 'true'" GCName="libclrgc.so"/>
   </ItemGroup>
 
   <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables
