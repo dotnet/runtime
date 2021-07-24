@@ -8,8 +8,6 @@ namespace System.Reflection.Emit
 {
     public sealed partial class AssemblyBuilder : System.Reflection.Assembly
     {
-        internal const string ThrowingMessageInRAF = "This member throws an exception for assemblies embedded in a single-file app";
-
         internal AssemblyBuilder() { }
         [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override string? CodeBase { get { throw null; } }
@@ -31,9 +29,9 @@ namespace System.Reflection.Emit
         public System.Reflection.Emit.ModuleBuilder? GetDynamicModule(string name) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")]
         public override System.Type[] GetExportedTypes() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles(ThrowingMessageInRAF)]
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles("This member throws an exception for assemblies embedded in a single-file app")]
         public override System.IO.FileStream GetFile(string name) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles(ThrowingMessageInRAF)]
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles("This member throws an exception for assemblies embedded in a single-file app")]
         public override System.IO.FileStream[] GetFiles(bool getResourceModules) { throw null; }
         public override int GetHashCode() { throw null; }
         public override System.Reflection.Module[] GetLoadedModules(bool getResourceModules) { throw null; }
