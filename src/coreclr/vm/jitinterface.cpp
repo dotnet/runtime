@@ -8971,7 +8971,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // Interface call devirtualization.
         //
         // We must ensure that pObjMT actually implements the
-        // interface corresponding to pBaseMD. If it's 
+        // interface corresponding to pBaseMD.
         if (!pObjMT->CanCastToInterface(pBaseMT))
         {
             if ((info->context != nullptr) && !pObjMT->IsSharedByGenericInstantiations())
