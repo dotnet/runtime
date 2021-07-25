@@ -695,7 +695,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static byte DecodeByte(char ch1, char ch2, ref int invalidIfNegative)
+        private static byte DecodeByte(nuint ch1, nuint ch2, ref int invalidIfNegative)
         {
             // TODO https://github.com/dotnet/runtime/issues/13464:
             // Replace the Unsafe.Add with HexConverter.FromChar once the bounds checks are eliminated.
@@ -703,16 +703,16 @@ namespace System
             ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
 
             int h1 = -1;
-            if (ch1 < lookup.Length)
+            if (ch1 < (nuint)lookup.Length)
             {
-                h1 = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), ch1);
+                h1 = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), (nint)ch1);
             }
             h1 <<= 4;
 
             int h2 = -1;
-            if (ch2 < lookup.Length)
+            if (ch2 < (nuint)lookup.Length)
             {
-                h2 = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), ch2);
+                h2 = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), (nint)ch2);
             }
 
             int result = h1 | h2;
