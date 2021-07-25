@@ -8735,11 +8735,7 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
 
         if (ig->igOffs == offs)
         {
-            // Found it!
-            sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "%s", emitLabelString(ig));
-            retbuf = buf[curBuf];
-            curBuf = (curBuf + 1) % 4;
-            return retbuf;
+            return emitLabelString(ig);
         }
         else if (ig->igOffs > offs)
         {
