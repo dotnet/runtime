@@ -1134,6 +1134,43 @@ public:
 
 }; // class LclVarDsc
 
+enum class SymbolicIntegerValue : int32_t
+{
+    LongMin,
+    IntMin,
+    ShortMin,
+    ByteMin,
+    Zero,
+    One,
+    ByteMax,
+    UByteMax,
+    ShortMax,
+    UShortMax,
+    IntMax,
+    UIntMax,
+    LongMax,
+};
+
+inline constexpr bool operator >(SymbolicIntegerValue left, SymbolicIntegerValue right)
+{
+    return static_cast<int32_t>(left) > static_cast<int32_t>(right);
+}
+
+inline constexpr bool operator >=(SymbolicIntegerValue left, SymbolicIntegerValue right)
+{
+    return static_cast<int32_t>(left) >= static_cast<int32_t>(right);
+}
+
+inline constexpr bool operator <(SymbolicIntegerValue left, SymbolicIntegerValue right)
+{
+    return static_cast<int32_t>(left) < static_cast<int32_t>(right);
+}
+
+inline constexpr bool operator <=(SymbolicIntegerValue left, SymbolicIntegerValue right)
+{
+    return static_cast<int32_t>(left) <= static_cast<int32_t>(right);
+}
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -7347,6 +7384,7 @@ public:
         O2K_SUBRANGE,
         O2K_COUNT
     };
+
     struct AssertionDsc
     {
         optAssertionKind assertionKind;
@@ -7359,6 +7397,23 @@ public:
         {
             ValueNum vnIdx;
             ValueNum vnLen;
+        };
+        struct Range // integer subrange
+        {
+            SymbolicIntegerValue loBound;
+            SymbolicIntegerValue hiBound;
+
+            bool Contains(int64_t value) const;
+
+            bool Contains(Range other) const
+            {
+                return (loBound <= other.loBound) && (other.hiBound <= hiBound);
+            }
+
+            bool Equals(Range other) const
+            {
+                return (loBound == other.loBound) && (hiBound == other.hiBound);
+            }
         };
         struct AssertionDscOp1
         {
@@ -7376,13 +7431,10 @@ public:
             struct IntVal
             {
                 ssize_t      iconVal;   // integer
+#if  !defined(HOST_64BIT)
                 unsigned     padding;   // unused; ensures iconFlags does not overlap lconVal
+#endif
                 GenTreeFlags iconFlags; // gtFlags
-            };
-            struct Range // integer subrange
-            {
-                ssize_t loBound;
-                ssize_t hiBound;
             };
             union {
                 SsaVar  lcl;
@@ -7440,46 +7492,16 @@ public:
             return false;
         }
 
-        static ssize_t GetLowerBoundForIntegralType(var_types type)
+        static Range GetInputRangeForCast(GenTreeCast* cast);
+        static Range GetOutputRangeForCast(GenTreeCast* cast);
+
+        static SymbolicIntegerValue GetLowerBoundForIntegralType(var_types type);
+        static SymbolicIntegerValue GetUpperBoundForIntegralType(var_types type);
+        static int64_t SymbolicToRealValue(SymbolicIntegerValue value);
+
+        static Range GetRangeForIntegralType(var_types type)
         {
-            switch (type)
-            {
-                case TYP_BYTE:
-                    return SCHAR_MIN;
-                case TYP_SHORT:
-                    return SHRT_MIN;
-                case TYP_INT:
-                    return INT_MIN;
-                case TYP_BOOL:
-                case TYP_UBYTE:
-                case TYP_USHORT:
-                case TYP_UINT:
-                    return 0;
-                default:
-                    unreached();
-            }
-        }
-        static ssize_t GetUpperBoundForIntegralType(var_types type)
-        {
-            switch (type)
-            {
-                case TYP_BOOL:
-                    return 1;
-                case TYP_BYTE:
-                    return SCHAR_MAX;
-                case TYP_SHORT:
-                    return SHRT_MAX;
-                case TYP_INT:
-                    return INT_MAX;
-                case TYP_UBYTE:
-                    return UCHAR_MAX;
-                case TYP_USHORT:
-                    return USHRT_MAX;
-                case TYP_UINT:
-                    return UINT_MAX;
-                default:
-                    unreached();
-            }
+            return {GetLowerBoundForIntegralType(type), GetUpperBoundForIntegralType(type)};
         }
 
         bool HasSameOp1(AssertionDsc* that, bool vnBased)
@@ -7525,7 +7547,7 @@ public:
                            (!vnBased || op2.lcl.ssaNum == that->op2.lcl.ssaNum);
 
                 case O2K_SUBRANGE:
-                    return ((op2.u2.loBound == that->op2.u2.loBound) && (op2.u2.hiBound == that->op2.u2.hiBound));
+                    return op2.u2.Equals(that->op2.u2);
 
                 case O2K_INVALID:
                     // we will return false
@@ -7631,7 +7653,7 @@ public:
                                       optAssertionKind assertionKind,
                                       bool             helperCallArgs = false);
 
-    bool optTryExtractSubrangeAssertion(GenTree* source, ssize_t* pLoBound, ssize_t* pHiBound);
+    bool optTryExtractSubrangeAssertion(GenTree* source, AssertionDsc::Range* pRange);
 
     void optCreateComplementaryAssertion(AssertionIndex assertionIndex,
                                          GenTree*       op1,
@@ -7647,10 +7669,7 @@ public:
     ASSERT_TP optGetVnMappedAssertions(ValueNum vn);
 
     // Used for respective assertion propagations.
-    AssertionIndex optAssertionIsSubrange(GenTree*         tree,
-                                          var_types        fromType,
-                                          var_types        toType,
-                                          ASSERT_VALARG_TP assertions);
+    AssertionIndex optAssertionIsSubrange(GenTree* tree, AssertionDsc::Range range, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased));
     bool optAssertionIsNonNull(GenTree*         op,
@@ -7675,7 +7694,7 @@ public:
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
-    GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);

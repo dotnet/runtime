@@ -762,7 +762,9 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 break;
 
             case O2K_SUBRANGE:
-                printf("[%u..%u]", curAssertion->op2.u2.loBound, curAssertion->op2.u2.hiBound);
+                printf("[%lld", AssertionDsc::SymbolicToRealValue(curAssertion->op2.u2.loBound));
+                printf("..");
+                printf("%lld]", AssertionDsc::SymbolicToRealValue(curAssertion->op2.u2.hiBound));
                 break;
 
             default:
@@ -1228,23 +1230,13 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             if (((assertionKind == OAK_SUBRANGE) || (assertionKind == OAK_EQUAL)))
             {
                 // Keep the casts on small struct fields.
+                // TODO-Review: why?
                 if (op2->OperIs(GT_CAST) && lvaTable[lclNum].lvIsStructField && lvaTable[lclNum].lvNormalizeOnLoad())
                 {
                     goto DONE_ASSERTION;
                 }
 
-                if (varTypeIsFloating(op1))
-                {
-                    // In global assertion propagation, we make "tentative" assertions
-                    // for trees like the following: CAST(type <- LCL_VAR). In this
-                    // scenario "op1" is the LCL_VAR and the purpose of this is
-                    // to prove, via implied assertions, that the cast can be removed.
-                    // Obviously, this is not useful for casts from floating point, so
-                    // don't make such assertions for them.
-                    goto DONE_ASSERTION;
-                }
-
-                if (optTryExtractSubrangeAssertion(op2, &assertion.op2.u2.loBound, &assertion.op2.u2.hiBound))
+                if (optTryExtractSubrangeAssertion(op2, &assertion.op2.u2))
                 {
                     assertion.op2.kind      = O2K_SUBRANGE;
                     assertion.assertionKind = OAK_SUBRANGE;
@@ -1373,21 +1365,21 @@ DONE_ASSERTION:
 // optTryExtractSubrangeAssertion: Extract the bounds of the value a tree produces.
 //
 // Generates [0..1] ranges for relops, [T_MIN..T_MAX] for small-typed indirections
-// and casts to small types.
+// and casts to small types. Generates various ranges for casts to and from "large"
+// types - see "AssertionDsc::GetOutputRangeForCast".
 //
 // Arguments:
-//    source    - tree producing the value
-//    pLoBound  - out parameter for the lower bound
-//    pHiBound  - out parameter for the upper bound
+//    source - tree producing the value
+//    pRange - [out] parameter for the range
 //
 // Return Value:
-//    "true" if the "source" computes a value narrower than the range of TYP_INT.
-//    "false" otherwise.
+//    "true" if the "source" computes a value that could be used for a subrange
+//    assertion, i. e. narrower than the range of the node's type.
 //
 // Notes:
-//   The out parameters are only written to if the function returns "true".
+//   The "pRange" parameter is only written to if the function returns "true".
 //
-bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, ssize_t* pLoBound, ssize_t* pHiBound)
+bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, AssertionDsc::Range* pRange)
 {
     var_types sourceType = TYP_UNDEF;
 
@@ -1399,8 +1391,8 @@ bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, ssize_t* pLoBound
         case GT_LE:
         case GT_GT:
         case GT_GE:
-            sourceType = TYP_BOOL;
-            break;
+            *pRange = {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
+            return true;
 
         case GT_CLS_VAR:
         case GT_LCL_FLD:
@@ -1409,8 +1401,31 @@ bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, ssize_t* pLoBound
             break;
 
         case GT_CAST:
-            sourceType = source->AsCast()->CastToType();
-            break;
+            if (varTypeIsIntegral(source) && varTypeIsIntegral(source->AsCast()->CastOp()))
+            {
+                // Policy: we do not make assertions for long <-> int casts globally. They are only useful
+                // for eliminating checked casts, which are quite rare, while the extra assertions take up space.
+                // This is most relevant in global assertion propagation, where the assertions created are
+                // actually "not proven", and the way they are "proven" is only by implication from constant
+                // assertions. This is a rare event. In local assertion propagation, we are not as constrained
+                // in the number of assertions, and they are generated "proven", so we'll make these freely.
+                if (!optLocalAssertionProp && (genActualType(source) != genActualType(source->AsCast()->CastOp())))
+                {
+                    return false;
+                }
+
+                AssertionDsc::Range castRange = AssertionDsc::GetOutputRangeForCast(source->AsCast());
+                // TODO-Casts: change below to source->TypeGet() when BOX import is fixed to not have CAST(short).
+                AssertionDsc::Range nodeRange = AssertionDsc::GetRangeForIntegralType(genActualType(source));
+                assert(nodeRange.Contains(castRange));
+
+                if (!castRange.Equals(nodeRange))
+                {
+                    *pRange = castRange;
+                    return true;
+                }
+            }
+            return false;
 
         default:
             return false;
@@ -1418,13 +1433,283 @@ bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, ssize_t* pLoBound
 
     if (varTypeIsSmall(sourceType))
     {
-        *pLoBound = AssertionDsc::GetLowerBoundForIntegralType(sourceType);
-        *pHiBound = AssertionDsc::GetUpperBoundForIntegralType(sourceType);
-
+        *pRange = AssertionDsc::GetRangeForIntegralType(sourceType);
         return true;
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// GetInputRangeForCast: Get the non-overflowing input range for a cast.
+//
+// This routine computes the input range for a cast from
+// an integer to an integer for which it will not overflow.
+//
+// Note that the ranges computed by this method are **always** in the
+// "signed" domain. For example, a cast such as CAST_OVF(ulong <- uint)
+// will return [INT32_MIN..INT32_MAX], i. e. the operation does not
+// overflow for any possible input and the GTF_OVERFLOW flag is a no-op.
+//
+// Arguments:
+//    cast - the cast node for which the range will be computed
+//
+// Return Value:
+//    The range this cast consumes without overflowing - see description.
+//
+/* static */ Compiler::AssertionDsc::Range Compiler::AssertionDsc::GetInputRangeForCast(GenTreeCast* cast)
+{
+    var_types fromType     = genActualType(cast->CastOp());
+    var_types toType       = cast->CastToType();
+    bool      fromUnsigned = cast->IsUnsigned();
+
+    assert((fromType == TYP_INT) || (fromType == TYP_LONG));
+    assert(varTypeIsIntegral(toType));
+
+    if (!cast->gtOverflow())
+    {
+        // CAST(small type <- uint/int/ulong/long) - [TO_TYPE_MIN..TO_TYPE_MAX]
+        if (varTypeIsSmall(toType))
+        {
+            return {GetLowerBoundForIntegralType(toType), GetUpperBoundForIntegralType(toType)};
+        }
+
+        // Widening/no-op representation-changing casts never "overflow" under our definition.
+        // These are CAST(u/long <- int), CAST(u/long <- uint), CAST(u/int <- u/int).
+        // Narrowing cases "overflow" when the input does not fit into TYP_INT.
+        // These are CAST(u/int <- u/long) - they are all the same operation.
+        return {SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
+    }
+
+    SymbolicIntegerValue lowerBound;
+    SymbolicIntegerValue upperBound;
+
+    // CAST_OVF(small type <- int/long)   - [TO_TYPE_MIN..TO_TYPE_MAX]
+    // CAST_OVF(small type <- uint/ulong) - [0..TO_TYPE_MAX]
+    if (varTypeIsSmall(toType))
+    {
+        lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : GetLowerBoundForIntegralType(toType);
+        upperBound = GetUpperBoundForIntegralType(toType);
+    }
+    else
+    {
+        switch (toType)
+        {
+            // CAST_OVF(uint <- uint)       - [INT_MIN..INT_MAX]
+            // CAST_OVF(uint <- int)        - [0..INT_MAX]
+            // CAST_OVF(uint <- ulong/long) - [0..UINT_MAX]
+            case TYP_UINT:
+                if (fromType == TYP_LONG)
+                {
+                    lowerBound = SymbolicIntegerValue::Zero;
+                    upperBound = SymbolicIntegerValue::UIntMax;
+                }
+                else
+                {
+                    lowerBound = fromUnsigned ? SymbolicIntegerValue::IntMin : SymbolicIntegerValue::Zero;
+                    upperBound = SymbolicIntegerValue::IntMax;
+                }
+                break;
+
+                // CAST_OVF(int <- uint/ulong) - [0..INT_MAX]
+                // CAST_OVF(int <- int/long)   - [INT_MIN..INT_MAX]
+            case TYP_INT:
+                lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : SymbolicIntegerValue::IntMin;
+                upperBound = SymbolicIntegerValue::IntMax;
+                break;
+
+                // CAST_OVF(ulong <- uint)  - [INT_MIN..INT_MAX]
+                // CAST_OVF(ulong <- int)   - [0..INT_MAX]
+                // CAST_OVF(ulong <- ulong) - [LONG_MIN..LONG_MAX]
+                // CAST_OVF(ulong <- long)  - [0..LONG_MAX]
+            case TYP_ULONG:
+                lowerBound = fromUnsigned ? GetLowerBoundForIntegralType(fromType) : SymbolicIntegerValue::Zero;
+                upperBound = GetUpperBoundForIntegralType(fromType);
+                break;
+
+                // CAST_OVF(long <- uint/int) - [INT_MIN..INT_MAX]
+                // CAST_OVF(long <- ulong)    - [0..LONG_MAX]
+                // CAST_OVF(long <- long)     - [LONG_MIN..LONG_MAX]
+            case TYP_LONG:
+                lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : GetLowerBoundForIntegralType(fromType);
+                upperBound = GetUpperBoundForIntegralType(fromType);
+                break;
+
+            default:
+                unreached();
+        }
+    }
+
+    return {lowerBound, upperBound};
+}
+
+//------------------------------------------------------------------------
+// GetInputRangeForCast: Get the output range for a cast.
+//
+// This method is the "output" counterpart to GetInputRangeForCast, it returns
+// a range produces by a cast (by definition, non-overflowing one).
+// The output range is the same for representation-preserving casts, but
+// can be different for other. One example is CAST_OVF(uint <- long).
+// The input range is [0..UINT_MAX], while the output is [INT_MIN..INT_MAX].
+//
+// Arguments:
+//   cast - the cast node for which the range will be computed
+//
+// Return Value:
+//   The range this cast produces - see description.
+//
+/* static */ Compiler::AssertionDsc::Range Compiler::AssertionDsc::GetOutputRangeForCast(GenTreeCast* cast)
+{
+    var_types fromType     = genActualType(cast->CastOp());
+    var_types toType       = cast->CastToType();
+    bool      fromUnsigned = cast->IsUnsigned();
+
+    assert((fromType == TYP_INT) || (fromType == TYP_LONG));
+    assert(varTypeIsIntegral(toType));
+
+    if (varTypeIsSmall(toType) || (genActualType(toType) == fromType))
+    {
+        return GetInputRangeForCast(cast);
+    }
+
+    // CAST(uint/int <- ulong/long) - [INT_MIN..INT_MAX]
+    // CAST(ulong/long <- uint)     - [0..UINT_MAX]
+    // CAST(ulong/long <- int)      - [INT_MIN..INT_MAX]
+    if (!cast->gtOverflow())
+    {
+        if ((fromType == TYP_INT) && fromUnsigned)
+        {
+            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax};
+        }
+
+        return {SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
+    }
+
+    SymbolicIntegerValue lowerBound;
+    SymbolicIntegerValue upperBound;
+    switch (toType)
+    {
+        // CAST_OVF(uint <- ulong) - [INT_MIN..INT_MAX]
+        // CAST_OVF(uint <- long)  - [INT_MIN..INT_MAX]
+        case TYP_UINT:
+            lowerBound = SymbolicIntegerValue::IntMin;
+            upperBound = SymbolicIntegerValue::IntMax;
+            break;
+
+            // CAST_OVF(int <- ulong) - [0..INT_MAX]
+            // CAST_OVF(int <- long)  - [INT_MIN..INT_MAX]
+        case TYP_INT:
+            lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : SymbolicIntegerValue::IntMin;
+            upperBound = SymbolicIntegerValue::IntMax;
+            break;
+
+            // CAST_OVF(ulong <- uint) - [0..UINT_MAX]
+            // CAST_OVF(ulong <- int)  - [0..INT_MAX]
+        case TYP_ULONG:
+            lowerBound = SymbolicIntegerValue::Zero;
+            upperBound = fromUnsigned ? SymbolicIntegerValue::UIntMax : SymbolicIntegerValue::IntMax;
+            break;
+
+            // CAST_OVF(long <- uint) - [0..UINT_MAX]
+            // CAST_OVF(long <- int)  - [INT_MIN..INT_MAX]
+        case TYP_LONG:
+            lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : SymbolicIntegerValue::IntMin;
+            upperBound = fromUnsigned ? SymbolicIntegerValue::UIntMax : SymbolicIntegerValue::IntMax;
+            break;
+
+        default:
+            unreached();
+    }
+
+    return {lowerBound, upperBound};
+}
+
+/* static */ SymbolicIntegerValue Compiler::AssertionDsc::GetLowerBoundForIntegralType(var_types type)
+{
+    switch (type)
+    {
+        case TYP_BOOL:
+        case TYP_UBYTE:
+        case TYP_USHORT:
+            return SymbolicIntegerValue::Zero;
+        case TYP_BYTE:
+            return SymbolicIntegerValue::ByteMin;
+        case TYP_SHORT:
+            return SymbolicIntegerValue::ShortMin;
+        case TYP_INT:
+            return SymbolicIntegerValue::IntMin;
+        case TYP_LONG:
+            return SymbolicIntegerValue::LongMin;
+        default:
+            unreached();
+    }
+}
+
+/* static */ SymbolicIntegerValue Compiler::AssertionDsc::GetUpperBoundForIntegralType(var_types type)
+{
+    switch (type)
+    {
+        case TYP_BYTE:
+            return SymbolicIntegerValue::ByteMax;
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return SymbolicIntegerValue::UByteMax;
+        case TYP_SHORT:
+            return SymbolicIntegerValue::ShortMax;
+        case TYP_USHORT:
+            return SymbolicIntegerValue::UShortMax;
+        case TYP_INT:
+            return SymbolicIntegerValue::IntMax;
+        case TYP_UINT:
+            return SymbolicIntegerValue::UIntMax;
+        case TYP_LONG:
+            return SymbolicIntegerValue::LongMax;
+        default:
+            unreached();
+    }
+}
+
+/* static */ int64_t Compiler::AssertionDsc::SymbolicToRealValue(SymbolicIntegerValue symbolicValue)
+{
+    switch (symbolicValue)
+    {
+        case SymbolicIntegerValue::LongMin:
+            return INT64_MIN;
+        case SymbolicIntegerValue::IntMin:
+            return INT32_MIN;
+        case SymbolicIntegerValue::ShortMin:
+            return INT16_MIN;
+        case SymbolicIntegerValue::ByteMin:
+            return INT8_MIN;
+        case SymbolicIntegerValue::Zero:
+            return 0;
+        case SymbolicIntegerValue::One:
+            return 1;
+        case SymbolicIntegerValue::ByteMax:
+            return INT8_MAX;
+        case SymbolicIntegerValue::UByteMax:
+            return UINT8_MAX;
+        case SymbolicIntegerValue::ShortMax:
+            return INT16_MAX;
+        case SymbolicIntegerValue::UShortMax:
+            return UINT16_MAX;
+        case SymbolicIntegerValue::IntMax:
+            return INT32_MAX;
+        case SymbolicIntegerValue::UIntMax:
+            return UINT32_MAX;
+        case SymbolicIntegerValue::LongMax:
+            return INT64_MAX;
+        default:
+            unreached();
+    }
+}
+
+bool Compiler::AssertionDsc::Range::Contains(int64_t value) const
+{
+    int64_t lowerBound = SymbolicToRealValue(loBound);
+    int64_t upperBound = SymbolicToRealValue(hiBound);
+
+    return (lowerBound <= value) && (value <= upperBound);
 }
 
 /*****************************************************************************
@@ -2247,6 +2532,8 @@ void Compiler::optAssertionGen(GenTree* tree)
                 // This represets an assertion that we would like to prove to be true. It is not actually a true
                 // assertion.
                 // If we can prove this assertion true then we can eliminate this cast.
+
+                // TODO-Bug: this must use "input" for a cast.
                 assertionInfo   = optCreateAssertion(tree->AsOp()->gtOp1, tree, OAK_SUBRANGE);
                 assertionProven = false;
             }
@@ -2325,18 +2612,22 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
     return NO_ASSERTION_INDEX;
 }
 
-/*****************************************************************************
- *
- *  Given a lclNum, a fromType and a toType, return assertion index of the assertion that
- *  claims that a variable's value is always a valid subrange of the fromType.
- *  Thus we can discard or omit a cast to fromType. Returns NO_ASSERTION_INDEX
- *  if one such assertion could not be found in "assertions."
- */
-
-AssertionIndex Compiler::optAssertionIsSubrange(GenTree*         tree,
-                                                var_types        fromType,
-                                                var_types        toType,
-                                                ASSERT_VALARG_TP assertions)
+//------------------------------------------------------------------------
+// optAssertionIsSubrange: Find a subrange assertion for the given range and tree.
+//
+// This function will return the index of the first assertion in "assertions"
+// which claims that the value of "tree" is withing the bounds of the provided
+// "range" (i. e. "range.Contains(assertedRange)").
+//
+// Arguments:
+//    tree       - the tree for which to find the assertion
+//    range      - range the subrange of which to look for
+//    assertions - the set of assertions
+//
+// Return Value:
+//    Index of the found assertion, NO_ASSERTION_INDEX otherwise.
+//
+AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, AssertionDsc::Range range, ASSERT_VALARG_TP assertions)
 {
     if (!optLocalAssertionProp && BitVecOps::IsEmpty(apTraits, assertions))
     {
@@ -2360,46 +2651,13 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree*         tree,
                 continue;
             }
 
-            // If we have an unsigned fromType, then the loBound can't be negative
-            //
-            if (varTypeIsUnsigned(fromType))
+            if (range.Contains(curAssertion->op2.u2))
             {
-                if (curAssertion->op2.u2.loBound < 0)
-                {
-                    continue;
-                }
+                return index;
             }
-
-            // Make sure the toType is within current assertion's bounds.
-            switch (toType)
-            {
-                case TYP_BYTE:
-                case TYP_UBYTE:
-                case TYP_SHORT:
-                case TYP_USHORT:
-                    if ((curAssertion->op2.u2.loBound < AssertionDsc::GetLowerBoundForIntegralType(toType)) ||
-                        (curAssertion->op2.u2.hiBound > AssertionDsc::GetUpperBoundForIntegralType(toType)))
-                    {
-                        continue;
-                    }
-                    break;
-
-                case TYP_UINT:
-                    if (curAssertion->op2.u2.loBound < AssertionDsc::GetLowerBoundForIntegralType(toType))
-                    {
-                        continue;
-                    }
-                    break;
-
-                case TYP_INT:
-                    break;
-
-                default:
-                    continue;
-            }
-            return index;
         }
     }
+
     return NO_ASSERTION_INDEX;
 }
 
@@ -3618,119 +3876,110 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
     return optAssertionProp_Update(op2, tree, stmt);
 }
 
-/*****************************************************************************
- *
- *  Given a tree consisting of a Cast and a set of available assertions
- *  we try to propagate an assertion and modify the Cast tree if we can.
- *  We pass in the root of the tree via 'stmt', for local copy prop 'stmt'
- *  will be nullptr.
- *
- *  Returns the modified tree, or nullptr if no assertion prop took place.
- */
-GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
+//------------------------------------------------------------------------
+// optAssertionProp_Cast: Propagate assertion for a cast, possibly removing it.
+//
+// The function use "optAssertionIsSubrange" to find an assertion which claims the
+// cast's operand (only locals are supported) is a subrange of the "input" range
+// for the cast, as computed by "AssertionDsc::GetInputRangeForCast", and, if such
+// assertion is found, act on it - either remove the cast if it is not changing
+// representation, or try to remove the GTF_OVERFLOW flag from it.
+//
+// Arguments:
+//    assertions - the set of live assertions
+//    cast       - the cast for which to propagate the assertions
+//    stmt       - statement "cast" is a part of, "nullptr" for local prop
+//
+// Return Value:
+//    The, possibly modified, cast tree or "nullptr" if no propagation took place.
+//
+GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt)
 {
-    assert(tree->gtOper == GT_CAST);
+    GenTree* op1 = cast->CastOp();
 
-    var_types fromType = tree->CastFromType();
-    var_types toType   = tree->AsCast()->gtCastType;
-    GenTree*  op1      = tree->AsCast()->CastOp();
-
-    // force the fromType to unsigned if GT_UNSIGNED flag is set
-    if (tree->IsUnsigned())
-    {
-        fromType = varTypeToUnsigned(fromType);
-    }
-
-    // If we have a cast involving floating point types, then bail.
-    if (varTypeIsFloating(toType) || varTypeIsFloating(fromType))
+    // Bail if we have a cast involving floating point or GC types.
+    if (!varTypeIsIntegral(cast) || !varTypeIsIntegral(op1))
     {
         return nullptr;
     }
 
     // Skip over a GT_COMMA node(s), if necessary to get to the lcl.
     GenTree* lcl = op1;
-    while (lcl->gtOper == GT_COMMA)
+    while (lcl->OperIs(GT_COMMA))
     {
-        lcl = lcl->AsOp()->gtOp2;
+        lcl = lcl->AsOp()->gtGetOp2();
     }
 
     // If we don't have a cast of a LCL_VAR then bail.
-    if (lcl->gtOper != GT_LCL_VAR)
+    if (!lcl->OperIs(GT_LCL_VAR))
     {
         return nullptr;
     }
 
-    AssertionIndex index = optAssertionIsSubrange(lcl, fromType, toType, assertions);
+    AssertionDsc::Range range = AssertionDsc::GetInputRangeForCast(cast);
+    AssertionIndex      index = optAssertionIsSubrange(lcl, range, assertions);
     if (index != NO_ASSERTION_INDEX)
     {
-        LclVarDsc* varDsc = &lvaTable[lcl->AsLclVarCommon()->GetLclNum()];
-        if (varDsc->lvNormalizeOnLoad() || varTypeIsLong(varDsc->TypeGet()))
+        LclVarDsc* varDsc = lvaGetDesc(lcl->AsLclVarCommon());
+
+        // Representation-changing casts cannot be removed.
+        if ((genActualType(cast) != genActualType(lcl)))
         {
-            // For normalize on load variables it must be a narrowing cast to remove
-            if (genTypeSize(toType) > genTypeSize(varDsc->TypeGet()))
+            // Can we just remove the GTF_OVERFLOW flag?
+            if (!cast->gtOverflow())
             {
-                // Can we just remove the GTF_OVERFLOW flag?
-                if ((tree->gtFlags & GTF_OVERFLOW) == 0)
-                {
-                    return nullptr;
-                }
-                else
-                {
-
+                return nullptr;
+            }
 #ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("\nSubrange prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-                        gtDispTree(tree, nullptr, nullptr, true);
-                    }
+            if (verbose)
+            {
+                printf("\nSubrange prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
+                DISPNODE(cast);
+            }
 #endif
-                    tree->gtFlags &= ~GTF_OVERFLOW; // This cast cannot overflow
-                    return optAssertionProp_Update(tree, tree, stmt);
-                }
-            }
+            cast->ClearOverflow();
+            return optAssertionProp_Update(cast, cast, stmt);
+        }
 
-            //             GT_CAST   long -> uint -> int
-            //                |
-            //           GT_LCL_VAR long
-            //
-            // Where the lclvar is known to be in the range of [0..MAX_UINT]
-            //
-            // A load of a 32-bit unsigned int is the same as a load of a 32-bit signed int
-            //
-            if (toType == TYP_UINT)
+        // We might need to retype a "normalize on load" local back to its original small type
+        // so that codegen recognizes it needs to use narrow loads if the local ends up in memory.
+        if (varDsc->lvNormalizeOnLoad())
+        {
+            // The Jit is known to play somewhat loose with small types, so let's restrict this code
+            // to the pattern we know is "safe and sound", i. e. CAST(type <- LCL_VAR(int, V00 type)).
+            if ((varDsc->TypeGet() != cast->CastToType()) || !lcl->TypeIs(TYP_INT))
             {
-                toType = TYP_INT;
+                return nullptr;
             }
 
-            // Change the "lcl" type to match what the cast wanted, by propagating the type
-            // change down the comma nodes leading to the "lcl", if we skipped them earlier.
             GenTree* tmp = op1;
-            while (tmp->gtOper == GT_COMMA)
+            while (tmp->OperIs(GT_COMMA))
             {
-                tmp->gtType = toType;
-                tmp         = tmp->AsOp()->gtOp2;
+                tmp->gtType = varDsc->TypeGet();
+                tmp         = tmp->AsOp()->gtGetOp2();
             }
             noway_assert(tmp == lcl);
-            tmp->gtType = toType;
+            tmp->gtType = varDsc->TypeGet();
         }
 
 #ifdef DEBUG
         if (verbose)
         {
             printf("\nSubrange prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-            gtDispTree(tree, nullptr, nullptr, true);
+            DISPNODE(cast);
         }
 #endif
-        return optAssertionProp_Update(op1, tree, stmt);
+        return optAssertionProp_Update(op1, cast, stmt);
     }
+
     return nullptr;
 }
 
 /*****************************************************************************
- *
- *  Given a tree with an array bounds check node, eliminate it because it was
- *  checked already in the program.
- */
+*
+*  Given a tree with an array bounds check node, eliminate it because it was
+*  checked already in the program.
+*/
 GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
     // Remove the bounds check as part of the GT_COMMA node since we need parent pointer to remove nodes.
@@ -4299,7 +4548,7 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
             return optAssertionProp_Comma(assertions, tree, stmt);
 
         case GT_CAST:
-            return optAssertionProp_Cast(assertions, tree, stmt);
+            return optAssertionProp_Cast(assertions, tree->AsCast(), stmt);
 
         case GT_CALL:
             return optAssertionProp_Call(assertions, tree->AsCall(), stmt);
@@ -4543,7 +4792,7 @@ void Compiler::optImpliedByConstAssertion(AssertionDsc* constAssertion, ASSERT_T
         {
             case O2K_SUBRANGE:
                 // Is the const assertion's constant, within implied assertion's bounds?
-                usable = ((iconVal >= impAssertion->op2.u2.loBound) && (iconVal <= impAssertion->op2.u2.hiBound));
+                usable = impAssertion->op2.u2.Contains(iconVal);
                 break;
 
             case O2K_CONST_INT:
