@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
@@ -16,6 +17,7 @@ namespace System.Net.Quic.Tests
          where T : IQuicImplProviderFactory, new()
     {
         private static byte[] s_data = Encoding.UTF8.GetBytes("Hello world!");
+        public QuicStreamTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public async Task BasicTest()
@@ -679,8 +681,14 @@ namespace System.Net.Quic.Tests
         }
     }
 
-    public sealed class QuicStreamTests_MockProvider : QuicStreamTests<MockProviderFactory> { }
+    public sealed class QuicStreamTests_MockProvider : QuicStreamTests<MockProviderFactory>
+    {
+        public QuicStreamTests_MockProvider(ITestOutputHelper output) : base(output) { }
+    }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
-    public sealed class QuicStreamTests_MsQuicProvider : QuicStreamTests<MsQuicProviderFactory> { }
+    public sealed class QuicStreamTests_MsQuicProvider : QuicStreamTests<MsQuicProviderFactory>
+    {
+        public QuicStreamTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }
+    }
 }

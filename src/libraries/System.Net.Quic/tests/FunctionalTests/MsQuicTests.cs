@@ -22,10 +22,7 @@ namespace System.Net.Quic.Tests
     {
         private static ReadOnlyMemory<byte> s_data = Encoding.UTF8.GetBytes("Hello world!");
 
-        public MsQuicTests(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        public MsQuicTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public async Task UnidirectionalAndBidirectionalStreamCountsWork()
@@ -33,7 +30,7 @@ namespace System.Net.Quic.Tests
             using QuicListener listener = CreateQuicListener();
             using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
             Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
-            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeout);
+            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeoutMilliseconds);
             using QuicConnection serverConnection = serverTask.Result;
 
             Assert.Equal(100, serverConnection.GetRemoteAvailableBidirectionalStreamCount());
@@ -55,7 +52,7 @@ namespace System.Net.Quic.Tests
 
             using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
             Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
-            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeout);
+            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeoutMilliseconds);
             using QuicConnection serverConnection = serverTask.Result;
 
             Assert.Equal(100, clientConnection.GetRemoteAvailableBidirectionalStreamCount());
@@ -112,7 +109,7 @@ namespace System.Net.Quic.Tests
 
             using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
             Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
-            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeout);
+            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeoutMilliseconds);
             using QuicConnection serverConnection = serverTask.Result;
         }
 
@@ -341,7 +338,7 @@ namespace System.Net.Quic.Tests
 
             using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, clientOptions);
             Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
-            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeout);
+            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeoutMilliseconds);
             using QuicConnection serverConnection = serverTask.Result;
 
             // Verify functionality of the connections.
@@ -358,7 +355,7 @@ namespace System.Net.Quic.Tests
             using QuicListener listener = CreateQuicListener(maxUnidirectionalStreams: 1);
             using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
             Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
-            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeout);
+            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeoutMilliseconds);
             using QuicConnection serverConnection = serverTask.Result;
             listener.Dispose();
 
@@ -385,7 +382,7 @@ namespace System.Net.Quic.Tests
             using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
 
             Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
-            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeout);
+            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeoutMilliseconds);
             using QuicConnection serverConnection = serverTask.Result;
 
             // No stream opened yet, should return immediately.
@@ -423,7 +420,7 @@ namespace System.Net.Quic.Tests
 
             using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
             Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
-            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeout);
+            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeoutMilliseconds);
             using QuicConnection serverConnection = serverTask.Result;
 
             await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverConnection.AcceptStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(100)));
@@ -527,7 +524,7 @@ namespace System.Net.Quic.Tests
             using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
 
             Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
-            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeout);
+            await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeoutMilliseconds);
             using QuicConnection serverConnection = serverTask.Result;
 
 
@@ -712,7 +709,7 @@ namespace System.Net.Quic.Tests
                 using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
 
                 Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
-                await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeout);
+                await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeoutMilliseconds);
                 using QuicConnection serverConnection = serverTask.Result;
 
                 using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
@@ -735,7 +732,7 @@ namespace System.Net.Quic.Tests
                 using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
 
                 Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
-                await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeout);
+                await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeoutMilliseconds);
                 using QuicConnection serverConnection = serverTask.Result;
 
                 using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
@@ -778,7 +775,7 @@ namespace System.Net.Quic.Tests
                 byte[] buffer = new byte[100];
                 QuicConnectionAbortedException ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
                 Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-            }).WaitAsync(TimeSpan.FromSeconds(PassingTestTimeout));
+            }).WaitAsync(TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds));
         }
 
         [Fact]
@@ -804,7 +801,7 @@ namespace System.Net.Quic.Tests
 
                 byte[] buffer = new byte[100];
                 await Assert.ThrowsAsync<QuicOperationAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
-            }).WaitAsync(TimeSpan.FromSeconds(PassingTestTimeout));
+            }).WaitAsync(TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds));
         }
     }
 }
