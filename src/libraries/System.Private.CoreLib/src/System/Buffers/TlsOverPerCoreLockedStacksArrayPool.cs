@@ -36,9 +36,9 @@ namespace System.Buffers
 
         /// <summary>A per-thread array of arrays, to cache one array per array size per thread.</summary>
         [ThreadStatic]
-        private static T[]?[]? t_tlsBuckets;
+        private static ThreadLocalArray[]? t_tlsBuckets;
         /// <summary>Used to keep track of all thread local buckets for trimming if needed.</summary>
-        private readonly ConditionalWeakTable<T[]?[], object?> _allTlsBuckets = new ConditionalWeakTable<T[]?[], object?>();
+        private readonly ConditionalWeakTable<ThreadLocalArray[], object?> _allTlsBuckets = new ConditionalWeakTable<ThreadLocalArray[], object?>();
         /// <summary>
         /// An array of per-core array stacks. The slots are lazily initialized to avoid creating
         /// lots of overhead for unused array sizes.
@@ -67,13 +67,13 @@ namespace System.Buffers
             int bucketIndex = Utilities.SelectBucketIndex(minimumLength);
 
             // First, try to get an array from TLS if possible.
-            T[]?[]? tlsBuckets = t_tlsBuckets;
+            ThreadLocalArray[]? tlsBuckets = t_tlsBuckets;
             if (tlsBuckets is not null && (uint)bucketIndex < (uint)tlsBuckets.Length)
             {
-                buffer = tlsBuckets[bucketIndex];
+                buffer = tlsBuckets[bucketIndex].Array;
                 if (buffer is not null)
                 {
-                    tlsBuckets[bucketIndex] = null;
+                    tlsBuckets[bucketIndex].Array = null;
                     if (log.IsEnabled())
                     {
                         log.BufferRented(buffer.GetHashCode(), buffer.Length, Id, bucketIndex);
@@ -143,7 +143,7 @@ namespace System.Buffers
             // this if the array being returned is erroneous or too large for the pool, but the
             // former condition is an error we don't need to optimize for, and the latter is incredibly
             // rare, given a max size of 1B elements.
-            T[]?[] tlsBuckets = t_tlsBuckets ?? InitializeTlsBucketsAndTrimming();
+            ThreadLocalArray[] tlsBuckets = t_tlsBuckets ?? InitializeTlsBucketsAndTrimming();
 
             bool haveBucket = false;
             bool returned = true;
@@ -166,8 +166,9 @@ namespace System.Buffers
                 // Store the array into the TLS bucket.  If there's already an array in it,
                 // push that array down into the per-core stacks, preferring to keep the latest
                 // one in TLS for better locality.
-                T[]? prev = tlsBuckets[bucketIndex];
-                tlsBuckets[bucketIndex] = array;
+                ref ThreadLocalArray tla = ref tlsBuckets[bucketIndex];
+                T[]? prev = tla.Array;
+                tla = new ThreadLocalArray(array);
                 if (prev is not null)
                 {
                     PerCoreLockedStacks stackBucket = _buckets[bucketIndex] ?? CreatePerCoreLockedStacks(bucketIndex);
@@ -194,43 +195,89 @@ namespace System.Buffers
             int milliseconds = Environment.TickCount;
             Utilities.MemoryPressure pressure = Utilities.GetMemoryPressure();
 
+            // Log that we're trimming.
             ArrayPoolEventSource log = ArrayPoolEventSource.Log;
             if (log.IsEnabled())
             {
                 log.BufferTrimPoll(milliseconds, (int)pressure);
             }
 
+            // Trim each of the per-core buckets.
             PerCoreLockedStacks?[] perCoreBuckets = _buckets;
             for (int i = 0; i < perCoreBuckets.Length; i++)
             {
-                perCoreBuckets[i]?.Trim((uint)milliseconds, Id, pressure, Utilities.GetMaxSizeForBucket(i));
+                perCoreBuckets[i]?.Trim(milliseconds, Id, pressure, Utilities.GetMaxSizeForBucket(i));
             }
+
+            // Trim each of the TLS buckets. Note that threads may be modifying their TLS slots concurrently with
+            // this trimming happening. We do not force synchronization with those operations, so we accept the fact
+            // that we may end up firing a trimming event even if an array wasn't trimmed, and potentially
+            // trim an array we didn't need to.  Both of these should be rare occurrences.
 
             if (pressure == Utilities.MemoryPressure.High)
             {
-                // Under high pressure, release all thread locals
-                if (log.IsEnabled())
+                // Under high pressure, release all thread locals.
+                if (!log.IsEnabled())
                 {
-                    foreach (KeyValuePair<T[]?[], object?> tlsBuckets in _allTlsBuckets)
+                    foreach (KeyValuePair<ThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets)
                     {
-                        T[]?[] buckets = tlsBuckets.Key;
+                        Array.Clear(tlsBuckets.Key);
+                    }
+                }
+                else
+                {
+                    foreach (KeyValuePair<ThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets)
+                    {
+                        ThreadLocalArray[] buckets = tlsBuckets.Key;
                         for (int i = 0; i < buckets.Length; i++)
                         {
-                            T[]? buffer = Interlocked.Exchange(ref buckets[i], null);
-                            if (buffer is not null)
+                            if (Interlocked.Exchange(ref buckets[i].Array, null) is T[] buffer)
                             {
-                                // As we don't want to take a perf hit in the rent path it
-                                // is possible that a buffer could be rented as we "free" it.
                                 log.BufferTrimmed(buffer.GetHashCode(), buffer.Length, Id);
                             }
                         }
                     }
                 }
-                else
+            }
+            else
+            {
+                // Otherwise, release thread locals based on how long we've observed them to be stored. This time is
+                // approximate, with the time set not when the array is stored but when we see it during a Trim, so it
+                // takes at least two Trim calls (and thus two gen2 GCs) to drop an array, unless we're in high memory
+                // pressure. These values have been set arbitrarily; we could tune them in the future.
+                uint millisecondsThreshold = pressure switch
                 {
-                    foreach (KeyValuePair<T[]?[], object?> tlsBuckets in _allTlsBuckets)
+                    Utilities.MemoryPressure.Medium => 15_000,
+                    _ => 30_000,
+                };
+
+                foreach (KeyValuePair<ThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets)
+                {
+                    ThreadLocalArray[] buckets = tlsBuckets.Key;
+                    for (int i = 0; i < buckets.Length; i++)
                     {
-                        Array.Clear(tlsBuckets.Key);
+                        if (buckets[i].Array is null)
+                        {
+                            continue;
+                        }
+
+                        // We treat 0 to mean it hasn't yet been seen in a Trim call. In the very rare case where Trim records 0,
+                        // it'll take an extra Trim call to remove the array.
+                        int lastSeen = buckets[i].TimeStamp;
+                        if (lastSeen == 0)
+                        {
+                            buckets[i].TimeStamp = milliseconds;
+                        }
+                        else if ((milliseconds < lastSeen) || (milliseconds - lastSeen) >= millisecondsThreshold)
+                        {
+                            // Time noticeably wrapped, or we've surpassed the threshold.
+                            // Clear out the array, and log its being trimmed if desired.
+                            if (Interlocked.Exchange(ref buckets[i].Array, null) is T[] buffer &&
+                                log.IsEnabled())
+                            {
+                                log.BufferTrimmed(buffer.GetHashCode(), buffer.Length, Id);
+                            }
+                        }
                     }
                 }
             }
@@ -238,11 +285,11 @@ namespace System.Buffers
             return true;
         }
 
-        private T[]?[] InitializeTlsBucketsAndTrimming()
+        private ThreadLocalArray[] InitializeTlsBucketsAndTrimming()
         {
             Debug.Assert(t_tlsBuckets is null);
 
-            T[]?[]? tlsBuckets = new T[NumBuckets][];
+            var tlsBuckets = new ThreadLocalArray[NumBuckets];
             t_tlsBuckets = tlsBuckets;
 
             _allTlsBuckets.Add(tlsBuckets, null);
@@ -307,7 +354,7 @@ namespace System.Buffers
                 return null;
             }
 
-            public void Trim(uint tickCount, int id, Utilities.MemoryPressure pressure, int bucketSize)
+            public void Trim(int tickCount, int id, Utilities.MemoryPressure pressure, int bucketSize)
             {
                 LockedStack[] stacks = _perCoreStacks;
                 for (int i = 0; i < stacks.Length; i++)
@@ -320,9 +367,12 @@ namespace System.Buffers
         /// <summary>Provides a simple, bounded stack of arrays, protected by a lock.</summary>
         private sealed class LockedStack
         {
+            /// <summary>The arrays in the stack.</summary>
             private readonly T[]?[] _arrays = new T[MaxBuffersPerArraySizePerCore][];
+            /// <summary>Number of arrays stored in <see cref="_arrays"/>.</summary>
             private int _count;
-            private uint _firstStackItemMS;
+            /// <summary>Timestamp set by Trim when it sees this as 0.</summary>
+            private int _timestamp;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool TryPush(T[] array)
@@ -335,8 +385,9 @@ namespace System.Buffers
                 {
                     if (count == 0)
                     {
-                        // Stash the time the bottom of the stack was filled
-                        _firstStackItemMS = (uint)Environment.TickCount;
+                        // Reset the time stamp now that we're transitioning from empty to non-empty.
+                        // Trim will see this as 0 and initialize it to the current time when Trim is called.
+                        _timestamp = 0;
                     }
 
                     arrays[count] = array;
@@ -364,11 +415,11 @@ namespace System.Buffers
                 return arr;
             }
 
-            public void Trim(uint tickCount, int id, Utilities.MemoryPressure pressure, int bucketSize)
+            public void Trim(int tickCount, int id, Utilities.MemoryPressure pressure, int bucketSize)
             {
-                const uint StackTrimAfterMS = 60 * 1000;                        // Trim after 60 seconds for low/moderate pressure
-                const uint StackHighTrimAfterMS = 10 * 1000;                    // Trim after 10 seconds for high pressure
-                const uint StackRefreshMS = StackTrimAfterMS / 4;               // Time bump after trimming (1/4 trim time)
+                const int StackTrimAfterMS = 60 * 1000;                        // Trim after 60 seconds for low/moderate pressure
+                const int StackHighTrimAfterMS = 10 * 1000;                    // Trim after 10 seconds for high pressure
+                const int StackRefreshMS = StackTrimAfterMS / 4;               // Time bump after trimming (1/4 trim time)
                 const int StackLowTrimCount = 1;                                // Trim one item when pressure is low
                 const int StackMediumTrimCount = 2;                             // Trim two items when pressure is moderate
                 const int StackHighTrimCount = MaxBuffersPerArraySizePerCore;   // Trim all items when pressure is high
@@ -381,62 +432,88 @@ namespace System.Buffers
                     return;
                 }
 
-                uint trimTicks = pressure == Utilities.MemoryPressure.High ? StackHighTrimAfterMS : StackTrimAfterMS;
+                int trimTicks = pressure == Utilities.MemoryPressure.High ? StackHighTrimAfterMS : StackTrimAfterMS;
 
                 lock (this)
                 {
-                    if (_count > 0 && _firstStackItemMS > tickCount || (tickCount - _firstStackItemMS) > trimTicks)
+                    if (_count == 0)
                     {
-                        // We've wrapped the tick count or elapsed enough time since the
-                        // first item went into the stack. Drop the top item so it can
-                        // be collected and make the stack look a little newer.
+                        return;
+                    }
 
-                        ArrayPoolEventSource log = ArrayPoolEventSource.Log;
-                        int trimCount = StackLowTrimCount;
-                        switch (pressure)
-                        {
-                            case Utilities.MemoryPressure.High:
-                                trimCount = StackHighTrimCount;
+                    if (_timestamp == 0)
+                    {
+                        _timestamp = tickCount;
+                        return;
+                    }
 
-                                // When pressure is high, aggressively trim larger arrays.
-                                if (bucketSize > StackLargeBucket)
-                                {
-                                    trimCount++;
-                                }
-                                if (Unsafe.SizeOf<T>() > StackModerateTypeSize)
-                                {
-                                    trimCount++;
-                                }
-                                if (Unsafe.SizeOf<T>() > StackLargeTypeSize)
-                                {
-                                    trimCount++;
-                                }
-                                break;
+                    if (_timestamp <= tickCount && (tickCount - _timestamp) <= trimTicks)
+                    {
+                        return;
+                    }
 
-                            case Utilities.MemoryPressure.Medium:
-                                trimCount = StackMediumTrimCount;
-                                break;
-                        }
+                    // We've wrapped the tick count or elapsed enough time since the
+                    // first item went into the stack. Drop the top item so it can
+                    // be collected and make the stack look a little newer.
 
-                        while (_count > 0 && trimCount-- > 0)
-                        {
-                            T[]? array = _arrays[--_count];
-                            Debug.Assert(array is not null, "No nulls should have been present in slots < _count.");
-                            _arrays[_count] = null;
+                    ArrayPoolEventSource log = ArrayPoolEventSource.Log;
+                    int trimCount = StackLowTrimCount;
+                    switch (pressure)
+                    {
+                        case Utilities.MemoryPressure.High:
+                            trimCount = StackHighTrimCount;
 
-                            if (log.IsEnabled())
+                            // When pressure is high, aggressively trim larger arrays.
+                            if (bucketSize > StackLargeBucket)
                             {
-                                log.BufferTrimmed(array.GetHashCode(), array.Length, id);
+                                trimCount++;
                             }
-                        }
+                            if (Unsafe.SizeOf<T>() > StackModerateTypeSize)
+                            {
+                                trimCount++;
+                            }
+                            if (Unsafe.SizeOf<T>() > StackLargeTypeSize)
+                            {
+                                trimCount++;
+                            }
+                            break;
 
-                        if (_count > 0 && _firstStackItemMS < uint.MaxValue - StackRefreshMS)
+                        case Utilities.MemoryPressure.Medium:
+                            trimCount = StackMediumTrimCount;
+                            break;
+                    }
+
+                    while (_count > 0 && trimCount-- > 0)
+                    {
+                        T[]? array = _arrays[--_count];
+                        Debug.Assert(array is not null, "No nulls should have been present in slots < _count.");
+                        _arrays[_count] = null;
+
+                        if (log.IsEnabled())
                         {
-                            // Give the remaining items a bit more time
-                            _firstStackItemMS += StackRefreshMS;
+                            log.BufferTrimmed(array.GetHashCode(), array.Length, id);
                         }
                     }
+
+                    _timestamp = _count > 0 ?
+                        _timestamp + StackRefreshMS : // Give the remaining items a bit more time
+                        0;
                 }
+            }
+        }
+
+        /// <summary>Wrapper for arrays stored in ThreadStatic buckets.</summary>
+        private struct ThreadLocalArray
+        {
+            /// <summary>The stored array.</summary>
+            public T[]? Array;
+            /// <summary>Environment.TickCount timestamp for when this array was observed by Trim.</summary>
+            public int TimeStamp;
+
+            public ThreadLocalArray(T[] array)
+            {
+                Array = array;
+                TimeStamp = 0;
             }
         }
     }
