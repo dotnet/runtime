@@ -6,8 +6,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Security;
+using System.Net.Sockets;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -106,6 +109,200 @@ namespace System.Net.Quic.Tests
                 }
 
                 return ret;
+            };
+
+            using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
+            ValueTask clientTask = clientConnection.ConnectAsync();
+
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await clientTask;
+        }
+
+        [Fact]
+        public async Task CertificateCallbackThrowPropagates()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource(PassingTestTimeout);
+            X509Certificate? receivedCertificate = null;
+
+            var quicOptions = new QuicListenerOptions();
+            quicOptions.ListenEndPoint = new IPEndPoint( Socket.OSSupportsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0);
+            quicOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
+
+            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, quicOptions);
+
+            QuicClientConnectionOptions options = new QuicClientConnectionOptions()
+            {
+                RemoteEndPoint = listener.ListenEndPoint,
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
+            };
+
+            options.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+            {
+                receivedCertificate = cert;
+                throw new ArithmeticException("foobar");
+            };
+
+            options.ClientAuthenticationOptions.TargetHost = "foobar1";
+
+            QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
+
+            Task<QuicConnection> serverTask = listener.AcceptConnectionAsync(cts.Token).AsTask();
+            await Assert.ThrowsAsync<ArithmeticException>(() => clientConnection.ConnectAsync(cts.Token).AsTask());
+            QuicConnection serverConnection = await serverTask;
+
+            Assert.Equal(quicOptions.ServerAuthenticationOptions.ServerCertificate, receivedCertificate);
+
+            clientConnection.Dispose();
+            serverConnection.Dispose();
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56263")]
+        public async Task ConnectWithCertificateCallback()
+        {
+            X509Certificate2 c1 = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+            X509Certificate2 c2 = System.Net.Test.Common.Configuration.Certificates.GetClientCertificate(); // This 'wrong' certificate but should be sufficient
+            X509Certificate2 expectedCertificate = c1;
+
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(PassingTestTimeout);
+            string? receivedHostName = null;
+            X509Certificate? receivedCertificate = null;
+
+            var quicOptions = new QuicListenerOptions();
+            quicOptions.ListenEndPoint = new IPEndPoint( Socket.OSSupportsIPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0);
+            quicOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
+            quicOptions.ServerAuthenticationOptions.ServerCertificate = null;
+            quicOptions.ServerAuthenticationOptions.ServerCertificateSelectionCallback = (sender, hostName) =>
+            {
+                receivedHostName = hostName;
+                if (hostName == "foobar1")
+                {
+                    return c1;
+                }
+                else if (hostName == "foobar2")
+                {
+                    return c2;
+                }
+
+                return null;
+            };
+
+            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, quicOptions);
+
+            QuicClientConnectionOptions options = new QuicClientConnectionOptions()
+            {
+                RemoteEndPoint = listener.ListenEndPoint,
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
+            };
+
+            options.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+            {
+                receivedCertificate = cert;
+                return true;
+            };
+
+            options.ClientAuthenticationOptions.TargetHost = "foobar1";
+
+            QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
+
+            Task<QuicConnection> serverTask = listener.AcceptConnectionAsync(cts.Token).AsTask();
+            await new Task[] { clientConnection.ConnectAsync().AsTask(), serverTask}.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+            QuicConnection serverConnection = serverTask.Result;
+
+            Assert.Equal(options.ClientAuthenticationOptions.TargetHost, receivedHostName);
+            Assert.Equal(c1, receivedCertificate);
+            clientConnection.Dispose();
+            serverConnection.Dispose();
+
+            // This should fail when callback return null.
+            options.ClientAuthenticationOptions.TargetHost = "foobar3";
+            clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
+            Task clientTask = clientConnection.ConnectAsync(cts.Token).AsTask();
+
+            await Assert.ThrowsAsync<QuicException>(() => clientTask);
+            Assert.Equal(options.ClientAuthenticationOptions.TargetHost, receivedHostName);
+            clientConnection.Dispose();
+
+            // Do this last to make sure Listener is still functional.
+            options.ClientAuthenticationOptions.TargetHost = "foobar2";
+            expectedCertificate = c2;
+
+            clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
+            serverTask = listener.AcceptConnectionAsync(cts.Token).AsTask();
+            await new Task[] { clientConnection.ConnectAsync().AsTask(), serverTask}.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
+            serverConnection = serverTask.Result;
+
+            Assert.Equal(options.ClientAuthenticationOptions.TargetHost, receivedHostName);
+            Assert.Equal(c2, receivedCertificate);
+            clientConnection.Dispose();
+            serverConnection.Dispose();
+        }
+
+        [Fact]
+        public async Task ConnectWithCertificateForDifferentName_Throws()
+        {
+            (X509Certificate2 certificate, _) = System.Net.Security.Tests.TestHelper.GenerateCertificates("localhost");
+
+            var quicOptions = new QuicListenerOptions();
+            quicOptions.ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
+            quicOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
+            quicOptions.ServerAuthenticationOptions.ServerCertificate = certificate;
+
+            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, quicOptions);
+
+            QuicClientConnectionOptions options = new QuicClientConnectionOptions()
+            {
+                RemoteEndPoint = listener.ListenEndPoint,
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
+            };
+
+            // Use different target host on purpose to get RemoteCertificateNameMismatch ssl error.
+            options.ClientAuthenticationOptions.TargetHost = "loopback";
+            options.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+            {
+                Assert.Equal(certificate.Subject, cert.Subject);
+                Assert.Equal(certificate.Issuer, cert.Issuer);
+                Assert.Equal(SslPolicyErrors.RemoteCertificateNameMismatch, errors & SslPolicyErrors.RemoteCertificateNameMismatch);
+                return SslPolicyErrors.None == errors;
+            };
+
+            using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
+            ValueTask clientTask = clientConnection.ConnectAsync();
+
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await Assert.ThrowsAsync<AuthenticationException>(async () => await clientTask);
+        }
+
+        [Theory]
+        [InlineData("127.0.0.1", true)]
+        [InlineData("::1", true)]
+        [InlineData("127.0.0.1", false)]
+        [InlineData("::1", false)]
+        public async Task ConnectWithCertificateForLoopbackIP_IndicatesExpectedError(string ipString, bool expectsError)
+        {
+            var ipAddress = IPAddress.Parse(ipString);
+            (X509Certificate2 certificate, _) = System.Net.Security.Tests.TestHelper.GenerateCertificates(expectsError ? "badhost" : "localhost");
+
+            var quicOptions = new QuicListenerOptions();
+            quicOptions.ListenEndPoint = new IPEndPoint(ipAddress, 0);
+            quicOptions.ServerAuthenticationOptions = GetSslServerAuthenticationOptions();
+            quicOptions.ServerAuthenticationOptions.ServerCertificate = certificate;
+
+            using QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, quicOptions);
+
+            QuicClientConnectionOptions options = new QuicClientConnectionOptions()
+            {
+                RemoteEndPoint = new IPEndPoint(ipAddress, listener.ListenEndPoint.Port),
+                ClientAuthenticationOptions = GetSslClientAuthenticationOptions(),
+            };
+
+            options.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+            {
+                Assert.Equal(certificate.Subject, cert.Subject);
+                Assert.Equal(certificate.Issuer, cert.Issuer);
+                Assert.Equal(expectsError ? SslPolicyErrors.RemoteCertificateNameMismatch : SslPolicyErrors.None, errors & SslPolicyErrors.RemoteCertificateNameMismatch);
+                return true;
             };
 
             using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);

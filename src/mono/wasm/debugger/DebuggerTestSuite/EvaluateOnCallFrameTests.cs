@@ -476,23 +476,6 @@ namespace DebuggerTests
                 await EvaluateOnCallFrameAndCheck(id, ("this.PropertyThrowException", TString("System.Exception: error")));
             });
 
-        async Task EvaluateOnCallFrameAndCheck(string call_frame_id, params (string expression, JObject expected)[] args)
-        {
-            foreach (var arg in args)
-            {
-                var (eval_val, _) = await EvaluateOnCallFrame(call_frame_id, arg.expression);
-                try
-                {
-                    await CheckValue(eval_val, arg.expected, arg.expression);
-                }
-                catch
-                {
-                    Console.WriteLine($"CheckValue failed for {arg.expression}. Expected: {arg.expected}, vs {eval_val}");
-                    throw;
-                }
-            }
-        }
-
         async Task EvaluateOnCallFrameFail(string call_frame_id, params (string expression, string class_name)[] args)
         {
             foreach (var arg in args)
@@ -513,7 +496,7 @@ namespace DebuggerTests
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                 var (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethodWrong()", expect_ok: false );
-                AssertEqual("Method 'MyMethodWrong' not found in type 'DebuggerTests.EvaluateMethodTestsClass.ParmToTest'", res.Error["message"]?.Value<string>(), "wrong error message");
+                AssertEqual("Unable to evaluate method 'MyMethodWrong'", res.Error["message"]?.Value<string>(), "wrong error message");
 
                 (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false );
                 AssertEqual("Unable to evaluate method 'MyMethod'", res.Error["message"]?.Value<string>(), "wrong error message");
@@ -522,10 +505,10 @@ namespace DebuggerTests
                 AssertEqual("Unable to evaluate method 'CallMethodWithParm'", res.Error["message"]?.Value<string>(), "wrong error message");
 
                 (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjNull.MyMethod()", expect_ok: false );
-                AssertEqual("Object reference not set to an instance of an object.", res.Error["message"]?.Value<string>(), "wrong error message");
+                AssertEqual("Unable to evaluate method 'MyMethod'", res.Error["message"]?.Value<string>(), "wrong error message");
 
                 (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false );
-                AssertEqual("Object reference not set to an instance of an object.", res.Error["message"]?.Value<string>(), "wrong error message");
+                AssertEqual("Unable to evaluate method 'MyMethod'", res.Error["message"]?.Value<string>(), "wrong error message");
            });
 
         [Fact]
@@ -540,6 +523,7 @@ namespace DebuggerTests
                    ("this.CallMethod()", TNumber(1)),
                    ("this.CallMethod()", TNumber(1)),
                    ("this.ParmToTestObj.MyMethod()", TString("methodOK")),
+                   ("this.ParmToTestObj.ToString()", TString("DebuggerTests.EvaluateMethodTestsClass+ParmToTest")),
                    ("this.objToTest.MyMethod()", TString("methodOK")));
            });
 

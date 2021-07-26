@@ -4515,6 +4515,7 @@ private:
     void impSpillCliqueSetMember(SpillCliqueDir predOrSucc, BasicBlock* blk, BYTE val);
 
     void impPushVar(GenTree* op, typeInfo tiRetVal);
+    GenTreeLclVar* impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET offset));
     void impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiRetVal);
     void impLoadVar(unsigned lclNum, IL_OFFSET offset)
     {
@@ -4603,7 +4604,8 @@ private:
                                       bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo);
 
-    bool impTailCallRetTypeCompatible(var_types                callerRetType,
+    bool impTailCallRetTypeCompatible(bool                     allowWidening,
+                                      var_types                callerRetType,
                                       CORINFO_CLASS_HANDLE     callerRetTypeClass,
                                       CorInfoCallConvExtension callerCallConv,
                                       var_types                calleeRetType,
@@ -5052,6 +5054,33 @@ public:
         }
         return m_opAsgnVarDefSsaNums;
     }
+
+    // This map tracks nodes whose value numbers explicitly or implicitly depend on memory states.
+    // The map provides the entry block of the most closely enclosing loop that
+    // defines the memory region accessed when defining the nodes's VN.
+    //
+    // This information should be consulted when considering hoisting node out of a loop, as the VN
+    // for the node will only be valid within the indicated loop.
+    //
+    // It is not fine-grained enough to track memory dependence within loops, so cannot be used
+    // for more general code motion.
+    //
+    // If a node does not have an entry in the map we currently assume the VN is not memory dependent
+    // and so memory does not constrain hoisting.
+    //
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BasicBlock*> NodeToLoopMemoryBlockMap;
+    NodeToLoopMemoryBlockMap* m_nodeToLoopMemoryBlockMap;
+    NodeToLoopMemoryBlockMap* GetNodeToLoopMemoryBlockMap()
+    {
+        if (m_nodeToLoopMemoryBlockMap == nullptr)
+        {
+            m_nodeToLoopMemoryBlockMap = new (getAllocator()) NodeToLoopMemoryBlockMap(getAllocator());
+        }
+        return m_nodeToLoopMemoryBlockMap;
+    }
+
+    void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
+    void optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree);
 
     // Requires value numbering phase to have completed. Returns the value number ("gtVN") of the
     // "tree," EXCEPT in the case of GTF_VAR_USEASG, because the tree node's gtVN member is the
@@ -7959,6 +7988,14 @@ public:
 
     bool eeRunWithErrorTrapImp(void (*function)(void*), void* param);
 
+    template <typename ParamType>
+    bool eeRunWithSPMIErrorTrap(void (*function)(ParamType*), ParamType* param)
+    {
+        return eeRunWithSPMIErrorTrapImp(reinterpret_cast<void (*)(void*)>(function), reinterpret_cast<void*>(param));
+    }
+
+    bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
+
     // Utility functions
 
     const char* eeGetFieldName(CORINFO_FIELD_HANDLE fieldHnd, const char** classNamePtr = nullptr);
@@ -9965,6 +10002,7 @@ public:
 
     BasicBlock* compCurBB;   // the current basic block in process
     Statement*  compCurStmt; // the current statement in process
+    GenTree*    compCurTree; // the current tree in process
 
     //  The following is used to create the 'method JIT info' block.
     size_t compInfoBlkSize;

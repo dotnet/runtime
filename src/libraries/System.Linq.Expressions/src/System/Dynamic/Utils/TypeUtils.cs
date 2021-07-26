@@ -623,7 +623,8 @@ namespace System.Dynamic.Utils
             || IsImplicitBoxingConversion(source, destination)
             || IsImplicitNullableConversion(source, destination);
 
-        [RequiresUnreferencedCode(Expression.ExpressionRequiresUnreferencedCode)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "The trimmer doesn't remove operators when System.Linq.Expressions is used. See https://github.com/mono/linker/pull/2125.")]
         public static MethodInfo? GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType)
         {
             Type nnExprType = GetNonNullableType(convertFrom);
@@ -829,8 +830,12 @@ namespace System.Dynamic.Utils
         /// op_False, because we have to do runtime lookup for those. It may
         /// not work right for unary operators in general.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "The trimmer doesn't remove operators when System.Linq.Expressions is used. See https://github.com/mono/linker/pull/2125.")]
         public static MethodInfo? GetBooleanOperator(Type type, string name)
         {
+            Debug.Assert(name == "op_False" || name == "op_True");
+
             do
             {
                 MethodInfo? result = type.GetAnyStaticMethodValidated(name, new[] { type });

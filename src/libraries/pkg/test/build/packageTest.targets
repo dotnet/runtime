@@ -74,16 +74,6 @@
       <RuntimeLibToTest Condition="'%(RuntimeLibToTest.RuntimeIdentifier)' == ''" RuntimeIdentifier="none" />
     </ItemGroup>
 
-    <!-- These libraries are part of the runtime pack but aren't exposed in the targeting pack: https://github.com/dotnet/runtime/issues/53892 -->
-    <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-      <ReferenceLibToTest Remove="@(ReferenceLibToTest)"
-                          Condition="'$(TestPackageId)' == 'Microsoft.Win32.Registry' or
-                                     '$(TestPackageId)' == 'System.IO.FileSystem.AccessControl' or
-                                     '$(TestPackageId)' == 'System.IO.Pipes.AccessControl' or
-                                     '$(TestPackageId)' == 'System.Security.AccessControl' or
-                                     '$(TestPackageId)' == 'System.Security.Principal.Windows'" />
-    </ItemGroup>
-
     <ItemGroup>
       <RuntimeLibToTestDependency Include="@(ReferencePath)" Condition="'%(ReferencePath.NuGetPackageId)' != '$(TestPackageId)'" />
 
@@ -104,7 +94,7 @@
           Inputs="%(RuntimeLibToTest.RuntimeIdentifier)" 
           Outputs="unused"
           DependsOnTargets="PrepareForRuntimeTesting"
-          Condition="'$(ShouldVerifyClosure)' == 'true' and '$(SkipVerifyClosureForRuntime)' != 'true'">
+          Condition="'$(ShouldVerifyClosure)' == 'true' and '$(SkipVerifyClosureForRuntime)' != 'true' and '$(SkipVerifyRuntime)' != 'true'">
     <Message Importance="High" Text="Testing closure for $(TestPackageID) TFM=$(TargetFramework) RID=%(RuntimeLibToTest.RuntimeIdentifier)" />
     <ItemGroup>
       <_runClosureFileNames Include="@(RuntimeLibToTestDependency->'%(FileName)');@(RuntimeLibToTest->'%(FileName)')">
@@ -123,7 +113,7 @@
           Inputs="%(RuntimeLibToTest.RuntimeIdentifier)" 
           Outputs="unused"
           DependsOnTargets="PrepareForRuntimeTesting"
-          Condition="'$(ShouldVerifyTypes)' == 'true'">
+          Condition="'$(ShouldVerifyTypes)' == 'true' and '$(SkipVerifyRuntime)' != 'true'">
     <Message Importance="High" Text="Testing for duplicate types for $(TestPackageID) TFM=$(TargetFramework) RID=%(RuntimeLibToTest.RuntimeIdentifier)" />
     <ItemGroup>
       <_runTypesFileNames Include="@(RuntimeLibToTestDependency->'%(FileName)');@(RuntimeLibToTest->'%(FileName)')">

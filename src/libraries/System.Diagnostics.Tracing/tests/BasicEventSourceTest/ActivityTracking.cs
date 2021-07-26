@@ -14,6 +14,7 @@ namespace BasicEventSourceTests
     public class ActivityTracking
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56073", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void StartStopCreatesActivity()
         {
             using ActivityEventListener l = new ActivityEventListener();
@@ -27,6 +28,7 @@ namespace BasicEventSourceTests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56073", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task ActivityFlowsAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();
@@ -75,6 +77,7 @@ namespace BasicEventSourceTests
         // the future we might decide it wasn't even desirable to begin with.
         // Compare with SetCurrentActivityIdAfterEventDoesNotFlowAsync below.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56073", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SetCurrentActivityIdBeforeEventFlowsAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();
@@ -100,6 +103,7 @@ namespace BasicEventSourceTests
         // the future we might decide it wasn't even desirable to begin with.
         // Compare with SetCurrentActivityIdBeforeEventFlowsAsync above.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56073", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task SetCurrentActivityIdAfterEventDoesNotFlowAsync()
         {
             using ActivityEventListener l = new ActivityEventListener();

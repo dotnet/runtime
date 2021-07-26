@@ -426,7 +426,7 @@ jobs:
       displayName: Disk Usage after Build
 
   # Only in glibc leg, we produce RPMs and Debs
-  - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.platform, 'Linux_x64'), eq(parameters.osSubgroup, ''))}}:
+  - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), eq(parameters.platform, 'Linux_x64'), eq(parameters.osSubgroup, ''), eq(parameters.pgoType, ''))}}:
     - ${{ each packageBuild in parameters.packageDistroList }}:
       # This leg's RID matches the build image. Build its distro-dependent packages, as well as
       # the distro-independent installers. (There's no particular reason to build the distro-

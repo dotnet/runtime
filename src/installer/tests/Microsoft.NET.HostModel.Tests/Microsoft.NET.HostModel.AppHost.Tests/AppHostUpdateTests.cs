@@ -400,7 +400,7 @@ namespace Microsoft.NET.HostModel.Tests
                     try
                     {
                         s_fileSystem_fileStatusField = typeof(FileSystemInfo).GetField("_fileStatus", BindingFlags.NonPublic | BindingFlags.Instance);
-                        s_fileStatus_fileStatusField = s_fileSystem_fileStatusField.FieldType.GetField("_fileStatus", BindingFlags.NonPublic | BindingFlags.Instance);
+                        s_fileStatus_fileStatusField = s_fileSystem_fileStatusField.FieldType.GetField("_fileCache", BindingFlags.NonPublic | BindingFlags.Instance);
                         s_fileStatusModeField = s_fileStatus_fileStatusField.FieldType.GetField("Mode", BindingFlags.NonPublic | BindingFlags.Instance);
                     }
                     catch (Exception ex)
