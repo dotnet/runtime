@@ -187,17 +187,6 @@ ves_icall_System_Math_Ceiling (gdouble v)
 	return ceil (v);
 }
 
-gint32
-ves_icall_System_Math_ILogB (gdouble x)
-{
-	if (FP_ILOGB0 != INT_MIN && x == 0.0)
-		return INT_MIN;
-	if (FP_ILOGBNAN != INT_MAX && isnan(x))
-		return INT_MAX;
-	
-	return ilogb(x);
-}
-
 gdouble
 ves_icall_System_Math_Log2 (gdouble x)
 {
@@ -346,17 +335,6 @@ float
 ves_icall_System_MathF_ModF (float x, float *d)
 {
 	return modff (x, d);
-}
-
-gint32
-ves_icall_System_MathF_ILogB (float x)
-{
-	if (FP_ILOGB0 != INT_MIN && x == 0.0)
-		return INT_MIN;
-	if (FP_ILOGBNAN != INT_MAX && isnan(x))
-		return INT_MAX;
-	
-	return ilogbf(x);
 }
 
 float
