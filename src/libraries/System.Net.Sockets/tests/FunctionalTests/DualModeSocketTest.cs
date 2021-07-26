@@ -2522,6 +2522,7 @@ namespace System.Net.Sockets.Tests
         {
             private readonly ITestOutputHelper _output;
             private Socket _server;
+            private Socket _guard;
             private Socket _acceptedSocket;
             private EventWaitHandle _waitHandle = new AutoResetEvent(false);
 
@@ -2534,16 +2535,8 @@ namespace System.Net.Sockets.Tests
             {
                 _output = output;
 
-                if (dualMode)
-                {
-                    _server = new Socket(SocketType.Stream, ProtocolType.Tcp);
-                }
-                else
-                {
-                    _server = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                }
-
-                port = _server.BindToAnonymousPort(address);
+                _server = SocketTestServer.CreateListenerSocketWithDualSafeGuard(address.AddressFamily, ProtocolType.Tcp, new IPEndPoint(address, 0), dualMode, out _guard);
+                port = ((IPEndPoint)_server.LocalEndPoint).Port;
                 _server.Listen(1);
 
                 IPAddress remoteAddress = address.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any;
@@ -2573,8 +2566,8 @@ namespace System.Net.Sockets.Tests
                 try
                 {
                     _server.Dispose();
-                    if (_acceptedSocket != null)
-                        _acceptedSocket.Dispose();
+                    _acceptedSocket?.Dispose();
+                    _guard?.Dispose();
                 }
                 catch (Exception) { }
             }
