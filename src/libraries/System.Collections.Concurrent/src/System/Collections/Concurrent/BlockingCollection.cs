@@ -494,7 +494,7 @@ namespace System.Collections.Concurrent
                         cancellationToken.ThrowIfCancellationRequested();
                         addingSucceeded = _collection.TryAdd(item);
                     }
-                    catch
+                    finally
                     {
                         //TryAdd did not result in increasing the size of the underlying store and hence we need
                         //to increment back the count of the _freeNodes semaphore.
@@ -502,7 +502,6 @@ namespace System.Collections.Concurrent
                         {
                             _freeNodes.Release();
                         }
-                        throw;
                     }
                     if (addingSucceeded)
                     {
