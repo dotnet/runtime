@@ -172,7 +172,6 @@ stub_debugger_debug_log_is_enabled (void)
 static void
 stub_debugger_unhandled_exception (MonoException *exc)
 {
-	g_assert_not_reached ();
 }
 
 static void
