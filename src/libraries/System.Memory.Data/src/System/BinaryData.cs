@@ -192,6 +192,11 @@ namespace System
         /// <summary>
         /// Converts the value of this instance to a string using UTF-8.
         /// </summary>
+        /// <remarks>
+        /// If the underlying object is a JSON string, calling <see cref="ToString"/> will retain the wrapping double quotes in the
+        /// resulting string. If you want to deserialize the JSON string to a string, thereby removing the wrapping double quotes,
+        /// call <see cref="ToObjectFromJson{String}"/> instead.
+        /// </remarks>
         /// <returns>
         /// A string from the value of this instance, using UTF-8 to decode the bytes.
         /// </returns>
