@@ -92,10 +92,10 @@
     </ItemGroup>
 
     <GenerateMsiVersion
-        Major="$([System.Version]::Parse('$(AssemblyVersion)').Major)"
-        Minor="$([System.Version]::Parse('$(AssemblyVersion)').Minor)"
-        Patch="$([System.Version]::Parse('$(AssemblyVersion)').Build)"
-        BuildNumber="$([System.Version]::Parse('$(AssemblyVersion)').Revision)" >
+        Major="$([System.Version]::Parse('$(FileVersion)').Major)"
+        Minor="$([System.Version]::Parse('$(FileVersion)').Minor)"
+        Patch="$([System.Version]::Parse('$(FileVersion)').Build)"
+        BuildNumber="$([System.Version]::Parse('$(FileVersion)').Revision)" >
       <Output TaskParameter="MsiVersion" PropertyName="MsiVersion" />
     </GenerateMsiVersion>
 
