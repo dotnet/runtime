@@ -164,15 +164,34 @@ var BindingSupportLib = {
 
 		_get_weak_delegate_from_handle: function (id) {
 			var result = null;
+
+			// Look up this handle in the weak delegate table, and if we find a matching weakref,
+			//  deref it to try and get a JS function. This function may have been collected.
 			if (this._weak_delegate_table.has(id)) {
 				var wr = this._weak_delegate_table.get(id);
-				result = wr.deref();				
+				result = wr.deref();
+				// Note that we could check for a null result (i.e. function was GC'd) here and
+				//  opt to abort since resurrecting a given ID probably shouldn't happen.
+				// However, this design makes resurrecting an ID harmless, so there's not any
+				//  value in doing that (and we would then need to differentiate 'new' vs 'get')
+				// Tracking whether an ID is being resurrected also would require us to keep track
+				//  of every ID that has ever been used, which will harm performance long-term.
 			}
+
+			// If the function for this handle was already collected (or was never created),
+			//  we create a new function that will invoke the corresponding C# delegate when
+			//  called, and store it into our weak mapping (so we can look it up again by id)
+			//  and register it with the finalization registry so that the C# side can release
+			//  the associated object references
 			if (!result) {
 				result = (arg1) => {
 					if (!this.try_invoke_weak_delegate_by_handle(id, arg1))
+						// Because lifetime is managed by JavaScript, it *is* an error for this 
+						//  invocation to ever fail. If we have a JS wrapper for an ID, there
+						//  should be no way for the managed delegate to have disappeared.
 						throw new Error("Weak delegate invocation failed");
 				};
+
 				this._weak_delegate_table.set(id, new WeakRef(result));
 				this._weak_delegate_registry.register(result, id);
 			}
@@ -180,7 +199,10 @@ var BindingSupportLib = {
 		},
 
 		_weak_delegate_finalized: function (id) {
-			// console.log(`releasing weak delegate ${id}`);
+			// The JS function associated with this ID has been collected by the JS GC.
+			// As such, it's not possible for this ID to be invoked by JS anymore, so
+			//  we can release the tracking weakref (it's null now, by definition),
+			//  and tell the C# side to stop holding a reference to the managed delegate.
 			this._weak_delegate_table.delete(id);
 			this.release_weak_delegate_by_handle(id);
 		},
@@ -2086,7 +2108,6 @@ var BindingSupportLib = {
 			var options = optionsHandle
 				? BINDING.mono_wasm_require_handle(optionsHandle)
 				: null;
-			// console.log(`${obj}.addEventListener(${sName}, ${listener}, ${options})`);
 
 			if (options)
 				obj.addEventListener(sName, listener, options);
@@ -2108,13 +2129,16 @@ var BindingSupportLib = {
 			if (!obj)
 				throw new Error("Invalid JS object handle");
 			var listener = BINDING._get_weak_delegate_from_handle(listenerId);
+			// Removing a nonexistent listener should not be treated as an error
 			if (!listener)
-				throw new Error("Invalid listener ID");
+				return;
 			var sName = BINDING.conv_string(nameRoot.value);
 
-			// console.log(`${obj}.removeEventListener(${sName}, ${listener}, ${capture})`);
-
 			obj.removeEventListener(sName, listener, !!capture);
+			// We do not manually remove the listener from the delegate registry here,
+			//  because that same delegate may have been used as an event listener for
+			//  other events or event targets. The GC will automatically clean it up
+			//  and trigger the FinalizationRegistry handler if it's unused
 			return 0;
 		} catch (exc) {
 			return BINDING.js_string_to_mono_string(exc.message);
