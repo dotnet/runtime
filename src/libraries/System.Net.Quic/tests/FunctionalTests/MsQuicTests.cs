@@ -155,6 +155,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56263")]
         public async Task ConnectWithCertificateCallback()
         {
             X509Certificate2 c1 = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
