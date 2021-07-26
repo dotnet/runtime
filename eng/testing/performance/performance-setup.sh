@@ -267,7 +267,8 @@ if [[ "$run_from_perf_repo" = true ]]; then
 else
     echo "Not running from perf repo"
     git clone --branch pr-alicias-branch --depth 1 https://github.com/radekdoulik/performance.git $performance_directory
-    git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
+    # uncomment to use BenchmarkDotNet sources instead of nuget packages
+    # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 
     ls $payload_directory
     
