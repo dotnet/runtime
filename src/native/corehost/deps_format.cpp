@@ -84,7 +84,7 @@ void deps_json_t::reconcile_libraries_with_targets(
                 size_t pos = lib_name.find(_X("/"));
                 entry.library_name = lib_name.substr(0, pos);
                 entry.library_version = lib_name.substr(pos + 1);
-                entry.library_type = pal::to_lower(library.value[_X("type")].GetString());
+                entry.library_type = to_lower(library.value[_X("type")].GetString());
                 entry.library_hash = hash;
                 entry.library_path = library_path;
                 entry.library_hash_path = library_hash_path;

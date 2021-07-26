@@ -2,16 +2,21 @@
   <!-- This depends on the root Directory.Build.targets imported this file -->
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
+  <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
+  <!--<Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'"/>-->
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
 
-  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
-  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences" Condition="@(RuntimePack->Count()) != 0">
+  <!-- Use local runtime pack -->
+  <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences">
+    <PropertyGroup>
+      <_LocalMicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.browser-wasm', $(Configuration)))</_LocalMicrosoftNetCoreAppRuntimePackDir>
+    </PropertyGroup>
     <ItemGroup>
-      <RuntimePack>
-        <PackageDirectory>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.browser-wasm', $(Configuration)))</PackageDirectory>
-      </RuntimePack>
+      <ResolvedRuntimePack PackageDirectory="$(_LocalMicrosoftNetCoreAppRuntimePackDir)"
+                           Condition="'$(_LocalMicrosoftNetCoreAppRuntimePackDir)' != '' and
+                                      '%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
     </ItemGroup>
-    <Message Text="Using RuntimePack.PackageDirectory: %(RuntimePack.PackageDirectory)" Importance="Low" />
+    <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
   <Target Name="RebuildWasmAppBuilder">

@@ -57,7 +57,10 @@ namespace System.Net.Test.Common
         public override async Task<GenericLoopbackConnection> EstablishGenericConnectionAsync()
         {
             QuicConnection con = await _listener.AcceptConnectionAsync().ConfigureAwait(false);
-            return new Http3LoopbackConnection(con);
+            Http3LoopbackConnection connection = new Http3LoopbackConnection(con);
+
+            await connection.EstablishControlStreamAsync();
+            return connection;
         }
 
         public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)
@@ -97,7 +100,7 @@ namespace System.Net.Test.Common
             await funcAsync(server, server.Address).WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
         }
 
-        public override Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
+        public override Task<GenericLoopbackConnection> CreateConnectionAsync(SocketWrapper socket, Stream stream, GenericLoopbackOptions options = null)
         {
             // TODO: make a new overload that takes a MultiplexedConnection.
             // This method is always unacceptable to call for HTTP/3.

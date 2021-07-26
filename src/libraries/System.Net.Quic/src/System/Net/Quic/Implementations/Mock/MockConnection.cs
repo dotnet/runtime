@@ -219,6 +219,8 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal MockStream OpenStream(long streamId, bool bidirectional)
         {
+            CheckDisposed();
+
             ConnectionState? state = _state;
             if (state is null)
             {
@@ -274,12 +276,15 @@ namespace System.Net.Quic.Implementations.Mock
             catch (ChannelClosedException)
             {
                 long errorCode = _isClient ? state._serverErrorCode : state._clientErrorCode;
-                throw new QuicConnectionAbortedException(errorCode);
+                throw (errorCode == -1) ? new QuicOperationAbortedException() : new QuicConnectionAbortedException(errorCode);
             }
         }
 
         internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
+            // TODO: We should abort local streams (and signal the peer to do likewise)
+            // Currently, we are not tracking the streams associated with this connection.
+
             ConnectionState? state = _state;
             if (state is not null)
             {
@@ -292,10 +297,12 @@ namespace System.Net.Quic.Implementations.Mock
                 if (_isClient)
                 {
                     state._clientErrorCode = errorCode;
+                    DrainAcceptQueue(-1, errorCode);
                 }
                 else
                 {
                     state._serverErrorCode = errorCode;
+                    DrainAcceptQueue(errorCode, -1);
                 }
             }
 
@@ -312,19 +319,37 @@ namespace System.Net.Quic.Implementations.Mock
             }
         }
 
+        private void DrainAcceptQueue(long outboundErrorCode, long inboundErrorCode)
+        {
+            ConnectionState? state = _state;
+            if (state is not null)
+            {
+                // TODO: We really only need to do the complete and drain once, but it doesn't really hurt to do it twice.
+                state._clientInitiatedStreamChannel.Writer.TryComplete();
+                while (state._clientInitiatedStreamChannel.Reader.TryRead(out MockStream.StreamState? streamState))
+                {
+                    streamState._outboundReadErrorCode = streamState._outboundWriteErrorCode = outboundErrorCode;
+                    streamState._inboundStreamBuffer?.AbortRead();
+                    streamState._outboundStreamBuffer?.EndWrite();
+                }
+
+                state._serverInitiatedStreamChannel.Writer.TryComplete();
+                while (state._serverInitiatedStreamChannel.Reader.TryRead(out MockStream.StreamState? streamState))
+                {
+                    streamState._inboundReadErrorCode = streamState._inboundWriteErrorCode = inboundErrorCode;
+                    streamState._outboundStreamBuffer?.AbortRead();
+                    streamState._inboundStreamBuffer?.EndWrite();
+                }
+            }
+        }
+
         private void Dispose(bool disposing)
         {
             if (!_disposed)
             {
                 if (disposing)
                 {
-                    ConnectionState? state = _state;
-                    if (state is not null)
-                    {
-                        Channel<MockStream.StreamState> streamChannel = _isClient ? state._clientInitiatedStreamChannel : state._serverInitiatedStreamChannel;
-                        streamChannel.Writer.Complete();
-                    }
-
+                    DrainAcceptQueue(-1, -1);
 
                     PeerStreamLimit? streamLimit = LocalStreamLimit;
                     if (streamLimit is not null)
@@ -448,6 +473,7 @@ namespace System.Net.Quic.Implementations.Mock
                 _applicationProtocol = applicationProtocol;
                 _clientInitiatedStreamChannel = Channel.CreateUnbounded<MockStream.StreamState>();
                 _serverInitiatedStreamChannel = Channel.CreateUnbounded<MockStream.StreamState>();
+                _clientErrorCode = _serverErrorCode = -1;
             }
         }
     }

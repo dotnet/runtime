@@ -3,6 +3,7 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <IsAspNetCoreApp>true</IsAspNetCoreApp>
     <SupportedOSPlatforms>windows;linux;macos</SupportedOSPlatforms>
   </PropertyGroup>
 </Project>

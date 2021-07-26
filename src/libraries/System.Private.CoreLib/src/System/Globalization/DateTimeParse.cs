@@ -5213,7 +5213,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 if (str[i] <= '\x007f')
                     buffer.Append(str[i]);
                 else
-                    buffer.Append("\\u").Append(((int)str[i]).ToString("x4", CultureInfo.InvariantCulture));
+                    buffer.Append($"\\u{(int)str[i]:x4}");
             }
             buffer.Append('"');
             return buffer.ToString();

@@ -179,11 +179,12 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // Browser PNSE: Cannot wait on monitors
+        [PlatformSpecific(TestPlatforms.Windows)]
         public Task ManyConcurrentWriteAsyncs()
         {
             // For inner loop, just test one case
             return ManyConcurrentWriteAsyncs_OuterLoop(
-                useAsync: OperatingSystem.IsWindows(),
+                useAsync: true,
                 presize: false,
                 exposeHandle: false,
                 cancelable: true,
@@ -193,6 +194,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [PlatformSpecific(TestPlatforms.Windows)] // testing undocumented feature that's legacy in the Windows implementation
         [MemberData(nameof(MemberData_FileStreamAsyncWriting))]
         [OuterLoop] // many combinations: we test just one in inner loop and the rest outer
         public async Task ManyConcurrentWriteAsyncs_OuterLoop(

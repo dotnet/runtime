@@ -168,4 +168,7 @@
   <data name="WritingAfterCompleted" xml:space="preserve">
     <value>Writing is not allowed after writer was completed.</value>
   </data>
+  <data name="UnflushedBytesNotSupported" xml:space="preserve">
+    <value>UnflushedBytes is not supported.</value>
+  </data>
 </root>

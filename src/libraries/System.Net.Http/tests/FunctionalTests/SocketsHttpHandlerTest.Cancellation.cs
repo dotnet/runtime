@@ -18,10 +18,11 @@ namespace System.Net.Http.Functional.Tests
         private async Task ValidateConnectTimeout(HttpMessageInvoker invoker, Uri uri, int minElapsed, int maxElapsed)
         {
             var sw = Stopwatch.StartNew();
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
                 invoker.SendAsync(TestAsync, new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion }, default));
             sw.Stop();
 
+            Assert.IsType<TimeoutException>(oce.InnerException);
             Assert.InRange(sw.ElapsedMilliseconds, minElapsed, maxElapsed);
         }
 
@@ -29,13 +30,19 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ConnectTimeout_TimesOutSSLAuth_Throws()
         {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                return;
+            }
+
             var releaseServer = new TaskCompletionSource();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                using (var handler = new SocketsHttpHandler())
+                using (var handler = CreateHttpClientHandler())
                 using (var invoker = new HttpMessageInvoker(handler))
                 {
-                    handler.ConnectTimeout = TimeSpan.FromSeconds(1);
+                    var socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
+                    socketsHandler.ConnectTimeout = TimeSpan.FromSeconds(1);
 
                     await ValidateConnectTimeout(invoker, new UriBuilder(uri) { Scheme = "https" }.Uri, 500, 85_000);
 
@@ -45,9 +52,17 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [Fact]
-        public async Task ConnectTimeout_ConnectCallbackTimesOut_Throws()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectTimeout_ConnectCallbackTimesOut_Throws(bool useSsl)
         {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                // HTTP3 does not support ConnectCallback
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (var handler = CreateHttpClientHandler())
@@ -59,7 +74,34 @@ namespace System.Net.Http.Functional.Tests
 
                     await ValidateConnectTimeout(invoker, uri, 500, 85_000);
                 }
-            }, server => Task.CompletedTask); // doesn't actually connect to server
+            }, server => Task.CompletedTask, // doesn't actually connect to server
+            options: new GenericLoopbackOptions() { UseSsl = useSsl });
+        }
+
+        [OuterLoop]
+        [Fact]
+        public async Task ConnectTimeout_PlaintextStreamFilterTimesOut_Throws()
+        {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                // HTTP3 does not support PlaintextStreamFilter
+                return;
+            }
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using (var handler = CreateHttpClientHandler())
+                using (var invoker = new HttpMessageInvoker(handler))
+                {
+                    var socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
+                    socketsHandler.ConnectTimeout = TimeSpan.FromSeconds(1);
+                    socketsHandler.ConnectCallback = (context, token) => new ValueTask<Stream>(new MemoryStream());
+                    socketsHandler.PlaintextStreamFilter = async (context, token) => { await Task.Delay(-1, token); return null; };
+
+                    await ValidateConnectTimeout(invoker, uri, 500, 85_000);
+                }
+            }, server => Task.CompletedTask, // doesn't actually connect to server
+            options: new GenericLoopbackOptions() { UseSsl = false });
         }
 
         [OuterLoop("Incurs significant delay")]

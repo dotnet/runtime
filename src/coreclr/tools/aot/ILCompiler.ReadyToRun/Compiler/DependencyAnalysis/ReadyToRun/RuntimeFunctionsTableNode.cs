@@ -67,6 +67,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 LayoutRuntimeFunctions();
 
             ObjectDataBuilder runtimeFunctionsBuilder = new ObjectDataBuilder(factory, relocsOnly);
+            runtimeFunctionsBuilder.RequireInitialAlignment(4);
 
             // Add the symbol representing this object node
             runtimeFunctionsBuilder.AddSymbol(this);

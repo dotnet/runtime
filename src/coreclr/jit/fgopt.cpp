@@ -1620,6 +1620,9 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             }
         }
         bNext->bbPreds = nullptr;
+
+        // `block` can no longer be a loop pre-header (if it was before).
+        block->bbFlags &= ~BBF_LOOP_PREHEADER;
     }
     else
     {
