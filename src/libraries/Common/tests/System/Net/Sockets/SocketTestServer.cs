@@ -69,12 +69,23 @@ namespace System.Net.Sockets.Tests
 
         protected void NotifyAccepted(Socket socket) => Accepted?.Invoke(socket);
 
-        public static Socket CreateListenerSocketWithDualSafeGuard(
+        public static Socket CreateListenerSocketWithDualPortGuard(
+            IPAddress address,
+            out Socket portGuard)
+            => CreateListenerSocketWithDualPortGuard(address, false, out portGuard);
+
+        public static Socket CreateListenerSocketWithDualPortGuard(
+            IPAddress address,
+            bool dualMode,
+            out Socket portGuard)
+            => CreateListenerSocketWithDualPortGuard(address.AddressFamily, ProtocolType.Tcp, new IPEndPoint(address, 0), dualMode, out portGuard);
+
+        public static Socket CreateListenerSocketWithDualPortGuard(
             AddressFamily addressFamily,
             ProtocolType protocolType,
             EndPoint listenEp,
             bool dualMode,
-            out Socket guard)
+            out Socket portGuard)
         {
             bool mustCreateGuard = !PlatformDetection.IsWindows && // Do not guard on Windows, where port selection is deterministic
                 protocolType == ProtocolType.Tcp &&
@@ -87,27 +98,27 @@ namespace System.Net.Sockets.Tests
             {
                 listener = CreateSocket();
                 listener.Bind(listenEp);
-                guard = null;
+                portGuard = null;
                 return listener;
             }
 
             for (int attempt = 0; attempt < 10; attempt++)
             {
                 listener = CreateSocket();
-                (guard, IPAddress guardAddress) = CreateGuard();
+                (portGuard, IPAddress guardAddress) = CreateGuard();
 
                 listener.Bind(listenEp);
                 int port = ((IPEndPoint)listener.LocalEndPoint).Port;
 
                 try
                 {
-                    guard.Bind(new IPEndPoint(guardAddress, port));
+                    portGuard.Bind(new IPEndPoint(guardAddress, port));
                     return listener;
                 }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AddressAlreadyInUse)
                 {
                     listener.Dispose();
-                    guard.Dispose();
+                    portGuard.Dispose();
                 }
             }
 

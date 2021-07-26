@@ -114,7 +114,7 @@ namespace System.Net.Sockets.Tests
         private void Start(EndPoint localEndPoint)
         {
             // Create the socket which listens for incoming connections.
-            _listenSocket = CreateListenerSocketWithDualSafeGuard(localEndPoint.AddressFamily, _protocolType, localEndPoint, false, out _guardSocket);
+            _listenSocket = CreateListenerSocketWithDualPortGuard(localEndPoint.AddressFamily, _protocolType, localEndPoint, false, out _guardSocket);
 
             // Start the server with a listen backlog of 100 connections.
             _listenSocket.Listen(100);

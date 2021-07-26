@@ -7,7 +7,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    public abstract class LocalEndPointTest<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
+    public abstract class LocalEndPointTest<T> : SocketTestHelperBase<T>, IDisposable
+        where T : SocketHelperBase, new()
     {
         protected abstract bool IPv6 { get; }
 
@@ -16,6 +17,8 @@ namespace System.Net.Sockets.Tests
         private IPAddress Loopback => IPv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
 
         public LocalEndPointTest(ITestOutputHelper output) : base(output) { }
+
+        private Socket _portGuard;
 
         [Fact]
         public async Task UdpSocket_WhenBoundToWildcardAddress_LocalEPDoesNotChangeOnSendTo()
@@ -76,7 +79,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task TcpClientSocket_WhenBoundToWildcardAddress_LocalEPChangeToSpecificOnConnnect()
         {
-            using (Socket server = CreateTcpSocket())
+            using (Socket server = CreateTcpServerSocket())
             using (Socket client = CreateTcpSocket())
             {
                 int serverPort = server.BindToAnonymousPort(Wildcard);
@@ -100,7 +103,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task TcpClientSocket_WhenNotBound_LocalEPChangeToSpecificOnConnnect()
         {
-            using (Socket server = CreateTcpSocket())
+            using (Socket server = CreateTcpServerSocket())
             using (Socket client = CreateTcpSocket())
             {
                 int serverPort = server.BindToAnonymousPort(Loopback);
@@ -121,7 +124,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task TcpAcceptSocket_WhenServerBoundToWildcardAddress_LocalEPIsSpecific()
         {
-            using (Socket server = CreateTcpSocket())
+            using (Socket server = CreateTcpServerSocket())
             using (Socket client = CreateTcpSocket())
             {
                 int serverPort = server.BindToAnonymousPort(Wildcard);
@@ -146,7 +149,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task TcpAcceptSocket_WhenServerBoundToSpecificAddress_LocalEPIsSame()
         {
-            using (Socket server = CreateTcpSocket())
+            using (Socket server = CreateTcpServerSocket())
             using (Socket client = CreateTcpSocket())
             {
                 int serverPort = server.BindToAnonymousPort(Loopback);
@@ -198,6 +201,8 @@ namespace System.Net.Sockets.Tests
             );
         }
 
+        private Socket CreateTcpServerSocket() => SocketTestServer.CreateListenerSocketWithDualPortGuard(Loopback, out _portGuard);
+
         private IPAddress GetLocalEPAddress(Socket socket)
         {
             return ((IPEndPoint)socket.LocalEndPoint).Address;
@@ -207,6 +212,8 @@ namespace System.Net.Sockets.Tests
         {
             return ((IPEndPoint)socket.LocalEndPoint).Port;
         }
+
+        public void Dispose() => _portGuard?.Dispose();
     }
     public abstract class LocalEndPointTestIPv4<T> : LocalEndPointTest<T> where T : SocketHelperBase, new()
     {

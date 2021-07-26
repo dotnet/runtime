@@ -23,7 +23,7 @@ namespace System.Net.Sockets.Tests
             _log = VerboseTestLogging.GetInstance();
             _receiveBufferSize = receiveBufferSize;
 
-            _socket = CreateListenerSocketWithDualSafeGuard(localEndPoint.AddressFamily, ProtocolType.Tcp, localEndPoint, false, out _guard);
+            _socket = CreateListenerSocketWithDualPortGuard(localEndPoint.AddressFamily, ProtocolType.Tcp, localEndPoint, false, out _guard);
             _socket.Listen(numConnections);
 
             _socket.BeginAccept(OnAccept, null);
