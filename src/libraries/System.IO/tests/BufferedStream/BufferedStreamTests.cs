@@ -12,8 +12,6 @@ namespace System.IO.Tests
 {
     public class BufferedStream_StreamAsync
     {
-        public static bool IsX64 { get; } = IntPtr.Size >= 8;
-		
         [Fact]
         public static void NullConstructor_Throws_ArgumentNullException()
         {
@@ -55,7 +53,7 @@ namespace System.IO.Tests
             Assert.Equal(1234, bufferedStream.BufferSize);
         }
 
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [OuterLoop]
         [InlineData(int.MaxValue / 2 + 1)]
         public void WriteFromByte_InputSizeLargerThanHalfOfMaxInt_ShouldSuccess(int inputSize)
@@ -64,22 +62,22 @@ namespace System.IO.Tests
 
             try
             {
-				bytes = new byte[inputSize];
+                bytes = new byte[inputSize];
             }
             catch (OutOfMemoryException)
             {
                 return;
             }
 
-			var writableStream = new WriteOnlyStream();
+            var writableStream = new WriteOnlyStream();
             using (var bs = new BufferedStream(writableStream))
             {
                 bs.Write(bytes, 0, inputSize);
-                Assert.Equal(inputSize, writableStream.GetPosition());
+                Assert.Equal(inputSize, writableStream.Position);
             }
         }
 
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [OuterLoop]
         [InlineData(int.MaxValue / 2 + 1)]
         public void WriteFromSpan_InputSizeLargerThanHalfOfMaxInt_ShouldSuccess(int inputSize)
@@ -88,18 +86,18 @@ namespace System.IO.Tests
 
             try
             {
-				bytes = new byte[inputSize];
+                bytes = new byte[inputSize];
             }
             catch (OutOfMemoryException)
             {
                 return;
             }
 
-			var writableStream = new WriteOnlyStream();
+            var writableStream = new WriteOnlyStream();
             using (var bs = new BufferedStream(writableStream))
             {
                 bs.Write(new ReadOnlySpan<byte>(bytes));
-                Assert.Equal(inputSize, writableStream.GetPosition());
+                Assert.Equal(inputSize, writableStream.Position);
             }
         }
 
@@ -445,7 +443,7 @@ namespace System.IO.Tests
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            _pos += (count - offset);
+            _pos += count;
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
@@ -460,13 +458,8 @@ namespace System.IO.Tests
 
         public override long Position
         {
-            get => throw new NotSupportedException();
+            get => _pos;
             set => throw new NotSupportedException();
-        }
-
-        public long GetPosition()
-        {
-            return _pos;
         }
     }
 }
