@@ -36,7 +36,7 @@ namespace ILLink.CodeFix
 			if (string.IsNullOrEmpty (name) || HasPublicAccessibility (containingSymbol!)) {
 				return Array.Empty<SyntaxNode> ();
 			} else {
-				return new[] { generator.AttributeArgument ("Message", generator.LiteralExpression ($"Calls {name}")) };
+				return new[] { generator.AttributeArgument (generator.LiteralExpression ($"Calls {name}")) };
 			}
 		}
 	}

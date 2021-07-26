@@ -1052,7 +1052,7 @@ namespace Mono.Linker.Steps
 			bool marked = false;
 
 			int arity_marker = name.IndexOf ('`');
-			if (arity_marker < 1 || !int.TryParse (name.Substring (arity_marker + 1), out int arity)) {
+			if (arity_marker < 1 || !int.TryParse (name.AsSpan (arity_marker + 1), out int arity)) {
 				arity = 0;
 			} else {
 				name = name.Substring (0, arity_marker);
@@ -2035,7 +2035,7 @@ namespace Mono.Linker.Steps
 						//
 						// We could implement support for this at some point, but for now it's important to make sure at least we don't crash trying to find some
 						// method on the current type when it exists on some other type
-						if (methodName.Contains ("."))
+						if (methodName.Contains ('.'))
 							continue;
 
 						MethodDefinition method = GetMethodWithNoParameters (type, methodName);

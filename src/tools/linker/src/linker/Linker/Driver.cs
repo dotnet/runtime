@@ -805,7 +805,7 @@ namespace Mono.Linker
 			string[] values = value.Split (new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
 			foreach (string v in values) {
 				var id = v.Trim ();
-				if (!id.StartsWith ("IL", StringComparison.Ordinal) || !ushort.TryParse (id.Substring (2), out ushort code))
+				if (!id.StartsWith ("IL", StringComparison.Ordinal) || !ushort.TryParse (id.AsSpan (2), out ushort code))
 					continue;
 
 				yield return code;
@@ -884,7 +884,7 @@ namespace Mono.Linker
 			string customStepName;
 			string targetName = null;
 			bool before = false;
-			if (!arg.Contains (":")) {
+			if (!arg.Contains (':')) {
 				customStepName = arg;
 			} else {
 				string[] parts = arg.Split (':');

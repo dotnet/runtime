@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -16,7 +17,7 @@ namespace Mono.Linker
 			var methodDefinition = method.Resolve ();
 			if (methodDefinition != null && (methodDefinition.IsSetter || methodDefinition.IsGetter)) {
 				// Append property name
-				string name = methodDefinition.IsSetter ? methodDefinition.Name.Substring (4) + ".set" : methodDefinition.Name.Substring (4) + ".get";
+				string name = methodDefinition.IsSetter ? string.Concat (methodDefinition.Name.AsSpan (4), ".set") : string.Concat (methodDefinition.Name.AsSpan (4), ".get");
 				sb.Append (name);
 				// Insert declaring type name and namespace
 				sb.Insert (0, '.').Insert (0, method.DeclaringType.GetDisplayName ());

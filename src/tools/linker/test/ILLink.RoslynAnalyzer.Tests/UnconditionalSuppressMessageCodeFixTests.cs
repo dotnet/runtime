@@ -49,26 +49,9 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 			DiagnosticResult[] baselineExpected,
 			DiagnosticResult[] fixedExpected)
 		{
-			var attributeDefinition = @"
-namespace System.Diagnostics.CodeAnalysis
-{
-#nullable enable
-    [AttributeUsage(AttributeTargets.Constructor |
-                    AttributeTargets.Event |
-                    AttributeTargets.Method |
-                    AttributeTargets.Property,
-                    Inherited = false,
-                    AllowMultiple = false)]
-    public sealed class RequiresAssemblyFilesAttribute : Attribute
-    {
-			public RequiresAssemblyFilesAttribute() { }
-			public string? Message { get; set; }
-			public string? Url { get; set; }
-	}
-}";
 			var test = new VerifyCSUSMwithRAF.Test {
-				TestCode = source + attributeDefinition,
-				FixedCode = fixedSource + attributeDefinition,
+				TestCode = source,
+				FixedCode = fixedSource,
 				ReferenceAssemblies = TestCaseUtils.Net6PreviewAssemblies
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
@@ -117,7 +100,7 @@ public class C
 using System.Diagnostics.CodeAnalysis;
 public class C
 {
-    [RequiresAssemblyFiles(Message = ""message"")]
+    [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
     int M2() => M1();
 }";
@@ -125,7 +108,7 @@ public class C
 using System.Diagnostics.CodeAnalysis;
 public class C
 {
-    [RequiresAssemblyFiles(Message = ""message"")]
+    [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
     [UnconditionalSuppressMessage(""SingleFile"", ""IL3002:Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file"", Justification = ""<Pending>"")]
     int M2() => M1();

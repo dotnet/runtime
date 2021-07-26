@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
 
@@ -109,7 +110,7 @@ namespace Mono.Linker
 			if (!(attribute.ConstructorArguments[1].Value is string warningId) ||
 				warningId.Length < 6 ||
 				!warningId.StartsWith ("IL") ||
-				!int.TryParse (warningId.Substring (2, 4), out info.Id)) {
+				!int.TryParse (warningId.AsSpan (2, 4), out info.Id)) {
 				return false;
 			}
 

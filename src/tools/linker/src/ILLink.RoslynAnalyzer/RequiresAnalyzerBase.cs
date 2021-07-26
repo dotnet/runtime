@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
@@ -116,7 +117,7 @@ namespace ILLink.RoslynAnalyzer
 					ImmutableArray<IMethodSymbol> staticConstructors)
 				{
 					foreach (var staticConstructor in staticConstructors) {
-						if (staticConstructor.HasAttribute (RequiresAttributeName) && TryGetRequiresAttribute (staticConstructor, out AttributeData? requiresAttribute))
+						if (staticConstructor.HasAttribute (RequiresAttributeName) && TryGetRequiresAttribute (staticConstructor, out var requiresAttribute))
 							ReportRequiresDiagnostic (operationContext, staticConstructor, requiresAttribute);
 					}
 				}
@@ -149,7 +150,7 @@ namespace ILLink.RoslynAnalyzer
 					while (member is IMethodSymbol method && method.OverriddenMethod != null && SymbolEqualityComparer.Default.Equals (method.ReturnType, method.OverriddenMethod.ReturnType))
 						member = method.OverriddenMethod;
 
-					if (TryGetRequiresAttribute (member, out AttributeData? requiresAttribute)) {
+					if (TryGetRequiresAttribute (member, out var requiresAttribute)) {
 						ReportRequiresDiagnostic (operationContext, member, requiresAttribute);
 					}
 				}
@@ -227,7 +228,7 @@ namespace ILLink.RoslynAnalyzer
 		/// <param name="operationContext">Analyzer operation context to be able to report the diagnostic.</param>
 		/// <param name="member">Information about the member that generated the diagnostic.</param>
 		/// <param name="requiresAttribute">Requires attribute data to print attribute arguments.</param>
-		private void ReportRequiresDiagnostic (OperationAnalysisContext operationContext, ISymbol member, AttributeData? requiresAttribute)
+		private void ReportRequiresDiagnostic (OperationAnalysisContext operationContext, ISymbol member, AttributeData requiresAttribute)
 		{
 			var message = GetMessageFromAttribute (requiresAttribute);
 			var url = GetUrlFromAttribute (requiresAttribute);
@@ -250,7 +251,7 @@ namespace ILLink.RoslynAnalyzer
 
 		private bool HasMismatchingAttributes (ISymbol member1, ISymbol member2) => member1.HasAttribute (RequiresAttributeName) ^ member2.HasAttribute (RequiresAttributeName);
 
-		protected abstract string GetMessageFromAttribute (AttributeData? requiresAttribute);
+		protected abstract string GetMessageFromAttribute (AttributeData requiresAttribute);
 
 		private string GetUrlFromAttribute (AttributeData? requiresAttribute)
 		{
@@ -264,7 +265,7 @@ namespace ILLink.RoslynAnalyzer
 		/// <param name="member">Symbol of the member to search attribute.</param>
 		/// <param name="requiresAttribute">Output variable in case of matching Requires attribute.</param>
 		/// <returns>True if the member contains a Requires attribute; otherwise, returns false.</returns>
-		private bool TryGetRequiresAttribute (ISymbol member, out AttributeData? requiresAttribute)
+		private bool TryGetRequiresAttribute (ISymbol member, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttribute)
 		{
 			requiresAttribute = null;
 			foreach (var _attribute in member.GetAttributes ()) {

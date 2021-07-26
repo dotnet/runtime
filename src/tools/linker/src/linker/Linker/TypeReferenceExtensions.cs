@@ -100,7 +100,7 @@ namespace Mono.Linker
 				sb.Append (']');
 			}
 
-			sb.Append (arrayType.Name.Substring (0, arrayType.Name.IndexOf ('[')));
+			sb.Append (arrayType.Name.AsSpan (0, arrayType.Name.IndexOf ('[')));
 			parseArrayDimensions (arrayType);
 			var element = arrayType.ElementType as ArrayType;
 			while (element != null) {
