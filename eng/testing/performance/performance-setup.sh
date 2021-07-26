@@ -264,7 +264,9 @@ if [[ "$run_from_perf_repo" = true ]]; then
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
-    git clone --branch alicial/hackbenchmarkdotnet --depth 1 --quiet https://github.com/dotnet/performance $performance_directory
+    # git clone --branch alicial/hackbenchmarkdotnet --depth 1 --quiet https://github.com/dotnet/performance $performance_directory
+    # tempararily use pr-alicias-branch to test new fixes
+    git clone --branch pr-alicias-branch --depth 1 --quiet https://github.com/radekdoulik/performance.git $performance_directory
     git clone --branch master --quiet https://github.com/Lxiamail/BenchmarkDotNet.git $benchmark_directory
     
     docs_directory=$performance_directory/docs
