@@ -233,7 +233,7 @@ namespace HostActivation.Tests
                         defaultInstallLocation)
                     .DotNetRoot(null)
                     .Execute()
-                    .Should().NotHaveStdErrContaining("install_location");
+                    .Should().NotHaveStdErrContaining("The install_location file");
             }
         }
 
