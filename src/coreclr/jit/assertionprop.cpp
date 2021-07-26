@@ -1334,31 +1334,48 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     }
 
 DONE_ASSERTION:
-    if (assertion.assertionKind == OAK_INVALID)
+    return optFinalizeCreatingAssertion(&assertion);
+}
+
+//------------------------------------------------------------------------
+// optFinalizeCreatingAssertion: Add the assertion, if well-formed, to the table.
+//
+// Checks that in global assertion propagation assertions do not have missing
+// value and SSA numbers.
+//
+// Arguments:
+//    assertion - assertion to check and add to the table
+//
+// Return Value:
+//    Index of the assertion if it was successfully created, NO_ASSERTION_INDEX otherwise.
+//
+AssertionIndex Compiler::optFinalizeCreatingAssertion(AssertionDsc* assertion)
+{
+    if (assertion->assertionKind == OAK_INVALID)
     {
         return NO_ASSERTION_INDEX;
     }
 
     if (!optLocalAssertionProp)
     {
-        if ((assertion.op1.vn == ValueNumStore::NoVN) || (assertion.op2.vn == ValueNumStore::NoVN) ||
-            (assertion.op1.vn == ValueNumStore::VNForVoid()) || (assertion.op2.vn == ValueNumStore::VNForVoid()))
+        if ((assertion->op1.vn == ValueNumStore::NoVN) || (assertion->op2.vn == ValueNumStore::NoVN) ||
+            (assertion->op1.vn == ValueNumStore::VNForVoid()) || (assertion->op2.vn == ValueNumStore::VNForVoid()))
         {
             return NO_ASSERTION_INDEX;
         }
 
         // TODO: only copy assertions rely on valid SSA number so we could generate more assertions here
-        if ((assertion.op1.kind != O1K_VALUE_NUMBER) && (assertion.op1.lcl.ssaNum == SsaConfig::RESERVED_SSA_NUM))
+        if ((assertion->op1.kind != O1K_VALUE_NUMBER) && (assertion->op1.lcl.ssaNum == SsaConfig::RESERVED_SSA_NUM))
         {
             return NO_ASSERTION_INDEX;
         }
     }
 
     // Now add the assertion to our assertion table
-    noway_assert(assertion.op1.kind != O1K_INVALID);
-    noway_assert((assertion.op1.kind == O1K_ARR_BND) || (assertion.op2.kind != O2K_INVALID));
+    noway_assert(assertion->op1.kind != O1K_INVALID);
+    noway_assert((assertion->op1.kind == O1K_ARR_BND) || (assertion->op2.kind != O2K_INVALID));
 
-    return optAddAssertion(&assertion);
+    return optAddAssertion(assertion);
 }
 
 //------------------------------------------------------------------------
@@ -1403,17 +1420,6 @@ bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, AssertionDsc::Ran
         case GT_CAST:
             if (varTypeIsIntegral(source) && varTypeIsIntegral(source->AsCast()->CastOp()))
             {
-                // Policy: we do not make assertions for long <-> int casts globally. They are only useful
-                // for eliminating checked casts, which are quite rare, while the extra assertions take up space.
-                // This is most relevant in global assertion propagation, where the assertions created are
-                // actually "not proven", and the way they are "proven" is only by implication from constant
-                // assertions. This is a rare event. In local assertion propagation, we are not as constrained
-                // in the number of assertions, and they are generated "proven", so we'll make these freely.
-                if (!optLocalAssertionProp && (genActualType(source) != genActualType(source->AsCast()->CastOp())))
-                {
-                    return false;
-                }
-
                 AssertionDsc::Range castRange = AssertionDsc::GetOutputRangeForCast(source->AsCast());
                 // TODO-Casts: change below to source->TypeGet() when BOX import is fixed to not have CAST(short).
                 AssertionDsc::Range nodeRange = AssertionDsc::GetRangeForIntegralType(genActualType(source));
@@ -2064,6 +2070,65 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex,
     }
 }
 
+// optAssertionGenCast: Create a tentative subrange assertion for a cast.
+//
+// This function will try to create an assertion that the cast's operand
+// is within the "input" range for the cast, so that this assertion can
+// later be proven via implication and the cast removed. Such assertions
+// are only generated during global propagation, and only for LCL_VARs.
+//
+// Arguments:
+//    cast - the cast node for which to create the assertion
+//
+// Return Value:
+//    Index of the generated assertion, or NO_ASSERTION_INDEX if it was not
+//    legal, profitable, or possible to create one.
+//
+AssertionIndex Compiler::optAssertionGenCast(GenTreeCast* cast)
+{
+    if (optLocalAssertionProp || !varTypeIsIntegral(cast) || !varTypeIsIntegral(cast->CastOp()))
+    {
+        return NO_ASSERTION_INDEX;
+    }
+
+    // This condition exists to preverve previous behavior.
+    if (!cast->CastOp()->OperIs(GT_LCL_VAR))
+    {
+        return NO_ASSERTION_INDEX;
+    }
+
+    GenTreeLclVar* lclVar = cast->CastOp()->AsLclVar();
+    LclVarDsc*     varDsc = lvaGetDesc(lclVar);
+
+    // It is not useful to make assertions about address-exposed variables, they will never be proven.
+    if (varDsc->lvAddrExposed)
+    {
+        return NO_ASSERTION_INDEX;
+    }
+
+    // A representation-changing cast cannot be simplified if it is not checked.
+    if (!cast->gtOverflow() && (genActualType(cast) != genActualType(lclVar)))
+    {
+        return NO_ASSERTION_INDEX;
+    }
+
+    // This condition also exists to preverve previous behavior.
+    if (varDsc->lvIsStructField && varDsc->lvNormalizeOnLoad())
+    {
+        return NO_ASSERTION_INDEX;
+    }
+
+    AssertionDsc assertion   = {OAK_SUBRANGE};
+    assertion.op1.kind       = O1K_LCLVAR;
+    assertion.op1.vn         = vnStore->VNConservativeNormalValue(lclVar->gtVNPair);
+    assertion.op1.lcl.lclNum = lclVar->GetLclNum();
+    assertion.op1.lcl.ssaNum = lclVar->GetSsaNum();
+    assertion.op2.kind       = O2K_SUBRANGE;
+    assertion.op2.u2         = AssertionDsc::GetInputRangeForCast(cast);
+
+    return optFinalizeCreatingAssertion(&assertion);
+}
+
 //------------------------------------------------------------------------
 // optCreateJtrueAssertions: Create assertions about a JTRUE's relop operands.
 //
@@ -2526,17 +2591,11 @@ void Compiler::optAssertionGen(GenTree* tree)
         break;
 
         case GT_CAST:
-            // We only create this assertion for global assertion prop
-            if (!optLocalAssertionProp)
-            {
-                // This represets an assertion that we would like to prove to be true. It is not actually a true
-                // assertion.
-                // If we can prove this assertion true then we can eliminate this cast.
-
-                // TODO-Bug: this must use "input" for a cast.
-                assertionInfo   = optCreateAssertion(tree->AsOp()->gtOp1, tree, OAK_SUBRANGE);
-                assertionProven = false;
-            }
+            // This represets an assertion that we would like to prove to be true.
+            // If we can prove this assertion true then we can eliminate this cast.
+            // We only create this assertion for global assertion propagation.
+            assertionInfo   = optAssertionGenCast(tree->AsCast());
+            assertionProven = false;
             break;
 
         case GT_JTRUE:
