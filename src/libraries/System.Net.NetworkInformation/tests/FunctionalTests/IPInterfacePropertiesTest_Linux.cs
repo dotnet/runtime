@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Net.Http.Functional.Tests;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 
@@ -15,9 +16,9 @@ namespace System.Net.NetworkInformation.Tests
     {
         private readonly ITestOutputHelper _log;
 
-        public IPInterfacePropertiesTest_Linux()
+        public IPInterfacePropertiesTest_Linux(ITestOutputHelper output)
         {
-            _log = TestLogging.GetInstance();
+            _log = output;
         }
 
         [Fact]
@@ -106,7 +107,7 @@ namespace System.Net.NetworkInformation.Tests
                         _log.WriteLine("-- " + wins.ToString());
                     }
                 }
-            }).WaitAsync(TimeSpan.FromSeconds(30));
+            }).WaitAsync(TestHelper.PassingTestTimeout);
         }
 
         [Fact]
@@ -132,7 +133,7 @@ namespace System.Net.NetworkInformation.Tests
                     _log.WriteLine("Mtu: " + ipv4Properties.Mtu);
                     _log.WriteLine("UsesWins: " + ipv4Properties.UsesWins);
                 }
-            }).WaitAsync(TimeSpan.FromSeconds(30));
+            }).WaitAsync(TestHelper.PassingTestTimeout);
         }
 
         [Fact]
@@ -160,7 +161,7 @@ namespace System.Net.NetworkInformation.Tests
                     _log.WriteLine("Mtu: " + ipv6Properties.Mtu);
                     _log.WriteLine("Scope: " + ipv6Properties.GetScopeId(ScopeLevel.Link));
                 }
-            }).WaitAsync(TimeSpan.FromSeconds(30));
+            }).WaitAsync(TestHelper.PassingTestTimeout);
         }
 
         [Fact]
@@ -190,7 +191,7 @@ namespace System.Net.NetworkInformation.Tests
                         _log.WriteLine("-- Level: " + level + "; " + ipv6Properties.GetScopeId(level));
                     }
                 }
-            }).WaitAsync(TimeSpan.FromSeconds(30));
+            }).WaitAsync(TestHelper.PassingTestTimeout);
         }
 
         [Fact]
@@ -215,7 +216,7 @@ namespace System.Net.NetworkInformation.Tests
                         break;
                     }
                 }
-            }).WaitAsync(TimeSpan.FromSeconds(30));
+            }).WaitAsync(TestHelper.PassingTestTimeout);
         }
 
         [Fact]
@@ -239,7 +240,7 @@ namespace System.Net.NetworkInformation.Tests
                         break;
                     }
                 }
-            }).WaitAsync(TimeSpan.FromSeconds(30));
+            }).WaitAsync(TestHelper.PassingTestTimeout);
         }
     }
 }
