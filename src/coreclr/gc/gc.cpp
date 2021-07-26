@@ -11888,7 +11888,7 @@ void gc_heap::distribute_free_regions()
             }
             // we should have found enough large regions to decommit
             // in the case of huge regions, we may have overshot a bit
-            assert (num_large_regions_to_decommit <= 0 && num_large_regions_to_decommit >= -num_huge_region_units);
+            assert (num_large_regions_to_decommit <= 0 && num_large_regions_to_decommit >= -(ptrdiff_t)num_huge_region_units);
 
             // we should have found at least one region to decommit
             assert (large_regions_to_decommit != nullptr);
