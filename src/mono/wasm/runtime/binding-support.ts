@@ -411,49 +411,49 @@ var BindingSupportLib = {
 		},
 
 		/** @returns return type is determined by the type parameter */
-		_unbox_mono_obj_root_with_known_nonprimitive_type: function (root: WasmRoot, type: CNonPrimativeTypes): number | string | boolean | JSObject | Promise<any> | Date | Function {
+		_unbox_mono_obj_root_with_known_nonprimitive_type: function (root: WasmRoot, type: CNonPrimitiveTypes): number | string | boolean | JSObject | Promise<any> | Date | Function {
 			if (root.value === undefined)
 				throw new Error(`Expected a root but got ${root}`);
 			
 			//See MARSHAL_TYPE_ defines in driver.c
 			switch (type) {
-				case CNonPrimativeTypes.Int64:
-				case CNonPrimativeTypes.UInt64:
+				case CNonPrimitiveTypes.Int64:
+				case CNonPrimitiveTypes.UInt64:
 					// TODO: Fix this once emscripten offers HEAPI64/HEAPU64 or can return them
 					throw new Error ("int64 not available");
-				case CNonPrimativeTypes.String:
-				case CNonPrimativeTypes.Char: // interned string
+				case CNonPrimitiveTypes.String:
+				case CNonPrimitiveTypes.Char: // interned string
 					return BINDING.conv_string (root.value);
-				case CNonPrimativeTypes.VTS:
+				case CNonPrimitiveTypes.VTS:
 					throw new Error ("no idea on how to unbox value types");
-				case CNonPrimativeTypes.Delegate:
+				case CNonPrimitiveTypes.Delegate:
 					return BINDING._unbox_delegate_root (root);
-				case CNonPrimativeTypes.Task:
+				case CNonPrimitiveTypes.Task:
 					return BINDING._unbox_task_root (root);
-				case CNonPrimativeTypes.Ref:
+				case CNonPrimitiveTypes.Ref:
 					return BINDING.extract_js_obj_root (root);
-				case CNonPrimativeTypes.Int8Array:
-				case CNonPrimativeTypes.Uint8Array:
-				case CNonPrimativeTypes.Uint8ClampedArray:
-				case CNonPrimativeTypes.Int16Array:
-				case CNonPrimativeTypes.UInt16Array:
-				case CNonPrimativeTypes.Int32Array:
-				case CNonPrimativeTypes.UInt32Array:
-				case CNonPrimativeTypes.Float32Array:
-				case CNonPrimativeTypes.Float64Array:
+				case CNonPrimitiveTypes.Int8Array:
+				case CNonPrimitiveTypes.Uint8Array:
+				case CNonPrimitiveTypes.Uint8ClampedArray:
+				case CNonPrimitiveTypes.Int16Array:
+				case CNonPrimitiveTypes.UInt16Array:
+				case CNonPrimitiveTypes.Int32Array:
+				case CNonPrimitiveTypes.UInt32Array:
+				case CNonPrimitiveTypes.Float32Array:
+				case CNonPrimitiveTypes.Float64Array:
 					throw new Error ("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
-				case CNonPrimativeTypes.DateTime: // clr .NET DateTime
+				case CNonPrimitiveTypes.DateTime: // clr .NET DateTime
 					var dateValue = BINDING.call_method<number>(BINDING.get_date_value, null, "m", [ root.value ]);
 					return new Date(dateValue);
-				case CNonPrimativeTypes.DateTimeOffset: // clr .NET DateTimeOffset
+				case CNonPrimitiveTypes.DateTimeOffset: // clr .NET DateTimeOffset
 					var dateoffsetValue = BINDING._object_to_string (root.value);
 					return dateoffsetValue;
-				case CNonPrimativeTypes.Uri: // clr .NET Uri
+				case CNonPrimitiveTypes.Uri: // clr .NET Uri
 					var uriValue = BINDING._object_to_string (root.value);
 					return uriValue;
-				case CNonPrimativeTypes.SafeHandle: // clr .NET SafeHandle
+				case CNonPrimitiveTypes.SafeHandle: // clr .NET SafeHandle
 					return BINDING._unbox_safehandle_root (root);
-				case CNonPrimativeTypes.Undefined:
+				case CNonPrimitiveTypes.Undefined:
 					return undefined;
 				default:
 					throw new Error (`no idea on how to unbox object kind ${type} at offset ${root.value} (root address is ${root.get_address()})`);
@@ -466,17 +466,17 @@ var BindingSupportLib = {
 
 			var type = BINDING.mono_wasm_try_unbox_primitive_and_get_type (root.value, BINDING._unbox_buffer);
 			switch (type) {
-				case CPrimativeTypes.Int:
+				case CPrimitiveTypes.Int:
 					return Module.HEAP32[BINDING._unbox_buffer / 4];
-				case CPrimativeTypes.UInt32:
+				case CPrimitiveTypes.UInt32:
 					return Module.HEAPU32[BINDING._unbox_buffer / 4];
-				case CPrimativeTypes.Float32:
+				case CPrimitiveTypes.Float32:
 					return Module.HEAPF32[BINDING._unbox_buffer / 4];
-				case CPrimativeTypes.Float64:
+				case CPrimitiveTypes.Float64:
 					return Module.HEAPF64[BINDING._unbox_buffer / 8];
-				case CPrimativeTypes.Bool:
+				case CPrimitiveTypes.Bool:
 					return (Module.HEAP32[BINDING._unbox_buffer / 4]) !== 0;
-				case CPrimativeTypes.Char:
+				case CPrimitiveTypes.Char:
 					return String.fromCharCode(Module.HEAP32[BINDING._unbox_buffer / 4]);
 				default:
 					return BINDING._unbox_mono_obj_root_with_known_nonprimitive_type (root, type);
@@ -1276,7 +1276,7 @@ var BindingSupportLib = {
 			if (!method)
 				throw new Error ("no method specified");
 
-			var needs_converter = BINDING._verify_args_for_method_call (args_marshal, args);
+			const needs_converter = BINDING._verify_args_for_method_call (args_marshal, args);
 
 			var buffer = 0, converter = null, argsRootBuffer = null;
 			var is_result_marshaled = true;
@@ -1289,7 +1289,7 @@ var BindingSupportLib = {
 
 				argsRootBuffer = BINDING._get_args_root_buffer_for_method_call (converter);
 
-				var scratchBuffer = BINDING._get_buffer_for_method_call (converter);
+				const scratchBuffer = BINDING._get_buffer_for_method_call (converter);
 
 				buffer = converter.compiled_variadic_function (scratchBuffer, argsRootBuffer, method, args);
 			}
@@ -1486,7 +1486,7 @@ var BindingSupportLib = {
 				}
 			}
 
-			var delegateRoot = MONO.mono_wasm_new_root (BINDING.extract_mono_obj (delegate_obj));
+			const delegateRoot = MONO.mono_wasm_new_root (BINDING.extract_mono_obj (delegate_obj));
 			try {
 				if (typeof delegate_obj.__mono_delegate_invoke__ === "undefined")
 					delegate_obj.__mono_delegate_invoke__ = BINDING.mono_wasm_get_delegate_invoke(delegateRoot.value);
@@ -1543,7 +1543,7 @@ var BindingSupportLib = {
 		call_static_method: function (fqn: string, args: any[], signature: ArgsMarshalString | null): number {
 			BINDING.bindings_lazy_init ();
 
-			var method = BINDING.resolve_method_fqn (fqn);
+			const method = BINDING.resolve_method_fqn (fqn);
 
 			if (typeof signature === "undefined")
 				signature = Module.mono_method_get_call_signature (method);

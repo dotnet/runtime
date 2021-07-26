@@ -31,7 +31,7 @@ interface BINDING_C_FUNCS {
     mono_wasm_register_bundled_satellite_assemblies (): void;
     mono_wasm_string_array_new (a: number): number;
     mono_wasm_string_from_utf16 (a: number, b: number): number;
-    mono_wasm_try_unbox_primitive_and_get_type (a: number, b: number): CPrimativeTypes;
+    mono_wasm_try_unbox_primitive_and_get_type (a: number, b: number): CPrimitiveTypes;
     mono_typed_array_new (a: number, b: number, c: number, d: number): number;
 }
 
@@ -130,7 +130,7 @@ declare const enum ConverterStepIndirects {
     Int64 = "i64",
 }
 
-declare const enum CNonPrimativeTypes {
+declare const enum CNonPrimitiveTypes {
     String = 3,
     VTS = 4, // throws errors due to "no idea on how to unbox value types"
     Delegate = 5,
@@ -155,7 +155,7 @@ declare const enum CNonPrimativeTypes {
     Undefined = 30
 }
 
-declare const enum CPrimativeTypes {
+declare const enum CPrimitiveTypes {
     Int = 1,
     Float64 = 2,
     Bool = 8,
