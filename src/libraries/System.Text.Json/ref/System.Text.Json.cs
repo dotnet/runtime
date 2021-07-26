@@ -852,7 +852,7 @@ namespace System.Text.Json.Serialization
         public abstract System.Text.Json.Serialization.Metadata.JsonTypeInfo? GetTypeInfo(System.Type type);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false)]
-    public partial class JsonSourceGenerationOptionsAttribute : System.Text.Json.Serialization.JsonAttribute
+    public sealed partial class JsonSourceGenerationOptionsAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonSourceGenerationOptionsAttribute() { }
         public System.Text.Json.Serialization.JsonIgnoreCondition DefaultIgnoreCondition { get { throw null; } set { } }

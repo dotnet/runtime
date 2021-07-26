@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization
 #else
     public
 #endif
-    class JsonSourceGenerationOptionsAttribute : JsonAttribute
+    sealed class JsonSourceGenerationOptionsAttribute : JsonAttribute
     {
         /// <summary>
         /// Specifies the default ignore condition.
