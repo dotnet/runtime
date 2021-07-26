@@ -323,11 +323,8 @@ ipc_socket_create_uds (DiagnosticsIpc *ipc)
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	new_socket = socket (ipc->server_address_family, socket_type, 0);
 #ifndef SOCK_CLOEXEC
-	if (new_socket != DS_IPC_INVALID_SOCKET) {
-		if (fcntl (new_socket, F_SETFD, FD_CLOEXEC) == -1) {
-			EP_ASSERT (!"Failed to set CLOEXEC");
-		}
-	}
+	if (new_socket != DS_IPC_INVALID_SOCKET)
+		fcntl (new_socket, F_SETFD, FD_CLOEXEC); // ignore any failures; this is best effort
 #endif // SOCK_CLOEXEC
 	DS_EXIT_BLOCKING_PAL_SECTION;
 	return new_socket;
@@ -356,9 +353,9 @@ ipc_socket_create_tcp (DiagnosticsIpc *ipc)
 	new_socket = socket (ipc->server_address_family, socket_type, IPPROTO_TCP);
 	if (new_socket != DS_IPC_INVALID_SOCKET) {
 #ifndef SOCK_CLOEXEC
-		if (fcntl (new_socket, F_SETFD, FD_CLOEXEC) == -1) {
-			EP_ASSERT (!"Failed to set CLOEXEC");
-		}
+#ifndef HOST_WIN32
+		fcntl (new_socket, F_SETFD, FD_CLOEXEC); // ignore any failures; this is best effort
+#endif // HOST_WIN32
 #endif // SOCK_CLOEXEC
 		int option_value = 1;
 		setsockopt (new_socket, IPPROTO_TCP, TCP_NODELAY, (const char*)&option_value, sizeof (option_value));
