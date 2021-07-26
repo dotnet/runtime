@@ -310,7 +310,6 @@ namespace
             struct
             {
                 PTRARRAYREF arrRef;
-                PTRARRAYREF arrRefTmp;
             } gc;
             ::ZeroMemory(&gc, sizeof(gc));
              GCPROTECT_BEGIN(gc);
