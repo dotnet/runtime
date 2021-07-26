@@ -2015,10 +2015,11 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     }
 #endif // DEBUG
 
-    vnStore               = nullptr;
-    m_opAsgnVarDefSsaNums = nullptr;
-    fgSsaPassesCompleted  = 0;
-    fgVNPassesCompleted   = 0;
+    vnStore                    = nullptr;
+    m_opAsgnVarDefSsaNums      = nullptr;
+    m_nodeToLoopMemoryBlockMap = nullptr;
+    fgSsaPassesCompleted       = 0;
+    fgVNPassesCompleted        = 0;
 
     // check that HelperCallProperties are initialized
 

@@ -545,6 +545,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56265")]
         public async Task ResponseCancellation_BothCancellationTokenAndDispose_Success()
         {
             if (UseQuicImplementationProvider != QuicImplementationProviders.MsQuic)

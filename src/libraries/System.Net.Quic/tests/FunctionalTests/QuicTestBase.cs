@@ -25,14 +25,17 @@ namespace System.Net.Quic.Tests
         public static QuicImplementationProvider ImplementationProvider { get; } = s_factory.GetProvider();
         public static bool IsSupported => ImplementationProvider.IsSupported;
 
+        public static bool IsMockProvider => typeof(T) == typeof(MockProviderFactory);
+        public static bool IsMsQuicProvider => typeof(T) == typeof(MsQuicProviderFactory);
+
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
         public X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
         public X509Certificate2 ClientCertificate = System.Net.Test.Common.Configuration.Certificates.GetClientCertificate();
 
-        public const int PassingTestTimeout = 30_000;
-
         public ITestOutputHelper _output;
+        public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
+        public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
 
         public bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
         {
@@ -54,7 +57,8 @@ namespace System.Net.Quic.Tests
             return new SslClientAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                RemoteCertificateValidationCallback = RemoteCertificateValidationCallback
+                RemoteCertificateValidationCallback = RemoteCertificateValidationCallback,
+                TargetHost = "localhost"
             };
         }
 

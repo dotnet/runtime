@@ -3410,7 +3410,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
     // Second, use source registers.
 
-    if (op1->IsMultiRegNode())
+    if (op1->IsMultiRegNode() && (op1->GetMultiRegCount() > 1))
     {
         // This is the case where the source produces multiple registers.
         // This must be a store lclvar.

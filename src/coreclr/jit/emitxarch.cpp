@@ -11914,10 +11914,12 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
 #endif
             if (id->idGCref())
             {
-                // The reg must currently be holding either a gcref or a byref
-                // and the instruction must be inc or dec
-                assert(((emitThisGCrefRegs | emitThisByrefRegs) & regMask) &&
-                       (ins == INS_inc || ins == INS_dec || ins == INS_inc_l || ins == INS_dec_l));
+                assert(ins == INS_inc || ins == INS_dec || ins == INS_inc_l || ins == INS_dec_l);
+                // We would like to assert that the reg must currently be holding either a gcref or a byref.
+                // However, we can see cases where a LCLHEAP generates a non-gcref value into a register,
+                // and the first instruction we generate after the LCLHEAP is an `inc` that is typed as
+                // byref. We'll properly create the byref gcinfo when this happens.
+                //     assert((emitThisGCrefRegs | emitThisByrefRegs) & regMask);
                 assert(id->idGCref() == GCT_BYREF);
                 // Mark it as holding a GCT_BYREF
                 emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);
@@ -12222,15 +12224,30 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                     case INS_sub:
                         assert(id->idGCref() == GCT_BYREF);
 
+#if 0
 #ifdef DEBUG
+                        // Due to elided register moves, we can't have the following assert.
+                        // For example, consider:
+                        //    t85 = LCL_VAR byref V01 arg1 rdx (last use) REG rdx
+                        //        /--*  t85    byref                                                       
+                        //        *  STORE_LCL_VAR byref  V40 tmp31 rdx REG rdx                 
+                        // Here, V01 is type `long` on entry, then is stored as a byref. But because
+                        // the register allocator assigned the same register, no instruction was
+                        // generated, and we only (currently) make gcref/byref changes in emitter GC info
+                        // when an instruction is generated. We still generate correct GC info, as this
+                        // instruction, if writing a GC ref even through reading a long, will go live here.
+                        // These situations typically occur due to unsafe casting, such as with Span<T>.
+
                         regMaskTP regMask;
                         regMask = genRegMask(reg1) | genRegMask(reg2);
 
                         // r1/r2 could have been a GCREF as GCREF + int=BYREF
-                        //                            or BYREF+/-int=BYREF
+                        //                               or BYREF+/-int=BYREF
                         assert(((regMask & emitThisGCrefRegs) && (ins == INS_add)) ||
                                ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub)));
-#endif
+#endif // DEBUG
+#endif // 0
+
                         // Mark r1 as holding a byref
                         emitGCregLiveUpd(GCT_BYREF, reg1, dst);
                         break;

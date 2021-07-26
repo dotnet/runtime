@@ -37,23 +37,146 @@ namespace System.Net.Quic.Tests
             Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
         }
 
+        private static async Task<QuicStream> OpenAndUseStreamAsync(QuicConnection c)
+        {
+            QuicStream s = c.OpenBidirectionalStream();
+
+            // This will pend
+            await s.ReadAsync(new byte[1]);
+
+            return s;
+        }
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55242", TestPlatforms.Linux)]
-        public async Task AcceptStream_ConnectionAborted_ByClient_Throws()
+        public async Task CloseAsync_WithPendingAcceptAndConnect_PendingAndSubsequentThrowOperationAbortedException()
         {
             using var sync = new SemaphoreSlim(0);
 
             await RunClientServer(
                 async clientConnection =>
                 {
-                    await clientConnection.CloseAsync(ExpectedErrorCode);
-                    sync.Release();
+                    await sync.WaitAsync();
                 },
                 async serverConnection =>
                 {
+                    // Pend operations before the client closes.
+                    Task<QuicStream> acceptTask = serverConnection.AcceptStreamAsync().AsTask();
+                    Assert.False(acceptTask.IsCompleted);
+                    Task<QuicStream> connectTask = OpenAndUseStreamAsync(serverConnection);
+                    Assert.False(connectTask.IsCompleted);
+
+                    await serverConnection.CloseAsync(ExpectedErrorCode);
+
+                    sync.Release();
+
+                    // Pending ops should fail
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => acceptTask);
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => connectTask);
+
+                    // Subsequent attempts should fail
+                    // TODO: Which exception is correct?
+                    if (IsMockProvider)
+                    {
+                        await Assert.ThrowsAsync<ObjectDisposedException>(async () => await serverConnection.AcceptStreamAsync());
+                        await Assert.ThrowsAsync<ObjectDisposedException>(async () => await OpenAndUseStreamAsync(serverConnection));
+                    }
+                    else
+                    {
+                        await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverConnection.AcceptStreamAsync());
+
+                        // TODO: ActiveIssue https://github.com/dotnet/runtime/issues/56133
+                        // MsQuic fails with System.Net.Quic.QuicException: Failed to open stream to peer. Error Code: INVALID_STATE
+                        //await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await OpenAndUseStreamAsync(serverConnection));
+                        await Assert.ThrowsAsync<QuicException>(() => OpenAndUseStreamAsync(serverConnection));
+                    }
+                });
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55242", TestPlatforms.Linux)]
+        public async Task Dispose_WithPendingAcceptAndConnect_PendingAndSubsequentThrowOperationAbortedException()
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
                     await sync.WaitAsync();
-                    QuicConnectionAbortedException ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => serverConnection.AcceptStreamAsync().AsTask());
+                },
+                async serverConnection =>
+                {
+                    // Pend operations before the client closes.
+                    Task<QuicStream> acceptTask = serverConnection.AcceptStreamAsync().AsTask();
+                    Assert.False(acceptTask.IsCompleted);
+                    Task<QuicStream> connectTask = OpenAndUseStreamAsync(serverConnection);
+                    Assert.False(connectTask.IsCompleted);
+
+                    serverConnection.Dispose();
+
+                    sync.Release();
+
+                    // Pending ops should fail
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => acceptTask);
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => connectTask);
+
+                    // Subsequent attempts should fail
+                    // TODO: Should these be QuicOperationAbortedException, to match above? Or vice-versa?
+                    await Assert.ThrowsAsync<ObjectDisposedException>(async () => await serverConnection.AcceptStreamAsync());
+                    await Assert.ThrowsAsync<ObjectDisposedException>(async () => await OpenAndUseStreamAsync(serverConnection));
+                });
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55242", TestPlatforms.Linux)]
+        public async Task ConnectionClosedByPeer_WithPendingAcceptAndConnect_PendingAndSubsequentThrowConnectionAbortedException()
+        {
+            if (IsMockProvider)
+            {
+                return;
+            }
+
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    await sync.WaitAsync();
+
+                    await clientConnection.CloseAsync(ExpectedErrorCode);
+                },
+                async serverConnection =>
+                {
+                    // Pend operations before the client closes.
+                    Task<QuicStream> acceptTask = serverConnection.AcceptStreamAsync().AsTask();
+                    Assert.False(acceptTask.IsCompleted);
+                    Task<QuicStream> connectTask = OpenAndUseStreamAsync(serverConnection);
+                    Assert.False(connectTask.IsCompleted);
+
+                    sync.Release();
+
+                    // Pending ops should fail
+                    QuicConnectionAbortedException ex;
+
+                    ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => acceptTask);
                     Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+                    ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => connectTask);
+                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+
+                    // Subsequent attempts should fail
+                    ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => serverConnection.AcceptStreamAsync().AsTask());
+                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+                    // TODO: ActiveIssue https://github.com/dotnet/runtime/issues/56133
+                    // MsQuic fails with System.Net.Quic.QuicException: Failed to open stream to peer. Error Code: INVALID_STATE
+                    if (IsMsQuicProvider)
+                    {
+                        await Assert.ThrowsAsync<QuicException>(() => OpenAndUseStreamAsync(serverConnection));
+                    }
+                    else
+                    {
+                        ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => OpenAndUseStreamAsync(serverConnection));
+                        Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
+                    }
                 });
         }
 
@@ -79,7 +202,7 @@ namespace System.Net.Quic.Tests
         [InlineData(10)]
         public async Task CloseAsync_WithOpenStream_LocalAndPeerStreamsFailWithQuicOperationAbortedException(int writesBeforeClose)
         {
-            if (typeof(T) == typeof(MockProviderFactory))
+            if (IsMockProvider)
             {
                 return;
             }
@@ -122,7 +245,7 @@ namespace System.Net.Quic.Tests
         [InlineData(10)]
         public async Task Dispose_WithOpenLocalStream_LocalStreamFailsWithQuicOperationAbortedException(int writesBeforeClose)
         {
-            if (typeof(T) == typeof(MockProviderFactory))
+            if (IsMockProvider)
             {
                 return;
             }
