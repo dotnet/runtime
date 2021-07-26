@@ -130,6 +130,13 @@ jobs:
         displayName: Disk Usage before Build
 
     - ${{ if eq(parameters.nameSuffix, 'Browser_wasm_Windows') }}:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: 14.x
+
+      - script: npm install -g typescript
+        displayName: Install typescript
+
       # Update machine certs
       - task: PowerShell@2
         displayName: Update machine certs
