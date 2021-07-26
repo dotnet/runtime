@@ -306,6 +306,7 @@ void
 ep_provider_callback_data_free (EventPipeProviderCallbackData *provider_callback_data)
 {
 	ep_return_void_if_nok (provider_callback_data != NULL);
+	ep_provider_callback_data_fini (provider_callback_data);
 	ep_rt_object_free (provider_callback_data);
 }
 
