@@ -65,7 +65,11 @@ public:
     UnknownImpl& operator=(const UnknownImpl&) = delete;
 
     UnknownImpl(UnknownImpl&&)  : _refCount{ 1 } {};
+ #ifdef _WIN32   
     UnknownImpl& operator=(UnknownImpl&&) = default;
+ #else
+    UnknownImpl& operator=(UnknownImpl&&) = delete;
+ #endif   
   
     template<typename I1, typename ...IR>
     HRESULT DoQueryInterface(
