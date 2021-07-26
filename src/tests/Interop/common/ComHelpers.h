@@ -57,26 +57,16 @@ namespace Internal
 // Implementation of IUnknown operations
 class UnknownImpl
 {
-public:
-#ifdef _WIN32
-    UnknownImpl() = default;
-#else    
+public:  
     UnknownImpl() : _refCount{ 1 } {};
-#endif    
     virtual ~UnknownImpl() = default;
 
     UnknownImpl(const UnknownImpl&) = delete;
     UnknownImpl& operator=(const UnknownImpl&) = delete;
 
-#ifdef _WIN32
-    UnknownImpl(UnknownImpl&&) = default;
-    UnknownImpl& operator=(UnknownImpl&&) = default;
- #else 
     UnknownImpl(UnknownImpl&&)  : _refCount{ 1 } {};
-    UnknownImpl& operator=(UnknownImpl&&) = delete;
- #endif   
-   
-
+    UnknownImpl& operator=(UnknownImpl&&) = default;
+  
     template<typename I1, typename ...IR>
     HRESULT DoQueryInterface(
         /* [in] */ REFIID riid,
@@ -130,12 +120,7 @@ protected:
     }
 
 private:
-#ifdef _WIN32
-    std::atomic<ULONG> _refCount = 1;
-#else
-    //Initizialization moved ad constructor level
-    std::atomic<ULONG> _refCount;
-#endif    
+    std::atomic<ULONG> _refCount;  
 };
 
 // Macro to use for defining ref counting impls
