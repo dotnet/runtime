@@ -1835,27 +1835,6 @@ namespace System.Reflection.Emit
             return generic_params;
         }
 
-        private static bool IsValidGetMethodType(Type type)
-        {
-            if (type is TypeBuilder || type is TypeBuilderInstantiation)
-                return true;
-            /*GetMethod() must work with TypeBuilders after CreateType() was called.*/
-            if (type.Module is ModuleBuilder)
-                return true;
-            if (type.IsGenericParameter)
-                return false;
-
-            Type[] inst = type.GetGenericArguments();
-            if (inst == null)
-                return false;
-            for (int i = 0; i < inst.Length; ++i)
-            {
-                if (IsValidGetMethodType(inst[i]))
-                    return true;
-            }
-            return false;
-        }
-
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Linker thinks Type.GetConstructor(ConstructorInfo) is one of the public APIs because it doesn't analyze method signatures. We already have ConstructorInfo.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
@@ -1887,6 +1866,27 @@ namespace System.Reflection.Emit
                 throw new ArgumentException("constructor not found");
 
             return res;
+        }
+
+        private static bool IsValidGetMethodType(Type type)
+        {
+            if (type is TypeBuilder || type is TypeBuilderInstantiation)
+                return true;
+            /*GetMethod() must work with TypeBuilders after CreateType() was called.*/
+            if (type.Module is ModuleBuilder)
+                return true;
+            if (type.IsGenericParameter)
+                return false;
+
+            Type[] inst = type.GetGenericArguments();
+            if (inst == null)
+                return false;
+            for (int i = 0; i < inst.Length; ++i)
+            {
+                if (IsValidGetMethodType(inst[i]))
+                    return true;
+            }
+            return false;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
