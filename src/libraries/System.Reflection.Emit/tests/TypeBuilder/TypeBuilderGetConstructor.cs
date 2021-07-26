@@ -8,6 +8,15 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderGetConstructor
     {
         [Fact]
+        public void GetConstructor_DeclaringTypeOfConstructorWithoutGenericParameters_ThrowsArgumentException()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
+
+            ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
+            AssertExtensions.Throws<ArgumentException>("type", () => TypeBuilder.GetConstructor(type.AsType(), ctor));
+        }
+
+        [Fact]
         public void GetConstructor_DeclaringTypeOfConstructorNotGenericTypeDefinition()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
