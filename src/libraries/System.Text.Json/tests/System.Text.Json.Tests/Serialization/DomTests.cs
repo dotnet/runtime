@@ -14,6 +14,8 @@ namespace System.Text.Json.Serialization.Tests
     /// The test class <see cref="JsonSerializerApiValidation"/> provides tests for input validation.
     public static class DomTests
     {
+        private const string Escaped_PlusSign = "\"\\u002B\""; // A '+' sign is escaped as hex.
+
         private class MyPoco
         {
             public static MyPoco Create()
@@ -180,6 +182,39 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonArray>(arrayProp);
             Assert.Equal(1, arrayProp[0].AsValue().GetValue<int>());
             Assert.Equal(2, arrayProp[1].AsValue().GetValue<int>());
+        }
+
+        [Fact]
+        public static void SerializeToDocument_WithEscaping()
+        {
+            using JsonDocument document = JsonSerializer.SerializeToDocument("+");
+            JsonElement dom = document.RootElement;
+            Assert.Equal(JsonValueKind.String, dom.ValueKind);
+            Assert.Equal(Escaped_PlusSign, dom.GetRawText());
+
+            string json = dom.Deserialize<string>();
+            Assert.Equal("+", json);
+        }
+
+        [Fact]
+        public static void SerializeToElement_WithEscaping()
+        {
+            JsonElement dom = JsonSerializer.SerializeToElement("+");
+            Assert.Equal(JsonValueKind.String, dom.ValueKind);
+            Assert.Equal(Escaped_PlusSign, dom.GetRawText());
+
+            string json = dom.Deserialize<string>();
+            Assert.Equal("+", json);
+        }
+
+        [Fact]
+        public static void SerializeToNode_WithEscaping()
+        {
+            JsonNode dom = JsonSerializer.SerializeToNode("+");
+            Assert.Equal(Escaped_PlusSign, dom.ToJsonString());
+
+            string json = dom.Deserialize<string>();
+            Assert.Equal("+", json);
         }
     }
 }

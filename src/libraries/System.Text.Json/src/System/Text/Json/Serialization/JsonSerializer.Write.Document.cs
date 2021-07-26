@@ -111,27 +111,18 @@ namespace System.Text.Json
         {
             JsonDocument? document = null;
 
-            // The PooledByteBufferWriter is cleared and returned when JsonDocument.Dispose() is called.
             JsonSerializerOptions options = jsonTypeInfo.Options;
-            var output = new PooledByteBufferWriter(options.DefaultBufferSize);
+            Debug.Assert(options != null);
 
-            // For performance, avoid calling JsonSerializer.Serialize(...) since that will allocate
-            // an extra byte[] and perform escaping on the result.
-
-            try
+            // The PooledByteBufferWriter is cleared and returned when JsonDocument.Dispose() is called.
+            // For performance, share the same buffer across serialization and deserialization.
+            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
+            using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
             {
-                using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
-                {
-                    WriteUsingMetadata(writer, value, jsonTypeInfo);
-                }
+                WriteUsingMetadata(writer, value, jsonTypeInfo);
+            }
 
-                JsonDocumentOptions documentOptions = options != null ? options.GetDocumentOptions() : default(JsonDocumentOptions);
-                document = JsonDocument.Parse(output, documentOptions);
-            }
-            catch
-            {
-                output.Dispose();
-            }
+            document = JsonDocument.Parse(output, options.GetDocumentOptions());
 
             Debug.Assert(document != null);
             return document;

@@ -213,6 +213,11 @@ namespace System.Text.Json
             return endIndex;
         }
 
+        internal ReadOnlyMemory<byte> GetRootRawValue()
+        {
+            return GetRawValue(0, includeQuotes : true);
+        }
+
         internal ReadOnlyMemory<byte> GetRawValue(int index, bool includeQuotes)
         {
             CheckNotDisposed();

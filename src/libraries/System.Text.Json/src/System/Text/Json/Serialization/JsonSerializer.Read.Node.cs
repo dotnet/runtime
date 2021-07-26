@@ -137,24 +137,21 @@ namespace System.Text.Json
             JsonSerializerOptions options = jsonTypeInfo.Options;
             Debug.Assert(options != null);
 
-            // For performance, we avoid calling JsonSerializer.Deserialize(node) since that will allocate an extra byte[].
-
-            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
+            // For performance, share the same buffer across serialization and deserialization.
+            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
+            using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
             {
-                using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
+                if (node is null)
                 {
-                    if (node is null)
-                    {
-                        writer.WriteNullValue();
-                    }
-                    else
-                    {
-                        node.WriteTo(writer, options);
-                    }
+                    writer.WriteNullValue();
                 }
-
-                return ReadUsingMetadata<TValue>(output.WrittenMemory.Span, jsonTypeInfo);
+                else
+                {
+                    node.WriteTo(writer, options);
+                }
             }
+
+            return ReadUsingMetadata<TValue>(output.WrittenMemory.Span, jsonTypeInfo);
         }
     }
 }

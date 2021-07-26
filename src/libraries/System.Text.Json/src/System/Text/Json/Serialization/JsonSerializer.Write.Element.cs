@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -109,19 +110,16 @@ namespace System.Text.Json
         private static JsonElement WriteElement<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
+            Debug.Assert(options != null);
 
-            // For performance, avoid calling JsonSerializer.Serialize(...) since that will perform escaping on the result.
-
-            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
+            // For performance, share the same buffer across serialization and deserialization.
+            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
+            using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
             {
-                using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
-                {
-                    WriteUsingMetadata(writer, value, jsonTypeInfo);
-                }
-
-                JsonDocumentOptions documentOptions = options != null ? options.GetDocumentOptions() : default(JsonDocumentOptions);
-                return JsonElement.ParseValue(output.WrittenMemory.Span, documentOptions);
+                WriteUsingMetadata(writer, value, jsonTypeInfo);
             }
+
+            return JsonElement.ParseValue(output.WrittenMemory.Span, options.GetDocumentOptions());
         }
     }
 }
