@@ -345,13 +345,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // is just 1 char behind MAX_PATH (260) so that the runtimeconfig(.dev).json files
             // break this threshold. This will cause hostfxr to normalize these paths -- here we
             // are checking that the updated paths are used.
-            var dirName = new string('a', 259 - outputDir.Length - appExeName.Length - 2);
-            var newDir = Path.Combine(outputDir, dirName);
+            var tmp = Path.GetTempPath();
+            var dirName = new string('a', 259 - tmp.Length - appExeName.Length - 1);
+            var newDir = Path.Combine(tmp, dirName);
             var appExe = Path.Combine(newDir, appExeName);
             Debug.Assert(appExe.Length == 259);
             Directory.CreateDirectory(newDir);
             foreach (var file in Directory.GetFiles(outputDir, "*.*", SearchOption.TopDirectoryOnly))
-                File.Copy(file, Path.Combine(newDir, Path.GetFileName(file)));
+                File.Copy(file, Path.Combine(newDir, Path.GetFileName(file)), true);
 
             Command.Create(appExe)
                 .DotNetRoot(project.BuiltDotnet.BinPath)
