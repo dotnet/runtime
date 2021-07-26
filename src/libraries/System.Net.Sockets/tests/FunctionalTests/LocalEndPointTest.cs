@@ -79,10 +79,9 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task TcpClientSocket_WhenBoundToWildcardAddress_LocalEPChangeToSpecificOnConnnect()
         {
-            using (Socket server = CreateTcpServerSocket())
+            using (Socket server = CreateBoundTcpServerSocket(Wildcard, out int serverPort))
             using (Socket client = CreateTcpSocket())
             {
-                int serverPort = server.BindToAnonymousPort(Wildcard);
                 int clientPortAfterBind = client.BindToAnonymousPort(Wildcard);
 
                 Assert.Equal(Wildcard, GetLocalEPAddress(client)); // wildcard before connect
@@ -103,10 +102,9 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task TcpClientSocket_WhenNotBound_LocalEPChangeToSpecificOnConnnect()
         {
-            using (Socket server = CreateTcpServerSocket())
+            using (Socket server = CreateBoundTcpServerSocket(Loopback, out int serverPort))
             using (Socket client = CreateTcpSocket())
             {
-                int serverPort = server.BindToAnonymousPort(Loopback);
                 server.Listen();
                 Task<Socket> acceptTask = AcceptAsync(server);
 
@@ -124,11 +122,9 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task TcpAcceptSocket_WhenServerBoundToWildcardAddress_LocalEPIsSpecific()
         {
-            using (Socket server = CreateTcpServerSocket())
+            using (Socket server = CreateBoundTcpServerSocket(Wildcard, out int serverPort))
             using (Socket client = CreateTcpSocket())
             {
-                int serverPort = server.BindToAnonymousPort(Wildcard);
-
                 Assert.Equal(Wildcard, GetLocalEPAddress(server)); // server -> wildcard before accept
 
                 server.Listen();
@@ -149,11 +145,9 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public async Task TcpAcceptSocket_WhenServerBoundToSpecificAddress_LocalEPIsSame()
         {
-            using (Socket server = CreateTcpServerSocket())
+            using (Socket server = CreateBoundTcpServerSocket(Loopback, out int serverPort))
             using (Socket client = CreateTcpSocket())
             {
-                int serverPort = server.BindToAnonymousPort(Loopback);
-
                 Assert.Equal(Loopback, GetLocalEPAddress(server)); // server -> specific before accept
 
                 server.Listen();
@@ -201,7 +195,12 @@ namespace System.Net.Sockets.Tests
             );
         }
 
-        private Socket CreateTcpServerSocket() => SocketTestServer.CreateListenerSocketWithDualPortGuard(Loopback, out _portGuard);
+        private Socket CreateBoundTcpServerSocket(IPAddress listenAddress, out int serverPort)
+        {
+            Socket server = SocketTestServer.CreateListenerSocketWithDualPortGuard(listenAddress, out _portGuard);
+            serverPort = ((IPEndPoint)server.LocalEndPoint).Port;
+            return server;
+        }
 
         private IPAddress GetLocalEPAddress(Socket socket)
         {

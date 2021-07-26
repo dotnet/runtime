@@ -70,15 +70,15 @@ namespace System.Net.Sockets.Tests
         protected void NotifyAccepted(Socket socket) => Accepted?.Invoke(socket);
 
         public static Socket CreateListenerSocketWithDualPortGuard(
-            IPAddress address,
+            IPAddress listenAddress,
             out Socket portGuard)
-            => CreateListenerSocketWithDualPortGuard(address, false, out portGuard);
+            => CreateListenerSocketWithDualPortGuard(listenAddress, false, out portGuard);
 
         public static Socket CreateListenerSocketWithDualPortGuard(
-            IPAddress address,
+            IPAddress listenAddress,
             bool dualMode,
             out Socket portGuard)
-            => CreateListenerSocketWithDualPortGuard(address.AddressFamily, ProtocolType.Tcp, new IPEndPoint(address, 0), dualMode, out portGuard);
+            => CreateListenerSocketWithDualPortGuard(listenAddress.AddressFamily, ProtocolType.Tcp, new IPEndPoint(listenAddress, 0), dualMode, out portGuard);
 
         public static Socket CreateListenerSocketWithDualPortGuard(
             AddressFamily addressFamily,
@@ -91,7 +91,7 @@ namespace System.Net.Sockets.Tests
                 protocolType == ProtocolType.Tcp &&
                 listenEp is IPEndPoint ipEp &&
                 ipEp.Port == 0 && // Only guard when we are binding to an anonymous port
-                (ipEp.Address == IPAddress.Loopback || ipEp.Address == IPAddress.IPv6Loopback);
+                (ipEp.Address == IPAddress.Loopback || ipEp.Address == IPAddress.IPv6Loopback || ipEp.Address == IPAddress.Any || ipEp.Address == IPAddress.IPv6Any);
 
             Socket listener;
             if (!mustCreateGuard)
