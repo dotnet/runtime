@@ -12,6 +12,7 @@
 #define DECLSPEC_UUID(x)
 #define DECLSPEC_NOVTABLE
 #define MIDL_INTERFACE(x)   struct DECLSPEC_UUID(x) DECLSPEC_NOVTABLE
+//Check OBJC_TESTS presence to avoid interface definition on OSX (already defined)
 #ifndef OBJC_TESTS
 #define interface struct
 #endif
@@ -41,7 +42,7 @@
 #define E_NOINTERFACE                    _HRESULT_TYPEDEF_(0x80004002L)
 #define S_FALSE                          _HRESULT_TYPEDEF_(0x00000001L)
 #define E_OUTOFMEMORY                    _HRESULT_TYPEDEF_(0x8007000EL)
-#define E_NOTIMPL   0x80004001
+#define E_NOTIMPL                        _HRESULT_TYPEDEF_(0x80004001L)
 
 // Declaring a handle dummy struct for HSTRING the same way DECLARE_HANDLE does.
 typedef struct HSTRING__{
@@ -71,8 +72,6 @@ typedef const GUID *LPCGUID;
 
 #ifdef __cplusplus
 #define REFGUID const GUID &
-#else
-#define REFGUID const GUID *
 #endif
 
 
@@ -94,8 +93,6 @@ inline int operator!=(REFGUID guidOne, REFGUID guidOther)
 typedef GUID IID;
 #ifdef __cplusplus
 #define REFIID const IID &
-#else
-#define REFIID const IID *
 #endif
 
 #define IID_NULL { 0x00000000, 0x0000, 0x0000, { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}

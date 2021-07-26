@@ -14,6 +14,7 @@
 // Common macro for working in COM
 #define RETURN_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { return hr; } }
 
+#ifdef _WIN32   
 namespace Internal
 {
     template<typename I>
@@ -21,13 +22,8 @@ namespace Internal
         /* [in] */ REFIID riid,
         /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject,
         /* [in] */ I obj)
-    {
-#ifdef _WIN32        
+    {    
         if (riid == __uuidof(I))
-#else
-        //__uuidof(I) doesn't work on linux, so needed types are checked
-        if (riid == __uuidof(IInspectable) || riid == __uuidof(IWeakReference) || riid == __uuidof(IWeakReferenceSource))
-#endif
         {
             *ppvObject = static_cast<I>(obj);
         }
@@ -47,12 +43,7 @@ namespace Internal
         /* [in] */ I1 i1,
         /* [in] */ IR... remain)
     {
-#ifdef _WIN32
         if (riid == __uuidof(I1))
-#else
-        //__uuidof(I1) doesn't work on linux, so needed types are checked
-        if (riid == __uuidof(IInspectable) || riid == __uuidof(IWeakReference) || riid == __uuidof(IWeakReferenceSource) )
-#endif
         {
             *ppvObject = static_cast<I1>(i1);
             return S_OK;
@@ -61,6 +52,7 @@ namespace Internal
         return __QueryInterfaceImpl(riid, ppvObject, remain...);
     }
 }
+ #endif  
 
 // Implementation of IUnknown operations
 class UnknownImpl
@@ -101,9 +93,15 @@ public:
         }
         else
         {
+            //Internal::__QueryInterfaceImpl available only for _WIN32 due to __uuidof(T) availability
+#ifdef _WIN32            
             HRESULT hr = Internal::__QueryInterfaceImpl(riid, ppvObject, i1, remain...);
             if (hr != S_OK)
                 return hr;
+#else
+            *ppvObject = nullptr;
+            return E_NOINTERFACE;
+#endif                
         }
 
         DoAddRef();

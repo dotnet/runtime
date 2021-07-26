@@ -212,7 +212,7 @@ namespace
                     (void)tgt->AddRefFromReferenceTracker();
                     if (FAILED(tgt->Peg()))
                     {
-                        throw std::runtime_error("Peg failure");
+                        throw std::runtime_error{ "Peg failure" };
                     }
                 }
             }
