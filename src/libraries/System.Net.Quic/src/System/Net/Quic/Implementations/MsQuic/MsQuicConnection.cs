@@ -234,7 +234,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventShutdownInitiatedByTransport(State state, ref ConnectionEvent connectionEvent)
         {
-            if (!state.Connected && state.ConnectTcs != null)
+            if (!state.Connected && state.ConnectTcs != null && !state.ConnectTcs.Task.IsCompleted)
             {
                 Debug.Assert(state.Connection != null);
                 state.Connection = null;
@@ -681,10 +681,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                     NetEventSource.Error(state, $"{state.TraceId} Exception occurred during handling {connectionEvent.Type} connection callback: {ex}");
                 }
 
-                if (state.ConnectTcs != null)
+                if (state.ConnectTcs != null && !state.ConnectTcs.Task.IsCompleted)
                 {
-                    state.ConnectTcs.SetException(ex);
-                    state.ConnectTcs = null;
+                    // This is opportunistic if we get exception and have ability to propagate it to caller.
+                    state.ConnectTcs.TrySetException(ex);
                     state.Connection = null;
                 }
                 else
