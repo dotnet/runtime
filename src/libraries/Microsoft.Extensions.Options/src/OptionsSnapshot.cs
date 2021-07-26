@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace Microsoft.Extensions.Options
 {
@@ -16,7 +17,9 @@ namespace Microsoft.Extensions.Options
         where TOptions : class
     {
         private readonly IOptionsMonitor<TOptions> _factory;
-        private readonly ConcurrentDictionary<string, TOptions> _cache = new(concurrencyLevel: 1, capacity: 5, StringComparer.Ordinal);
+
+        private volatile ConcurrentDictionary<string, TOptions> _cache;
+        private volatile TOptions _unnamedOptionsValue;
 
         /// <summary>
         /// Initializes a new instance with the specified options configurations.
@@ -37,14 +40,24 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public TOptions Get(string name)
         {
-            name ??= Options.DefaultName;
+            if (name == null || name == Options.DefaultName)
+            {
+                if (_unnamedOptionsValue is TOptions value)
+                {
+                    return value;
+                }
+
+                return _unnamedOptionsValue = _factory.Get(Options.DefaultName);
+            }
+
+            var cache = _cache ?? Interlocked.CompareExchange(ref _cache, new(concurrencyLevel: 1, capacity: 5, StringComparer.Ordinal), null) ?? _cache;
 
 #if NETSTANDARD2_1
-            TOptions options = _cache.GetOrAdd(name, static (name, factory) => factory.Get(name), _factory);
+            TOptions options = cache.GetOrAdd(name, static (name, factory) => factory.Get(name), _factory);
 #else
-            if (!_cache.TryGetValue(name, out TOptions options))
+            if (!cache.TryGetValue(name, out TOptions options))
             {
-                options = _cache.GetOrAdd(name, _factory.Get(name));
+                options = cache.GetOrAdd(name, _factory.Get(name));
             }
 #endif
             return options;
