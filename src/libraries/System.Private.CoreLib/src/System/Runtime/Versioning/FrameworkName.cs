@@ -52,22 +52,9 @@ namespace System.Runtime.Versioning
             {
                 if (_fullName == null)
                 {
-                    if (string.IsNullOrEmpty(Profile))
-                    {
-                        _fullName =
-                            Identifier +
-                            ComponentSeparator + VersionKey + KeyValueSeparator + VersionValuePrefix +
-                            Version.ToString();
-                    }
-                    else
-                    {
-                        _fullName =
-                            Identifier +
-                            ComponentSeparator + VersionKey + KeyValueSeparator + VersionValuePrefix +
-                            Version.ToString() +
-                            ComponentSeparator + ProfileKey + KeyValueSeparator +
-                            Profile;
-                    }
+                    _fullName = string.IsNullOrEmpty(Profile) ?
+                        $"{Identifier}{ComponentSeparator + VersionKey + KeyValueSeparator + VersionValuePrefix}{Version}" :
+                        $"{Identifier}{ComponentSeparator + VersionKey + KeyValueSeparator + VersionValuePrefix}{Version}{ComponentSeparator + ProfileKey + KeyValueSeparator}{Profile}";
                 }
 
                 Debug.Assert(_fullName != null);

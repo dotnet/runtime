@@ -84,6 +84,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55053", TestPlatforms.Linux)]
         public async Task Connect_DualMode_MultiAddressFamilyConnect_RetrievedEndPoints_Success()
         {
             if (!SupportsMultiConnect)
@@ -109,6 +110,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54677", TestPlatforms.Linux)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55709", TestPlatforms.Linux)]
         public async Task Connect_DualMode_DnsConnect_RetrievedEndPoints_Success()
         {
             var localhostAddresses = Dns.GetHostAddresses("localhost");
@@ -129,7 +132,7 @@ namespace System.Net.Sockets.Tests
 
                 var localEndPoint = client.LocalEndPoint as IPEndPoint;
                 Assert.NotNull(localEndPoint);
-                Assert.Equal(IPAddress.Loopback.MapToIPv6(), localEndPoint.Address);
+                Assert.True(localEndPoint.Address.Equals(IPAddress.IPv6Loopback) || localEndPoint.Address.Equals(IPAddress.Loopback.MapToIPv6()));
 
                 var remoteEndPoint = client.RemoteEndPoint as IPEndPoint;
                 Assert.NotNull(remoteEndPoint);

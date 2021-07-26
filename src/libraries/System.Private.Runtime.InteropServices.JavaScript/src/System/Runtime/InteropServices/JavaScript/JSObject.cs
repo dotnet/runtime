@@ -73,6 +73,7 @@ namespace System.Runtime.InteropServices.JavaScript
             object res = Interop.Runtime.InvokeJSWithArgs(JSHandle, method, args, out int exception);
             if (exception != 0)
                 throw new JSException((string)res);
+            Interop.Runtime.ReleaseInFlight(res);
             return res;
         }
 
@@ -103,6 +104,7 @@ namespace System.Runtime.InteropServices.JavaScript
             object propertyValue = Interop.Runtime.GetObjectProperty(JSHandle, name, out int exception);
             if (exception != 0)
                 throw new JSException((string)propertyValue);
+            Interop.Runtime.ReleaseInFlight(propertyValue);
             return propertyValue;
         }
 

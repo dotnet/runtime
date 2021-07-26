@@ -1798,7 +1798,7 @@ namespace System.Data
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute xmlAttrib)
+        internal object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute? xmlAttrib)
         {
             return InsureStorage().ConvertXmlToObject(xmlReader, xmlAttrib);
         }

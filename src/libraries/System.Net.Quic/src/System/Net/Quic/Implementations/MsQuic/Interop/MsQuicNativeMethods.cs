@@ -52,10 +52,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        internal delegate uint MsQuicOpenDelegate(
-            out NativeApi* registration);
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         internal delegate uint SetContextDelegate(
             SafeHandle handle,
             IntPtr context);

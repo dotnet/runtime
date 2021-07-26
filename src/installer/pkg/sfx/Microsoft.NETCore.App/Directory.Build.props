@@ -161,6 +161,7 @@
     <PlatformManifestFileEntry Include="api-ms-win-crt-utility-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="API-MS-Win-core-xstate-l2-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="ucrtbase.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="msquic.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump" IsNative="true" />
@@ -193,6 +194,13 @@
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-stub-static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-static.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-component-hot_reload-stub-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger-static.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-component-debugger-stub-static.lib" IsNative="true" />
     <!-- Mono WASM-specific files -->
     <PlatformManifestFileEntry Include="libmono-ee-interp.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-icall-table.a" IsNative="true" />
@@ -217,7 +225,7 @@
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.h" IsNative="true" />
     <PlatformManifestFileEntry Include="emcc-default.rsp" IsNative="true" />
-    <PlatformManifestFileEntry Include="Emcc.props" IsNative="true" />
+    <PlatformManifestFileEntry Include="emcc-props.json" IsNative="true" />
     <!-- ICU-specific files -->
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />

@@ -56,6 +56,7 @@ namespace System.Data.ProviderBase
 
         private readonly LoadOption _loadOption;
 
+        [RequiresUnreferencedCode("chapterValue and dataReader schema table rows DataTypes type cannot be statically analyzed.")]
         internal SchemaMapping(DataAdapter adapter, DataSet? dataset, DataTable? datatable, DataReaderContainer dataReader, bool keyInfo,
                                     SchemaType schemaType, string? sourceTableName, bool gettingData,
                                     DataColumn? parentChapterColumn, object? parentChapterValue)
@@ -382,6 +383,7 @@ namespace System.Data.ProviderBase
             return _mappedDataValues!;
         }
 
+        [RequiresUnreferencedCode("Row chapter column types cannot be statically analyzed")]
         internal void LoadDataRowWithClear()
         {
             // for FillErrorEvent to ensure no values leftover from previous row
@@ -392,6 +394,7 @@ namespace System.Data.ProviderBase
             LoadDataRow();
         }
 
+        [RequiresUnreferencedCode("Row chapter column types cannot be statically analyzed")]
         internal void LoadDataRow()
         {
             try
@@ -447,6 +450,7 @@ namespace System.Data.ProviderBase
             }
         }
 
+        [RequiresUnreferencedCode("Row chapter column types cannot be statically analyzed")]
         internal int LoadDataRowChapters(DataRow dataRow)
         {
             int datarowadded = 0;
@@ -565,6 +569,7 @@ namespace System.Data.ProviderBase
             }
         }
 
+        [RequiresUnreferencedCode("chapterValue's type cannot be statically analyzed")]
         private object[]? SetupSchemaWithoutKeyInfo(MissingMappingAction mappingAction, MissingSchemaAction schemaAction, bool gettingData, DataColumn? parentChapterColumn, object? chapterValue)
         {
             Debug.Assert(_dataTable != null);
@@ -760,6 +765,7 @@ namespace System.Data.ProviderBase
             return dataValues;
         }
 
+        [RequiresUnreferencedCode("chapterValue and _schemaTable schema rows DataTypes type cannot be statically analyzed. When _loadOption is set, members from types used in the expression column may be trimmed if not referenced directly.")]
         private object[]? SetupSchemaWithKeyInfo(MissingMappingAction mappingAction, MissingSchemaAction schemaAction, bool gettingData, DataColumn? parentChapterColumn, object? chapterValue)
         {
             Debug.Assert(_dataTable != null);
@@ -1005,6 +1011,7 @@ namespace System.Data.ProviderBase
                         {
                             AddAdditionalProperties(dataColumn, schemaRow.DataRow);
                         }
+
                         AddItemToAllowRollback(ref addedItems, dataColumn);
                         columnCollection.Add(dataColumn);
                     }
@@ -1139,7 +1146,7 @@ namespace System.Data.ProviderBase
             return dataValues;
         }
 
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode("Members from types used in the expression column may be trimmed if not referenced directly.")]
         private void AddAdditionalProperties(DataColumn targetColumn, DataRow schemaRow)
         {
             DataColumnCollection columns = schemaRow.Table.Columns;

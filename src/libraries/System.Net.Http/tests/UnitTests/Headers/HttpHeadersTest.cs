@@ -329,60 +329,44 @@ namespace System.Net.Http.Tests
             Assert.Equal(1, headers.Parser.TryParseValueCallCount);
         }
 
-        [Fact]
-        public void TryAddWithoutValidation_AddValueContainingNewLine_NewLineFollowedByWhitespaceIsOKButNewLineFollowedByNonWhitespaceIsRejected()
+        [Theory]
+        [MemberData(nameof(HeaderValuesWithNewLines))]
+        public void TryAddWithoutValidation_AddValueContainingNewLine_Rejected(string headerValue)
         {
-            MockHeaders headers = new MockHeaders();
-
-            // The header parser rejects both of the following values. Both values contain new line chars. According
-            // to the RFC, LWS supports newlines followed by whitespace. I.e. the first value gets rejected by the
-            // parser, but added to the list of invalid values.
-            headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\n other: value"); // OK, LWS is allowed
-            Assert.Equal(1, headers.Count());
-            Assert.Equal(1, headers.First().Value.Count());
-            Assert.Equal(invalidHeaderValue + "\r\n other: value", headers.First().Value.First());
-            Assert.Equal(1, headers.Parser.TryParseValueCallCount);
+            var headers = new HttpRequestHeaders();
 
             // This value is considered invalid (newline char followed by non-whitespace). However, since
             // TryAddWithoutValidation() only causes the header value to be analyzed when it gets actually accessed, no
             // exception is thrown. Instead the value is discarded and a warning is logged.
-            headers.Clear();
-            headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\nother:value");
-            Assert.False(headers.Contains(headers.Descriptor));
+            headers.TryAddWithoutValidation("foo", headerValue);
+
+            Assert.Equal(1, headers.NonValidated.Count);
+            Assert.Equal(headerValue, headers.NonValidated["foo"].ToString());
+
+            Assert.False(headers.Contains("foo"));
             Assert.Equal(0, headers.Count());
 
-            // Adding newline followed by whitespace to a custom header is OK.
-            headers.Clear();
-            headers.TryAddWithoutValidation("custom", "value\r\n other: value"); // OK, LWS is allowed
-            Assert.Equal(1, headers.Count());
-            Assert.Equal(1, headers.First().Value.Count());
-            Assert.Equal("value\r\n other: value", headers.First().Value.First());
+            // Accessing the header forces parsing and the invalid value is removed
+            Assert.Equal(0, headers.NonValidated.Count);
 
-            // Adding newline followed by non-whitespace chars is invalid. The value is discarded and a warning is
-            // logged.
-            headers.Clear();
-            headers.TryAddWithoutValidation("custom", "value\r\nother: value");
-            Assert.False(headers.Contains("custom"));
-            Assert.Equal(0, headers.Count());
-
-            // Also ending a value with newline is invalid. Verify that valid values are added.
-            headers.Clear();
-            headers.Parser.TryParseValueCallCount = 0;
-            headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix + "\rvalid");
-            headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\n");
-            headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix + "\n," + invalidHeaderValue + "\r\nother");
-            Assert.Equal(1, headers.Count());
-            Assert.Equal(1, headers.First().Value.Count());
-            Assert.Equal(parsedPrefix + "\rvalid", headers.First().Value.First());
-            Assert.Equal(4, headers.Parser.TryParseValueCallCount);
 
             headers.Clear();
-            headers.TryAddWithoutValidation("custom", "value\r\ninvalid");
-            headers.TryAddWithoutValidation("custom", "value\r\n valid");
-            headers.TryAddWithoutValidation("custom", "validvalue, invalid\r\nvalue");
+            headers.TryAddWithoutValidation("foo", new[] { "valid", headerValue });
+
+            Assert.Equal(1, headers.NonValidated.Count);
+            HeaderStringValues values = headers.NonValidated["foo"];
+            Assert.Equal(2, values.Count);
+            Assert.Equal(new[] { "valid", headerValue }, values);
+
             Assert.Equal(1, headers.Count());
             Assert.Equal(1, headers.First().Value.Count());
-            Assert.Equal("value\r\n valid", headers.First().Value.First());
+            Assert.Equal("valid", headers.First().Value.First());
+
+            // Accessing the header forces parsing and the invalid value is removed
+            Assert.Equal(1, headers.NonValidated.Count);
+            values = headers.NonValidated["foo"];
+            Assert.Equal(1, values.Count);
+            Assert.Equal("valid", values.ToString());
         }
 
         [Fact]
@@ -811,22 +795,23 @@ namespace System.Net.Http.Tests
             Assert.Equal(3, headers.GetValues("CuStOm-HeAdEr").Count());
         }
 
-        [Fact]
-        public void Add_AddValueContainingNewLine_NewLineFollowedByWhitespaceIsOKButNewLineFollowedByNonWhitespaceIsRejected()
+        [Theory]
+        [MemberData(nameof(HeaderValuesWithNewLines))]
+        public void Add_AddValueContainingNewLine_Rejected(string headerValue)
         {
-            MockHeaders headers = new MockHeaders();
+            var headers = new HttpRequestHeaders();
+
+            Assert.Throws<FormatException>(() => headers.Add("foo", headerValue));
+            Assert.Equal(0, headers.Count());
+            Assert.Equal(0, headers.NonValidated.Count);
 
             headers.Clear();
-            headers.Add("custom", "value\r");
+            Assert.Throws<FormatException>(() => headers.Add("foo", new[] { "valid", headerValue }));
             Assert.Equal(1, headers.Count());
             Assert.Equal(1, headers.First().Value.Count());
-            Assert.Equal("value\r", headers.First().Value.First());
-
-            headers.Clear();
-            Assert.Throws<FormatException>(() => { headers.Add("custom", new string[] { "valid\n", "invalid\r\nother" }); });
-            Assert.Equal(1, headers.Count());
-            Assert.Equal(1, headers.First().Value.Count());
-            Assert.Equal("valid\n", headers.First().Value.First());
+            Assert.Equal("valid", headers.First().Value.First());
+            Assert.Equal(1, headers.NonValidated.Count);
+            Assert.Equal("valid", headers.NonValidated["foo"].ToString());
         }
 
         [Fact]
@@ -996,11 +981,11 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void RemoveParsedValue_FirstAddInvalidNewlineCharsValueThenCallRemoveParsedValue_HeaderRemoved()
+        public void RemoveParsedValue_FirstAddNewlineCharsValueThenCallRemoveParsedValue_HeaderRemoved()
         {
             MockHeaders headers = new MockHeaders();
 
-            // Add header value with invalid newline chars.
+            // Add header value with newline chars.
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\ninvalid");
 
             Assert.Equal(0, headers.Parser.TryParseValueCallCount);
@@ -1011,11 +996,11 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void RemoveParsedValue_FirstAddInvalidNewlineCharsValueThenAddValidValueThenCallAddParsedValue_HeaderRemoved()
+        public void RemoveParsedValue_FirstAddNewlineCharsValueThenAddValidValueThenCallAddParsedValue_HeaderRemoved()
         {
             MockHeaders headers = new MockHeaders();
 
-            // Add header value with invalid newline chars.
+            // Add header value with newline chars.
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\ninvalid");
             headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix + "1");
 
@@ -1407,11 +1392,11 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void GetParsedValues_GetParsedValuesForKnownHeaderWithInvalidNewlineChars_ReturnsNull()
+        public void GetParsedValues_GetParsedValuesForKnownHeaderWithNewlineChars_ReturnsNull()
         {
             MockHeaders headers = new MockHeaders();
 
-            // Add header value with invalid newline chars.
+            // Add header value with newline chars.
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\ninvalid");
 
             Assert.Equal(0, headers.Parser.TryParseValueCallCount);
@@ -1436,7 +1421,6 @@ namespace System.Net.Http.Tests
             MockHeaderParser parser = new MockHeaderParser("---");
             MockHeaders headers = new MockHeaders(parser);
 
-            // Add header value with invalid newline chars.
             headers.Add(headers.Descriptor, rawPrefix + "1");
             headers.TryAddWithoutValidation(headers.Descriptor, "value2,value3");
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue);
@@ -1464,7 +1448,6 @@ namespace System.Net.Http.Tests
             MockHeaderParser parser = new MockHeaderParser(true);
             MockHeaders headers = new MockHeaders(parser);
 
-            // Add header value with invalid newline chars.
             headers.Add(headers.Descriptor, rawPrefix + "1");
             headers.Add("header2", "value2");
             headers.Add("header3", (string)null);
@@ -1501,7 +1484,6 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53647", TestPlatforms.Browser)]
         [Fact]
         public void NonValidated_ValidAndInvalidValues_DictionaryMembersWork()
         {
@@ -1539,7 +1521,6 @@ namespace System.Net.Http.Tests
             Assert.Equal(new HashSet<string> { "Location", "Date" }, nonValidated.Keys.ToHashSet());
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/53647", TestPlatforms.Browser)]
         [Fact]
         public void NonValidated_ValidInvalidAndRaw_AllReturned()
         {
@@ -1624,12 +1605,12 @@ namespace System.Net.Http.Tests
             Assert.True(headers.Contains(headers.Descriptor));
 
             // Contains() should trigger parsing of values added with TryAddWithoutValidation(): If the value was invalid,
-            // i.e. contains invalid newline chars, then the header will be removed from the collection.
+            // i.e. contains newline chars, then the header will be removed from the collection.
             Assert.Equal(1, headers.Parser.TryParseValueCallCount);
         }
 
         [Fact]
-        public void Contains_AddValuesWithInvalidNewlineChars_HeadersGetRemovedWhenCallingContains()
+        public void Contains_AddValuesWithNewlineChars_HeadersGetRemovedWhenCallingContains()
         {
             MockHeaders headers = new MockHeaders();
 
@@ -1796,11 +1777,11 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void AddParsedValue_FirstAddInvalidNewlineCharsValueThenCallAddParsedValue_ParsedValueAdded()
+        public void AddParsedValue_FirstAddNewlineCharsValueThenCallAddParsedValue_ParsedValueAdded()
         {
             MockHeaders headers = new MockHeaders();
 
-            // Add header value with invalid newline chars.
+            // Add header value with newline chars.
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\ninvalid");
 
             Assert.Equal(0, headers.Parser.TryParseValueCallCount);
@@ -1813,11 +1794,11 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void AddParsedValue_FirstAddInvalidNewlineCharsValueThenAddValidValueThenCallAddParsedValue_ParsedValueAdded()
+        public void AddParsedValue_FirstAddNewlineCharsValueThenAddValidValueThenCallAddParsedValue_ParsedValueAdded()
         {
             MockHeaders headers = new MockHeaders();
 
-            // Add header value with invalid newline chars.
+            // Add header value with newline chars.
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\ninvalid");
             headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix + "0");
 
@@ -2212,6 +2193,16 @@ namespace System.Net.Http.Tests
             yield return new object[] { "invalid=header" };
             yield return new object[] { "invalid{header" };
             yield return new object[] { "invalid}header" };
+        }
+
+        public static IEnumerable<object[]> HeaderValuesWithNewLines()
+        {
+            foreach (string pattern in new[] { "*", "*foo", "* foo", "foo*", "foo* ", "foo*bar", "foo* bar" })
+            foreach (string newLine in new[] { "\r", "\n", "\r\n" })
+            foreach (string prefix in new[] { "", "valid, " })
+            {
+                yield return new object[] { prefix + pattern.Replace("*", newLine) };
+            }
         }
 
         #region Helper methods

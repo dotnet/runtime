@@ -15,7 +15,7 @@
       <Value>.NETCoreApp;UAP</Value>
     </ValidatePackageSuppression>
 
-    <NETStandardCompatError Include="netcoreapp2.0" Supported="netcoreapp3.1" />
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

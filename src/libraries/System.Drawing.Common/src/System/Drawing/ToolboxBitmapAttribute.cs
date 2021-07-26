@@ -28,10 +28,6 @@ namespace System.Drawing
         private static readonly Size s_largeSize = new Size(32, 32);
         private static readonly Size s_smallSize = new Size(16, 16);
 
-        // Used to help cache the last result of BitmapSelector.GetFileName.
-        private static string? s_lastOriginalFileName;
-        private static string? s_lastUpdatedFileName;
-
         public ToolboxBitmapAttribute(string imageFile) : this(GetImageFromFile(imageFile, false), GetImageFromFile(imageFile, true))
         {
             _imageFile = imageFile;
@@ -168,19 +164,6 @@ namespace System.Drawing
             return b;
         }
 
-        // Cache the last result of BitmapSelector.GetFileName because we commonly load images twice
-        // in succession from the same file and we don't need to compute the name twice.
-        private static string? GetFileNameFromBitmapSelector(string originalName)
-        {
-            if (originalName != s_lastOriginalFileName)
-            {
-                s_lastOriginalFileName = originalName;
-                s_lastUpdatedFileName = BitmapSelector.GetFileName(originalName);
-            }
-
-            return s_lastUpdatedFileName;
-        }
-
         // Just forwards to Image.FromFile eating any non-critical exceptions that may result.
         private static Image? GetImageFromFile(string? imageFile, bool large, bool scaled = true)
         {
@@ -189,8 +172,6 @@ namespace System.Drawing
             {
                 if (imageFile != null)
                 {
-                    imageFile = GetFileNameFromBitmapSelector(imageFile);
-
                     string? ext = Path.GetExtension(imageFile);
                     if (ext != null && string.Equals(ext, ".ico", StringComparison.OrdinalIgnoreCase))
                     {

@@ -52,7 +52,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingModule.ScopeName; }
         }
 
-        public override Type[] FindTypes(TypeFilter filter, object filterCriteria)
+        public override Type[] FindTypes(TypeFilter? filter, object? filterCriteria)
         {
             return UnderlyingModule.FindTypes(filter, filterCriteria);
         }
@@ -72,7 +72,7 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingModule.GetCustomAttributesData();
         }
 
-        public override FieldInfo GetField(string name, BindingFlags bindingAttr)
+        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             return UnderlyingModule.GetField(name, bindingAttr);
         }
@@ -82,7 +82,7 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingModule.GetFields(bindingFlags);
         }
 
-        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             if (types == null)
             {
@@ -107,7 +107,7 @@ namespace System.Reflection.Context.Delegation
         //    return UnderlyingModule.GetSignerCertificate();
         //}
 
-        public override Type GetType(string className, bool throwOnError, bool ignoreCase)
+        public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
             return UnderlyingModule.GetType(className, throwOnError, ignoreCase);
         }
@@ -127,17 +127,17 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingModule.IsResource();
         }
 
-        public override FieldInfo ResolveField(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        public override FieldInfo? ResolveField(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return UnderlyingModule.ResolveField(metadataToken, genericTypeArguments, genericMethodArguments);
         }
 
-        public override MemberInfo ResolveMember(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        public override MemberInfo? ResolveMember(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return UnderlyingModule.ResolveMember(metadataToken, genericTypeArguments, genericMethodArguments);
         }
 
-        public override MethodBase ResolveMethod(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        public override MethodBase? ResolveMethod(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return UnderlyingModule.ResolveMethod(metadataToken, genericTypeArguments, genericMethodArguments);
         }
@@ -152,7 +152,7 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingModule.ResolveString(metadataToken);
         }
 
-        public override Type ResolveType(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments)
+        public override Type ResolveType(int metadataToken, Type[]? genericTypeArguments, Type[]? genericMethodArguments)
         {
             return UnderlyingModule.ResolveType(metadataToken, genericTypeArguments, genericMethodArguments);
         }

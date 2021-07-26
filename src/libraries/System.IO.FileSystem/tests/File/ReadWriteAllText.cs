@@ -84,8 +84,7 @@ namespace System.IO.Tests
             Assert.Equal(overwriteLines, Read(path));
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void OpenFile_ThrowsIOException()
         {
             string path = GetTestFilePath();

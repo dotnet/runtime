@@ -84,12 +84,11 @@ namespace System.Security.Cryptography
                 SafeRsaHandle key = GetKey();
 
                 int rsaSize = Interop.AndroidCrypto.RsaSize(key);
-                byte[]? buf = null;
                 Span<byte> destination = default;
+                byte[] buf = CryptoPool.Rent(rsaSize);
 
                 try
                 {
-                    buf = CryptoPool.Rent(rsaSize);
                     destination = new Span<byte>(buf, 0, rsaSize);
 
                     if (!TryDecrypt(key, data, destination, rsaPadding, oaepProcessor, out int bytesWritten))
@@ -103,7 +102,7 @@ namespace System.Security.Cryptography
                 finally
                 {
                     CryptographicOperations.ZeroMemory(destination);
-                    CryptoPool.Return(buf!, clearSize: 0);
+                    CryptoPool.Return(buf, clearSize: 0);
                 }
             }
 

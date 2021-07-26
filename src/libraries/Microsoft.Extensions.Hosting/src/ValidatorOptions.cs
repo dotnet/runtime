@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     internal sealed class ValidatorOptions
     {
-        // Maps each options type to a method that forces its evaluation, e.g. IOptionsMonitor<TOptions>.Get(name)
-        public IDictionary<Type, Action> Validators { get; } = new Dictionary<Type, Action>();
+        // Maps each pair of a) options type and b) options name to a method that forces its evaluation, e.g. IOptionsMonitor<TOptions>.Get(name)
+        public IDictionary<(Type optionsType, string optionsName), Action> Validators { get; } = new Dictionary<(Type, string), Action>();
     }
 }

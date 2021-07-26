@@ -135,14 +135,14 @@ namespace Microsoft.Extensions.Hosting.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        private async Task ValidateOnStart_AddOptionsMultipleTimesForSameType_LastOneGetsTriggered()
+        private async Task ValidateOnStart_AddNamedOptionsMultipleTimesForSameType_BothGetTriggered()
         {
             bool firstOptionsBuilderTriggered = false;
             bool secondOptionsBuilderTriggered = false;
             var hostBuilder = CreateHostBuilder(services =>
             {
                 services.AddOptions<ComplexOptions>("bad_configuration1")
-                    .Configure(o => o.Boolean = false)
+                    .Configure(o => o.Boolean = true)
                     .Validate(o =>
                     {
                         firstOptionsBuilderTriggered = true;
@@ -175,7 +175,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 ValidateFailure<ComplexOptions>(error, 2, "Boolean", "Integer");
             }
 
-            Assert.False(firstOptionsBuilderTriggered);
+            Assert.True(firstOptionsBuilderTriggered);
             Assert.True(secondOptionsBuilderTriggered);
         }
 

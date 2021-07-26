@@ -8,6 +8,8 @@
     <PackageDescription>Internal transport package to provide aspnetcore with the assemblies that make up the Microsoft.ASPNetCore.App shared framework.</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
+    <_analyzers Include="$(ASPNETCoreAppPackageRootPath)\analyzers\**\*.*" />
+    <File Include="@(_analyzers)" TargetPath="analyzers\%(RecursiveDir)" />
     <_libDocs Include="$(ASPNETCoreAppPackageRuntimePath)\*.xml" />
     <File Include="$(ASPNETCoreAppPackageRefPath)\*.*;@(_libDocs)" TargetPath="ref\$(NetCoreAppCurrent)" />
     <File Include="$(ASPNETCoreAppPackageRuntimePath)\*.*"  Exclude="@(_libDocs)" TargetPath="lib\$(NetCoreAppCurrent)" />

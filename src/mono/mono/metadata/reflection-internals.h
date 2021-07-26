@@ -25,7 +25,7 @@ mono_domain_try_type_resolve_name (MonoAssembly *assembly, MonoStringHandle name
 MonoReflectionTypeBuilderHandle
 mono_class_get_ref_info (MonoClass *klass);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_reflection_parse_type_checked (char *name, MonoTypeNameParse *info, MonoError *error);
 
 gboolean
@@ -37,7 +37,7 @@ mono_reflection_type_resolve_user_types (MonoReflectionType *type, MonoError *er
 MonoType *
 mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref_type, MonoError *error);
 
-MonoType*
+MONO_COMPONENT_API MonoType*
 mono_reflection_get_type_checked (MonoAssemblyLoadContext *alc, MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean search_mscorlib, gboolean *type_resolve, MonoError *error);
 
 MonoType*
@@ -63,17 +63,17 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 
 MonoCustomAttrInfo*
 mono_custom_attrs_from_index_checked    (MonoImage *image, uint32_t idx, gboolean ignore_missing, MonoError *error);
-MonoCustomAttrInfo*
+MONO_COMPONENT_API MonoCustomAttrInfo*
 mono_custom_attrs_from_method_checked   (MonoMethod *method, MonoError *error);
-MonoCustomAttrInfo*
+MONO_COMPONENT_API MonoCustomAttrInfo*
 mono_custom_attrs_from_class_checked   	(MonoClass *klass, MonoError *error);
-MonoCustomAttrInfo*
+MONO_COMPONENT_API MonoCustomAttrInfo*
 mono_custom_attrs_from_assembly_checked	(MonoAssembly *assembly, gboolean ignore_missing, MonoError *error);
-MonoCustomAttrInfo*
+MONO_COMPONENT_API MonoCustomAttrInfo*
 mono_custom_attrs_from_property_checked	(MonoClass *klass, MonoProperty *property, MonoError *error);
 MonoCustomAttrInfo*
 mono_custom_attrs_from_event_checked	(MonoClass *klass, MonoEvent *event, MonoError *error);
-MonoCustomAttrInfo*
+MONO_COMPONENT_API MonoCustomAttrInfo*
 mono_custom_attrs_from_field_checked	(MonoClass *klass, MonoClassField *field, MonoError *error);
 MonoCustomAttrInfo*
 mono_custom_attrs_from_param_checked	(MonoMethod *method, uint32_t param, MonoError *error);
@@ -85,10 +85,10 @@ mono_identifier_unescape_type_name_chars (char* identifier);
 MonoImage *
 mono_find_dynamic_image_owner (void *ptr);
 
-MonoReflectionAssemblyHandle
+MONO_COMPONENT_API MonoReflectionAssemblyHandle
 mono_assembly_get_object_handle (MonoAssembly *assembly, MonoError *error);
 
-MonoReflectionType*
+MONO_COMPONENT_API MonoReflectionType*
 mono_type_get_object_checked (MonoType *type, MonoError *error);
 
 MonoReflectionTypeHandle

@@ -49,7 +49,7 @@ namespace Wasm.Build.Tests
                 extraProperties = $"{extraProperties}<InvariantGlobalization>{invariantGlobalization}</InvariantGlobalization>";
 
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = GetBuildArgsWith(buildArgs, extraProperties);
+            buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
 
             if (dotnetWasmFromRuntimePack == null)
                 dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
@@ -57,17 +57,21 @@ namespace Wasm.Build.Tests
             string programText = @"
                 using System;
                 using System.Globalization;
-                using System.Threading.Tasks;
 
-                public class TestClass {
-                    public static int Main()
-                    {
-                        var culture = new CultureInfo(""es-ES"", false);
-                        // https://github.com/dotnet/runtime/blob/main/docs/design/features/globalization-invariant-mode.md#cultures-and-culture-data
-                        Console.WriteLine($""{culture.LCID == 0x1000} - {culture.NativeName}"");
-                        return 42;
-                    }
-                }";
+                // https://github.com/dotnet/runtime/blob/main/docs/design/features/globalization-invariant-mode.md#cultures-and-culture-data
+                try
+                {
+                    CultureInfo culture = new (""es-ES"", false);
+                    Console.WriteLine($""es-ES: Is Invariant LCID: {culture.LCID == CultureInfo.InvariantCulture.LCID}, NativeName: {culture.NativeName}"");
+                }
+                catch (CultureNotFoundException cnfe)
+                {
+                    Console.WriteLine($""Could not create es-ES culture: {cnfe.Message}"");
+                }
+
+                Console.WriteLine($""CurrentCulture.NativeName: {CultureInfo.CurrentCulture.NativeName}"");
+                return 42;
+            ";
 
             BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
@@ -75,11 +79,19 @@ namespace Wasm.Build.Tests
                         dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                         hasIcudt: invariantGlobalization == null || invariantGlobalization.Value == false);
 
-            string expectedOutputString = invariantGlobalization == true
-                                            ? "False - en (ES)"
-                                            : "True - Invariant Language (Invariant Country)";
-            RunAndTestWasmApp(buildArgs, expectedExitCode: 42,
-                                test: output => Assert.Contains(expectedOutputString, output), host: host, id: id);
+            if (invariantGlobalization == true)
+            {
+                string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id);
+                Assert.Contains("Could not create es-ES culture", output);
+                Assert.Contains("CurrentCulture.NativeName: Invariant Language (Invariant Country)", output);
+            }
+            else
+            {
+                string output = RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id);
+                Assert.Contains("es-ES: Is Invariant LCID: False, NativeName: es (ES)", output);
+
+                // ignoring the last line of the output which prints the current culture
+            }
         }
     }
 }

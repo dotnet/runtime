@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 #nullable enable
 
@@ -27,7 +28,7 @@ namespace Wasm.Build.Tests
             bool dotnetWasmFromRuntimePack = !nativeRelink && !buildArgs.AOT;
 
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = GetBuildArgsWith(buildArgs, $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>");
+            buildArgs = ExpandBuildArgs(buildArgs, $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>");
 
             BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
@@ -38,7 +39,7 @@ namespace Wasm.Build.Tests
             Run();
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
-                Assert.True(false, $"Test bug: could not get the build product in the cache");
+                throw new XunitException($"Test bug: could not get the build product in the cache");
 
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
 
@@ -46,9 +47,8 @@ namespace Wasm.Build.Tests
 
             // no-op Rebuild
             BuildProject(buildArgs,
-                        () => {},
-                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                         id: id,
+                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                         createProject: false,
                         useCache: false);
 

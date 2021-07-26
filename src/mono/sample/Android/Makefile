@@ -3,6 +3,8 @@ MONO_ARCH?=x64
 DOTNET := ../../../../dotnet.sh
 USE_LLVM=true
 AOT=false
+AOT_WITH_LIBRARY_FILES=false
+INTERP=false
 DEPLOY_AND_RUN?=true
 
 #If DIAGNOSTIC_PORTS is enabled, RUNTIME_COMPONENTS must also be enabled.
@@ -25,7 +27,10 @@ run:
 	/p:TargetOS=Android \
 	/p:Configuration=$(MONO_CONFIG) \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
+	/p:RunAOTCompilation=$(AOT) \
 	/p:ForceAOT=$(AOT) \
+	/p:AOTWithLibraryFiles=$(AOT_WITH_LIBRARY_FILES) \
+	/p:MonoForceInterpreter=$(INTERP) \
 	/p:UseLLVM=$(USE_LLVM) \
 	/p:RunActivity=false \
 	'/p:RuntimeComponents="$(RUNTIME_COMPONENTS)"' \

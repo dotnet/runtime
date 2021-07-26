@@ -84,7 +84,7 @@ namespace System.Runtime.Serialization
                         string? prefix = writer.LookupPrefix(ns);
                         if (prefix == null)
                         {
-                            prefix = string.Format(CultureInfo.InvariantCulture, "d{0}p{1}", depth, _prefixes);
+                            prefix = string.Create(CultureInfo.InvariantCulture, $"d{depth}p{_prefixes}");
                             _prefixes++;
                             writer.WriteAttributeString("xmlns", prefix, null, ns);
                         }

@@ -1,0 +1,185 @@
+﻿<Project DefaultTargets="Restore;Build">
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+
+  <PropertyGroup>
+    <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">netcoreapp3.1</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
+    <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(DotNetBuildFromSource)' == 'true'">net5.0</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
+    <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">net472</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
+    <MicrosoftDotNetBuildTasksInstallersTaskAssembly>$(NuGetPackageRoot)microsoft.dotnet.build.tasks.installers\$(MicrosoftDotNetBuildTasksInstallersVersion)\tools\$(MicrosoftDotNetBuildTasksInstallersTaskTargetFramework)\Microsoft.DotNet.Build.Tasks.Installers.dll</MicrosoftDotNetBuildTasksInstallersTaskAssembly>
+  </PropertyGroup>
+
+  <UsingTask AssemblyFile="$(PkgMicrosoft_DotNet_Build_Tasks_Workloads)\tools\net472\Microsoft.DotNet.Build.Tasks.Workloads.dll" TaskName="GenerateVisualStudioWorkload" />
+
+  <UsingTask TaskName="CreateLightCommandPackageDrop" AssemblyFile="$(MicrosoftDotNetBuildTasksInstallersTaskAssembly)" />
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+
+    <WorkloadIntermediateOutputPath>$(ArtifactsObjDir)workloads/</WorkloadIntermediateOutputPath>
+    <WorkloadOutputPath>$(ArtifactsBinDir)workloads/</WorkloadOutputPath>
+    <WorkloadOutputPath Condition="'$(workloadArtifactsPath)' != ''">$(workloadArtifactsPath)/</WorkloadOutputPath>
+    <PackageSource>$(ArtifactsShippingPackagesDir)</PackageSource>
+    <PackageSource Condition="'$(workloadPackagesPath)' != ''">$(workloadPackagesPath)/</PackageSource>
+  </PropertyGroup>
+
+  <!-- Arcade -->
+  <PropertyGroup>
+    <!-- Temp directory for light command layouts -->
+    <LightCommandObjDir>$(ArtifactsObjDir)/LightCommandPackages</LightCommandObjDir>
+    <!-- Directory for the zipped up light command package -->
+    <LightCommandPackagesDir>$(ArtifactsNonShippingPackagesDir)</LightCommandPackagesDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <WixToolsetPath>$(PkgWix)\tools</WixToolsetPath>
+    <SwixPluginPath>$(PkgMicroBuild_Plugins_SwixBuild_Dotnet)</SwixPluginPath>
+    <SwixBuildTargets>$(SwixPluginPath)\build\MicroBuild.Plugins.SwixBuild.targets</SwixBuildTargets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Workloads" Version="$(MicrosoftDotNetBuildTasksWorkloadsPackageVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="WiX" Version="$(WixPackageVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="MicroBuild.Plugins.SwixBuild.Dotnet" Version="$(SwixPackageVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" GeneratePathProperty="True" />
+  </ItemGroup>
+
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+
+  <Target Name="Build" DependsOnTargets="GenerateVersions">
+    <ItemGroup>
+      <!-- Overrides for Visual Studio setup generation. If the workload definition IDs change,
+           these must be updated. -->
+      <ComponentResources Include="wasm-tools" Title=".NET WebAssembly Build Tools"
+                          Description="Build tools for WebAssembly ahead-of-time (AoT) compilation and native linking."/>
+      <ComponentResources Include="microsoft-net-runtime-android" Title=".NET Android Build Tools"
+                          Description="Build tools for Android compilation and native linking."/>
+      <ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET Android Build Tools (AoT)"
+                          Description="Build tools for Android ahead-of-time (AoT) compilation and native linking."/>
+      <ComponentResources Include="runtimes-ios" Title=".NET iOS Build Tools"
+                          Description="Build tools for iOS compilation and native linking."/>
+      <ComponentResources Include="runtimes-tvos" Title=".NET tvOS Build Tools"
+                          Description="Build tools for tvOS compilation and native linking."/>
+      <ComponentResources Include="runtimes-maccatalyst" Title=".NET Mac Catalyst Build Tools"
+                          Description="Build tools for Mac Catalyst compilation and native linking."/>
+
+      <!-- Visual Studio components must be versioned. Build tasks will fall back to cobbling a version number from
+           the manifest information unless it's overridden. -->
+      <ComponentVersions Include="wasm-tools" Version="$(FileVersion)" />
+      <ComponentVersions Include="microsoft-net-runtime-android" Version="$(FileVersion)" />
+      <ComponentVersions Include="microsoft-net-runtime-android-aot" Version="$(FileVersion)" />
+      <ComponentVersions Include="runtimes-ios" Version="$(FileVersion)" />
+      <ComponentVersions Include="runtimes-tvos" Version="$(FileVersion)" />
+      <ComponentVersions Include="runtimes-maccatalyst" Version="$(FileVersion)" />
+    </ItemGroup>
+
+    <!-- BAR requires having version information in blobs -->
+    <PropertyGroup>
+      <VersionedVisualStudioSetupInsertionPath>$(VisualStudioSetupInsertionPath)$(SDKBundleVersion)\</VersionedVisualStudioSetupInsertionPath>
+    </PropertyGroup>
+
+    <!-- Shorten package names to avoid long path issues in Visual Studio -->
+    <ItemGroup>
+      <ShortNames Include="microsoft.netcore.app.runtime;Microsoft.NETCore.App.Runtime;microsoft.net.runtime;Microsoft.NET.Runtime">
+        <Replacement>Microsoft</Replacement>
+      </ShortNames>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.Manifest-*.nupkg" />
+    </ItemGroup>
+
+    <GenerateVisualStudioWorkload IntermediateBaseOutputPath="$(WorkloadIntermediateOutputPath)"
+                                  WixToolsetPath="$(WixToolsetPath)"
+                                  GenerateMsis="true"
+                                  ComponentVersions="@(ComponentVersions)"
+                                  OutputPath="$(WorkloadOutputPath)"
+                                  PackagesPath="$(PackageSource)"
+                                  ShortNames="@(ShortNames)"
+                                  WorkloadPackages="@(ManifestPackages)">
+      <Output TaskParameter="SwixProjects" ItemName="SwixProjects" />
+      <Output TaskParameter="Msis" ItemName="Msis" />
+    </GenerateVisualStudioWorkload>
+
+    <!-- Build all the SWIX projects. This requires full framework MSBuild-->
+    <MSBuild Projects="@(SwixProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
+
+    <!-- Gather .wixobj files for post-build signing. We'll have to batch since we generated multiple MSIs in the previous step. -->
+    <MSBuild Projects="$(MSBuildProjectFile)" Properties="_WixObjDir=%(Msis.WixObj);_Msi=%(Msis.Identity)" Targets="CreateWixPack" />
+
+    <!-- Build the Visual Studio manifest project. -->
+    <ItemGroup>
+      <VisualStudioManifestProjects Include="mono_wasm_mobile.vsmanproj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(VisualStudioManifestProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath);OutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
+
+    <!-- Build all the MSI payload packages for NuGet. -->
+    <ItemGroup>
+      <MsiPackageProjects Include="%(Msis.PackageProject)" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(MsiPackageProjects)" Properties="OutputPath=$(ArtifactsShippingPackagesDir)" Targets="restore;pack" />
+  </Target>
+
+  <!-- Target to create a single wixpack for signing -->
+  <Target Name="CreateWixPack">
+    <ItemGroup>
+      <_WixObj Include="$(_WixObjDir)\**\*.wixobj" />
+    </ItemGroup>
+
+    <CreateLightCommandPackageDrop
+      LightCommandWorkingDir="$(LightCommandObjDir)"
+      OutputFolder="$(LightCommandPackagesDir)"
+      NoLogo="true"
+      Cultures="en-us"
+      InstallerFile="$(_Msi)"
+      WixExtensions="WixUIExtension;WixDependencyExtension;WixUtilExtension"
+      WixSrcFiles="@(_WixObj)">
+      <Output TaskParameter="OutputFile" PropertyName="_LightCommandPackageNameOutput" />
+    </CreateLightCommandPackageDrop>
+  </Target>
+
+  <!-- These are just individual targets for testing local builds. -->
+  <Target Name="BuildSwixProjects">
+    <ItemGroup>
+      <SwixProjects Include="$(WorkloadIntermediateOutputPath)**\*.swixproj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(SwixProjects)" BuildInParallel="true" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
+  </Target>
+
+  <Target Name="BuildVisualStudioManifest">
+    <ItemGroup>
+      <VisualStudioManifestProjects Include="Microsoft.NET.vsmanproj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(VisualStudioManifestProjects)" BuildInParallel="true" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath);OutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
+  </Target>
+
+  <Target Name="GenerateVersions" DependsOnTargets="GetAssemblyVersion">
+    <Exec Command="git rev-list --count HEAD"
+          ConsoleToMSBuild="true"
+          Condition=" '$(GitCommitCount)' == '' ">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitCount" />
+    </Exec>
+
+    <Error Condition=" '$(OfficialBuild)' == 'true' And '$(_PatchNumber)' == '' "
+           Text="_PatchNumber should not be empty in an official build. Check if there were changes in Arcade." />
+
+    <PropertyGroup>
+      <GitCommitCount>$(GitCommitCount.PadLeft(6,'0'))</GitCommitCount>
+
+      <!-- This number comes from arcade and combines the date based build number id and the revision (incremental number per day) -->
+      <CombinedBuildNumberAndRevision>$(_PatchNumber)</CombinedBuildNumberAndRevision>
+      <!-- Fallback to commit count when patch number is not set. This happens only during CI. -->
+      <CombinedBuildNumberAndRevision Condition=" '$(CombinedBuildNumberAndRevision)' == '' ">$(GitCommitCount)</CombinedBuildNumberAndRevision>
+
+      <!-- This number comes from arcade and combines the date based build number id and the revision (incremental number per day) -->
+      <SDKBundleVersion>$(FileVersion)</SDKBundleVersion>
+      <!-- Fallback to commit count when patch number is not set. This happens only during CI. -->
+      <SDKBundleVersion Condition=" '$(SDKBundleVersion)' == '' ">$(VersionPrefix).$(CombinedBuildNumberAndRevision)</SDKBundleVersion>
+    </PropertyGroup>
+  </Target>
+</Project>

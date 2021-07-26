@@ -344,7 +344,7 @@ namespace System.Security.Cryptography
                 if (blocksToProcess > 1 && _transform.CanTransformMultipleBlocks)
                 {
                     // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
-                    int numWholeBlocksInBytes = blocksToProcess * _inputBlockSize;
+                    int numWholeBlocksInBytes = checked(blocksToProcess * _inputBlockSize);
                     byte[] tempInputBuffer = ArrayPool<byte>.Shared.Rent(numWholeBlocksInBytes);
                     try
                     {
@@ -570,7 +570,7 @@ namespace System.Security.Cryptography
                         int numWholeBlocksInBytes = numWholeBlocks * _inputBlockSize;
 
                         // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
-                        byte[]? tempOutputBuffer = ArrayPool<byte>.Shared.Rent(numWholeBlocks * _outputBlockSize);
+                        byte[]? tempOutputBuffer = ArrayPool<byte>.Shared.Rent(checked(numWholeBlocks * _outputBlockSize));
                         numOutputBytes = 0;
 
                         try

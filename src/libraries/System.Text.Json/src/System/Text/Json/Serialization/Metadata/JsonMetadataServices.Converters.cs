@@ -82,7 +82,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonElement"/> values.
         /// </summary>
-        internal static JsonConverter<JsonElement> JsonElementConverter => s_jsonElementConverter ??= new JsonElementConverter();
+        public static JsonConverter<JsonElement> JsonElementConverter => s_jsonElementConverter ??= new JsonElementConverter();
         private static JsonConverter<JsonElement>? s_jsonElementConverter;
 
         /// <summary>
@@ -109,6 +109,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         public static JsonConverter<string> StringConverter => s_stringConverter ??= new StringConverter();
         private static JsonConverter<string>? s_stringConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="TimeSpan"/> values.
+        /// </summary>
+        public static JsonConverter<TimeSpan> TimeSpanConverter => s_timeSpanConverter ??= new TimeSpanConverter();
+        private static JsonConverter<TimeSpan>? s_timeSpanConverter;
 
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="ushort"/> values.

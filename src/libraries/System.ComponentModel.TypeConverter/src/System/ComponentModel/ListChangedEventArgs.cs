@@ -12,13 +12,13 @@ namespace System.ComponentModel
         {
         }
 
-        public ListChangedEventArgs(ListChangedType listChangedType, int newIndex, PropertyDescriptor propDesc) : this(listChangedType, newIndex)
+        public ListChangedEventArgs(ListChangedType listChangedType, int newIndex, PropertyDescriptor? propDesc) : this(listChangedType, newIndex)
         {
             PropertyDescriptor = propDesc;
             OldIndex = newIndex;
         }
 
-        public ListChangedEventArgs(ListChangedType listChangedType, PropertyDescriptor propDesc)
+        public ListChangedEventArgs(ListChangedType listChangedType, PropertyDescriptor? propDesc)
         {
             ListChangedType = listChangedType;
             PropertyDescriptor = propDesc;
@@ -37,6 +37,6 @@ namespace System.ComponentModel
 
         public int OldIndex { get; }
 
-        public PropertyDescriptor PropertyDescriptor { get; }
+        public PropertyDescriptor? PropertyDescriptor { get; }
     }
 }
