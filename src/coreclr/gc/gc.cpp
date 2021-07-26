@@ -11709,25 +11709,23 @@ void gc_heap::distribute_free_regions()
 
         total_ephemeral_budget += desired_allocation;
 
-        if (settings.condemned_generation >= max_generation)
+        for (int gen = loh_generation; gen <= poh_generation; gen++)
         {
-            for (int gen = loh_generation; gen <= poh_generation; gen++)
-            {
-                dynamic_data* dd_gen = hp->dynamic_data_of (gen);
+            dynamic_data* dd_gen = hp->dynamic_data_of (gen);
 
-                // estimate how much we are going to need in gen - assume half the free list space gets used
-                ptrdiff_t new_allocation_gen = dd_new_allocation (dd_gen);
-                ptrdiff_t free_list_space_gen = generation_free_list_space (hp->generation_of (gen));
-                ptrdiff_t budget_gen = new_allocation_gen - (free_list_space_gen / 2);
-                dprintf (REGIONS_LOG, ("budget for gen %d on heap %d is %Id (new %Id, free %Id)", gen, i, budget_gen, new_allocation_gen, free_list_space_gen));
-                if (budget_gen > 0)
-                {
-                    total_uoh_budget += budget_gen;
-                }
+            // estimate how much we are going to need in gen - assume half the free list space gets used
+            ptrdiff_t new_allocation_gen = dd_new_allocation (dd_gen);
+            ptrdiff_t free_list_space_gen = generation_free_list_space (hp->generation_of (gen));
+            ptrdiff_t budget_gen = new_allocation_gen - (free_list_space_gen / 2);
+            dprintf (REGIONS_LOG, ("budget for gen %d on heap %d is %Id (new %Id, free %Id)", gen, i, budget_gen, new_allocation_gen, free_list_space_gen));
+            if (budget_gen > 0)
+            {
+                total_uoh_budget += budget_gen;
             }
         }
     }
-    size_t total_ephemeral_regions_budget = total_ephemeral_budget >> min_segment_size_shr;
+    const size_t REGION_SIZE = global_region_allocator.get_region_alignment();
+    size_t total_ephemeral_regions_budget = (total_ephemeral_budget + (REGION_SIZE -1)) / REGION_SIZE;
 
     const size_t LARGE_REGION_SIZE = global_region_allocator.get_large_region_alignment();
     size_t total_uoh_regions_budget = (total_uoh_budget + (LARGE_REGION_SIZE-1)) / LARGE_REGION_SIZE;
@@ -11822,7 +11820,7 @@ void gc_heap::distribute_free_regions()
         num_huge_region_units));
 
     total_num_free_large_regions += num_large_regions_to_decommit;
-    if ((settings.condemned_generation < max_generation) ||
+    if (background_running_p() ||
         (total_num_free_large_regions + num_huge_region_units < total_uoh_regions_budget))
     {
         target_num_large_regions = (total_num_free_large_regions + (n_heaps - 1)) / n_heaps;
@@ -20218,14 +20216,14 @@ void gc_heap::gc1()
                 {
                     // to avoid spikes in mem usage due to short terms fluctuations in survivorship,
                     // apply some smoothing.
-                    static size_t smoothed_desired_per_heap_uoh = 0;
+                    static size_t smoothed_desired_per_heap_uoh[total_generation_count - uoh_start_generation] = { 0, 0 };
                     size_t smoothing = 3; // exponential smoothing factor
                     size_t uoh_count = dd_collection_count (dynamic_data_of (max_generation));
                     if (smoothing  > uoh_count)
                         smoothing  = uoh_count;
-                    smoothed_desired_per_heap_uoh = desired_per_heap / smoothing + ((smoothed_desired_per_heap_uoh / smoothing) * (smoothing-1));
-                    dprintf (2, ("smoothed_desired_per_heap_loh  = %Id  desired_per_heap = %Id", smoothed_desired_per_heap_uoh, desired_per_heap));
-                    desired_per_heap = Align(smoothed_desired_per_heap_uoh, get_alignment_constant (false));
+                    smoothed_desired_per_heap_uoh[gen - uoh_start_generation] = desired_per_heap / smoothing + ((smoothed_desired_per_heap_uoh[gen - uoh_start_generation] / smoothing) * (smoothing-1));
+                    dprintf (2, ("smoothed_desired_per_heap_%s  = %Id  desired_per_heap = %Id", ((gen == loh_generation) ? "loh" : "poh"), smoothed_desired_per_heap_uoh[gen - uoh_start_generation], desired_per_heap));
+                    desired_per_heap = Align(smoothed_desired_per_heap_uoh[gen - uoh_start_generation], get_alignment_constant (false));
                 }
 #endif //0
                 for (int i = 0; i < gc_heap::n_heaps; i++)
