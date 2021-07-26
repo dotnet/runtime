@@ -17,16 +17,16 @@ namespace System.Globalization.Tests
             {
                 yield return new object[] { "en-US", "English (United States)" };
                 yield return new object[] { "fr-FR", "French (France)" };
+                yield return new object[] { "zh-Hant", "Chinese (Traditional)" };
+                yield return new object[] { "zh-Hans", "Chinese (Simplified)" };
+                yield return new object[] { "uz-Arab", "Uzbek (Arabic)" };
+                yield return new object[] { "uz-Cyrl", "Uzbek (Cyrillic)" };
             }
             else
             {
                 // Mobile / Browser ICU doesn't contain CultureInfo.EnglishName
                 yield return new object[] { "en-US", "en (US)" };
                 yield return new object[] { "fr-FR", "fr (FR)" };
-                yield return new object[] { "zh-Hant", "Chinese (Traditional)" };
-                yield return new object[] { "zh-Hans", "Chinese (Simplified)" };
-                yield return new object[] { "uz-Arab", "Uzbek (Arabic)" };
-                yield return new object[] { "uz-Cyrl", "Uzbek (Cyrillic)" };
             }
         }
 
