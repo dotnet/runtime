@@ -730,7 +730,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 PortableAppFixture_Published = new TestProjectFixture("PortableApp", RepoDirectories)
                     .EnsureRestored()
-                    .PublishProject();
+                    .PublishProject(extraArgs: "/p:UseAppHost=true");
 
                 MockApp = new TestApp(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "portableAppActivation")), "App");
                 Directory.CreateDirectory(MockApp.Location);
