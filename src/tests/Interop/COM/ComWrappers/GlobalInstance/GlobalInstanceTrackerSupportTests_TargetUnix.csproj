@@ -5,19 +5,18 @@
     <UseManagedCOMServer>true</UseManagedCOMServer>
     <IsManagedCOMClient>true</IsManagedCOMClient>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- There is only a Windows version of this test -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <!-- There is a Windows and a non-Windows version of this test to allow it to be compiled for all targets -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GlobalInstance.cs" />
-    <Compile Include="GlobalInstance.Marshalling.cs" />
+    <Compile Include="GlobalInstance.TrackerSupport.cs" />
     <Compile Include="../Common.cs" />
     <Compile Include="../../ServerContracts/Server.Contracts.cs" />
     <Compile Include="../../ServerContracts/ServerGuids.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../MockReferenceTrackerRuntime/CMakeLists.txt" />
-    <ProjectReference Include="../../NativeServer/CMakeLists.txt" />
     <ProjectReference Include="../../NETServer/NETServer.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
@@ -28,8 +27,5 @@
     <None Include="CoreShim.X.manifest">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" Value="false" />
   </ItemGroup>
 </Project>
