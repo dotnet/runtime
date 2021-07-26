@@ -166,7 +166,7 @@ using System.Diagnostics.CodeAnalysis;
 
 class C
 {
-	[RequiresAssemblyFiles (Message = ""Message from attribute"", Url = ""https://helpurl"")]
+	[RequiresAssemblyFiles (""Message from attribute"", Url = ""https://helpurl"")]
 	void M1()
 	{
 	}
@@ -231,13 +231,13 @@ class C
 		M2();
 	}
 
-	[RequiresAssemblyFiles (Message = ""Warn from M2"")]
+	[RequiresAssemblyFiles (""Warn from M2"")]
 	void M2()
 	{
 		M3();
 	}
 
-	[RequiresAssemblyFiles (Message = ""Warn from M3"")]
+	[RequiresAssemblyFiles (""Warn from M3"")]
 	void M3()
 	{
 	}
@@ -321,6 +321,8 @@ class C
     }
 }";
 			return VerifyRequiresAssemblyFilesAnalyzer (src,
+				// (8,13): warning IL3002: Using member 'System.Reflection.AssemblyName.CodeBase.get' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. The code will return an empty string for assemblies embedded in a single-file app.
+				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (8, 13, 8, 23).WithArguments ("System.Reflection.AssemblyName.CodeBase.get", " The code will return an empty string for assemblies embedded in a single-file app.", ""),
 				// (8,13): warning IL3000: 'System.Reflection.AssemblyName.CodeBase' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
 				VerifyCS.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3000).WithSpan (8, 13, 8, 23).WithArguments ("System.Reflection.AssemblyName.CodeBase"),
 				// (9,13): warning IL3000: 'System.Reflection.AssemblyName.EscapedCodeBase' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
@@ -445,7 +447,7 @@ class C
 using System.Diagnostics.CodeAnalysis;
 public class C
 {
-    [RequiresAssemblyFiles(Message = ""message"")]
+    [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
     int M2() => M1();
 }
@@ -469,18 +471,18 @@ public class E
 using System.Diagnostics.CodeAnalysis;
 public class C
 {
-    [RequiresAssemblyFiles(Message = ""message"")]
+    [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
-    [RequiresAssemblyFiles(Message = ""Calls M1"")]
+    [RequiresAssemblyFiles(""Calls M1"")]
     int M2() => M1();
 }
 class D
 {
-    [RequiresAssemblyFiles(Message = ""Calls M1"")]
+    [RequiresAssemblyFiles(""Calls M1"")]
     public int M3(C c) => c.M1();
     public class E
     {
-        [RequiresAssemblyFiles(Message = ""Calls M1"")]
+        [RequiresAssemblyFiles(""Calls M1"")]
         public int M4(C c) => c.M1();
     }
 }
@@ -561,7 +563,7 @@ using System.Diagnostics.CodeAnalysis;
 
 public class C
 {
-    [RequiresAssemblyFiles(Message = ""message"")]
+    [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
 
     int M2 => M1();
@@ -572,10 +574,10 @@ using System.Diagnostics.CodeAnalysis;
 
 public class C
 {
-    [RequiresAssemblyFiles(Message = ""message"")]
+    [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
 
-    [RequiresAssemblyFiles(Message = ""Calls M1"")]
+    [RequiresAssemblyFiles(""Calls M1"")]
     int M2 => M1();
 }";
 			return VerifyRequiresAssemblyFilesCodeFix (
@@ -642,7 +644,7 @@ using System.Diagnostics.CodeAnalysis;
 
 public class C
 {
-    [RequiresAssemblyFiles(Message = ""message"")]
+    [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
 
     Action M2()
@@ -657,13 +659,13 @@ using System.Diagnostics.CodeAnalysis;
 
 public class C
 {
-    [RequiresAssemblyFiles(Message = ""message"")]
+    [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
 
-    [RequiresAssemblyFiles(Message = ""Calls Wrapper"")]
+    [RequiresAssemblyFiles(""Calls Wrapper"")]
     Action M2()
     {
-        [global::System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute(Message = ""Calls M1"")] void Wrapper () => M1();
+        [global::System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute(""Calls M1"")] void Wrapper () => M1();
         return Wrapper;
     }
 }";
@@ -688,7 +690,7 @@ using System.Diagnostics.CodeAnalysis;
 
 public class C
 {
-    [RequiresAssemblyFiles(Message = ""message"")]
+    [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
 
     public C () => M1();
@@ -699,7 +701,7 @@ using System.Diagnostics.CodeAnalysis;
 
 public class C
 {
-    [RequiresAssemblyFiles(Message = ""message"")]
+    [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
 
     [RequiresAssemblyFiles()]
@@ -724,7 +726,7 @@ using System.Diagnostics.CodeAnalysis;
 
 public class C
 {
-    [RequiresAssemblyFiles(Message = ""message"")]
+    [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
 
     public event EventHandler E1
@@ -742,7 +744,7 @@ using System.Diagnostics.CodeAnalysis;
 
 public class C
 {
-    [RequiresAssemblyFiles(Message = ""message"")]
+    [RequiresAssemblyFiles(""message"")]
     public int M1() => 0;
 
     [RequiresAssemblyFiles()]
@@ -773,7 +775,7 @@ using System.Diagnostics.CodeAnalysis;
 
 class StaticCtor
 {
-	[RequiresAssemblyFiles (Message = ""Message for --TestStaticCtor--"")]
+	[RequiresAssemblyFiles (""Message for --TestStaticCtor--"")]
 	static StaticCtor ()
 	{
 	}
@@ -799,7 +801,7 @@ class StaticCtorTriggeredByFieldAccess
 {
 	public static int field;
 
-	[RequiresAssemblyFiles (Message = ""Message for --StaticCtorTriggeredByFieldAccess.Cctor--"")]
+	[RequiresAssemblyFiles (""Message for --StaticCtorTriggeredByFieldAccess.Cctor--"")]
 	static StaticCtorTriggeredByFieldAccess ()
 	{
 		field = 0;
@@ -826,12 +828,12 @@ using System.Diagnostics.CodeAnalysis;
 
 class StaticCtorTriggeredByMethodCall
 {
-	[RequiresAssemblyFiles (Message = ""Message for --StaticCtorTriggeredByMethodCall.Cctor--"")]
+	[RequiresAssemblyFiles (""Message for --StaticCtorTriggeredByMethodCall.Cctor--"")]
 	static StaticCtorTriggeredByMethodCall ()
 	{
 	}
 
-	[RequiresAssemblyFiles (Message = ""Message for --StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--"")]
+	[RequiresAssemblyFiles (""Message for --StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--"")]
 	public void TriggerStaticCtorMarking ()
 	{
 	}

@@ -123,15 +123,18 @@ namespace ILLink.RoslynAnalyzer
 			return false;
 		}
 
-		protected override bool VerifyAttributeArguments (AttributeData attribute) => attribute.ConstructorArguments.Length == 0;
+		protected override bool VerifyAttributeArguments (AttributeData attribute) => attribute.ConstructorArguments.Length == 0 ||
+			attribute.ConstructorArguments.Length >= 1 && attribute.ConstructorArguments[0] is { Type: { SpecialType: SpecialType.System_String } } ctorArg;
 
-		protected override string GetMessageFromAttribute (AttributeData? requiresAttribute)
+		protected override string GetMessageFromAttribute (AttributeData requiresAttribute)
 		{
-			var message = requiresAttribute?.NamedArguments.FirstOrDefault (na => na.Key == "Message").Value.Value?.ToString ();
-			if (!string.IsNullOrEmpty (message))
-				message = $" {message}{(message!.TrimEnd ().EndsWith (".") ? "" : ".")}";
-
-			return message!;
+			string message = "";
+			if (requiresAttribute.ConstructorArguments.Length >= 1) {
+				message = requiresAttribute.ConstructorArguments[0].Value?.ToString () ?? "";
+				if (!string.IsNullOrEmpty (message))
+					message = $" {message}{(message!.TrimEnd ().EndsWith (".") ? "" : ".")}";
+			}
+			return message;
 		}
 	}
 }

@@ -22,7 +22,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static readonly ReferenceAssemblies Net6PreviewAssemblies =
 			new ReferenceAssemblies (
 				"net6.0",
-				new PackageIdentity ("Microsoft.NETCore.App.Ref", "6.0.0-preview.5.21224.4"),
+				new PackageIdentity ("Microsoft.NETCore.App.Ref", "6.0.0-preview.7.21368.2"),
 				Path.Combine ("ref", "net6.0"))
 			.WithNuGetConfigFilePath (Path.Combine (TestCaseUtils.GetRepoRoot (), "NuGet.config"));
 

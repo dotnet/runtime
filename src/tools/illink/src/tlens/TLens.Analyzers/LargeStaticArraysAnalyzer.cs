@@ -27,7 +27,7 @@ namespace TLens.Analyzers
 				if (!name.StartsWith ("__StaticArrayInitTypeSize="))
 					continue;
 
-				if (!int.TryParse (name.Substring (26), out int size))
+				if (!int.TryParse (name.AsSpan (26), out int size))
 					throw new NotImplementedException (name);
 
 				methods.Add ((size, method));
