@@ -23,6 +23,7 @@ namespace System.Net.Sockets.Tests
         private int _receiveBufferSize;       // Buffer size to use for each socket I/O operation.
         private BufferManager _bufferManager; // Represents a large reusable set of buffers for all socket operations.
         private Socket _listenSocket;          // The socket used to listen for incoming connection requests.
+        private Socket _guardSocket;
         private SocketAsyncEventArgsPool _readWritePool; // Pool of reusable SocketAsyncEventArgs objects for write, read and accept socket operations.
         private int _totalBytesRead;          // Counter of the total # bytes received by the server.
         private int _numConnectedSockets;     // The total number of clients connected to the server.
@@ -67,6 +68,11 @@ namespace System.Net.Sockets.Tests
                         _listenSocket.Dispose();
                         _listenSocket = null;
                     }
+                    if (_guardSocket != null)
+                    {
+                        _guardSocket.Dispose();
+                        _guardSocket = null;
+                    }
                 }
             }
         }
@@ -108,8 +114,7 @@ namespace System.Net.Sockets.Tests
         private void Start(EndPoint localEndPoint)
         {
             // Create the socket which listens for incoming connections.
-            _listenSocket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, _protocolType);
-            _listenSocket.Bind(localEndPoint);
+            _listenSocket = CreateListenerSocketWithDualSafeGuard(localEndPoint.AddressFamily, _protocolType, localEndPoint, false, out _guardSocket);
 
             // Start the server with a listen backlog of 100 connections.
             _listenSocket.Listen(100);

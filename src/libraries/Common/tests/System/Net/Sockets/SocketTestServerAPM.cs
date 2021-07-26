@@ -11,6 +11,7 @@ namespace System.Net.Sockets.Tests
         private VerboseTestLogging _log;
 
         private Socket _socket;
+        private Socket _guard;
         private int _receiveBufferSize;
         private volatile bool _disposed = false;
 
@@ -22,8 +23,7 @@ namespace System.Net.Sockets.Tests
             _log = VerboseTestLogging.GetInstance();
             _receiveBufferSize = receiveBufferSize;
 
-            _socket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            _socket.Bind(localEndPoint);
+            _socket = CreateListenerSocketWithDualSafeGuard(localEndPoint.AddressFamily, ProtocolType.Tcp, localEndPoint, false, out _guard);
             _socket.Listen(numConnections);
 
             _socket.BeginAccept(OnAccept, null);
@@ -34,6 +34,7 @@ namespace System.Net.Sockets.Tests
             if (disposing)
             {
                 _socket.Dispose();
+                _guard?.Dispose();
                 _disposed = true;
             }
         }
