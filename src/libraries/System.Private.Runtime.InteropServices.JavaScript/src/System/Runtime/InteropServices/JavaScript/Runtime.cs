@@ -218,42 +218,44 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject.Int32Handle;
         }
 
-        private static int NextWeakDelegateID = 1;
-        private static object WeakDelegateLock = new object();
-        private static Dictionary<Delegate, int> IDFromWeakDelegate = new Dictionary<Delegate, int>();
-        private static Dictionary<int, Delegate> WeakDelegateFromID = new Dictionary<int, Delegate>();
+        private static int NextJSOwnedObjectID = 1;
+        private static object JSOwnedObjectLock = new object();
+        private static Dictionary<object, int> IDFromJSOwnedObject = new Dictionary<object, int>();
+        private static Dictionary<int, object> JSOwnedObjectFromID = new Dictionary<int, object>();
 
         // A weak delegate (good name TBD) is a managed delegate that has its lifetime controlled
         //  by JavaScript. The managed object will be freed once its js wrapper no longer exists.
-        public static int GetWeakDelegateHandle (Delegate del) {
-            if (del == null)
-                throw new ArgumentNullException(nameof(del));
+        public static int GetJSOwnedObjectHandle (object o) {
+            if (o == null)
+                return 0;
 
             int result;
-            lock (WeakDelegateLock) {
-                if (IDFromWeakDelegate.TryGetValue(del, out result))
+            lock (JSOwnedObjectLock) {
+                if (IDFromJSOwnedObject.TryGetValue(o, out result))
                     return result;
 
-                result = NextWeakDelegateID++;
-                IDFromWeakDelegate[del] = result;
-                WeakDelegateFromID[result] = del;
+                result = NextJSOwnedObjectID++;
+                IDFromJSOwnedObject[o] = result;
+                JSOwnedObjectFromID[result] = o;
                 return result;
             }
         }
 
-        public static void ReleaseWeakDelegateByHandle (int id) {
-            lock (WeakDelegateLock) {
-                var del = WeakDelegateFromID[id];
-                IDFromWeakDelegate.Remove(del);
-                WeakDelegateFromID.Remove(id);
+        public static void ReleaseJSOwnedObjectByHandle (int id) {
+            lock (JSOwnedObjectLock) {
+                if (!JSOwnedObjectFromID.TryGetValue(id, out object? o))
+                    throw new Exception($"JS-owned object with id {id} was already released");
+                IDFromJSOwnedObject.Remove(o);
+                JSOwnedObjectFromID.Remove(id);
             }
         }
 
-        public static bool TryInvokeWeakDelegateByHandle (int id, JSObject? arg1) {
+        public static bool TryInvokeJSOwnedDelegateByHandle (int id, JSObject? arg1) {
             Delegate? del;
-            lock (WeakDelegateLock) {
-                if (!WeakDelegateFromID.TryGetValue(id, out del))
+            lock (JSOwnedObjectLock) {
+                if (!JSOwnedObjectFromID.TryGetValue(id, out object? o))
                     return false;
+                del = (Delegate)o;
             }
 
             if (del == null)

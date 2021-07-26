@@ -146,8 +146,8 @@ var BindingSupportLib = {
 			this.safehandle_release = get_method ("SafeHandleRelease");
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
-			this.release_weak_delegate_by_handle = bind_runtime_method ("ReleaseWeakDelegateByHandle", "i");
-			this.try_invoke_weak_delegate_by_handle = bind_runtime_method ("TryInvokeWeakDelegateByHandle", "io");
+			this.release_js_owned_object_by_handle = bind_runtime_method ("ReleaseJSOwnedObjectByHandle", "i");
+			this.try_invoke_js_owned_delegate_by_handle = bind_runtime_method ("TryInvokeJSOwnedDelegateByHandle", "io");
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 
@@ -158,8 +158,8 @@ var BindingSupportLib = {
 			this._interned_string_current_root_buffer_count = 0;
 			this._interned_js_string_table = new Map ();
 
-			this._weak_delegate_table = new Map ();
-			this._weak_delegate_registry = new FinalizationRegistry(this._weak_delegate_finalized.bind(this));
+			this._js_owned_object_table = new Map ();
+			this._js_owned_object_registry = new FinalizationRegistry(this._js_owned_object_finalized.bind(this));
 		},
 
 		_get_weak_delegate_from_handle: function (id) {
@@ -167,8 +167,8 @@ var BindingSupportLib = {
 
 			// Look up this handle in the weak delegate table, and if we find a matching weakref,
 			//  deref it to try and get a JS function. This function may have been collected.
-			if (this._weak_delegate_table.has(id)) {
-				var wr = this._weak_delegate_table.get(id);
+			if (this._js_owned_object_table.has(id)) {
+				var wr = this._js_owned_object_table.get(id);
 				result = wr.deref();
 				// Note that we could check for a null result (i.e. function was GC'd) here and
 				//  opt to abort since resurrecting a given ID probably shouldn't happen.
@@ -185,26 +185,26 @@ var BindingSupportLib = {
 			//  the associated object references
 			if (!result) {
 				result = (arg1) => {
-					if (!this.try_invoke_weak_delegate_by_handle(id, arg1))
+					if (!this.try_invoke_js_owned_delegate_by_handle(id, arg1))
 						// Because lifetime is managed by JavaScript, it *is* an error for this 
 						//  invocation to ever fail. If we have a JS wrapper for an ID, there
 						//  should be no way for the managed delegate to have disappeared.
-						throw new Error("Weak delegate invocation failed");
+						throw new Error(`JS-owned delegate invocation failed for id ${id}`);
 				};
 
-				this._weak_delegate_table.set(id, new WeakRef(result));
-				this._weak_delegate_registry.register(result, id);
+				this._js_owned_object_table.set(id, new WeakRef(result));
+				this._js_owned_object_registry.register(result, id);
 			}
 			return result;
 		},
 
-		_weak_delegate_finalized: function (id) {
+		_js_owned_object_finalized: function (id) {
 			// The JS function associated with this ID has been collected by the JS GC.
 			// As such, it's not possible for this ID to be invoked by JS anymore, so
 			//  we can release the tracking weakref (it's null now, by definition),
 			//  and tell the C# side to stop holding a reference to the managed delegate.
-			this._weak_delegate_table.delete(id);
-			this.release_weak_delegate_by_handle(id);
+			this._js_owned_object_table.delete(id);
+			this.release_js_owned_object_by_handle(id);
 		},
 
 		// Ensures the string is already interned on both the managed and JavaScript sides,

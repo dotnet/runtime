@@ -94,7 +94,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (options?.Signal != null)
                     throw new NotImplementedException("EventListenerOptions.Signal");
 
-                var jsfunc = Runtime.GetWeakDelegateHandle(listener);
+                var jsfunc = Runtime.GetJSOwnedObjectHandle(listener);
                 // int exception;
                 if (options.HasValue) {
                     // TODO: Optimize this
@@ -121,7 +121,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (listener == null)
                 return;
-            var jsfunc = Runtime.GetWeakDelegateHandle(listener);
+            var jsfunc = Runtime.GetJSOwnedObjectHandle(listener);
             RemoveEventListener(name, jsfunc, options);
         }
 
