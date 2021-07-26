@@ -230,9 +230,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     addEventListener: function (name, listener, options) {
         if (name === 'throwError')
             throw new Error('throwError throwing');
+        var capture = !options ? false : !!options.capture;
         for (var i = 0; i < this.listeners.length; i++) {
             var item = this.listeners[i];
             if (item[0] !== name)
+                continue;
+            var itemCapture = !item[2] ? false : !!item[2].capture;
+            if (itemCapture !== capture)
                 continue;
             if (item[1] === listener)
                 return;
@@ -246,7 +250,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 continue;
             if (item[1] !== listener)
                 continue;
-            if (item[2] === null)
+            var itemCapture = !item[2] ? false : !!item[2].capture;
+            if (itemCapture !== !!capture)
                 continue;
             this.listeners.splice(i, 1);
             return;
@@ -261,7 +266,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var item = this.listeners[i];
             if (item[0] !== name)
                 continue;
-            var itemCapture = (item[2] === null) ? false : (item[2].capture || false);
+            var itemCapture = !item[2] ? false : (item[2].capture || false);
             if (itemCapture !== capture)
                 continue;
             item[1].call(this, evt);
@@ -286,7 +291,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void AddEventListenerPassesOptions () {
             var log = new List<string>();
-            var obj = SetupListenerTest("addEventListenerWorks");
+            var obj = SetupListenerTest("addEventListenerPassesOptions");
             obj.AddEventListener("test", () => {
                 log.Add("Capture");
             }, new JSObject.EventListenerOptions { Capture = true });
@@ -300,7 +305,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Fact]
         public static void AddEventListenerForwardsExceptions () {
-            var obj = SetupListenerTest("addEventListenerWorks");
+            var obj = SetupListenerTest("addEventListenerForwardsExceptions");
             obj.AddEventListener("test", () => {
                 throw new Exception("Test exception");
             });
@@ -316,6 +321,48 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             });
             Assert.Contains("throwError throwing", exc.Message);
             obj.Invoke("fireEvent", "throwError");
+        }
+
+        [Fact]
+        public static void RemovedEventListenerIsNotCalled () {
+            var obj = SetupListenerTest("removedEventListenerIsNotCalled");
+            Action del = () => {
+                throw new Exception("Should not be called");
+            };
+            obj.AddEventListener("test", del);
+            Assert.Throws<JSException>(() => {
+                obj.Invoke("fireEvent", "test");
+            });
+
+            obj.RemoveEventListener("test", del);
+            obj.Invoke("fireEvent", "test");
+        }
+
+        [Fact]
+        public static void RegisterSameEventListener () {
+            var counter = new int[1];
+            var obj = SetupListenerTest("registerSameDelegateTwice");
+            Action del = () => {
+                counter[0]++;
+            };
+
+            obj.AddEventListener("test1", del);
+            obj.AddEventListener("test2", del);
+
+            obj.Invoke("fireEvent", "test1");
+            Assert.Equal(1, counter[0]);
+            obj.Invoke("fireEvent", "test2");
+            Assert.Equal(2, counter[0]);
+
+            obj.RemoveEventListener("test1", del);
+            obj.Invoke("fireEvent", "test1");
+            obj.Invoke("fireEvent", "test2");
+            Assert.Equal(3, counter[0]);
+
+            obj.RemoveEventListener("test2", del);
+            obj.Invoke("fireEvent", "test1");
+            obj.Invoke("fireEvent", "test2");
+            Assert.Equal(3, counter[0]);
         }
     }
 }
