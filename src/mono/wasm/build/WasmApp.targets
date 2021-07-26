@@ -264,9 +264,24 @@
         SkipUnchangedFiles="true" 
         Condition="!Exists('package.json')"/>
     
-    <!-- npm install -->
+    <!-- npm install if not on CI -->
     <Exec Command="npm install"
         WorkingDirectory="$(WasmAppDir)"
-        IgnoreStandardErrorWarningFormat="true" />
+        IgnoreStandardErrorWarningFormat="true" 
+        Condition="'$(ContinuousIntegrationBuild)' != 'true'"/>
+
+    <!-- however, if we are on ci, then use npm ci to be more consistent. It needs a package-lock.json though, so we copy one over as well -->
+    <Copy SourceFiles="package-lock.json"
+        DestinationFolder="$(WasmAppDir)"
+        SkipUnchangedFiles="true" 
+        Condition="Exists('package-lock.json') and '$(ContinuousIntegrationBuild)' == 'true'"/>
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)\template-package-lock.json"
+        DestinationFiles="$(WasmAppDir)\package-lock.json"
+        SkipUnchangedFiles="true" 
+        Condition="!Exists('package-lock.json') and '$(ContinuousIntegrationBuild)' == 'true'"/>
+    <Exec Command="npm ci"
+        WorkingDirectory="$(WasmAppDir)"
+        IgnoreStandardErrorWarningFormat="true" 
+        Condition="'$(ContinuousIntegrationBuild)' == 'true'"/>
   </Target>
 </Project>
