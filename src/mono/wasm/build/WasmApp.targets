@@ -264,8 +264,9 @@
         SkipUnchangedFiles="true" 
         Condition="!Exists('package.json')"/>
     
-    <!-- npm install if not on CI -->
+    <!-- npm install via emsdk npm if not on CI -->
     <Exec Command="npm install"
+        EnvironmentVariables="@(EmscriptenEnvVars)"
         WorkingDirectory="$(WasmAppDir)"
         IgnoreStandardErrorWarningFormat="true" 
         Condition="'$(ContinuousIntegrationBuild)' != 'true'"/>
@@ -279,7 +280,9 @@
         DestinationFiles="$(WasmAppDir)\package-lock.json"
         SkipUnchangedFiles="true" 
         Condition="!Exists('package-lock.json') and '$(ContinuousIntegrationBuild)' == 'true'"/>
+    
     <Exec Command="npm ci"
+        EnvironmentVariables="@(EmscriptenEnvVars)"
         WorkingDirectory="$(WasmAppDir)"
         IgnoreStandardErrorWarningFormat="true" 
         Condition="'$(ContinuousIntegrationBuild)' == 'true'"/>
