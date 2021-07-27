@@ -8,7 +8,14 @@
 
 Commonly Used Types:
 Microsoft.Extensions.DependencyInjection.IServiceCollection</PackageDescription>
+    <!-- Use targeting pack references instead of granular ones in the project file. -->
+    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.cs"
+             Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs" />
+  </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.netcoreapp.cs"
@@ -27,13 +34,6 @@ Microsoft.Extensions.DependencyInjection.IServiceCollection</PackageDescription>
                         $([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.ComponentModel" />
-    <Reference Include="System.Linq.Expressions" />
-    <Reference Include="System.Runtime" />
   </ItemGroup>
 
 </Project>
