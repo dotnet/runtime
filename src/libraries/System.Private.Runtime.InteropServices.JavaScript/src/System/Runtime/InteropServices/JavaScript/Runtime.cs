@@ -248,7 +248,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // The JS layer invokes this method when the JS wrapper for a JS owned object
         //  has been collected by the JS garbage collector
-        internal static void ReleaseJSOwnedObjectByHandle (int id) {
+        public static void ReleaseJSOwnedObjectByHandle (int id) {
             lock (JSOwnedObjectLock) {
                 if (!JSOwnedObjectFromID.TryGetValue(id, out object? o))
                     throw new Exception($"JS-owned object with id {id} was already released");
@@ -260,9 +260,9 @@ namespace System.Runtime.InteropServices.JavaScript
         // The JS layer invokes this API when the JS wrapper for a delegate is invoked.
         // In multiple places this function intentionally returns false instead of throwing
         //  in an unexpected condition. This is done because unexpected conditions of this
-        //  type are usually caused by a JS object (i.e. a WebSocket) receiving an event 
-        //  after its managed owner has been disposed - throwing in that case is unwanted.        
-        internal static bool TryInvokeJSOwnedDelegateByHandle (int id, JSObject? arg1) {
+        //  type are usually caused by a JS object (i.e. a WebSocket) receiving an event
+        //  after its managed owner has been disposed - throwing in that case is unwanted.
+        public static bool TryInvokeJSOwnedDelegateByHandle (int id, JSObject? arg1) {
             Delegate? del;
             lock (JSOwnedObjectLock) {
                 if (!JSOwnedObjectFromID.TryGetValue(id, out object? o))

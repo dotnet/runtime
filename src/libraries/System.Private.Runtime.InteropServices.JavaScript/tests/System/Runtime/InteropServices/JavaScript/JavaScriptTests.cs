@@ -364,5 +364,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             obj.Invoke("fireEvent", "test2");
             Assert.Equal(3, counter[0]);
         }
+
+        [Fact]
+        public static void UseAddEventListenerResultToRemove () {
+            var obj = SetupListenerTest("useAddEventListenerResultToRemove");
+            Action del = () => {
+                throw new Exception("Should not be called");
+            };
+            var handle = obj.AddEventListener("test", del);
+            Assert.Throws<JSException>(() => {
+                obj.Invoke("fireEvent", "test");
+            });
+
+            obj.RemoveEventListener("test", handle);
+            obj.Invoke("fireEvent", "test");
+        }
     }
 }
