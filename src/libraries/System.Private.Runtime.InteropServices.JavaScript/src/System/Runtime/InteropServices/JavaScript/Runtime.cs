@@ -223,8 +223,13 @@ namespace System.Runtime.InteropServices.JavaScript
         private static Dictionary<object, int> IDFromJSOwnedObject = new Dictionary<object, int>();
         private static Dictionary<int, object> JSOwnedObjectFromID = new Dictionary<int, object>();
 
-        // A weak delegate (good name TBD) is a managed delegate that has its lifetime controlled
-        //  by JavaScript. The managed object will be freed once its js wrapper no longer exists.
+        // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
+        // The managed side maintains a strong reference to the object, while the JS side
+        //  maintains a weak reference and notifies the managed side if the JS wrapper object
+        //  has been reclaimed by the JS GC. At that point, the managed side will release its
+        //  strong references, allowing the managed object to be collected.
+        // This ensures that things like delegates and promises will never 'go away' while JS
+        //  is expecting to be able to invoke or await them.
         public static int GetJSOwnedObjectHandle (object o) {
             if (o == null)
                 return 0;
@@ -241,7 +246,9 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static void ReleaseJSOwnedObjectByHandle (int id) {
+        // The JS layer invokes this method when the JS wrapper for a JS owned object
+        //  has been collected by the JS garbage collector
+        internal static void ReleaseJSOwnedObjectByHandle (int id) {
             lock (JSOwnedObjectLock) {
                 if (!JSOwnedObjectFromID.TryGetValue(id, out object? o))
                     throw new Exception($"JS-owned object with id {id} was already released");
@@ -250,7 +257,12 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static bool TryInvokeJSOwnedDelegateByHandle (int id, JSObject? arg1) {
+        // The JS layer invokes this API when the JS wrapper for a delegate is invoked.
+        // In multiple places this function intentionally returns false instead of throwing
+        //  in an unexpected condition. This is done because unexpected conditions of this
+        //  type are usually caused by a JS object (i.e. a WebSocket) receiving an event 
+        //  after its managed owner has been disposed - throwing in that case is unwanted.        
+        internal static bool TryInvokeJSOwnedDelegateByHandle (int id, JSObject? arg1) {
             Delegate? del;
             lock (JSOwnedObjectLock) {
                 if (!JSOwnedObjectFromID.TryGetValue(id, out object? o))
