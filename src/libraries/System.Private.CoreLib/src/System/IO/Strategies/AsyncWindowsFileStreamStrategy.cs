@@ -51,7 +51,7 @@ namespace System.IO.Strategies
                 // ourselves, but only in memory. This isn't threadsafe.
                 _filePosition += destination.Length;
 
-                // we know for sure that there is nothing to read, so we just return here and avoid a sys-call
+                // We know for sure that there is nothing to read, so we just return here and avoid a sys-call.
                 if (destination.IsEmpty && LengthCachingSupported)
                 {
                     return ValueTask.FromResult(0);
