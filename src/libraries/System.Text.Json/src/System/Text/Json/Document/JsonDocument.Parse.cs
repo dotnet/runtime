@@ -137,7 +137,7 @@ namespace System.Text.Json
             }
         }
 
-        internal static JsonDocument Parse(PooledByteBufferWriter utf8Json, JsonDocumentOptions options = default)
+        internal static JsonDocument ParseRented(PooledByteBufferWriter utf8Json, JsonDocumentOptions options = default)
         {
             return Parse(
                 utf8Json.WrittenMemory,

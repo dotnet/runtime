@@ -65,7 +65,6 @@ namespace System.Text.Json
                 _extraPooledByteBufferWriter = extraPooledByteBufferWriter;
             }
 
-
             IsDisposable = isDisposable;
 
             // Both rented fields better be null if we're not disposable.
@@ -91,7 +90,7 @@ namespace System.Text.Json
                 if (extraRentedBytes != null)
                 {
                     // When "extra rented bytes exist" it contains the document,
-                    // and thus need to be cleared before being returned.
+                    // and thus needs to be cleared before being returned.
                     extraRentedBytes.AsSpan(0, length).Clear();
                     ArrayPool<byte>.Shared.Return(extraRentedBytes);
                 }
