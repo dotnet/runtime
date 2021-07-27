@@ -164,10 +164,12 @@ namespace System.Net.NameResolution.Tests
                 using var listener = new TestEventListener("System.Net.NameResolution", EventLevel.Informational);
                 listener.AddActivityTracking();
 
-                TaskCompletionSource firstResolutionStart = new();
-                TaskCompletionSource secondResolutionStop = new();
+                TaskCompletionSource firstResolutionStart = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource secondResolutionStop = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 List<(string EventName, Guid ActivityId)> events = new();
+
+                bool? callbackWaitTimedOut = null;
 
                 await listener.RunWithCallbackAsync(e =>
                 {
@@ -178,7 +180,7 @@ namespace System.Net.NameResolution.Tests
 
                     if (e.EventName == "ResolutionStart" && firstResolutionStart.TrySetResult())
                     {
-                        secondResolutionStop.Task.Wait();
+                        callbackWaitTimedOut = !secondResolutionStop.Task.Wait(TimeSpan.FromSeconds(15));
                     }
                 },
                 async () =>
@@ -219,6 +221,8 @@ namespace System.Net.NameResolution.Tests
                 Assert.Equal(events[0].ActivityId, events[3].ActivityId);
                 Assert.Equal(events[1].ActivityId, events[2].ActivityId);
                 Assert.NotEqual(events[0].ActivityId, events[1].ActivityId);
+
+                Assert.False(callbackWaitTimedOut);
             }).Dispose();
         }
     }
