@@ -1134,12 +1134,6 @@ int MyICJI::FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers)
     return result;
 }
 
-// Cleans up internal EE tracking when an exception is caught.
-void MyICJI::HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    jitInstance->mc->cr->AddCall("HandleException");
-}
-
 void MyICJI::ThrowExceptionForJitResult(HRESULT result)
 {
     jitInstance->mc->cr->AddCall("ThrowExceptionForJitResult");
@@ -1586,6 +1580,14 @@ uint32_t MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
 bool MyICJI::runWithErrorTrap(void (*function)(void*), void* param)
 {
     return RunWithErrorTrap(function, param);
+}
+
+// Runs the given function with the given parameter under an error trap
+// and returns true if the function completes successfully. This catches
+// all SPMI exceptions and lets others through.
+bool MyICJI::runWithSPMIErrorTrap(void (*function)(void*), void* param)
+{
+    return RunWithSPMIErrorTrap(function, param);
 }
 
 // Ideally we'd just use the copies of this in standardmacros.h

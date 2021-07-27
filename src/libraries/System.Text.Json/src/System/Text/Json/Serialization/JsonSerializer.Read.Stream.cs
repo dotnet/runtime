@@ -28,7 +28,7 @@ namespace System.Text.Json
         /// The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the read operation.
         /// </param>
         /// <exception cref="System.ArgumentNullException">
-        /// <paramref name="utf8Json"/>is <see langword="null"/>.
+        /// <paramref name="utf8Json"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
@@ -61,7 +61,7 @@ namespace System.Text.Json
         /// <param name="utf8Json">JSON data to parse.</param>
         /// <param name="options">Options to control the behavior during reading.</param>
         /// <exception cref="System.ArgumentNullException">
-        /// <paramref name="utf8Json"/>is <see langword="null"/>.
+        /// <paramref name="utf8Json"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
@@ -388,8 +388,8 @@ namespace System.Text.Json
                     do
                     {
                         bufferState = await ReadFromStreamAsync(utf8Json, bufferState, cancellationToken).ConfigureAwait(false);
-                        Queue<TValue>? queue = ContinueDeserialize<Queue<TValue>>(ref bufferState, ref jsonReaderState, ref readStack, converter, options);
-                        if (queue is not null)
+                        ContinueDeserialize<Queue<TValue>>(ref bufferState, ref jsonReaderState, ref readStack, converter, options);
+                        if (readStack.Current.ReturnValue is Queue<TValue> queue)
                         {
                             while (queue.Count > 0)
                             {

@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
 using System.Reflection.PortableExecutable;
 using System.Text;
 
@@ -18,8 +19,6 @@ namespace R2RDump
 {
     class TextDumper : Dumper
     {
-        private const int GuidByteSize = 16;
-
         public TextDumper(ReadyToRunReader r2r, TextWriter writer, Disassembler disassembler, DumpOptions options)
             : base(r2r, writer, disassembler, options)
         {
@@ -90,14 +89,8 @@ namespace R2RDump
                     int assemblyIndex = 0;
                     foreach (string assemblyName in _r2r.ManifestReferenceAssemblies.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key))
                     {
-                        string dividerName = $@"Component Assembly [{assemblyIndex}]: {assemblyName}";
-                        if (_r2r.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ManifestAssemblyMvids, out ReadyToRunSection mvidSection))
-                        {
-                            int mvidOffset = _r2r.GetOffset(mvidSection.RelativeVirtualAddress) + GuidByteSize * assemblyIndex;
-                            Guid mvid = new Guid(new ReadOnlySpan<byte>(_r2r.Image, mvidOffset, GuidByteSize));
-                            dividerName += $@" - MVID {mvid:b}";
-                        }
-                        WriteDivider(dividerName);
+                        Guid mvid = _r2r.GetAssemblyMvid(assemblyIndex);
+                        WriteDivider($@"Component Assembly [{assemblyIndex}]: {assemblyName} - MVID {mvid:b}");
                         ReadyToRunCoreHeader assemblyHeader = _r2r.ReadyToRunAssemblyHeaders[assemblyIndex];
                         foreach (ReadyToRunSection section in NormalizedSections(assemblyHeader))
                         {
@@ -513,12 +506,10 @@ namespace R2RDump
                     _writer.WriteLine("Composite executable: {0}", ownerCompositeExecutable.ToEscapedString());
                     break;
                 case ReadyToRunSectionType.ManifestAssemblyMvids:
-                    int mvidOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
-                    int mvidCount = section.Size / GuidByteSize;
+                    int mvidCount = section.Size / ReadyToRunReader.GuidByteSize;
                     for (int mvidIndex = 0; mvidIndex < mvidCount; mvidIndex++)
                     {
-                        Guid mvid = new Guid(new Span<byte>(_r2r.Image, mvidOffset + GuidByteSize * mvidIndex, GuidByteSize));
-                        _writer.WriteLine("MVID[{0}] = {1:b}", mvidIndex, mvid);
+                        _writer.WriteLine("MVID[{0}] = {1:b}", mvidIndex, _r2r.GetAssemblyMvid(mvidIndex));
                     }
                     break;
                 default:

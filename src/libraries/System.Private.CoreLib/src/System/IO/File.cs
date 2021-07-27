@@ -10,6 +10,7 @@ using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 #if MS_IO_REDIST
 using System;
@@ -373,19 +374,13 @@ namespace System.IO
             if (bytes == null)
                 throw new ArgumentNullException(nameof(bytes));
 
-            InternalWriteAllBytes(path, bytes);
-        }
-
-        private static void InternalWriteAllBytes(string path, byte[] bytes)
-        {
-            Debug.Assert(path != null);
-            Debug.Assert(path.Length != 0);
-            Debug.Assert(bytes != null);
-
-            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
-            {
-                fs.Write(bytes, 0, bytes.Length);
-            }
+#if MS_IO_REDIST
+            using FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
+            fs.Write(bytes, 0, bytes.Length);
+#else
+            using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read);
+            RandomAccess.WriteAtOffset(sfh, bytes, 0);
+#endif
         }
         public static string[] ReadAllLines(string path)
         {
@@ -801,8 +796,11 @@ namespace System.IO
 
                         byte[] tmp = ArrayPool<byte>.Shared.Rent((int)newLength);
                         Buffer.BlockCopy(rentedArray, 0, tmp, 0, bytesRead);
-                        ArrayPool<byte>.Shared.Return(rentedArray);
+
+                        byte[] toReturn = rentedArray;
                         rentedArray = tmp;
+
+                        ArrayPool<byte>.Shared.Return(toReturn);
                     }
 
                     Debug.Assert(bytesRead < rentedArray.Length);
@@ -836,22 +834,17 @@ namespace System.IO
 
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
-                : InternalWriteAllBytesAsync(path, bytes, cancellationToken);
-        }
+                : Core(path, bytes, cancellationToken);
 
-        private static async Task InternalWriteAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken)
-        {
-            Debug.Assert(!string.IsNullOrEmpty(path));
-            Debug.Assert(bytes != null);
-
-            using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan))
+            static async Task Core(string path, byte[] bytes, CancellationToken cancellationToken)
             {
 #if MS_IO_REDIST
+                using FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, 1, FileOptions.Asynchronous | FileOptions.SequentialScan);
                 await fs.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
 #else
-                await fs.WriteAsync(new ReadOnlyMemory<byte>(bytes), cancellationToken).ConfigureAwait(false);
+                using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous | FileOptions.SequentialScan);
+                await RandomAccess.WriteAtOffsetAsync(sfh, bytes, 0, cancellationToken).ConfigureAwait(false);
 #endif
-                await fs.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -931,6 +924,7 @@ namespace System.IO
 
         private static async Task InternalWriteAllTextAsync(StreamWriter sw, string contents, CancellationToken cancellationToken)
         {
+#if MS_IO_REDIST
             char[]? buffer = null;
             try
             {
@@ -941,11 +935,7 @@ namespace System.IO
                 {
                     int batchSize = Math.Min(DefaultBufferSize, count - index);
                     contents.CopyTo(index, buffer, 0, batchSize);
-#if MS_IO_REDIST
                     await sw.WriteAsync(buffer, 0, batchSize).ConfigureAwait(false);
-#else
-                    await sw.WriteAsync(new ReadOnlyMemory<char>(buffer, 0, batchSize), cancellationToken).ConfigureAwait(false);
-#endif
                     index += batchSize;
                 }
 
@@ -960,6 +950,13 @@ namespace System.IO
                     ArrayPool<char>.Shared.Return(buffer);
                 }
             }
+#else
+            using (sw)
+            {
+                await sw.WriteAsync(contents.AsMemory(), cancellationToken).ConfigureAwait(false);
+                await sw.FlushAsync().ConfigureAwait(false);
+            }
+#endif
         }
 
         public static Task AppendAllTextAsync(string path, string? contents, CancellationToken cancellationToken = default(CancellationToken))
@@ -1006,6 +1003,46 @@ namespace System.IO
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
                 : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: true), contents, cancellationToken);
+        }
+
+        /// <summary>
+        /// Creates a file symbolic link identified by <paramref name="path"/> that points to <paramref name="pathToTarget"/>.
+        /// </summary>
+        /// <param name="path">The path where the symbolic link should be created.</param>
+        /// <param name="pathToTarget">The path of the target to which the symbolic link points.</param>
+        /// <returns>A <see cref="FileInfo"/> instance that wraps the newly created file symbolic link.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> or <paramref name="pathToTarget"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="path"/> or <paramref name="pathToTarget"/> is empty.
+        /// -or-
+        /// <paramref name="path"/> or <paramref name="pathToTarget"/> contains a null character.</exception>
+        /// <exception cref="IOException">A file or directory already exists in the location of <paramref name="path"/>.
+        /// -or-
+        /// An I/O error occurred.</exception>
+        public static FileSystemInfo CreateSymbolicLink(string path, string pathToTarget)
+        {
+            string fullPath = Path.GetFullPath(path);
+            FileSystem.VerifyValidPath(pathToTarget, nameof(pathToTarget));
+
+            FileSystem.CreateSymbolicLink(path, pathToTarget, isDirectory: false);
+            return new FileInfo(originalPath: path, fullPath: fullPath, isNormalized: true);
+        }
+
+        /// <summary>
+        /// Gets the target of the specified file link.
+        /// </summary>
+        /// <param name="linkPath">The path of the file link.</param>
+        /// <param name="returnFinalTarget"><see langword="true"/> to follow links to the final target; <see langword="false"/> to return the immediate next link.</param>
+        /// <returns>A <see cref="FileInfo"/> instance if <paramref name="linkPath"/> exists, independently if the target exists or not. <see langword="null"/> if <paramref name="linkPath"/> is not a link.</returns>
+        /// <exception cref="IOException">The file on <paramref name="linkPath"/> does not exist.
+        /// -or-
+        /// The link's file system entry type is inconsistent with that of its target.
+        /// -or-
+        /// Too many levels of symbolic links.</exception>
+        /// <remarks>When <paramref name="returnFinalTarget"/> is <see langword="true"/>, the maximum number of symbolic links that are followed are 40 on Unix and 63 on Windows.</remarks>
+        public static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget)
+        {
+            FileSystem.VerifyValidPath(linkPath, nameof(linkPath));
+            return FileSystem.ResolveLinkTarget(linkPath, returnFinalTarget, isDirectory: false);
         }
     }
 }

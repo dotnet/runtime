@@ -1686,6 +1686,13 @@ namespace System.Diagnostics
             }
         }
 
+        private static Win32Exception CreateExceptionForErrorStartingProcess(string errorMessage, int errorCode, string fileName, string? workingDirectory)
+        {
+            string directoryForException = string.IsNullOrEmpty(workingDirectory) ? Directory.GetCurrentDirectory() : workingDirectory;
+            string msg = SR.Format(SR.ErrorStartingProcess, fileName, directoryForException, errorMessage);
+            return new Win32Exception(errorCode, msg);
+        }
+
         /// <summary>
         /// This enum defines the operation mode for redirected process stream.
         /// We don't support switching between synchronous mode and asynchronous mode.

@@ -33,6 +33,7 @@ typedef struct _MonoDebugMethodInfo		MonoDebugMethodInfo;
 typedef struct _MonoDebugLocalsInfo		MonoDebugLocalsInfo;
 typedef struct _MonoDebugMethodAsyncInfo	MonoDebugMethodAsyncInfo;
 typedef struct _MonoDebugSourceLocation		MonoDebugSourceLocation;
+typedef struct _MonoDebugInformationEnc		MonoDebugInformationEnc;
 
 typedef struct _MonoDebugList			MonoDebugList;
 
@@ -108,6 +109,12 @@ struct _MonoDebugSourceLocation {
 	char *source_file;
 	uint32_t row, column;
 	uint32_t il_offset;
+};
+
+
+struct _MonoDebugInformationEnc {
+	MonoImage *image;
+	int idx;
 };
 
 MONO_API mono_bool mono_debug_enabled (void);
@@ -191,7 +198,7 @@ mono_debug_add_delegate_trampoline (void* code, int size);
 MONO_API MonoDebugLocalsInfo*
 mono_debug_lookup_locals (MonoMethod *method, mono_bool ignore_pdb);
 
-MonoDebugMethodAsyncInfo*
+MONO_API MonoDebugMethodAsyncInfo*
 mono_debug_lookup_method_async_debug_info (MonoMethod *method);
 
 MONO_API

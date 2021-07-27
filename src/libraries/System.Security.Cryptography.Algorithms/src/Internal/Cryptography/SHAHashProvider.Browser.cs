@@ -4,8 +4,8 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-using System.Numerics;
 using System.Security.Cryptography;
+using static System.Numerics.BitOperations;
 
 namespace Internal.Cryptography
 {
@@ -340,11 +340,6 @@ namespace Internal.Cryptography
                 state[5] += f;
                 state[6] += g;
                 state[7] += h;
-            }
-
-            private static uint RotateRight(uint x, int n)
-            {
-                return (((x) >> (n)) | ((x) << (32 - (n))));
             }
 
             private static uint Ch(uint x, uint y, uint z)
@@ -915,11 +910,6 @@ namespace Internal.Cryptography
                 state[5] += f;
                 state[6] += g;
                 state[7] += h;
-            }
-
-            private static ulong RotateRight(ulong x, int n)
-            {
-                return (((x) >> (n)) | ((x) << (64 - (n))));
             }
 
             private static ulong Ch(ulong x, ulong y, ulong z)

@@ -324,7 +324,6 @@ namespace System.Runtime.CompilerServices
             }
 
             PortableTailCallFrame newFrame;
-            newFrame.Prev = prevFrame;
             // GC uses NextCall to keep LoaderAllocator alive after we link it below,
             // so we must null it out before that.
             newFrame.NextCall = null;
@@ -350,12 +349,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern long GetILBytesJitted();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetMethodsJittedCount();
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
@@ -497,7 +490,6 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct PortableTailCallFrame
     {
-        public PortableTailCallFrame* Prev;
         public IntPtr TailCallAwareReturnAddress;
         public delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> NextCall;
     }

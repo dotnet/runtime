@@ -116,7 +116,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_STOREIND:
-            LowerStoreIndirCommon(node->AsIndir());
+            LowerStoreIndirCommon(node->AsStoreInd());
             break;
 
         case GT_ADD:
@@ -1507,6 +1507,11 @@ GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
 #ifdef TARGET_ARM
     if (floatType == TYP_DOUBLE)
     {
+        // A special case when we introduce TYP_LONG
+        // during lowering for arm32 softFP to pass double
+        // in int registers.
+        assert(comp->opts.compUseSoftFP);
+
         regNumber nextReg                  = REG_NEXT(regNum);
         intArg->AsMultiRegOp()->gtOtherReg = nextReg;
     }
@@ -3160,7 +3165,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 #endif // !WINDOWS_AMD64_ABI
             convertToStoreObj = false;
         }
-        else if (!varDsc->IsEnregisterable())
+        else if (!varDsc->IsEnregisterableType())
         {
             convertToStoreObj = true;
         }
@@ -3418,11 +3423,10 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
         lclNum = fieldLclNum;
         varDsc = comp->lvaGetDesc(lclNum);
     }
-    else if (!varDsc->lvRegStruct && !varTypeIsEnregisterable(varDsc))
-
+    else if (varDsc->lvPromoted)
     {
-        // TODO-1stClassStructs: We can no longer promote or enregister this struct,
-        // since it is referenced as a whole.
+        // TODO-1stClassStructs: We can no longer independently promote
+        // or enregister this struct, since it is referenced as a whole.
         comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_BlockOp));
     }
 
@@ -3434,9 +3438,10 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
     }
     else
     {
-        var_types lclVarType = varDsc->GetRegisterType(lclVar);
+        const var_types lclVarType = varDsc->GetRegisterType(lclVar);
         assert(lclVarType != TYP_UNDEF);
-        lclVar->ChangeType(lclVarType);
+        const var_types actualType = genActualType(lclVarType);
+        lclVar->ChangeType(actualType);
 
         if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(lclVarType))
         {
@@ -3558,7 +3563,7 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
     {
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
-        LowerStoreIndirCommon(store);
+        LowerStoreIndirCommon(store->AsStoreInd());
         return;
     }
     else
@@ -4039,12 +4044,12 @@ void Lowering::InsertPInvokeMethodProlog()
     GenTree* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL, argList);
 
     // some sanity checks on the frame list root vardsc
-    LclVarDsc* varDsc = &comp->lvaTable[comp->info.compLvFrameListRoot];
+    const unsigned   lclNum = comp->info.compLvFrameListRoot;
+    const LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
     noway_assert(!varDsc->lvIsParam);
     noway_assert(varDsc->lvType == TYP_I_IMPL);
 
-    GenTree* store =
-        new (comp, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, TYP_I_IMPL, comp->info.compLvFrameListRoot);
+    GenTree* store       = new (comp, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, TYP_I_IMPL, lclNum);
     store->AsOp()->gtOp1 = call;
     store->gtFlags |= GTF_VAR_DEF;
 
@@ -4065,6 +4070,7 @@ void Lowering::InsertPInvokeMethodProlog()
         GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfCallSiteSP);
     storeSP->gtOp1 = PhysReg(REG_SPBASE);
     storeSP->gtFlags |= GTF_VAR_DEF;
+    comp->lvaSetVarDoNotEnregister(comp->lvaInlinedPInvokeFrameVar DEBUGARG(Compiler::DNER_LocalField));
 
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeSP));
     DISPTREERANGE(firstBlockRange, storeSP);
@@ -4099,7 +4105,7 @@ void Lowering::InsertPInvokeMethodProlog()
         // The init routine sets InlinedCallFrame's m_pNext, so we just set the thead's top-of-stack
         GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
         firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
+        ContainCheckStoreIndir(frameUpd->AsStoreInd());
         DISPTREERANGE(firstBlockRange, frameUpd);
     }
 #endif // TARGET_64BIT
@@ -4162,7 +4168,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
     {
         GenTree* frameUpd = CreateFrameLinkUpdate(PopFrame);
         returnBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
+        ContainCheckStoreIndir(frameUpd->AsStoreInd());
     }
 }
 
@@ -4324,7 +4330,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         // Stubs do this once per stub, not once per call.
         GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
         BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, frameUpd));
-        ContainCheckStoreIndir(frameUpd->AsIndir());
+        ContainCheckStoreIndir(frameUpd->AsStoreInd());
     }
 #endif // TARGET_64BIT
 
@@ -4334,7 +4340,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     //  [tcb + offsetOfGcState] = 0
     GenTree* storeGCState = SetGCState(0);
     BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, storeGCState));
-    ContainCheckStoreIndir(storeGCState->AsIndir());
+    ContainCheckStoreIndir(storeGCState->AsStoreInd());
 
     // Indicate that codegen has switched this thread to preemptive GC.
     // This tree node doesn't generate any code, but impacts LSRA and gc reporting.
@@ -4380,7 +4386,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 
     GenTree* tree = SetGCState(1);
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
-    ContainCheckStoreIndir(tree->AsIndir());
+    ContainCheckStoreIndir(tree->AsStoreInd());
 
     tree = CreateReturnTrapSeq();
     BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
@@ -4395,7 +4401,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     {
         tree = CreateFrameLinkUpdate(PopFrame);
         BlockRange().InsertBefore(insertionPoint, LIR::SeqTree(comp, tree));
-        ContainCheckStoreIndir(tree->AsIndir());
+        ContainCheckStoreIndir(tree->AsStoreInd());
     }
 #else
     const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = comp->eeGetEEInfo()->inlinedCallFrameInfo;
@@ -5886,6 +5892,16 @@ PhaseStatus Lowering::DoPhase()
     }
 #endif // !defined(TARGET_64BIT)
 
+    if (!comp->compEnregLocals())
+    {
+        // Lowering is checking if lvDoNotEnregister is already set for contained optimizations.
+        // If we are running without `CLFLG_REGVAR` flag set (`compEnregLocals() == false`)
+        // then we already know that we won't enregister any locals and it is better to set
+        // `lvDoNotEnregister` flag before we start reading it.
+        // The main reason why this flag is not set is that we are running in minOpts.
+        comp->lvSetMinOptsDoNotEnreg();
+    }
+
     for (BasicBlock* const block : comp->Blocks())
     {
         /* Make the block publicly available */
@@ -6410,7 +6426,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             ContainCheckReturnTrap(node->AsOp());
             break;
         case GT_STOREIND:
-            ContainCheckStoreIndir(node->AsIndir());
+            ContainCheckStoreIndir(node->AsStoreInd());
             break;
         case GT_IND:
             ContainCheckIndir(node->AsIndir());
@@ -6524,7 +6540,7 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
             assert(varDsc->lvIsMultiRegRet || (varDsc->lvIsHfa() && varTypeIsValidHfaType(varDsc->lvType)));
 
             // Mark var as contained if not enregisterable.
-            if (!varTypeIsEnregisterable(op1))
+            if (!varDsc->IsEnregisterableLcl())
             {
                 if (!op1->IsMultiRegLclVar())
                 {
@@ -6593,9 +6609,8 @@ void Lowering::ContainCheckBitCast(GenTree* node)
 // Arguments:
 //    ind - the store indirection node we are lowering.
 //
-void Lowering::LowerStoreIndirCommon(GenTreeIndir* ind)
+void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
-    assert(ind->OperIs(GT_STOREIND));
     assert(ind->TypeGet() != TYP_STRUCT);
     TryCreateAddrMode(ind->Addr(), true);
     if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
@@ -6720,7 +6735,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
-    if (comp->opts.OptimizationEnabled())
+    if (!comp->opts.OptimizationEnabled())
     {
         return false;
     }
@@ -6741,7 +6756,9 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     {
         return false;
     }
-    if (varTypeIsSIMD(regType))
+
+    GenTree* src = blkNode->Data();
+    if (varTypeIsSIMD(regType) && src->IsConstInitVal())
     {
         // TODO-CQ: support STORE_IND SIMD16(SIMD16, CNT_INT 0).
         return false;
@@ -6754,13 +6771,12 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
-    GenTree* src = blkNode->Data();
     if (src->OperIsInitVal() && !src->IsConstInitVal())
     {
         return false;
     }
 
-    if (varTypeIsSmall(regType) && !src->IsConstInitVal())
+    if (varTypeIsSmall(regType) && !src->IsConstInitVal() && !src->IsLocal())
     {
         // source operand INDIR will use a widening instruction
         // and generate worse code, like `movzx` instead of `mov`
@@ -6795,6 +6811,6 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     {
         assert(src->TypeIs(regType) || src->IsCnsIntOrI() || src->IsCall());
     }
-    LowerStoreIndirCommon(blkNode);
+    LowerStoreIndirCommon(blkNode->AsStoreInd());
     return true;
 }

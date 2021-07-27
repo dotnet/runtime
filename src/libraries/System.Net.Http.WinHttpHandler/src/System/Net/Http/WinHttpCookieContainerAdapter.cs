@@ -15,17 +15,21 @@ namespace System.Net.Http
 
         public static void AddResponseCookiesToContainer(WinHttpRequestState state)
         {
-            HttpRequestMessage request = state.RequestMessage;
-            SafeWinHttpHandle requestHandle = state.RequestHandle;
-            CookieContainer cookieContainer = state.Handler.CookieContainer;
+            HttpRequestMessage? request = state.RequestMessage;
+            SafeWinHttpHandle? requestHandle = state.RequestHandle;
+            Debug.Assert(state.Handler != null);
+            CookieContainer? cookieContainer = state.Handler.CookieContainer;
 
             Debug.Assert(state.Handler.CookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer);
+            Debug.Assert(request != null);
+            Debug.Assert(requestHandle != null);
             Debug.Assert(cookieContainer != null);
+            Debug.Assert(request.RequestUri != null);
 
             // Get 'Set-Cookie' headers from response.
-            char[] buffer = null;
+            char[]? buffer = null;
             uint index = 0;
-            string cookieHeader;
+            string? cookieHeader;
             while (WinHttpResponseParser.GetResponseHeader(
                 requestHandle, Interop.WinHttp.WINHTTP_QUERY_SET_COOKIE, ref buffer, ref index, out cookieHeader))
             {
@@ -44,9 +48,12 @@ namespace System.Net.Http
 
         public static void ResetCookieRequestHeaders(WinHttpRequestState state, Uri redirectUri)
         {
-            SafeWinHttpHandle requestHandle = state.RequestHandle;
+            SafeWinHttpHandle? requestHandle = state.RequestHandle;
 
+            Debug.Assert(state.Handler != null);
             Debug.Assert(state.Handler.CookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer);
+            Debug.Assert(state.Handler.CookieContainer != null);
+            Debug.Assert(requestHandle != null);
 
             // Clear cookies.
             if (!Interop.WinHttp.WinHttpAddRequestHeaders(
@@ -64,7 +71,7 @@ namespace System.Net.Http
 
             // Re-add cookies. The GetCookieHeader() method will return the correct set of
             // cookies based on the redirectUri.
-            string cookieHeader = GetCookieHeader(redirectUri, state.Handler.CookieContainer);
+            string? cookieHeader = GetCookieHeader(redirectUri, state.Handler.CookieContainer);
             if (!string.IsNullOrEmpty(cookieHeader))
             {
                 if (!Interop.WinHttp.WinHttpAddRequestHeaders(
@@ -78,9 +85,9 @@ namespace System.Net.Http
             }
         }
 
-        public static string GetCookieHeader(Uri uri, CookieContainer cookies)
+        public static string? GetCookieHeader(Uri uri, CookieContainer cookies)
         {
-            string cookieHeader = null;
+            string? cookieHeader = null;
 
             Debug.Assert(cookies != null);
 

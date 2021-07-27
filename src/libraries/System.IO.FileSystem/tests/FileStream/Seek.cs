@@ -32,6 +32,9 @@ namespace System.IO.Tests
                 Assert.Equal(length, fs.Position);
                 Assert.Throws<IOException>(() => fs.Seek(-length, SeekOrigin.End));
                 Assert.Equal(length, fs.Position);
+
+                fs.Write(TestBuffer);
+                Assert.Equal(length, fs.Seek(length, SeekOrigin.Begin));
             }
         }
     }

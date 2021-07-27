@@ -80,6 +80,10 @@ namespace System.Security.Cryptography.Csp.Tests
                 // CryptoServiceProviders will not get one-shot APIs as they are being deprecated
                 "TryEncryptEcbCore",
                 "TryDecryptEcbCore",
+                "TryEncryptCbcCore",
+                "TryDecryptCbcCore",
+                "TryEncryptCfbCore",
+                "TryDecryptCfbCore",
             };
 
             IEnumerable<MethodInfo> baseMethods = shimType.

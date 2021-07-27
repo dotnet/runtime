@@ -9,30 +9,27 @@ namespace System.Reflection
     public readonly partial struct CustomAttributeTypedArgument
     {
         public static bool operator ==(CustomAttributeTypedArgument left, CustomAttributeTypedArgument right) => left.Equals(right);
-
         public static bool operator !=(CustomAttributeTypedArgument left, CustomAttributeTypedArgument right) => !left.Equals(right);
 
-        private readonly object? m_value;
-        private readonly Type m_argumentType;
+        private readonly object? _value;
+        private readonly Type _argumentType;
 
         public CustomAttributeTypedArgument(Type argumentType, object? value)
         {
-            // value can be null.
-            if (argumentType == null)
+            if (argumentType is null)
                 throw new ArgumentNullException(nameof(argumentType));
 
-            m_value = (value is null) ? null : CanonicalizeValue(value);
-            m_argumentType = argumentType;
+            _value = CanonicalizeValue(value);
+            _argumentType = argumentType;
         }
 
         public CustomAttributeTypedArgument(object value)
         {
-            // value cannot be null.
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
-            m_value = CanonicalizeValue(value);
-            m_argumentType = value.GetType();
+            _value = CanonicalizeValue(value);
+            _argumentType = value.GetType();
         }
 
 
@@ -40,13 +37,13 @@ namespace System.Reflection
 
         internal string ToString(bool typed)
         {
-            if (m_argumentType == null)
+            if (_argumentType is null)
                 return base.ToString()!;
 
             if (ArgumentType.IsEnum)
                 return typed ? $"{Value}" : $"({ArgumentType.FullName}){Value}";
 
-            if (Value == null)
+            if (Value is null)
                 return typed ? "null" : $"({ArgumentType.Name})null";
 
             if (ArgumentType == typeof(string))
@@ -67,10 +64,11 @@ namespace System.Reflection
                 result.Append("new ");
                 result.Append(elementType.IsEnum ? elementType.FullName : elementType.Name);
                 result.Append('[');
-                result.Append(array.Count.ToString());
+                int count = array.Count;
+                result.Append(count.ToString());
                 result.Append(']');
 
-                for (int i = 0; i < array.Count; i++)
+                for (int i = 0; i < count; i++)
                 {
                     if (i != 0)
                     {
@@ -90,7 +88,9 @@ namespace System.Reflection
         public override int GetHashCode() => base.GetHashCode();
         public override bool Equals(object? obj) => obj == (object)this;
 
-        public Type ArgumentType => m_argumentType;
-        public object? Value => m_value;
+        public Type ArgumentType => _argumentType;
+        public object? Value => _value;
+
+        private static object? CanonicalizeValue(object? value) => (value is Enum e) ? e.GetValue() : value;
     }
 }

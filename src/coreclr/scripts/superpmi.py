@@ -308,9 +308,11 @@ asm_diff_parser.add_argument("-base_git_hash", help="Use this git hash as the ba
 asm_diff_parser.add_argument("--diff_jit_dump", action="store_true", help="Generate JitDump output for diffs. Default: only generate asm, not JitDump.")
 asm_diff_parser.add_argument("-temp_dir", help="Specify a temporary directory used for a previous ASM diffs run (for which --skip_cleanup was used) to view the results. The replay command is skipped.")
 asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC info in disassembly (sets COMPlus_JitGCDump/COMPlus_NgenGCDump; requires instructions to be prefixed by offsets).")
+asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets COMPlus_JitDebugDump/COMPlus_NgenDebugDump).")
 asm_diff_parser.add_argument("-base_jit_option", action="append", help="Option to pass to the baseline JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 asm_diff_parser.add_argument("-diff_jit_option", action="append", help="Option to pass to the diff JIT. Format is key=value, where key is the option name without leading COMPlus_...")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
+asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -1717,6 +1719,11 @@ class SuperPMIReplayAsmDiffs:
                 "COMPlus_JitGCDump": "*",
                 "COMPlus_NgenGCDump": "*" })
 
+        if self.coreclr_args.debuginfo:
+            asm_complus_vars.update({
+                "COMPlus_JitDebugDump": "*",
+                "COMPlus_NgenDebugDump": "*" })
+
         jit_dump_complus_vars = asm_complus_vars.copy()
         jit_dump_complus_vars.update({
             "COMPlus_JitDump": "*",
@@ -1970,6 +1977,8 @@ class SuperPMIReplayAsmDiffs:
                                 summary_file_info = ( mch_file, md_summary_file )
                                 all_md_summary_files.append(summary_file_info)
                                 command = [ jit_analyze_path, "--md", md_summary_file, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
+                                if self.coreclr_args.metrics:
+                                    command += [ "--metrics", ",".join(self.coreclr_args.metrics) ]
                                 run_and_log(command, logging.INFO)
                                 ran_jit_analyze = True
 
@@ -3633,6 +3642,11 @@ def setup_args(args):
                             "Unable to set gcinfo.")
 
         coreclr_args.verify(args,
+                            "debuginfo",
+                            lambda unused: True,
+                            "Unable to set debuginfo.")
+
+        coreclr_args.verify(args,
                             "diff_jit_dump",
                             lambda unused: True,
                             "Unable to set diff_jit_dump.")
@@ -3652,6 +3666,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set tag.",
                             modify_arg=lambda arg: make_safe_filename(arg) if arg is not None else arg)
+
+        coreclr_args.verify(args,
+                            "metrics",
+                            lambda unused: True,
+                            "Unable to set metrics.")
 
         process_base_jit_path_arg(coreclr_args)
 

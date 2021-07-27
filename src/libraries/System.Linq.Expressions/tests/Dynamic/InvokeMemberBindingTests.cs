@@ -54,6 +54,7 @@ namespace System.Dynamic.Tests
             yield return new[] {new object()};
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55070", typeof(PlatformDetection), nameof(PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly))]
         [Theory, MemberData(nameof(ObjectArguments))]
         public void InvokeVirtualMethod(object value)
         {
@@ -411,6 +412,7 @@ namespace System.Dynamic.Tests
             public OutAction OutDelegate;
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55071", typeof(PlatformDetection), nameof(PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly))]
         [Fact]
         public void InvokeFuncMember()
         {

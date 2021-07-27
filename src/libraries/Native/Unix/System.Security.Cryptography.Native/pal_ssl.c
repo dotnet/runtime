@@ -5,7 +5,6 @@
 #include "openssl.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_rsa.h"
-#include "pal_rsa.h"
 #include "pal_x509.h"
 
 #include <assert.h>
@@ -368,8 +367,36 @@ int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num)
     return SSL_read(ssl, buf, num);
 }
 
+static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
+{
+    (void)preverify_ok;
+    (void)store;
+    // We don't care. Real verification happens in managed code.
+    return 1;
+}
+
+int32_t CryptoNative_SslRenegotiate(SSL* ssl)
+{
+    // The openssl context is destroyed so we can't use ticket or session resumption.
+    SSL_set_options(ssl, SSL_OP_NO_TICKET | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
+
+    int pending = SSL_renegotiate_pending(ssl);
+    if (!pending)
+    {
+        SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
+        int ret = SSL_renegotiate(ssl);
+        if(ret != 1)
+            return ret;
+
+        return SSL_do_handshake(ssl);
+    }
+
+    return 0;
+}
+
 int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl)
 {
+    SSL_peek(ssl, NULL, 0);
     return SSL_renegotiate_pending(ssl) != 0;
 }
 
@@ -661,7 +688,7 @@ static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
 
     if (rsa != NULL)
     {
-        if (CryptoNative_EvpPkeySetRsa(evp, rsa) == 1)
+        if (EVP_PKEY_set1_RSA(evp, rsa) == 1)
         {
             rsa = NULL;
         }
