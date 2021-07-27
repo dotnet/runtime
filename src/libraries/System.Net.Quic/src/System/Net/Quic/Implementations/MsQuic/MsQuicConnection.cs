@@ -227,6 +227,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 state.Connected = true;
                 state.ConnectTcs!.SetResult(MsQuicStatusCodes.Success);
+                state.ConnectTcs = null;
             }
 
             return MsQuicStatusCodes.Success;
@@ -234,7 +235,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static uint HandleEventShutdownInitiatedByTransport(State state, ref ConnectionEvent connectionEvent)
         {
-            if (!state.Connected && state.ConnectTcs != null && !state.ConnectTcs.Task.IsCompleted)
+            if (!state.Connected && state.ConnectTcs != null)
             {
                 Debug.Assert(state.Connection != null);
                 state.Connection = null;
@@ -242,6 +243,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 uint hresult = connectionEvent.Data.ShutdownInitiatedByTransport.Status;
                 Exception ex = QuicExceptionHelpers.CreateExceptionForHResult(hresult, "Connection has been shutdown by transport.");
                 state.ConnectTcs!.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
+                state.ConnectTcs = null;
             }
 
             state.AcceptQueue.Writer.TryComplete();
@@ -575,7 +577,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new Exception($"Unsupported remote endpoint type '{_remoteEndPoint.GetType()}'.");
             }
 
-            _state.ConnectTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = _state.ConnectTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             try
             {
@@ -599,7 +601,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
-            return new ValueTask(_state.ConnectTcs.Task);
+            return new ValueTask(tcs.Task);
         }
 
         private ValueTask ShutdownAsync(
@@ -680,11 +682,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                     NetEventSource.Error(state, $"{state.TraceId} Exception occurred during handling {connectionEvent.Type} connection callback: {ex}");
                 }
 
-                if (state.ConnectTcs != null && !state.ConnectTcs.Task.IsCompleted)
+                if (state.ConnectTcs != null)
                 {
                     // This is opportunistic if we get exception and have ability to propagate it to caller.
                     state.ConnectTcs.TrySetException(ex);
                     state.Connection = null;
+                    state.ConnectTcs = null;
                 }
                 else
                 {
