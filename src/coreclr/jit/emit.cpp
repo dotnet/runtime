@@ -3932,56 +3932,42 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
 
     if (flag == GTF_ICON_STR_HDL)
     {
-        if (emitComp->opts.disDiffable && (handle == 0xD1FFAB1E))
+        const WCHAR* wstr = emitComp->opts.disDiffable ? nullptr :emitComp->eeGetCPString(handle);
+        // NOTE: eGetCPString always returns nullptr on Linux/ARM
+        if (wstr == nullptr)
         {
             str = "string handle";
         }
         else
         {
-            const WCHAR* wstr = emitComp->eeGetCPString(handle);
-            // NOTE: eGetCPString always returns nullptr on Linux/ARM
-            if (wstr == nullptr)
-            {
-                str = "string handle";
-            }
-            else
-            {
-                const size_t actualLen = wcslen(wstr);
-                const size_t maxLength = 63;
-                const size_t newLen = min(maxLength, actualLen);
+            const size_t actualLen = wcslen(wstr);
+            const size_t maxLength = 63;
+            const size_t newLen = min(maxLength, actualLen);
 
-                // +1 for null terminator
-                WCHAR buf[maxLength + 1] = { 0 };
-                wcsncpy(buf, wstr, newLen);
-                for (size_t i = 0; i < newLen; i++)
+            // +1 for null terminator
+            WCHAR buf[maxLength + 1] = { 0 };
+            wcsncpy(buf, wstr, newLen);
+            for (size_t i = 0; i < newLen; i++)
+            {
+                // Escape \n and \r symbols
+                if (buf[i] == L'\n' || buf[i] == L'\r')
                 {
-                    // Escape \n and \r symbols
-                    if (buf[i] == L'\n' || buf[i] == L'\r')
-                    {
-                        buf[i] = L' ';
-                    }
+                    buf[i] = L' ';
                 }
-                if (actualLen > maxLength)
-                {
-                    // Append "..." for long strings
-                    buf[maxLength - 3] = L'.';
-                    buf[maxLength - 2] = L'.';
-                    buf[maxLength - 1] = L'.';
-                }
-                printf("%s \"%S\"", commentPrefix, buf);
             }
+            if (actualLen > maxLength)
+            {
+                // Append "..." for long strings
+                buf[maxLength - 3] = L'.';
+                buf[maxLength - 2] = L'.';
+                buf[maxLength - 1] = L'.';
+            }
+            printf("%s \"%S\"", commentPrefix, buf);
         }
     }
     else if (flag == GTF_ICON_CLASS_HDL)
     {
-        if (emitComp->opts.disDiffable && (handle == 0xD1FFAB1E))
-        {
-            str = "class handle";
-        }
-        else
-        {
-            str = emitComp->eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(handle));
-        }
+        str = emitComp->opts.disDiffable ? "class handle" : emitComp->eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(handle));
     }
 #ifndef TARGET_XARCH
     // These are less useful for xarch:
@@ -3995,14 +3981,7 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
     }
     else if (flag == GTF_ICON_FIELD_HDL)
     {
-        if (emitComp->opts.disDiffable && (handle == 0xD1FFAB1E))
-        {
-            str = "class handle";
-        }
-        else
-        {
-            str = emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(handle));
-        }
+        str = emitComp->opts.disDiffable ? "field handle" : emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(handle));
     }
     else if (flag == GTF_ICON_STATIC_HDL)
     {
@@ -4010,14 +3989,7 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
     }
     else if (flag == GTF_ICON_METHOD_HDL)
     {
-        if (emitComp->opts.disDiffable && (handle == 0xD1FFAB1E))
-        {
-            str = "method handle";
-        }
-        else
-        {
-            str = emitComp->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(handle));
-        }
+        str = emitComp->opts.disDiffable ? "method handle" : emitComp->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(handle));
     }
     else if (flag == GTF_ICON_FTN_ADDR)
     {
