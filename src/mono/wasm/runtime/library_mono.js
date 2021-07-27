@@ -820,7 +820,6 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_runtime_ready: function () {
-			globalMONO.MONO = MONO; // TODO find a better way to do MONO. It is needed since we use Runtime.evaluate and call MONO
 			MONO.mono_wasm_runtime_is_ready = true;
 			MONO._clear_per_step_state ();
 
@@ -833,7 +832,7 @@ var MonoSupportLib = {
 			MONO._register_c_fn     ('mono_wasm_send_dbg_command_with_parms', 				'bool', [ 'number', 'number', 'number', 'number', 'number', 'number', 'string' ]);
 
 			// DO NOT REMOVE - magic debugger init function
-			if (globalMONO.dotnetDebugger)
+			if (globalThis.dotnetDebugger)
 				debugger;
 			else
 				console.debug ("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
@@ -1090,6 +1089,7 @@ var MonoSupportLib = {
 		//      "auto" (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
 		//    diagnostic_tracing: (optional) enables diagnostic log messages during startup
 		mono_load_runtime_and_bcl_args: function (args) {
+			globalThis.MONO = MONO;
 			try {
 				return MONO._load_assets_and_runtime (args);
 			} catch (exc) {
@@ -1462,8 +1462,8 @@ var MonoSupportLib = {
 	},
 	schedule_background_exec: function () {
 		++MONO.pump_count;
-		if (typeof globalMONO.setTimeout === 'function') {
-			globalMONO.setTimeout (MONO.pump_message, 0);
+		if (typeof globalThis.setTimeout === 'function') {
+			globalThis.setTimeout (MONO.pump_message, 0);
 		}
 	},
 
@@ -1471,8 +1471,8 @@ var MonoSupportLib = {
 		if (!MONO.mono_set_timeout_exec)
 			MONO.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
 
-		if (typeof globalMONO.setTimeout === 'function') {
-			globalMONO.setTimeout (function () {
+		if (typeof globalThis.setTimeout === 'function') {
+			globalThis.setTimeout (function () {
 				MONO.mono_set_timeout_exec (id);
 			}, timeout);
 		} else {
