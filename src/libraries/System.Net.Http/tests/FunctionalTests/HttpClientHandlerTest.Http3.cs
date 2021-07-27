@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Test.Common;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -629,6 +630,128 @@ namespace System.Net.Http.Functional.Tests
             {
                 await stream.SendDataFrameAsync(buf);
             }
+        }
+
+        [ConditionalFact(nameof(IsMsQuicSupported))]
+        public async Task Alpn_H3_Success()
+        {
+            // Mock doesn't use ALPN.
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
+            var options = new Http3Options() { Alpn = "h3" };
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
+
+            using var clientDone = new SemaphoreSlim(0);
+            using var serverDone = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+
+                SslApplicationProtocol negotiatedAlpn = ExtractMsQuicNegotiatedAlpn(connection);
+                Assert.Equal(new SslApplicationProtocol("h3"), negotiatedAlpn);
+
+                using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
+                await stream.HandleRequestAsync();
+
+                serverDone.Release();
+                await clientDone.WaitAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+                HttpResponseMessage response = await client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10));
+
+                response.EnsureSuccessStatusCode();
+                Assert.Equal(HttpVersion.Version30, response.Version);
+
+                clientDone.Release();
+                await serverDone.WaitAsync();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+        }
+
+        [ConditionalFact(nameof(IsMsQuicSupported))]
+        public async Task Alpn_NonH3_NegotiationFailure()
+        {
+            // Mock doesn't use ALPN.
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
+            var options = new Http3Options() { Alpn = "h3-29" }; // anything other than "h3"
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(options);
+
+            using var clientDone = new SemaphoreSlim(0);
+
+            Task serverTask = Task.Run(async () =>
+            {
+                // ALPN handshake handled by transport, app level will not get any notification
+                await clientDone.WaitAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using HttpClient client = CreateHttpClient();
+
+                using HttpRequestMessage request = new()
+                    {
+                        Method = HttpMethod.Get,
+                        RequestUri = server.Address,
+                        Version = HttpVersion30,
+                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                    };
+
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
+                Assert.Contains("ALPN_NEG_FAILURE", ex.Message);
+
+                clientDone.Release();
+            });
+
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
+        }
+
+        private SslApplicationProtocol ExtractMsQuicNegotiatedAlpn(Http3LoopbackConnection loopbackConnection)
+        {
+            // TODO: rewrite after object structure change
+            // current structure:
+            // Http3LoopbackConnection -> private QuicConnection _connection
+            // QuicConnection -> private QuicConnectionProvider _provider (= MsQuicConnection)
+            // MsQuicConnection -> private SslApplicationProtocol _negotiatedAlpnProtocol
+
+            FieldInfo quicConnectionField = loopbackConnection.GetType().GetField("_connection", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(quicConnectionField);
+            object quicConnection = quicConnectionField.GetValue(loopbackConnection);
+            Assert.NotNull(quicConnection);
+            Assert.Equal("QuicConnection", quicConnection.GetType().Name);
+
+            FieldInfo msQuicConnectionField = quicConnection.GetType().GetField("_provider", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(msQuicConnectionField);
+            object msQuicConnection = msQuicConnectionField.GetValue(quicConnection);
+            Assert.NotNull(msQuicConnection);
+            Assert.Equal("MsQuicConnection", msQuicConnection.GetType().Name);
+
+            FieldInfo alpnField = msQuicConnection.GetType().GetField("_negotiatedAlpnProtocol", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(alpnField);
+            object alpn = alpnField.GetValue(msQuicConnection);
+            Assert.NotNull(alpn);
+            Assert.IsType<SslApplicationProtocol>(alpn);
+
+            return (SslApplicationProtocol)alpn;
         }
 
         /// <summary>
