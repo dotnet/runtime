@@ -129,7 +129,8 @@ jobs:
       value: ''
 
     # 'innerloop' and 'clrinterpreter' jobs run the Priority 0 tests; everything else runs the Priority 1 tests.
-    - ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.testGroup, 'clrinterpreter')) }}:
+    # 'gc-standalone' is forced to run pri0 as well to start with. 
+    - ${{ if and(ne(parameters.testGroup, 'innerloop'), ne(parameters.testGroup, 'clrinterpreter'), ne(parameters.testGroup, 'gc-standalone')) }}:
       - ${{ if ne(parameters.osGroup, 'windows') }}:
         - name: priorityArg
           value: 'priority1'

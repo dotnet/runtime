@@ -133,6 +133,13 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        private static void CheckIsIpv6LoopbackEndPoint(EndPoint endPoint)
+        {
+            IPEndPoint ep = endPoint as IPEndPoint;
+            Assert.NotNull(ep);
+            Assert.True(ep.Address.Equals(IPAddress.IPv6Loopback) || ep.Address.Equals(IPAddress.Loopback.MapToIPv6()));
+        }
+
         [Fact]
         public void _STRESS_Connect_DualMode_DnsConnect_RetrievedEndPoints_Success(){
             System.Threading.Tasks.Parallel.For(0, 100, async _ => {
