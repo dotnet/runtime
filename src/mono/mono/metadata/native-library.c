@@ -698,9 +698,6 @@ netcore_resolve_with_resolving_event (MonoAssemblyLoadContext *alc, MonoAssembly
 	if (mono_runtime_get_no_exec ())
 		return NULL;
 
-	if (!mono_gchandle_get_target_internal (alc->gchandle))
-		return NULL;
-
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoStringHandle scope_handle;
