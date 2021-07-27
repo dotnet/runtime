@@ -4,32 +4,32 @@
     <body>
       <trans-unit id="ContextClassesMustBePartialMessageFormat">
         <source>Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</source>
-        <target state="new">Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</target>
+        <target state="translated">派生した 'JsonSerializerContext'型 '{0}' は、JSON シリアル化可能な型を指定します。ソース生成を開始するには、型と含まれているすべての型を部分的にする必要があります。</target>
         <note />
       </trans-unit>
       <trans-unit id="ContextClassesMustBePartialTitle">
         <source>Derived 'JsonSerializerContext' types and all containing types must be partial.</source>
-        <target state="new">Derived 'JsonSerializerContext' types and all containing types must be partial.</target>
+        <target state="translated">派生した 'JsonSerializerContext' 型と含まれているすべての型は部分的である必要があります。</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
-        <target state="new">There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</target>
+        <target state="translated">{0} と名前が付けられた種類が複数あります。最初に検出されたものに対してソースが生成されました。この問題を解決するには、'JsonSerializableAttribute.TypeInfoPropertyName' を使用します。</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
-        <target state="new">Duplicate type name.</target>
+        <target state="translated">重複した種類名。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
         <source>Did not generate serialization metadata for type '{0}'.</source>
-        <target state="new">Did not generate serialization metadata for type '{0}'.</target>
+        <target state="translated">'{0}'型 のシリアル化メタデータを生成ませんでした。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate serialization metadata for type.</source>
-        <target state="new">Did not generate serialization metadata for type.</target>
+        <target state="translated">型のシリアル化メタデータが生成されません。</target>
         <note />
       </trans-unit>
     </body>

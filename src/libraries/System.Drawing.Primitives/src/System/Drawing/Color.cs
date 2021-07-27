@@ -402,7 +402,7 @@ namespace System.Drawing
 
                 // if we reached here, just encode the value
                 //
-                return Convert.ToString(value, 16);
+                return value.ToString("x");
             }
         }
 
@@ -565,21 +565,10 @@ namespace System.Drawing
 
         public KnownColor ToKnownColor() => (KnownColor)knownColor;
 
-        public override string ToString()
-        {
-            if (IsNamedColor)
-            {
-                return nameof(Color) + " [" + Name + "]";
-            }
-            else if ((state & StateValueMask) != 0)
-            {
-                return nameof(Color) + " [A=" + A.ToString() + ", R=" + R.ToString() + ", G=" + G.ToString() + ", B=" + B.ToString() + "]";
-            }
-            else
-            {
-                return nameof(Color) + " [Empty]";
-            }
-        }
+        public override string ToString() =>
+            IsNamedColor ? $"{nameof(Color)} [{Name}]":
+            (state & StateValueMask) != 0 ? $"{nameof(Color)} [A={A}, R={R}, G={G}, B={B}]" :
+            $"{nameof(Color)} [Empty]";
 
         public static bool operator ==(Color left, Color right) =>
             left.value == right.value

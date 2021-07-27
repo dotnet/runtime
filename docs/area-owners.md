@@ -146,7 +146,7 @@ Note: Editing this file doesn't update the mapping used by the `@msftbot` issue 
 | os-alpine        |               |                                                     |              |
 | os-android       | @steveisok    | @akoeplinger                                        |              |
 | os-freebsd       |               |                                                     |              |
-| os-mac-os-x      | @steveisok    |                                                     |              |
+| os-mac-os-x      |               |                                                     |              |
 | os-maccatalyst   | @steveisok    |                                                     |              |
 | os-ios           | @steveisok    | @vargaz                                             |              |
 | os-tvos          | @steveisok    | @vargaz                                             |              |

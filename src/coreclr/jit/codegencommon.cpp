@@ -1799,7 +1799,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     {
         // Ngen case - GS cookie constant needs to be accessed through an indirection.
         instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr,
-                               INS_FLAGS_DONT_CARE DEBUGARG((size_t)THT_GSCookieCheck) DEBUGARG(0));
+                               INS_FLAGS_DONT_CARE DEBUGARG((size_t)THT_GSCookieCheck) DEBUGARG(GTF_EMPTY));
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, regGSConst, regGSConst, 0);
     }
     // Load this method's GS value from the stack frame
@@ -3783,7 +3783,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 varNum = regArgTab[argNum].varNum;
                 noway_assert(varNum < compiler->lvaCount);
-                varDsc = compiler->lvaTable + varNum;
+                varDsc                     = compiler->lvaTable + varNum;
+                const var_types varRegType = varDsc->GetRegisterType();
                 noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
 
                 /* cannot possibly have stack arguments */
@@ -3827,7 +3828,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     assert(argNum > 0);
                     assert(regArgTab[argNum - 1].slot == 1);
                     assert(regArgTab[argNum - 1].varNum == varNum);
-                    assert((varDsc->lvType == TYP_SIMD12) || (varDsc->lvType == TYP_SIMD16));
+                    assert((varRegType == TYP_SIMD12) || (varRegType == TYP_SIMD16));
                     regArgMaskLive &= ~genRegMask(regNum);
                     regArgTab[argNum].circular = false;
                     change                     = true;
@@ -4338,9 +4339,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
             varNum = regArgTab[argNum].varNum;
             noway_assert(varNum < compiler->lvaCount);
-            varDsc            = compiler->lvaTable + varNum;
-            var_types regType = regArgTab[argNum].getRegType(compiler);
-            regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType);
+            varDsc                     = compiler->lvaTable + varNum;
+            const var_types regType    = regArgTab[argNum].getRegType(compiler);
+            const regNumber regNum     = genMapRegArgNumToRegNum(argNum, regType);
+            const var_types varRegType = varDsc->GetRegisterType();
 
 #if defined(UNIX_AMD64_ABI)
             if (regType == TYP_UNDEF)
@@ -4439,7 +4441,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 assert(regArgTab[argNum].slot == 2);
                 assert(argNum > 0);
                 assert(regArgTab[argNum - 1].slot == 1);
-                assert((varDsc->lvType == TYP_SIMD12) || (varDsc->lvType == TYP_SIMD16));
+                assert((varRegType == TYP_SIMD12) || (varRegType == TYP_SIMD16));
                 destRegNum = varDsc->GetRegNum();
                 noway_assert(regNum != destRegNum);
                 continue;
@@ -4509,7 +4511,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 noway_assert(regArgTab[nextArgNum].varNum == varNum);
                 // Emit a shufpd with a 0 immediate, which preserves the 0th element of the dest reg
                 // and moves the 0th element of the src reg into the 1st element of the dest reg.
-                GetEmitter()->emitIns_R_R_I(INS_shufpd, emitActualTypeSize(varDsc->lvType), destRegNum, nextRegNum, 0);
+                GetEmitter()->emitIns_R_R_I(INS_shufpd, emitActualTypeSize(varRegType), destRegNum, nextRegNum, 0);
                 // Set destRegNum to regNum so that we skip the setting of the register below,
                 // but mark argNum as processed and clear regNum from the live mask.
                 destRegNum = regNum;
@@ -11245,11 +11247,15 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     assert(regCount <= MAX_RET_REG_COUNT);
 
 #if FEATURE_MULTIREG_RET
+    // Right now the only enregisterable structs supported are SIMD vector types.
     if (genIsRegCandidateLocal(actualOp1))
     {
-        // Right now the only enregisterable structs supported are SIMD vector types.
-        assert(varTypeIsSIMD(op1));
-        assert(!actualOp1->AsLclVar()->IsMultiReg());
+#if defined(DEBUG)
+        const GenTreeLclVar* lclVar = actualOp1->AsLclVar();
+        const LclVarDsc*     varDsc = compiler->lvaGetDesc(lclVar);
+        assert(varTypeIsSIMD(varDsc->GetRegisterType()));
+        assert(!lclVar->IsMultiReg());
+#endif // DEBUG
 #ifdef FEATURE_SIMD
         genSIMDSplitReturn(op1, &retTypeDesc);
 #endif // FEATURE_SIMD
@@ -11329,6 +11335,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
     assert(op1->IsMultiRegNode());
     unsigned regCount =
         actualOp1->IsMultiRegLclVar() ? actualOp1->AsLclVar()->GetFieldCount(compiler) : actualOp1->GetMultiRegCount();
+    assert(regCount > 1);
 
     // Assumption: current implementation requires that a multi-reg
     // var in 'var = call' is flagged as lvIsMultiRegRet to prevent it from
@@ -12579,4 +12586,78 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
             offs += 4;
         }
     }
+}
+
+//----------------------------------------------------------------------
+// genBitCast - Generate the instruction to move a value between register files
+//
+// Arguments
+//    targetType - the destination type
+//    targetReg  - the destination register
+//    srcType    - the source type
+//    srcReg     - the source register
+//
+void CodeGen::genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg)
+{
+    const bool srcFltReg = varTypeUsesFloatReg(srcType) || varTypeIsSIMD(srcType);
+    assert(srcFltReg == genIsValidFloatReg(srcReg));
+
+    const bool dstFltReg = varTypeUsesFloatReg(targetType) || varTypeIsSIMD(targetType);
+    assert(dstFltReg == genIsValidFloatReg(targetReg));
+
+    inst_Mov(targetType, targetReg, srcReg, /* canSkip */ true);
+}
+
+//----------------------------------------------------------------------
+// genCodeForBitCast - Generate code for a GT_BITCAST that is not contained
+//
+// Arguments
+//    treeNode - the GT_BITCAST for which we're generating code
+//
+void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
+{
+    regNumber targetReg  = treeNode->GetRegNum();
+    var_types targetType = treeNode->TypeGet();
+    GenTree*  op1        = treeNode->gtGetOp1();
+    genConsumeRegs(op1);
+
+    if (op1->isContained())
+    {
+        assert(op1->IsLocal() || op1->isIndir());
+        if (genIsRegCandidateLocal(op1))
+        {
+            unsigned lclNum = op1->AsLclVar()->GetLclNum();
+            GetEmitter()->emitIns_R_S(ins_Load(treeNode->TypeGet(), compiler->isSIMDTypeLocalAligned(lclNum)),
+                                      emitTypeSize(treeNode), targetReg, lclNum, 0);
+        }
+        else
+        {
+            op1->gtType = treeNode->TypeGet();
+            op1->SetRegNum(targetReg);
+            op1->ClearContained();
+            JITDUMP("Changing type of BITCAST source to load directly.\n");
+            genCodeForTreeNode(op1);
+        }
+    }
+    else
+    {
+#ifdef TARGET_ARM
+        if (compiler->opts.compUseSoftFP && (targetType == TYP_LONG))
+        {
+            // This is a special arm-softFP case when a TYP_LONG node was introduced during lowering
+            // for a call argument,  so it was not handled by decomposelongs phase as all other TYP_LONG nodes.
+            // Example foo(double LclVar V01), LclVar V01 has to be passed in general registers r0, r1,
+            // so lowering will add `BITCAST long(LclVar double V01)` and codegen has to support it here.
+            const regNumber srcReg   = op1->GetRegNum();
+            const regNumber otherReg = treeNode->AsMultiRegOp()->gtOtherReg;
+            assert(otherReg != REG_NA);
+            inst_RV_RV_RV(INS_vmov_d2i, targetReg, otherReg, srcReg, EA_8BYTE);
+        }
+        else
+#endif // TARGET_ARM
+        {
+            genBitCast(targetType, targetReg, op1->TypeGet(), op1->GetRegNum());
+        }
+    }
+    genProduceReg(treeNode);
 }

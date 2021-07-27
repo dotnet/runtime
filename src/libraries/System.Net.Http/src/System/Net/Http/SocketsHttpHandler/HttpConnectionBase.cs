@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal abstract class HttpConnectionBase : IHttpTrace
+    internal abstract class HttpConnectionBase : IDisposable, IHttpTrace
     {
         /// <summary>Cached string for the last Date header received on this connection.</summary>
         private string? _lastDateHeaderValue;
@@ -39,7 +39,6 @@ namespace System.Net.Http
             }
         }
 
-        public abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken);
         public abstract void Trace(string message, [CallerMemberName] string? memberName = null);
 
         protected void TraceConnection(Stream stream)
@@ -60,14 +59,15 @@ namespace System.Net.Http
             }
         }
 
-        public long CreationTickCount { get; } = Environment.TickCount64;
+        private readonly long _creationTickCount = Environment.TickCount64;
 
-        // Check if lifetime expired on connection.
-        public bool LifetimeExpired(long nowTicks, TimeSpan lifetime)
-        {
-            return lifetime != Timeout.InfiniteTimeSpan &&
-                (lifetime == TimeSpan.Zero || (nowTicks - CreationTickCount) > lifetime.TotalMilliseconds);
-        }
+        public long GetLifetimeTicks(long nowTicks) => nowTicks - _creationTickCount;
+
+        public abstract long GetIdleTicks(long nowTicks);
+
+        /// <summary>Check whether a connection is still usable, or should be scavenged.</summary>
+        /// <returns>True if connection can be used.</returns>
+        public virtual bool CheckUsabilityOnScavenge() => true;
 
         internal static bool IsDigit(byte c) => (uint)(c - '0') <= '9' - '0';
 
@@ -126,5 +126,7 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) connection.Trace($"Exception from asynchronous processing: {e}");
             }
         }
+
+        public abstract void Dispose();
     }
 }

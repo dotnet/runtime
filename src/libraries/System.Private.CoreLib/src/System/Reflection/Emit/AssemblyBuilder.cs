@@ -8,7 +8,7 @@ namespace System.Reflection.Emit
 {
     public sealed partial class AssemblyBuilder : Assembly
     {
-        [RequiresAssemblyFiles(Message = "The code will throw for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
         public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         public override string Location => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         public override MethodInfo? EntryPoint => null;

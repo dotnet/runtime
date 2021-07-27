@@ -119,8 +119,7 @@ namespace System.Net
 
         private static Encoding GetEncoding(EncodingType type)
         {
-            Debug.Assert((type == EncodingType.Primary) || (type == EncodingType.Secondary),
-                "Unknown 'EncodingType' value: " + type.ToString());
+            Debug.Assert((type == EncodingType.Primary) || (type == EncodingType.Secondary), $"Unknown 'EncodingType' value: {type}");
 
             if (type == EncodingType.Secondary)
             {
@@ -330,8 +329,7 @@ namespace System.Net
         {
             foreach (byte octet in octets)
             {
-                target.Append('%');
-                target.Append(octet.ToString("X2", CultureInfo.InvariantCulture));
+                target.Append($"%{octet:X2}");
             }
         }
 
@@ -350,7 +348,7 @@ namespace System.Net
                 {
                     octetString.Append(' ');
                 }
-                octetString.Append(octet.ToString("X2", CultureInfo.InvariantCulture));
+                octetString.Append($"{octet:X2}");
             }
 
             return octetString.ToString();

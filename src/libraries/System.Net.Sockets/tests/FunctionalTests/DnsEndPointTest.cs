@@ -363,6 +363,30 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Fact]
+        public void Socket_StaticConnectAsync_IPv6MappedIPv4_Success()
+        {
+            using SocketTestServer server = SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out int port);
+
+            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+            args.RemoteEndPoint = new DnsEndPoint("[::FFFF:127.0.0.1]", port);
+            args.Completed += OnConnectAsyncCompleted;
+
+            ManualResetEvent complete = new ManualResetEvent(false);
+            args.UserToken = complete;
+
+            if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, args))
+            {
+                Assert.True(complete.WaitOne(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
+            }
+
+            Assert.Equal(SocketError.Success, args.SocketError);
+            Assert.Null(args.ConnectByNameError);
+            Assert.NotNull(args.ConnectSocket);
+            Assert.True(args.ConnectSocket.Connected);
+            args.ConnectSocket.Dispose();
+        }
+
         [OuterLoop]
         [Fact]
         public void Socket_StaticConnectAsync_HostNotFound()

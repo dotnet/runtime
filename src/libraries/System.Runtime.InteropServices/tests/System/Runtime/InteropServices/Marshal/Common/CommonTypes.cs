@@ -6,6 +6,12 @@ namespace System.Runtime.InteropServices.Tests.Common
     [ComVisible(true)]
     public class GenericClass<T> { }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public class SequentialGenericClass<T>
+    {
+        public T field;
+    }
+
     [ComVisible(true)]
     public class NonGenericClass { }
 

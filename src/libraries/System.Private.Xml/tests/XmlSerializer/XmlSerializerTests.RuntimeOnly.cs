@@ -276,6 +276,13 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_StringWithNullChar()
+    {
+        Assert.Throws<InvalidOperationException>(() => SerializeWithDefaultValue<string>("Sample\0String", null));
+        Assert.Throws<InvalidOperationException>(() => DeserializeFromXmlString<string>("<?xml version=\"1.0\"?><string>Sample&#x0;String</string>"));
+    }
+
+    [Fact]
     public static void Xml_UintAsRoot()
     {
         foreach (uint value in new uint[] { (uint)3, (uint)0, uint.MinValue, uint.MaxValue })

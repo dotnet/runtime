@@ -15,6 +15,7 @@ namespace System.Net.Http
 
         private const int MessageNotYetSent = 0;
         private const int MessageAlreadySent = 1;
+        private const int MessageIsRedirect = 2;
 
         // Track whether the message has been sent.
         // The message shouldn't be sent again if this field is equal to MessageAlreadySent.
@@ -159,12 +160,13 @@ namespace System.Net.Http
             return sb.ToString();
         }
 
-        internal bool MarkAsSent()
-        {
-            return Interlocked.Exchange(ref _sendStatus, MessageAlreadySent) == MessageNotYetSent;
-        }
+        internal bool MarkAsSent() => Interlocked.CompareExchange(ref _sendStatus, MessageAlreadySent, MessageNotYetSent) == MessageNotYetSent;
 
-        internal bool WasSentByHttpClient() => _sendStatus == MessageAlreadySent;
+        internal bool WasSentByHttpClient() => (_sendStatus & MessageAlreadySent) != 0;
+
+        internal void MarkAsRedirected() => _sendStatus |= MessageIsRedirect;
+
+        internal bool WasRedirected() => (_sendStatus & MessageIsRedirect) != 0;
 
         #region IDisposable Members
 
