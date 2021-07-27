@@ -3,7 +3,10 @@
     <Error Condition="'%(ResolvedRuntimePack.PackageDirectory)' == '' and '$(_MonoRuntimeComponentManifestJsonFilePath)' == ''"
            Text="Empty ResolvedRuntimePack.PackageDirectory while trying to read runtime components manifest" />
     <PropertyGroup>
-      <_MonoRuntimeComponentManifestJsonFilePath Condition="'$(_MonoRuntimeComponentManifestJsonFilePath)' == ''">%(ResolvedRuntimePack.PackageDirectory)\runtimes\$(RuntimeIdentifier)\build\RuntimeComponentManifest.json</_MonoRuntimeComponentManifestJsonFilePath>
+      <_MonoRuntimeComponentManifestJsonFilePath 
+        Condition="'$(_MonoRuntimeComponentManifestJsonFilePath)' == '' and '%(ResolvedFrameworkReference.Identity)' == 'Microsoft.NETCore.App'">
+        %(RuntimePackPath)\runtimes\$(RuntimeIdentifier)\build\RuntimeComponentManifest.json
+      </_MonoRuntimeComponentManifestJsonFilePath>
     </PropertyGroup>
     <MonoRuntimeComponentManifestReadTask JsonFilePath="$(_MonoRuntimeComponentManifestJsonFilePath)">
       <Output TaskParameter="_MonoRuntimeComponentSharedLibExt" ItemName="_MonoRuntimeComponentSharedLibExt" />
