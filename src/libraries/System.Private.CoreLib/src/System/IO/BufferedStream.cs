@@ -231,7 +231,7 @@ namespace System.IO
                 _readPos = (int)(newPos - bufferBeginPos);
             }
             else
-            { // The new position is not in the buffer range. Loose the buffer.
+            { // The new position is not in the buffer range. Lose the buffer.
                 _readPos = 0;
                 _readLen = 0;
                 _stream!.Seek(newPos, SeekOrigin.Begin);
