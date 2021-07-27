@@ -109,8 +109,6 @@ namespace System.Text.Json
 
         private static JsonDocument WriteDocument<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
         {
-            JsonDocument? document = null;
-
             JsonSerializerOptions options = jsonTypeInfo.Options;
             Debug.Assert(options != null);
 
@@ -122,10 +120,7 @@ namespace System.Text.Json
                 WriteUsingMetadata(writer, value, jsonTypeInfo);
             }
 
-            document = JsonDocument.Parse(output, options.GetDocumentOptions());
-
-            Debug.Assert(document != null);
-            return document;
+            return JsonDocument.Parse(output, options.GetDocumentOptions());
         }
     }
 }

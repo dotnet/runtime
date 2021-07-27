@@ -84,14 +84,14 @@ namespace System.Text.Json
             _parsedData.Dispose();
             _utf8Json = ReadOnlyMemory<byte>.Empty;
 
-            // When "extra rented bytes exist" they contain the document,
-            // and thus need to be cleared before being returned.
             if (_hasExtraRentedArrayPoolBytes)
             {
                 byte[]? extraRentedBytes = Interlocked.Exchange(ref _extraRentedArrayPoolBytes, null);
 
                 if (extraRentedBytes != null)
                 {
+                    // When "extra rented bytes exist" it contains the document,
+                    // and thus need to be cleared before being returned.
                     extraRentedBytes.AsSpan(0, length).Clear();
                     ArrayPool<byte>.Shared.Return(extraRentedBytes);
                 }

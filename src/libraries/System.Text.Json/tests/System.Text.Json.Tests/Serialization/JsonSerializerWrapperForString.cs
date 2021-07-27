@@ -126,28 +126,28 @@ namespace System.Text.Json.Serialization.Tests
 
             protected internal override async Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
-                using var stream = new MemoryStream();
+                using MemoryStream stream = new();
                 await JsonSerializer.SerializeAsync(stream, value, inputType, options);
                 return Encoding.UTF8.GetString(stream.ToArray());
             }
 
             protected internal override async Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null)
             {
-                using var stream = new MemoryStream();
+                using MemoryStream stream = new();
                 await JsonSerializer.SerializeAsync<T>(stream, value, options);
                 return Encoding.UTF8.GetString(stream.ToArray());
             }
 
             protected internal override async Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context)
             {
-                using var stream = new MemoryStream();
+                using MemoryStream stream = new();
                 await JsonSerializer.SerializeAsync(stream, value, inputType, context);
                 return Encoding.UTF8.GetString(stream.ToArray());
             }
 
             protected internal override async Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo)
             {
-                using var stream = new MemoryStream();
+                using MemoryStream stream = new();
                 await JsonSerializer.SerializeAsync(stream, value, jsonTypeInfo);
                 return Encoding.UTF8.GetString(stream.ToArray());
             }
@@ -160,10 +160,8 @@ namespace System.Text.Json.Serialization.Tests
                     return await JsonSerializer.DeserializeAsync<T>((Stream)null, options ?? _optionsWithSmallBuffer);
                 }
 
-                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
-                {
-                    return await JsonSerializer.DeserializeAsync<T>(stream, options ?? _optionsWithSmallBuffer);
-                }
+                using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
+                return await JsonSerializer.DeserializeAsync<T>(stream, options ?? _optionsWithSmallBuffer);
             }
 
             protected internal override async Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
@@ -174,10 +172,8 @@ namespace System.Text.Json.Serialization.Tests
                     return await JsonSerializer.DeserializeAsync((Stream)null, type, options ?? _optionsWithSmallBuffer);
                 }
 
-                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
-                {
-                    return await JsonSerializer.DeserializeAsync(stream, type, options ?? _optionsWithSmallBuffer);
-                }
+                using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
+                return await JsonSerializer.DeserializeAsync(stream, type, options ?? _optionsWithSmallBuffer);
             }
 
             protected internal override async Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
@@ -188,10 +184,8 @@ namespace System.Text.Json.Serialization.Tests
                     return await JsonSerializer.DeserializeAsync((Stream)null, jsonTypeInfo);
                 }
 
-                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
-                {
-                    return await JsonSerializer.DeserializeAsync(stream, jsonTypeInfo);
-                }
+                using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
+                return await JsonSerializer.DeserializeAsync(stream, jsonTypeInfo);
             }
 
             protected internal override async Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
@@ -202,10 +196,8 @@ namespace System.Text.Json.Serialization.Tests
                     return await JsonSerializer.DeserializeAsync((Stream)null, type, context);
                 }
 
-                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
-                {
-                    return await JsonSerializer.DeserializeAsync(stream, type, context);
-                }
+                using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
+                return await JsonSerializer.DeserializeAsync(stream, type, context);
             }
         }
 
@@ -235,28 +227,28 @@ namespace System.Text.Json.Serialization.Tests
 
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
-                using var stream = new MemoryStream();
+                using MemoryStream stream = new();
                 JsonSerializer.Serialize(stream, value, inputType, options);
                 return Task.FromResult(Encoding.UTF8.GetString(stream.ToArray()));
             }
 
             protected internal override Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null)
             {
-                using var stream = new MemoryStream();
+                using MemoryStream stream = new();
                 JsonSerializer.Serialize<T>(stream, value, options);
                 return Task.FromResult(Encoding.UTF8.GetString(stream.ToArray()));
             }
 
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context)
             {
-                using var stream = new MemoryStream();
+                using MemoryStream stream = new();
                 JsonSerializer.Serialize(stream, value, inputType, context);
                 return Task.FromResult(Encoding.UTF8.GetString(stream.ToArray()));
             }
 
             protected internal override Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo)
             {
-                using var stream = new MemoryStream();
+                using MemoryStream stream = new();
                 JsonSerializer.Serialize(stream, value, jsonTypeInfo);
                 return Task.FromResult(Encoding.UTF8.GetString(stream.ToArray()));
             }
@@ -269,10 +261,8 @@ namespace System.Text.Json.Serialization.Tests
                     return Task.FromResult(JsonSerializer.Deserialize<T>((Stream)null, options ?? _optionsWithSmallBuffer));
                 }
 
-                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
-                {
-                    return Task.FromResult(JsonSerializer.Deserialize<T>(stream, options ?? _optionsWithSmallBuffer));
-                }
+                using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
+                return Task.FromResult(JsonSerializer.Deserialize<T>(stream, options ?? _optionsWithSmallBuffer));
             }
 
             protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerOptions options = null)
@@ -283,10 +273,8 @@ namespace System.Text.Json.Serialization.Tests
                     return Task.FromResult(JsonSerializer.Deserialize((Stream)null, type, options ?? _optionsWithSmallBuffer));
                 }
 
-                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
-                {
-                    return Task.FromResult(JsonSerializer.Deserialize(stream, type, options ?? _optionsWithSmallBuffer));
-                }
+                using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
+                return Task.FromResult(JsonSerializer.Deserialize(stream, type, options ?? _optionsWithSmallBuffer));
             }
 
             protected internal override Task<T> DeserializeWrapper<T>(string json, JsonTypeInfo<T> jsonTypeInfo)
@@ -297,10 +285,8 @@ namespace System.Text.Json.Serialization.Tests
                     return Task.FromResult(JsonSerializer.Deserialize<T>((Stream)null, jsonTypeInfo));
                 }
 
-                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
-                {
-                    return Task.FromResult(JsonSerializer.Deserialize<T>(stream, jsonTypeInfo));
-                }
+                using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
+                return Task.FromResult(JsonSerializer.Deserialize<T>(stream, jsonTypeInfo));
             }
 
             protected internal override Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context)
@@ -311,10 +297,8 @@ namespace System.Text.Json.Serialization.Tests
                     return Task.FromResult(JsonSerializer.Deserialize((Stream)null, type, context));
                 }
 
-                using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
-                {
-                    return Task.FromResult(JsonSerializer.Deserialize(stream, type, context));
-                }
+                using MemoryStream stream = new(Encoding.UTF8.GetBytes(json));
+                return Task.FromResult(JsonSerializer.Deserialize(stream, type, context));
             }
         }
 
@@ -325,32 +309,44 @@ namespace System.Text.Json.Serialization.Tests
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null)
             {
                 using MemoryStream stream = new MemoryStream();
-                using var writer = new Utf8JsonWriter(stream);
-                JsonSerializer.Serialize(writer, value, inputType, options);
+                using (Utf8JsonWriter writer = new(stream))
+                {
+                    JsonSerializer.Serialize(writer, value, inputType, options);
+                }
+
                 return Task.FromResult(Encoding.UTF8.GetString(stream.ToArray()));
             }
 
             protected internal override Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null)
             {
                 using MemoryStream stream = new MemoryStream();
-                using var writer = new Utf8JsonWriter(stream);
-                JsonSerializer.Serialize<T>(writer, value, options);
+                using (Utf8JsonWriter writer = new(stream))
+                {
+                    JsonSerializer.Serialize<T>(writer, value, options);
+                }
+
                 return Task.FromResult(Encoding.UTF8.GetString(stream.ToArray()));
             }
 
             protected internal override Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerContext context)
             {
                 using MemoryStream stream = new MemoryStream();
-                using var writer = new Utf8JsonWriter(stream);
-                JsonSerializer.Serialize(writer, value, inputType, context);
+                using (Utf8JsonWriter writer = new(stream))
+                {
+                    JsonSerializer.Serialize(writer, value, inputType, context);
+                }
+
                 return Task.FromResult(Encoding.UTF8.GetString(stream.ToArray()));
             }
 
             protected internal override Task<string> SerializeWrapper<T>(T value, JsonTypeInfo<T> jsonTypeInfo)
             {
                 using MemoryStream stream = new MemoryStream();
-                using var writer = new Utf8JsonWriter(stream);
-                JsonSerializer.Serialize(writer, value, jsonTypeInfo);
+                using (Utf8JsonWriter writer = new(stream))
+                {
+                    JsonSerializer.Serialize(writer, value, jsonTypeInfo);
+                }
+
                 return Task.FromResult(Encoding.UTF8.GetString(stream.ToArray()));
             }
 
@@ -415,13 +411,13 @@ namespace System.Text.Json.Serialization.Tests
                     return "null";
                 }
 
-                using (var stream = new MemoryStream())
+                using MemoryStream stream = new();
+                using (Utf8JsonWriter writer = new(stream))
                 {
-                    Utf8JsonWriter writer = new Utf8JsonWriter(stream, new JsonWriterOptions());
                     document.WriteTo(writer);
-                    writer.Flush();
-                    return Encoding.UTF8.GetString(stream.ToArray());
                 }
+
+                return Encoding.UTF8.GetString(stream.ToArray());
             }
 
             protected internal override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
@@ -503,13 +499,12 @@ namespace System.Text.Json.Serialization.Tests
 
             private string GetStringFromElement(JsonElement element)
             {
-                using (var stream = new MemoryStream())
+                using MemoryStream stream = new MemoryStream();
+                using (Utf8JsonWriter writer = new(stream))
                 {
-                    Utf8JsonWriter writer = new Utf8JsonWriter(stream, new JsonWriterOptions());
                     element.WriteTo(writer);
-                    writer.Flush();
-                    return Encoding.UTF8.GetString(stream.ToArray());
                 }
+                return Encoding.UTF8.GetString(stream.ToArray());
             }
 
             protected internal override Task<T> DeserializeWrapper<T>(string json, JsonSerializerOptions options = null)
