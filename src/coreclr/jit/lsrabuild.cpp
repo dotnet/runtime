@@ -2680,12 +2680,15 @@ void LinearScan::validateIntervals()
                 RefType refType = ref->refType;
                 if (!defined && RefTypeIsUse(refType) && (lastUseBBNum == ref->bbNum))
                 {
-                    if (compiler->info.compMethodName != nullptr)
+                    if (!ref->lastUse)
                     {
-                        JITDUMP("%s: ", compiler->info.compMethodName);
+                        if (compiler->info.compMethodName != nullptr)
+                        {
+                            JITDUMP("%s: ", compiler->info.compMethodName);
+                        }
+                        JITDUMP("LocalVar V%02u: undefined use at %u\n", interval->varNum, ref->nodeLocation);
+                        assert(false);
                     }
-                    JITDUMP("LocalVar V%02u: undefined use at %u\n", interval->varNum, ref->nodeLocation);
-                    assert(false);
                 }
 
                 // For single-def intervals, the only the first refposition should be a RefTypeDef
