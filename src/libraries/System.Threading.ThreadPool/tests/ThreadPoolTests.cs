@@ -956,10 +956,17 @@ namespace System.Threading.ThreadPools.Tests
             // Avoid contaminating the main process' environment
             RemoteExecutor.Invoke(() =>
             {
-                // The test is run affinitized to at most 2 processors for more frequent repros. The actual test process below
-                // will inherit the affinity.
-                Process testParentProcess = Process.GetCurrentProcess();
-                testParentProcess.ProcessorAffinity = (nint)testParentProcess.ProcessorAffinity & 0x3;
+                try
+                {
+                    // The test is run affinitized to at most 2 processors for more frequent repros. The actual test process below
+                    // will inherit the affinity.
+                    Process testParentProcess = Process.GetCurrentProcess();
+                    testParentProcess.ProcessorAffinity = (nint)testParentProcess.ProcessorAffinity & 0x3;
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    // Processor affinity is not supported on some platforms, try to run the test anyway
+                }
 
                 RemoteExecutor.Invoke(() =>
                 {
