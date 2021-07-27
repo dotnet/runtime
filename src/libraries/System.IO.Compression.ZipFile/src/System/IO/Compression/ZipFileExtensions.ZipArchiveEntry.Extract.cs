@@ -81,9 +81,12 @@ namespace System.IO.Compression
                 ExtractExternalAttributes(fs, source);
             }
 
-            if (!OperatingSystem.IsAndroid()) // https://github.com/dotnet/runtime/issues/35374, https://github.com/mono/mono/issues/17133
+            try
             {
                 File.SetLastWriteTime(destinationFileName, source.LastWriteTime.DateTime);
+            }
+            catch (UnauthorizedAccessException) when (OperatingSystem.IsAndroid()) // not every Android supports that (#35374)
+            {
             }
         }
 
