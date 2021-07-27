@@ -445,9 +445,6 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 	if (mono_runtime_get_no_exec ())
 		return NULL;
 
-	if (!mono_gchandle_get_target_internal (alc->gchandle))
-		return NULL;
-
 	HANDLE_FUNCTION_ENTER ();
 
 	aname_str = mono_stringify_assembly_name (aname);
@@ -457,7 +454,14 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 
 	MonoReflectionAssemblyHandle assm;
 	gpointer gchandle;
-	gchandle = (gpointer)alc->gchandle;
+	/* for the default ALC, pass NULL to ask for the Default ALC - see
+	 * AssemblyLoadContext.GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext) - which
+	 * will create the managed ALC object if it hasn't been created yet
+	 */
+	if (alc->gchandle == default_alc->gchandle)
+		gchandle = NULL;
+	else
+		gchandle = GUINT_TO_POINTER (alc->gchandle);
 	gpointer args [2];
 	args [0] = &gchandle;
 	args [1] = MONO_HANDLE_RAW (aname_obj);
