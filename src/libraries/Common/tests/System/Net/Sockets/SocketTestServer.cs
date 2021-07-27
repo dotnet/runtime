@@ -87,7 +87,7 @@ namespace System.Net.Sockets.Tests
             bool dualMode,
             out Socket portGuard)
         {
-            bool mustCreateGuard = !PlatformDetection.IsWindows && // Do not guard on Windows, where port selection is deterministic
+            bool mustCreateGuard = OperatingSystem.IsLinux() && 
                 protocolType == ProtocolType.Tcp &&
                 listenEp is IPEndPoint ipEp &&
                 ipEp.Port == 0 && // Only guard when we are binding to an anonymous port

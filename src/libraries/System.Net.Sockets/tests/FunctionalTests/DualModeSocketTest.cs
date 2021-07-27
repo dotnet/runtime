@@ -2535,7 +2535,7 @@ namespace System.Net.Sockets.Tests
             {
                 _output = output;
 
-                _server = SocketTestServer.CreateListenerSocketWithDualPortGuard(address.AddressFamily, ProtocolType.Tcp, new IPEndPoint(address, 0), dualMode, out _guard);
+                _server = SocketTestServer.CreateListenerSocketWithDualPortGuard(address, dualMode, out _guard);
                 port = ((IPEndPoint)_server.LocalEndPoint).Port;
                 _server.Listen(1);
 
