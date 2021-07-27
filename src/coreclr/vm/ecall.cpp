@@ -661,9 +661,9 @@ LPVOID ECall::GetQCallImpl(MethodDesc * pMD)
         id = ECall::GetIDForMethod(pMD);
 
 #ifdef _DEBUG
-    CONSISTENCY_CHECK_MSGF(id != 0,
-        ("%s::%s is not registered in ecall.cpp",
-        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
+        CONSISTENCY_CHECK_MSGF(id != 0,
+            ("%s::%s is not registered in ecall.cpp",
+            pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 #endif
 
         _ASSERTE(id != 0);
