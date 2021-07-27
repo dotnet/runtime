@@ -101,7 +101,7 @@ namespace System.Reflection.PortableExecutable
                     try
                     {
 #if NETCOREAPP3_0_OR_GREATER
-                        actualLength = deflate.Read(new Span<byte>(decompressed.Pointer, decompressed.Size));
+                        actualLength = deflate.TryReadAll(new Span<byte>(decompressed.Pointer, decompressed.Size));
 #else
                         using var decompressedStream = new UnmanagedMemoryStream(decompressed.Pointer, decompressed.Size, decompressed.Size, FileAccess.Write);
                         deflate.CopyTo(decompressedStream);
