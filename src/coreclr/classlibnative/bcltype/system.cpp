@@ -195,6 +195,8 @@ INT32 QCALLTYPE SystemNative::GetProcessorCount()
 // managed string object buffer. This buffer is not always used, see comments in
 // the method below.
 WCHAR g_szFailFastBuffer[256];
+WCHAR *g_pFailFastBuffer = g_szFailFastBuffer;
+
 #define FAIL_FAST_STATIC_BUFFER_LENGTH (sizeof(g_szFailFastBuffer) / sizeof(WCHAR))
 
 // This is the common code for FailFast processing that is wrapped by the two
@@ -262,9 +264,11 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
 
     if (cchMessage < FAIL_FAST_STATIC_BUFFER_LENGTH)
     {
-        pszMessage = g_szFailFastBuffer;
+        // The static buffer can be used only once to avoid race condition with other threads
+        pszMessage = (WCHAR *)InterlockedExchangeT(&g_pFailFastBuffer, NULL);
     }
-    else
+
+    if (pszMessage == NULL)
     {
         // We can fail here, but we can handle the fault.
         CONTRACT_VIOLATION(FaultViolation);
@@ -273,19 +277,22 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
         {
             // Truncate the message to what will fit in the static buffer.
             cchMessage = FAIL_FAST_STATIC_BUFFER_LENGTH - 1;
-            pszMessage = g_szFailFastBuffer;
+            pszMessage = InterlockedExchangeT(&g_pFailFastBuffer, NULL);
         }
     }
 
     if (cchMessage > 0)
         memcpyNoGCRefs(pszMessage, gc.refMesgString->GetBuffer(), cchMessage * sizeof(WCHAR));
-    pszMessage[cchMessage] = W('\0');
 
-    if (cchMessage == 0) {
+    if (pszMessage == NULL) {
+        WszOutputDebugString(W("CLR: Managed code called FailFast, but there is not enough memory to print the supplied message.\r\n"));
+    }
+    else if (cchMessage == 0) {
         WszOutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
     }
     else {
         WszOutputDebugString(W("CLR: Managed code called FailFast, saying \""));
+        pszMessage[cchMessage] = W('\0');
         WszOutputDebugString(pszMessage);
         WszOutputDebugString(W("\"\r\n"));
     }
