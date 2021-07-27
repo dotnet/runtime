@@ -105,10 +105,10 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_MustBeTypeBuilder);
 
             if (!constructor.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(constructor));
+                throw new ArgumentException(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(type));
 
             if (type.GetGenericTypeDefinition() != constructor.DeclaringType)
-                throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(constructor));
+                throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(type));
 
             // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
             if (type is TypeBuilder && type.IsGenericTypeDefinition)

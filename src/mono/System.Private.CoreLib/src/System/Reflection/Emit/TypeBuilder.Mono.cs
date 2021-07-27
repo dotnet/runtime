@@ -1854,10 +1854,10 @@ namespace System.Reflection.Emit
                 throw new ArgumentException("Type is not a generic type", nameof(type));
 
             if (constructor.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException("constructor declaring type is not the generic type definition of type", nameof(constructor));
+                throw new ArgumentException("constructor declaring type is not the generic type definition of type", nameof(type));
 
             if (!constructor.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException("constructor declaring type is not a generic type definition", nameof(constructor));
+                throw new ArgumentException("constructor declaring type is not a generic type definition", nameof(type));
             if (constructor == null)
                 throw new NullReferenceException(); //MS raises this instead of an ArgumentNullException
 
