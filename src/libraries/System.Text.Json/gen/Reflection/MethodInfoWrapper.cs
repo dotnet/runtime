@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
     internal class MethodInfoWrapper : MethodInfo
     {
@@ -41,7 +41,7 @@ namespace System.Text.Json.SourceGeneration.Reflection
                         _attributes |= MethodAttributes.Static;
                     }
 
-                    if (_method.IsVirtual)
+                    if (_method.IsVirtual || _method.IsOverride)
                     {
                         _attributes |= MethodAttributes.Virtual;
                     }
@@ -53,6 +53,9 @@ namespace System.Text.Json.SourceGeneration.Reflection
                             break;
                         case Accessibility.Private:
                             _attributes |= MethodAttributes.Private;
+                            break;
+                        case Accessibility.Internal:
+                            _attributes |= MethodAttributes.Assembly;
                             break;
                     }
                 }

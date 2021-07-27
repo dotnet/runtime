@@ -31,6 +31,7 @@ namespace System.IO.Tests
         // Windows 7 and 8.1 doesn't throw in this case, see https://github.com/dotnet/runtime/issues/53010.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10OrLater))]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53366")]
         public void FileSystemWatcher_DirectorySymbolicLink_TargetsFile_Fails()
         {
             // Arrange

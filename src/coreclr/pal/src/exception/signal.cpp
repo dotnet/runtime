@@ -344,6 +344,26 @@ bool IsRunningOnAlternateStack(void *context)
 #endif // HAVE_MACH_EXCEPTIONS
 }
 
+static bool IsSaSigInfo(struct sigaction* action)
+{
+    return (action->sa_flags & SA_SIGINFO) != 0;
+}
+
+static bool IsSigDfl(struct sigaction* action)
+{
+    // macOS can return sigaction with SIG_DFL and SA_SIGINFO.
+    // SA_SIGINFO means we should use sa_sigaction, but here we want to check sa_handler.
+    // So we ignore SA_SIGINFO when sa_sigaction and sa_handler are at the same address.
+    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+            action->sa_handler == SIG_DFL;
+}
+
+static bool IsSigIgn(struct sigaction* action)
+{
+    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+            action->sa_handler == SIG_IGN;
+}
+
 /*++
 Function :
     invoke_previous_action
@@ -363,7 +383,30 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
 {
     _ASSERTE(action != NULL);
 
-    if (action->sa_flags & SA_SIGINFO)
+    if (IsSigIgn(action))
+    {
+        if (signalRestarts)
+        {
+            // This signal mustn't be ignored because it will be restarted.
+            PROCAbort(code);
+        }
+        return;
+    }
+    else if (IsSigDfl(action))
+    {
+        if (signalRestarts)
+        {
+            // Restore the original and restart h/w exception.
+            restore_signal(code, action);
+        }
+        else
+        {
+            // We can't invoke the original handler because returning from the
+            // handler doesn't restart the exception.
+            PROCAbort(code);
+        }
+    }
+    else if (IsSaSigInfo(action))
     {
         // Directly call the previous handler.
         _ASSERTE(action->sa_sigaction != NULL);
@@ -371,39 +414,14 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
     }
     else
     {
-        if (action->sa_handler == SIG_IGN)
-        {
-            if (signalRestarts)
-            {
-                // This signal mustn't be ignored because it will be restarted.
-                PROCAbort();
-            }
-            return;
-        }
-        else if (action->sa_handler == SIG_DFL)
-        {
-            if (signalRestarts)
-            {
-                // Restore the original and restart h/w exception.
-                restore_signal(code, action);
-            }
-            else
-            {
-                // We can't invoke the original handler because returning from the
-                // handler doesn't restart the exception.
-                PROCAbort();
-            }
-        }
-        else
-        {
-            // Directly call the previous handler.
-            _ASSERTE(action->sa_handler != NULL);
-            action->sa_handler(code);
-        }
+        // Directly call the previous handler.
+        _ASSERTE(action->sa_handler != NULL);
+        action->sa_handler(code);
     }
 
     PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
-    PROCCreateCrashDumpIfEnabled();
+
+    PROCCreateCrashDumpIfEnabled(code);
 }
 
 /*++
@@ -575,13 +593,13 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
                 if (SwitchStackAndExecuteHandler(code | StackOverflowFlag, siginfo, context, (size_t)handlerStackTop))
                 {
-                    PROCAbort();
+                    PROCAbort(SIGSEGV);
                 }
             }
             else
             {
                 (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-                PROCAbort();
+                PROCAbort(SIGSEGV);
             }
         }
 

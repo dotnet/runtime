@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
@@ -95,6 +98,38 @@ namespace System.IO.Compression
             return _baseStream.Read(buffer, offset, count);
         }
 
+        public override int Read(Span<byte> buffer)
+        {
+            ThrowIfDisposed();
+            ThrowIfCantRead();
+
+            return _baseStream.Read(buffer);
+        }
+
+        public override int ReadByte()
+        {
+            ThrowIfDisposed();
+            ThrowIfCantRead();
+
+            return _baseStream.ReadByte();
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            ThrowIfCantRead();
+
+            return _baseStream.ReadAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfCantRead();
+
+            return _baseStream.ReadAsync(buffer, cancellationToken);
+        }
+
         public override long Seek(long offset, SeekOrigin origin)
         {
             ThrowIfDisposed();
@@ -128,12 +163,44 @@ namespace System.IO.Compression
             _baseStream.Write(source);
         }
 
+        public override void WriteByte(byte value)
+        {
+            ThrowIfDisposed();
+            ThrowIfCantWrite();
+
+            _baseStream.WriteByte(value);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            ThrowIfCantWrite();
+
+            return _baseStream.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfCantWrite();
+
+            return _baseStream.WriteAsync(buffer, cancellationToken);
+        }
+
         public override void Flush()
         {
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
             _baseStream.Flush();
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            ThrowIfCantWrite();
+
+            return _baseStream.FlushAsync(cancellationToken);
         }
 
         protected override void Dispose(bool disposing)
@@ -257,6 +324,43 @@ namespace System.IO.Compression
 
             _positionInSuperStream += ret;
             return ret;
+        }
+
+        public override int ReadByte()
+        {
+            byte b = default;
+            return Read(MemoryMarshal.CreateSpan(ref b, 1)) == 1 ? b : -1;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfCantRead();
+            return Core(buffer, cancellationToken);
+
+            async ValueTask<int> Core(Memory<byte> buffer, CancellationToken cancellationToken)
+            {
+                if (_superStream.Position != _positionInSuperStream)
+                {
+                    _superStream.Seek(_positionInSuperStream, SeekOrigin.Begin);
+                }
+
+                if (_positionInSuperStream > _endInSuperStream - buffer.Length)
+                {
+                    buffer = buffer.Slice(0, (int)(_endInSuperStream - _positionInSuperStream));
+                }
+
+                int ret = await _superStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+                _positionInSuperStream += ret;
+                return ret;
+            }
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -437,6 +541,39 @@ namespace System.IO.Compression
             _position += source.Length;
         }
 
+        public override void WriteByte(byte value) =>
+            Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            Debug.Assert(CanWrite);
+
+            return !buffer.IsEmpty ?
+                Core(buffer, cancellationToken) :
+                default;
+
+            async ValueTask Core(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                if (!_everWritten)
+                {
+                    _initialPosition = _baseBaseStream.Position;
+                    _everWritten = true;
+                }
+
+                _checksum = Crc32Helper.UpdateCrc32(_checksum, buffer.Span);
+
+                await _baseStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+                _position += buffer.Length;
+            }
+        }
+
         public override void Flush()
         {
             ThrowIfDisposed();
@@ -445,6 +582,12 @@ namespace System.IO.Compression
             Debug.Assert(CanWrite);
 
             _baseStream.Flush();
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+            return _baseStream.FlushAsync(cancellationToken);
         }
 
         protected override void Dispose(bool disposing)

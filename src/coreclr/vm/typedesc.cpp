@@ -1730,6 +1730,11 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
     }
     CONTRACTL_END;
 
+    // During EEStartup, we cannot safely validate constraints, but we can also be confident that the code doesn't violate them
+    // Just skip validation and declare that the constraints are satisfied.
+    if (g_fEEInit)
+        return TRUE;
+
     IMDInternalImport* pInternalImport = GetModule()->GetMDImport();
     mdGenericParamConstraint tkConstraint;
 
@@ -1922,7 +1927,7 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                                 MethodDesc *pMD = it.GetMethodDesc();
                                 if (pMD->IsVirtual() &&
                                     pMD->IsStatic() &&
-                                    !thElem.AsMethodTable()->ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* checkDuplicates */ TRUE))
+                                    !thElem.AsMethodTable()->ResolveVirtualStaticMethod(pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE))
                                 {
                                     virtualStaticResolutionCheckFailed = true;
                                     break;

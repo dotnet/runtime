@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
+#nullable enable
+
 #if CODEDOM
 namespace System.CodeDom
 #else
@@ -73,7 +75,7 @@ namespace System.Runtime.Serialization
             Initialize(typeName, codeTypeReferenceOption);
         }
 
-        public CodeTypeReference(string typeName)
+        public CodeTypeReference(string? typeName)
         {
             Initialize(typeName);
         }
@@ -325,7 +327,7 @@ namespace System.Runtime.Serialization
 
                 string returnType = _baseType;
                 return _needsFixup && TypeArguments.Count > 0 ?
-                    returnType + '`' + TypeArguments.Count.ToString(CultureInfo.InvariantCulture) :
+                    $"{returnType}`{(uint)TypeArguments.Count}" :
                     returnType;
             }
             set

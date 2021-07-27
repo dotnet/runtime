@@ -1,6 +1,0 @@
-<Project>
-  <ItemGroup>
-    <!-- issue https://github.com/dotnet/runtime/issues/25657 -->
-    <PackageReference Include="NETStandard.Library" Version="1.6.1" />
-  </ItemGroup>
-</Project>

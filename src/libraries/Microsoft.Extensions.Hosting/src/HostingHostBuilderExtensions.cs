@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -201,11 +203,10 @@ namespace Microsoft.Extensions.Hosting
             builder.ConfigureAppConfiguration((hostingContext, config) =>
             {
                 IHostEnvironment env = hostingContext.HostingEnvironment;
-
-                bool reloadOnChange = hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
+                bool reloadOnChange = GetReloadConfigOnChangeValue(hostingContext);
 
                 config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: reloadOnChange)
-                      .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
+                        .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: reloadOnChange);
 
                 if (env.IsDevelopment() && env.ApplicationName is { Length: > 0 })
                 {
@@ -225,7 +226,12 @@ namespace Microsoft.Extensions.Hosting
             })
             .ConfigureLogging((hostingContext, logging) =>
             {
-                bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+                bool isWindows =
+#if NET6_0_OR_GREATER
+                    OperatingSystem.IsWindows();
+#else
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#endif
 
                 // IMPORTANT: This needs to be added *before* configuration is loaded, this lets
                 // the defaults be overridden by the configuration.
@@ -236,7 +242,12 @@ namespace Microsoft.Extensions.Hosting
                 }
 
                 logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-                logging.AddConsole();
+#if NET6_0_OR_GREATER
+                if (!OperatingSystem.IsBrowser())
+#endif
+                {
+                    logging.AddConsole();
+                }
                 logging.AddDebug();
                 logging.AddEventSourceLogger();
 
@@ -263,6 +274,9 @@ namespace Microsoft.Extensions.Hosting
             });
 
             return builder;
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Calling IConfiguration.GetValue is safe when the T is bool.")]
+            static bool GetReloadConfigOnChangeValue(HostBuilderContext hostingContext) => hostingContext.Configuration.GetValue("hostBuilder:reloadConfigOnChange", defaultValue: true);
         }
 
         /// <summary>
@@ -271,6 +285,11 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         public static IHostBuilder UseConsoleLifetime(this IHostBuilder hostBuilder)
         {
             return hostBuilder.ConfigureServices(collection => collection.AddSingleton<IHostLifetime, ConsoleLifetime>());
@@ -283,6 +302,11 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="configureOptions">The delegate for configuring the <see cref="ConsoleLifetime"/>.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         public static IHostBuilder UseConsoleLifetime(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions)
         {
             return hostBuilder.ConfigureServices(collection =>
@@ -298,6 +322,11 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> that can be used to cancel the console.</param>
         /// <returns>A <see cref="Task"/> that only completes when the token is triggered or shutdown is triggered.</returns>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         public static Task RunConsoleAsync(this IHostBuilder hostBuilder, CancellationToken cancellationToken = default)
         {
             return hostBuilder.UseConsoleLifetime().Build().RunAsync(cancellationToken);
@@ -310,6 +339,11 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="configureOptions">The delegate for configuring the <see cref="ConsoleLifetime"/>.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> that can be used to cancel the console.</param>
         /// <returns>A <see cref="Task"/> that only completes when the token is triggered or shutdown is triggered.</returns>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         public static Task RunConsoleAsync(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions, CancellationToken cancellationToken = default)
         {
             return hostBuilder.UseConsoleLifetime(configureOptions).Build().RunAsync(cancellationToken);

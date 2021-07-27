@@ -20,11 +20,11 @@ namespace System.Diagnostics.Metrics
     public sealed class MeterListener : IDisposable
     {
         // We use LikedList here so we don't have to take any lock while iterating over the list as we always hold on a node which be either valid or null.
-        // LinkedList is thread safe for Add, Remove, and Clear operations.
+        // DiagLinkedList is thread safe for Add, Remove, and Clear operations.
         private static List<MeterListener> s_allStartedListeners = new List<MeterListener>();
 
         // List of the instruments which the current listener is listening to.
-        private LinkedList<Instrument> _enabledMeasurementInstruments = new LinkedList<Instrument>();
+        private DiagLinkedList<Instrument> _enabledMeasurementInstruments = new DiagLinkedList<Instrument>();
         private bool _disposed;
 
         // We initialize all measurement callback with no-op operations so we'll avoid the null checks during the execution;
@@ -185,15 +185,29 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public void RecordObservableInstruments()
         {
-            LinkedListNode<Instrument>? current = _enabledMeasurementInstruments.First;
+            List<Exception>? exceptionsList = null;
+            DiagNode<Instrument>? current = _enabledMeasurementInstruments.First;
             while (current is not null)
             {
                 if (current.Value.IsObservable)
                 {
-                    current.Value.Observe(this);
+                    try
+                    {
+                        current.Value.Observe(this);
+                    }
+                    catch (Exception e)
+                    {
+                        exceptionsList ??= new List<Exception>();
+                        exceptionsList.Add(e);
+                    }
                 }
 
                 current = current.Next;
+            }
+
+            if (exceptionsList is not null)
+            {
+                throw new AggregateException(exceptionsList);
             }
         }
 
@@ -214,7 +228,7 @@ namespace System.Diagnostics.Metrics
                 _disposed = true;
                 s_allStartedListeners.Remove(this);
 
-                LinkedListNode<Instrument>? current = _enabledMeasurementInstruments.First;
+                DiagNode<Instrument>? current = _enabledMeasurementInstruments.First;
                 if (current is not null && measurementsCompleted is not null)
                 {
                     callbacksArguments = new Dictionary<Instrument, object?>();

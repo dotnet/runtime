@@ -79,40 +79,6 @@ namespace System.Diagnostics.Metrics
         public T Value { get; }
 
         // Private helper to copy IEnumerable to array. We have it to avoid adding dependencies on System.Linq
-        private static KeyValuePair<string, object?>[] ToArray(IEnumerable<KeyValuePair<string, object?>>? tags)
-        {
-            if (tags is null)
-            {
-                return Instrument.EmptyTags;
-            }
-
-            int count = 0;
-            using (IEnumerator<KeyValuePair<string, object?>> e = tags.GetEnumerator())
-            {
-                checked
-                {
-                    while (e.MoveNext())
-                    {
-                        count++;
-                    }
-                }
-            }
-
-            int index = 0;
-            KeyValuePair<string, object?>[] tagsArray = new KeyValuePair<string, object?>[count];
-            using (IEnumerator<KeyValuePair<string, object?>> e = tags.GetEnumerator())
-            {
-                checked
-                {
-                    while (e.MoveNext() && index < count)
-                    {
-                        tagsArray[index] = e.Current;
-                        index++;
-                    }
-                }
-            }
-
-            return tagsArray;
-        }
+        private static KeyValuePair<string, object?>[] ToArray(IEnumerable<KeyValuePair<string, object?>>? tags) => tags is null ? Instrument.EmptyTags : new List<KeyValuePair<string, object?>>(tags).ToArray();
     }
 }

@@ -31,7 +31,7 @@ namespace ILCompiler
         private string _pdbPath;
         private bool _generatePerfMapFile;
         private string _perfMapPath;
-        private Guid? _perfMapMvid;
+        private int _perfMapFormatVersion;
         private bool _generateProfileFile;
         private int _parallelism;
         Func<MethodDesc, string> _printReproInstructions;
@@ -63,6 +63,12 @@ namespace ILCompiler
 
             // R2R field layout needs compilation group information
             ((ReadyToRunCompilerContext)context).SetCompilationGroup(group);
+        }
+
+        // Shutdown the Jit if it has been loaded. This must only be called once per process
+        public static void ShutdownJit()
+        {
+            CorInfoImpl.ShutdownJit();
         }
 
         public override CompilationBuilder UseBackendOptions(IEnumerable<string> options)
@@ -156,11 +162,11 @@ namespace ILCompiler
             return this;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UsePerfMapFile(bool generatePerfMapFile, string perfMapPath, Guid? inputModuleMvid)
+        public ReadyToRunCodegenCompilationBuilder UsePerfMapFile(bool generatePerfMapFile, string perfMapPath, int perfMapFormatVersion)
         {
             _generatePerfMapFile = generatePerfMapFile;
             _perfMapPath = perfMapPath;
-            _perfMapMvid = inputModuleMvid;
+            _perfMapFormatVersion = perfMapFormatVersion;
             return this;
         }
 
@@ -248,7 +254,7 @@ namespace ILCompiler
 
             NodeFactory factory = new NodeFactory(
                 _context,
-                _compilationGroup,
+                (ReadyToRunCompilationModuleGroupBase)_compilationGroup,
                 _profileData,
                 _nameMangler,
                 corHeaderNode,
@@ -312,7 +318,7 @@ namespace ILCompiler
                 pdbPath: _pdbPath,
                 generatePerfMapFile: _generatePerfMapFile,
                 perfMapPath: _perfMapPath,
-                perfMapMvid: _perfMapMvid,
+                perfMapFormatVersion: _perfMapFormatVersion,
                 generateProfileFile: _generateProfileFile,
                 _parallelism,
                 _profileData,

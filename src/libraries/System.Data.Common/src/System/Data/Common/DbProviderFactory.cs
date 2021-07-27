@@ -1,14 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Data.Common
 {
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
     public abstract partial class DbProviderFactory
     {
         private bool? _canCreateDataAdapter;
         private bool? _canCreateCommandBuilder;
 
         protected DbProviderFactory() { }
+
+        public virtual bool CanCreateBatch => false;
 
         public virtual bool CanCreateDataSourceEnumerator => false;
 
@@ -43,6 +48,10 @@ namespace System.Data.Common
                 return _canCreateCommandBuilder.Value;
             }
         }
+
+        public virtual DbBatch CreateBatch() => throw new NotSupportedException();
+
+        public virtual DbBatchCommand CreateBatchCommand() => throw new NotSupportedException();
 
         public virtual DbCommand? CreateCommand() => null;
 

@@ -1,6 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <!-- This package intentionally drops all runtime-package mappings from runtime.json -->
-    <ShouldVerifyClosure>false</ShouldVerifyClosure>
-  </PropertyGroup>
-</Project>

@@ -15,7 +15,7 @@ namespace System.Diagnostics.Metrics
 #endif
     public class Meter : IDisposable
     {
-        private static List<Meter> s_allMeters = new List<Meter>();
+        private static readonly List<Meter> s_allMeters = new List<Meter>();
         private List<Instrument> _instruments = new List<Instrument>();
         internal bool Disposed { get; private set; }
 
@@ -44,6 +44,9 @@ namespace System.Diagnostics.Metrics
             {
                 s_allMeters.Add(this);
             }
+
+            // Ensure the metrics EventSource has been created in case we need to log this meter
+            GC.KeepAlive(MetricsEventSource.Log);
         }
 
         /// <summary>

@@ -341,6 +341,12 @@ namespace Microsoft.NET.Build.Tasks
         private static Eligibility GetInputFileEligibility(ITaskItem file, bool compositeCompile, HashSet<string> exclusionSet, HashSet<string> r2rCompositeExclusionSet)
         {
             // Check to see if this is a valid ILOnly image that we can compile
+            if (!file.ItemSpec.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) && !file.ItemSpec.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                // If it isn't a dll or an exe, it certainly isn't a valid ILOnly image for compilation
+                return Eligibility.None;
+            }
+
             using (FileStream fs = new FileStream(file.ItemSpec, FileMode.Open, FileAccess.Read))
             {
                 try

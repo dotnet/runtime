@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Utf8MemoryStream = System.Text.Json.Tests.Serialization.CollectionTests.Utf8MemoryStream;
+using Utf8MemoryStream = System.Text.Json.Serialization.Tests.CollectionTests.Utf8MemoryStream;
 
 namespace System.Text.Json.Serialization.Tests
 {
@@ -72,6 +72,23 @@ namespace System.Text.Json.Serialization.Tests
             using var stream = new MemoryStream(data);
             List<TElement> results = await JsonSerializer.DeserializeAsyncEnumerable<TElement>(stream, options).ToListAsync();
             Assert.Equal(source, results);
+        }
+
+        [Fact]
+        public static async Task DeserializeAsyncEnumerable_ShouldStreamPartialData()
+        {
+            string json = JsonSerializer.Serialize(Enumerable.Range(0, 100));
+
+            using var stream = new Utf8MemoryStream(json);
+            IAsyncEnumerable<int> asyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<int>(stream, new JsonSerializerOptions { DefaultBufferSize = 1 });
+            await using IAsyncEnumerator<int> asyncEnumerator = asyncEnumerable.GetAsyncEnumerator();
+
+            for (int i = 0; i < 20; i++)
+            {
+                bool success = await asyncEnumerator.MoveNextAsync();
+                Assert.True(success, "AsyncEnumerator.MoveNextAsync() should return true.");
+                Assert.True(stream.Position < stream.Capacity / 2, "should have consumed less than half of the stream contents.");
+            }
         }
 
         [Fact]

@@ -121,7 +121,7 @@ namespace System.Xml
         public void Clear()
         {
             if (_strings != null)
-                Array.Clear(_strings, 0, _strings.Length);
+                Array.Clear(_strings);
 
             if (_stringDict != null)
                 _stringDict.Clear();

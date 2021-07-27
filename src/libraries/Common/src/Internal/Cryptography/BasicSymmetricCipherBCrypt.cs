@@ -52,7 +52,7 @@ namespace Internal.Cryptography
                 _currentIv = null;
                 if (currentIv != null)
                 {
-                    Array.Clear(currentIv, 0, currentIv.Length);
+                    Array.Clear(currentIv);
                 }
             }
 
@@ -64,15 +64,27 @@ namespace Internal.Cryptography
             Debug.Assert(input.Length > 0);
             Debug.Assert((input.Length % PaddingSizeInBytes) == 0);
 
-            int numBytesWritten;
+            int numBytesWritten = 0;
 
-            if (_encrypting)
+            // BCryptEncrypt and BCryptDecrypt can do in place encryption, but if the buffers overlap
+            // the offset must be zero. In that case, we need to copy to a temporary location.
+            if (input.Overlaps(output, out int offset) && offset != 0)
             {
-                numBytesWritten = Interop.BCrypt.BCryptEncrypt(_hKey, input, _currentIv, output);
+                byte[] rented = CryptoPool.Rent(output.Length);
+
+                try
+                {
+                    numBytesWritten = BCryptTransform(input, rented);
+                    rented.AsSpan(0, numBytesWritten).CopyTo(output);
+                }
+                finally
+                {
+                    CryptoPool.Return(rented, clearSize: numBytesWritten);
+                }
             }
             else
             {
-                numBytesWritten = Interop.BCrypt.BCryptDecrypt(_hKey, input, _currentIv, output);
+                numBytesWritten = BCryptTransform(input, output);
             }
 
             if (numBytesWritten != input.Length)
@@ -84,6 +96,13 @@ namespace Internal.Cryptography
             }
 
             return numBytesWritten;
+
+            int BCryptTransform(ReadOnlySpan<byte> input, Span<byte> output)
+            {
+                return _encrypting ?
+                    Interop.BCrypt.BCryptEncrypt(_hKey, input, _currentIv, output) :
+                    Interop.BCrypt.BCryptDecrypt(_hKey, input, _currentIv, output);
+            }
         }
 
         public override int TransformFinal(ReadOnlySpan<byte> input, Span<byte> output)

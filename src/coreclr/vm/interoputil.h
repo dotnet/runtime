@@ -83,10 +83,6 @@ ULONG SafeReleasePreemp(IUnknown* pUnk, RCW* pRCW = NULL);
 // Determines if a COM object can be cast to the specified type.
 BOOL CanCastComObject(OBJECTREF obj, MethodTable * pTargetMT);
 
-// includes Types which hold a "ComObject" class
-// and types which are imported through typelib
-BOOL IsComWrapperClass(TypeHandle type);
-
 // includes Type which hold a "__ComObject" class
 BOOL IsComObjectClass(TypeHandle type);
 

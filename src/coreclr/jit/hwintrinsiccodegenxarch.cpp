@@ -324,7 +324,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             genHWIntrinsic_R_R_RM_R(node, ins);
                             break;
                         }
+                        case NI_AVXVNNI_MultiplyWideningAndAdd:
+                        case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+                        {
+                            assert(targetReg != REG_NA);
+                            assert(op1Reg != REG_NA);
+                            assert(op2Reg != REG_NA);
 
+                            genHWIntrinsic_R_R_R_RM(ins, simdSize, targetReg, op1Reg, op2Reg, op3);
+                            break;
+                        }
                         default:
                         {
                             unreached();

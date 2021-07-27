@@ -75,6 +75,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(MemoryMappedFileAccess.ReadWrite, MemoryMappedFileAccess.CopyOnWrite)]
         [InlineData(MemoryMappedFileAccess.Read, MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.Read, MemoryMappedFileAccess.CopyOnWrite)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53601", runtimes: TestRuntimes.Mono, platforms: TestPlatforms.MacCatalyst)]
         public void ValidAccessLevelCombinations(MemoryMappedFileAccess mapAccess, MemoryMappedFileAccess viewAccess)
         {
             const int Capacity = 4096;

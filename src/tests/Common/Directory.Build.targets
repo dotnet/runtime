@@ -129,7 +129,13 @@
              WasmAppBuilder expects in native/-->
         <RunTimeDependencyCopyLocal
           Include="@(LibrariesRuntimeFiles)"
-          TargetDir="runtimepack/native/"/>
+          TargetDir="runtimepack/native/%(LibrariesRuntimeFiles.NativeSubDirectory)/"
+          Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' != ''" />
+
+        <RunTimeDependencyCopyLocal
+          Include="@(LibrariesRuntimeFiles)"
+          TargetDir="runtimepack/native/"
+          Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' == ''" />
 
         <RunTimeDependencyCopyLocal
           Include="$(ArtifactsDir)\TargetingPack\**"
@@ -138,6 +144,10 @@
         <!-- Wasm App Builder always builds in Debug -->
         <RunTimeDependencyCopyLocal
           Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\**"
+          TargetDir="WasmAppBuilder/"/>
+
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\JsonToItemsTaskFactory\Debug\$(NetCoreAppToolCurrent)\publish\**"
           TargetDir="WasmAppBuilder/"/>
 
         <RunTimeDependencyCopyLocal

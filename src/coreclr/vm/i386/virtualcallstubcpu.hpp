@@ -84,7 +84,7 @@ struct LookupHolder
 {
     static void InitializeStatic();
 
-    void  Initialize(PCODE resolveWorkerTarget, size_t dispatchToken);
+    void  Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorkerTarget, size_t dispatchToken);
 
     LookupStub*    stub()               { LIMITED_METHOD_CONTRACT;  return &_stub;    }
 
@@ -198,7 +198,7 @@ struct DispatchHolder
 {
     static void InitializeStatic();
 
-    void  Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT);
+    void  Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT);
 
     DispatchStub* stub()      { LIMITED_METHOD_CONTRACT;  return &_stub; }
 
@@ -347,7 +347,8 @@ struct ResolveHolder
 {
     static void  InitializeStatic();
 
-    void  Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
+    void  Initialize(ResolveHolder* pResolveHolderRX,
+                     PCODE resolveWorkerTarget, PCODE patcherTarget,
                      size_t dispatchToken, UINT32 hashedToken,
                      void * cacheAddr, INT32 * counterAddr
 #ifndef UNIX_X86_ABI
@@ -741,14 +742,14 @@ void LookupHolder::InitializeStatic()
     lookupInit._resolveWorkerDispl = 0xcccccccc;
 }
 
-void  LookupHolder::Initialize(PCODE resolveWorkerTarget, size_t dispatchToken)
+void  LookupHolder::Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorkerTarget, size_t dispatchToken)
 {
     _stub = lookupInit;
 
     //fill in the stub specific fields
     //@TODO: Get rid of this duplication of data.
     _stub._token              = dispatchToken;
-    _stub._resolveWorkerDispl = resolveWorkerTarget - ((PCODE) &_stub._resolveWorkerDispl + sizeof(DISPL));
+    _stub._resolveWorkerDispl = resolveWorkerTarget - ((PCODE) &pLookupHolderRX->_stub._resolveWorkerDispl + sizeof(DISPL));
 }
 
 LookupHolder* LookupHolder::FromLookupEntry(PCODE lookupEntry)
@@ -811,14 +812,14 @@ void DispatchHolder::InitializeStatic()
 #endif //STUB_LOGGING
 };
 
-void  DispatchHolder::Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT)
+void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT)
 {
     _stub = dispatchInit;
 
     //fill in the stub specific fields
     _stub._expectedMT  = (size_t) expectedMT;
-    _stub._failDispl   = failTarget - ((PCODE) &_stub._failDispl + sizeof(DISPL));
-    _stub._implDispl   = implTarget - ((PCODE) &_stub._implDispl + sizeof(DISPL));
+    _stub._failDispl   = failTarget - ((PCODE) &pDispatchHolderRX->_stub._failDispl + sizeof(DISPL));
+    _stub._implDispl   = implTarget - ((PCODE) &pDispatchHolderRX->_stub._implDispl + sizeof(DISPL));
 }
 
 DispatchHolder* DispatchHolder::FromDispatchEntry(PCODE dispatchEntry)
@@ -943,7 +944,8 @@ void ResolveHolder::InitializeStatic()
     resolveInit.toResolveStub          = (offsetof(ResolveStub, _resolveEntryPoint) - (offsetof(ResolveStub, toResolveStub) + 1)) & 0xFF;
 };
 
-void  ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
+void  ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX, 
+                                PCODE resolveWorkerTarget, PCODE patcherTarget,
                                 size_t dispatchToken, UINT32 hashedToken,
                                 void * cacheAddr, INT32 * counterAddr
 #ifndef UNIX_X86_ABI
@@ -960,8 +962,8 @@ void  ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
     _stub._token              = dispatchToken;
 //    _stub._hashedTokenMov     = hashedToken;
     _stub._tokenPush          = dispatchToken;
-    _stub._resolveWorkerDispl = resolveWorkerTarget - ((PCODE) &_stub._resolveWorkerDispl + sizeof(DISPL));
-    _stub._backpatcherDispl   = patcherTarget       - ((PCODE) &_stub._backpatcherDispl   + sizeof(DISPL));
+    _stub._resolveWorkerDispl = resolveWorkerTarget - ((PCODE) &pResolveHolderRX->_stub._resolveWorkerDispl + sizeof(DISPL));
+    _stub._backpatcherDispl   = patcherTarget       - ((PCODE) &pResolveHolderRX->_stub._backpatcherDispl   + sizeof(DISPL));
 #ifndef UNIX_X86_ABI
     _stub._stackArgumentsSize = stackArgumentsSize;
 #endif

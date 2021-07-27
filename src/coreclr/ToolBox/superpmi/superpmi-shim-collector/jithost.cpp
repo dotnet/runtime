@@ -6,6 +6,20 @@
 #include "spmiutil.h"
 #include "jithost.h"
 
+// There is a single JitHost object created during the one-time initialization of the JIT (function jitStartup),
+// and shared amongst all subsequent compilations. Any calls to the getIntConfigValue/getStringConfigValue
+// APIs get recorded in a single, global MethodContext/CompileResult, and are copied to the
+// per-compilation MethodContext in the shim implementation of compileMethod (using recGlobalContext()).
+// This works because the JIT eagerly asks for all config values once, in the one-time jitStartup
+// function. If the JIT were to ask for config values later, during the per-compilation phase,
+// they would get recorded here in the global MethodContext, and copied to all subsequent
+// compilation MethodContexts. This would be incorrect. A solution would be to use a per-compilation
+// MethodContext in addition to the global MethodContext, but we have to allow for multi-threading. That is,
+// there could be multiple JIT compilations happening concurrently, so we can't just replace the global
+// MethodContext with a per-compilation MethodContext. Perhaps per-compilation MethodContext could be
+// stored in a map from OS thread id to MethodContext, and looked up here based on thread id. The host APIs
+// have no per-compilation knowledge.
+
 JitHost* g_ourJitHost;
 
 // RecordVariable: return `true` if the given COMPlus variable `key` should be recorded
@@ -39,11 +53,6 @@ JitHost::JitHost(ICorJitHost* wrappedHost, MethodContext* methodContext) : wrapp
 {
 }
 
-void JitHost::setMethodContext(MethodContext* methodContext)
-{
-    this->mc = methodContext;
-}
-
 void* JitHost::allocateMemory(size_t size)
 {
     return wrappedHost->allocateMemory(size);
@@ -56,6 +65,15 @@ void JitHost::freeMemory(void* block)
 
 int JitHost::getIntConfigValue(const WCHAR* key, int defaultValue)
 {
+    // Special-case handling: don't collect this pseudo-variable, and don't
+    // even record that it was called (since it would get recorded into the
+    // global state). (See the superpmi.exe tool implementation of JitHost::getIntConfigValue()
+    // for the special-case implementation of this.)
+    if (wcscmp(key, W("SuperPMIMethodContextNumber")) == 0)
+    {
+        return defaultValue;
+    }
+
     mc->cr->AddCall("getIntConfigValue");
     int result = wrappedHost->getIntConfigValue(key, defaultValue);
 

@@ -47,7 +47,7 @@ namespace Internal.Cryptography
             {
                 if (IV != null)
                 {
-                    Array.Clear(IV, 0, IV.Length);
+                    Array.Clear(IV);
                     IV = null;
                 }
             }

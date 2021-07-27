@@ -123,8 +123,7 @@ namespace System.PrivateUri.Tests
                 if (!(implicitValue.Equals(explicitValue) || (fileSchemePrefix + implicitValue).Equals(explicitValue)))
                 {
                     errorCount++;
-                    testResults.Append("Property mismatch: " + info.Name + ", implicit value: " + implicitValue
-                        + ", explicit value: " + explicitValue + "; ");
+                    testResults.Append($"Property mismatch: {info.Name}, implicit value: {implicitValue}, explicit value: {explicitValue}; ");
                 }
             }
 
@@ -133,8 +132,7 @@ namespace System.PrivateUri.Tests
             if (!implicitString.Equals(explicitString))
             {
                 errorCount++;
-                testResults.Append("ToString mismatch; implicit value: " + implicitString
-                    + ", explicit value: " + explicitString);
+                testResults.Append($"ToString mismatch; implicit value: {implicitString}, explicit value: {explicitString}");
             }
 
             errors = testResults.ToString();
@@ -275,8 +273,7 @@ namespace System.PrivateUri.Tests
                 if (!resultValue.Equals(startValue))
                 {
                     errorCount++;
-                    testResults.Append("Property mismatch: " + info.Name + ", result value: "
-                        + resultValue + ", start value: " + startValue + "; ");
+                    testResults.Append($"Property mismatch: {info.Name}, result value: {resultValue}, start value: {startValue}; ");
                 }
             }
 
@@ -285,8 +282,7 @@ namespace System.PrivateUri.Tests
             if (!resultString.Equals(startString))
             {
                 errorCount++;
-                testResults.Append("ToString mismatch; result value: " + resultString
-                    + ", start value: " + startString);
+                testResults.Append($"ToString mismatch; result value: {resultString}, start value: {startString}");
             }
 
             errors = testResults.ToString();

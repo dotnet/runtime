@@ -417,7 +417,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
             }
 
-            EmitMethodSpecificationSignature(method, flags, enforceDefEncoding, context);
+            EmitMethodSpecificationSignature(method, flags, enforceDefEncoding, enforceOwningType, context);
 
             if (method.ConstrainedType != null)
             {
@@ -438,9 +438,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         private void EmitMethodSpecificationSignature(MethodWithToken method, 
-            uint flags, bool enforceDefEncoding, SignatureContext context)
+            uint flags, bool enforceDefEncoding, bool enforceOwningType, SignatureContext context)
         {
             ModuleToken methodToken = method.Token;
+
             if (method.Method.HasInstantiation && !method.Method.IsGenericMethodDefinition)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation;
@@ -469,7 +470,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     throw new NotImplementedException();
             }
 
+            if ((method.Token.Module != context.LocalContext) && !enforceOwningType)
+            {
+                // If enforeOwningType is set, this is an entry for the InstanceEntryPoint or InstrumentationDataTable nodes
+                // which are not used in quite the same way, and for which the MethodDef is always matched to the module
+                // which defines the type
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UpdateContext;
+            }
+
             EmitUInt(flags);
+
+            if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UpdateContext) != 0)
+            {
+                uint moduleIndex = (uint)context.Resolver.GetModuleIndex(method.Token.Module);
+                EmitUInt(moduleIndex);
+                context = context.InnerContext(method.Token.Module);
+            }
+
             if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
             {
                 // The type here should be the type referred to by the memberref (if this is one, not the type where the method was eventually found!

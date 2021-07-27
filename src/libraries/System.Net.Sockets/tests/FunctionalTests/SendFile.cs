@@ -421,9 +421,14 @@ namespace System.Net.Sockets.Tests
     public sealed class SendFile_Task : SendFile<SocketHelperTask>
     {
         public SendFile_Task(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SendFile_CancellableTask : SendFile<SocketHelperCancellableTask>
+    {
+        public SendFile_CancellableTask(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        public async Task Precanceled_Throws()
+        public async Task SendFileAsync_Precanceled_Throws()
         {
             using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -445,7 +450,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task SendAsync_CanceledDuringOperation_Throws(bool ipv6)
+        public async Task SendFileAsync_CanceledDuringOperation_Throws(bool ipv6)
         {
             const int CancelAfter = 200; // ms
             const int NumOfSends = 100;

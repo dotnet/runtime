@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// TODO: Enable after System.Private.Xml is annotated
-#nullable disable
-
 using System.Xml;
 using System.Collections;
 using System.Globalization;
 using System.Diagnostics;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -16,7 +14,7 @@ namespace System.Data
     {
         internal string _schemaName;
         internal string _schemaUri;
-        internal XmlElement _schemaRoot;
+        internal XmlElement? _schemaRoot;
         internal DataSet _ds;
 
         internal XDRSchema(DataSet ds, bool fInline)
@@ -27,6 +25,7 @@ namespace System.Data
             _ds = ds;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void LoadSchema(XmlElement schemaRoot, DataSet ds)
         {
             if (schemaRoot == null)
@@ -48,7 +47,7 @@ namespace System.Data
             ds.Namespace = _schemaUri;
 
             // Walk all the top level Element tags.
-            for (XmlNode n = schemaRoot.FirstChild; n != null; n = n.NextSibling)
+            for (XmlNode? n = schemaRoot.FirstChild; n != null; n = n.NextSibling)
             {
                 if (!(n is XmlElement))
                     continue;
@@ -66,10 +65,10 @@ namespace System.Data
                 ds.DataSetName = _schemaName;
         }
 
-        internal XmlElement FindTypeNode(XmlElement node)
+        internal XmlElement? FindTypeNode(XmlElement node)
         {
             string strType;
-            XmlNode vn;
+            XmlNode? vn;
             XmlNode vnRoof;
 
             Debug.Assert(FEqualIdentity(node, Keywords.XDR_ELEMENT, Keywords.XDRNS) ||
@@ -105,7 +104,7 @@ namespace System.Data
                     }
 
                     // Move vn node
-                    if (vn.FirstChild != null)
+                    if (vn!.FirstChild != null)
                         vn = vn.FirstChild;
                     else if (vn.NextSibling != null)
                         vn = vn.NextSibling;
@@ -114,7 +113,7 @@ namespace System.Data
                         while (vn != vnRoof)
                         {
                             vn = vn.ParentNode;
-                            if (vn.NextSibling != null)
+                            if (vn!.NextSibling != null)
                             {
                                 vn = vn.NextSibling;
                                 break;
@@ -131,7 +130,7 @@ namespace System.Data
 
         internal bool IsTextOnlyContent(XmlElement node)
         {
-            Debug.Assert(FEqualIdentity(node, Keywords.XDR_ELEMENTTYPE, Keywords.XDRNS), "Invalid node type " + node.LocalName);
+            Debug.Assert(FEqualIdentity(node, Keywords.XDR_ELEMENTTYPE, Keywords.XDRNS), $"Invalid node type {node.LocalName}");
 
             string value = node.GetAttribute(Keywords.CONTENT);
             if (value == null || value.Length == 0)
@@ -160,7 +159,7 @@ namespace System.Data
             if (!IsTextOnlyContent(typeNode))
                 return false;
 
-            for (XmlNode n = typeNode.FirstChild; n != null; n = n.NextSibling)
+            for (XmlNode? n = typeNode.FirstChild; n != null; n = n.NextSibling)
             {
                 if (FEqualIdentity(n, Keywords.XDR_ELEMENT, Keywords.XDRNS) ||
                     FEqualIdentity(n, Keywords.XDR_ATTRIBUTE, Keywords.XDRNS))
@@ -177,9 +176,10 @@ namespace System.Data
             return true;
         }
 
-        internal DataTable HandleTable(XmlElement node)
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        internal DataTable? HandleTable(XmlElement node)
         {
-            XmlElement typeNode;
+            XmlElement? typeNode;
 
             Debug.Assert(FEqualIdentity(node, Keywords.XDR_ELEMENTTYPE, Keywords.XDRNS) ||
                          FEqualIdentity(node, Keywords.XDR_ELEMENT, Keywords.XDRNS), "Invalid node type");
@@ -217,13 +217,14 @@ namespace System.Data
         private sealed class NameType : IComparable
         {
             public string name;
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
             public Type type;
-            public NameType(string n, Type t)
+            public NameType(string n, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type t)
             {
                 name = n;
                 type = t;
             }
-            public int CompareTo(object obj) { return string.Compare(name, (string)obj, StringComparison.Ordinal); }
+            public int CompareTo(object? obj) { return string.Compare(name, (string?)obj, StringComparison.Ordinal); }
         };
 
         // XDR spec: http://www.ltg.ed.ac.uk/~ht/XMLData-Reduced.htm
@@ -281,17 +282,18 @@ namespace System.Data
                 // Let's check that we realy don't have this name:
                 foreach (NameType nt in s_mapNameTypeXdr)
                 {
-                    Debug.Assert(nt.name != name, "FindNameType('" + name + "') -- failed. Existed name not found");
+                    Debug.Assert(nt.name != name, $"FindNameType('{name}') -- failed. Existed name not found");
                 }
 #endif
                 throw ExceptionBuilder.UndefinedDatatype(name);
             }
-            Debug.Assert(s_mapNameTypeXdr[index].name == name, "FindNameType('" + name + "') -- failed. Wrong name found");
+            Debug.Assert(s_mapNameTypeXdr[index].name == name, $"FindNameType('{name}') -- failed. Wrong name found");
             return s_mapNameTypeXdr[index];
         }
 
         private static readonly NameType s_enumerationNameType = FindNameType("enumeration");
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         private Type ParseDataType(string dt, string dtValues)
         {
             string strType = dt;
@@ -336,6 +338,7 @@ namespace System.Data
             return instanceName;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleColumn(XmlElement node, DataTable table)
         {
             Debug.Assert(FEqualIdentity(node, Keywords.XDR_ELEMENT, Keywords.XDRNS) ||
@@ -348,8 +351,8 @@ namespace System.Data
             string strValues;
             int minOccurs = 0;
             int maxOccurs = 1;
-            string strDefault;
-            DataColumn column;
+            string? strDefault;
+            DataColumn? column;
 
             // Get the name
             if (node.Attributes.Count > 0)
@@ -384,9 +387,9 @@ namespace System.Data
             }
 
             // Now get the type
-            XmlElement typeNode = FindTypeNode(node);
+            XmlElement? typeNode = FindTypeNode(node);
 
-            SimpleType xsdType = null;
+            SimpleType? xsdType = null;
 
             if (typeNode == null)
             {
@@ -485,7 +488,7 @@ namespace System.Data
                 }
                 catch (System.FormatException)
                 {
-                    throw ExceptionBuilder.CannotConvert(strDefault, type.FullName);
+                    throw ExceptionBuilder.CannotConvert(strDefault, type.FullName!);
                 }
         }
 
@@ -535,12 +538,12 @@ namespace System.Data
             }
         }
 
-
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleTypeNode(XmlElement typeNode, DataTable table, ArrayList tableChildren)
         {
-            DataTable tableChild;
+            DataTable? tableChild;
 
-            for (XmlNode n = typeNode.FirstChild; n != null; n = n.NextSibling)
+            for (XmlNode? n = typeNode.FirstChild; n != null; n = n.NextSibling)
             {
                 if (!(n is XmlElement))
                     continue;
@@ -564,14 +567,15 @@ namespace System.Data
             }
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataTable InstantiateTable(DataSet dataSet, XmlElement node, XmlElement typeNode)
         {
             string typeName = string.Empty;
             XmlAttributeCollection attrs = node.Attributes;
-            DataTable table;
+            DataTable? table;
             int minOccurs = 1;
             int maxOccurs = 1;
-            string keys = null;
+            string? keys = null;
             ArrayList tableChildren = new ArrayList();
 
 
@@ -612,7 +616,7 @@ namespace System.Data
 
                 for (int i = 0; i < keyLength; i++)
                 {
-                    DataColumn col = table.Columns[list[i], _schemaUri];
+                    DataColumn? col = table.Columns[list[i], _schemaUri];
                     if (col == null)
                         throw ExceptionBuilder.ElementTypeNotFound(list[i]);
                     cols[i] = col;
@@ -623,7 +627,7 @@ namespace System.Data
 
             foreach (DataTable _tableChild in tableChildren)
             {
-                DataRelation relation = null;
+                DataRelation? relation = null;
 
                 DataRelationCollection childRelations = table.ChildRelations;
 
@@ -649,18 +653,19 @@ namespace System.Data
                 relation.CheckMultipleNested = false; // disable the check for multiple nested parent
 
                 relation.Nested = true;
-                _tableChild.DataSet.Relations.Add(relation);
+                _tableChild.DataSet!.Relations.Add(relation);
                 relation.CheckMultipleNested = true; // enable the check for multiple nested parent
             }
 
             return table;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal DataTable InstantiateSimpleTable(DataSet dataSet, XmlElement node)
         {
             string typeName;
             XmlAttributeCollection attrs = node.Attributes;
-            DataTable table;
+            DataTable? table;
             int minOccurs = 1;
             int maxOccurs = 1;
 

@@ -238,7 +238,7 @@ public:
 
     static Precode* Allocate(PrecodeType t, MethodDesc* pMD,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
-    void Init(PrecodeType t, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
+    void Init(Precode* pPrecodeRX, PrecodeType t, MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
 
 #ifndef DACCESS_COMPILE
     void ResetTargetInterlocked();

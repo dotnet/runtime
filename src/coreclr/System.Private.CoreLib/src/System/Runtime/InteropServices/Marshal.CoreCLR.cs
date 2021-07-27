@@ -209,14 +209,6 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
 
-        private static object PtrToStructureHelper(IntPtr ptr, Type structureType)
-        {
-            var rt = (RuntimeType)structureType;
-            object structure = rt.CreateInstanceDefaultCtor(publicOnly: false, wrapExceptions: true)!;
-            PtrToStructureHelper(ptr, structure, allowValueClasses: true);
-            return structure;
-        }
-
         /// <summary>
         /// Helper function to copy a pointer into a preallocated structure.
         /// </summary>
@@ -472,8 +464,15 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Checks if the object is classic COM component.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool IsComObject(object o);
+        public static bool IsComObject(object o)
+        {
+            if (o is null)
+            {
+                throw new ArgumentNullException(nameof(o));
+            }
+
+            return o is __ComObject;
+        }
 
         /// <summary>
         /// Release the COM component and if the reference hits 0 zombie this object.

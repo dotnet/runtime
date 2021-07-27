@@ -31,7 +31,7 @@
 #define LODWORD(_qw)    ((ULONG)(_qw))
 
 #if defined(MIDL_PASS) || defined(RC_INVOKED) || defined(_M_CEE_PURE) \
-    || defined(_M_AMD64) || defined(__ARM_ARCH)
+    || defined(_M_AMD64) || defined(__ARM_ARCH) || defined(_M_S390X)
 
 #ifndef UInt32x32To64
 #define UInt32x32To64(a, b) ((unsigned __int64)((ULONG)(a)) * (unsigned __int64)((ULONG)(b)))

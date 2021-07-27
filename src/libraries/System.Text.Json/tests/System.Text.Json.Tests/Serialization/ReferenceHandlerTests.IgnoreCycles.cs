@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Tests
     public class ReferenceHandlerTests_IgnoreCycles
     {
         private static readonly JsonSerializerOptions s_optionsIgnoreCycles =
-            new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.IgnoreCycles };
+            new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.IgnoreCycles, DefaultBufferSize = 1 };
 
         [Fact]
         public async Task IgnoreCycles_OnObject()
@@ -399,6 +399,25 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             await Test_Serialize_And_SerializeAsync_Contains(root, expectedSubstring: @"""DayOfBirth"":15", expectedTimes: 2, s_optionsIgnoreCycles);
+        }
+
+        [Fact]
+        public async Task CycleDetectionStatePersistsAcrossContinuations()
+        {
+            string expectedValueJson = @"{""LargePropertyName"":""A large-ish string to force continuations"",""Nested"":null}";
+            var recVal = new RecursiveValue { LargePropertyName = "A large-ish string to force continuations" };
+            recVal.Nested = recVal;
+
+            var value = new List<RecursiveValue> { recVal, recVal };
+            string expectedJson = $"[{expectedValueJson},{expectedValueJson}]";
+
+            await Test_Serialize_And_SerializeAsync(value, expectedJson, s_optionsIgnoreCycles);
+        }
+
+        public class RecursiveValue
+        {
+            public string LargePropertyName { get; set; }
+            public RecursiveValue? Nested { get; set; }
         }
 
         private async Task Test_Serialize_And_SerializeAsync<T>(T obj, string expected, JsonSerializerOptions options)

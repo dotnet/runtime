@@ -130,3 +130,36 @@ int32_t CryptoNative_HmacCurrent(const HMAC_CTX* ctx, uint8_t* md, int32_t* len)
 
     return 0;
 }
+
+int32_t CryptoNative_HmacOneShot(const EVP_MD* type,
+                                 const uint8_t* key,
+                                 int32_t keySize,
+                                 const uint8_t* source,
+                                 int32_t sourceSize,
+                                 uint8_t* md,
+                                 int32_t* mdSize)
+{
+    assert(mdSize != NULL && type != NULL && md != NULL && mdSize != NULL);
+    assert(keySize >= 0 && *mdSize >= 0);
+    assert(key != NULL || keySize == 0);
+    assert(source != NULL || sourceSize == 0);
+
+    uint8_t empty = 0;
+
+    if (key == NULL)
+    {
+        if (keySize != 0)
+        {
+            return -1;
+        }
+
+        key = &empty;
+    }
+
+    unsigned int unsignedSource = Int32ToUint32(sourceSize);
+    unsigned int unsignedSize = Int32ToUint32(*mdSize);
+    unsigned char* result = HMAC(type, key, keySize, source, unsignedSource, md, &unsignedSize);
+    *mdSize = Uint32ToInt32(unsignedSize);
+
+    return result == NULL ? 0 : 1;
+}

@@ -8,6 +8,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Sockets
 {
@@ -71,7 +72,7 @@ namespace System.Net.Sockets
         private Internals.SocketAddress? _pinnedSocketAddress;
 
         // SendPacketsElements property variables.
-        private FileStream[]? _sendPacketsFileStreams;
+        private SafeFileHandle[]? _sendPacketsFileHandles;
 
         // Overlapped object related variables.
         private PreAllocatedOverlapped _preAllocatedOverlapped;
@@ -255,37 +256,38 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        internal unsafe SocketError DoOperationAccept(Socket socket, SafeSocketHandle handle, SafeSocketHandle acceptHandle)
+        internal unsafe SocketError DoOperationAccept(Socket socket, SafeSocketHandle handle, SafeSocketHandle acceptHandle, CancellationToken cancellationToken)
         {
             bool userBuffer = _count != 0;
             Debug.Assert(!userBuffer || (!_buffer.Equals(default) && _count >= _acceptAddressBufferCount));
             Memory<byte> buffer = userBuffer ? _buffer : _acceptBuffer;
-            Debug.Assert(_asyncProcessingState == AsyncProcessingState.None);
 
-            NativeOverlapped* overlapped = AllocateNativeOverlapped();
-            try
+            fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer.Span))
             {
-                _singleBufferHandle = buffer.Pin();
-                _asyncProcessingState = AsyncProcessingState.Set;
+                NativeOverlapped* overlapped = AllocateNativeOverlapped();
+                try
+                {
+                    Debug.Assert(_asyncProcessingState == AsyncProcessingState.None, $"Expected None, got {_asyncProcessingState}");
+                    _asyncProcessingState = AsyncProcessingState.InProcess;
 
-                bool success = socket.AcceptEx(
-                    handle,
-                    acceptHandle,
-                    userBuffer ? (IntPtr)((byte*)_singleBufferHandle.Pointer + _offset) : (IntPtr)_singleBufferHandle.Pointer,
-                    userBuffer ? _count - _acceptAddressBufferCount : 0,
-                    _acceptAddressBufferCount / 2,
-                    _acceptAddressBufferCount / 2,
-                    out int bytesTransferred,
-                    overlapped);
+                    bool success = socket.AcceptEx(
+                        handle,
+                        acceptHandle,
+                        (IntPtr)(userBuffer ? (bufferPtr + _offset) : bufferPtr),
+                        userBuffer ? _count - _acceptAddressBufferCount : 0,
+                        _acceptAddressBufferCount / 2,
+                        _acceptAddressBufferCount / 2,
+                        out int bytesTransferred,
+                        overlapped);
 
-                return ProcessIOCPResult(success, bytesTransferred, overlapped);
-            }
-            catch
-            {
-                _asyncProcessingState = AsyncProcessingState.None;
-                FreeNativeOverlapped(overlapped);
-                _singleBufferHandle.Dispose();
-                throw;
+                    return ProcessIOCPResultWithDeferredAsyncHandling(success, bytesTransferred, overlapped, buffer, cancellationToken);
+                }
+                catch
+                {
+                    _asyncProcessingState = AsyncProcessingState.None;
+                    FreeNativeOverlapped(overlapped);
+                    throw;
+                }
             }
         }
 
@@ -701,7 +703,7 @@ namespace System.Net.Sockets
             {
                 // Loop through the elements attempting to open each files and get its handle.
                 int index = 0;
-                _sendPacketsFileStreams = new FileStream[sendPacketsElementsFileCount];
+                _sendPacketsFileHandles = new SafeFileHandle[sendPacketsElementsFileCount];
                 try
                 {
                     foreach (SendPacketsElement spe in sendPacketsElementsCopy)
@@ -709,8 +711,8 @@ namespace System.Net.Sockets
                         if (spe?.FilePath != null)
                         {
                             // Create a FileStream to open the file.
-                            _sendPacketsFileStreams[index] =
-                                new FileStream(spe.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                            _sendPacketsFileHandles[index] =
+                                File.OpenHandle(spe.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
                             // Get the file handle from the stream.
                             index++;
@@ -721,8 +723,8 @@ namespace System.Net.Sockets
                 {
                     // Got an exception opening a file - close any open streams, then throw.
                     for (int i = index - 1; i >= 0; i--)
-                        _sendPacketsFileStreams[i].Dispose();
-                    _sendPacketsFileStreams = null;
+                        _sendPacketsFileHandles[i].Dispose();
+                    _sendPacketsFileHandles = null;
                     throw;
                 }
             }
@@ -1017,7 +1019,7 @@ namespace System.Net.Sockets
                     else if (spe.FilePath != null)
                     {
                         // This element is a file.
-                        sendPacketsDescriptorPinned[descriptorIndex].fileHandle = _sendPacketsFileStreams![fileIndex].SafeFileHandle.DangerousGetHandle();
+                        sendPacketsDescriptorPinned[descriptorIndex].fileHandle = _sendPacketsFileHandles![fileIndex].DangerousGetHandle();
                         sendPacketsDescriptorPinned[descriptorIndex].fileOffset = spe.OffsetLong;
                         sendPacketsDescriptorPinned[descriptorIndex].length = (uint)spe.Count;
                         sendPacketsDescriptorPinned[descriptorIndex].flags =
@@ -1088,20 +1090,26 @@ namespace System.Net.Sockets
                 safeHandle.DangerousAddRef(ref refAdded);
                 IntPtr handle = safeHandle.DangerousGetHandle();
 
-                Debug.Assert(_asyncProcessingState == AsyncProcessingState.Set);
-                bool userBuffer = _count >= _acceptAddressBufferCount;
+                // This matches the logic in DoOperationAccept
+                bool userBuffer = _count != 0;
+                Debug.Assert(!userBuffer || (!_buffer.Equals(default) && _count >= _acceptAddressBufferCount));
+                Memory<byte> buffer = userBuffer ? _buffer : _acceptBuffer;
 
-                _currentSocket.GetAcceptExSockaddrs(
-                    userBuffer ? (IntPtr)((byte*)_singleBufferHandle.Pointer + _offset) : (IntPtr)_singleBufferHandle.Pointer,
-                    _count != 0 ? _count - _acceptAddressBufferCount : 0,
-                    _acceptAddressBufferCount / 2,
-                    _acceptAddressBufferCount / 2,
-                    out localAddr,
-                    out localAddrLength,
-                    out remoteAddr,
-                    out remoteSocketAddress.InternalSize
+                fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer.Span))
+                {
+                    _currentSocket.GetAcceptExSockaddrs(
+                        (IntPtr)(userBuffer ? (bufferPtr + _offset) : bufferPtr),
+                        userBuffer ? _count - _acceptAddressBufferCount : 0,
+                        _acceptAddressBufferCount / 2,
+                        _acceptAddressBufferCount / 2,
+                        out localAddr,
+                        out localAddrLength,
+                        out remoteAddr,
+                        out remoteSocketAddress.InternalSize
                     );
-                Marshal.Copy(remoteAddr, remoteSocketAddress.Buffer, 0, remoteSocketAddress.Size);
+
+                    Marshal.Copy(remoteAddr, remoteSocketAddress.Buffer, 0, remoteSocketAddress.Size);
+                }
 
                 socketError = Interop.Winsock.setsockopt(
                     _acceptSocket!.SafeHandle,
@@ -1232,14 +1240,14 @@ namespace System.Net.Sockets
         private void FinishOperationSendPackets()
         {
             // Close the files if open.
-            if (_sendPacketsFileStreams != null)
+            if (_sendPacketsFileHandles != null)
             {
-                for (int i = 0; i < _sendPacketsFileStreams.Length; i++)
+                for (int i = 0; i < _sendPacketsFileHandles.Length; i++)
                 {
-                    _sendPacketsFileStreams[i]?.Dispose();
+                    _sendPacketsFileHandles[i]?.Dispose();
                 }
 
-                _sendPacketsFileStreams = null;
+                _sendPacketsFileHandles = null;
             }
         }
 

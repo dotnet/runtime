@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
+using Internal;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
@@ -209,7 +210,7 @@ namespace System.Runtime.CompilerServices
             // cases is we lose the ability to properly step in the debugger, as the debugger uses that
             // object's identity to track this specific builder/state machine.  As such, we proceed to
             // overwrite whatever's there anyway, even if it's non-null.
-            StateMachineBox<TStateMachine> box = StateMachineBox<TStateMachine>.GetOrCreateBox();
+            StateMachineBox<TStateMachine> box = StateMachineBox<TStateMachine>.RentFromCache();
             boxFieldRef = box; // important: this must be done before storing stateMachine into box.StateMachine!
             box.StateMachine = stateMachine;
             box.Context = currentContext;
@@ -284,114 +285,86 @@ namespace System.Runtime.CompilerServices
         {
             /// <summary>Delegate used to invoke on an ExecutionContext when passed an instance of this box type.</summary>
             private static readonly ContextCallback s_callback = ExecutionContextCallback;
+            /// <summary>Per-core cache of boxes, with one box per core.</summary>
+            /// <remarks>Each element is padded to expected cache-line size so as to minimize false sharing.</remarks>
+            private static readonly PaddedReference[] s_perCoreCache = new PaddedReference[Environment.ProcessorCount];
             /// <summary>Thread-local cache of boxes. This currently only ever stores one.</summary>
             [ThreadStatic]
             private static StateMachineBox<TStateMachine>? t_tlsCache;
-            /// <summary>Lock used to protected the shared cache of boxes. 1 == held, 0 == not held.</summary>
-            /// <remarks>The code that uses this assumes a runtime without thread aborts.</remarks>
-            private static int s_cacheLock;
-            /// <summary>Singly-linked list cache of boxes.</summary>
-            private static StateMachineBox<TStateMachine>? s_cache;
-            /// <summary>The number of items stored in <see cref="s_cache"/>.</summary>
-            private static int s_cacheSize;
 
-            /// <summary>If this box is stored in the cache, the next box in the cache.</summary>
-            private StateMachineBox<TStateMachine>? _next;
             /// <summary>The state machine itself.</summary>
             public TStateMachine? StateMachine;
 
             /// <summary>Gets a box object to use for an operation.  This may be a reused, pooled object, or it may be new.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // only one caller
-            internal static StateMachineBox<TStateMachine> GetOrCreateBox()
+            internal static StateMachineBox<TStateMachine> RentFromCache()
             {
-                StateMachineBox<TStateMachine>? box;
-
-                // First see if the thread-static cache of at most one box has one.
-                box = t_tlsCache;
+                // First try to get a box from the per-thread cache.
+                StateMachineBox<TStateMachine>? box = t_tlsCache;
                 if (box is not null)
                 {
                     t_tlsCache = null;
-                    return box;
                 }
-
-                // Try to acquire the lock to access the cache.  If there's any contention, don't use the cache.
-                if (s_cache is not null && // hot read just to see if there's any point paying for the interlocked
-                    Interlocked.Exchange(ref s_cacheLock, 1) == 0)
+                else
                 {
-                    // If there are any instances cached, take one from the cache stack and use it.
-                    box = s_cache;
-                    if (box is not null)
+                    // If we can't, then try to get a box from the per-core cache.
+                    ref StateMachineBox<TStateMachine>? slot = ref PerCoreCacheSlot;
+                    if (slot is null ||
+                        (box = Interlocked.Exchange<StateMachineBox<TStateMachine>?>(ref slot, null)) is null)
                     {
-                        s_cache = box._next;
-                        box._next = null;
-                        s_cacheSize--;
-                        Debug.Assert(s_cacheSize >= 0, "Expected the cache size to be non-negative.");
-
-                        // Release the lock and return the box.
-                        Volatile.Write(ref s_cacheLock, 0);
-                        return box;
+                        // If we can't, just create a new one.
+                        box = new StateMachineBox<TStateMachine>();
                     }
-
-                    // No objects were cached.  We'll just create a new instance.
-                    Debug.Assert(s_cacheSize == 0, "Expected cache size to be 0.");
-
-                    // Release the lock.
-                    Volatile.Write(ref s_cacheLock, 0);
                 }
 
-                // Couldn't quickly get a cached instance, so create a new instance.
-                return new StateMachineBox<TStateMachine>();
+                return box;
             }
 
-            /// <summary>Returns this instance to the cache, or drops it if the cache is full or this instance shouldn't be cached.</summary>
-            private void ReturnOrDropBox()
+            /// <summary>Returns this instance to the cache.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] // only two callers
+            private void ReturnToCache()
             {
-                Debug.Assert(_next is null, "Expected box to not be part of cached list.");
-
                 // Clear out the state machine and associated context to avoid keeping arbitrary state referenced by
-                // lifted locals.  We want to do this regardless of whether we end up caching the box or not, in case
-                // the caller keeps the box alive for an arbitrary period of time.
+                // lifted locals, and reset the instance for another await.
                 ClearStateUponCompletion();
-
-                // Reset the MRVTSC.  We can either do this here, in which case we may be paying the (small) overhead
-                // to reset the box even if we're going to drop it, or we could do it while holding the lock, in which
-                // case we'll only reset it if necessary but causing the lock to be held for longer, thereby causing
-                // more contention.  For now at least, we do it outside of the lock. (This must not be done after
-                // the lock is released, since at that point the instance could already be in use elsewhere.)
-                // We also want to increment the version number even if we're going to drop it, to maximize the chances
-                // that incorrectly double-awaiting a ValueTask will produce an error.
                 _valueTaskSource.Reset();
 
-                // If reusing the object would result in potentially wrapping around its version number, just throw it away.
-                // This provides a modicum of additional safety when ValueTasks are misused (helping to avoid the case where
-                // a ValueTask is illegally re-awaited and happens to do so at exactly 2^16 uses later on this exact same instance),
-                // at the expense of potentially incurring an additional allocation every 65K uses.
-                if ((ushort)_valueTaskSource.Version == ushort.MaxValue)
-                {
-                    return;
-                }
-
-                // If the thread static cache is empty, store this into it and bail.
+                // If the per-thread cache is empty, store this into it..
                 if (t_tlsCache is null)
                 {
                     t_tlsCache = this;
-                    return;
                 }
-
-                // Try to acquire the cache lock.  If there's any contention, or if the cache is full, we just throw away the object.
-                if (Interlocked.Exchange(ref s_cacheLock, 1) == 0)
+                else
                 {
-                    if (s_cacheSize < PoolingAsyncValueTaskMethodBuilder.s_valueTaskPoolingCacheSize)
+                    // Otherwise, store it into the per-core cache.
+                    ref StateMachineBox<TStateMachine>? slot = ref PerCoreCacheSlot;
+                    if (slot is null)
                     {
-                        // Push the box onto the cache stack for subsequent reuse.
-                        _next = s_cache;
-                        s_cache = this;
-                        s_cacheSize++;
-                        Debug.Assert(s_cacheSize > 0 && s_cacheSize <= PoolingAsyncValueTaskMethodBuilder.s_valueTaskPoolingCacheSize, "Expected cache size to be within bounds.");
+                        // Try to avoid the write if we know the slot isn't empty (we may still have a benign race condition and
+                        // overwrite what's there if something arrived in the interim).
+                        Volatile.Write(ref slot, this);
                     }
+                }
+            }
 
-                    // Release the lock.
-                    Volatile.Write(ref s_cacheLock, 0);
+            /// <summary>Gets the slot in <see cref="s_perCoreCache"/> for the current core.</summary>
+            private static ref StateMachineBox<TStateMachine>? PerCoreCacheSlot
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)] // only two callers are RentFrom/ReturnToCache
+                get
+                {
+                    // Get the current processor ID.  We need to ensure it fits within s_perCoreCache, so we
+                    // could % by its length, but we can do so instead by Environment.ProcessorCount, which will be a const
+                    // in tier 1, allowing better code gen, and then further use uints for even better code gen.
+                    Debug.Assert(s_perCoreCache.Length == Environment.ProcessorCount);
+                    int i = (int)((uint)Thread.GetCurrentProcessorId() % (uint)Environment.ProcessorCount);
+
+                    // We want an array of StateMachineBox<> objects, each consuming its own cache line so that
+                    // elements don't cause false sharing with each other.  But we can't use StructLayout.Explicit
+                    // with generics.  So we use object fields, but always reinterpret them (for all reads and writes
+                    // to avoid any safety issues) as StateMachineBox<> instances.
+                    Debug.Assert(s_perCoreCache[i].Object is null || s_perCoreCache[i].Object is StateMachineBox<TStateMachine>);
+                    return ref Unsafe.As<object?, StateMachineBox<TStateMachine>?>(ref s_perCoreCache[i].Object);
                 }
             }
 
@@ -429,7 +402,7 @@ namespace System.Runtime.CompilerServices
 
                 if (context is null)
                 {
-                    Debug.Assert(!(StateMachine is null));
+                    Debug.Assert(StateMachine is not null);
                     StateMachine.MoveNext();
                 }
                 else
@@ -447,8 +420,7 @@ namespace System.Runtime.CompilerServices
                 }
                 finally
                 {
-                    // Reuse this instance if possible, otherwise clear and drop it.
-                    ReturnOrDropBox();
+                    ReturnToCache();
                 }
             }
 
@@ -461,8 +433,7 @@ namespace System.Runtime.CompilerServices
                 }
                 finally
                 {
-                    // Reuse this instance if possible, otherwise clear and drop it.
-                    ReturnOrDropBox();
+                    ReturnToCache();
                 }
             }
 

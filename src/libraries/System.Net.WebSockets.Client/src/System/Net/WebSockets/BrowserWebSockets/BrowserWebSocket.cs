@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -575,7 +574,15 @@ namespace System.Net.WebSockets
                 _innerWebSocketCloseStatus = closeStatus;
                 _innerWebSocketCloseStatusDescription = statusDescription;
                 _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
-                _closeStatus = (int)_innerWebSocket.GetObjectProperty("readyState");
+                if (_innerWebSocket != null && !_innerWebSocket.IsDisposed && _state != (int)InternalState.Aborted)
+                {
+                    _closeStatus = (int)_innerWebSocket.GetObjectProperty("readyState");
+                }
+                else
+                {
+                    _closeStatus = 3; // (CLOSED)
+                }
+
                 return _tcsClose.Task;
             }
             catch (Exception exc)
@@ -613,7 +620,14 @@ namespace System.Net.WebSockets
                 _innerWebSocketCloseStatus = closeStatus;
                 _innerWebSocketCloseStatusDescription = statusDescription;
                 _innerWebSocket!.Invoke("close", (int)closeStatus, statusDescription);
-                _closeStatus = (int)_innerWebSocket.GetObjectProperty("readyState");
+                if (_innerWebSocket != null && !_innerWebSocket.IsDisposed && _state != (int)InternalState.Aborted)
+                {
+                    _closeStatus = (int)_innerWebSocket.GetObjectProperty("readyState");
+                }
+                else
+                {
+                    _closeStatus = 3; // (CLOSED)
+                }
                 OnCloseCallback(null, cancellationToken);
                 return Task.CompletedTask;
             }
