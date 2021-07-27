@@ -54,9 +54,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>89806f0b9e93ad2bbe32c654412835c0801a2032</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="6.0.0-beta.21370.12">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="6.0.0-beta.21372.16">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>89806f0b9e93ad2bbe32c654412835c0801a2032</Sha>
+      <Sha>6224d1b573b73caaa84176bd83dabe75f202cdc7</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.CodeAnalysis" Version="6.0.0-beta.21370.12">
       <Uri>https://github.com/dotnet/arcade</Uri>
