@@ -17997,13 +17997,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         {
             GenTreeIndir* indir = obj->AsIndir();
 
-            if (indir->Addr()->OperIs(GT_CNS_INT) && indir->Addr()->IsIconHandle(GTF_ICON_STR_HDL))
-            {
-                objClass    = impGetStringClass();
-                *pIsExact   = true;
-                *pIsNonNull = true;
-                break;
-            }
             if (indir->HasBase() && !indir->HasIndex())
             {
                 // indir(addr(lcl)) --> lcl
@@ -18314,12 +18307,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
             {
                 JITDUMP("Field's current class not available\n");
             }
-        }
-
-        if (!(*pIsExact) && (fieldClass != NO_CLASS_HANDLE) && (impIsClassExact(fieldClass)))
-        {
-            JITDUMP("Field is of an exact class: %s\n", eeGetClassName(fieldClass));
-            *pIsExact = true;
         }
     }
 
