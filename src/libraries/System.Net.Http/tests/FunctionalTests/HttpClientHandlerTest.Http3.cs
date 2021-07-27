@@ -458,6 +458,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56194")]
         [InlineData(CancellationType.Dispose)]
         [InlineData(CancellationType.CancellationToken)]
         public async Task ResponseCancellation_ServerReceivesCancellation(CancellationType type)
