@@ -125,7 +125,6 @@ namespace System.Net.Sockets.Tests
                 Assert.True(client.DualMode);
 
                 await ConnectAsync(client, new DnsEndPoint("localhost", port));
-
                 CheckIsIpv6LoopbackEndPoint(client.LocalEndPoint);
                 CheckIsIpv6LoopbackEndPoint(client.RemoteEndPoint);
             }
