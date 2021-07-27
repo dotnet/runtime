@@ -197,6 +197,48 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
+        public static void ConvertJSONArrayToIListOfJsonNode()
+        {
+            dynamic obj = JsonSerializer.Deserialize<JsonArray>("[42]");
+            Assert.Equal(42, (int)obj[0]);
+
+            IList<JsonNode> ilist = obj;
+            Assert.NotNull(ilist);
+            Assert.Equal(42, (int)ilist[0]);
+        }
+
+        [Fact]
+        public static void ConvertJSONArrayToJsonArray()
+        {
+            JsonArray nodes = JsonSerializer.Deserialize<JsonArray>("[1,1.1,\"Hello\"]");
+            Assert.Equal(1, (long)nodes[0]);
+            Assert.Equal(1.1, (double)nodes[1]);
+            Assert.Equal("Hello", (string)nodes[2]);
+        }
+
+        [Fact]
+        public static void ConvertJSONArrayToJsonNodeArray()
+        {
+            // Instead of JsonArray, use array of JsonNodes
+            JsonNode[] nodes = JsonSerializer.Deserialize<JsonNode[]>("[1,1.1,\"Hello\"]");
+            Assert.Equal(1, (long)nodes[0]);
+            Assert.Equal(1.1, (double)nodes[1]);
+            Assert.Equal("Hello", (string)nodes[2]);
+        }
+
+        [Fact]
+        public static void ConvertJSONArrayToObjectArray()
+        {
+            // Instead of JsonArray, use array of objects
+            JsonSerializerOptions options = new();
+            options.UnknownTypeHandling = Serialization.JsonUnknownTypeHandling.JsonNode;
+            object[] nodes = JsonSerializer.Deserialize<object[]>("[1,1.1,\"Hello\"]", options);
+            Assert.Equal(1, (long)(JsonNode)nodes[0]);
+            Assert.Equal(1.1, (double)(JsonNode)nodes[1]);
+            Assert.Equal("Hello", (string)(JsonNode)nodes[2]);
+        }
+
+        [Fact]
         public static void ReAddSameNode_Throws()
         {
             var jValue = JsonValue.Create(1);

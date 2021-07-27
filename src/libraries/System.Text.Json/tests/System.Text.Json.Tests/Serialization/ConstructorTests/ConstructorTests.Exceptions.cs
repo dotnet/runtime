@@ -123,7 +123,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task ExtensionDataProperty_CannotBindTo_CtorParam()
         {
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.DeserializeWrapper<Class_ExtData_CtorParam>("{}"));
-            string exStr = ex.ToString();
+            string exStr = ex.ToString(); // System.InvalidOperationException: 'The extension data property 'System.Collections.Generic.Dictionary`2[System.String,System.Text.Json.JsonElement] ExtensionData' on type 'System.Text.Json.Serialization.Tests.ConstructorTests+Class_ExtData_CtorParam' cannot bind with a parameter in constructor 'Void .ctor(System.Collections.Generic.Dictionary`2[System.String,System.Text.Json.JsonElement])'.'
             Assert.Contains("System.Collections.Generic.Dictionary`2[System.String,System.Text.Json.JsonElement] ExtensionData", exStr);
             Assert.Contains("System.Text.Json.Serialization.Tests.ConstructorTests+Class_ExtData_CtorParam", exStr);
             Assert.Contains("(System.Collections.Generic.Dictionary`2[System.String,System.Text.Json.JsonElement])", exStr);

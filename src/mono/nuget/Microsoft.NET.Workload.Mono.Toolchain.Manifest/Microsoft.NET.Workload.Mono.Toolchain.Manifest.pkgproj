@@ -13,11 +13,12 @@
 
     <PropertyGroup>
       <WorkloadManifestPath>$(IntermediateOutputPath)WorkloadManifest.json</WorkloadManifestPath>
+      <WorkloadManifestTargetsPath>$(IntermediateOutputPath)WorkloadManifest.targets</WorkloadManifestTargetsPath>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageFile Include="$(WorkloadManifestPath)" TargetPath="data" />
-      <PackageFile Include="WorkloadManifest.targets" TargetPath="data" />
+      <PackageFile Include="$(WorkloadManifestTargetsPath)" TargetPath="data" />
     </ItemGroup>
   </Target>
 
@@ -37,6 +38,11 @@
       TemplateFile="WorkloadManifest.json.in"
       Properties="@(_WorkloadManifestValues)"
       OutputPath="$(WorkloadManifestPath)" />
+
+    <GenerateFileFromTemplate
+      TemplateFile="WorkloadManifest.targets.in"
+      Properties="@(_WorkloadManifestValues)"
+      OutputPath="$(WorkloadManifestTargetsPath)" />
   </Target>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

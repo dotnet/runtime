@@ -343,7 +343,7 @@ namespace Internal.Cryptography
 
         public void Dispose()
         {
-            Array.Clear(_data, 0, _data.Length);
+            Array.Clear(_data);
             _gcHandle.Free();
         }
     }

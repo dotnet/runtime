@@ -102,6 +102,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        [ActiveIssue ("https://github.com/dotnet/runtime/issues/53599", platforms: TestPlatforms.MacCatalyst, runtimes: TestRuntimes.Mono)]
         public static void ConstructorThrows_StackTrace()
         {
             Expression<Func<Thrower>> e = () => new Thrower(true);

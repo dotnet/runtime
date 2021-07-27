@@ -21,12 +21,12 @@ namespace System.Xml.Xsl
     {
         public static uint DblHi(double dbl)
         {
-            return (uint)(BitConverter.DoubleToInt64Bits(dbl) >> 32);
+            return (uint)(BitConverter.DoubleToUInt64Bits(dbl) >> 32);
         }
 
         public static uint DblLo(double dbl)
         {
-            return unchecked((uint)BitConverter.DoubleToInt64Bits(dbl));
+            return unchecked((uint)BitConverter.DoubleToUInt64Bits(dbl));
         }
 
         // Returns true if value is infinite or NaN (exponent bits are all ones)
@@ -659,7 +659,7 @@ namespace System.Xml.Xsl
                         AddU(ref dblHi, 1);
                     }
                 }
-                return BitConverter.Int64BitsToDouble((long)dblHi << 32 | dblLo);
+                return BitConverter.UInt64BitsToDouble((ulong)dblHi << 32 | dblLo);
             }
 
             // Lop off the integer part and return it.
@@ -1112,7 +1112,7 @@ namespace System.Xml.Xsl
                     dblHi = DblHi(dblT);
                     dblHi &= 0x000FFFFF;
                     dblHi |= 0x3FF00000;
-                    dblT = BitConverter.Int64BitsToDouble((long)dblHi << 32 | DblLo(dblT));
+                    dblT = BitConverter.UInt64BitsToDouble((ulong)dblHi << 32 | DblLo(dblT));
 
                     // Adjust wExp2 because we don't have the implicit bit.
                     wExp2++;
@@ -1123,7 +1123,7 @@ namespace System.Xml.Xsl
                     // First multiply by a power of 2 to get a normalized value.
                     dblHi &= 0x000FFFFF;
                     dblHi |= 0x3FF00000;
-                    dblT = BitConverter.Int64BitsToDouble((long)dblHi << 32 | dblLo);
+                    dblT = BitConverter.UInt64BitsToDouble((ulong)dblHi << 32 | dblLo);
 
                     // This is the power of 2.
                     w1 = wExp2 + 52;
@@ -2307,7 +2307,7 @@ namespace System.Xml.Xsl
                         }
                     }
                 }
-                return BitConverter.Int64BitsToDouble((long)dblHi << 32 | dblLo);
+                return BitConverter.UInt64BitsToDouble((ulong)dblHi << 32 | dblLo);
             }
 #endif
         };

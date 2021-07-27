@@ -4072,7 +4072,36 @@ void ZapInfo::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,
 
 bool ZapInfo::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
 {
-    return m_pEEJitInfo->resolveVirtualMethod(info);
+    bool result = m_pEEJitInfo->resolveVirtualMethod(info);
+    if (result)
+    {
+        // First, cons up a suitable resolved token.
+        CORINFO_RESOLVED_TOKEN derivedResolvedToken = {};
+        info->resolvedTokenDevirtualizedMethod = derivedResolvedToken;
+
+        info->resolvedTokenDevirtualizedMethod.tokenScope   = getMethodModule(info->devirtualizedMethod);
+        info->resolvedTokenDevirtualizedMethod.tokenContext = MAKE_METHODCONTEXT(info->devirtualizedMethod);
+        info->resolvedTokenDevirtualizedMethod.token        = getMethodDefFromMethod(info->devirtualizedMethod);
+        info->resolvedTokenDevirtualizedMethod.tokenType    = CORINFO_TOKENKIND_DevirtualizedMethod;
+        info->resolvedTokenDevirtualizedMethod.hClass       = (CORINFO_CLASS_HANDLE)((size_t)info->exactContext & ~CORINFO_CONTEXTFLAGS_MASK);;
+        info->resolvedTokenDevirtualizedMethod.hMethod      = info->devirtualizedMethod;
+
+        // Then, if the method is on a valuetype, cons up a unboxed method resolution stub
+        info->resolvedTokenDevirtualizedUnboxedMethod = derivedResolvedToken;
+        bool unused;
+        CORINFO_METHOD_HANDLE unboxedMethod = getUnboxedEntry(info->devirtualizedMethod, &unused);
+        if (unboxedMethod != NULL)
+        {
+            info->resolvedTokenDevirtualizedUnboxedMethod.tokenScope   = getMethodModule(unboxedMethod);
+            info->resolvedTokenDevirtualizedUnboxedMethod.tokenContext = MAKE_METHODCONTEXT(unboxedMethod);
+            info->resolvedTokenDevirtualizedUnboxedMethod.token        = getMethodDefFromMethod(unboxedMethod);
+            info->resolvedTokenDevirtualizedUnboxedMethod.tokenType    = CORINFO_TOKENKIND_DevirtualizedMethod;
+            info->resolvedTokenDevirtualizedUnboxedMethod.hClass       = (CORINFO_CLASS_HANDLE)((size_t)info->exactContext & ~CORINFO_CONTEXTFLAGS_MASK);;
+            info->resolvedTokenDevirtualizedUnboxedMethod.hMethod      = unboxedMethod;
+        }
+    }
+
+    return result;
 }
 
 CORINFO_METHOD_HANDLE ZapInfo::getUnboxedEntry(

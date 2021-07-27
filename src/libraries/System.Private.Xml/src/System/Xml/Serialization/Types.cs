@@ -550,6 +550,7 @@ namespace System.Xml.Serialization
             AddNonXsdPrimitive(typeof(Guid), "guid", UrtTypes.Namespace, "Guid", new XmlQualifiedName("string", XmlSchema.Namespace), new XmlSchemaFacet[] { guidPattern }, TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired | TypeFlags.IgnoreDefault);
             AddNonXsdPrimitive(typeof(char), "char", UrtTypes.Namespace, "Char", new XmlQualifiedName("unsignedShort", XmlSchema.Namespace), Array.Empty<XmlSchemaFacet>(), TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.IgnoreDefault);
             AddNonXsdPrimitive(typeof(TimeSpan), "TimeSpan", UrtTypes.Namespace, "TimeSpan", new XmlQualifiedName("duration", XmlSchema.Namespace), Array.Empty<XmlSchemaFacet>(), TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired);
+            AddNonXsdPrimitive(typeof(DateTimeOffset), "dateTimeOffset", UrtTypes.Namespace, "DateTimeOffset", new XmlQualifiedName("dateTime", XmlSchema.Namespace), Array.Empty<XmlSchemaFacet>(), TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired);
 
             AddSoapEncodedTypes(Soap.Encoding);
 
@@ -595,6 +596,8 @@ namespace System.Xml.Serialization
                     else if (type == typeof(Guid))
                         return true;
                     else if (type == typeof(TimeSpan))
+                        return true;
+                    else if (type == typeof(DateTimeOffset))
                         return true;
                     else if (type == typeof(XmlNode[]))
                         return true;
@@ -1066,12 +1069,12 @@ namespace System.Xml.Serialization
         {
             if (mapping.BaseMapping == null)
                 return mapping.Members!;
-            ArrayList list = new ArrayList();
+            var list = new List<MemberMapping>();
             GetAllMembers(mapping, list);
-            return (MemberMapping[])list.ToArray(typeof(MemberMapping));
+            return list.ToArray();
         }
 
-        internal static void GetAllMembers(StructMapping mapping, ArrayList list)
+        internal static void GetAllMembers(StructMapping mapping, List<MemberMapping> list)
         {
             if (mapping.BaseMapping != null)
             {
@@ -1092,12 +1095,12 @@ namespace System.Xml.Serialization
 
         internal static MemberMapping[] GetSettableMembers(StructMapping structMapping)
         {
-            ArrayList list = new ArrayList();
+            var list = new List<MemberMapping>();
             GetSettableMembers(structMapping, list);
-            return (MemberMapping[])list.ToArray(typeof(MemberMapping));
+            return list.ToArray();
         }
 
-        private static void GetSettableMembers(StructMapping mapping, ArrayList list)
+        private static void GetSettableMembers(StructMapping mapping, List<MemberMapping> list)
         {
             if (mapping.BaseMapping != null)
             {
@@ -1219,7 +1222,10 @@ namespace System.Xml.Serialization
                             replacedInfo = info;
                             if (replacedInfo != memberInfoToBeReplaced)
                             {
-                                if (!info.GetMethod!.IsPublic
+                                // The property name is a match. It might be an override, or
+                                // it might be hiding. Either way, check to see if the derived
+                                // property has a getter that is useable for serialization.
+                                if (info.GetMethod != null && !info.GetMethod!.IsPublic
                                     && memberInfoToBeReplaced is PropertyInfo
                                     && ((PropertyInfo)memberInfoToBeReplaced).GetMethod!.IsPublic
                                    )

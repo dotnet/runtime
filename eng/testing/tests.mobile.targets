@@ -6,37 +6,27 @@
     <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</RunAOTCompilation>
 
     <PublishingTestsRun>true</PublishingTestsRun>
-    <UseDefaultBlazorWASMFeatureSwitches Condition="'$(UseDefaultBlazorWASMFeatureSwitches)' == ''">true</UseDefaultBlazorWASMFeatureSwitches>
-    <UseDefaultAndroidFeatureSwitches Condition="'$(UseDefaultAndroidFeatureSwitches)' == ''">true</UseDefaultAndroidFeatureSwitches>
-    <UseDefaultiOSFeatureSwitches Condition="'$(UseDefaultiOSFeatureSwitches)' == ''">true</UseDefaultiOSFeatureSwitches>
     <BundleTestAppTargets>BundleTestAppleApp;BundleTestAndroidApp</BundleTestAppTargets>
-  </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Android' and '$(UseDefaultAndroidFeatureSwitches)' == 'true'">
-    <DebuggerSupport>false</DebuggerSupport>
-    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
-    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
-    <EventSourceSupport>false</EventSourceSupport>
-    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">true</UseSystemResourceKeys>
-    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
-    <StartupHookSupport>false</StartupHookSupport>
-    <UseNativeHttpHandler>true</UseNativeHttpHandler>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator') and '$(UseDefaultiOSFeatureSwitches)' == 'true'">
-    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
-    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
-    <EventSourceSupport>false</EventSourceSupport>
-    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
-    <StartupHookSupport>false</StartupHookSupport>
-    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">true</UseSystemResourceKeys>
-    <UseNativeHttpHandler>true</UseNativeHttpHandler>
+    <!-- this catches the case when we are running tests, but not archiving them.
+         In case of archiving, the workload gets installed by code elsewhere -->
+    <InstallWorkloadForTesting Condition="'$(TestUsingWorkloads)' == 'true' and '$(ArchiveTests)' != 'true'">true</InstallWorkloadForTesting>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Suppress linker warnings as these are tests -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <!-- https://github.com/dotnet/sdk/issues/18581 tracks needing to set 2 properties to disable warnings. -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+
+    <!-- Reduce library test app size by trimming framework library features  -->
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
+    <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
+    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
+    <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
+    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
+    <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">false</UseNativeHttpHandler>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -111,7 +101,7 @@
     <RemoveDir Directories="$(BundleDir)" />
 
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
         OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="Full"
         OutputType="AsmOnly"
@@ -158,7 +148,7 @@
 
   <Target Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" Name="BundleTestAppleApp" DependsOnTargets="GenerateRuntimeConfig">
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
-    <Error Condition="('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(TargetOS)' == 'MacCatalyst') and '$(DevTeamProvisioning)' == ''"
+    <Error Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'MacCatalyst') and '$(DevTeamProvisioning)' == ''"
            Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'UBF8T346G9' if you're part of the Microsoft team account, or 'adhoc' to sign with an adhoc key.." />
     <Error Condition="'$(TestArchiveTestsDir)' == ''" Text="TestArchiveTestsDir property to archive the test folder must be set." />
 
@@ -169,12 +159,25 @@
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AppleTestRunner.dll</MainLibraryFileName>
       <_MobileIntermediateOutputPath Condition="'$(RunAOTCompilation)' == 'true'">$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
     </PropertyGroup>
+    <PropertyGroup>
+      <AOTMode Condition="'$(TargetOS)' != 'MacCatalyst'">Full</AOTMode>
+      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' != 'true'">Full</AOTMode>
+      <AOTMode Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
+    </PropertyGroup>
     <ItemGroup>
-      <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="$(PublishDir)*.dll" Exclude="$(PublishDir)System.Runtime.WindowsRuntime.dll">
+      <_AotExcludeAssemblies Include="$(PublishDir)System.Runtime.WindowsRuntime.dll" />
+      <_AotExcludeAssemblies Include="@(NativeLibraries->'$(PublishDir)%(Identity)')" />
+
+      <!-- JustInterp only needs to AOT CoreLib, the other assemblies will just get added to BundleAssemblies via _BundleNonAotAssemblies -->
+      <_AotIncludeAssemblies Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' == 'JustInterp'" Include="$(PublishDir)System.Private.CoreLib.dll" />
+      <_AotIncludeAssemblies Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' != 'JustInterp'" Include="$(PublishDir)*.dll" />
+
+      <AotInputAssemblies Condition="'$(RunAOTCompilation)' == 'true'" Include="@(_AotIncludeAssemblies)" Exclude="@(_AotExcludeAssemblies)">
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </AotInputAssemblies>
       <BundleAssemblies Condition="'$(RunAOTCompilation)' != 'true'" Include="$(PublishDir)*.dll" />
+      <_BundleNonAotAssemblies Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' == 'JustInterp'" Include="$(PublishDir)*.dll" Exclude="$(PublishDir)System.Private.CoreLib.dll" />
     </ItemGroup>
 
     <MakeDir Directories="$(_MobileIntermediateOutputPath)"
@@ -182,9 +185,9 @@
     <RemoveDir Directories="$(BundleDir)" />
 
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
         OutputDir="$(_MobileIntermediateOutputPath)"
-        Mode="Full"
+        Mode="$(AOTMode)"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(BundleDir)\modules.m"
@@ -193,6 +196,10 @@
         LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
+
+    <ItemGroup>
+      <BundleAssemblies Include="@(_BundleNonAotAssemblies)" />
+    </ItemGroup>
 
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
@@ -288,6 +295,11 @@
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
           DependsOnTargets="Publish;$(BundleTestAppTargets);ArchiveTests" />
+
+  <Target Name="PrepareForTestUsingWorkloads"
+          BeforeTargets="Test"
+          DependsOnTargets="InstallWorkloadUsingArtifacts"
+          Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
   <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(SkipImportRepoLinkerTargets)' != 'true'" />
 </Project>

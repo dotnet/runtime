@@ -80,7 +80,7 @@
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
-    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard.dll to $(ApiCompatTarget)" />
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard.dll to $(NetCoreAppCurrent)" />
 
     <Exec Command="$(_ApiCompatCommand) &quot;$(_netStandardLibrary20RefPath.TrimEnd('\/'))&quot; --baseline &quot;$(ApiCompatNSBaselineFile)&quot; @&quot;$(ApiCompatResponseFile)&quot;"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
@@ -89,7 +89,7 @@
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
-    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard to $(ApiCompatTarget)" />
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard to $(NetCoreAppCurrent)" />
  
     <PropertyGroup>
       <PreviousNetCoreAppRefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', '$(PreviousNetCoreAppPackageId)', '$(PreviousNetCoreAppPackageVersion)', 'ref', '$(PreviousNetCoreApp)'))</PreviousNetCoreAppRefPath>
@@ -107,7 +107,7 @@
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
-    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(PreviousNetCoreApp) to $(ApiCompatTarget)" />
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(PreviousNetCoreApp) to $(NetCoreAppCurrent)" />
   </Target>
 
   <Target Name="CleanAdditionalFiles" AfterTargets="Clean">

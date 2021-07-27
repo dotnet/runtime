@@ -4,32 +4,32 @@
     <body>
       <trans-unit id="ContextClassesMustBePartialMessageFormat">
         <source>Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</source>
-        <target state="new">Derived 'JsonSerializerContext' type '{0}' specifies JSON-serializable types. The type and all containing types must be made partial to kick off source generation.</target>
+        <target state="translated">Pochodny typ "JsonSerializerContext" "{0}" określa typy możliwe do serializacji w notacji JSON. Typ i wszystkie zawierające typy muszą być częściowe, aby uruchomić generowanie źródła.</target>
         <note />
       </trans-unit>
       <trans-unit id="ContextClassesMustBePartialTitle">
         <source>Derived 'JsonSerializerContext' types and all containing types must be partial.</source>
-        <target state="new">Derived 'JsonSerializerContext' types and all containing types must be partial.</target>
+        <target state="translated">Pochodne typy "JsonSerializerContext" i wszystkich zawierające typy muszą być częściowe.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
-        <target state="new">There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</target>
+        <target state="translated">Istnieje wiele typów o nazwie {0}. Wygenerowano źródło dla pierwszego wykrytego elementu. Aby rozwiązać tę kolizję, użyj „JsonSerializableAttribute. TypeInfoPropertyName”.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
-        <target state="new">Duplicate type name.</target>
+        <target state="translated">Zduplikowana nazwa typu.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
         <source>Did not generate serialization metadata for type '{0}'.</source>
-        <target state="new">Did not generate serialization metadata for type '{0}'.</target>
+        <target state="translated">Nie wygenerowano metadanych serializacji dla typu „{0}”.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate serialization metadata for type.</source>
-        <target state="new">Did not generate serialization metadata for type.</target>
+        <target state="translated">Nie wygenerowano metadanych serializacji dla typu.</target>
         <note />
       </trans-unit>
     </body>

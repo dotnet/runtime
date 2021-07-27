@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Net;
+using System.Text;
 using System.Runtime.InteropServices;
 
 namespace System.DirectoryServices.Protocols
@@ -12,13 +13,67 @@ namespace System.DirectoryServices.Protocols
         // Linux doesn't support setting FQDN so we mark the flag as if it is already set so we don't make a call to set it again.
         private bool _setFQDNDone = true;
 
-        private void InternalInitConnectionHandle(string hostname) => _ldapHandle = new ConnectionHandle(Interop.Ldap.ldap_init(hostname, ((LdapDirectoryIdentifier)_directoryIdentifier).PortNumber), _needDispose);
+        private void InternalInitConnectionHandle(string hostname)
+        {
+            if ((LdapDirectoryIdentifier)_directoryIdentifier == null)
+            {
+                throw new NullReferenceException();
+            }
+
+            _ldapHandle = new ConnectionHandle();
+        }
 
         private int InternalConnectToServer()
         {
+            // In Linux you don't have to call Connect after calling init. You
+            // directly call bind. However, we set the URI for the connection
+            // here instead of during initialization because we need access to
+            // the SessionOptions property to properly define it, which is not
+            // available during init.
             Debug.Assert(!_ldapHandle.IsInvalid);
-            // In Linux you don't have to call Connect after calling init. You directly call bind.
-            return 0;
+
+            string scheme = null;
+            LdapDirectoryIdentifier directoryIdentifier = (LdapDirectoryIdentifier)_directoryIdentifier;
+            if (directoryIdentifier.Connectionless)
+            {
+                scheme = "cldap://";
+            }
+            else if (SessionOptions.SecureSocketLayer)
+            {
+                scheme = "ldaps://";
+            }
+            else
+            {
+                scheme = "ldap://";
+            }
+
+            string uris = null;
+            string[] servers = directoryIdentifier.Servers;
+            if (servers != null && servers.Length != 0)
+            {
+                StringBuilder temp = new StringBuilder(200);
+                for (int i = 0; i < servers.Length; i++)
+                {
+                    if (i != 0)
+                    {
+                        temp.Append(' ');
+                    }
+                    temp.Append(scheme);
+                    temp.Append(servers[i]);
+                    temp.Append(':');
+                    temp.Append(directoryIdentifier.PortNumber);
+                }
+                if (temp.Length != 0)
+                {
+                    uris = temp.ToString();
+                }
+            }
+            else
+            {
+                uris = $"{scheme}:{directoryIdentifier.PortNumber}";
+            }
+
+            return LdapPal.SetStringOption(_ldapHandle, LdapOption.LDAP_OPT_URI, uris);
         }
 
         private int InternalBind(NetworkCredential tempCredential, SEC_WINNT_AUTH_IDENTITY_EX cred, BindMethod method)
@@ -30,7 +85,7 @@ namespace System.DirectoryServices.Protocols
             }
             else
             {
-                error = Interop.Ldap.ldap_simple_bind(_ldapHandle, cred.user, cred.password);
+                error = LdapPal.BindToDirectory(_ldapHandle, cred.user, cred.password);
             }
 
             return error;

@@ -161,7 +161,10 @@ namespace
         ~ExternalWrapperResultHolder()
         {
             if (Result.Context != NULL)
+            {
+                GCX_PREEMP();
                 InteropLib::Com::DestroyWrapperForExternal(Result.Context);
+            }
         }
         InteropLib::Com::ExternalWrapperResult* operator&()
         {
@@ -285,9 +288,6 @@ namespace
         // The collection should respect the supplied arguments.
         //        withFlags - If Flag_None, then ignore. Otherwise objects must have these flags.
         //    threadContext - The object must be associated with the supplied thread context.
-        //
-        // [TODO] Performance improvement should be made here to provide a custom IEnumerable
-        // instead of a managed array.
         OBJECTREF CreateManagedEnumerable(_In_ DWORD withFlags, _In_opt_ void* threadContext)
         {
             CONTRACT(OBJECTREF)
@@ -300,64 +300,61 @@ namespace
             }
             CONTRACT_END;
 
-            DWORD objCount;
-            DWORD objCountMax;
-
             struct
             {
                 PTRARRAYREF arrRef;
-                PTRARRAYREF arrRefTmp;
             } gc;
             ::ZeroMemory(&gc, sizeof(gc));
             GCPROTECT_BEGIN(gc);
 
+            CQuickArrayList<ExternalObjectContext*> localList;
+
+            // Determine objects to return
             {
                 LockHolder lock(this);
-                objCountMax = _hashMap.GetCount();
-            }
-
-            // Allocate the max number of objects needed.
-            gc.arrRef = (PTRARRAYREF)AllocateObjectArray(objCountMax, g_pObjectClass);
-
-            // Populate the array
-            {
-                LockHolder lock(this);
-                Iterator curr = _hashMap.Begin();
                 Iterator end = _hashMap.End();
-
-                ExternalObjectContext* inst;
-                for (objCount = 0; curr != end && objCount < objCountMax; objCount++, curr++)
+                for (Iterator curr = _hashMap.Begin(); curr != end; ++curr)
                 {
-                    inst = *curr;
+                    ExternalObjectContext* inst = *curr;
 
                     // Only add objects that are in the correct thread
                     // context and have the appropriate flags set.
                     if (inst->ThreadContext == threadContext
                         && (withFlags == ExternalObjectContext::Flags_None || inst->IsSet(withFlags)))
                     {
-                        // Separate the wrapper from the tracker runtime prior to
-                        // passing this onto the caller. This call is okay to make
-                        // even if the instance isn't from the tracker runtime.
-                        InteropLib::Com::SeparateWrapperFromTrackerRuntime(inst);
-                        gc.arrRef->SetAt(objCount, inst->GetObjectRef());
+                        localList.Push(inst);
                         STRESS_LOG1(LF_INTEROP, LL_INFO100, "Add EOC to Enumerable: 0x%p\n", inst);
                     }
                 }
             }
 
-            // Make the array the correct size
-            if (objCount < objCountMax)
+            // Allocate enumerable type to return.
+            gc.arrRef = (PTRARRAYREF)AllocateObjectArray((DWORD)localList.Size(), g_pObjectClass);
+
+            // Insert objects into enumerable.
+            // The ExternalObjectContexts in the hashmap are only
+            // removed and associated objects collected during a GC. Since
+            // this code is running in Cooperative mode they will never
+            // be null.
+            for (SIZE_T i = 0; i < localList.Size(); i++)
             {
-                gc.arrRefTmp = (PTRARRAYREF)AllocateObjectArray(objCount, g_pObjectClass);
+                ExternalObjectContext* inst = localList[i];
+                gc.arrRef->SetAt(i, inst->GetObjectRef());
+            }
 
-                SIZE_T elementSize = gc.arrRef->GetComponentSize();
-
-                void *src = gc.arrRef->GetDataPtr();
-                void *dest = gc.arrRefTmp->GetDataPtr();
-
-                _ASSERTE(sizeof(Object*) == elementSize && "Assumption invalidated in memmoveGCRefs() usage");
-                memmoveGCRefs(dest, src, objCount * elementSize);
-                gc.arrRef = gc.arrRefTmp;
+            {
+                // Separate the wrapper from the tracker runtime prior to
+                // passing them onto the caller. This call is okay to make
+                // even if the instance isn't from the tracker runtime.
+                // We switch to Preemptive mode since seperating a wrapper
+                // requires us to call out to non-runtime code which could
+                // call back into the runtime and/or trigger a GC.
+                GCX_PREEMP();
+                for (SIZE_T i = 0; i < localList.Size(); i++)
+                {
+                    ExternalObjectContext* inst = localList[i];
+                    InteropLib::Com::SeparateWrapperFromTrackerRuntime(inst);
+                }
             }
 
             GCPROTECT_END();
@@ -656,12 +653,15 @@ namespace
                 OBJECTHANDLE instHandle = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
 
                 // Call the InteropLib and create the associated managed object wrapper.
-                hr = InteropLib::Com::CreateWrapperForObject(
-                    instHandle,
-                    vtableCount,
-                    vtables,
-                    flags,
-                    &newWrapper);
+                {
+                    GCX_PREEMP();
+                    hr = InteropLib::Com::CreateWrapperForObject(
+                        instHandle,
+                        vtableCount,
+                        vtables,
+                        flags,
+                        &newWrapper);
+                }
                 if (FAILED(hr))
                 {
                     DestroyHandleCommon(instHandle, InstanceHandleType);
@@ -809,7 +809,6 @@ namespace
                     sizeof(ExternalObjectContext),
                     &resultHolder);
             }
-
             if (FAILED(hr))
                 COMPlusThrowHR(hr);
 
@@ -1461,14 +1460,18 @@ void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper)
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(wrapper != NULL);
     }
     CONTRACTL_END;
 
     STRESS_LOG1(LF_INTEROP, LL_INFO100, "Destroying MOW: 0x%p\n", wrapper);
-    InteropLib::Com::DestroyWrapperForObject(wrapper);
+
+    {
+        GCX_PREEMP();
+        InteropLib::Com::DestroyWrapperForObject(wrapper);
+    }
 }
 
 void ComWrappersNative::DestroyExternalComObjectContext(_In_ void* contextRaw)
@@ -1476,7 +1479,7 @@ void ComWrappersNative::DestroyExternalComObjectContext(_In_ void* contextRaw)
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(contextRaw != NULL);
     }
@@ -1488,7 +1491,11 @@ void ComWrappersNative::DestroyExternalComObjectContext(_In_ void* contextRaw)
 #endif
 
     STRESS_LOG1(LF_INTEROP, LL_INFO100, "Destroying EOC: 0x%p\n", contextRaw);
-    InteropLib::Com::DestroyWrapperForExternal(contextRaw);
+
+    {
+        GCX_PREEMP();
+        InteropLib::Com::DestroyWrapperForExternal(contextRaw);
+    }
 }
 
 void ComWrappersNative::MarkExternalComObjectContextCollected(_In_ void* contextRaw)

@@ -205,7 +205,7 @@ namespace System.Net.Http.Headers
                 {
                     // In the corner case where the value is negative, ensure it uses
                     // the invariant's negative sign rather than the current culture's.
-                    sb.Append(maxAge.ToString(NumberFormatInfo.InvariantInfo));
+                    sb.Append(NumberFormatInfo.InvariantInfo, $"{maxAge}");
                 }
             }
 
@@ -222,7 +222,7 @@ namespace System.Net.Http.Headers
                 {
                     // In the corner case where the value is negative, ensure it uses
                     // the invariant's negative sign rather than the current culture's.
-                    sb.Append(sharedMaxAge.ToString(NumberFormatInfo.InvariantInfo));
+                    sb.Append(NumberFormatInfo.InvariantInfo, $"{sharedMaxAge}");
                 }
             }
 
@@ -241,7 +241,7 @@ namespace System.Net.Http.Headers
                     {
                         // In the corner case where the value is negative, ensure it uses
                         // the invariant's negative sign rather than the current culture's.
-                        sb.Append(maxStaleLimit.ToString(NumberFormatInfo.InvariantInfo));
+                        sb.Append(NumberFormatInfo.InvariantInfo, $"{maxStaleLimit}");
                     }
                 }
             }
@@ -259,7 +259,7 @@ namespace System.Net.Http.Headers
                 {
                     // In the corner case where the value is negative, ensure it uses
                     // the invariant's negative sign rather than the current culture's.
-                    sb.Append(minFresh.ToString(NumberFormatInfo.InvariantInfo));
+                    sb.Append(NumberFormatInfo.InvariantInfo, $"{minFresh}");
                 }
             }
 

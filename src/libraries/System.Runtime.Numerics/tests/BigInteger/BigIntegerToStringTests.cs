@@ -1676,11 +1676,11 @@ namespace System.Numerics.Tests
             {
                 if (upper)
                 {
-                    output = output + chars[start].ToString("X");
+                    output = $"{output}{chars[start]:X}";
                 }
                 else
                 {
-                    output = output + chars[start].ToString("x");
+                    output = $"{output}{chars[start]:x}";
                 }
             }
 

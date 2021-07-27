@@ -785,6 +785,13 @@ unsigned long local_SSL_CTX_set_options(SSL_CTX* ctx, unsigned long options)
     return (unsigned long)SSL_CTX_ctrl(ctx, SSL_CTRL_OPTIONS, (long)options, NULL);
 }
 
+unsigned long local_SSL_set_options(SSL* ssl, unsigned long options)
+{
+   // SSL_ctrl is signed long in and signed long out; but SSL_set_options,
+   // which was a macro call to SSL_ctrl in 1.0, is unsigned/unsigned.
+   return (unsigned long)SSL_ctrl(ssl, SSL_CTRL_OPTIONS, (long)options, NULL);
+}
+
 int local_SSL_session_reused(SSL* ssl)
 {
     return (int)SSL_ctrl(ssl, SSL_CTRL_GET_SESSION_REUSED, 0, NULL);
@@ -811,6 +818,70 @@ int32_t local_RSA_pkey_ctx_ctrl(EVP_PKEY_CTX* ctx, int32_t optype, int32_t cmd, 
     // On OpenSSL 1.0.2 there aren't two different identifiers for RSA,
     // so just pass the request on th EVP_PKEY_CTX_ctrl with the only identifier defined.
     return EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA, optype, cmd, p1, p2);
+}
+
+int local_RSA_test_flags(const RSA *r, int flags)
+{
+    return r->flags & flags;
+}
+
+int local_EVP_PKEY_check(EVP_PKEY_CTX* ctx)
+{
+    EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+
+    if (pkey == NULL)
+    {
+        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_INPUT_NOT_INITIALIZED, __FILE__, __LINE__);
+        return -1;
+    }
+
+    int id = EVP_PKEY_get_base_id(pkey);
+
+    switch (id)
+    {
+        case NID_rsaEncryption:
+        {
+            const RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+            if (rsa != NULL)
+            {
+                return RSA_check_key(rsa);
+            }
+
+            break;
+        }
+        default:
+            ERR_put_error(ERR_LIB_EVP, 0, EVP_R_UNSUPPORTED_ALGORITHM, __FILE__, __LINE__);
+            return -1;
+    }
+
+    ERR_put_error(ERR_LIB_EVP, 0, EVP_R_NO_KEY_SET, __FILE__, __LINE__);
+    return -1;
+}
+
+int local_EVP_PKEY_public_check(EVP_PKEY_CTX* ctx)
+{
+    EVP_PKEY* pkey = EVP_PKEY_CTX_get0_pkey(ctx);
+
+    if (pkey == NULL)
+    {
+        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_INPUT_NOT_INITIALIZED, __FILE__, __LINE__);
+        return -1;
+    }
+
+    int id = EVP_PKEY_get_base_id(pkey);
+
+    switch (id)
+    {
+        case NID_rsaEncryption:
+        {
+            ERR_put_error(ERR_LIB_EVP, 0, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE, __FILE__, __LINE__);
+            return -2;
+        }
+        default:
+            ERR_put_error(ERR_LIB_EVP, 0, EVP_R_UNSUPPORTED_ALGORITHM, __FILE__, __LINE__);
+            return -1;
+    }
 }
 
 #endif

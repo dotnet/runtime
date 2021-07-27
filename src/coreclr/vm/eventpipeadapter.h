@@ -200,7 +200,8 @@ public:
 		EventPipeSerializationFormat format,
 		const bool rundownRequested,
 		IpcStream *const stream,
-		EventPipeSessionSynchronousCallback callback)
+		EventPipeSessionSynchronousCallback callback,
+		void *callbackAdditionalData)
 	{
 		CONTRACTL
 		{
@@ -222,7 +223,8 @@ public:
 			format,
 			rundownRequested,
 			stream,
-			callback);
+			callback,
+			callbackAdditionalData);
 		ep_rt_utf8_string_free (outputPathUTF8);
 		return result;
 	}

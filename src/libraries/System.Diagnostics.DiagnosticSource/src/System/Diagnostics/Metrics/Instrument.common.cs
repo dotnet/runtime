@@ -39,7 +39,7 @@ namespace System.Diagnostics.Metrics
         /// <param name="tags">A span of key-value pair tags associated with the measurement.</param>
         protected void RecordMeasurement(T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags)
         {
-            LinkedListNode<ListenerSubscription>? current = _subscriptions.First;
+            DiagNode<ListenerSubscription>? current = _subscriptions.First;
             while (current is not null)
             {
                 current.Value.Listener.NotifyMeasurement(this, measurement, tags, current.Value.State);

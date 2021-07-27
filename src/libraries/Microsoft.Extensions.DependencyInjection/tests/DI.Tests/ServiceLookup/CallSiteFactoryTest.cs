@@ -557,6 +557,41 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
         [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        public void GetSlotTests(int numberOfServices)
+        {
+            var serviceDescriptors = new[] {
+                ServiceDescriptor.Singleton<ICustomService, CustomService1>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService2>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService3>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService4>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService5>()
+            };
+
+            var callsiteFactory = new CallSiteFactory(serviceDescriptors.Take(numberOfServices));
+
+            for (int i = 0; i < numberOfServices; i++)
+            {
+                Assert.Equal(numberOfServices - i - 1, callsiteFactory.GetSlot(serviceDescriptors[i]));
+            }
+        }
+
+        interface ICustomService
+        {
+
+        }
+
+        class CustomService1 : ICustomService { }
+        class CustomService2 : ICustomService { }
+        class CustomService3 : ICustomService { }
+        class CustomService4 : ICustomService { }
+        class CustomService5 : ICustomService { }
+
+        [Theory]
         [InlineData(typeof(TypeWithMultipleParameterizedConstructors))]
         [InlineData(typeof(TypeWithSupersetConstructors))]
         public void CreateCallSite_ThrowsIfTypeHasNoConstructurWithResolvableParameters(Type type)

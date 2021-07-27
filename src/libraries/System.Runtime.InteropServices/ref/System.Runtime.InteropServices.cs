@@ -177,6 +177,7 @@ namespace System.Runtime.InteropServices
     {
         public static System.Span<T> AsSpan<T>(System.Collections.Generic.List<T>? list) { throw null; }
         public static ref TValue GetValueRefOrNullRef<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull { throw null; }
+        public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key, out bool exists) where TKey : notnull { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class ComAliasNameAttribute : System.Attribute
@@ -624,8 +625,8 @@ namespace System.Runtime.InteropServices
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static void PtrToStructure(System.IntPtr ptr, object structure) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        public static object? PtrToStructure(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type structureType) { throw null; }
-        public static T? PtrToStructure<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>(System.IntPtr ptr) { throw null; }
+        public static object? PtrToStructure(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors| System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type structureType) { throw null; }
+        public static T? PtrToStructure<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]T>(System.IntPtr ptr) { throw null; }
         public static void PtrToStructure<T>(System.IntPtr ptr, [System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T structure) { }
         public static int QueryInterface(System.IntPtr pUnk, ref System.Guid iid, out System.IntPtr ppv) { throw null; }
         public static byte ReadByte(System.IntPtr ptr) { throw null; }
@@ -760,6 +761,27 @@ namespace System.Runtime.InteropServices
         public static bool TryLoad(string libraryPath, out System.IntPtr handle) { throw null; }
         public static bool TryLoad(string libraryName, System.Reflection.Assembly assembly, System.Runtime.InteropServices.DllImportSearchPath? searchPath, out System.IntPtr handle) { throw null; }
     }
+    public static unsafe partial class NativeMemory
+    {
+        [System.CLSCompliantAttribute(false)]
+        public static void* AlignedAlloc(nuint byteCount, nuint alignment) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void AlignedFree(void* ptr) { }
+        [System.CLSCompliantAttribute(false)]
+        public static void* AlignedRealloc(void* ptr, nuint byteCount, nuint alignment) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void* Alloc(nuint byteCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void* Alloc(nuint elementCount, nuint elementSize) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void* AllocZeroed(nuint byteCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void* AllocZeroed(nuint elementCount, nuint elementSize) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void Free(void* ptr) { }
+        [System.CLSCompliantAttribute(false)]
+        public static void* Realloc(void* ptr, nuint byteCount) { throw null; }
+    }
     public readonly struct NFloat : IEquatable<NFloat>
     {
         public NFloat(float value) { }
@@ -774,6 +796,43 @@ namespace System.Runtime.InteropServices
     public sealed partial class OptionalAttribute : System.Attribute
     {
         public OptionalAttribute() { }
+    }
+    public enum PosixSignal
+    {
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGTSTP = -10,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGTTOU = -9,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGTTIN = -8,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGWINCH = -7,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGCONT = -6,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGCHLD = -5,
+        SIGTERM = -4,
+        SIGQUIT = -3,
+        SIGINT = -2,
+        SIGHUP = -1,
+    }
+    public sealed partial class PosixSignalContext
+    {
+        public PosixSignalContext(System.Runtime.InteropServices.PosixSignal signal) { }
+        public bool Cancel { get { throw null; } set { } }
+        public System.Runtime.InteropServices.PosixSignal Signal { get { throw null; } }
+    }
+    public sealed partial class PosixSignalRegistration : System.IDisposable
+    {
+        internal PosixSignalRegistration() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        public static System.Runtime.InteropServices.PosixSignalRegistration Create(System.Runtime.InteropServices.PosixSignal signal, System.Action<System.Runtime.InteropServices.PosixSignalContext> handler) { throw null; }
+        public void Dispose() { }
+        ~PosixSignalRegistration() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class PreserveSigAttribute : System.Attribute

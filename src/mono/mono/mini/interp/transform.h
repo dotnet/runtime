@@ -86,7 +86,7 @@ struct _InterpInst {
 };
 
 struct _InterpBasicBlock {
-	guint8 *ip;
+	int il_offset;
 	GSList *seq_points;
 	SeqPoint *last_seq_point;
 

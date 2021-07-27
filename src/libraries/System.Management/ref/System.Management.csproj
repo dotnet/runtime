@@ -1,12 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Management.cs" />
     <Compile Include="System.Management.manual.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.CodeDom\ref\System.CodeDom.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\ref\System.CodeDom.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.TypeConverter\ref\System.ComponentModel.TypeConverter.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+    <Reference Include="netstandard" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
+    <Reference Include="System.ObjectModel" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
 </Project>

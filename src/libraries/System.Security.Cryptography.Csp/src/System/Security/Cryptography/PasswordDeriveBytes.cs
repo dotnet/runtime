@@ -177,22 +177,22 @@ namespace System.Security.Cryptography
 
                 if (_baseValue != null)
                 {
-                    Array.Clear(_baseValue, 0, _baseValue.Length);
+                    Array.Clear(_baseValue);
                 }
 
                 if (_extra != null)
                 {
-                    Array.Clear(_extra, 0, _extra.Length);
+                    Array.Clear(_extra);
                 }
 
                 if (_password != null)
                 {
-                    Array.Clear(_password, 0, _password.Length);
+                    Array.Clear(_password);
                 }
 
                 if (_salt != null)
                 {
-                    Array.Clear(_salt, 0, _salt.Length);
+                    Array.Clear(_salt);
                 }
             }
         }

@@ -21,6 +21,25 @@ namespace System.Net.Test.Common
             return Environment.ExpandEnvironmentVariables(envValue);
         }
 
+        private static int GetPortValue(string envName, int defaultValue)
+        {
+            string envValue = Environment.GetEnvironmentVariable(envName);
+
+            if (string.IsNullOrWhiteSpace(envValue))
+            {
+                return defaultValue;
+            }
+            envValue = Environment.ExpandEnvironmentVariables(envValue);
+
+            var split = envValue.Split(':');
+            if (split.Length<2)
+            {
+                return defaultValue;
+            }
+            
+            return int.Parse(split[1]);
+        }
+
         private static Uri GetUriValue(string envName, Uri defaultValue=null)
         {
             string envValue = GetValue(envName, null);

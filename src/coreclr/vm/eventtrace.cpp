@@ -682,13 +682,13 @@ void ETW::GCLog::MovedReference(
     // ProfAPI
     if (fAllowProfApiNotification)
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC() || CORProfilerTrackGCMovedObjects());
-        g_profControlBlock.pProfInterface->MovedReference(pbMemBlockStart,
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC() || CORProfilerTrackGCMovedObjects());
+        (&g_profControlBlock)->MovedReference(pbMemBlockStart,
                                                           pbMemBlockEnd,
                                                           cbRelocDistance,
                                                           &(pCtxForEtwAndProfapi->pctxProfAPI),
                                                           fCompacting);
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -808,9 +808,9 @@ VOID ETW::GCLog::EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiN
     // ProfAPI
     if (fAllowProfApiNotification)
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC() || CORProfilerTrackGCMovedObjects());
-        g_profControlBlock.pProfInterface->EndMovedReferences(&(pCtxForEtwAndProfapi->pctxProfAPI));
-        END_PIN_PROFILER();
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackGC() || CORProfilerTrackGCMovedObjects());
+        (&g_profControlBlock)->EndMovedReferences(&(pCtxForEtwAndProfapi->pctxProfAPI));
+        END_PROFILER_CALLBACK();
     }
 #endif //PROFILING_SUPPORTED
 
@@ -2616,8 +2616,6 @@ VOID ETW::ThreadLog::FireThreadDC(Thread * pThread)
         GetClrInstanceId());
 }
 
-
-
 #ifndef FEATURE_REDHAWK
 
 // TypeSystemLog implementation
@@ -4169,6 +4167,12 @@ VOID ETW::EnumerationLog::EndRundown()
             MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context,
             TRACE_LEVEL_INFORMATION,
             CLR_RUNDOWNTHREADING_KEYWORD);
+
+        BOOL bIsGCRundownEnabled = ETW_TRACING_CATEGORY_ENABLED(
+            MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context,
+            TRACE_LEVEL_INFORMATION,
+            CLR_RUNDOWNGC_KEYWORD);
+
         if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context,
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_RUNDOWNJIT_KEYWORD)
@@ -4186,6 +4190,8 @@ VOID ETW::EnumerationLog::EndRundown()
            bIsPerfTrackRundownEnabled
            ||
            bIsThreadingRundownEnabled
+           ||
+           bIsGCRundownEnabled
         )
         {
             // begin marker event will go to the rundown provider
@@ -4225,6 +4231,11 @@ VOID ETW::EnumerationLog::EndRundown()
             if (bIsThreadingRundownEnabled)
             {
                 SendThreadRundownEvent();
+            }
+
+            if (bIsGCRundownEnabled)
+            {
+                SendGCRundownEvent();
             }
 
             // end marker event will go to the rundown provider
@@ -4416,6 +4427,12 @@ VOID EtwCallbackCommon(
     if (g_fEEStarted && !g_fEEShutDown && bIsPublicTraceHandle)
     {
         ETW::TypeSystemLog::OnKeywordsChanged();
+    }
+
+    if (g_fEEStarted && !g_fEEShutDown)
+    {
+        // Emit the YieldProcessor measured values at the beginning of the trace
+        YieldProcessorNormalization::FireMeasurementEvents();
     }
 }
 
@@ -5045,7 +5062,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
         {
             PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W("");
             UINT8 startupMode = 0;
-            UINT startupFlags = 0;
+            UINT startupFlags = CorHost2::GetStartupFlags();
             PathString dllPath;
             UINT8 Sku = ETW::InfoLog::InfoStructs::CoreCLR;
 
@@ -5968,6 +5985,49 @@ VOID ETW::EnumerationLog::SendThreadRundownEvent()
         ThreadLog::FireThreadCreated(pThread);
     }
 #endif // !DACCESS_COMPILE
+}
+
+/********************************************************/
+/* This routine is used to send GC rundown events */
+/********************************************************/
+VOID ETW::EnumerationLog::SendGCRundownEvent()
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+    } CONTRACTL_END;
+
+    if (GCHeapUtilities::IsGCHeapInitialized())
+    {
+        EtwGCSettingsInfo gcSettingsInfo;
+        GCHeapUtilities::GetGCHeap()->DiagGetGCSettings(&gcSettingsInfo);
+
+        DWORD dwEtwGCSettingFlags = 0;
+        if (gcSettingsInfo.concurrent_gc_p)
+            dwEtwGCSettingFlags |= kEtwGCFlagConcurrent;
+
+        if (gcSettingsInfo.use_large_pages_p)
+            dwEtwGCSettingFlags |= kEtwGCFlagLargePages;
+
+        if (gcSettingsInfo.use_frozen_segments_p)
+            dwEtwGCSettingFlags |= kEtwGCFlagFrozenSegs;
+
+        if (gcSettingsInfo.hard_limit_config_p)
+            dwEtwGCSettingFlags |= kEtwGCFlagHardLimitConfig;
+
+        if (gcSettingsInfo.no_affinitize_p)
+            dwEtwGCSettingFlags |= kEtwGCFlagNoAffinitize;
+
+        FireEtwGCSettingsRundown (
+            gcSettingsInfo.heap_hard_limit,
+            gcSettingsInfo.loh_threshold,
+            gcSettingsInfo.physical_memory_from_config,
+            gcSettingsInfo.gen0_min_budget_from_config,
+            gcSettingsInfo.gen0_max_budget_from_config,
+            gcSettingsInfo.high_mem_percent_from_config,
+            dwEtwGCSettingFlags,
+            GetClrInstanceId());
+    }
 }
 
 /****************************************************************************/

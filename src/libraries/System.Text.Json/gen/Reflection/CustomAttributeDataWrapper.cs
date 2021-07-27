@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
     internal class CustomAttributeDataWrapper : CustomAttributeData
     {
@@ -25,10 +25,18 @@ namespace System.Text.Json.SourceGeneration.Reflection
             }
 
             var constructorArguments = new List<CustomAttributeTypedArgument>();
+
             foreach (TypedConstant ca in a.ConstructorArguments)
             {
-                constructorArguments.Add(new CustomAttributeTypedArgument(ca.Type.AsType(metadataLoadContext), ca.Value));
+                if (ca.Kind == TypedConstantKind.Error)
+                {
+                    continue;
+                }
+
+                object value = ca.Kind == TypedConstantKind.Array ? ca.Values : ca.Value;
+                constructorArguments.Add(new CustomAttributeTypedArgument(ca.Type.AsType(metadataLoadContext), value));
             }
+
             Constructor = new ConstructorInfoWrapper(a.AttributeConstructor!, metadataLoadContext);
             NamedArguments = namedArguments;
             ConstructorArguments = constructorArguments;

@@ -259,7 +259,7 @@ namespace System.Runtime.Loader
 
         public string? Name => _name;
 
-        public override string ToString() => "\"" + Name + "\" " + GetType().ToString() + " #" + _id;
+        public override string ToString() => $"\"{Name}\" {GetType()} #{_id}";
 
         public static IEnumerable<AssemblyLoadContext> All
         {
@@ -780,8 +780,8 @@ namespace System.Runtime.Loader
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 
-            bool exists = Internal.IO.File.InternalExists(assemblyPath);
-            if (!exists && Path.IsCaseSensitive)
+            bool exists = System.IO.FileSystem.FileExists(assemblyPath);
+            if (!exists && PathInternal.IsCaseSensitive)
             {
 #if CORECLR
                 if (AssemblyLoadContext.IsTracingEnabled())
@@ -790,7 +790,7 @@ namespace System.Runtime.Loader
                 }
 #endif // CORECLR
                 assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!.ToLowerInvariant(), $"{assemblyName.Name}.dll");
-                exists = Internal.IO.File.InternalExists(assemblyPath);
+                exists = System.IO.FileSystem.FileExists(assemblyPath);
             }
 
             Assembly? asm = exists ? parentALC.LoadFromAssemblyPath(assemblyPath) : null;

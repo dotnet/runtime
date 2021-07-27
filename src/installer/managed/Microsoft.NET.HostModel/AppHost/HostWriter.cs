@@ -3,6 +3,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
@@ -30,12 +31,14 @@ namespace Microsoft.NET.HostModel.AppHost
         /// <param name="appBinaryFilePath">Full path to app binary or relative path to the result apphost file</param>
         /// <param name="windowsGraphicalUserInterface">Specify whether to set the subsystem to GUI. Only valid for PE apphosts.</param>
         /// <param name="assemblyToCopyResorcesFrom">Path to the intermediate assembly, used for copying resources to PE apphosts.</param>
+        /// <param name="enableMacOSCodeSign">Sign the app binary using codesign with an anonymous certificate.</param>
         public static void CreateAppHost(
             string appHostSourceFilePath,
             string appHostDestinationFilePath,
             string appBinaryFilePath,
             bool windowsGraphicalUserInterface = false,
-            string assemblyToCopyResorcesFrom = null)
+            string assemblyToCopyResorcesFrom = null,
+            bool enableMacOSCodeSign = false)
         {
             var bytesToWrite = Encoding.UTF8.GetBytes(appBinaryFilePath);
             if (bytesToWrite.Length > 1024)
@@ -140,6 +143,9 @@ namespace Microsoft.NET.HostModel.AppHost
                     {
                         throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {filePermissionOctal} for {appHostDestinationFilePath}.");
                     }
+
+                    if (enableMacOSCodeSign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                        CodeSign(appHostDestinationFilePath);
                 }
             }
             catch (Exception ex)
@@ -231,6 +237,29 @@ namespace Microsoft.NET.HostModel.AppHost
             bundleHeaderOffset = headerOffset;
 
             return headerOffset != 0;
+        }
+
+        private static void CodeSign(string appHostPath)
+        {
+            Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+            const string codesign = @"/usr/bin/codesign";
+            if (!File.Exists(codesign))
+                return;
+
+            var psi = new ProcessStartInfo()
+            {
+                Arguments = $"-s - \"{appHostPath}\"",
+                FileName = codesign,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+            };
+
+            using (var p = Process.Start(psi))
+            {
+                p.WaitForExit();
+                if (p.ExitCode != 0)
+                    throw new AppHostSigningException(p.ExitCode, p.StandardError.ReadToEnd());
+            }
         }
 
         [DllImport("libc", SetLastError = true)]

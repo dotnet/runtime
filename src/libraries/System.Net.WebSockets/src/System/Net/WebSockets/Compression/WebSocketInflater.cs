@@ -82,10 +82,9 @@ namespace System.Net.WebSockets.Compression
             }
             else
             {
-                // Rent a buffer as close to the size of the user buffer as possible,
-                // but not try to rent anything above 1MB because the array pool will allocate.
+                // Rent a buffer as close to the size of the user buffer as possible.
                 // If the payload is smaller than the user buffer, rent only as much as we need.
-                _buffer = ArrayPool<byte>.Shared.Rent(Math.Min(userBufferLength, (int)Math.Min(payloadLength, 1024 * 1024)));
+                _buffer = ArrayPool<byte>.Shared.Rent((int)Math.Min(userBufferLength, payloadLength));
             }
         }
 
@@ -112,9 +111,11 @@ namespace System.Net.WebSockets.Compression
                     {
                         byte[] newBuffer = ArrayPool<byte>.Shared.Rent(_available + FlushMarkerLength);
                         _buffer.AsSpan(0, _available).CopyTo(newBuffer);
-                        ArrayPool<byte>.Shared.Return(_buffer);
 
+                        byte[] toReturn = _buffer;
                         _buffer = newBuffer;
+
+                        ArrayPool<byte>.Shared.Return(toReturn);
                     }
 
                     FlushMarker.CopyTo(_buffer.AsSpan(_available));
@@ -203,12 +204,13 @@ namespace System.Net.WebSockets.Compression
 
         private void ReleaseBuffer()
         {
-            if (_buffer is not null)
+            if (_buffer is byte[] toReturn)
             {
-                ArrayPool<byte>.Shared.Return(_buffer);
                 _buffer = null;
                 _available = 0;
                 _position = 0;
+
+                ArrayPool<byte>.Shared.Return(toReturn);
             }
         }
 

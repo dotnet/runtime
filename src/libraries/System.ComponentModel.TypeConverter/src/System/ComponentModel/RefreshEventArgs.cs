@@ -12,7 +12,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.RefreshEventArgs'/> class with
         /// the component that has changed.
         /// </summary>
-        public RefreshEventArgs(object componentChanged)
+        public RefreshEventArgs(object? componentChanged)
         {
             ComponentChanged = componentChanged;
             TypeChanged = componentChanged?.GetType();
@@ -22,7 +22,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.RefreshEventArgs'/> class with
         /// the type of component that has changed.
         /// </summary>
-        public RefreshEventArgs(Type typeChanged)
+        public RefreshEventArgs(Type? typeChanged)
         {
             TypeChanged = typeChanged;
         }
@@ -30,11 +30,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the component that has changed its properties, events, or extenders.
         /// </summary>
-        public object ComponentChanged { get; }
+        public object? ComponentChanged { get; }
 
         /// <summary>
         /// Gets the type that has changed its properties, or events.
         /// </summary>
-        public Type TypeChanged { get; }
+        public Type? TypeChanged { get; }
     }
 }

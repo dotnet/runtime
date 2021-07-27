@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
+#pragma warning disable CA1844 // lack of WriteAsync(ReadOnlyMemory) override in .NET Standard 2.1 build
+
 namespace System.Net.Http
 {
     internal sealed class WinHttpRequestStream : Stream
@@ -31,6 +33,7 @@ namespace System.Net.Http
 
             // Take copy of handle from state.
             // The state's request handle will be set to null once the response stream starts.
+            Debug.Assert(_state.RequestHandle != null);
             _requestHandle = _state.RequestHandle;
         }
 

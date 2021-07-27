@@ -84,6 +84,56 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task Connect_DualMode_MultiAddressFamilyConnect_RetrievedEndPoints_Success()
+        {
+            if (!SupportsMultiConnect)
+                return;
+
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port))
+            using (Socket client = new Socket(SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.True(client.DualMode);
+
+                await MultiConnectAsync(client, new IPAddress[] { IPAddress.IPv6Loopback, IPAddress.Loopback }, port);
+
+                CheckIsIpv6LoopbackEndPoint(client.LocalEndPoint);
+                CheckIsIpv6LoopbackEndPoint(client.RemoteEndPoint);
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55709", TestPlatforms.Linux)]
+        public async Task Connect_DualMode_DnsConnect_RetrievedEndPoints_Success()
+        {
+            var localhostAddresses = Dns.GetHostAddresses("localhost");
+            if (Array.IndexOf(localhostAddresses, IPAddress.Loopback) == -1 ||
+                Array.IndexOf(localhostAddresses, IPAddress.IPv6Loopback) == -1)
+            {
+                return;
+            }
+
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port))
+            using (Socket client = new Socket(SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.True(client.DualMode);
+
+                await ConnectAsync(client, new DnsEndPoint("localhost", port));
+
+                CheckIsIpv6LoopbackEndPoint(client.LocalEndPoint);
+                CheckIsIpv6LoopbackEndPoint(client.RemoteEndPoint);
+            }
+        }
+
+        private static void CheckIsIpv6LoopbackEndPoint(EndPoint endPoint)
+        {
+            IPEndPoint ep = endPoint as IPEndPoint;
+            Assert.NotNull(ep);
+            Assert.True(ep.Address.Equals(IPAddress.IPv6Loopback) || ep.Address.Equals(IPAddress.Loopback.MapToIPv6()));
+        }
+
+        [Fact]
         public async Task Connect_OnConnectedSocket_Fails()
         {
             int port;

@@ -11,7 +11,7 @@
 #include <mono/utils/mono-error.h>
 
 gboolean mono_verifier_class_is_valid_generic_instantiation (MonoClass *klass);
-gboolean mono_verifier_is_method_valid_generic_instantiation (MonoMethod *method);
+MONO_COMPONENT_API gboolean mono_verifier_is_method_valid_generic_instantiation (MonoMethod *method);
 
 /*Token validation macros and functions */
 #define IS_MEMBER_REF(token) (mono_metadata_token_table (token) == MONO_TABLE_MEMBERREF)

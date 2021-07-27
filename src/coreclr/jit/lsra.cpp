@@ -196,9 +196,9 @@ BasicBlock::weight_t LinearScan::getWeight(RefPosition* refPos)
             if (refPos->getInterval()->isSpilled)
             {
                 // Decrease the weight if the interval has already been spilled.
-                if (varDsc->lvLiveInOutOfHndlr)
+                if (varDsc->lvLiveInOutOfHndlr || refPos->getInterval()->firstRefPosition->singleDefSpill)
                 {
-                    // An EH var is always spilled at defs, and we'll decrease the weight by half,
+                    // An EH-var/single-def is always spilled at defs, and we'll decrease the weight by half,
                     // since only the reload is needed.
                     weight = weight / 2;
                 }
@@ -700,7 +700,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // after the first liveness analysis - either by optimizations or by Lowering, and the tracked
     // set won't be recomputed until after Lowering (and this constructor is called prior to Lowering),
     // so we don't want to check that yet.
-    enregisterLocalVars = ((compiler->opts.compFlags & CLFLG_REGVAR) != 0);
+    enregisterLocalVars = compiler->compEnregLocals();
 #ifdef TARGET_ARM64
     availableIntRegs = (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd);
 #else
@@ -831,8 +831,10 @@ void LinearScan::setBlockSequence()
     }
 #endif // TRACK_LSRA_STATS
 
+    JITDUMP("Start LSRA Block Sequence: \n");
     for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = nextBlock)
     {
+        JITDUMP("Current block: " FMT_BB "\n", block->bbNum);
         blockSequence[bbSeqCount] = block;
         markBlockVisited(block);
         bbSeqCount++;
@@ -866,9 +868,8 @@ void LinearScan::setBlockSequence()
         }
 
         bool hasUniquePred = (block->GetUniquePred(compiler) != nullptr);
-        for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+        for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            BasicBlock* predBlock = pred->getBlock();
             if (!hasUniquePred)
             {
                 if (predBlock->NumSucc(compiler) > 1)
@@ -903,13 +904,13 @@ void LinearScan::setBlockSequence()
 
         // First, update the NORMAL successors of the current block, adding them to the worklist
         // according to the desired order.  We will handle the EH successors below.
-        bool checkForCriticalOutEdge = (block->NumSucc(compiler) > 1);
+        const unsigned numSuccs                = block->NumSucc(compiler);
+        bool           checkForCriticalOutEdge = (numSuccs > 1);
         if (!checkForCriticalOutEdge && block->bbJumpKind == BBJ_SWITCH)
         {
             assert(!"Switch with single successor");
         }
 
-        const unsigned numSuccs = block->NumSucc(compiler);
         for (unsigned succIndex = 0; succIndex < numSuccs; succIndex++)
         {
             BasicBlock* succ = block->GetSucc(succIndex, compiler);
@@ -931,6 +932,7 @@ void LinearScan::setBlockSequence()
             // (i.e. pred-first or random, since layout order is handled above).
             if (!BlockSetOps::IsMember(compiler, readySet, succ->bbNum))
             {
+                JITDUMP("\tSucc block: " FMT_BB, succ->bbNum);
                 addToBlockSequenceWorkList(readySet, succ, predSet);
                 BlockSetOps::AddElemD(compiler, readySet, succ->bbNum);
             }
@@ -954,27 +956,18 @@ void LinearScan::setBlockSequence()
                 // If we don't encounter all blocks by traversing the regular successor links, do a full
                 // traversal of all the blocks, and add them in layout order.
                 // This may include:
-                //   - internal-only blocks (in the fgAddCodeList) which may not be in the flow graph
-                //     (these are not even in the bbNext links).
+                //   - internal-only blocks which may not be in the flow graph
                 //   - blocks that have become unreachable due to optimizations, but that are strongly
                 //     connected (these are not removed)
                 //   - EH blocks
 
-                for (Compiler::AddCodeDsc* desc = compiler->fgAddCodeList; desc != nullptr; desc = desc->acdNext)
+                for (BasicBlock* const seqBlock : compiler->Blocks())
                 {
-                    if (!isBlockVisited(block))
+                    if (!isBlockVisited(seqBlock))
                     {
-                        addToBlockSequenceWorkList(readySet, block, predSet);
-                        BlockSetOps::AddElemD(compiler, readySet, block->bbNum);
-                    }
-                }
-
-                for (BasicBlock* block = compiler->fgFirstBB; block; block = block->bbNext)
-                {
-                    if (!isBlockVisited(block))
-                    {
-                        addToBlockSequenceWorkList(readySet, block, predSet);
-                        BlockSetOps::AddElemD(compiler, readySet, block->bbNum);
+                        JITDUMP("\tUnvisited block: " FMT_BB, seqBlock->bbNum);
+                        addToBlockSequenceWorkList(readySet, seqBlock, predSet);
+                        BlockSetOps::AddElemD(compiler, readySet, seqBlock->bbNum);
                     }
                 }
                 verifiedAllBBs = true;
@@ -989,25 +982,17 @@ void LinearScan::setBlockSequence()
 
 #ifdef DEBUG
     // Make sure that we've visited all the blocks.
-    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         assert(isBlockVisited(block));
     }
 
-    JITDUMP("LSRA Block Sequence: ");
+    JITDUMP("Final LSRA Block Sequence: \n");
     int i = 1;
     for (BasicBlock *block = startBlockSequence(); block != nullptr; ++i, block = moveToNextBlock())
     {
         JITDUMP(FMT_BB, block->bbNum);
-
-        if (block->isMaxBBWeight())
-        {
-            JITDUMP("(MAX) ");
-        }
-        else
-        {
-            JITDUMP("(%6s) ", refCntWtd2str(block->getBBWeight(compiler)));
-        }
+        JITDUMP("(%6s) ", refCntWtd2str(block->getBBWeight(compiler)));
 
         if (blockInfo[block->bbNum].hasEHBoundaryIn)
         {
@@ -1111,18 +1096,17 @@ void LinearScan::addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlo
 
     // Get predSet of block
     BlockSetOps::ClearD(compiler, predSet);
-    flowList* pred;
-    for (pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (BasicBlock* const predBlock : block->PredBlocks())
     {
-        BlockSetOps::AddElemD(compiler, predSet, pred->getBlock()->bbNum);
+        BlockSetOps::AddElemD(compiler, predSet, predBlock->bbNum);
     }
 
     // If either a rarely run block or all its preds are already sequenced, use block's weight to sequence
     bool useBlockWeight = block->isRunRarely() || BlockSetOps::IsSubset(compiler, sequencedBlockSet, predSet);
+    JITDUMP(", Criteria: %s", useBlockWeight ? "weight" : "bbNum");
 
     BasicBlockList* prevNode = nullptr;
     BasicBlockList* nextNode = blockSequenceWorkList;
-
     while (nextNode != nullptr)
     {
         int seqResult;
@@ -1160,6 +1144,17 @@ void LinearScan::addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlo
     {
         prevNode->next = newListNode;
     }
+
+#ifdef DEBUG
+    nextNode = blockSequenceWorkList;
+    JITDUMP(", Worklist: [");
+    while (nextNode != nullptr)
+    {
+        JITDUMP(FMT_BB " ", nextNode->block->bbNum);
+        nextNode = nextNode->next;
+    }
+    JITDUMP("]\n");
+#endif
 }
 
 void LinearScan::removeFromBlockSequenceWorkList(BasicBlockList* listNode, BasicBlockList* prevNode)
@@ -1397,9 +1392,7 @@ void Interval::setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l
 //
 void LinearScan::identifyCandidatesExceptionDataflow()
 {
-    BasicBlock* block;
-
-    foreach_block(compiler, block)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         if (block->hasEHBoundaryIn())
         {
@@ -1455,7 +1448,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     {
         return false;
     }
-    assert((compiler->opts.compFlags & CLFLG_REGVAR) != 0);
+    assert(compiler->compEnregLocals());
 
     if (!varDsc->lvTracked)
     {
@@ -1497,7 +1490,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
     // references when using the general GC encoding.
     unsigned lclNum = (unsigned)(varDsc - compiler->lvaTable);
-    if (varDsc->lvAddrExposed || !varDsc->IsEnregisterable() ||
+    if (varDsc->lvAddrExposed || !varDsc->IsEnregisterableType() ||
         (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT)))
     {
 #ifdef DEBUG
@@ -1801,7 +1794,7 @@ void LinearScan::identifyCandidates()
 
             if (varDsc->lvLiveInOutOfHndlr)
             {
-                newInt->isWriteThru = varDsc->lvEhWriteThruCandidate;
+                newInt->isWriteThru = varDsc->lvSingleDefRegCandidate;
                 setIntervalAsSpilled(newInt);
             }
 
@@ -1816,7 +1809,7 @@ void LinearScan::identifyCandidates()
             // Additionally, when we are generating code for a target with partial SIMD callee-save
             // (AVX on non-UNIX amd64 and 16-byte vectors on arm64), we keep a separate set of the
             // LargeVectorType vars.
-            if (Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType))
+            if (Compiler::varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()))
             {
                 largeVectorVarCount++;
                 VarSetOps::AddElemD(compiler, largeVectorVars, varDsc->lvVarIndex);
@@ -2415,9 +2408,8 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
                         }
                         else
                         {
-                            for (flowList* pred = otherBlock->bbPreds; pred != nullptr; pred = pred->flNext)
+                            for (BasicBlock* const otherPred : otherBlock->PredBlocks())
                             {
-                                BasicBlock* otherPred = pred->getBlock();
                                 if (otherPred->bbNum == blockInfo[otherBlock->bbNum].predBBNum)
                                 {
                                     predBlock = otherPred;
@@ -2435,10 +2427,8 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock* block,
         }
         else
         {
-            for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+            for (BasicBlock* const candidatePredBlock : block->PredBlocks())
             {
-                BasicBlock* candidatePredBlock = pred->getBlock();
-
                 if (isBlockVisited(candidatePredBlock))
                 {
                     if ((predBlock == nullptr) || (predBlock->bbWeight < candidatePredBlock->bbWeight))
@@ -2477,7 +2467,7 @@ void LinearScan::dumpVarRefPositions(const char* title)
                 printf("  (Interval %d)\n", interval->intervalIndex);
                 for (RefPosition* ref = interval->firstRefPosition; ref != nullptr; ref = ref->nextRefPosition)
                 {
-                    ref->dump();
+                    ref->dump(this);
                 }
             }
             else
@@ -3283,6 +3273,24 @@ void LinearScan::spillInterval(Interval* interval, RefPosition* fromRefPosition 
             fromRefPosition->spillAfter = true;
         }
     }
+
+    // Only handle the singledef intervals whose firstRefPosition is RefTypeDef and is not yet marked as spillAfter.
+    // The singledef intervals whose firstRefPositions are already marked as spillAfter, no need to mark them as
+    // singleDefSpill because they will always get spilled at firstRefPosition.
+    // This helps in spilling the singleDef at definition
+    //
+    // Note: Only mark "singleDefSpill" for those intervals who ever get spilled. The intervals that are never spilled
+    // will not be marked as "singleDefSpill" and hence won't get spilled at the first definition.
+    if (interval->isSingleDef && RefTypeIsDef(interval->firstRefPosition->refType) &&
+        !interval->firstRefPosition->spillAfter)
+    {
+        // TODO-CQ: Check if it is beneficial to spill at def, meaning, if it is a hot block don't worry about
+        // doing the spill. Another option is to track number of refpositions and a interval has more than X
+        // refpositions
+        // then perform this optimization.
+        interval->firstRefPosition->singleDefSpill = true;
+    }
+
     assert(toRefPosition != nullptr);
 
 #ifdef DEBUG
@@ -3965,16 +3973,16 @@ void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap in
 //
 // Arguments:
 //    currentBlock   - the BasicBlock we are about to allocate registers for
-//    allocationPass - true if we are currently allocating registers (versus writing them back)
 //
 // Return Value:
 //    None
 //
 // Notes:
-//    During the allocation pass, we use the outVarToRegMap of the selected predecessor to
-//    determine the lclVar locations for the inVarToRegMap.
-//    During the resolution (write-back) pass, we only modify the inVarToRegMap in cases where
-//    a lclVar was spilled after the block had been completed.
+//    During the allocation pass (allocationPassComplete = false), we use the outVarToRegMap
+//    of the selected predecessor to determine the lclVar locations for the inVarToRegMap.
+//    During the resolution (write-back when allocationPassComplete = true) pass, we only
+//    modify the inVarToRegMap in cases where a lclVar was spilled after the block had been
+//    completed.
 void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 {
     // If we have no register candidates we should only call this method during allocation.
@@ -4356,7 +4364,7 @@ void LinearScan::dumpRefPositions(const char* str)
     printf("------------\n");
     for (RefPosition& refPos : refPositions)
     {
-        refPos.dump();
+        refPos.dump(this);
     }
 }
 #endif // DEBUG
@@ -5615,10 +5623,6 @@ void LinearScan::allocateRegisters()
 // Return Value:
 //    None
 //
-// Assumptions:
-//    For ARM32, when "regType" is TYP_DOUBLE, "reg" should be a even-numbered
-//    float register, i.e. lower half of double register.
-//
 // Note:
 //    For ARM32, two float registers consisting a double register are updated
 //    together when "regType" is TYP_DOUBLE.
@@ -5631,8 +5635,8 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, Regi
     regNumber doubleReg           = REG_NA;
     if (regType == TYP_DOUBLE)
     {
-        doubleReg                        = reg->regNum;
-        RegRecord* anotherHalfReg        = getSecondHalfRegRec(reg);
+        RegRecord* anotherHalfReg        = findAnotherHalfRegRec(reg);
+        doubleReg                        = genIsValidDoubleReg(reg->regNum) ? reg->regNum : anotherHalfReg->regNum;
         anotherHalfReg->assignedInterval = interval;
     }
     else if ((oldAssignedInterval != nullptr) && (oldAssignedInterval->registerType == TYP_DOUBLE))
@@ -5929,7 +5933,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
             assert(currentRefPosition->refType == RefTypeExpUse);
         }
     }
-    else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType) &&
+    else if (spillAfter && !RefTypeIsUse(currentRefPosition->refType) && (treeNode != nullptr) &&
              (!treeNode->IsMultiReg() || treeNode->gtGetOp1()->IsMultiRegNode()))
     {
         // In the case of a pure def, don't bother spilling - just assign it to the
@@ -5940,10 +5944,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         assert(interval->isSpilled);
         varDsc->SetRegNum(REG_STK);
         interval->physReg = REG_NA;
-        if (treeNode != nullptr)
-        {
-            writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
-        }
+        writeLocalReg(treeNode->AsLclVar(), interval->varNum, REG_NA);
     }
     else // Not reload and Not pure-def that's spillAfter
     {
@@ -6031,6 +6032,27 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
                     treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
                 }
             }
+        }
+
+        if (currentRefPosition->singleDefSpill && (treeNode != nullptr))
+        {
+            // This is the first (and only) def of a single-def var (only defs are marked 'singleDefSpill').
+            // Mark it as GTF_SPILL, so it is spilled immediately to the stack at definition and
+            // GTF_SPILLED, so the variable stays live in the register.
+            //
+            // TODO: This approach would still create the resolution moves but during codegen, will check for
+            // `lvSpillAtSingleDef` to decide whether to generate spill or not. In future, see if there is some
+            // better way to avoid resolution moves, perhaps by updating the varDsc->SetRegNum(REG_STK) in this
+            // method?
+            treeNode->gtFlags |= GTF_SPILL;
+            treeNode->gtFlags |= GTF_SPILLED;
+
+            if (treeNode->IsMultiReg())
+            {
+                treeNode->SetRegSpillFlagByIdx(GTF_SPILLED, currentRefPosition->getMultiRegIdx());
+            }
+
+            varDsc->lvSpillAtSingleDef = true;
         }
     }
 
@@ -6158,10 +6180,21 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
     }
     else
     {
-        // Create the new node, with "tree" as its only child.
-        var_types treeType = tree->TypeGet();
+        var_types regType = tree->TypeGet();
+        if ((regType == TYP_STRUCT) && !tree->IsMultiRegNode())
+        {
+            assert(compiler->compEnregStructLocals());
+            assert(tree->IsLocal());
+            const GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
+            const LclVarDsc*           varDsc = compiler->lvaGetDesc(lcl);
+            // We create struct copies with a primitive type so we don't bother copy node with parsing structHndl.
+            // Note that for multiReg node we keep each regType in the tree and don't need this.
+            regType = varDsc->GetRegisterType(lcl);
+            assert(regType != TYP_UNDEF);
+        }
 
-        GenTreeCopyOrReload* newNode = new (compiler, oper) GenTreeCopyOrReload(oper, treeType, tree);
+        // Create the new node, with "tree" as its only child.
+        GenTreeCopyOrReload* newNode = new (compiler, oper) GenTreeCopyOrReload(oper, regType, tree);
         assert(refPosition->registerAssignment != RBM_NONE);
         SetLsraAdded(newNode);
         newNode->SetRegNumByIdx(refPosition->assignedReg(), multiRegIdx);
@@ -6209,7 +6242,7 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
     }
 
     LclVarDsc* varDsc = compiler->lvaTable + lclVarInterval->varNum;
-    assert(Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType));
+    assert(Compiler::varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()));
 
     // On Arm64, we must always have a register to save the upper half,
     // while on x86 we can spill directly to memory.
@@ -6290,7 +6323,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     // lclVar as spilled).
     assert(lclVarReg != REG_NA);
     LclVarDsc* varDsc = compiler->lvaTable + lclVarInterval->varNum;
-    assert(Compiler::varTypeNeedsPartialCalleeSave(varDsc->lvType));
+    assert(Compiler::varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()));
 
     GenTree* restoreLcl = nullptr;
     restoreLcl          = compiler->gtNewLclvNode(lclVarInterval->varNum, varDsc->lvType);
@@ -6949,7 +6982,7 @@ void LinearScan::resolveRegisters()
             printf("Has %sCritical Edges\n\n", hasCriticalEdges ? "" : "No ");
 
             printf("Prior to Resolution\n");
-            foreach_block(compiler, block)
+            for (BasicBlock* const block : compiler->Blocks())
             {
                 printf("\n" FMT_BB, block->bbNum);
                 if (block->hasEHBoundaryIn())
@@ -7861,8 +7894,6 @@ void LinearScan::resolveEdges()
         return;
     }
 
-    BasicBlock *block, *prevBlock = nullptr;
-
     // Handle all the critical edges first.
     // We will try to avoid resolution across critical edges in cases where all the critical-edge
     // targets of a block have the same home.  We will then split the edges only for the
@@ -7871,7 +7902,7 @@ void LinearScan::resolveEdges()
 
     if (hasCriticalEdges)
     {
-        foreach_block(compiler, block)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             if (block->bbNum > bbNumMaxBeforeResolution)
             {
@@ -7882,12 +7913,10 @@ void LinearScan::resolveEdges()
             {
                 handleOutgoingCriticalEdges(block);
             }
-            prevBlock = block;
         }
     }
 
-    prevBlock = nullptr;
-    foreach_block(compiler, block)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         if (block->bbNum > bbNumMaxBeforeResolution)
         {
@@ -7947,7 +7976,7 @@ void LinearScan::resolveEdges()
     // would only improve the debug case, and would clutter up the code somewhat.
     if (compiler->fgBBNumMax > bbNumMaxBeforeResolution)
     {
-        foreach_block(compiler, block)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             if (block->bbNum > bbNumMaxBeforeResolution)
             {
@@ -8004,16 +8033,15 @@ void LinearScan::resolveEdges()
 #ifdef DEBUG
     // Make sure the varToRegMaps match up on all edges.
     bool foundMismatch = false;
-    foreach_block(compiler, block)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         if (block->isEmpty() && block->bbNum > bbNumMaxBeforeResolution)
         {
             continue;
         }
         VarToRegMap toVarToRegMap = getInVarToRegMap(block->bbNum);
-        for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+        for (BasicBlock* const predBlock : block->PredBlocks())
         {
-            BasicBlock*     predBlock       = pred->getBlock();
             VarToRegMap     fromVarToRegMap = getOutVarToRegMap(predBlock->bbNum);
             VarSetOps::Iter iter(compiler, block->bbLiveIn);
             unsigned        varIndex = 0;
@@ -8640,7 +8668,8 @@ void LinearScan::dumpLsraStats(FILE* file)
 
     fprintf(file, "----------\n");
 #ifdef DEBUG
-    fprintf(file, "Register selection order: %S\n", JitConfig.JitLsraOrdering());
+    fprintf(file, "Register selection order: %S\n",
+            JitConfig.JitLsraOrdering() == nullptr ? W("ABCDEFGHIJKLMNOPQ") : JitConfig.JitLsraOrdering());
 #endif
     fprintf(file, "Total Tracked Vars:  %d\n", compiler->lvaTrackedCount);
     fprintf(file, "Total Reg Cand Vars: %d\n", regCandidateVarCount);
@@ -8659,6 +8688,7 @@ void LinearScan::dumpLsraStats(FILE* file)
     bool addedBlockHeader = false;
     bool anyNonZeroStat   = false;
 
+    // Iterate for block 0
     for (int statIndex = 0; statIndex < LsraStat::COUNT; statIndex++)
     {
         unsigned lsraStat = blockInfo[0].stats[statIndex];
@@ -8686,7 +8716,8 @@ void LinearScan::dumpLsraStats(FILE* file)
         fprintf(file, "\n");
     }
 
-    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    // Iterate for remaining blocks
+    for (BasicBlock* const block : compiler->Blocks())
     {
         if (block->bbNum > bbNumMaxBeforeResolution)
         {
@@ -8731,7 +8762,6 @@ void LinearScan::dumpLsraStats(FILE* file)
         {
             fprintf(file, "..........\n");
         }
-        // TODO-review: I don't see a point of displaying Stats (SpillCount, etc.) if they are zero. Thoughts?
         if ((regSelectI < firstRegSelStat) || (sumStats[regSelectI] != 0))
         {
             // Print register selection stats
@@ -8779,7 +8809,7 @@ void LinearScan::dumpLsraStatsCsv(FILE* file)
     }
 
     // blocks
-    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : compiler->Blocks())
     {
         if (block->bbNum > bbNumMaxBeforeResolution)
         {
@@ -8798,6 +8828,48 @@ void LinearScan::dumpLsraStatsCsv(FILE* file)
         fprintf(file, ",%u", sumStats[statIndex]);
     }
     fprintf(file, ",%.2f\n", compiler->info.compPerfScore);
+}
+
+// -----------------------------------------------------------
+// dumpLsraStatsSummary - dumps Lsra stats summary to given file
+//
+// Arguments:
+//    file    -  file to which stats are to be written.
+//
+void LinearScan::dumpLsraStatsSummary(FILE* file)
+{
+    unsigned             sumStats[LsraStat::STAT_FREE] = {0};
+    BasicBlock::weight_t wtdStats[LsraStat::STAT_FREE] = {0.0};
+
+    // Iterate for block 0
+    for (int statIndex = 0; statIndex < LsraStat::STAT_FREE; statIndex++)
+    {
+        unsigned lsraStat = blockInfo[0].stats[statIndex];
+        sumStats[statIndex] += lsraStat;
+        wtdStats[statIndex] += (lsraStat * blockInfo[0].weight);
+    }
+
+    // Iterate for remaining blocks
+    for (BasicBlock* const block : compiler->Blocks())
+    {
+        if (block->bbNum > bbNumMaxBeforeResolution)
+        {
+            continue;
+        }
+
+        for (int statIndex = 0; statIndex < LsraStat::STAT_FREE; statIndex++)
+        {
+            unsigned lsraStat = blockInfo[block->bbNum].stats[statIndex];
+            sumStats[statIndex] += lsraStat;
+            wtdStats[statIndex] += (lsraStat * block->bbWeight);
+        }
+    }
+
+    for (int regSelectI = 0; regSelectI < LsraStat::STAT_FREE; regSelectI++)
+    {
+        fprintf(file, ", %s %u %sWt %f", getStatName(regSelectI), sumStats[regSelectI], getStatName(regSelectI),
+                wtdStats[regSelectI]);
+    }
 }
 #endif // TRACK_LSRA_STATS
 
@@ -8870,7 +8942,7 @@ const char* LinearScan::getScoreName(RegisterScore score)
     }
 }
 
-void RefPosition::dump()
+void RefPosition::dump(LinearScan* linearScan)
 {
     printf("<RefPosition #%-3u @%-3u", rpNum, nodeLocation);
 
@@ -8911,6 +8983,10 @@ void RefPosition::dump()
     {
         printf(" spillAfter");
     }
+    if (this->singleDefSpill)
+    {
+        printf(" singleDefSpill");
+    }
     if (this->writeThru)
     {
         printf(" writeThru");
@@ -8944,6 +9020,8 @@ void RefPosition::dump()
     {
         printf(" regOptional");
     }
+
+    printf(" wt=%.2f", linearScan->getWeight(this));
     printf(">\n");
 }
 
@@ -9651,12 +9729,12 @@ void LinearScan::dumpLsraAllocationEvent(
 
         case LSRA_EVENT_DONE_KILL_GC_REFS:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("Done       ");
+            printf("Done          ");
             break;
 
         case LSRA_EVENT_NO_GC_KILLS:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("None       ");
+            printf("None          ");
             break;
 
         // Block boundaries
@@ -10622,7 +10700,7 @@ void LinearScan::verifyFinalAllocation()
     // Now, verify the resolution blocks.
     // Currently these are nearly always at the end of the method, but that may not always be the case.
     // So, we'll go through all the BBs looking for blocks whose bbNum is greater than bbNumMaxBeforeResolution.
-    for (BasicBlock* currentBlock = compiler->fgFirstBB; currentBlock != nullptr; currentBlock = currentBlock->bbNext)
+    for (BasicBlock* const currentBlock : compiler->Blocks())
     {
         if (currentBlock->bbNum > bbNumMaxBeforeResolution)
         {
@@ -11220,11 +11298,12 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
         spillCandidates &= ~spillCandidateBit;
         regNumber  spillCandidateRegNum    = genRegNumFromMask(spillCandidateBit);
         RegRecord* spillCandidateRegRecord = &linearScan->physRegs[spillCandidateRegNum];
+        Interval*  assignedInterval        = spillCandidateRegRecord->assignedInterval;
 
         // Can and should the interval in this register be spilled for this one,
         // if we don't find a better alternative?
         if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == currentLocation) &&
-            !spillCandidateRegRecord->assignedInterval->getNextRefPosition()->RegOptional())
+            !assignedInterval->getNextRefPosition()->RegOptional())
         {
             continue;
         }
@@ -11233,13 +11312,34 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
             continue;
         }
 
-        float currentSpillWeight = linearScan->spillCost[spillCandidateRegNum];
-#ifdef TARGET_ARM
-        if (currentInterval->registerType == TYP_DOUBLE)
+        float        currentSpillWeight = 0;
+        RefPosition* recentRefPosition  = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
+        if ((recentRefPosition != nullptr) &&
+            (recentRefPosition->RegOptional() && !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
         {
-            currentSpillWeight = max(currentSpillWeight, linearScan->spillCost[REG_NEXT(spillCandidateRegNum)]);
+            // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
+            // is not an actual ref. In those cases, we will reload in future (next) refPosition.
+            // For such cases, consider the spill cost of next refposition.
+            // See notes in "spillInterval()".
+            RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
+            if (reloadRefPosition != nullptr)
+            {
+                currentSpillWeight = linearScan->getWeight(reloadRefPosition);
+            }
         }
+
+        // Only consider spillCost if we were not able to calculate weight of reloadRefPosition.
+        if (currentSpillWeight == 0)
+        {
+            currentSpillWeight = linearScan->spillCost[spillCandidateRegNum];
+#ifdef TARGET_ARM
+            if (currentInterval->registerType == TYP_DOUBLE)
+            {
+                currentSpillWeight = max(currentSpillWeight, linearScan->spillCost[REG_NEXT(spillCandidateRegNum)]);
+            }
 #endif
+        }
+
         if (currentSpillWeight < bestSpillWeight)
         {
             bestSpillWeight    = currentSpillWeight;

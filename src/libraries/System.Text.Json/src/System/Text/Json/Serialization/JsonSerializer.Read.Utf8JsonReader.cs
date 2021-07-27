@@ -54,7 +54,7 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
+        public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
             => ReadUsingOptions<TValue>(ref reader, typeof(TValue), options);
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static object? Deserialize(ref Utf8JsonReader reader, [DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
+        public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType == null)
             {

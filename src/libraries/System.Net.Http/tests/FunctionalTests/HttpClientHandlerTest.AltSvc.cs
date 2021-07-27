@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using System.Net.Test.Common;
+using System.Net.Quic;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -18,35 +19,45 @@ namespace System.Net.Http.Functional.Tests
         /// <summary>
         /// HTTP/3 tests by default use prenegotiated HTTP/3. To test Alt-Svc upgrades, that must be disabled.
         /// </summary>
-        protected override HttpClient CreateHttpClient()
+        private HttpClient CreateHttpClient(Version version)
         {
-            HttpClientHandler handler = CreateHttpClientHandler(HttpVersion.Version30);
-
-            return CreateHttpClient(handler);
+            var client = CreateHttpClient();
+            client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+            client.DefaultRequestVersion = version;
+            return client;
         }
 
         [Theory]
         [MemberData(nameof(AltSvcHeaderUpgradeVersions))]
-        public async Task AltSvc_Header_Upgrade_Success(Version fromVersion)
+        public async Task AltSvc_Header_Upgrade_Success(Version fromVersion, bool overrideHost)
         {
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/54050")]
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
             // The test makes a request to a HTTP/1 or HTTP/2 server first, which supplies an Alt-Svc header pointing to the second server.
             using GenericLoopbackServer firstServer =
                 fromVersion.Major switch
                 {
-                    1 => new LoopbackServer(new LoopbackServer.Options { UseSsl = true }),
+                    1 => Http11LoopbackServerFactory.Singleton.CreateServer(new LoopbackServer.Options { UseSsl = true }),
                     2 => Http2LoopbackServer.CreateServer(),
                     _ => throw new Exception("Unknown HTTP version.")
                 };
 
             // The second request is expected to come in on this HTTP/3 server.
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
+            
+            if (!overrideHost)
+                Assert.Equal(firstServer.Address.IdnHost, secondServer.Address.IdnHost);
 
-            using HttpClient client = CreateHttpClient();
+            using HttpClient client = CreateHttpClient(fromVersion);
 
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
             Task serverTask = firstServer.AcceptConnectionSendResponseAndCloseAsync(additionalHeaders: new[]
             {
-                new HttpHeaderData("Alt-Svc", $"h3=\"{secondServer.Address.IdnHost}:{secondServer.Address.Port}\"")
+                new HttpHeaderData("Alt-Svc", $"h3=\"{(overrideHost ? secondServer.Address.IdnHost : null)}:{secondServer.Address.Port}\"")
             });
 
             await new[] { firstResponseTask, serverTask }.WhenAllOrAnyFailed(30_000);
@@ -57,19 +68,27 @@ namespace System.Net.Http.Functional.Tests
             await AltSvc_Upgrade_Success(firstServer, secondServer, client);
         }
 
-        public static TheoryData<Version> AltSvcHeaderUpgradeVersions =>
-            new TheoryData<Version>
+        public static TheoryData<Version, bool> AltSvcHeaderUpgradeVersions =>
+            new TheoryData<Version, bool>
             {
-                { HttpVersion.Version11 },
-                { HttpVersion.Version20 }
+                { HttpVersion.Version11, true },
+                { HttpVersion.Version11, false },
+                { HttpVersion.Version20, true },
+                { HttpVersion.Version20, false }
             };
 
         [Fact]
         public async Task AltSvc_ConnectionFrame_UpgradeFrom20_Success()
         {
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/54050")]
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
-            using HttpClient client = CreateHttpClient();
+            using HttpClient client = CreateHttpClient(HttpVersion.Version20);
 
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
             Task serverTask = Task.Run(async () =>
@@ -92,9 +111,15 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task AltSvc_ResponseFrame_UpgradeFrom20_Success()
         {
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/54050")]
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
             using Http2LoopbackServer firstServer = Http2LoopbackServer.CreateServer();
             using Http3LoopbackServer secondServer = CreateHttp3LoopbackServer();
-            using HttpClient client = CreateHttpClient();
+            using HttpClient client = CreateHttpClient(HttpVersion.Version20);
 
             Task<HttpResponseMessage> firstResponseTask = client.GetAsync(firstServer.Address);
             Task serverTask = Task.Run(async () =>

@@ -2023,7 +2023,7 @@ private:
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier);
     PCODE GetPrecompiledNgenCode(PrepareCodeConfig* pConfig);
     PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
-    PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0Jit);
+    PCODE GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0);
     COR_ILMETHOD_DECODER* GetAndVerifyILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
     COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
     COR_ILMETHOD_DECODER* GetAndVerifyNoMetadataILHeader();
@@ -2208,7 +2208,8 @@ public:
         }
     }
 
-    bool FinalizeOptimizationTierForTier0Jit();
+    bool FinalizeOptimizationTierForTier0Load();
+    bool FinalizeOptimizationTierForTier0LoadOrJit();
 #endif
 
 public:
@@ -2300,21 +2301,21 @@ public:
 class MulticoreJitPrepareCodeConfig : public PrepareCodeConfig
 {
 private:
-    bool m_wasTier0Jit;
+    bool m_wasTier0;
 
 public:
     MulticoreJitPrepareCodeConfig(MethodDesc* pMethod);
 
-    bool WasTier0Jit() const
+    bool WasTier0() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_wasTier0Jit;
+        return m_wasTier0;
     }
 
-    void SetWasTier0Jit()
+    void SetWasTier0()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wasTier0Jit = true;
+        m_wasTier0 = true;
     }
 
     virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse) override;

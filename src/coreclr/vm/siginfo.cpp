@@ -989,7 +989,8 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                  BOOL                        dropGenericArgumentLevel/*=FALSE*/,
                  const Substitution *        pSubst/*=NULL*/,
                  // ZapSigContext is only set when decoding zapsigs
-                 const ZapSig::Context *     pZapSigContext) const
+                 const ZapSig::Context *     pZapSigContext,
+                 MethodTable *               pMTInterfaceMapOwner) const
 {
     CONTRACT(TypeHandle)
     {
@@ -1414,20 +1415,31 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 break;
             }
 
-            // Group together the current signature type context and substitution chain, which
-            // we may later use to instantiate constraints of type arguments that turn out to be
-            // typespecs, i.e. generic types.
-            InstantiationContext instContext(pTypeContext, pSubst);
+            Instantiation genericLoadInst(thisinst, ntypars);
 
-            // Now make the instantiated type
-            // The class loader will check the arity
-            // When we know it was correctly computed at NGen time, we ask the class loader to skip that check.
-            thRet = (ClassLoader::LoadGenericInstantiationThrowing(pGenericTypeModule,
-                                                                   tkGenericType,
-                                                                   Instantiation(thisinst, ntypars),
-                                                                   fLoadTypes, level,
-                                                                   &instContext,
-                                                                   pZapSigContext && pZapSigContext->externalTokens == ZapSig::NormalTokens));
+#ifndef FEATURE_PREJIT // PREJIT doesn't support the volatile update semantics in the interface map that this requires
+            if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner))
+            {
+                thRet = ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level);
+            }
+            else
+#endif // FEATURE_PREJIT
+            {
+                // Group together the current signature type context and substitution chain, which
+                // we may later use to instantiate constraints of type arguments that turn out to be
+                // typespecs, i.e. generic types.
+                InstantiationContext instContext(pTypeContext, pSubst);
+
+                // Now make the instantiated type
+                // The class loader will check the arity
+                // When we know it was correctly computed at NGen time, we ask the class loader to skip that check.
+                thRet = (ClassLoader::LoadGenericInstantiationThrowing(pGenericTypeModule,
+                                                                    tkGenericType,
+                                                                    genericLoadInst,
+                                                                    fLoadTypes, level,
+                                                                    &instContext,
+                                                                    pZapSigContext && pZapSigContext->externalTokens == ZapSig::NormalTokens));
+            }
             break;
         }
 

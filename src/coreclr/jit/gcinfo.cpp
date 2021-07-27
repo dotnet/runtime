@@ -272,7 +272,6 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTree* tgt, GenTree
         case GT_LEA:
             return gcWriteBarrierFormFromTargetAddress(tgt->AsAddrMode()->Base());
 
-        case GT_ARR_ELEM: /* Definitely in the managed heap */
         case GT_CLS_VAR:
             return WBF_BarrierUnchecked;
 

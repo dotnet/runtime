@@ -17,7 +17,7 @@ namespace System.Runtime
         {
             Interop.Kernel32.MEMORYSTATUSEX memoryStatus = default;
             memoryStatus.dwLength = (uint)sizeof(Interop.Kernel32.MEMORYSTATUSEX);
-            if (!Interop.Kernel32.GlobalMemoryStatusEx(ref memoryStatus))
+            if (Interop.Kernel32.GlobalMemoryStatusEx(&memoryStatus) == Interop.BOOL.FALSE)
             {
                 availPageFile = default;
                 totalAddressSpaceFree = default;

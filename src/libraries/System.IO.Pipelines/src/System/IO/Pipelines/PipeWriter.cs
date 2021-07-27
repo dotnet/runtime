@@ -36,6 +36,10 @@ namespace System.IO.Pipelines
         /// <remarks>The canceled <see cref="System.IO.Pipelines.PipeWriter.FlushAsync(System.Threading.CancellationToken)" /> or <see cref="System.IO.Pipelines.PipeWriter.WriteAsync(System.ReadOnlyMemory{byte},System.Threading.CancellationToken)" /> operation returns a <see cref="System.IO.Pipelines.FlushResult" /> where <see cref="System.IO.Pipelines.FlushResult.IsCanceled" /> is <see langword="true" />.</remarks>
         public abstract void CancelPendingFlush();
 
+        /// <summary>Gets a value that indicates whether the current <see cref="System.IO.Pipelines.PipeWriter" /> supports reporting the count of unflushed bytes.</summary>
+        /// <value><see langword="true" />If a class derived from <see cref="System.IO.Pipelines.PipeWriter" /> does not support getting the unflushed bytes, calls to <see cref="System.IO.Pipelines.PipeWriter.UnflushedBytes" /> throw <see cref="System.NotImplementedException" />.</value>
+        public virtual bool CanGetUnflushedBytes => false;
+
         /// <summary>Registers a callback that executes when the <see cref="System.IO.Pipelines.PipeReader" /> side of the pipe is completed.</summary>
         /// <param name="callback">The callback to register.</param>
         /// <param name="state">The state object to pass to <paramref name="callback" /> when it's invoked.</param>
@@ -143,5 +147,11 @@ namespace System.IO.Pipelines
                 }
             }
         }
+
+        /// <summary>
+        /// When overridden in a derived class, gets the count of unflushed bytes within the current writer.
+        /// </summary>
+        /// <exception cref="System.NotImplementedException">The <see cref="System.IO.Pipelines.PipeWriter"/> does not support getting the unflushed byte count.</exception>
+        public virtual long UnflushedBytes => throw ThrowHelper.CreateNotSupportedException_UnflushedBytes();
     }
 }

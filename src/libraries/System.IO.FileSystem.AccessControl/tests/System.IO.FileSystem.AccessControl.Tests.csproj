@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DirectoryObjectSecurityTests.cs" />
@@ -17,11 +17,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.IO.FileSystem.AccessControl.csproj" SkipUseReferenceAssembly="true" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
-    <Reference Include="System.DirectoryServices" />
   </ItemGroup>
 </Project>

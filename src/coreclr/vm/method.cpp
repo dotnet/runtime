@@ -4168,10 +4168,10 @@ static const struct CentralJumpCode {
     BYTE m_jmp[1];
     INT32 m_rel32;
 
-    inline void Setup(MethodDesc* pMD, PCODE target, LoaderAllocator *pLoaderAllocator) {
+    inline void Setup(CentralJumpCode* pCodeRX, MethodDesc* pMD, PCODE target, LoaderAllocator *pLoaderAllocator) {
         WRAPPER_NO_CONTRACT;
         m_pBaseMD = pMD;
-        m_rel32 = rel32UsingJumpStub(&m_rel32, target, pMD, pLoaderAllocator);
+        m_rel32 = rel32UsingJumpStub(&pCodeRX->m_rel32, target, pMD, pLoaderAllocator);
     }
 
     inline BOOL CheckTarget(TADDR target) {
@@ -4185,46 +4185,6 @@ c_CentralJumpCode = {
     { 0xC1, 0xE0, MethodDesc::ALIGNMENT_SHIFT },  //   shl   eax, MethodDesc::ALIGNMENT_SHIFT
     { 0x05 }, NULL,                               //   add   eax, pBaseMD
     { 0xE9 }, 0                                   //   jmp   PreStub
-};
-#include <poppack.h>
-
-#elif defined(TARGET_AMD64)
-
-#include <pshpack1.h>
-static const struct CentralJumpCode {
-    BYTE m_movzxRAX[4];
-    BYTE m_shlEAX[4];
-    BYTE m_movRAX[2];
-    MethodDesc* m_pBaseMD;
-    BYTE m_addR10RAX[3];
-    BYTE m_jmp[1];
-    INT32 m_rel32;
-
-    inline void Setup(MethodDesc* pMD, PCODE target, LoaderAllocator *pLoaderAllocator) {
-        WRAPPER_NO_CONTRACT;
-        m_pBaseMD = pMD;
-        m_rel32 = rel32UsingJumpStub(&m_rel32, target, pMD, pLoaderAllocator);
-    }
-
-    inline BOOL CheckTarget(TADDR target) {
-        WRAPPER_NO_CONTRACT;
-        TADDR addr = rel32Decode(PTR_HOST_MEMBER_TADDR(CentralJumpCode, this, m_rel32));
-        if (*PTR_BYTE(addr) == 0x48 &&
-            *PTR_BYTE(addr+1) == 0xB8 &&
-            *PTR_BYTE(addr+10) == 0xFF &&
-            *PTR_BYTE(addr+11) == 0xE0)
-        {
-            addr = *PTR_TADDR(addr+2);
-        }
-        return (addr == target);
-    }
-}
-c_CentralJumpCode = {
-    { 0x48, 0x0F, 0xB6, 0xC0 },                         //   movzx rax,al
-    { 0x48, 0xC1, 0xE0, MethodDesc::ALIGNMENT_SHIFT },  //   shl   rax, MethodDesc::ALIGNMENT_SHIFT
-    { 0x49, 0xBA }, NULL,                               //   mov   r10, pBaseMD
-    { 0x4C, 0x03, 0xD0 },                               //   add   r10,rax
-    { 0xE9 }, 0                     // jmp PreStub
 };
 #include <poppack.h>
 
@@ -4488,15 +4448,17 @@ TADDR MethodDescChunk::AllocateCompactEntryPoints(LoaderAllocator *pLoaderAlloca
     SIZE_T size = SizeOfCompactEntryPoints(count);
 
     TADDR temporaryEntryPoints = (TADDR)pamTracker->Track(pLoaderAllocator->GetPrecodeHeap()->AllocAlignedMem(size, sizeof(TADDR)));
+    ExecutableWriterHolder<void> temporaryEntryPointsWriterHolder((void *)temporaryEntryPoints, size);
+    size_t rxOffset = temporaryEntryPoints - (TADDR)temporaryEntryPointsWriterHolder.GetRW();
 
 #ifdef TARGET_ARM
-    BYTE* p = (BYTE*)temporaryEntryPoints + COMPACT_ENTRY_ARM_CODE;
+    BYTE* p = (BYTE*)temporaryEntryPointsWriterHolder.GetRW() + COMPACT_ENTRY_ARM_CODE;
     int relOffset        = count * TEP_ENTRY_SIZE - TEP_ENTRY_SIZE; // relative offset for the short jump
 
     _ASSERTE (relOffset < MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB);
 #else // TARGET_ARM
     // make the temporary entrypoints unaligned, so they are easy to identify
-    BYTE* p = (BYTE*)temporaryEntryPoints + 1;
+    BYTE* p = (BYTE*)temporaryEntryPointsWriterHolder.GetRW() + 1;
     int indexInBlock     = TEP_MAX_BLOCK_INDEX;         // recompute relOffset in first iteration
     int relOffset        = 0;                           // relative offset for the short jump
 #endif // TARGET_ARM
@@ -4541,10 +4503,11 @@ TADDR MethodDescChunk::AllocateCompactEntryPoints(LoaderAllocator *pLoaderAlloca
         if (relOffset == 0)
         {
             CentralJumpCode* pCode = (CentralJumpCode*)p;
+            CentralJumpCode* pCodeRX = (CentralJumpCode*)(p + rxOffset);
 
             memcpy(pCode, &c_CentralJumpCode, TEP_CENTRAL_JUMP_SIZE);
 
-            pCode->Setup(pBaseMD, GetPreStubEntryPoint(), pLoaderAllocator);
+            pCode->Setup(pCodeRX, pBaseMD, GetPreStubEntryPoint(), pLoaderAllocator);
 
             p += TEP_CENTRAL_JUMP_SIZE;
 
@@ -4565,11 +4528,11 @@ TADDR MethodDescChunk::AllocateCompactEntryPoints(LoaderAllocator *pLoaderAlloca
     memcpy(pCode, &c_CentralJumpCode, TEP_CENTRAL_JUMP_SIZE);
     pCode->Setup (GetPreStubCompactARMEntryPoint(), this);
 
-    _ASSERTE(p + TEP_CENTRAL_JUMP_SIZE == (BYTE*)temporaryEntryPoints + size);
+    _ASSERTE(p + TEP_CENTRAL_JUMP_SIZE == (BYTE*)temporaryEntryPointsWriterHolder.GetRW() + size);
 
 #else // TARGET_ARM
 
-    _ASSERTE(p == (BYTE*)temporaryEntryPoints + size);
+    _ASSERTE(p == (BYTE*)temporaryEntryPointsWriterHolder.GetRW() + size);
 
 #endif // TARGET_ARM
 

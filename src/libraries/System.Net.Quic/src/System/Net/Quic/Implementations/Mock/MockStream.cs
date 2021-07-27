@@ -14,11 +14,14 @@ namespace System.Net.Quic.Implementations.Mock
     {
         private bool _disposed;
         private readonly bool _isInitiator;
+        private readonly MockConnection _connection;
 
         private readonly StreamState _streamState;
+        private bool _writesCanceled;
 
-        internal MockStream(StreamState streamState, bool isInitiator)
+        internal MockStream(MockConnection connection, StreamState streamState, bool isInitiator)
         {
+            _connection = connection;
             _streamState = streamState;
             _isInitiator = isInitiator;
         }
@@ -67,10 +70,10 @@ namespace System.Net.Quic.Implementations.Mock
             int bytesRead = await streamBuffer.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
             if (bytesRead == 0)
             {
-                long errorCode = _isInitiator ? _streamState._inboundErrorCode : _streamState._outboundErrorCode;
+                long errorCode = _isInitiator ? _streamState._inboundReadErrorCode : _streamState._outboundReadErrorCode;
                 if (errorCode != 0)
                 {
-                    throw new QuicStreamAbortedException(errorCode);
+                    throw (errorCode == -1) ? new QuicOperationAbortedException() : new QuicStreamAbortedException(errorCode);
                 }
             }
 
@@ -84,6 +87,10 @@ namespace System.Net.Quic.Implementations.Mock
         internal override void Write(ReadOnlySpan<byte> buffer)
         {
             CheckDisposed();
+            if (Volatile.Read(ref _writesCanceled))
+            {
+                throw new OperationCanceledException();
+            }
 
             StreamBuffer? streamBuffer = WriteStreamBuffer;
             if (streamBuffer is null)
@@ -102,12 +109,29 @@ namespace System.Net.Quic.Implementations.Mock
         internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
         {
             CheckDisposed();
+            if (Volatile.Read(ref _writesCanceled))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                throw new OperationCanceledException();
+            }
 
             StreamBuffer? streamBuffer = WriteStreamBuffer;
             if (streamBuffer is null)
             {
                 throw new NotSupportedException();
             }
+
+            long errorCode = _isInitiator ? _streamState._inboundWriteErrorCode : _streamState._outboundWriteErrorCode;
+            if (errorCode != 0)
+            {
+                throw new QuicStreamAbortedException(errorCode);
+            }
+
+            using var registration = cancellationToken.UnsafeRegister(static s =>
+            {
+                var stream = (MockStream)s!;
+                Volatile.Write(ref stream._writesCanceled, true);
+            }, this);
 
             await streamBuffer.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
@@ -153,31 +177,31 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal override void AbortRead(long errorCode)
         {
-            throw new NotImplementedException();
+            if (_isInitiator)
+            {
+                _streamState._outboundWriteErrorCode = errorCode;
+            }
+            else
+            {
+                _streamState._inboundWriteErrorCode = errorCode;
+            }
+
+            ReadStreamBuffer?.AbortRead();
         }
 
         internal override void AbortWrite(long errorCode)
         {
             if (_isInitiator)
             {
-                _streamState._outboundErrorCode = errorCode;
+                _streamState._outboundReadErrorCode = errorCode;
             }
             else
             {
-                _streamState._inboundErrorCode = errorCode;
+                _streamState._inboundReadErrorCode = errorCode;
             }
 
             WriteStreamBuffer?.EndWrite();
         }
-
-
-        internal override ValueTask ShutdownWriteCompleted(CancellationToken cancellationToken = default)
-        {
-            CheckDisposed();
-
-            return default;
-        }
-
 
         internal override ValueTask ShutdownCompleted(CancellationToken cancellationToken = default)
         {
@@ -192,6 +216,15 @@ namespace System.Net.Quic.Implementations.Mock
 
             // This seems to mean shutdown send, in particular, not both.
             WriteStreamBuffer?.EndWrite();
+
+            if (_streamState._inboundStreamBuffer is null) // unidirectional stream
+            {
+                _connection.LocalStreamLimit!.Unidirectional.Decrement();
+            }
+            else
+            {
+                _connection.LocalStreamLimit!.Bidirectional.Decrement();
+            }
         }
 
         private void CheckDisposed()
@@ -229,8 +262,10 @@ namespace System.Net.Quic.Implementations.Mock
             public readonly long _streamId;
             public StreamBuffer _outboundStreamBuffer;
             public StreamBuffer? _inboundStreamBuffer;
-            public long _outboundErrorCode;
-            public long _inboundErrorCode;
+            public long _outboundReadErrorCode;
+            public long _inboundReadErrorCode;
+            public long _outboundWriteErrorCode;
+            public long _inboundWriteErrorCode;
 
             private const int InitialBufferSize =
 #if DEBUG

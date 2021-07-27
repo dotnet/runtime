@@ -865,7 +865,11 @@ namespace Microsoft.VisualBasic
                 string typeName = GetTypeOutput(e.CreateType);
                 Output.Write(typeName);
 
-                if (typeName.IndexOf('(') == -1) // string.Contains(char) is .NetCore2.1+ specific
+#if NETCOREAPP
+                if (!typeName.Contains('('))
+#else
+                if (typeName.IndexOf('(') == -1)
+#endif
                 {
                     Output.Write("()");
                 }
@@ -2269,7 +2273,7 @@ namespace Microsoft.VisualBasic
             {
                 foreach (byte b in checksumPragma.ChecksumData)
                 {
-                    Output.Write(b.ToString("X2", CultureInfo.InvariantCulture));
+                    Output.Write(b.ToString("X2"));
                 }
             }
             Output.WriteLine("\")");

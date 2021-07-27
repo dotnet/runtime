@@ -147,11 +147,13 @@ r4_conv_to_i4: dest:i src1:f len:16
 r4_conv_to_u4: dest:i src1:f len:32
 r4_conv_to_i8: dest:i src1:f len:32
 r4_conv_to_r8: dest:f src1:f len:17
+r4_conv_to_u8: dest:i src1:f len:17
 r4_conv_to_r4: dest:f src1:f len:17
 r4_add: dest:f src1:f src2:f clob:1 len:5
 r4_sub: dest:f src1:f src2:f clob:1 len:5
 r4_mul: dest:f src1:f src2:f clob:1 len:5
 r4_div: dest:f src1:f src2:f clob:1 len:5
+r4_rem: dest:f src1:f src2:f clob:1 len:12
 r4_neg: dest:f src1:f clob:1 len:23
 r4_ceq: dest:i src1:f src2:f len:35
 r4_cgt: dest:i src1:f src2:f len:35
@@ -187,11 +189,13 @@ loadu1_membase: dest:i src1:b len:30
 loadu2_membase: dest:i src1:b len:30
 loadu4_mem: dest:i len:8
 loadu4_membase: dest:i src1:b len:30
-localloc: dest:i src1:i len:110
+localloc: dest:i src1:i len:180
 memory_barrier: len:10
 move: dest:i src1:i len:4
 mul_imm: dest:i src1:i len:24
 nop: len:4
+popcnt32: dest:i src1:i len:38
+popcnt64: dest:i src1:i len:34
 relaxed_nop: len:4
 arglist: src1:i len:28
 bigmul: len:2 dest:i src1:a src2:i
@@ -218,7 +222,18 @@ zext_i4: dest:i src1:i len:4
 shl_imm: dest:i src1:i len:10
 shr_imm: dest:i src1:i len:10
 shr_un_imm: dest:i src1:i len:10
+abs: dest:f src1:f len:4
+absf: dest:f src1:f len:4
+ceil: dest:f src1:f len:4
+ceilf: dest:f src1:f len:4
+floor: dest:f src1:f len:4
+floorf: dest:f src1:f len:4
+round: dest:f src1:f len:4
 sqrt: dest:f src1:f len:4
+sqrtf: dest:f src1:f len:4
+trunc: dest:f src1:f len:4
+truncf: dest:f src1:f len:4
+fcopysign: dest:f src1:f src2:f len:4
 start_handler: len:26
 store_membase_imm: dest:b len:46
 store_membase_reg: dest:b src1:i len:26

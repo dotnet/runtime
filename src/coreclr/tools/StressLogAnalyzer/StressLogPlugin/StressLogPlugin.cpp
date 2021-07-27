@@ -139,6 +139,7 @@ d(IS_PLAN_PINNED_PLUG,          ThreadStressLog::gcPlanPinnedPlugMsg())         
 d(IS_DESIRED_NEW_ALLOCATION,    ThreadStressLog::gcDesiredNewAllocationMsg())                                               \
 d(IS_MAKE_UNUSED_ARRAY,         ThreadStressLog::gcMakeUnusedArrayMsg())                                                    \
 d(IS_START_BGC_THREAD,          ThreadStressLog::gcStartBgcThread())                                                        \
+d(IS_RELOCATE_REFERENCE,        ThreadStressLog::gcRelocateReferenceMsg())                                                  \
 d(IS_UNINTERESTING,             "")
 
 enum InterestingStringId : unsigned char
@@ -469,6 +470,26 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
     case    IS_START_BGC_THREAD:
         RememberThreadForHeap(tsl->threadId, (int64_t)args[0], GC_THREAD_BG);
         break;
+    case    IS_RELOCATE_REFERENCE:
+        if (s_valueFilterCount > 0)
+        {
+            size_t src = (size_t)args[0];
+            size_t dst_from = (size_t)args[1];
+            size_t dst_to = (size_t)args[2];
+            // print this message if the source or destination contain (part of) the range we're looking for
+            for (int i = 0; i < s_valueFilterCount; i++)
+            {
+                if ((s_valueFilter[i].end < src || src < s_valueFilter[i].start) &&
+                    (s_valueFilter[i].end < dst_from || dst_from < s_valueFilter[i].start) &&
+                    (s_valueFilter[i].end < dst_to || dst_to < s_valueFilter[i].start))
+                {
+                    // empty intersection with both the source and the destination
+                    continue;
+                }
+                return true;
+            }
+        }
+        break;
     }
     return fLevelFilter || s_interestingStringFilter[isd];
 }
@@ -521,10 +542,10 @@ static ThreadStressLogDesc s_threadStressLogDesc[MAX_THREADSTRESSLOGS];
 static int s_threadStressLogCount;
 static LONG s_wrappedWriteThreadCount;
 
-static const LONG MAX_MESSAGE_COUNT = 1024 * 1024 * 1024;
+static const LONG MAX_MESSAGE_COUNT = 64 * 1024 * 1024;
 static StressThreadAndMsg* s_threadMsgBuf;
-static volatile LONG s_msgCount = 0;
-static volatile LONG s_totalMsgCount = 0;
+static volatile LONGLONG s_msgCount = 0;
+static volatile LONGLONG s_totalMsgCount = 0;
 static double s_timeFilterStart = 0;
 static double s_timeFilterEnd = 0;
 static wchar_t* s_outputFileName = nullptr;
@@ -956,6 +977,10 @@ bool ParseOptions(int argc, wchar_t* argv[])
                 return false;
             }
         }
+        else
+        {
+            return false;
+        }
         i++;
     }
     return true;
@@ -963,7 +988,7 @@ bool ParseOptions(int argc, wchar_t* argv[])
 
 static void IncludeMessage(uint64_t threadId, StressMsg* msg)
 {
-    LONG msgCount = _InterlockedIncrement(&s_msgCount) - 1;
+    LONGLONG msgCount = _InterlockedIncrement64(&s_msgCount) - 1;
     if (msgCount < MAX_MESSAGE_COUNT)
     {
         s_threadMsgBuf[msgCount].threadId = threadId;
@@ -1108,7 +1133,7 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
         s_threadStressLogDesc[threadStressLogIndex].workFinished = 1;
     }
 
-    InterlockedAdd(&s_totalMsgCount, totalMsgCount);
+    InterlockedAdd64(&s_totalMsgCount, totalMsgCount);
     InterlockedAdd(&s_wrappedWriteThreadCount, wrappedWriteThreadCount);
 
     return 0;
@@ -1126,7 +1151,7 @@ static double FindLatestTime(StressLog::StressLogHeader* hdr)
     return latestTime;
 }
 
-static void PrintFriendlyNumber(int n)
+static void PrintFriendlyNumber(LONGLONG n)
 {
     if (n < 1000)
         printf("%d", n);
