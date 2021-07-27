@@ -81,7 +81,10 @@ namespace System.IO.Compression
                 ExtractExternalAttributes(fs, source);
             }
 
-            File.SetLastWriteTime(destinationFileName, source.LastWriteTime.DateTime);
+            if (!OperatingSystem.IsAndroid()) // https://github.com/dotnet/runtime/issues/35374, https://github.com/mono/mono/issues/17133
+            {
+                File.SetLastWriteTime(destinationFileName, source.LastWriteTime.DateTime);
+            }
         }
 
         static partial void ExtractExternalAttributes(FileStream fs, ZipArchiveEntry entry);
