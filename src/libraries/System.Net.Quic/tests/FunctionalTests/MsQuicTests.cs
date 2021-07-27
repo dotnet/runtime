@@ -549,21 +549,18 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
         public async Task CloseAsync_ByServer_AcceptThrows()
         {
-            await RunClientServer(
-                clientConnection =>
-                {
-                    return Task.CompletedTask;
-                },
-                async serverConnection =>
-                {
-                    var acceptTask = serverConnection.AcceptStreamAsync();
-                    await serverConnection.CloseAsync(errorCode: 0);
-                    // make sure
-                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => acceptTask.AsTask());
-                });
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
+
+            using (clientConnection)
+            using (serverConnection)
+            {
+                var acceptTask = serverConnection.AcceptStreamAsync();
+                await serverConnection.CloseAsync(errorCode: 0);
+                // make sure we throw
+                await Assert.ThrowsAsync<QuicOperationAbortedException>(() => acceptTask.AsTask());
+            }
         }
 
         internal static ReadOnlySequence<byte> CreateReadOnlySequenceFromBytes(byte[] data)
