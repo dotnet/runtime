@@ -163,7 +163,8 @@ public:
         Module              *referencingModule,
         Module              *fromModule,
         PCCOR_SIGNATURE     pBuffer,
-        ClassLoadLevel      level = CLASS_LOADED);
+        ClassLoadLevel      level = CLASS_LOADED,
+        PCCOR_SIGNATURE     *ppAfterSig = NULL);
 
     static MethodDesc *DecodeMethod(
         Module              *referencingModule,
@@ -178,7 +179,9 @@ public:
         ZapSig::Context     *pZapSigContext,
         TypeHandle          *ppTH = NULL,
         PCCOR_SIGNATURE     *ppOwnerTypeSpecWithVars = NULL,
-        PCCOR_SIGNATURE     *ppMethodSpecWithVars = NULL);
+        PCCOR_SIGNATURE     *ppMethodSpecWithVars = NULL,
+        PCCOR_SIGNATURE     *ppAfterSig = NULL,
+        BOOL                actualOwnerRequired = FALSE);
 
     static FieldDesc *DecodeField(
         Module              *referencingModule,

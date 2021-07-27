@@ -246,10 +246,6 @@ if NOT "%__BuildType%"=="Release" (
     set __PgoOptimize=0
 )
 
-if %__PgoOptimize%==0 (
-    set __RestoreOptData=0
-)
-
 set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
 set "__LogsDir=%__RootBinDir%\log\!__BuildType!"
@@ -335,29 +331,20 @@ REM === Restore optimization profile data
 REM ===
 REM =========================================================================================
 
-set OptDataProjectFilePath=%__ProjectDir%\.nuget\optdata\optdata.csproj
-if %__RestoreOptData% EQU 1 (
-    echo %__MsgPrefix%Restoring the OptimizationData Package
-    set "__BinLog=\"%__LogsDir%\OptRestore_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog\""
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        "%OptDataProjectFilePath%" /t:Restore^
-        %__CommonMSBuildArgs% %__UnprocessedBuildArgs%^
-        /nodereuse:false /bl:!__BinLog!
-    if not !errorlevel! == 0 (
-        set __exitCode=!errorlevel!
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to restore the optimization data package.
-        goto ExitWithCode
-    )
-)
 set __PgoOptDataPath=
 if %__PgoOptimize% EQU 1 (
+    set OptDataProjectFilePath=%__ProjectDir%\.nuget\optdata\optdata.csproj
+    set __OptDataRestoreArg=
+    if %__RestoreOptData% EQU 1 (
+        set __OptDataRestoreArg=/restore
+    )
     set PgoDataPackagePathOutputFile=%__IntermediatesDir%\optdatapath.txt
     set "__BinLog=\"%__LogsDir%\PgoVersionRead_%__TargetOS%__%__BuildArch%__%__BuildType%.binlog\""
 
     REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath^
-        /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"^
+        "!OptDataProjectFilePath!" /t:DumpPgoDataPackagePath^
+        /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!" !__OptDataRestoreArg!^
         %__CommonMSBuildArgs% %__UnprocessedBuildArgs% /bl:!__BinLog!
 
     if not !errorlevel! == 0 (

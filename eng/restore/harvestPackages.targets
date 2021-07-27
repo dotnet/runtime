@@ -1,4 +1,14 @@
 ﻿<Project InitialTargets="AddPackageDownload">
+
+  <PropertyGroup>
+    <PackagingTaskAssembly>$(NuGetPackageRoot)microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\tools\</PackagingTaskAssembly>
+    <PackagingTaskAssembly Condition="'$(MSBuildRuntimeType)' == 'core'">$(PackagingTaskAssembly)netcoreapp3.1\</PackagingTaskAssembly>
+    <PackagingTaskAssembly Condition="'$(MSBuildRuntimeType)' != 'core'">$(PackagingTaskAssembly)net472\</PackagingTaskAssembly>
+    <!-- TODO: Remove when https://github.com/dotnet/arcade/issues/7413 is fixed. -->
+    <PackagingTaskAssembly Condition="'$(MSBuildRuntimeType)' == 'core' and '$(DotNetBuildFromSource)' == 'true'">$(PackagingTaskAssembly)net5.0\</PackagingTaskAssembly>
+    <PackagingTaskAssembly>$(PackagingTaskAssembly)Microsoft.DotNet.Build.Tasks.Packaging.dll</PackagingTaskAssembly>
+  </PropertyGroup>
+
   <UsingTask TaskName="GetLastStablePackage" AssemblyFile="$(PackagingTaskAssembly)"/>
   <Target Name="AddPackageDownload">
     <ItemGroup>

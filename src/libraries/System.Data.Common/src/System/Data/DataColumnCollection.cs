@@ -182,7 +182,7 @@ namespace System.Data
             }
             if (!_table.fInitInProgress && column != null && column.Computed)
             {
-                column.Expression = column.Expression;
+                column.CopyExpressionFrom(column);
             }
             OnCollectionChanged(new CollectionChangeEventArgs(CollectionChangeAction.Add, column));
         }
@@ -211,7 +211,8 @@ namespace System.Data
         /// Creates and adds a <see cref='System.Data.DataColumn'/>
         /// with the specified name, type, and compute expression to the columns collection.
         /// </summary>
-        public DataColumn Add(string? columnName, Type type, string expression)
+        [RequiresUnreferencedCode("Members might be trimmed for some data types or expressions.")]
+        public DataColumn Add(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type, string expression)
         {
             var column = new DataColumn(columnName, type, expression);
             Add(column);
@@ -223,7 +224,7 @@ namespace System.Data
         /// with the
         /// specified name and type to the columns collection.
         /// </summary>
-        public DataColumn Add(string? columnName, Type type)
+        public DataColumn Add(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type)
         {
             var column = new DataColumn(columnName, type);
             Add(column);

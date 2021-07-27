@@ -12,7 +12,7 @@ namespace System.ComponentModel.Design.Serialization
     [Obsolete("This attribute has been deprecated. Use DesignerSerializerAttribute instead. For example, to specify a root designer for CodeDom, use DesignerSerializerAttribute(...,typeof(TypeCodeDomSerializer)). https://go.microsoft.com/fwlink/?linkid=14202")]
     public sealed class RootDesignerSerializerAttribute : Attribute
     {
-        private string _typeId;
+        private string? _typeId;
 
         /// <summary>
         /// Creates a new designer serialization attribute.
@@ -51,7 +51,7 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Creates a new designer serialization attribute.
         /// </summary>
-        public RootDesignerSerializerAttribute(string serializerTypeName, string baseSerializerTypeName, bool reloadable)
+        public RootDesignerSerializerAttribute(string? serializerTypeName, string? baseSerializerTypeName, bool reloadable)
         {
             SerializerTypeName = serializerTypeName;
             SerializerBaseTypeName = baseSerializerTypeName;
@@ -68,12 +68,12 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Retrieves the fully qualified type name of the serializer.
         /// </summary>
-        public string SerializerTypeName { get; }
+        public string? SerializerTypeName { get; }
 
         /// <summary>
         /// Retrieves the fully qualified type name of the serializer base type.
         /// </summary>
-        public string SerializerBaseTypeName { get; }
+        public string? SerializerBaseTypeName { get; }
 
         /// <summary>
         /// This defines a unique ID for this attribute type. It is used

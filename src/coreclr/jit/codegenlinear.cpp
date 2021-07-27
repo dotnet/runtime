@@ -229,7 +229,7 @@ void CodeGen::genCodeForBBlist()
                 {
                     newRegByrefSet |= varDsc->lvRegMask();
                 }
-                if (!varDsc->lvLiveInOutOfHndlr)
+                if (!varDsc->IsAlwaysAliveInMemory())
                 {
 #ifdef DEBUG
                     if (verbose && VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varIndex))
@@ -240,7 +240,7 @@ void CodeGen::genCodeForBBlist()
                     VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varIndex);
                 }
             }
-            if ((!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr) && compiler->lvaIsGCTracked(varDsc))
+            if ((!varDsc->lvIsInReg() || varDsc->IsAlwaysAliveInMemory()) && compiler->lvaIsGCTracked(varDsc))
             {
 #ifdef DEBUG
                 if (verbose && !VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varIndex))
@@ -356,7 +356,7 @@ void CodeGen::genCodeForBBlist()
             // Mark a label and update the current set of live GC refs
 
             block->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                             gcInfo.gcRegByrefSetCur, false DEBUG_ARG(block->bbNum));
+                                                             gcInfo.gcRegByrefSetCur, false DEBUG_ARG(block));
         }
 
         if (block == compiler->fgFirstColdBlock)
@@ -394,6 +394,13 @@ void CodeGen::genCodeForBBlist()
         // Clear compCurStmt and compCurLifeTree.
         compiler->compCurStmt     = nullptr;
         compiler->compCurLifeTree = nullptr;
+
+        // Emit poisoning into scratch BB that comes right after prolog.
+        // We cannot emit this code in the prolog as it might make the prolog too large.
+        if (compiler->compShouldPoisonFrame() && compiler->fgBBisScratch(block))
+        {
+            genPoisonFrame(newLiveRegSet);
+        }
 
         // Traverse the block in linear order, generating code for each node as we
         // as we encounter it.
@@ -866,9 +873,9 @@ void CodeGen::genSpillVar(GenTree* tree)
         var_types lclType = varDsc->GetActualRegisterType();
         emitAttr  size    = emitTypeSize(lclType);
 
-        // If this is a write-thru variable, we don't actually spill at a use, but we will kill the var in the reg
-        // (below).
-        if (!varDsc->lvLiveInOutOfHndlr)
+        // If this is a write-thru or a single-def variable, we don't actually spill at a use,
+        // but we will kill the var in the reg (below).
+        if (!varDsc->IsAlwaysAliveInMemory())
         {
             instruction storeIns = ins_Store(lclType, compiler->isSIMDTypeLocalAligned(varNum));
             assert(varDsc->GetRegNum() == tree->GetRegNum());
@@ -876,7 +883,7 @@ void CodeGen::genSpillVar(GenTree* tree)
         }
 
         // We should only have both GTF_SPILL (i.e. the flag causing this method to be called) and
-        // GTF_SPILLED on a write-thru def, for which we should not be calling this method.
+        // GTF_SPILLED on a write-thru/single-def def, for which we should not be calling this method.
         assert((tree->gtFlags & GTF_SPILLED) == 0);
 
         // Remove the live var from the register.
@@ -911,8 +918,9 @@ void CodeGen::genSpillVar(GenTree* tree)
     }
     else
     {
-        // We only have 'GTF_SPILL' and 'GTF_SPILLED' on a def of a write-thru lclVar.
-        assert(varDsc->lvLiveInOutOfHndlr && ((tree->gtFlags & GTF_VAR_DEF) != 0));
+        // We only have 'GTF_SPILL' and 'GTF_SPILLED' on a def of a write-thru lclVar
+        // or a single-def var that is to be spilled at its definition.
+        assert((varDsc->IsAlwaysAliveInMemory()) && ((tree->gtFlags & GTF_VAR_DEF) != 0));
     }
 
 #ifdef USING_VARIABLE_LIVE_RANGE
@@ -1048,7 +1056,7 @@ void CodeGen::genUnspillLocal(
         }
 #endif // USING_VARIABLE_LIVE_RANGE
 
-        if (!varDsc->lvLiveInOutOfHndlr)
+        if (!varDsc->IsAlwaysAliveInMemory())
         {
 #ifdef DEBUG
             if (VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex))
@@ -1184,12 +1192,12 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             assert(spillType != TYP_UNDEF);
 
 // TODO-Cleanup: The following code could probably be further merged and cleaned up.
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             // Load local variable from its home location.
             // In most cases the tree type will indicate the correct type to use for the load.
             // However, if it is NOT a normalizeOnLoad lclVar (i.e. NOT a small int that always gets
-            // widened when loaded into a register), and its size is not the same as genActualType of
-            // the type of the lclVar, then we need to change the type of the tree node when loading.
+            // widened when loaded into a register), and its size is not the same as the actual register type
+            // of the lclVar, then we need to change the type of the tree node when loading.
             // This situation happens due to "optimizations" that avoid a cast and
             // simply retype the node when using long type lclVar as an int.
             // While loading the int in that case would work for this use of the lclVar, if it is
@@ -1202,13 +1210,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             {
                 assert(!varTypeIsGC(varDsc));
                 spillType = lclActualType;
-            }
-#elif defined(TARGET_ARM64)
-            var_types targetType = unspillTree->gtType;
-            if (spillType != genActualType(varDsc->lvType) && !varTypeIsGC(spillType) && !varDsc->lvNormalizeOnLoad())
-            {
-                assert(!varTypeIsGC(varDsc));
-                spillType = genActualType(varDsc->lvType);
             }
 #elif defined(TARGET_ARM)
 // No normalizing for ARM
@@ -1458,7 +1459,8 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
         LclVarDsc*           varDsc = &compiler->lvaTable[lcl->GetLclNum()];
         if (varDsc->GetRegNum() != REG_STK)
         {
-            inst_Mov(tree->TypeGet(), tree->GetRegNum(), varDsc->GetRegNum(), /* canSkip */ true);
+            var_types regType = varDsc->GetRegisterType(lcl);
+            inst_Mov(regType, tree->GetRegNum(), varDsc->GetRegNum(), /* canSkip */ true);
         }
     }
 
@@ -1575,7 +1577,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         {
             genConsumeAddress(tree);
         }
-#ifdef TARGET_XARCH
         else if (tree->OperIsLocalRead())
         {
             // A contained lcl var must be living on stack and marked as reg optional, or not be a
@@ -1589,6 +1590,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             // Update the life of the lcl var.
             genUpdateLife(tree);
         }
+#ifdef TARGET_XARCH
 #ifdef FEATURE_HW_INTRINSICS
         else if (tree->OperIs(GT_HWINTRINSIC))
         {
@@ -2043,12 +2045,12 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
 
     // We have a register candidate local that is marked with GTF_SPILL.
     // This flag generally means that we need to spill this local.
-    // The exception is the case of a use of an EH var use that is being "spilled"
+    // The exception is the case of a use of an EH/spill-at-single-def var use that is being "spilled"
     // to the stack, indicated by GTF_SPILL (note that all EH lclVar defs are always
-    // spilled, i.e. write-thru).
-    // An EH var use is always valid on the stack (so we don't need to actually spill it),
+    // spilled, i.e. write-thru. Likewise, single-def vars that are spilled at its definitions).
+    // An EH or single-def var use is always valid on the stack (so we don't need to actually spill it),
     // but the GTF_SPILL flag records the fact that the register value is going dead.
-    if (((lclNode->gtFlags & GTF_VAR_DEF) != 0) || !varDsc->lvLiveInOutOfHndlr)
+    if (((lclNode->gtFlags & GTF_VAR_DEF) != 0) || (!varDsc->IsAlwaysAliveInMemory()))
     {
         // Store local variable to its home location.
         // Ensure that lclVar stores are typed correctly.

@@ -82,3 +82,7 @@ create_gcinfo_lib(TARGET gcinfo_unix_armel OS unix ARCH armel)
 create_gcinfo_lib(TARGET gcinfo_unix_arm OS unix ARCH arm)
 create_gcinfo_lib(TARGET gcinfo_win_arm OS win ARCH arm)
 create_gcinfo_lib(TARGET gcinfo_win_x86 OS win ARCH x86)
+
+if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
+  create_gcinfo_lib(TARGET gcinfo_unix_x86 OS unix ARCH x86)
+endif (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)

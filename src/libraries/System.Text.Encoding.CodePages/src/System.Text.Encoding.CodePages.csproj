@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netcoreapp3.1-windows;netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);netcoreapp3.1-windows;netcoreapp3.1;netstandard2.0-windows;netstandard2.0;net461-windows</TargetFrameworks>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
   <!-- Generator for code mapping table, target to invoke is GenerateEncodingSource -->

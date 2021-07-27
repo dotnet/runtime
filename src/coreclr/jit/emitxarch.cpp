@@ -24,37 +24,37 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "codegen.h"
 
-bool IsSSEInstruction(instruction ins)
+bool emitter::IsSSEInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_SSE_INSTRUCTION);
 }
 
-bool IsSSEOrAVXInstruction(instruction ins)
+bool emitter::IsSSEOrAVXInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
 }
 
-bool IsAVXOnlyInstruction(instruction ins)
+bool emitter::IsAVXOnlyInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_AVX_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
 }
 
-bool IsFMAInstruction(instruction ins)
+bool emitter::IsFMAInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_FMA_INSTRUCTION) && (ins <= INS_LAST_FMA_INSTRUCTION);
 }
 
-bool IsAVXVNNIInstruction(instruction ins)
+bool emitter::IsAVXVNNIInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_AVXVNNI_INSTRUCTION) && (ins <= INS_LAST_AVXVNNI_INSTRUCTION);
 }
 
-bool IsBMIInstruction(instruction ins)
+bool emitter::IsBMIInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_BMI_INSTRUCTION) && (ins <= INS_LAST_BMI_INSTRUCTION);
 }
 
-regNumber getBmiRegNumber(instruction ins)
+regNumber emitter::getBmiRegNumber(instruction ins)
 {
     switch (ins)
     {
@@ -81,7 +81,7 @@ regNumber getBmiRegNumber(instruction ins)
     }
 }
 
-regNumber getSseShiftRegNumber(instruction ins)
+regNumber emitter::getSseShiftRegNumber(instruction ins)
 {
     switch (ins)
     {
@@ -123,7 +123,7 @@ regNumber getSseShiftRegNumber(instruction ins)
     }
 }
 
-bool emitter::IsAVXInstruction(instruction ins)
+bool emitter::IsAVXInstruction(instruction ins) const
 {
     return UseVEXEncoding() && IsSSEOrAVXInstruction(ins);
 }
@@ -296,6 +296,13 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                 return false;
             }
 
+#ifdef TARGET_AMD64
+            if (id->idIns() == INS_movsxd)
+            {
+                return false;
+            }
+#endif
+
             // movzx always zeroes the upper 32 bits.
             if (id->idIns() == INS_movzx)
             {
@@ -438,7 +445,7 @@ bool emitter::Is4ByteSSEInstruction(instruction ins)
 
 // Returns true if this instruction requires a VEX prefix
 // All AVX instructions require a VEX prefix
-bool emitter::TakesVexPrefix(instruction ins)
+bool emitter::TakesVexPrefix(instruction ins) const
 {
     // special case vzeroupper as it requires 2-byte VEX prefix
     // special case the fencing, movnti and the prefetch instructions as they never take a VEX prefix
@@ -514,7 +521,7 @@ emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr att
 }
 
 // Returns true if this instruction, for the given EA_SIZE(attr), will require a REX.W prefix
-bool TakesRexWPrefix(instruction ins, emitAttr attr)
+bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
 {
     // Because the current implementation of AVX does not have a way to distinguish between the register
     // size specification (128 vs. 256 bits) and the operand size specification (32 vs. 64 bits), where both are
@@ -3958,7 +3965,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val)
+void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t val DEBUGARG(GenTreeFlags gtFlags))
 {
     emitAttr size = EA_SIZE(attr);
 
@@ -4082,8 +4089,8 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
     id->idIns(ins);
     id->idInsFmt(fmt);
     id->idReg1(reg);
-
     id->idCodeSize(sz);
+    INDEBUG(id->idDebugOnlyInfo()->idFlags = gtFlags);
 
     dispIns(id);
     emitCurIGsize += sz;
@@ -4243,6 +4250,20 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
 // Arguments:
 //    ins       -- The instruction being checked
 //
+// Return Value:
+//    true if the instruction is a qualifying move instruction; otherwise, false
+//
+// Remarks:
+//    This methods covers most kinds of two operand move instructions that copy a
+//    value between two registers. It does not cover all move-like instructions
+//    and so doesn't currently cover things like movsb/movsw/movsd/movsq or cmovcc
+//    and doesn't currently cover cases where a value is read/written from memory.
+//
+//    The reason it doesn't cover all instructions was namely to limit the scope
+//    of the initial change to that which was impactful to move elision so that
+//    it could be centrally managed and optimized. It may be beneficial to support
+//    the other move instructions in the future but that may require more extensive
+//    changes to ensure relevant codegen/emit paths flow and check things correctly.
 bool emitter::IsMovInstruction(instruction ins)
 {
     switch (ins)
@@ -4253,7 +4274,6 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_movd:
         case INS_movdqa:
         case INS_movdqu:
-        case INS_movsd:
         case INS_movsdsse2:
         case INS_movss:
         case INS_movsx:
@@ -4277,6 +4297,215 @@ bool emitter::IsMovInstruction(instruction ins)
             return false;
         }
     }
+}
+
+//------------------------------------------------------------------------
+// IsJccInstruction: Determine if an instruction is a conditional jump instruction.
+//
+// Arguments:
+//    ins       -- The instruction being checked
+//
+// Return Value:
+//    true if the instruction qualifies; otherwise, false
+//
+bool emitter::IsJccInstruction(instruction ins)
+{
+    return ((ins >= INS_jo) && (ins <= INS_jg)) || ((ins >= INS_l_jo) && (ins <= INS_l_jg));
+}
+
+//------------------------------------------------------------------------
+// IsJmpInstruction: Determine if an instruction is a jump instruction but NOT a conditional jump instruction.
+//
+// Arguments:
+//    ins       -- The instruction being checked
+//
+// Return Value:
+//    true if the instruction qualifies; otherwise, false
+//
+bool emitter::IsJmpInstruction(instruction ins)
+{
+    return
+#ifdef TARGET_AMD64
+        (ins == INS_rex_jmp) ||
+#endif
+        (ins == INS_i_jmp) || (ins == INS_jmp) || (ins == INS_l_jmp);
+}
+
+//----------------------------------------------------------------------------------------
+// IsRedundantMov:
+//    Check if the current `mov` instruction is redundant and can be omitted.
+//    A `mov` is redundant in following 3 cases:
+//
+//    1. Move to same register on TARGET_AMD64
+//       (Except 4-byte movement like "mov eax, eax" which zeros out upper bits of eax register)
+//
+//         mov rax, rax
+//
+//    2. Move that is identical to last instruction emitted.
+//
+//         mov rax, rbx  # <-- last instruction
+//         mov rax, rbx  # <-- current instruction can be omitted.
+//
+//    3. Opposite Move as that of last instruction emitted.
+//
+//         mov rax, rbx  # <-- last instruction
+//         mov rbx, rax  # <-- current instruction can be omitted.
+//
+// Arguments:
+//                 ins  - The current instruction
+//                 fmt  - The current format
+//                 size - Operand size of current instruction
+//                 dst  - The current destination
+//                 src  - The current source
+// canIgnoreSideEffects - The move can be skipped as it doesn't represent special semantics
+//
+// Return Value:
+//    true if the move instruction is redundant; otherwise, false.
+
+bool emitter::IsRedundantMov(
+    instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects)
+{
+    assert(IsMovInstruction(ins));
+
+    if (canIgnoreSideEffects && (dst == src))
+    {
+        // These elisions used to be explicit even when optimizations were disabled
+
+        // Some instructions have a side effect and shouldn't be skipped
+        // however existing codepaths were skipping these instructions in
+        // certain scenarios and so we skip them as well for back-compat
+        // when canIgnoreSideEffects is true (see below for which have a
+        // side effect).
+        //
+        // Long term, these paths should be audited and should likely be
+        // replaced with copies rather than extensions.
+        return true;
+    }
+
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        // The remaining move elisions should only happen if optimizations are enabled
+        return false;
+    }
+
+    // TODO-XArch-CQ: There are places where the fact that an instruction zero-extends
+    // is not an important detail, such as when "regular" floating-point code is generated
+    //
+    // This differs from cases like HWIntrinsics that deal with the entire vector and so
+    // they need to be "aware" that a given move impacts the upper-bits.
+    //
+    // Ideally we can detect this difference, likely via canIgnoreSideEffects, and allow
+    // the below optimizations for those scenarios as well.
+
+    // Track whether the instruction has a zero/sign-extension or clearing of the upper-bits as a side-effect
+    bool hasSideEffect = false;
+
+    switch (ins)
+    {
+        case INS_mov:
+        {
+            // non EA_PTRSIZE moves may zero-extend the source
+            hasSideEffect = (size != EA_PTRSIZE);
+            break;
+        }
+
+        case INS_movapd:
+        case INS_movaps:
+        case INS_movdqa:
+        case INS_movdqu:
+        case INS_movupd:
+        case INS_movups:
+        {
+            // non EA_32BYTE moves clear the upper bits under VEX encoding
+            hasSideEffect = UseVEXEncoding() && (size != EA_32BYTE);
+            break;
+        }
+
+        case INS_movd:
+        {
+            // Clears the upper bits
+            hasSideEffect = true;
+            break;
+        }
+
+        case INS_movsdsse2:
+        case INS_movss:
+        {
+            // Clears the upper bits under VEX encoding
+            hasSideEffect = UseVEXEncoding();
+            break;
+        }
+
+        case INS_movsx:
+        case INS_movzx:
+        {
+            // Sign/Zero-extends the source
+            hasSideEffect = true;
+            break;
+        }
+
+#if defined(TARGET_AMD64)
+        case INS_movq:
+        {
+            // Clears the upper bits
+            hasSideEffect = true;
+            break;
+        }
+
+        case INS_movsxd:
+        {
+            // Sign-extends the source
+            hasSideEffect = true;
+            break;
+        }
+#endif // TARGET_AMD64
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    // Check if we are already in the correct register and don't have a side effect
+    if ((dst == src) && !hasSideEffect)
+    {
+        JITDUMP("\n -- suppressing mov because src and dst is same register and the mov has no side-effects.\n");
+        return true;
+    }
+
+    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+
+    // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
+    // functionality even if their actual identifier differs and we should optimize these
+
+    if (isFirstInstrInBlock ||               // Don't optimize if instruction is the first instruction in IG.
+        (emitLastIns == nullptr) ||          // or if a last instruction doesn't exist
+        (emitLastIns->idIns() != ins) ||     // or if the instruction is different from the last instruction
+        (emitLastIns->idOpSize() != size) || // or if the operand size is different from the last instruction
+        (emitLastIns->idInsFmt() != fmt))    // or if the format is different from the last instruction
+    {
+        return false;
+    }
+
+    regNumber lastDst = emitLastIns->idReg1();
+    regNumber lastSrc = emitLastIns->idReg2();
+
+    // Check if we did same move in last instruction, side effects don't matter since they already happened
+    if ((lastDst == dst) && (lastSrc == src))
+    {
+        JITDUMP("\n -- suppressing mov because last instruction already moved from src to dst register.\n");
+        return true;
+    }
+
+    // Check if we did a switched mov in the last instruction  and don't have a side effect
+    if ((lastDst == src) && (lastSrc == dst) && !hasSideEffect)
+    {
+        JITDUMP("\n -- suppressing mov because last instruction already moved from dst to src register and the mov has "
+                "no side-effects.\n");
+        return true;
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -4309,7 +4538,6 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
         case INS_movaps:
         case INS_movdqa:
         case INS_movdqu:
-        case INS_movsd:
         case INS_movsdsse2:
         case INS_movss:
         case INS_movupd:
@@ -4351,66 +4579,13 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
     assert(size <= EA_32BYTE);
     noway_assert(emitVerifyEncodable(ins, size, dstReg, srcReg));
 
-    if (canSkip && (dstReg == srcReg))
-    {
-        switch (ins)
-        {
-            case INS_mov:
-            {
-                // These instructions have no side effect and can be skipped
-                return;
-            }
-
-            case INS_movapd:
-            case INS_movaps:
-            case INS_movdqa:
-            case INS_movdqu:
-            case INS_movupd:
-            case INS_movups:
-            {
-                // These instructions have no side effect and can be skipped
-                return;
-            }
-
-            case INS_movd:
-            case INS_movsd:
-            case INS_movsdsse2:
-            case INS_movss:
-            case INS_movsx:
-            case INS_movzx:
-            {
-                // These instructions have a side effect and shouldn't be skipped
-                // however existing codepaths were skipping these instructions in
-                // certain scenarios and so we skip them as well for back-compat.
-                //
-                // Long term, these paths should be audited and should likely be
-                // replaced with copies rather than extensions.
-                return;
-            }
-
-#if defined(TARGET_AMD64)
-            case INS_movq:
-            case INS_movsxd:
-            {
-                // These instructions have a side effect and shouldn't be skipped
-                // however existing codepaths were skipping these instructions in
-                // certain scenarios and so we skip them as well for back-compat.
-                //
-                // Long term, these paths should be audited and should likely be
-                // replaced with copies rather than extensions.
-                return;
-            }
-#endif // TARGET_AMD64
-
-            default:
-            {
-                unreached();
-            }
-        }
-    }
-
     UNATIVE_OFFSET sz  = emitInsSizeRR(ins, dstReg, srcReg, attr);
     insFormat      fmt = emitInsModeFormat(ins, IF_RRD_RRD);
+
+    if (IsRedundantMov(ins, fmt, attr, dstReg, srcReg, canSkip))
+    {
+        return;
+    }
 
     instrDesc* id = emitNewInstrSmall(attr);
     id->idIns(ins);
@@ -8316,7 +8491,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             lab = (insGroup*)emitCodeGetCookie(*bbp++);
             assert(lab);
 
-            printf("\n            D" SIZE_LETTER "      G_M%03u_IG%02u", emitComp->compMethodID, lab->igNum);
+            printf("\n            D" SIZE_LETTER "      %s", emitLabelString(lab));
         } while (--cnt);
     }
 }
@@ -8540,28 +8715,24 @@ void emitter::emitDispIns(
     if (code != nullptr)
     {
         /* Display the instruction hex code */
+        assert(((code >= emitCodeBlock) && (code < emitCodeBlock + emitTotalHotCodeSize)) ||
+               ((code >= emitColdCodeBlock) && (code < emitColdCodeBlock + emitTotalColdCodeSize)));
 
-        emitDispInsHex(id, code, sz);
+        emitDispInsHex(id, code + writeableOffset, sz);
     }
 
     /* Display the instruction name */
 
-    sstr = codeGen->genInsName(ins);
+    sstr = codeGen->genInsDisplayName(id);
+    printf(" %-9s", sstr);
 
-    if (IsAVXInstruction(ins) && !IsBMIInstruction(ins))
-    {
-        printf(" v%-8s", sstr);
-    }
-    else
-    {
-        printf(" %-9s", sstr);
-    }
 #ifndef HOST_UNIX
-    if (strnlen_s(sstr, 10) >= 8)
+    if (strnlen_s(sstr, 10) >= 9)
 #else  // HOST_UNIX
-    if (strnlen(sstr, 10) >= 8)
+    if (strnlen(sstr, 10) >= 9)
 #endif // HOST_UNIX
     {
+        // Make sure there's at least one space after the instruction name, for very long instruction names.
         printf(" ");
     }
 
@@ -8701,6 +8872,8 @@ void emitter::emitDispIns(
                 { // (val < 0)
                     printf("-0x%IX", -val);
                 }
+
+                emitDispCommentForHandle(val, id->idDebugOnlyInfo()->idFlags & GTF_ICON_HDL_MASK);
             }
             break;
 
@@ -9511,7 +9684,7 @@ void emitter::emitDispIns(
                 }
                 else
                 {
-                    printf("G_M%03u_IG%02u", emitComp->compMethodID, id->idAddr()->iiaIGlabel->igNum);
+                    emitPrintLabel(id->idAddr()->iiaIGlabel);
                 }
             }
             else
@@ -11743,10 +11916,12 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
 #endif
             if (id->idGCref())
             {
-                // The reg must currently be holding either a gcref or a byref
-                // and the instruction must be inc or dec
-                assert(((emitThisGCrefRegs | emitThisByrefRegs) & regMask) &&
-                       (ins == INS_inc || ins == INS_dec || ins == INS_inc_l || ins == INS_dec_l));
+                assert(ins == INS_inc || ins == INS_dec || ins == INS_inc_l || ins == INS_dec_l);
+                // We would like to assert that the reg must currently be holding either a gcref or a byref.
+                // However, we can see cases where a LCLHEAP generates a non-gcref value into a register,
+                // and the first instruction we generate after the LCLHEAP is an `inc` that is typed as
+                // byref. We'll properly create the byref gcinfo when this happens.
+                //     assert((emitThisGCrefRegs | emitThisByrefRegs) & regMask);
                 assert(id->idGCref() == GCT_BYREF);
                 // Mark it as holding a GCT_BYREF
                 emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);
@@ -12051,15 +12226,30 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                     case INS_sub:
                         assert(id->idGCref() == GCT_BYREF);
 
+#if 0
 #ifdef DEBUG
+                        // Due to elided register moves, we can't have the following assert.
+                        // For example, consider:
+                        //    t85 = LCL_VAR byref V01 arg1 rdx (last use) REG rdx
+                        //        /--*  t85    byref                                                       
+                        //        *  STORE_LCL_VAR byref  V40 tmp31 rdx REG rdx                 
+                        // Here, V01 is type `long` on entry, then is stored as a byref. But because
+                        // the register allocator assigned the same register, no instruction was
+                        // generated, and we only (currently) make gcref/byref changes in emitter GC info
+                        // when an instruction is generated. We still generate correct GC info, as this
+                        // instruction, if writing a GC ref even through reading a long, will go live here.
+                        // These situations typically occur due to unsafe casting, such as with Span<T>.
+
                         regMaskTP regMask;
                         regMask = genRegMask(reg1) | genRegMask(reg2);
 
                         // r1/r2 could have been a GCREF as GCREF + int=BYREF
-                        //                            or BYREF+/-int=BYREF
+                        //                               or BYREF+/-int=BYREF
                         assert(((regMask & emitThisGCrefRegs) && (ins == INS_add)) ||
                                ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub)));
-#endif
+#endif // DEBUG
+#endif // 0
+
                         // Mark r1 as holding a byref
                         emitGCregLiveUpd(GCT_BYREF, reg1, dst);
                         break;
@@ -14531,6 +14721,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
     switch (ins)
     {
         case INS_align:
+#if FEATURE_LOOP_ALIGN
+            if (id->idCodeSize() == 0)
+            {
+                // We're not going to generate any instruction, so it doesn't count for PerfScore.
+                result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+                break;
+            }
+#endif
+            FALLTHROUGH;
+
         case INS_nop:
         case INS_int3:
             assert(memFmt == IF_NONE);

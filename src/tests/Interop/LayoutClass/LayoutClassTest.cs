@@ -175,6 +175,12 @@ namespace PInvokeTests
         private static extern bool SealedBlittableSeqLayoutClassByOutAttr([Out] SealedBlittable p);
 
         [DllImport("LayoutClassNative")]
+        private static extern bool PointersEqual(SealedBlittable obj, ref int field);
+
+        [DllImport("LayoutClassNative")]
+        private static extern bool PointersEqual(Blittable obj, ref int field);
+
+        [DllImport("LayoutClassNative")]
         private static extern bool SimpleNestedLayoutClassByValue(NestedLayout p);
 
         [DllImport("LayoutClassNative", EntryPoint = "Invalid")]
@@ -280,6 +286,20 @@ namespace PInvokeTests
             ValidateSealedBlittableClassInOut(SealedBlittableSeqLayoutClassByOutAttr);
         }
 
+        public static void SealedBlittablePinned()
+        {
+            Console.WriteLine($"Running {nameof(SealedBlittablePinned)}...");
+            var blittable = new SealedBlittable(1);
+            Assert.IsTrue(PointersEqual(blittable, ref blittable.a));
+        }
+
+        public static void BlittablePinned()
+        {
+            Console.WriteLine($"Running {nameof(BlittablePinned)}...");
+            var blittable = new Blittable(1);
+            Assert.IsTrue(PointersEqual(blittable, ref blittable.a));
+        }
+
         public static void NestedLayoutClass()
         {
             Console.WriteLine($"Running {nameof(NestedLayoutClass)}...");
@@ -317,6 +337,8 @@ namespace PInvokeTests
                 SealedBlittableClassByOutAttr();
                 NestedLayoutClass();
                 RecursiveNativeLayout();
+                SealedBlittablePinned();
+                BlittablePinned();
             }
             catch (Exception e)
             {

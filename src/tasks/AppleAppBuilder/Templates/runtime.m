@@ -194,7 +194,7 @@ unhandled_exception_handler (MonoObject *exc, void *user_data)
 void
 log_callback (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
-    os_log_info (OS_LOG_DEFAULT, "(%s %s) %s", log_domain, log_level, message);
+    os_log_info (OS_LOG_DEFAULT, "(%{public}s %{public}s) %{public}s", log_domain, log_level, message);
     if (fatal) {
         os_log_info (OS_LOG_DEFAULT, "Exit code: %d.", 1);
         exit (1);
@@ -302,7 +302,7 @@ mono_ios_runtime_init (void)
     // register modules
     register_aot_modules ();
 
-#if (FORCE_INTERPRETER && TARGET_OS_MACCATALYST)
+#if (FORCE_INTERPRETER && FORCE_AOT)
     os_log_info (OS_LOG_DEFAULT, "AOT INTERP Enabled");
     mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP);
 #else

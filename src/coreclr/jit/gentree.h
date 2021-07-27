@@ -494,6 +494,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX/GT_INDEX_ADDR -- the array reference should be range-checked.
     GTF_INX_STRING_LAYOUT       = 0x40000000, // GT_INDEX -- this uses the special string array layout
+    GTF_INX_NOFAULT             = 0x20000000, // GT_INDEX -- the INDEX does not throw an exception (morph to GTF_IND_NONFAULTING)
 
     GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND   -- the target is not on the heap
     GTF_IND_VOLATILE            = 0x40000000, // GT_IND   -- the load or store must use volatile sematics (this is a nop on X86)
@@ -1250,7 +1251,7 @@ public:
         return OperIsInitVal(OperGet());
     }
 
-    bool IsConstInitVal()
+    bool IsConstInitVal() const
     {
         return (gtOper == GT_CNS_INT) || (OperIsInitVal() && (gtGetOp1()->gtOper == GT_CNS_INT));
     }
@@ -1982,10 +1983,10 @@ public:
     // variable, or just a portion of it.
     bool DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire = nullptr);
 
-    // Returns true if "this" represents the address of a local, or a field of a local.  If returns true, sets
-    // "*pLclVarTree" to the node indicating the local variable.  If the address is that of a field of this node,
-    // sets "*pFldSeq" to the field sequence representing that field, else null.
-    bool IsLocalAddrExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, FieldSeqNode** pFldSeq);
+    bool IsLocalAddrExpr(Compiler*             comp,
+                         GenTreeLclVarCommon** pLclVarTree,
+                         FieldSeqNode**        pFldSeq,
+                         ssize_t*              pOffset = nullptr);
 
     // Simpler variant of the above which just returns the local node if this is an expression that
     // yields an address into a local
@@ -2115,6 +2116,63 @@ public:
     bool IsUnsigned() const
     {
         return ((gtFlags & GTF_UNSIGNED) != 0);
+    }
+
+    void SetUnsigned()
+    {
+        assert(OperIs(GT_ADD, GT_SUB, GT_MUL, GT_CAST));
+        gtFlags |= GTF_UNSIGNED;
+    }
+
+    void ClearUnsigned()
+    {
+        assert(OperIs(GT_ADD, GT_SUB, GT_MUL, GT_CAST));
+        gtFlags &= ~GTF_UNSIGNED;
+    }
+
+    void SetOverflow()
+    {
+        assert(OperMayOverflow());
+        gtFlags |= GTF_OVERFLOW;
+    }
+
+    void ClearOverflow()
+    {
+        assert(OperMayOverflow());
+        gtFlags &= ~GTF_OVERFLOW;
+    }
+
+    bool Is64RsltMul() const
+    {
+        return (gtFlags & GTF_MUL_64RSLT) != 0;
+    }
+
+    void Set64RsltMul()
+    {
+        gtFlags |= GTF_MUL_64RSLT;
+    }
+
+    void Clear64RsltMul()
+    {
+        gtFlags &= ~GTF_MUL_64RSLT;
+    }
+
+    void SetAllEffectsFlags(GenTree* source)
+    {
+        SetAllEffectsFlags(source->gtFlags & GTF_ALL_EFFECT);
+    }
+
+    void SetAllEffectsFlags(GenTree* source, GenTree* otherSource)
+    {
+        SetAllEffectsFlags((source->gtFlags | otherSource->gtFlags) & GTF_ALL_EFFECT);
+    }
+
+    void SetAllEffectsFlags(GenTreeFlags sourceFlags)
+    {
+        assert((sourceFlags & ~GTF_ALL_EFFECT) == 0);
+
+        gtFlags &= ~GTF_ALL_EFFECT;
+        gtFlags |= sourceFlags;
     }
 
     inline bool IsCnsIntOrI() const;
@@ -3739,8 +3797,6 @@ enum GenTreeCallFlags : unsigned int
                                                      // to restore real function address and load hidden argument
                                                      // as the first argument for calli. It is CoreRT replacement for instantiating
                                                      // stubs, because executable code cannot be generated at runtime.
-    GTF_CALL_M_HELPER_SPECIAL_DCE      = 0x00020000, // this helper call can be removed if it is part of a comma and
-                                                     // the comma result is unused.
     GTF_CALL_M_DEVIRTUALIZED           = 0x00040000, // this call was devirtualized
     GTF_CALL_M_UNBOXED                 = 0x00080000, // this call was optimized to use the unboxed entry point
     GTF_CALL_M_GUARDED_DEVIRT          = 0x00100000, // this call is a candidate for guarded devirtualization
@@ -5311,9 +5367,9 @@ struct GenTreeBoundsChk : public GenTree
     }
 };
 
-// gtArrElem -- general array element (GT_ARR_ELEM), for non "SZ_ARRAYS"
-//              -- multidimensional arrays, or 1-d arrays with non-zero lower bounds.
-
+// GenTreeArrElem - bounds checked address (byref) of a general array element,
+//    for multidimensional arrays, or 1-d arrays with non-zero lower bounds.
+//
 struct GenTreeArrElem : public GenTree
 {
     GenTree* gtArrObj;
@@ -5329,7 +5385,7 @@ struct GenTreeArrElem : public GenTree
                                  // This has caused VSW 571394.
     var_types gtArrElemType;     // The array element type
 
-    // Requires that "inds" is a pointer to an array of "rank" GenTreePtrs for the indices.
+    // Requires that "inds" is a pointer to an array of "rank" nodes for the indices.
     GenTreeArrElem(
         var_types type, GenTree* arr, unsigned char rank, unsigned char elemSize, var_types elemType, GenTree** inds)
         : GenTree(GT_ARR_ELEM, type), gtArrObj(arr), gtArrRank(rank), gtArrElemSize(elemSize), gtArrElemType(elemType)
@@ -5684,6 +5740,13 @@ public:
 
 #ifndef JIT32_GCENCODER
     bool gtBlkOpGcUnsafe;
+#endif
+
+#ifdef TARGET_XARCH
+    bool IsOnHeapAndContainsReferences()
+    {
+        return (m_layout != nullptr) && m_layout->HasGCPtr() && !Addr()->OperIsLocalAddr();
+    }
 #endif
 
     GenTreeBlk(genTreeOps oper, var_types type, GenTree* addr, ClassLayout* layout)
@@ -6738,6 +6801,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
 
     GenTreeCopyOrReload(genTreeOps oper, var_types type, GenTree* op1) : GenTreeUnOp(oper, type, op1)
     {
+        assert(type != TYP_STRUCT || op1->IsMultiRegNode());
         SetRegNum(REG_NA);
         ClearOtherRegs();
     }

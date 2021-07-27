@@ -261,9 +261,9 @@ namespace System.Xml
 
         /// <summary>
         /// Calls parseQName and throws exception if the resulting name is not a valid QName.
-        /// Returns the prefix and local name parts.
+        /// Returns the colon offset in the name.
         /// </summary>
-        internal static void ParseQNameThrow(string s, out string prefix, out string localName)
+        internal static int ParseQNameThrow(string s)
         {
             int colonOffset;
             int len = ParseQName(s, 0, out colonOffset);
@@ -274,6 +274,16 @@ namespace System.Xml
                 ThrowInvalidName(s, 0, len);
             }
 
+            return colonOffset;
+        }
+
+        /// <summary>
+        /// Calls parseQName and throws exception if the resulting name is not a valid QName.
+        /// Returns the prefix and local name parts.
+        /// </summary>
+        internal static void ParseQNameThrow(string s, out string prefix, out string localName)
+        {
+            int colonOffset = ParseQNameThrow(s);
             if (colonOffset != 0)
             {
                 prefix = s.Substring(0, colonOffset);

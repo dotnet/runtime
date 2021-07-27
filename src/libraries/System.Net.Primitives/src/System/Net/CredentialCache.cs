@@ -452,7 +452,7 @@ namespace System.Net
             obj is CredentialHostKey && Equals((CredentialHostKey)obj);
 
         public override string ToString() =>
-            Host + ":" + Port.ToString(NumberFormatInfo.InvariantInfo) + ":" + AuthenticationType;
+            string.Create(CultureInfo.InvariantCulture, $"{Host}:{Port}:{AuthenticationType}");
     }
 
     internal sealed class CredentialKey : IEquatable<CredentialKey?>
@@ -543,6 +543,6 @@ namespace System.Net
         public override bool Equals([NotNullWhen(true)] object? obj) => Equals(obj as CredentialKey);
 
         public override string ToString() =>
-            "[" + UriPrefixLength.ToString(NumberFormatInfo.InvariantInfo) + "]:" + UriPrefix + ":" + AuthenticationType;
+            string.Create(CultureInfo.InvariantCulture, $"[{UriPrefixLength}]:{UriPrefix}:{AuthenticationType}");
     }
 }

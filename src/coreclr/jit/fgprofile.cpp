@@ -48,6 +48,31 @@ bool Compiler::fgHaveProfileData()
 }
 
 //------------------------------------------------------------------------
+// fgHaveSufficientProfileData: check if profile data is available
+//   and is sufficient enough to be trustful.
+//
+// Returns:
+//   true if so
+//
+// Note:
+//   See notes for fgHaveProfileData.
+//
+bool Compiler::fgHaveSufficientProfileData()
+{
+    if (!fgHaveProfileData())
+    {
+        return false;
+    }
+
+    if ((fgFirstBB != nullptr) && (fgPgoSource == ICorJitInfo::PgoSource::Static))
+    {
+        const BasicBlock::weight_t sufficientSamples = 1000;
+        return fgFirstBB->bbWeight > sufficientSamples;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------
 // fgApplyProfileScale: scale inlinee counts by appropriate scale factor
 //
 void Compiler::fgApplyProfileScale()

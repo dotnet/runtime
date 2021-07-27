@@ -64,51 +64,12 @@ public:
         UINT cbClientData,
         DWORD dwConcurrentGCWaitTimeoutInMs);
 
-    static BOOL IsProfilerEvacuated();
-    static void TerminateProfiling();
+    static BOOL IsProfilerEvacuated(ProfilerInfo *pDetachInfo);
+    static void TerminateProfiling(ProfilerInfo *pProfilerInfo);
     static void LogProfError(int iStringResourceID, ...);
     static void LogProfInfo(int iStringResourceID, ...);
     static void LogNoInterfaceError(REFIID iidRequested, LPCWSTR wszClsid);
     INDEBUG(static BOOL ShouldInjectProfAPIFault(ProfAPIFaultFlags faultFlag);)
-
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-    // ----------------------------------------------------------------------------
-    // ProfilingAPIUtility::IncEvacuationCounter
-    //
-    // Description:
-    //    Simple helper to increase the evacuation counter inside an EE thread by one
-    //
-    // Arguments:
-    //    * pThread - pointer to an EE Thread
-    //
-    template<typename ThreadType>
-    static FORCEINLINE void IncEvacuationCounter(ThreadType * pThread)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (pThread)
-            pThread->IncProfilerEvacuationCounter();
-    }
-
-    // ----------------------------------------------------------------------------
-    // ProfilingAPIUtility::DecEvacuationCounter
-    //
-    // Description:
-    //    Simple helper to decrease the evacuation counter inside an EE thread by one
-    //
-    // Arguments:
-    //    * pThread - pointer to an EE Thread
-    //
-    template<typename ThreadType>
-    static FORCEINLINE void DecEvacuationCounter(ThreadType * pThread)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (pThread)
-            pThread->DecProfilerEvacuationCounter();
-    }
-
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
 
     // See code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization
     static CRITSEC_COOKIE GetStatusCrst();
@@ -147,6 +108,8 @@ private:
         DWORD dwConcurrentGCWaitTimeoutInMs = INFINITE);
     static HRESULT ProfilerCLSIDFromString(__inout_z LPWSTR wszClsid, CLSID * pClsid);
     static HRESULT AttemptLoadProfilerForStartup();
+    static HRESULT AttemptLoadDelayedStartupProfilers();
+    static HRESULT AttemptLoadProfilerList();
 
     static void AppendSupplementaryInformation(int iStringResource, SString * pString);
 
@@ -172,5 +135,12 @@ private:
     Thread *   m_pThread;
     DWORD      m_dwOriginalFullState;
 };
+
+FORCEINLINE void DeregisterProfilerIfNotificationOnly(ProfilerInfo *pProfilerInfo) 
+{
+    g_profControlBlock.DeRegisterProfilerInfo(pProfilerInfo);
+}
+
+typedef Wrapper<ProfilerInfo *, DoNothing, DeregisterProfilerIfNotificationOnly> ProfilerInfoHolder;
 
 #endif //__PROFILING_HELPER_H__

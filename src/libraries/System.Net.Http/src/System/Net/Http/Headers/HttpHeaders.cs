@@ -37,34 +37,19 @@ namespace System.Net.Http.Headers
 
         private readonly HttpHeaderType _allowedHeaderTypes;
         private readonly HttpHeaderType _treatAsCustomHeaderTypes;
-        /// <summary>Whether to force values in <see cref="_headerStore"/> to be wrapped in <see cref="HeaderStoreItemInfo"/> objects.</summary>
-        /// <remarks>
-        /// In general, header and collection types in System.Net.Http are not thread-safe: it's an error to read/write the same header
-        /// collection on multiple threads, and even to enumerate a single header collection from multiple threads concurrently; doing
-        /// so may lazily-initialize various properties and structures.  However, there is one collection exempt from this based purely
-        /// on necessity: HttpClient.DefaultRequestHeaders.  DefaultRequestHeaders is enumerated to add all of its headers into each
-        /// request, and since requests may be sent on the same HttpClient instance concurrently, this collection may be enumerated
-        /// concurrently.  As such, we need to ensure that any mutation performed on DefaultRequestHeaders while enumerating is done in
-        /// a thread-safe way.  This is achieved by locking on the <see cref="HeaderStoreItemInfo"/> objects in the <see cref="_headerStore"/>,
-        /// but that means the value must be a <see cref="HeaderStoreItemInfo"/> rather than a raw string, which we prefer to store for
-        /// unvalidated additions.  To work around that, for the HttpClient.DefaultRequestHeaders collection sets <see cref="_forceHeaderStoreItems"/>
-        /// to true, which will cause additions to always be wrapped, even if we otherwise wouldn't need them to be.
-        /// </remarks>
-        private bool _forceHeaderStoreItems;
 
         protected HttpHeaders()
             : this(HttpHeaderType.All, HttpHeaderType.None)
         {
         }
 
-        internal HttpHeaders(HttpHeaderType allowedHeaderTypes, HttpHeaderType treatAsCustomHeaderTypes, bool forceHeaderStoreItems = false)
+        internal HttpHeaders(HttpHeaderType allowedHeaderTypes, HttpHeaderType treatAsCustomHeaderTypes)
         {
             // Should be no overlap
             Debug.Assert((allowedHeaderTypes & treatAsCustomHeaderTypes) == 0);
 
             _allowedHeaderTypes = allowedHeaderTypes & ~HttpHeaderType.NonTrailing;
             _treatAsCustomHeaderTypes = treatAsCustomHeaderTypes & ~HttpHeaderType.NonTrailing;
-            _forceHeaderStoreItems = forceHeaderStoreItems;
         }
 
         internal Dictionary<HeaderDescriptor, object>? HeaderStore => _headerStore;
@@ -157,7 +142,7 @@ namespace System.Net.Http.Headers
             else
             {
                 // The header store did not contain the header.  Add the raw string.
-                _headerStore.Add(descriptor, _forceHeaderStoreItems ? new HeaderStoreItemInfo { RawValue = value } : (object)value);
+                _headerStore.Add(descriptor, value);
             }
 
             return true;
@@ -236,7 +221,7 @@ namespace System.Net.Http.Headers
         internal bool Contains(HeaderDescriptor descriptor)
         {
             // We can't just call headerStore.ContainsKey() since after parsing the value the header may not exist
-            // anymore (if the value contains invalid newline chars, we remove the header). So try to parse the
+            // anymore (if the value contains newline chars, we remove the header). So try to parse the
             // header value.
             return _headerStore != null && TryGetAndParseHeaderInfo(descriptor, out _);
         }
@@ -324,10 +309,7 @@ namespace System.Net.Http.Headers
                     // To retain consistent semantics, we need to upgrade a raw string to a HeaderStoreItemInfo
                     // during enumeration so that we can parse the raw value in order to a) return
                     // the correct set of parsed values, and b) update the instance for subsequent enumerations
-                    // to reflect that parsing.  It is safe to write back into the dictionary here because
-                    // the only collection that can be enumerated concurrently is HttpClient.DefaultRequestHeaders,
-                    // and all values in it will be HeaderStoreItemInfo.
-                    Debug.Assert(!_forceHeaderStoreItems);
+                    // to reflect that parsing.
                     _headerStore[descriptor] = info = new HeaderStoreItemInfo() { RawValue = value };
                 }
 
@@ -336,10 +318,7 @@ namespace System.Net.Http.Headers
                 // values.
                 if (!ParseRawHeaderValues(descriptor, info, removeEmptyHeader: false))
                 {
-                    // We have an invalid header value (contains invalid newline chars). Delete it.
-                    // Note that ParseRawHeaderValues locks on the info object, such that only a single
-                    // call to it with the same info will return false, which makes this removal safe to
-                    // do even for HttpClient.DefaultRequestHeaders, which may be enumerated concurrently.
+                    // We have an invalid header value (contains newline chars). Delete it.
                     _headerStore.Remove(descriptor);
                 }
                 else
@@ -470,7 +449,7 @@ namespace System.Net.Http.Headers
                 if (info.IsEmpty)
                 {
                     bool headerRemoved = Remove(descriptor);
-                    Debug.Assert(headerRemoved, "Existing header '" + descriptor.Name + "' couldn't be removed.");
+                    Debug.Assert(headerRemoved, $"Existing header '{descriptor.Name}' couldn't be removed.");
                 }
 
                 return result;
@@ -561,7 +540,7 @@ namespace System.Net.Http.Headers
                     else
                     {
                         Debug.Assert(sourceValue is string);
-                        _headerStore.Add(header.Key, _forceHeaderStoreItems ? new HeaderStoreItemInfo { RawValue = sourceValue } : sourceValue);
+                        _headerStore.Add(header.Key, sourceValue);
                     }
                 }
             }
@@ -731,43 +710,37 @@ namespace System.Net.Http.Headers
 
         private bool ParseRawHeaderValues(HeaderDescriptor descriptor, HeaderStoreItemInfo info, bool removeEmptyHeader)
         {
-            // Prevent multiple threads from parsing the raw value at the same time, or else we would get
-            // false duplicates or false nulls.
-            lock (info)
+            // Unlike TryGetHeaderInfo() this method tries to parse all non-validated header values (if any)
+            // before returning to the caller.
+            if (info.RawValue != null)
             {
-                // Unlike TryGetHeaderInfo() this method tries to parse all non-validated header values (if any)
-                // before returning to the caller.
-                if (info.RawValue != null)
+                List<string>? rawValues = info.RawValue as List<string>;
+
+                if (rawValues == null)
                 {
-                    List<string>? rawValues = info.RawValue as List<string>;
+                    ParseSingleRawHeaderValue(descriptor, info);
+                }
+                else
+                {
+                    ParseMultipleRawHeaderValues(descriptor, info, rawValues);
+                }
 
-                    if (rawValues == null)
-                    {
-                        ParseSingleRawHeaderValue(descriptor, info);
-                    }
-                    else
-                    {
-                        ParseMultipleRawHeaderValues(descriptor, info, rawValues);
-                    }
+                // At this point all values are either in info.ParsedValue, info.InvalidValue, or were removed since they
+                // contain newline chars. Reset RawValue.
+                info.RawValue = null;
 
-                    // At this point all values are either in info.ParsedValue, info.InvalidValue, or were removed since they
-                    // contain invalid newline chars. Reset RawValue.
-                    info.RawValue = null;
-
-                    // During parsing, we removed the value since it contains invalid newline chars. Return false to indicate that
-                    // this is an empty header. If the caller specified to remove empty headers, we'll remove the header before
-                    // returning.
-                    if ((info.InvalidValue == null) && (info.ParsedValue == null))
+                // During parsing, we removed the value since it contains newline chars. Return false to indicate that
+                // this is an empty header. If the caller specified to remove empty headers, we'll remove the header before
+                // returning.
+                if ((info.InvalidValue == null) && (info.ParsedValue == null))
+                {
+                    if (removeEmptyHeader)
                     {
-                        if (removeEmptyHeader)
-                        {
-                            // After parsing the raw value, no value is left because all values contain invalid newline
-                            // chars.
-                            Debug.Assert(_headerStore != null);
-                            _headerStore.Remove(descriptor);
-                        }
-                        return false;
+                        // After parsing the raw value, no value is left because all values contain newline chars.
+                        Debug.Assert(_headerStore != null);
+                        _headerStore.Remove(descriptor);
                     }
+                    return false;
                 }
             }
 
@@ -780,7 +753,7 @@ namespace System.Net.Http.Headers
             {
                 foreach (string rawValue in rawValues)
                 {
-                    if (!ContainsInvalidNewLine(rawValue, descriptor.Name))
+                    if (!ContainsNewLine(rawValue, descriptor.Name))
                     {
                         AddParsedValue(info, rawValue);
                     }
@@ -805,7 +778,7 @@ namespace System.Net.Http.Headers
 
             if (descriptor.Parser == null)
             {
-                if (!ContainsInvalidNewLine(rawValue, descriptor.Name))
+                if (!ContainsNewLine(rawValue, descriptor.Name))
                 {
                     AddParsedValue(info, rawValue);
                 }
@@ -894,7 +867,7 @@ namespace System.Net.Http.Headers
                     }
                     else
                     {
-                        if (!ContainsInvalidNewLine(value, descriptor.Name) && addWhenInvalid)
+                        if (!ContainsNewLine(value, descriptor.Name) && addWhenInvalid)
                         {
                             AddInvalidValue(info, value);
                         }
@@ -911,7 +884,7 @@ namespace System.Net.Http.Headers
             }
 
             Debug.Assert(value != null);
-            if (!ContainsInvalidNewLine(value, descriptor.Name) && addWhenInvalid)
+            if (!ContainsNewLine(value, descriptor.Name) && addWhenInvalid)
             {
                 AddInvalidValue(info, value ?? string.Empty);
             }
@@ -999,8 +972,8 @@ namespace System.Net.Http.Headers
             if (descriptor.Parser == null)
             {
                 // If we don't have a parser for the header, we consider the value valid if it doesn't contains
-                // invalid newline characters. We add the values as "parsed value". Note that we allow empty values.
-                CheckInvalidNewLine(value);
+                // newline characters. We add the values as "parsed value". Note that we allow empty values.
+                CheckContainsNewLine(value);
                 AddParsedValue(info, value ?? string.Empty);
                 return;
             }
@@ -1103,22 +1076,22 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        private static void CheckInvalidNewLine(string? value)
+        internal static void CheckContainsNewLine(string? value)
         {
             if (value == null)
             {
                 return;
             }
 
-            if (HttpRuleParser.ContainsInvalidNewLine(value))
+            if (HttpRuleParser.ContainsNewLine(value))
             {
                 throw new FormatException(SR.net_http_headers_no_newlines);
             }
         }
 
-        private static bool ContainsInvalidNewLine(string value, string name)
+        private static bool ContainsNewLine(string value, string name)
         {
-            if (HttpRuleParser.ContainsInvalidNewLine(value))
+            if (HttpRuleParser.ContainsNewLine(value))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_no_newlines, name, value));
                 return true;

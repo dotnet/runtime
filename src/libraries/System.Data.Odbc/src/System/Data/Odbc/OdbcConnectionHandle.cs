@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 
+#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
+
 namespace System.Data.Odbc
 {
     internal sealed class OdbcConnectionHandle : OdbcHandle
@@ -259,13 +261,6 @@ namespace System.Data.Odbc
         internal ODBC32.RetCode SetConnectionAttribute3(ODBC32.SQL_ATTR attribute, string buffer, int length)
         {
             ODBC32.RetCode retcode = Interop.Odbc.SQLSetConnectAttrW(this, attribute, buffer, length);
-            return retcode;
-        }
-
-        internal ODBC32.RetCode SetConnectionAttribute4(ODBC32.SQL_ATTR attribute, System.Transactions.IDtcTransaction transaction, int length)
-        {
-            ODBC32.RetCode retcode = Interop.Odbc.SQLSetConnectAttrW(this, attribute, transaction, length);
-            ODBC.TraceODBC(3, "SQLSetConnectAttrW", retcode);
             return retcode;
         }
     }

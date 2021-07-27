@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using System.Diagnostics;
 using System.Threading;
 using System.Runtime.InteropServices;
@@ -170,98 +171,20 @@ namespace System.Globalization
                     continue;
                 }
 
-                if (char.IsHighSurrogate(c) && i < source.Length - 1 && char.IsLowSurrogate(source[i + 1]))
+                if (char.IsHighSurrogate(c) && i < source.Length - 1)
                 {
-                    // well formed surrogates
-                    ToUpperSurrogate(c, source[i + 1], out ushort h, out ushort l);
-                    destination[i]   = (char)h;
-                    destination[i+1] = (char)l;
-                    i++; // skip the low surrogate
-                    continue;
+                    char cl = source[i + 1];
+                    if (char.IsLowSurrogate(cl))
+                    {
+                        // well formed surrogates
+                        SurrogateCasing.ToUpper(c, cl, out destination[i], out destination[i+1]);
+                        i++; // skip the low surrogate
+                        continue;
+                    }
                 }
 
                 destination[i] = ToUpper(c);
             }
-        }
-
-        // For simplicity ToUpper doesn't expect the Surrogate be formed with
-        //  S = ((H - 0xD800) * 0x400) + (L - 0xDC00) + 0x10000
-        // Instead it expect to have it in the form (H << 16) | L
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ToUpperSurrogate(ushort h, ushort l, out ushort hr, out ushort lr)
-        {
-            switch (h)
-            {
-                case 0xD801:
-                    // DESERET SMALL LETTERS 10428 ~ 1044F
-                    if ((uint) (l - 0xdc28) <= (uint) (0xdc4f - 0xdc28))
-                    {
-                        hr = h;
-                        lr = (ushort) ((l - 0xdc28) +  0xdc00);
-                        return;
-                    }
-
-                    // OSAGE SMALL LETTERS 104D8 ~ 104FB
-                    if ((uint) (l - 0xdcd8) <= (uint) (0xdcfb - 0xdcd8))
-                    {
-                        hr = h;
-                        lr = (ushort) ((l - 0xdcd8) +  0xdcb0);
-                        return;
-                    }
-                    break;
-
-                case 0xd803:
-                    // OLD HUNGARIAN SMALL LETTERS 10CC0 ~ 10CF2
-                    if ((uint) (l - 0xdcc0) <= (uint) (0xdcf2 - 0xdcc0))
-                    {
-                        hr = h;
-                        lr = (ushort) ((l - 0xdcc0) +  0xdc80);
-                        return;
-                    }
-                    break;
-
-                case 0xd806:
-                    // WARANG CITI SMALL LETTERS 118C0 ~ 118DF
-                    if ((uint) (l - 0xdcc0) <= (uint) (0xdcdf - 0xdcc0))
-                    {
-                        hr = h;
-                        lr = (ushort) ((l - 0xdcc0) +  0xdca0);
-                        return;
-                    }
-                    break;
-
-                case 0xd81b:
-                    // MEDEFAIDRIN SMALL LETTERS 16E60 ~ 16E7F
-                    if ((uint) (l - 0xde60) <= (uint) (0xde7f - 0xde60))
-                    {
-                        hr = h;
-                        lr = (ushort) ((l - 0xde60) +  0xde40);
-                        return;
-                    }
-                    break;
-
-                case 0xd83a:
-                    // ADLAM SMALL LETTERS 1E922 ~ 1E943
-                    if ((uint) (l - 0xdd22) <= (uint) (0xdd43 - 0xdd22))
-                    {
-                        hr = h;
-                        lr = (ushort) ((l - 0xdd22) +  0xdd00);
-                        return;
-                    }
-                    break;
-            }
-
-            hr = h;
-            lr = l;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool EqualSurrogate(char h1, char l1, char h2, char l2)
-        {
-            ToUpperSurrogate(h1, l1, out ushort hr1, out ushort lr1);
-            ToUpperSurrogate(h2, l2, out ushort hr2, out ushort lr2);
-
-            return hr1 == hr2 && lr1 == lr2;
         }
 
         internal static int CompareStringIgnoreCase(ref char strA, int lengthA, ref char strB, int lengthB)
@@ -274,72 +197,93 @@ namespace System.Globalization
             ref char charA = ref strA;
             ref char charB = ref strB;
 
-            while (length != 0)
+            int index = 0;
+
+            while (index < length)
             {
-                 // optimize for Ascii cases
-                if (charA <= '\u00FF' || length == 1 || !char.IsHighSurrogate(charA) || !char.IsHighSurrogate(charB))
-                {
-                    if (charA == charB)
-                    {
-                        length--;
-                        charA = ref Unsafe.Add(ref charA, 1);
-                        charB = ref Unsafe.Add(ref charB, 1);
-                        continue;
-                    }
-
-                    char aUpper = OrdinalCasing.ToUpper(charA);
-                    char bUpper = OrdinalCasing.ToUpper(charB);
-
-                    if (aUpper == bUpper)
-                    {
-                        length--;
-                        charA = ref Unsafe.Add(ref charA, 1);
-                        charB = ref Unsafe.Add(ref charB, 1);
-                        continue;
-                    }
-
-                    return aUpper - bUpper;
-                }
-
-                // We come here only of we have valid high surrogates and length > 1
-
                 char a = charA;
                 char b = charB;
+                char lowSurrogateA = '\0';
 
-                length--;
-                charA = ref Unsafe.Add(ref charA, 1);
-                charB = ref Unsafe.Add(ref charB, 1);
-
-                if (!char.IsLowSurrogate(charA) || !char.IsLowSurrogate(charB))
+                if (!char.IsHighSurrogate(a) || index >= lengthA - 1 || !char.IsLowSurrogate(lowSurrogateA = Unsafe.Add(ref charA, 1)))
                 {
-                    // malformed Surrogates - should be rare cases
-                    if (a != b)
+                    if (!char.IsHighSurrogate(b) || index >= lengthB - 1 || !char.IsLowSurrogate(Unsafe.Add(ref charB, 1)))
                     {
+                        //
+                        // Neither A or B are surrogates
+                        //
+
+                        if (b == a)
+                        {
+                            index++;
+                            charA = ref Unsafe.Add(ref charA, 1);
+                            charB = ref Unsafe.Add(ref charB, 1);
+                            continue;
+                        }
+
+                        char aUpper = OrdinalCasing.ToUpper(a);
+                        char bUpper = OrdinalCasing.ToUpper(b);
+
+                        if (aUpper == bUpper)
+                        {
+                            index++;
+                            charA = ref Unsafe.Add(ref charA, 1);
+                            charB = ref Unsafe.Add(ref charB, 1);
+                            continue;
+                        }
+
                         return a - b;
                     }
 
-                    // Should be pointing to the right characters in the string to resume at.
-                    // Just in case we could be pointing at high surrogate now.
+                    //
+                    // charA is not surrogate and charB is valid surrogate
+                    //
+
+                    return -1;
+                }
+
+                //
+                // A is Surrogate
+                //
+
+                char lowSurrogateB = '\0';
+
+                if (!char.IsHighSurrogate(b) || index >= lengthB - 1 || !char.IsLowSurrogate(lowSurrogateB = Unsafe.Add(ref charB, 1)))
+                {
+                    //
+                    // charB is not surrogate and charA is surrogate
+                    //
+
+                    return 1;
+                }
+
+                //
+                // charA and charB are surrogates
+                //
+
+                Debug.Assert(lowSurrogateA != '\0');
+                Debug.Assert(lowSurrogateB != '\0');
+
+                if (a == b && lowSurrogateA == lowSurrogateB)
+                {
+                    index += 2;
+                    charA = ref Unsafe.Add(ref charA, 2);
+                    charB = ref Unsafe.Add(ref charB, 2);
                     continue;
                 }
 
-                // we come here only if we have valid full surrogates
-                ToUpperSurrogate(a, charA, out ushort h1, out ushort l1);
-                ToUpperSurrogate(b, charB, out ushort h2, out ushort l2);
+                uint upperSurrogateA = CharUnicodeInfo.ToUpper(UnicodeUtility.GetScalarFromUtf16SurrogatePair(a, lowSurrogateA));
+                uint upperSurrogateB = CharUnicodeInfo.ToUpper(UnicodeUtility.GetScalarFromUtf16SurrogatePair(b, lowSurrogateB));
 
-                if (h1 != h2)
+                if (upperSurrogateA == upperSurrogateB)
                 {
-                    return (int)h1 - (int)h2;
+                    index += 2;
+                    charA = ref Unsafe.Add(ref charA, 2);
+                    charB = ref Unsafe.Add(ref charB, 2);
+                    continue;
                 }
 
-                if (l1 != l2)
-                {
-                    return (int)l1 - (int)l2;
-                }
-
-                length--;
-                charA = ref Unsafe.Add(ref charA, 1);
-                charB = ref Unsafe.Add(ref charB, 1);
+                return (int)upperSurrogateA - (int)upperSurrogateB;
             }
 
             return lengthA - lengthB;
@@ -381,7 +325,7 @@ namespace System.Globalization
                         {
                             // Well formed surrogates
                             // both the source and the Value have well-formed surrogates.
-                            if (!EqualSurrogate(*pSrc, *(pSrc + 1), *pVal, *(pVal + 1)))
+                            if (!SurrogateCasing.Equal(*pSrc, *(pSrc + 1), *pVal, *(pVal + 1)))
                                 break; // no match
 
                             pSrc += 2;
@@ -444,7 +388,7 @@ namespace System.Globalization
                         {
                             // Well formed surrogates
                             // both the source and the Value have well-formed surrogates.
-                            if (!EqualSurrogate(*pSrc, *(pSrc + 1), *pVal, *(pVal + 1)))
+                            if (!SurrogateCasing.Equal(*pSrc, *(pSrc + 1), *pVal, *(pVal + 1)))
                                 break; // no match
 
                             pSrc += 2;

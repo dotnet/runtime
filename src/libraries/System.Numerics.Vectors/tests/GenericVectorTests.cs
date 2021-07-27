@@ -3137,6 +3137,49 @@ namespace System.Numerics.Tests
         }
         #endregion
 
+        #region Sum
+
+        [Fact]
+        public void SumInt32() => TestSum<int>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumInt64() => TestSum<long>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumSingle() => TestSum<float>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumDouble() => TestSum<double>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumUInt32() => TestSum<uint>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumUInt64() => TestSum<ulong>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumByte() => TestSum<byte>(x => x.Aggregate((a, b) => (byte)(a + b)));
+
+        [Fact]
+        public void SumSByte() => TestSum<sbyte>(x => x.Aggregate((a, b) => (sbyte)(a + b)));
+
+        [Fact]
+        public void SumInt16() => TestSum<short>(x => x.Aggregate((a, b) => (short)(a + b)));
+
+        [Fact]
+        public void SumUInt16() => TestSum<ushort>(x => x.Aggregate((a, b) => (ushort)(a + b)));
+
+        private static void TestSum<T>(Func<T[], T> expected) where T : struct, IEquatable<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new(values);
+            T sum = Vector.Sum(vector);
+
+            AssertEqual(expected(values), sum, "Sum");
+        }
+
+        #endregion
+
         #region Helper Methods
         private static void AssertEqual<T>(T expected, T actual, string operation, int precision = -1) where T : IEquatable<T>
         {

@@ -128,7 +128,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -148,7 +147,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
         public async Task GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -230,11 +228,11 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 #if NETCOREAPP
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         [Theory]
         [InlineData(TransferType.ContentLength, TransferError.ContentLengthTooLarge)]
         [InlineData(TransferType.Chunked, TransferError.MissingChunkTerminator)]
         [InlineData(TransferType.Chunked, TransferError.ChunkSizeTooLarge)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54160", TestPlatforms.Browser)]
         public async Task ReadAsStreamAsync_InvalidServerResponse_ThrowsIOException(
             TransferType transferType,
             TransferError transferError)
@@ -245,7 +243,6 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         [Theory]
         [InlineData(TransferType.None, TransferError.None)]
         [InlineData(TransferType.ContentLength, TransferError.None)]
@@ -260,7 +257,6 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
         [Theory]
         [InlineData(TransferType.None, TransferError.None)]
         [InlineData(TransferType.ContentLength, TransferError.None)]
@@ -329,6 +325,7 @@ namespace System.Net.Http.Functional.Tests
                     // Write response header
                     await connection.WriteStringAsync("HTTP/1.1 200 OK\r\n").ConfigureAwait(false);
                     await connection.WriteStringAsync($"Date: {DateTimeOffset.UtcNow:R}\r\n").ConfigureAwait(false);
+                    await connection.WriteStringAsync(LoopbackServer.CorsHeaders).ConfigureAwait(false);
                     await connection.WriteStringAsync("Content-Type: text/plain\r\n").ConfigureAwait(false);
                     if (!string.IsNullOrEmpty(transferHeader))
                     {

@@ -202,6 +202,7 @@ DEFINE_CLASS(VARIANT_WRAPPER,       Interop,                VariantWrapper)
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
 
+BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS_U(System,                 __ComObject,            ComObject)
 DEFINE_FIELD_U(m_ObjectToDataMap,      ComObject,              m_ObjectToDataMap)
@@ -211,14 +212,12 @@ DEFINE_METHOD(COM_OBJECT,           GET_EVENT_PROVIDER,     GetEventProvider,   
 #ifdef FOR_ILLINK
 DEFINE_METHOD(COM_OBJECT,           CTOR,                   .ctor,                      IM_RetVoid)
 #endif
-#endif // FEATURE_COMINTEROP
 
-BEGIN_ILLINK_FEATURE_SWITCH(System.Runtime.InteropServices.BuiltInComInterop.IsSupported, true, true)
-#ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(LICENSE_INTEROP_PROXY,  InternalInteropServices, LicenseInteropProxy)
 DEFINE_METHOD(LICENSE_INTEROP_PROXY, CREATE,                  Create,                  SM_RetObj)
 DEFINE_METHOD(LICENSE_INTEROP_PROXY, GETCURRENTCONTEXTINFO,   GetCurrentContextInfo,   IM_RuntimeTypeHandle_RefBool_RefIntPtr_RetVoid)
 DEFINE_METHOD(LICENSE_INTEROP_PROXY, SAVEKEYINCURRENTCONTEXT, SaveKeyInCurrentContext, IM_IntPtr_RetVoid)
+
 #endif // FEATURE_COMINTEROP
 END_ILLINK_FEATURE_SWITCH()
 
@@ -780,7 +779,6 @@ DEFINE_FIELD(RAW_ARRAY_DATA,        PADDING,                Padding)
 DEFINE_FIELD(RAW_ARRAY_DATA,        DATA,                   Data)
 
 DEFINE_CLASS(PORTABLE_TAIL_CALL_FRAME, CompilerServices,              PortableTailCallFrame)
-DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, PREV,                          Prev)
 DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, TAILCALL_AWARE_RETURN_ADDRESS, TailCallAwareReturnAddress)
 DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, NEXT_CALL,                     NextCall)
 
@@ -789,7 +787,6 @@ DEFINE_FIELD(TAIL_CALL_TLS,            FRAME,                         Frame)
 DEFINE_FIELD(TAIL_CALL_TLS,            ARG_BUFFER,                    ArgBuffer)
 
 DEFINE_CLASS_U(CompilerServices,           PortableTailCallFrame, PortableTailCallFrame)
-DEFINE_FIELD_U(Prev,                       PortableTailCallFrame, Prev)
 DEFINE_FIELD_U(TailCallAwareReturnAddress, PortableTailCallFrame, TailCallAwareReturnAddress)
 DEFINE_FIELD_U(NextCall,                   PortableTailCallFrame, NextCall)
 
@@ -1070,6 +1067,7 @@ DEFINE_METHOD(CSTRMARSHALER,        CLEAR_NATIVE,           ClearNative,        
 
 DEFINE_CLASS(FIXEDWSTRMARSHALER,   StubHelpers,            FixedWSTRMarshaler)
 DEFINE_METHOD(FIXEDWSTRMARSHALER,  CONVERT_TO_NATIVE,      ConvertToNative,            SM_Str_IntPtr_Int_RetVoid)
+DEFINE_METHOD(FIXEDWSTRMARSHALER,  CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtr_Int_RetStr)
 
 DEFINE_CLASS(BSTRMARSHALER,         StubHelpers,            BSTRMarshaler)
 DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_NATIVE,      ConvertToNative,            SM_Str_IntPtr_RetIntPtr)

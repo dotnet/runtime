@@ -5,8 +5,6 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <TargetOS Condition="'$(TargetOS)' == ''">iOS</TargetOS>
     <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iOSSimulator</TargetOS>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture)\$(Configuration)\runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <RuntimeIdentifier>$(TargetOS.ToLower())-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
   </PropertyGroup>
@@ -20,16 +18,6 @@
   <PropertyGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
     <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
   </PropertyGroup>
-
-  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
-  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
-    <ItemGroup>
-      <RuntimePack>
-        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)</PackageDirectory>
-      </RuntimePack>
-    </ItemGroup>
-    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
-  </Target>
 
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="AppleAppBuilderTask"
@@ -80,7 +68,7 @@
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
         ProjectName="HelloiOS"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)native\include\mono-2.0"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\native\include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="Program.dll"
         GenerateXcodeProject="True"
@@ -106,12 +94,9 @@
           Condition="'$(ArchiveTests)' != 'true'">
     <!-- FIXME: only run if the TargetArchitecture matches the current architecture -->
 
-    <!-- install and run on ios simulator -->
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl shutdown &quot;$(IosSimulator)&quot;" ContinueOnError="WarnAndContinue" />
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl boot &quot;$(IosSimulator)&quot;" />
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="open -a Simulator" />
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl install &quot;$(IosSimulator)&quot; $(AppBundlePath)" />
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl launch --console booted net.dot.HelloiOS" />
+    <!-- install and run on ios simulator or device -->
+    <Exec Condition="'$(TargetOS)' == 'iOSSimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'iOS'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />
 
     <!-- run on MacCatalyst -->
     <Exec Condition="'$(TargetOS)' == 'MacCatalyst'" Command="open -W $(AppBundlePath)" />

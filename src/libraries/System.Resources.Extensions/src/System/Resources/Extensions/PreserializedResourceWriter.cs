@@ -98,7 +98,7 @@ namespace System.Resources.Extensions
                         throw new TypeLoadException(SR.Format(SR.TypeLoadException_CannotLoadConverter, primitiveType));
                     }
 
-                    object primitiveValue = converter.ConvertFromInvariantString(value);
+                    object primitiveValue = converter.ConvertFromInvariantString(value)!;
 
                     Debug.Assert(primitiveValue.GetType() == primitiveType);
 

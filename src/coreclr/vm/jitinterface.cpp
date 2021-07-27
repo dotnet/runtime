@@ -102,23 +102,47 @@ GARY_IMPL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 
 #else // DACCESS_COMPILE
 
-uint64_t g_cbILJitted = 0;
-uint32_t g_cMethodsJitted = 0;
+Volatile<int64_t> g_cbILJitted = 0;
+Volatile<int64_t> g_cMethodsJitted = 0;
+Volatile<int64_t> g_c100nsTicksInJit = 0;
+thread_local int64_t t_cbILJittedForThread = 0;
+thread_local int64_t t_cMethodsJittedForThread = 0;
+thread_local int64_t t_c100nsTicksInJitForThread = 0;
+
+// This prevents tearing of 64 bit values on 32 bit systems
+static inline
+int64_t AtomicLoad64WithoutTearing(int64_t volatile *valueRef)
+{
+    WRAPPER_NO_CONTRACT;
+#if TARGET_64BIT
+    return VolatileLoad(valueRef);
+#else
+    return InterlockedCompareExchangeT((LONG64 volatile *)valueRef, (LONG64)0, (LONG64)0);
+#endif // TARGET_64BIT
+}
 
 #ifndef CROSSGEN_COMPILE
-FCIMPL0(INT64, GetJittedBytes)
+FCIMPL1(INT64, GetCompiledILBytes, CLR_BOOL currentThread)
 {
     FCALL_CONTRACT;
 
-    return g_cbILJitted;
+    return currentThread ? t_cbILJittedForThread : AtomicLoad64WithoutTearing(&g_cbILJitted);
 }
 FCIMPLEND
 
-FCIMPL0(INT32, GetJittedMethodsCount)
+FCIMPL1(INT64, GetCompiledMethodCount, CLR_BOOL currentThread)
 {
     FCALL_CONTRACT;
 
-    return g_cMethodsJitted;
+    return currentThread ? t_cMethodsJittedForThread : AtomicLoad64WithoutTearing(&g_cMethodsJitted);
+}
+FCIMPLEND
+
+FCIMPL1(INT64, GetCompilationTimeInTicks, CLR_BOOL currentThread)
+{
+    FCALL_CONTRACT;
+
+    return currentThread ? t_c100nsTicksInJitForThread : AtomicLoad64WithoutTearing(&g_c100nsTicksInJit);
 }
 FCIMPLEND
 #endif
@@ -7738,12 +7762,12 @@ getMethodInfoHelper(
 #if defined(PROFILING_SUPPORTED)
         BOOL fProfilerRequiresGenericsContextForEnterLeave = FALSE;
         {
-            BEGIN_PIN_PROFILER(CORProfilerPresent());
-            if (g_profControlBlock.pProfInterface->RequiresGenericsContextForEnterLeave())
+            BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
+            if ((&g_profControlBlock)->RequiresGenericsContextForEnterLeave())
             {
                 fProfilerRequiresGenericsContextForEnterLeave = TRUE;
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
         if (fProfilerRequiresGenericsContextForEnterLeave)
         {
@@ -8134,7 +8158,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         // profiler that this inlining is going to take place, and give them a
         // chance to prevent it.
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackJITInfo());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackJITInfo());
             if (pCaller->IsILStub() || pCallee->IsILStub())
             {
                 // do nothing
@@ -8142,7 +8166,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             else
             {
                 BOOL fShouldInline;
-                HRESULT hr = g_profControlBlock.pProfInterface->JITInlining(
+                HRESULT hr = (&g_profControlBlock)->JITInlining(
                     (FunctionID)pCaller,
                     (FunctionID)pCallee,
                     &fShouldInline);
@@ -8154,7 +8178,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
                     goto exit;
                 }
             }
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
 #endif // PROFILING_SUPPORTED
@@ -8904,6 +8928,8 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     info->devirtualizedMethod = NULL;
     info->requiresInstMethodTableArg = false;
     info->exactContext = NULL;
+    memset(&info->resolvedTokenDevirtualizedMethod, 0, sizeof(info->resolvedTokenDevirtualizedMethod));
+    memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
@@ -8971,7 +8997,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 int canonicallyMatchingInterfacesFound = 0;
                 while (it.Next())
                 {
-                    if (it.GetInterface()->GetCanonicalMethodTable() == pOwnerMT)
+                    if (it.GetInterface(pObjMT)->GetCanonicalMethodTable() == pOwnerMT)
                     {
                         canonicallyMatchingInterfacesFound++;
                         if (canonicallyMatchingInterfacesFound > 1)
@@ -10910,6 +10936,23 @@ static LONG RunWithErrorTrapFilter(struct _EXCEPTION_POINTERS* exceptionPointers
 
 #endif // !defined(TARGET_UNIX)
 
+bool CEEInfo::runWithSPMIErrorTrap(void (*function)(void*), void* param)
+{
+    // No dynamic contract here because SEH is used
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_PREEMPTIVE;
+
+    // NOTE: the lack of JIT/EE transition markers in this method is intentional. Any
+    //       transitions into the EE proper should occur either via JIT/EE
+    //       interface calls made by `function`.
+
+    // As we aren't SPMI, we don't need to do anything other than call the function.
+
+    function(param);
+    return true;
+}
+
 bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
 {
     // No dynamic contract here because SEH is used
@@ -11182,9 +11225,9 @@ void CEEJitInfo::GetProfilingHandle(bool                      *pbHookFunction,
         void * profilerHandle = m_pMethodBeingCompiled;
 
         {
-            BEGIN_PIN_PROFILER(CORProfilerFunctionIDMapperEnabled());
-            profilerHandle = (void *)g_profControlBlock.pProfInterface->EEFunctionIDMapper((FunctionID) m_pMethodBeingCompiled, &bHookFunction);
-            END_PIN_PROFILER();
+            BEGIN_PROFILER_CALLBACK(CORProfilerFunctionIDMapperEnabled());
+            profilerHandle = (void *)(&g_profControlBlock)->EEFunctionIDMapper((FunctionID) m_pMethodBeingCompiled, &bHookFunction);
+            END_PROFILER_CALLBACK();
         }
 
         m_gphCache.m_pvGphProfilerHandle = profilerHandle;
@@ -11210,12 +11253,37 @@ void CEEJitInfo::GetProfilingHandle(bool                      *pbHookFunction,
 }
 
 /*********************************************************************/
+void CEEJitInfo::WriteCodeBytes()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef USE_INDIRECT_CODEHEADER
+    if (m_pRealCodeHeader != NULL)
+    {
+        // Restore the read only version of the real code header
+        m_CodeHeaderRW->SetRealCodeHeader(m_pRealCodeHeader);
+        m_pRealCodeHeader = NULL;
+    }
+#endif // USE_INDIRECT_CODEHEADER
+
+    if (m_CodeHeaderRW != m_CodeHeader)
+    {
+        ExecutableWriterHolder<void> codeWriterHolder((void *)m_CodeHeader, m_codeWriteBufferSize);
+        memcpy(codeWriterHolder.GetRW(), m_CodeHeaderRW, m_codeWriteBufferSize);
+    }
+}
+
+/*********************************************************************/
 void CEEJitInfo::BackoutJitData(EEJitManager * jitMgr)
 {
     CONTRACTL {
         NOTHROW;
         GC_TRIGGERS;
     } CONTRACTL_END;
+
+    // The RemoveJitData call below requires the m_CodeHeader to be valid, so we need to write
+    // the code bytes to the target memory location.
+    WriteCodeBytes();
 
     CodeHeader* pCodeHeader = m_CodeHeader;
     if (pCodeHeader)
@@ -11230,19 +11298,7 @@ void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-#ifdef USE_INDIRECT_CODEHEADER
-    if (m_pRealCodeHeader != NULL)
-    {
-        // Restore the read only version of the real code header
-        m_CodeHeaderRW->SetRealCodeHeader(m_pRealCodeHeader);
-        m_pRealCodeHeader = NULL;
-    }
-#endif // USE_INDIRECT_CODEHEADER
-
-    if (m_CodeHeaderRW != m_CodeHeader)
-    {
-        memcpy(m_CodeHeader, m_CodeHeaderRW, m_codeWriteBufferSize);
-    }
+    WriteCodeBytes();
 
     // Now that the code header was written to the final location, publish the code via the nibble map
     jitMgr->NibbleMapSet(m_pCodeHeap, m_CodeHeader->GetCodeStartAddress(), TRUE);
@@ -11860,7 +11916,7 @@ WORD CEEJitInfo::getRelocTypeHint(void * target)
     if (m_fAllowRel32)
     {
         // The JIT calls this method for data addresses only. It always uses REL32s for direct code targets.
-        if (IsPreferredExecutableRange(target))
+        if (ExecutableAllocator::IsPreferredExecutableRange(target))
             return IMAGE_REL_BASED_REL32;
     }
 #endif // TARGET_AMD64
@@ -12523,7 +12579,7 @@ void CEEJitInfo::getEHinfo(
 #endif // CROSSGEN_COMPILE
 
 #if defined(CROSSGEN_COMPILE)
-EXTERN_C ICorJitCompiler* __stdcall getJit();
+EXTERN_C ICorJitCompiler* getJit();
 #endif // defined(CROSSGEN_COMPILE)
 
 #ifdef FEATURE_INTERPRETER
@@ -13015,8 +13071,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     MethodDesc* ftn = nativeCodeVersion.GetMethodDesc();
 
     PCODE ret = NULL;
+    NormalizedTimer timer;
+    int64_t c100nsTicksInJit = 0;
 
     COOPERATIVE_TRANSITION_BEGIN();
+
+    timer.Start();
 
 #ifdef FEATURE_PREJIT
 
@@ -13379,8 +13439,17 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         printf(".");
 #endif // _DEBUG
 
-    FastInterlockExchangeAddLong((LONG64*)&g_cbILJitted, methodInfo.ILCodeSize);
-    FastInterlockIncrement((LONG*)&g_cMethodsJitted);
+    timer.Stop();
+    c100nsTicksInJit = timer.Elapsed100nsTicks();
+
+    InterlockedExchangeAdd64((LONG64*)&g_c100nsTicksInJit, c100nsTicksInJit);
+    t_c100nsTicksInJitForThread += c100nsTicksInJit;
+
+    InterlockedExchangeAdd64((LONG64*)&g_cbILJitted, methodInfo.ILCodeSize);
+    t_cbILJittedForThread += methodInfo.ILCodeSize;
+
+    InterlockedIncrement64((LONG64*)&g_cMethodsJitted);
+    t_cMethodsJittedForThread++;
 
     COOPERATIVE_TRANSITION_END();
     return ret;
@@ -13462,7 +13531,7 @@ void Module::LoadHelperTable()
             *curEntry = X86_INSTR_JMP_REL32;
             *(INT32 *)(curEntry + 1) = rel32UsingJumpStub((INT32 *)(curEntry + 1), pfnHelper, NULL, GetLoaderAllocator());
 #else // all other platforms
-            emitJump(curEntry, (LPVOID)pfnHelper);
+            emitJump(curEntry, curEntry, (LPVOID)pfnHelper);
             _ASSERTE(HELPER_TABLE_ENTRY_LEN >= JUMP_ALLOCATE_SIZE);
 #endif
 
@@ -13958,9 +14027,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             CORINFO_PROFILING_HANDLE profilerHandle = (CORINFO_PROFILING_HANDLE)funId;
 
             {
-                BEGIN_PIN_PROFILER(CORProfilerFunctionIDMapperEnabled());
-                profilerHandle = (CORINFO_PROFILING_HANDLE) g_profControlBlock.pProfInterface->EEFunctionIDMapper(funId, &bHookFunction);
-                END_PIN_PROFILER();
+                BEGIN_PROFILER_CALLBACK(CORProfilerFunctionIDMapperEnabled());
+                profilerHandle = (CORINFO_PROFILING_HANDLE)(&g_profControlBlock)->EEFunctionIDMapper(funId, &bHookFunction);
+                END_PROFILER_CALLBACK();
             }
 
             // Profiling handle is opaque token. It does not have to be aligned thus we can not store it in the same location as token.
@@ -14252,6 +14321,131 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
                 return FALSE;
             }
+            result = 1;
+        }
+        break;
+
+    case ENCODE_VERIFY_VIRTUAL_FUNCTION_OVERRIDE:
+    case ENCODE_CHECK_VIRTUAL_FUNCTION_OVERRIDE:
+        {
+            PCCOR_SIGNATURE updatedSignature = pBlob;
+
+            ReadyToRunVirtualFunctionOverrideFlags flags = (ReadyToRunVirtualFunctionOverrideFlags)CorSigUncompressData(updatedSignature);
+
+            SigTypeContext typeContext;    // empty context is OK: encoding should not contain type variables.
+            ZapSig::Context zapSigContext(pInfoModule, (void *)currentModule, ZapSig::NormalTokens);
+            MethodDesc *pDeclMethod = ZapSig::DecodeMethod(pInfoModule, updatedSignature, &typeContext, &zapSigContext, NULL, NULL, NULL, &updatedSignature, TRUE);
+            TypeHandle thImpl = ZapSig::DecodeType(currentModule, pInfoModule, updatedSignature, CLASS_LOADED, &updatedSignature);
+
+            MethodDesc *pImplMethodCompiler = NULL;
+            
+            if ((flags & READYTORUN_VIRTUAL_OVERRIDE_VirtualFunctionOverriden) != 0)
+            {
+                pImplMethodCompiler = ZapSig::DecodeMethod(currentModule, pInfoModule, updatedSignature);
+            }
+
+            MethodDesc *pImplMethodRuntime;
+            if (pDeclMethod->IsInterface())
+            {
+                if (!thImpl.CanCastTo(pDeclMethod->GetMethodTable()))
+                {
+                    MethodTable *pInterfaceTypeCanonical = pDeclMethod->GetMethodTable()->GetCanonicalMethodTable();
+
+                    // Its possible for the decl method to need to be found on the only canonically compatible interface on the owning type
+                    MethodTable::InterfaceMapIterator it = thImpl.GetMethodTable()->IterateInterfaceMap();
+                    while (it.Next())
+                    {
+                        MethodTable *pItfInMap = it.GetInterface(thImpl.GetMethodTable());
+                        if (pInterfaceTypeCanonical == pItfInMap->GetCanonicalMethodTable())
+                        {
+                            pDeclMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pDeclMethod, pItfInMap, FALSE, pDeclMethod->GetMethodInstantiation(), FALSE, TRUE);
+                            break;
+                        }
+                    }
+                }
+                DispatchSlot slot = thImpl.GetMethodTable()->FindDispatchSlotForInterfaceMD(pDeclMethod, /*throwOnConflict*/ FALSE);
+                pImplMethodRuntime = slot.GetMethodDesc();
+            }
+            else
+            {
+                MethodTable *pCheckMT = thImpl.GetMethodTable();
+                MethodTable *pBaseMT = pDeclMethod->GetMethodTable();
+                WORD slot = pDeclMethod->GetSlot();
+
+                while (pCheckMT != nullptr)
+                {
+                    if (pCheckMT->HasSameTypeDefAs(pBaseMT))
+                    {
+                        break;
+                    }
+
+                    pCheckMT = pCheckMT->GetParentMethodTable();
+                }
+
+                if (pCheckMT == nullptr)
+                {
+                    pImplMethodRuntime = NULL;
+                }
+                else if (IsMdFinal(pDeclMethod->GetAttrs()))
+                {
+                    pImplMethodRuntime = pDeclMethod;
+                }
+                else
+                {
+                    _ASSERTE(slot < pBaseMT->GetNumVirtuals());
+                    pImplMethodRuntime = thImpl.GetMethodTable()->GetMethodDescForSlot(slot);
+                }
+            }
+
+            if (pImplMethodRuntime != pImplMethodCompiler)
+            {
+                if (kind == ENCODE_CHECK_VIRTUAL_FUNCTION_OVERRIDE)
+                {
+                    return FALSE;
+                }
+                else
+                {
+                    // Verification failures are failfast events
+                    DefineFullyQualifiedNameForClassW();
+                    SString methodNameDecl;
+                    SString methodNameImplRuntime(W("(NULL)"));
+                    SString methodNameImplCompiler(W("(NULL)"));
+
+                    pDeclMethod->GetFullMethodInfo(methodNameDecl);
+
+                    if (pImplMethodRuntime != NULL)
+                    {
+                        methodNameImplRuntime.Clear();
+                        pImplMethodRuntime->GetFullMethodInfo(methodNameImplRuntime);
+                    }
+
+                    if (pImplMethodCompiler != NULL)
+                    {
+                        methodNameImplCompiler.Clear();
+                        pImplMethodCompiler->GetFullMethodInfo(methodNameImplCompiler);
+                    }
+
+                    SString fatalErrorString;
+                    fatalErrorString.Printf(W("Verify_VirtualFunctionOverride Decl Method '%s' on type '%s' is '%s'(actual) instead of expected '%s'(from compiler)"),
+                        methodNameDecl.GetUnicode(),
+                        GetFullyQualifiedNameForClassW(thImpl.GetMethodTable()),
+                        methodNameImplRuntime.GetUnicode(),
+                        methodNameImplCompiler.GetUnicode());
+
+#ifdef _DEBUG
+                    {
+                        StackScratchBuffer buf;
+                        _ASSERTE_MSG(false, fatalErrorString.GetUTF8(buf));
+                    }
+#endif
+                    _ASSERTE(!IsDebuggerPresent() && "Stop on assert here instead of fatal error for ease of live debugging");
+
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
+                    return FALSE;
+
+                }
+            }
+
             result = 1;
         }
         break;

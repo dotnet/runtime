@@ -168,7 +168,7 @@ namespace System.Net.Security.Tests
                     intermedPub3.Dispose();
                     CertificateAuthority intermediateAuthority3 = new CertificateAuthority(intermedCert3, null, null, null);
 
-                    RSA eeKey = (RSA)endEntity.PrivateKey;
+                    RSA eeKey = endEntity.GetRSAPrivateKey();
                     endEntity = intermediateAuthority3.CreateEndEntity(
                         $"CN=\"A SSL Test\", O=\"testName\"",
                         eeKey,

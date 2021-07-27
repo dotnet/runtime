@@ -326,10 +326,6 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     // If other kinds of code need multi-versioning we could add more cases here,
     // but for now generation of all other code/stubs occurs in other code paths
     _ASSERTE(IsIL() || IsNoMetadata());
@@ -541,9 +537,9 @@ PCODE MethodDesc::GetPrecompiledNgenCode(PrepareCodeConfig* pConfig)
     {
         BOOL fShouldSearchCache = TRUE;
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackCacheSearches());
-            g_profControlBlock.pProfInterface->JITCachedFunctionSearchStarted((FunctionID)this, &fShouldSearchCache);
-            END_PIN_PROFILER();
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackCacheSearches());
+            (&g_profControlBlock)->JITCachedFunctionSearchStarted((FunctionID)this, &fShouldSearchCache);
+            END_PROFILER_CALLBACK();
         }
 
         if (!fShouldSearchCache)
@@ -589,10 +585,10 @@ PCODE MethodDesc::GetPrecompiledNgenCode(PrepareCodeConfig* pConfig)
         * cached jitted function has been made.
         */
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackCacheSearches());
-            g_profControlBlock.pProfInterface->
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackCacheSearches());
+            (&g_profControlBlock)->
                 JITCachedFunctionSearchFinished((FunctionID)this, COR_PRF_CACHED_FUNCTION_FOUND);
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
 #endif // PROFILING_SUPPORTED
 
@@ -870,7 +866,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackJITInfo());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackJITInfo());
         // For methods with non-zero rejit id we send ReJITCompilationStarted, otherwise
         // JITCompilationStarted. It isn't clear if this is the ideal policy for these
         // notifications yet.
@@ -879,7 +875,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         if (rejitId != 0)
         {
             _ASSERTE(!nativeCodeVersion.IsDefaultVersion());
-            g_profControlBlock.pProfInterface->ReJITCompilationStarted((FunctionID)this,
+            (&g_profControlBlock)->ReJITCompilationStarted((FunctionID)this,
                 rejitId,
                 TRUE);
         }
@@ -890,7 +886,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         {
             if (!IsNoMetadata())
             {
-                g_profControlBlock.pProfInterface->JITCompilationStarted((FunctionID)this, TRUE);
+                (&g_profControlBlock)->JITCompilationStarted((FunctionID)this, TRUE);
 
             }
             else
@@ -899,7 +895,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 CorInfoOptions corOptions;
                 LPCBYTE ilHeaderPointer = this->AsDynamicMethodDesc()->GetResolver()->GetCodeInfo(&ilSize, &unused, &corOptions, &unused);
 
-                g_profControlBlock.pProfInterface->DynamicMethodJITCompilationStarted((FunctionID)this, TRUE, ilHeaderPointer, ilSize);
+                (&g_profControlBlock)->DynamicMethodJITCompilationStarted((FunctionID)this, TRUE, ilHeaderPointer, ilSize);
             }
 
             if (nativeCodeVersion.IsDefaultVersion())
@@ -907,7 +903,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 pConfig->SetProfilerMayHaveActivatedNonDefaultCodeVersion();
             }
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -959,7 +955,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackJITInfo());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackJITInfo());
         // For methods with non-zero rejit id we send ReJITCompilationFinished, otherwise
         // JITCompilationFinished. It isn't clear if this is the ideal policy for these
         // notifications yet.
@@ -968,7 +964,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         if (rejitId != 0)
         {
             _ASSERTE(!nativeCodeVersion.IsDefaultVersion());
-            g_profControlBlock.pProfInterface->ReJITCompilationFinished((FunctionID)this,
+            (&g_profControlBlock)->ReJITCompilationFinished((FunctionID)this,
                 rejitId,
                 S_OK,
                 TRUE);
@@ -980,14 +976,14 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
         {
             if (!IsNoMetadata())
             {
-                g_profControlBlock.pProfInterface->
+                (&g_profControlBlock)->
                     JITCompilationFinished((FunctionID)this,
                         pEntry->m_hrResultCode,
                         TRUE);
             }
             else
             {
-                g_profControlBlock.pProfInterface->DynamicMethodJITCompilationFinished((FunctionID)this, pEntry->m_hrResultCode, TRUE);
+                (&g_profControlBlock)->DynamicMethodJITCompilationFinished((FunctionID)this, pEntry->m_hrResultCode, TRUE);
             }
 
             if (nativeCodeVersion.IsDefaultVersion())
@@ -995,7 +991,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 pConfig->SetProfilerMayHaveActivatedNonDefaultCodeVersion();
             }
         }
-        END_PIN_PROFILER();
+        END_PROFILER_CALLBACK();
     }
 #endif // PROFILING_SUPPORTED
 
@@ -2034,10 +2030,6 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
         GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
         {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-            auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
             pbRetVal = pMD->DoPrestub(pDispatchingMT, CallerGCMode::Coop);
         }
 
@@ -2334,7 +2326,16 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         if (!GetOrCreatePrecode()->SetTargetInterlocked(pStub->GetEntryPoint()))
         {
-            pStub->DecRef();
+            if (pStub->HasExternalEntryPoint())
+            {
+                // Stubs with external entry point are allocated from regular heap and so they are always writeable
+                pStub->DecRef();
+            }
+            else
+            {
+                ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub));
+                stubWriterHolder.GetRW()->DecRef();
+            }
         }
         else if (pStub->HasExternalEntryPoint())
         {
@@ -2455,7 +2456,8 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CO
             *(INT32 *)(pNewValue+1) = rel32UsingJumpStub((INT32*)(&pThunk->callJmp[1]), pCode, pMD, NULL);
 
             _ASSERTE(IS_ALIGNED((size_t)pThunk, sizeof(INT64)));
-            FastInterlockCompareExchangeLong((INT64*)pThunk, newValue, oldValue);
+            ExecutableWriterHolder<INT64> thunkWriterHolder((INT64*)pThunk, sizeof(INT64));
+            FastInterlockCompareExchangeLong(thunkWriterHolder.GetRW(), newValue, oldValue);
 
             FlushInstructionCache(GetCurrentProcess(), pThunk, 8);
         }

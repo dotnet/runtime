@@ -31,6 +31,10 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        // This should correspond to platforms on which System.Net.Quic is supported. See also HttpConnectionPool.IsHttp3Supported().
+        public static bool IsMockQuicSupported
+            => (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+
         protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, QuicImplementationProvider quicImplementationProvider = null, bool allowAllHttp2Certificates = true)
         {
             useVersion ??= HttpVersion.Version11;
@@ -45,7 +49,7 @@ namespace System.Net.Http.Functional.Tests
             if (quicImplementationProvider != null)
             {
                 SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
-                socketsHttpHandler.QuicImplementationProvider = quicImplementationProvider;
+                SetQuicImplementationProvider(socketsHttpHandler, quicImplementationProvider);
                 socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true;
             }
 
@@ -62,11 +66,18 @@ namespace System.Net.Http.Functional.Tests
         protected static HttpClientHandler CreateHttpClientHandler(string useVersionString) =>
             CreateHttpClientHandler(Version.Parse(useVersionString));
 
-
-        protected static object GetUnderlyingSocketsHttpHandler(HttpClientHandler handler)
+        protected static SocketsHttpHandler GetUnderlyingSocketsHttpHandler(HttpClientHandler handler)
         {
             FieldInfo field = typeof(HttpClientHandler).GetField("_underlyingHandler", BindingFlags.Instance | BindingFlags.NonPublic);
-            return field?.GetValue(handler);
+            return (SocketsHttpHandler)field?.GetValue(handler);
+        }
+
+        protected static void SetQuicImplementationProvider(SocketsHttpHandler handler, QuicImplementationProvider quicImplementationProvider)
+        {
+            FieldInfo settingsField = typeof(SocketsHttpHandler).GetField("_settings", BindingFlags.Instance | BindingFlags.NonPublic);
+            object settings = settingsField.GetValue(handler);
+            FieldInfo field = settings.GetType().GetField("_quicImplementationProvider", BindingFlags.Instance | BindingFlags.NonPublic);
+            field.SetValue(settings, quicImplementationProvider);
         }
 
         protected static HttpRequestMessage CreateRequest(HttpMethod method, Uri uri, Version version, bool exactVersion = false) =>

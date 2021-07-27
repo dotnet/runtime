@@ -11,6 +11,8 @@
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
 
+static bool _event_pipe_component_inited = false;
+
 struct _EventPipeProviderConfigurationNative {
 	gunichar2 *provider_name;
 	uint64_t keywords;
@@ -156,7 +158,8 @@ event_pipe_enable (
 		format,
 		rundown_requested,
 		stream,
-		sync_callback);
+		sync_callback,
+        NULL);
 
 	if (config_providers) {
 		for (int i = 0; i < providers_len; ++i) {
@@ -283,5 +286,11 @@ event_pipe_thread_ctrl_activity_id (
 MonoComponentEventPipe *
 mono_component_event_pipe_init (void)
 {
+	if (!_event_pipe_component_inited) {
+		extern void ep_rt_mono_component_init (void);
+		ep_rt_mono_component_init ();
+		_event_pipe_component_inited = true;
+	}
+
 	return &fn_table;
 }
