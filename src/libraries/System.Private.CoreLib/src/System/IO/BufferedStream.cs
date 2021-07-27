@@ -889,7 +889,7 @@ namespace System.IO
             checked
             {  // We do not expect buffer sizes big enough for an overflow, but if it happens, lets fail early:
                 totalUserbytes = _writePos + count;
-               // Allow current totalUserbytes up to int.MaxValue by using uint arithmetic operation for totalUserbytes + count
+                // Allow current totalUserbytes up to int.MaxValue by using uint arithmetic operation for totalUserbytes + count
                 useBuffer = ((uint)totalUserbytes + count < (_bufferSize + _bufferSize));
             }
 
