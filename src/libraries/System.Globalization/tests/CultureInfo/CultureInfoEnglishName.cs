@@ -19,7 +19,6 @@ namespace System.Globalization.Tests
                 yield return new object[] { "fr-FR", "French (France)" };
                 yield return new object[] { "zh-Hant", "Chinese (Traditional)" };
                 yield return new object[] { "zh-Hans", "Chinese (Simplified)" };
-                yield return new object[] { "uz-Arab", "Uzbek (Arabic)" };
                 yield return new object[] { "uz-Cyrl", "Uzbek (Cyrillic)" };
             }
             else
