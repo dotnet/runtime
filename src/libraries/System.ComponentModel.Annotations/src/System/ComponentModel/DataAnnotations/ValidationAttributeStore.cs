@@ -116,7 +116,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="type">The type whose store item is needed.  It cannot be null</param>
         /// <returns>The type store item.  It will not be null.</returns>
-        private TypeStoreItem GetTypeStoreItem([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        private TypeStoreItem GetTypeStoreItem([DynamicallyAccessedMembers(TypeStoreItem.DynamicallyAccessedTypes)] Type type)
         {
             Debug.Assert(type != null);
 
@@ -124,8 +124,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 if (!_typeStoreItems.TryGetValue(type, out TypeStoreItem? item))
                 {
-                    // use CustomAttributeExtensions.GetCustomAttributes() to get inherited attributes as well as direct ones
-                    var attributes = CustomAttributeExtensions.GetCustomAttributes(type, true);
+                    var attributes = TypeDescriptor.GetAttributes(type).Cast<Attribute>();
                     item = new TypeStoreItem(type, attributes);
                     _typeStoreItems[type] = item;
                 }
@@ -170,18 +169,20 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         private sealed class TypeStoreItem : StoreItem
         {
+            internal const DynamicallyAccessedMemberTypes DynamicallyAccessedTypes = DynamicallyAccessedMemberTypes.All;
+
             private readonly object _syncRoot = new object();
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            [DynamicallyAccessedMembers(DynamicallyAccessedTypes)]
             private readonly Type _type;
             private Dictionary<string, PropertyStoreItem>? _propertyStoreItems;
 
-            internal TypeStoreItem([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, IEnumerable<Attribute> attributes)
+            internal TypeStoreItem([DynamicallyAccessedMembers(DynamicallyAccessedTypes)] Type type, IEnumerable<Attribute> attributes)
                 : base(attributes)
             {
                 _type = type;
             }
 
-            [RequiresUnreferencedCode("The Type of _type cannot be statically discovered.")]
+            [RequiresUnreferencedCode("The Types of _type's properties cannot be statically discovered.")]
             internal PropertyStoreItem GetPropertyStoreItem(string propertyName)
             {
                 if (!TryGetPropertyStoreItem(propertyName, out PropertyStoreItem? item))
@@ -193,7 +194,7 @@ namespace System.ComponentModel.DataAnnotations
                 return item;
             }
 
-            [RequiresUnreferencedCode("The Type of _type cannot be statically discovered.")]
+            [RequiresUnreferencedCode("The Types of _type's properties cannot be statically discovered.")]
             internal bool TryGetPropertyStoreItem(string propertyName, [NotNullWhen(true)] out PropertyStoreItem? item)
             {
                 if (string.IsNullOrEmpty(propertyName))
@@ -218,11 +219,12 @@ namespace System.ComponentModel.DataAnnotations
             [RequiresUnreferencedCode("The Types of _type's properties cannot be statically discovered.")]
             private Dictionary<string, PropertyStoreItem> CreatePropertyStoreItems()
             {
-                Dictionary<string, PropertyStoreItem> propertyStoreItems = new Dictionary<string, PropertyStoreItem>();
-                PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(this._type);
+                var propertyStoreItems = new Dictionary<string, PropertyStoreItem>();
+
+                var properties = TypeDescriptor.GetProperties(_type);
                 foreach (PropertyDescriptor property in properties)
                 {
-                    PropertyStoreItem item = new PropertyStoreItem(property.PropertyType, GetExplicitAttributes(property).Cast<Attribute>());
+                    var item = new PropertyStoreItem(property.PropertyType, GetExplicitAttributes(property).Cast<Attribute>());
                     propertyStoreItems[property.Name] = item;
                 }
 
@@ -230,15 +232,15 @@ namespace System.ComponentModel.DataAnnotations
             }
 
             /// <summary>
-            /// Method to extract only the explicitly specified attributes from a <see cref="PropertyDescriptor"/>
+            ///     Method to extract only the explicitly specified attributes from a <see cref="PropertyDescriptor"/>
             /// </summary>
             /// <remarks>
-            /// Normal TypeDescriptor semantics are to inherit the attributes of a property's type.  This method
-            /// exists to suppress those inherited attributes.
+            ///     Normal TypeDescriptor semantics are to inherit the attributes of a property's type.  This method
+            ///     exists to suppress those inherited attributes.
             /// </remarks>
             /// <param name="propertyDescriptor">The property descriptor whose attributes are needed.</param>
             /// <returns>A new <see cref="AttributeCollection"/> stripped of any attributes from the property's type.</returns>
-            [RequiresUnreferencedCode("The Type of propertyDescriptor.PropertyType cannot be statically discovered. ")]
+            [RequiresUnreferencedCode("The Type of propertyDescriptor.PropertyType cannot be statically discovered.")]
             private AttributeCollection GetExplicitAttributes(PropertyDescriptor propertyDescriptor)
             {
                 List<Attribute> attributes = new List<Attribute>(propertyDescriptor.Attributes.Cast<Attribute>());

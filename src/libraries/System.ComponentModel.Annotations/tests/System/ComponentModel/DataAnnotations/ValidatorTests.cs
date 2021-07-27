@@ -500,6 +500,22 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
+        public static void ValidateObject_returns_false_if_all_properties_are_valid_but_metadatatype_class_type_attribute_fails_validation()
+        {
+            var objectToBeValidated = new HasMetadataTypeToBeValidated()
+            {
+                PropertyToBeTested = "Valid Value",
+                SecondPropertyToBeTested = "TypeInvalid"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
+
+            var exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateObject(objectToBeValidated, validationContext, true));
+            Assert.Equal("The SecondPropertyToBeTested field mustn't be \"TypeInvalid\".", exception.ValidationResult.ErrorMessage);
+        }
+
+        [Fact]
         public static void ValidateObject_returns_false_if_all_properties_are_valid_but_metadatatype_class_has_unmatched_property_name()
         {
             var objectToBeValidated = new HasMetadataTypeWithUnmatchedProperties()
@@ -1414,11 +1430,17 @@ namespace System.ComponentModel.DataAnnotations.Tests
             public string SecondPropertyToBeTested { get; set; }
         }
 
+        [CustomValidation(typeof(MetadataTypeToAddValidationAttributes), nameof(Validate))]
         public class MetadataTypeToAddValidationAttributes
         {
             [Required]
             [MaxLength(11)]
             public string SecondPropertyToBeTested { get; set; }
+
+            public static ValidationResult Validate(HasMetadataTypeToBeValidated value)
+                => value.SecondPropertyToBeTested == "TypeInvalid"
+                    ? new ValidationResult("The SecondPropertyToBeTested field mustn't be \"TypeInvalid\".")
+                    : ValidationResult.Success;
         }
     }
 }
