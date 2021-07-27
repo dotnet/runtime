@@ -25,13 +25,11 @@ namespace System.Text.Json.Serialization.Converters
 
         private readonly ConcurrentDictionary<ulong, JsonEncodedText> _nameCache;
 
-        private readonly Lazy<ConcurrentDictionary<ulong, JsonEncodedText>> _dictionaryKeyPolicyCache = new Lazy<ConcurrentDictionary<ulong, JsonEncodedText>>();
+        private ConcurrentDictionary<ulong, JsonEncodedText>? _dictionaryKeyPolicyCache;
 
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
         private const int NameCacheSizeSoftLimit = 64;
-
-        private const int DictionaryKeyPolicyCacheSizeSoftLimit = 64;
 
         public override bool CanConvert(Type type)
         {
@@ -329,20 +327,31 @@ namespace System.Text.Json.Serialization.Converters
 
             ulong key = ConvertToUInt64(value);
 
-            JsonEncodedText formatted;
-            string original;
-
-            if (options.DictionaryKeyPolicy != null && !state.Current.IgnoreDictionaryKeyPolicy)
+            //Try to obtain values from caches
+            if (options.DictionaryKeyPolicy != null)
             {
-                if (_dictionaryKeyPolicyCache.Value.TryGetValue(key, out formatted))
+                Debug.Assert(!state.Current.IgnoreDictionaryKeyPolicy);
+
+                if (_dictionaryKeyPolicyCache != null && _dictionaryKeyPolicyCache.TryGetValue(key, out JsonEncodedText formatted))
                 {
                     writer.WritePropertyName(formatted);
                     return;
                 }
+            }
+            else
+            {
+                if (_nameCache.TryGetValue(key, out JsonEncodedText formatted))
+                {
+                    writer.WritePropertyName(formatted);
+                    return;
+                }
+            }
 
-                original = value.ToString();
-
-                if (IsValidIdentifier(original))
+            //if there are not cached values
+            string original = value.ToString();
+            if (IsValidIdentifier(original))
+            {
+                if (options.DictionaryKeyPolicy != null)
                 {
                     original = options.DictionaryKeyPolicy.ConvertName(original);
 
@@ -351,15 +360,20 @@ namespace System.Text.Json.Serialization.Converters
                         ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(options.DictionaryKeyPolicy);
                     }
 
-                    if (_dictionaryKeyPolicyCache.Value.Count < DictionaryKeyPolicyCacheSizeSoftLimit)
+                    if (_dictionaryKeyPolicyCache == null)
+                    {
+                        _dictionaryKeyPolicyCache = new ConcurrentDictionary<ulong, JsonEncodedText>();
+                    }
+
+                    if (_dictionaryKeyPolicyCache.Count < NameCacheSizeSoftLimit)
                     {
                         JavaScriptEncoder? encoder = options.Encoder;
 
-                        formatted = JsonEncodedText.Encode(original, encoder);
+                        JsonEncodedText formatted = JsonEncodedText.Encode(original, encoder);
 
                         writer.WritePropertyName(formatted);
 
-                        _dictionaryKeyPolicyCache.Value.TryAdd(key, formatted);
+                        _dictionaryKeyPolicyCache.TryAdd(key, formatted);
                     }
                     else
                     {
@@ -370,37 +384,29 @@ namespace System.Text.Json.Serialization.Converters
 
                     return;
                 }
-            }
-
-            if (_nameCache.TryGetValue(key, out formatted))
-            {
-                writer.WritePropertyName(formatted);
-                return;
-            }
-
-            original = value.ToString();
-            if (IsValidIdentifier(original))
-            {
-                // We are dealing with a combination of flag constants since
-                // all constant values were cached during warm-up.
-                JavaScriptEncoder? encoder = options.Encoder;
-
-                if (_nameCache.Count < NameCacheSizeSoftLimit)
-                {
-                    formatted = JsonEncodedText.Encode(original, encoder);
-
-                    writer.WritePropertyName(formatted);
-
-                    _nameCache.TryAdd(key, formatted);
-                }
                 else
                 {
-                    // We also do not create a JsonEncodedText instance here because passing the string
-                    // directly to the writer is cheaper than creating one and not caching it for reuse.
-                    writer.WritePropertyName(original);
-                }
+                    // We are dealing with a combination of flag constants since
+                    // all constant values were cached during warm-up.
+                    JavaScriptEncoder? encoder = options.Encoder;
 
-                return;
+                    if (_nameCache.Count < NameCacheSizeSoftLimit)
+                    {
+                        JsonEncodedText formatted = JsonEncodedText.Encode(original, encoder);
+
+                        writer.WritePropertyName(formatted);
+
+                        _nameCache.TryAdd(key, formatted);
+                    }
+                    else
+                    {
+                        // We also do not create a JsonEncodedText instance here because passing the string
+                        // directly to the writer is cheaper than creating one and not caching it for reuse.
+                        writer.WritePropertyName(original);
+                    }
+
+                    return;
+                }
             }
 
             switch (s_enumTypeCode)
