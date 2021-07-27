@@ -103,6 +103,12 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void _STRESS_Connect_DualMode_MultiAddressFamilyConnect_RetrievedEndPoints_Success()
+        {
+            Parallel.For(0, 100, async _ => await Connect_DualMode_MultiAddressFamilyConnect_RetrievedEndPoints_Success());
+        }
+
+        [Fact]
         public async Task Connect_DualMode_DnsConnect_RetrievedEndPoints_Success()
         {
             var localhostAddresses = Dns.GetHostAddresses("localhost");
@@ -123,6 +129,12 @@ namespace System.Net.Sockets.Tests
                 CheckIsIpv6LoopbackEndPoint(client.LocalEndPoint);
                 CheckIsIpv6LoopbackEndPoint(client.RemoteEndPoint);
             }
+        }
+
+        [Fact]
+        public void _STRESS_Connect_DualMode_DnsConnect_RetrievedEndPoints_Success()
+        {
+            Parallel.For(0, 100, async _ => await Connect_DualMode_DnsConnect_RetrievedEndPoints_Success());
         }
 
         private static void CheckIsIpv6LoopbackEndPoint(EndPoint endPoint)
