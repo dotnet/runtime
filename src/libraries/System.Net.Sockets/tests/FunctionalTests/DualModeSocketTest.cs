@@ -788,7 +788,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45810", TestRuntimes.Mono)]
         public void BeginAcceptV4BoundToAnyV4_Success()
         {
             DualModeConnect_BeginAccept_Helper(IPAddress.Any, IPAddress.Loopback);
@@ -850,6 +849,13 @@ namespace System.Net.Sockets.Tests
                 serverSocket.Listen(1);
                 IAsyncResult async = serverSocket.BeginAccept(null, null);
                 SocketClient client = new SocketClient(_log, serverSocket, connectTo, port);
+                
+                Assert.True(
+                    client.WaitHandle.WaitOne(TestSettings.PassingTestTimeout),
+                    "Timed out while waiting for connection");
+                Assert.True(
+                        async.AsyncWaitHandle.WaitOne(TestSettings.PassingTestTimeout),
+                        "Timed out while to accept the client");
 
                 // Due to the nondeterministic nature of calling dispose on a Socket that is doing
                 // an EndAccept operation, we expect two types of exceptions to happen.
@@ -871,10 +877,6 @@ namespace System.Net.Sockets.Tests
                 }
                 catch (ObjectDisposedException) { }
                 catch (SocketException) { }
-
-                Assert.True(
-                    client.WaitHandle.WaitOne(TestSettings.PassingTestTimeout),
-                    "Timed out while waiting for connection");
 
                 if (client.Error != SocketError.Success)
                 {
