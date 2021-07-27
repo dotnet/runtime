@@ -378,7 +378,17 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
                 }
 
-                return MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                int result = MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                if (result == 0 && commandLineOptions.InheritTimestamp)
+                {
+                    static DateTime Latest(IEnumerable<DateTime> datetimes)
+                        => datetimes.Aggregate((cur, dt) => dt > cur ? dt : cur);
+
+                    commandLineOptions.OutputFileName.CreationTimeUtc = Latest(commandLineOptions.InputFilesToMerge.Select(fi => fi.CreationTimeUtc));
+                    commandLineOptions.OutputFileName.LastWriteTimeUtc = Latest(commandLineOptions.InputFilesToMerge.Select(fi => fi.LastWriteTimeUtc));
+                }
+
+                return result;
             }
             finally
             {
