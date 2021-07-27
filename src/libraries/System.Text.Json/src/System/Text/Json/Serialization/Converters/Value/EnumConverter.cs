@@ -327,7 +327,7 @@ namespace System.Text.Json.Serialization.Converters
 
             ulong key = ConvertToUInt64(value);
 
-            //Try to obtain values from caches
+            // Try to obtain values from caches
             if (options.DictionaryKeyPolicy != null)
             {
                 Debug.Assert(!state.Current.IgnoreDictionaryKeyPolicy);
@@ -338,16 +338,14 @@ namespace System.Text.Json.Serialization.Converters
                     return;
                 }
             }
-            else
+            else if (_nameCache.TryGetValue(key, out JsonEncodedText formatted))
             {
-                if (_nameCache.TryGetValue(key, out JsonEncodedText formatted))
-                {
-                    writer.WritePropertyName(formatted);
-                    return;
-                }
+                writer.WritePropertyName(formatted);
+                return;
             }
 
-            //if there are not cached values
+
+            // if there are not cached values
             string original = value.ToString();
             if (IsValidIdentifier(original))
             {
@@ -360,10 +358,7 @@ namespace System.Text.Json.Serialization.Converters
                         ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(options.DictionaryKeyPolicy);
                     }
 
-                    if (_dictionaryKeyPolicyCache == null)
-                    {
-                        _dictionaryKeyPolicyCache = new ConcurrentDictionary<ulong, JsonEncodedText>();
-                    }
+                    _dictionaryKeyPolicyCache ??= new ConcurrentDictionary<ulong, JsonEncodedText>();
 
                     if (_dictionaryKeyPolicyCache.Count < NameCacheSizeSoftLimit)
                     {
@@ -386,8 +381,9 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    // We are dealing with a combination of flag constants since
-                    // all constant values were cached during warm-up.
+                    // We might be dealing with a combination of flag constants since all constant values were
+                    // likely cached during warm - up(assuming the number of constants <= NameCacheSizeSoftLimit).
+
                     JavaScriptEncoder? encoder = options.Encoder;
 
                     if (_nameCache.Count < NameCacheSizeSoftLimit)

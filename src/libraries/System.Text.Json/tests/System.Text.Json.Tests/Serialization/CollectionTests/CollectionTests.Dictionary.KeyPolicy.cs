@@ -212,7 +212,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void EnumSerialization_DictionaryPolicy_Honored_None()
+        public static void EnumSerializationAsDictKey_NoDictionaryKeyPolicy()
         {
             Dictionary<ETestEnum, ETestEnum> dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1 };
             string value = JsonSerializer.Serialize(dict);
