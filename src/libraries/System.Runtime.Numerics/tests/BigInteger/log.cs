@@ -177,25 +177,6 @@ namespace System.Numerics.Tests
             }
         }
 
-        private static void VerifyIdentityString(string opstring1, string opstring2)
-        {
-            StackCalc sc1 = new StackCalc(opstring1);
-            while (sc1.DoNextOperation())
-            {
-                //Run the full calculation
-                sc1.DoNextOperation();
-            }
-
-            StackCalc sc2 = new StackCalc(opstring2);
-            while (sc2.DoNextOperation())
-            {
-                //Run the full calculation
-                sc2.DoNextOperation();
-            }
-
-            Assert.Equal(sc1.snCalc.Peek().ToString(), sc2.snCalc.Peek().ToString());
-        }
-
         private static byte[] GetRandomByteArray(Random random)
         {
             return GetRandomByteArray(random, random.Next(0, 100));
@@ -206,6 +187,7 @@ namespace System.Numerics.Tests
             return MyBigIntImp.GetRandomByteArray(random, size);
         }
 
+        //Be carefully, this method can generate byte array, which can not be accurately presented by double.
         private static byte[] GetRandomPosByteArray(Random random, int size)
         {
             byte[] value = new byte[size];
