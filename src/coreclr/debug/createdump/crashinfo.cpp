@@ -361,8 +361,9 @@ bool
 CrashInfo::UnwindAllThreads(IXCLRDataProcess* pClrDataProcess)
 {
     ReleaseHolder<ISOSDacInterface> pSos = nullptr;
-    pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
-
+    if (pClrDataProcess != nullptr) {
+        pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
+    }
     // For each native and managed thread
     for (ThreadInfo* thread : m_threads)
     {

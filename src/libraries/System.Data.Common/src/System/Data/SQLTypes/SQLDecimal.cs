@@ -1911,7 +1911,7 @@ namespace System.Data.SqlTypes
 
         private bool FGt10_38(Span<uint> rglData)
         {
-            Debug.Assert(rglData.Length == 4, "rglData.Length == 4", "Wrong array length: " + rglData.Length.ToString(CultureInfo.InvariantCulture));
+            Debug.Assert(rglData.Length == 4, "rglData.Length == 4", $"Wrong array length: {rglData.Length}");
 
             return rglData[3] >= 0x4b3b4ca8L &&
             ((rglData[3] > 0x4b3b4ca8L) || (rglData[2] > 0x5a86c47aL) ||

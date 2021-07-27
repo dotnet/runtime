@@ -185,6 +185,9 @@
   <data name="InvalidApplication" xml:space="preserve">
     <value>The specified executable is not a valid application for this OS platform.</value>
   </data>
+  <data name="ErrorStartingProcess" xml:space="preserve">
+    <value>An error occurred trying to start process '{0}' with working directory '{1}'. {2}</value>
+  </data>
   <data name="StandardOutputEncodingNotAllowed" xml:space="preserve">
     <value>StandardOutputEncoding is only supported when standard output is redirected.</value>
   </data>

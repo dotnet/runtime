@@ -49,9 +49,6 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 if (_elementTypeInfo == null && ElementType != null)
                 {
-                    Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Enumerable ||
-                        PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Dictionary);
-
                     _elementTypeInfo = Options.GetOrAddClass(ElementType);
                 }
 
@@ -181,6 +178,8 @@ namespace System.Text.Json.Serialization.Metadata
 
             PropertyInfoForTypeInfo = CreatePropertyInfoForTypeInfo(Type, runtimeType, converter, typeNumberHandling, Options);
 
+            ElementType = converter.ElementType;
+
             switch (PropertyInfoForTypeInfo.ConverterStrategy)
             {
                 case ConverterStrategy.Object:
@@ -196,6 +195,8 @@ namespace System.Text.Json.Serialization.Metadata
                         Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
 
                         PropertyInfo[] properties = type.GetProperties(bindingFlags);
+
+                        bool propertyOrderSpecified = false;
 
                         // PropertyCache is not accessed by other threads until the current JsonTypeInfo instance
                         //  is finished initializing and added to the cache on JsonSerializerOptions.
@@ -229,6 +230,7 @@ namespace System.Text.Json.Serialization.Metadata
                                         propertyInfo,
                                         isVirtual,
                                         typeNumberHandling,
+                                        ref propertyOrderSpecified,
                                         ref ignoredMembers);
                                 }
                                 else
@@ -263,6 +265,7 @@ namespace System.Text.Json.Serialization.Metadata
                                             fieldInfo,
                                             isVirtual: false,
                                             typeNumberHandling,
+                                            ref propertyOrderSpecified,
                                             ref ignoredMembers);
                                     }
                                 }
@@ -286,6 +289,11 @@ namespace System.Text.Json.Serialization.Metadata
                             properties = currentType.GetProperties(bindingFlags);
                         };
 
+                        if (propertyOrderSpecified)
+                        {
+                            PropertyCache.List.Sort((p1, p2) => p1.Value!.Order.CompareTo(p2.Value!.Order));
+                        }
+
                         if (converter.ConstructorIsParameterized)
                         {
                             InitializeConstructorParameters(converter.ConstructorInfo!);
@@ -294,15 +302,23 @@ namespace System.Text.Json.Serialization.Metadata
                     break;
                 case ConverterStrategy.Enumerable:
                     {
-                        ElementType = converter.ElementType;
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
+
+                        if (converter.RequiresDynamicMemberAccessors)
+                        {
+                            converter.Initialize(Options, this);
+                        }
                     }
                     break;
                 case ConverterStrategy.Dictionary:
                     {
                         KeyType = converter.KeyType;
-                        ElementType = converter.ElementType;
                         CreateObject = Options.MemberAccessorStrategy.CreateConstructor(runtimeType);
+
+                        if (converter.RequiresDynamicMemberAccessors)
+                        {
+                            converter.Initialize(Options, this);
+                        }
                     }
                     break;
                 case ConverterStrategy.Value:
@@ -327,6 +343,7 @@ namespace System.Text.Json.Serialization.Metadata
             MemberInfo memberInfo,
             bool isVirtual,
             JsonNumberHandling? typeNumberHandling,
+            ref bool propertyOrderSpecified,
             ref Dictionary<string, JsonPropertyInfo>? ignoredMembers)
         {
             bool hasExtensionAttribute = memberInfo.GetCustomAttribute(typeof(JsonExtensionDataAttribute)) != null;
@@ -347,6 +364,7 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 CacheMember(jsonPropertyInfo, PropertyCache, ref ignoredMembers);
+                propertyOrderSpecified |= jsonPropertyInfo.Order != 0;
             }
         }
 

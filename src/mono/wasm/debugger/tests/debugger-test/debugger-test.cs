@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Threading.Tasks;
+using System.Linq;
 public partial class Math
 { //Only append content to this class as the test suite depends on line info
     public static int IntAdd(int a, int b)
@@ -361,7 +361,7 @@ public class DebuggerTest
         Console.WriteLine ($"break here");
     }
 
-    public static async Task BoxingTestAsync()
+    public static async System.Threading.Tasks.Task BoxingTestAsync()
     {
         int? n_i = 5;
         object o_i = n_i.Value;
@@ -380,7 +380,7 @@ public class DebuggerTest
         object o_ia = new int[] {918, 58971};
 
         Console.WriteLine ($"break here");
-        await Task.CompletedTask;
+        await System.Threading.Tasks.Task.CompletedTask;
     }
 
     public static void BoxedTypeObjectTest()
@@ -395,7 +395,7 @@ public class DebuggerTest
         object oo0 = oo;
         Console.WriteLine ($"break here");
     }
-    public static async Task BoxedTypeObjectTestAsync()
+    public static async System.Threading.Tasks.Task BoxedTypeObjectTestAsync()
     {
         int i = 5;
         object o0 = i;
@@ -406,7 +406,7 @@ public class DebuggerTest
         object oo = new object();
         object oo0 = oo;
         Console.WriteLine ($"break here");
-        await Task.CompletedTask;
+        await System.Threading.Tasks.Task.CompletedTask;
     }
 
     public static void BoxedAsClass()
@@ -419,7 +419,7 @@ public class DebuggerTest
         Console.WriteLine ($"break here");
     }
 
-    public static async Task BoxedAsClassAsync()
+    public static async System.Threading.Tasks.Task BoxedAsClassAsync()
     {
         ValueType vt_dt = new DateTime(4819, 5, 6, 7, 8, 9);
         ValueType vt_gs = new Math.GenericStruct<string> { StringField = "vt_gs#StringField" };
@@ -427,7 +427,7 @@ public class DebuggerTest
         Enum ee = System.IO.FileMode.Append;
 
         Console.WriteLine ($"break here");
-        await Task.CompletedTask;
+        await System.Threading.Tasks.Task.CompletedTask;
     }
 }
 
@@ -452,14 +452,14 @@ public class MulticastDelegateTestClass
         TestEvent?.Invoke(this, Delegate?.ToString());
     }
 
-    public async Task TestAsync()
+    public async System.Threading.Tasks.Task TestAsync()
     {
         TestEvent += (_, s) => Console.WriteLine(s);
         TestEvent += (_, s) => Console.WriteLine(s + "qwe");
         Delegate = TestEvent;
 
         TestEvent?.Invoke(this, Delegate?.ToString());
-        await Task.CompletedTask;
+        await System.Threading.Tasks.Task.CompletedTask;
     }
 }
 
@@ -470,10 +470,10 @@ public class EmptyClass
         Console.WriteLine($"break here");
     }
 
-    public static async Task StaticMethodWithNoLocalsAsync()
+    public static async System.Threading.Tasks.Task StaticMethodWithNoLocalsAsync()
     {
         Console.WriteLine($"break here");
-        await Task.CompletedTask;
+        await System.Threading.Tasks.Task.CompletedTask;
     }
 
     public static void run()
@@ -490,10 +490,10 @@ public struct EmptyStruct
         Console.WriteLine($"break here");
     }
 
-    public static async Task StaticMethodWithNoLocalsAsync()
+    public static async System.Threading.Tasks.Task StaticMethodWithNoLocalsAsync()
     {
         Console.WriteLine($"break here");
-        await Task.CompletedTask;
+        await System.Threading.Tasks.Task.CompletedTask;
     }
 
     public static void StaticMethodWithLocalEmptyStruct()
@@ -502,11 +502,11 @@ public struct EmptyStruct
         Console.WriteLine($"break here");
     }
 
-    public static async Task StaticMethodWithLocalEmptyStructAsync()
+    public static async System.Threading.Tasks.Task StaticMethodWithLocalEmptyStructAsync()
     {
         var es = new EmptyStruct();
         Console.WriteLine($"break here");
-        await Task.CompletedTask;
+        await System.Threading.Tasks.Task.CompletedTask;
     }
 
     public static void run()
@@ -652,4 +652,78 @@ public class LoadDebuggerTestALC {
 
         }
     }
+
+
+public class Something
+{
+    public string Name { get; set; }
+    public Something() => Name = "Same of something";
+    public override string ToString() => Name;
+}
+
+public class Foo
+{
+    public string Bar => Stuffs.First(x => x.Name.StartsWith('S')).Name;
+    public System.Collections.Generic.List<Something> Stuffs { get; } = Enumerable.Range(0, 10).Select(x => new Something()).ToList();
+    public string Lorem { get; set; } = "Safe";
+    public string Ipsum { get; set; } = "Side";
+    public Something What { get; } = new Something();
+    public int Bart()
+    {
+        int ret;
+        if (Lorem.StartsWith('S'))
+            ret = 0;
+        else
+            ret = 1;
+        return ret;
+    }
+    public static void RunBart()
+    {
+        Foo foo = new Foo();
+        foo.Bart();
+        Console.WriteLine(foo.OtherBar());
+        foo.OtherBarAsync().Wait(10);
+    }
+    public bool OtherBar()
+    {
+        var a = 1;
+        var b = 2;
+        var x = "Stew";
+        var y = "00.123";
+        var c = a + b == 3 || b + a == 2;
+        var d = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts) && x.Contains('S');
+        var e = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts1)
+                && x.Contains('S');
+        var f = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts2)
+                &&
+                x.Contains('S');
+        var g = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts3) &&
+                x.Contains('S');
+        return d && e == true;
+    }
+    public async System.Threading.Tasks.Task OtherBarAsync()
+    {
+        var a = 1;
+        var b = 2;
+        var x = "Stew";
+        var y = "00.123";
+        var c = a + b == 3 || b + a == 2;
+        var d = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts) && await AsyncMethod();
+        var e = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts1)
+                && await AsyncMethod();
+        var f = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts2)
+                &&
+                await AsyncMethod();
+        var g = await AsyncMethod() &&
+                await AsyncMethod();
+        Console.WriteLine(g);
+        await System.Threading.Tasks.Task.CompletedTask;
+    }
+    public async System.Threading.Tasks.Task<bool> AsyncMethod()
+    {
+        await System.Threading.Tasks.Task.Delay(1);
+        Console.WriteLine($"time for await");
+        return true;
+    }
+}
 

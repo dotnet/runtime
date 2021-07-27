@@ -348,7 +348,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void UnicodePropertyNamesWithPooledAlloc()
         {
-            // We want to go over StackallocThreshold=256 to force a pooled allocation, so this property is 400 chars and 401 bytes.
+            // We want to go over StackallocByteThreshold=256 to force a pooled allocation, so this property is 400 chars and 401 bytes.
             ClassWithUnicodeProperty obj = JsonSerializer.Deserialize<ClassWithUnicodeProperty>("{\"A\u046734567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890\":1}");
             Assert.Equal(1, obj.A\u046734567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890);
 
@@ -574,22 +574,6 @@ namespace System.Text.Json.Serialization.Tests
     {
         public int myObject { get; set; }
         public int MyObject { get; set; }
-    }
-
-    public class UppercaseNamingPolicy : JsonNamingPolicy
-    {
-        public override string ConvertName(string name)
-        {
-            return name.ToUpperInvariant();
-        }
-    }
-
-    public class NullNamingPolicy : JsonNamingPolicy
-    {
-        public override string ConvertName(string name)
-        {
-            return null;
-        }
     }
 
     public class EmptyClassWithExtensionProperty

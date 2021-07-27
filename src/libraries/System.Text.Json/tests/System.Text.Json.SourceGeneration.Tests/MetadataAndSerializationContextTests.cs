@@ -18,6 +18,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyType))]
     [JsonSerializable(typeof(MyType2))]
     [JsonSerializable(typeof(MyTypeWithCallbacks))]
+    [JsonSerializable(typeof(MyTypeWithPropertyOrdering))]
     [JsonSerializable(typeof(MyIntermediateType))]
     [JsonSerializable(typeof(HighLowTempsImmutable))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass))]
@@ -47,6 +48,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MetadataAndSerializationContext.Default.MyType.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.MyType2.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.MyTypeWithCallbacks.Serialize);
+            Assert.NotNull(MetadataAndSerializationContext.Default.MyTypeWithPropertyOrdering.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.MyIntermediateType.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.HighLowTempsImmutable.Serialize);
             Assert.NotNull(MetadataAndSerializationContext.Default.MyNestedClass.Serialize);

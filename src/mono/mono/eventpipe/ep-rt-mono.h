@@ -859,7 +859,9 @@ bool
 ep_rt_config_value_get_enable (void)
 {
 	bool enable = false;
-	gchar *value = g_getenv ("COMPlus_EnableEventPipe");
+	gchar *value = g_getenv ("DOTNET_EnableEventPipe");
+	if (!value)
+		value = g_getenv ("COMPlus_EnableEventPipe");
 	if (value && atoi (value) == 1)
 		enable = true;
 	g_free (value);
@@ -871,7 +873,10 @@ inline
 ep_char8_t *
 ep_rt_config_value_get_config (void)
 {
-	return g_getenv ("COMPlus_EventPipeConfig");
+	gchar *value = g_getenv ("DOTNET_EventPipeConfig");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeConfig");
+	return (ep_char8_t *)value;
 }
 
 static
@@ -879,7 +884,10 @@ inline
 ep_char8_t *
 ep_rt_config_value_get_output_path (void)
 {
-	return g_getenv ("COMPlus_EventPipeOutputPath");
+	gchar *value = g_getenv ("DOTNET_EventPipeOutputPath");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeOutputPath");
+	return (ep_char8_t *)value;
 }
 
 static
@@ -888,7 +896,9 @@ uint32_t
 ep_rt_config_value_get_circular_mb (void)
 {
 	uint32_t circular_mb = 0;
-	gchar *value = g_getenv ("COMPlus_EventPipeCircularMB");
+	gchar *value = g_getenv ("DOTNET_EventPipeCircularMB");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeCircularMB");
 	if (value)
 		circular_mb = strtoul (value, NULL, 10);
 	g_free (value);
@@ -901,7 +911,9 @@ bool
 ep_rt_config_value_get_output_streaming (void)
 {
 	bool enable = false;
-	gchar *value = g_getenv ("COMPlus_EventPipeOutputStreaming");
+	gchar *value = g_getenv ("DOTNET_EventPipeOutputStreaming");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeOutputStreaming");
 	if (value && atoi (value) == 1)
 		enable = true;
 	g_free (value);
@@ -923,7 +935,9 @@ uint32_t
 ep_rt_config_value_get_rundown (void)
 {
 	uint32_t value_uint32_t = 1;
-	gchar *value = g_getenv ("COMPlus_EventPipeRundown");
+	gchar *value = g_getenv ("DOTNET_EventPipeRundown");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeRundown");
 	if (value)
 		value_uint32_t = (uint32_t)atoi (value);
 	g_free (value);

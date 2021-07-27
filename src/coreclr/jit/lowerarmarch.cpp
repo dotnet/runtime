@@ -302,6 +302,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // address, not knowing that GT_IND is part of a block op that has containment restrictions.
             src->AsIndir()->Addr()->ClearContained();
         }
+        else if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(Compiler::DNER_BlockOp));
+        }
 
         if (blkNode->OperIs(GT_STORE_OBJ))
         {
@@ -1549,9 +1555,6 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
-#if 0
-    // TODO-ARMARCH-CQ: support contained bitcast under STORE_LCL_VAR/FLD,
-    // currently codegen does not expect it.
     if (op1->OperIs(GT_BITCAST))
     {
         // If we know that the source of the bitcast will be in a register, then we can make
@@ -1564,7 +1567,6 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
             return;
         }
     }
-#endif
 
     const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
 

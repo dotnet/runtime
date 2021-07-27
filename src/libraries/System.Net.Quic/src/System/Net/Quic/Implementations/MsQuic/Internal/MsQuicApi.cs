@@ -127,8 +127,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             if (OperatingSystem.IsWindows() && !IsWindowsVersionSupported())
             {
-                IsQuicSupported = false;
-
                 if (NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");

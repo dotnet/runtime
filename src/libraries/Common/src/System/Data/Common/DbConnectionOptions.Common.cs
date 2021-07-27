@@ -525,11 +525,11 @@ namespace System.Data.Common
                             }
                         }
                     }
-                    Debug.Assert(isEquivalent, "ParseInternal code vs regex message mismatch: <" + msg1 + "> <" + msg2 + ">");
+                    Debug.Assert(isEquivalent, $"ParseInternal code vs regex message mismatch: <{msg1}> <{msg2}>");
                 }
                 else
                 {
-                    Debug.Fail("ParseInternal code vs regex throw mismatch " + f.Message);
+                    Debug.Fail($"ParseInternal code vs regex throw mismatch {f.Message}");
                 }
                 e = null;
             }

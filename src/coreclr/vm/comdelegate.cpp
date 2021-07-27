@@ -1263,7 +1263,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
                                                         pUMThunkMarshInfo,
                                                         NULL ) != NULL)
                 {
-                    delete pUMThunkMarshInfo;
+                    pMT->GetLoaderAllocator()->GetStubHeap()->BackoutMem(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
                     pUMThunkMarshInfo = pClass->m_pUMThunkMarshInfo;
                 }
             }

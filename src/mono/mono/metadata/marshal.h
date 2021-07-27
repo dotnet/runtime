@@ -113,6 +113,7 @@ typedef enum {
 	WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL,
 	/* Subtypes of MONO_WRAPPER_MANAGED_TO_NATIVE */
 	WRAPPER_SUBTYPE_ICALL_WRAPPER, // specifically JIT icalls
+	WRAPPER_SUBTYPE_NATIVE_FUNC,
 	WRAPPER_SUBTYPE_NATIVE_FUNC_AOT,
 	WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT,
 	WRAPPER_SUBTYPE_PINVOKE,
@@ -391,7 +392,7 @@ mono_marshal_ftnptr_eh_callback (guint32 gchandle);
 MONO_PAL_API void
 mono_marshal_set_last_error (void);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void
 mono_marshal_clear_last_error (void);
 
@@ -538,11 +539,11 @@ mono_marshal_unlock_internal (void);
 void * 
 mono_marshal_alloc (gsize size, MonoError *error);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void 
 mono_marshal_free (gpointer ptr);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void
 mono_marshal_free_array (gpointer *ptr, int size);
 
@@ -552,11 +553,11 @@ mono_marshal_free_ccw (MonoObject* obj);
 MONO_API void *
 mono_marshal_string_to_utf16 (MonoString *s);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void
 mono_marshal_set_last_error_windows (int error);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 void 
 mono_struct_delete_old (MonoClass *klass, char *ptr);
 
@@ -565,15 +566,15 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	      MonoMarshalSpec *spec, int conv_arg, 
 	      MonoType **conv_arg_type, MarshalAction action);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoObject *
 mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *cache);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoAsyncResult *
 mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoObject *
 mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params);
 
@@ -604,10 +605,10 @@ mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo);
 gboolean
 mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 MonoObject* mono_marshal_get_type_object (MonoClass *klass);
 
-ICALL_EXTERN_C
+ICALL_EXPORT
 gpointer
 mono_marshal_lookup_pinvoke (MonoMethod *method);
 

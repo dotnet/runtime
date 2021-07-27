@@ -50,6 +50,10 @@
 #include "roapi.h"
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+#include "asmconstants.h"
+#endif
+
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
 TailCallTls::TailCallTls()
@@ -1150,8 +1154,6 @@ void InitThreadManager()
     }
     CONTRACTL_END;
 
-    InitializeYieldProcessorNormalizedCrst();
-
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
     _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
@@ -1643,6 +1645,7 @@ Thread::Thread()
 
     m_currentPrepareCodeConfig = nullptr;
     m_isInForbidSuspendForDebuggerRegion = false;
+    m_hasPendingActivation = false;
 
 #ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
@@ -7194,6 +7197,7 @@ BOOL Thread::HaveExtraWorkForFinalizer()
         || Thread::CleanupNeededForFinalizedThread()
         || (m_DetachCount > 0)
         || SystemDomain::System()->RequireAppDomainCleanup()
+        || YieldProcessorNormalization::IsMeasurementScheduled()
         || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
 }
 
@@ -7239,6 +7243,12 @@ void Thread::DoExtraWorkForFinalizer()
 
     // If there were any TimerInfos waiting to be released, they'll get flushed now
     ThreadpoolMgr::FlushQueueOfTimerInfos();
+
+    if (YieldProcessorNormalization::IsMeasurementScheduled())
+    {
+        GCX_PREEMP();
+        YieldProcessorNormalization::PerformMeasurement();
+    }
 
     ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();
 }
@@ -8299,7 +8309,57 @@ BOOL dbgOnly_IsSpecialEEThread()
 
 #endif // _DEBUG
 
+void Thread::StaticInitialize()
+{
+    WRAPPER_NO_CONTRACT;
 
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    InitializeSpecialUserModeApc();
+
+    // When CET shadow stacks are enabled, support for special user-mode APCs with the necessary functionality is required
+    _ASSERTE_ALL_BUILDS(__FILE__, !AreCetShadowStacksEnabled() || UseSpecialUserModeApc());
+#endif
+}
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+
+QueueUserAPC2Proc Thread::s_pfnQueueUserAPC2Proc;
+
+static void NTAPI EmptyApcCallback(ULONG_PTR Parameter)
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+void Thread::InitializeSpecialUserModeApc()
+{
+    WRAPPER_NO_CONTRACT;
+    static_assert_no_msg(OFFSETOF__APC_CALLBACK_DATA__ContextRecord == offsetof(CLONE_APC_CALLBACK_DATA, ContextRecord));
+
+    HMODULE hKernel32 = WszLoadLibraryEx(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+    // See if QueueUserAPC2 exists
+    QueueUserAPC2Proc pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(hKernel32, "QueueUserAPC2");
+    if (pfnQueueUserAPC2Proc == nullptr)
+    {
+        return;
+    }
+
+    // See if QueueUserAPC2 supports the special user-mode APC with a callback that includes the interrupted CONTEXT. A special
+    // user-mode APC can interrupt a thread that is in user mode and not in a non-alertable wait.
+    if (!(*pfnQueueUserAPC2Proc)(EmptyApcCallback, GetCurrentThread(), 0, SpecialUserModeApcWithContextFlags))
+    {
+        return;
+    }
+
+    // In the future, once code paths using the special user-mode APC get some bake time, it should be used regardless of
+    // whether CET shadow stacks are enabled
+    if (AreCetShadowStacksEnabled())
+    {
+        s_pfnQueueUserAPC2Proc = pfnQueueUserAPC2Proc;
+    }
+}
+
+#endif // FEATURE_SPECIAL_USER_MODE_APC
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE

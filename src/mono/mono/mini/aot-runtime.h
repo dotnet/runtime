@@ -11,7 +11,7 @@
 #include "mini.h"
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 181
+#define MONO_AOT_FILE_VERSION 182
 
 #define MONO_AOT_TRAMP_PAGE_SIZE 16384
 

@@ -153,7 +153,6 @@ public class AppleAppBuilderTask : Task
 
     public override bool Execute()
     {
-        Utils.Logger = Log;
         bool isDevice = (TargetOS == TargetNames.iOS || TargetOS == TargetNames.tvOS);
 
         if (!File.Exists(Path.Combine(AppDir, MainLibraryFileName)))
@@ -205,11 +204,6 @@ public class AppleAppBuilderTask : Task
             throw new InvalidOperationException("Need list of AOT files for device builds.");
         }
 
-        if (TargetOS != TargetNames.MacCatalyst && ForceInterpreter && ForceAOT)
-        {
-            throw new InvalidOperationException("Interpreter and AOT cannot be enabled at the same time");
-        }
-
         if (!string.IsNullOrEmpty(DiagnosticPorts))
         {
             bool validDiagnosticsConfig = false;
@@ -227,7 +221,7 @@ public class AppleAppBuilderTask : Task
 
         if (GenerateXcodeProject)
         {
-            Xcode generator = new Xcode(TargetOS, Arch);
+            Xcode generator = new Xcode(Log, TargetOS, Arch);
             generator.EnableRuntimeLogging = EnableRuntimeLogging;
             generator.DiagnosticPorts = DiagnosticPorts;
 
@@ -239,7 +233,7 @@ public class AppleAppBuilderTask : Task
                 if (isDevice && string.IsNullOrEmpty(DevTeamProvisioning))
                 {
                     // DevTeamProvisioning shouldn't be empty for arm64 builds
-                    Utils.LogInfo("DevTeamProvisioning is not set, BuildAppBundle step is skipped.");
+                    Log.LogMessage(MessageImportance.High, "DevTeamProvisioning is not set, BuildAppBundle step is skipped.");
                 }
                 else
                 {

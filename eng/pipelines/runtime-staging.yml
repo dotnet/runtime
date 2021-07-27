@@ -55,48 +55,7 @@ jobs:
   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
-# Build the whole product using Mono and run libraries tests
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    platforms:
-    - iOSSimulator_x64
-    - tvOSSimulator_x64
-    variables:
-      # map dependencies variables to local variables
-      - name: librariesContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:MonoForceInterpreter=true
-      timeoutInMinutes: 180
-      condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-      # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        interpreter: true
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        condition: >-
-          or(
-          eq(variables['librariesContainsChange'], true),
-          eq(variables['monoContainsChange'], true),
-          eq(variables['isFullMatrix'], true))
-
-#
-# MacCatalyst interp - requires AOT Compilation and Interp flags 
+# iOS/tvOS/Catalyst interp - requires AOT Compilation and Interp flags 
 # Build the whole product using Mono and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -107,9 +66,12 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - MacCatalyst_x64
-    # don't run tests on MacCatalyst_arm64 PRs until we can get significantly more devices
+    - iOSSimulator_x64
+    - tvOSSimulator_x64
+    # don't run tests on arm64 PRs until we can get significantly more devices
     - ${{ if eq(variables['isFullMatrix'], true) }}:
       - MacCatalyst_arm64
+      - iOSSimulator_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -354,7 +316,7 @@ jobs:
       timeoutInMinutes: 90
 
 #
-# Build Browser_wasm, on windows
+# Build Browser_wasm, on windows, run console and browser tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -374,7 +336,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: Browser_wasm_Windows
       buildArgs: -subset mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=windows
-      timeoutInMinutes: 120
+      timeoutInMinutes: 180
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -389,6 +351,7 @@ jobs:
         extraHelixArguments: /p:BrowserHost=windows
         scenarios:
         - normal
+        - wasmtestonbrowser
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),
