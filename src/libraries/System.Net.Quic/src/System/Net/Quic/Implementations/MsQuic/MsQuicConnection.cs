@@ -242,7 +242,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 uint hresult = connectionEvent.Data.ShutdownInitiatedByTransport.Status;
                 Exception ex = QuicExceptionHelpers.CreateExceptionForHResult(hresult, "Connection has been shutdown by transport.");
                 state.ConnectTcs!.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
-                state.ConnectTcs = null;
             }
 
             state.AcceptQueue.Writer.TryComplete();
