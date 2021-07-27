@@ -410,9 +410,7 @@ namespace System.Reflection
             return res;
         }
 
-        internal const string UnknownStringMessageInRAF = "Returns <Unknown> for modules with no file path";
-
-        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override FileStream? GetFile(string name)
         {
             if (name == null)
@@ -433,7 +431,7 @@ namespace System.Reflection
                 return null;
         }
 
-        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override FileStream[] GetFiles(bool getResourceModules)
         {
             if (Location.Length == 0)
