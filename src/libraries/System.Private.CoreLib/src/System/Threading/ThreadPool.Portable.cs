@@ -27,7 +27,7 @@ namespace System.Threading
 #if CORERT
         internal const bool EnableWorkerTracking = false;
 #else
-        internal static readonly bool EnableWorkerTracking =
+        private static readonly bool IsWorkerTrackingEnabledInConfig =
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
 #endif
 
