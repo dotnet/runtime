@@ -104,12 +104,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 router.MapGet("json/new", RewriteSingle);
                 router.MapGet("devtools/page/{pageId}", ConnectProxy);
                 router.MapGet("devtools/browser/{pageId}", ConnectProxy);
+                router.MapGet("devtools/node/{pageId}", ConnectNode);
 
                 string GetEndpoint(HttpContext context)
                 {
                     HttpRequest request = context.Request;
                     PathString requestPath = request.Path;
-                    return $"{devToolsHost.Scheme}://{devToolsHost.Authority}{request.Path}{request.QueryString}";
+                    return $"{devToolsHost.Scheme}://{context.Request.Host}{request.Path}{request.QueryString}";
                 }
 
                 async Task Copy(HttpContext context)
@@ -142,6 +143,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                     await context.Response.WriteAsync(JsonSerializer.Serialize(alteredTabs));
                 }
 
+                async Task ConnectNode(HttpContext context)
+                {
+                    // monkey patch some values as Node starts on 9229 by default and the url cannot be made to include /devtools/node
+                    context.Request.Host = new HostString($"{context.Request.Host.Host}:9229");
+                    context.Request.Path = $"/{context.Request.RouteValues["pageId"]}";
+                    await ConnectProxy(context);
+                }
+
                 async Task ConnectProxy(HttpContext context)
                 {
                     if (!context.WebSockets.IsWebSocketRequest)
@@ -149,8 +158,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         context.Response.StatusCode = 400;
                         return;
                     }
-
-                    var endpoint = new Uri($"ws://{devToolsHost.Authority}{context.Request.Path}");
+                    var endpoint = new Uri($"ws://{context.Request.Host}{context.Request.Path}");
                     try
                     {
                         using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>

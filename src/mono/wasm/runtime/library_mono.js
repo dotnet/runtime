@@ -297,33 +297,33 @@ var MonoSupportLib = {
 			if (index === undefined)
 				return;
 
-			this._scratch_root_buffer.set (index, 0);
-			this._scratch_root_free_indices[this._scratch_root_free_indices_count] = index;
-			this._scratch_root_free_indices_count++;
+			MONO._scratch_root_buffer.set (index, 0);
+			MONO._scratch_root_free_indices[MONO._scratch_root_free_indices_count] = index;
+			MONO._scratch_root_free_indices_count++;
 		},
 
 		_mono_wasm_claim_scratch_index: function () {
-			if (!this._scratch_root_buffer) {
+			if (!MONO._scratch_root_buffer) {
 				const maxScratchRoots = 8192;
-				this._scratch_root_buffer = this.mono_wasm_new_root_buffer (maxScratchRoots, "js roots");
+				MONO._scratch_root_buffer = MONO.mono_wasm_new_root_buffer (maxScratchRoots, "js roots");
 
-				this._scratch_root_free_indices = new Int32Array (maxScratchRoots);
-				this._scratch_root_free_indices_count = maxScratchRoots;
+				MONO._scratch_root_free_indices = new Int32Array (maxScratchRoots);
+				MONO._scratch_root_free_indices_count = maxScratchRoots;
 				for (var i = 0; i < maxScratchRoots; i++)
-					this._scratch_root_free_indices[i] = maxScratchRoots - i - 1;
+					MONO._scratch_root_free_indices[i] = maxScratchRoots - i - 1;
 
-				Object.defineProperty (this._mono_wasm_root_prototype, "value", {
-					get: this._mono_wasm_root_prototype.get,
-					set: this._mono_wasm_root_prototype.set,
+				Object.defineProperty (MONO._mono_wasm_root_prototype, "value", {
+					get: MONO._mono_wasm_root_prototype.get,
+					set: MONO._mono_wasm_root_prototype.set,
 					configurable: false
 				});
 			}
 
-			if (this._scratch_root_free_indices_count < 1)
+			if (MONO._scratch_root_free_indices_count < 1)
 				throw new Error ("Out of scratch root space");
 
-			var result = this._scratch_root_free_indices[this._scratch_root_free_indices_count - 1];
-			this._scratch_root_free_indices_count--;
+			var result = MONO._scratch_root_free_indices[MONO._scratch_root_free_indices_count - 1];
+			MONO._scratch_root_free_indices_count--;
 			return result;
 		},
 
@@ -344,9 +344,9 @@ var MonoSupportLib = {
 		 * @returns {WasmRootBuffer}
 		 */
 		mono_wasm_new_root_buffer: function (capacity, msg) {
-			if (!this.mono_wasm_register_root || !this.mono_wasm_deregister_root) {
-				this.mono_wasm_register_root = Module.cwrap ("mono_wasm_register_root", "number", ["number", "number", "string"]);
-				this.mono_wasm_deregister_root = Module.cwrap ("mono_wasm_deregister_root", null, ["number"]);
+			if (!MONO.mono_wasm_register_root || !MONO.mono_wasm_deregister_root) {
+				MONO.mono_wasm_register_root = Module.cwrap ("mono_wasm_register_root", "number", ["number", "number", "string"]);
+				MONO.mono_wasm_deregister_root = Module.cwrap ("mono_wasm_deregister_root", null, ["number"]);
 			}
 
 			if (capacity <= 0)
@@ -359,14 +359,14 @@ var MonoSupportLib = {
 			if ((offset % 4) !== 0)
 				throw new Error ("Malloc returned an unaligned offset");
 
-			this._zero_region (offset, capacityBytes);
+			MONO._zero_region (offset, capacityBytes);
 
-			var result = Object.create (this._mono_wasm_root_buffer_prototype);
+			var result = Object.create (MONO._mono_wasm_root_buffer_prototype);
 			result.__offset = offset;
 			result.__offset32 = (offset / 4) | 0;
 			result.__count = capacity;
 			result.length = capacity;
-			result.__handle = this.mono_wasm_register_root (offset, capacityBytes, msg || 0);
+			result.__handle = MONO.mono_wasm_register_root (offset, capacityBytes, msg || 0);
 			result.__ownsAllocation = true;
 
 			return result;
@@ -381,9 +381,9 @@ var MonoSupportLib = {
 		 * @returns {WasmRootBuffer}
 		 */
 		mono_wasm_new_root_buffer_from_pointer: function (offset, capacity, msg) {
-			if (!this.mono_wasm_register_root || !this.mono_wasm_deregister_root) {
-				this.mono_wasm_register_root = Module.cwrap ("mono_wasm_register_root", "number", ["number", "number", "string"]);
-				this.mono_wasm_deregister_root = Module.cwrap ("mono_wasm_deregister_root", null, ["number"]);
+			if (!MONO.mono_wasm_register_root || !MONO.mono_wasm_deregister_root) {
+				MONO.mono_wasm_register_root = Module.cwrap ("mono_wasm_register_root", "number", ["number", "number", "string"]);
+				MONO.mono_wasm_deregister_root = Module.cwrap ("mono_wasm_deregister_root", null, ["number"]);
 			}
 
 			if (capacity <= 0)
@@ -395,14 +395,14 @@ var MonoSupportLib = {
 			if ((offset % 4) !== 0)
 				throw new Error ("Unaligned offset");
 
-			this._zero_region (offset, capacityBytes);
+			MONO._zero_region (offset, capacityBytes);
 
-			var result = Object.create (this._mono_wasm_root_buffer_prototype);
+			var result = Object.create (MONO._mono_wasm_root_buffer_prototype);
 			result.__offset = offset;
 			result.__offset32 = (offset / 4) | 0;
 			result.__count = capacity;
 			result.length = capacity;
-			result.__handle = this.mono_wasm_register_root (offset, capacityBytes, msg || 0);
+			result.__handle = MONO.mono_wasm_register_root (offset, capacityBytes, msg || 0);
 			result.__ownsAllocation = false;
 
 			return result;
@@ -420,13 +420,13 @@ var MonoSupportLib = {
 		mono_wasm_new_root: function (value) {
 			var result;
 
-			if (this._scratch_root_free_instances.length > 0) {
-				result = this._scratch_root_free_instances.pop ();
+			if (MONO._scratch_root_free_instances.length > 0) {
+				result = MONO._scratch_root_free_instances.pop ();
 			} else {
-				var index = this._mono_wasm_claim_scratch_index ();
-				var buffer = this._scratch_root_buffer;
+				var index = MONO._mono_wasm_claim_scratch_index ();
+				var buffer = MONO._scratch_root_buffer;
 
-				result = Object.create (this._mono_wasm_root_prototype);
+				result = Object.create (MONO._mono_wasm_root_prototype);
 				result.__buffer = buffer;
 				result.__index = index;
 			}
@@ -457,11 +457,11 @@ var MonoSupportLib = {
 			if (Array.isArray (count_or_values)) {
 				result = new Array (count_or_values.length);
 				for (var i = 0; i < result.length; i++)
-					result[i] = this.mono_wasm_new_root (count_or_values[i]);
+					result[i] = MONO.mono_wasm_new_root (count_or_values[i]);
 			} else if ((count_or_values | 0) > 0) {
 				result = new Array (count_or_values);
 				for (var i = 0; i < result.length; i++)
-					result[i] = this.mono_wasm_new_root ();
+					result[i] = MONO.mono_wasm_new_root ();
 			} else {
 				throw new Error ("count_or_values must be either an array or a number greater than 0");
 			}
@@ -491,27 +491,27 @@ var MonoSupportLib = {
 				if (mono_string === 0)
 					return null;
 
-				if (!this.mono_wasm_string_root)
-					this.mono_wasm_string_root = MONO.mono_wasm_new_root ();
-				this.mono_wasm_string_root.value = mono_string;
+				if (!MONO.mono_wasm_string_root)
+					MONO.mono_wasm_string_root = MONO.mono_wasm_new_root ();
+				MONO.mono_wasm_string_root.value = mono_string;
 
-				if (!this.mono_wasm_string_get_data)
-					this.mono_wasm_string_get_data = Module.cwrap ("mono_wasm_string_get_data", null, ['number', 'number', 'number', 'number']);
+				if (!MONO.mono_wasm_string_get_data)
+					MONO.mono_wasm_string_get_data = Module.cwrap ("mono_wasm_string_get_data", null, ['number', 'number', 'number', 'number']);
 				
-				if (!this.mono_wasm_string_decoder_buffer)
-					this.mono_wasm_string_decoder_buffer = Module._malloc(12);
+				if (!MONO.mono_wasm_string_decoder_buffer)
+					MONO.mono_wasm_string_decoder_buffer = Module._malloc(12);
 				
-				let ppChars = this.mono_wasm_string_decoder_buffer + 0,
-					pLengthBytes = this.mono_wasm_string_decoder_buffer + 4,
-					pIsInterned = this.mono_wasm_string_decoder_buffer + 8;
+				let ppChars = MONO.mono_wasm_string_decoder_buffer + 0,
+					pLengthBytes = MONO.mono_wasm_string_decoder_buffer + 4,
+					pIsInterned = MONO.mono_wasm_string_decoder_buffer + 8;
 				
-				this.mono_wasm_string_get_data (mono_string, ppChars, pLengthBytes, pIsInterned);
+				MONO.mono_wasm_string_get_data (mono_string, ppChars, pLengthBytes, pIsInterned);
 
 				// TODO: Is this necessary?
-				if (!this.mono_wasm_empty_string)
-					this.mono_wasm_empty_string = "";
+				if (!MONO.mono_wasm_empty_string)
+					MONO.mono_wasm_empty_string = "";
 
-				let result = this.mono_wasm_empty_string;
+				let result = MONO.mono_wasm_empty_string;
 				let lengthBytes = Module.HEAP32[pLengthBytes / 4],
 					pChars = Module.HEAP32[ppChars / 4],
 					isInterned = Module.HEAP32[pIsInterned / 4];
@@ -525,7 +525,7 @@ var MonoSupportLib = {
 						result = MONO.interned_string_table.get(mono_string);
 						// console.log("intern table cache hit", mono_string, result.length);
 					} else {
-						result = this.decode(pChars, pChars + lengthBytes, false);
+						result = MONO.decode(pChars, pChars + lengthBytes, false);
 						if (isInterned) {
 							if (!MONO.interned_string_table)
 								MONO.interned_string_table = new Map();
@@ -535,7 +535,7 @@ var MonoSupportLib = {
 					}						
 				}
 
-				this.mono_wasm_string_root.value = 0;
+				MONO.mono_wasm_string_root.value = 0;
 				return result;
 			},
 			decode: function (start, end, save) {
@@ -559,7 +559,7 @@ var MonoSupportLib = {
 					}
 				}
 				if (save)
-					this.result = str;
+					MONO.result = str;
 
 				return str;
 			},
@@ -581,8 +581,8 @@ var MonoSupportLib = {
 		mono_wasm_send_dbg_command_with_parms: function (id, command_set, command, command_parameters, length, valtype, newvalue)
 		{
 			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
-			dataHeap.set (new Uint8Array (this._base64_to_uint8 (command_parameters)));
-			this._c_fn_table.mono_wasm_send_dbg_command_with_parms_wrapper (id, command_set, command, dataHeap.byteOffset, length, valtype, newvalue.toString());
+			dataHeap.set (new Uint8Array (MONO._base64_to_uint8 (command_parameters)));
+			MONO._c_fn_table.mono_wasm_send_dbg_command_with_parms_wrapper (id, command_set, command, dataHeap.byteOffset, length, valtype, newvalue.toString());
 			let { res_ok, res } = MONO.commands_received;
 			if (!res_ok)
 				throw new Error (`Failed on mono_wasm_invoke_method_debugger_agent_with_parms`);
@@ -592,9 +592,9 @@ var MonoSupportLib = {
 		mono_wasm_send_dbg_command: function (id, command_set, command, command_parameters)
 		{
 			const dataHeap = new Uint8Array (Module.HEAPU8.buffer, command_parameters, command_parameters.length);
-			dataHeap.set (new Uint8Array (this._base64_to_uint8 (command_parameters)));
+			dataHeap.set (new Uint8Array (MONO._base64_to_uint8 (command_parameters)));
 
-			this._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, dataHeap.byteOffset, command_parameters.length);
+			MONO._c_fn_table.mono_wasm_send_dbg_command_wrapper (id, command_set, command, dataHeap.byteOffset, command_parameters.length);
 
 			let { res_ok, res } = MONO.commands_received;
 			if (!res_ok)
@@ -612,10 +612,10 @@ var MonoSupportLib = {
 		},
 
 		_get_cfo_res_details: function (objectId, args) {
-			if (!(objectId in this._call_function_res_cache))
+			if (!(objectId in MONO._call_function_res_cache))
 				throw new Error(`Could not find any object with id ${objectId}`);
 
-			const real_obj = this._call_function_res_cache [objectId];
+			const real_obj = MONO._call_function_res_cache [objectId];
 
 			const descriptors = Object.getOwnPropertyDescriptors (real_obj);
 			if (args.accessorPropertiesOnly) {
@@ -670,18 +670,18 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_get_details: function (objectId, args={}) {
-				return this._get_cfo_res_details (`dotnet:cfo_res:${objectId}`, args);
+				return MONO._get_cfo_res_details (`dotnet:cfo_res:${objectId}`, args);
 		},
 
 		_cache_call_function_res: function (obj) {
-			const id = `dotnet:cfo_res:${this._next_call_function_res_id++}`;
-			this._call_function_res_cache[id] = obj;
+			const id = `dotnet:cfo_res:${MONO._next_call_function_res_id++}`;
+			MONO._call_function_res_cache[id] = obj;
 			return id;
 		},
 
 		mono_wasm_release_object: function (objectId) {
-			if (objectId in this._cache_call_function_res)
-				delete this._cache_call_function_res[objectId];
+			if (objectId in MONO._cache_call_function_res)
+				delete MONO._cache_call_function_res[objectId];
 		},
 
 		_create_proxy_from_object_id: function (objectId, details) {
@@ -722,12 +722,12 @@ var MonoSupportLib = {
 			let proxy;
 
 			if (objId.startsWith ('dotnet:cfo_res:')) {
-				if (objId in this._call_function_res_cache)
-					proxy = this._call_function_res_cache [objId];
+				if (objId in MONO._call_function_res_cache)
+					proxy = MONO._call_function_res_cache [objId];
 				else
 					throw new Error (`Unknown object id ${objId}`);
 			} else {
-				proxy = this._create_proxy_from_object_id (objId, details);
+				proxy = MONO._create_proxy_from_object_id (objId, details);
 			}
 
 			const fn_args = request.arguments != undefined ? request.arguments.map(a => JSON.stringify(a.value)) : [];
@@ -748,7 +748,7 @@ var MonoSupportLib = {
 				return {type: "object", value: fn_res};
 			if (Object.getPrototypeOf (fn_res) == Array.prototype) {
 
-				const fn_res_id = this._cache_call_function_res (fn_res);
+				const fn_res_id = MONO._cache_call_function_res (fn_res);
 
 				return {
 					type: "object",
@@ -764,27 +764,27 @@ var MonoSupportLib = {
 
 			if (fn_res == proxy)
 				return { type: "object", className: "Object", description: "Object", objectId: objId };
-			const fn_res_id = this._cache_call_function_res (fn_res);
+			const fn_res_id = MONO._cache_call_function_res (fn_res);
 			return { type: "object", className: "Object", description: "Object", objectId: fn_res_id };
 		},
 
 		_clear_per_step_state: function () {
-			this._next_id_var = 0;
-			this._id_table = {};
+			MONO._next_id_var = 0;
+			MONO._id_table = {};
 		},
 
 		mono_wasm_debugger_resume: function () {
-			this._clear_per_step_state ();
+			MONO._clear_per_step_state ();
 		},
 
 		mono_wasm_detach_debugger: function () {
-			if (!this.mono_wasm_set_is_debugger_attached)
-				this.mono_wasm_set_is_debugger_attached = Module.cwrap ('mono_wasm_set_is_debugger_attached', 'void', ['bool']);
-			this.mono_wasm_set_is_debugger_attached(false);
+			if (!MONO.mono_wasm_set_is_debugger_attached)
+				MONO.mono_wasm_set_is_debugger_attached = Module.cwrap ('mono_wasm_set_is_debugger_attached', 'void', ['bool']);
+			MONO.mono_wasm_set_is_debugger_attached(false);
 		},
 
 		_register_c_fn: function (name, ...args) {
-			Object.defineProperty (this._c_fn_table, name + '_wrapper', { value: Module.cwrap (name, ...args) });
+			Object.defineProperty (MONO._c_fn_table, name + '_wrapper', { value: Module.cwrap (name, ...args) });
 		},
 
 		/**
@@ -802,7 +802,7 @@ var MonoSupportLib = {
 			if (ret_type !== 'bool')
 				throw new Error (`Bug: Expected a C function signature that returns bool`);
 
-			this._register_c_fn (name, ret_type, params);
+			MONO._register_c_fn (name, ret_type, params);
 			Object.defineProperty (this, name + '_info', {
 				value: function (...args) {
 					MONO.var_info = [];
@@ -810,7 +810,7 @@ var MonoSupportLib = {
 					let res = MONO.var_info;
 					MONO.var_info = [];
 					if (res_ok) {
-						res = this._fixup_name_value_objects (res);
+						res = MONO._fixup_name_value_objects (res);
 						return { res_ok, res };
 					}
 
@@ -820,19 +820,20 @@ var MonoSupportLib = {
 		},
 
 		mono_wasm_runtime_ready: function () {
-			this.mono_wasm_runtime_is_ready = true;
-			this._clear_per_step_state ();
+			globalMONO.MONO = MONO; // TODO find a better way to do MONO. It is needed since we use Runtime.evaluate and call MONO
+			MONO.mono_wasm_runtime_is_ready = true;
+			MONO._clear_per_step_state ();
 
 			// FIXME: where should this go?
-			this._next_call_function_res_id = 0;
-			this._call_function_res_cache = {};
+			MONO._next_call_function_res_id = 0;
+			MONO._call_function_res_cache = {};
 
-			this._c_fn_table = {};
-			this._register_c_fn     ('mono_wasm_send_dbg_command',							'bool', [ 'number', 'number', 'number', 'number', 'number' ]);
-			this._register_c_fn     ('mono_wasm_send_dbg_command_with_parms', 				'bool', [ 'number', 'number', 'number', 'number', 'number', 'number', 'string' ]);
+			MONO._c_fn_table = {};
+			MONO._register_c_fn     ('mono_wasm_send_dbg_command',							'bool', [ 'number', 'number', 'number', 'number', 'number' ]);
+			MONO._register_c_fn     ('mono_wasm_send_dbg_command_with_parms', 				'bool', [ 'number', 'number', 'number', 'number', 'number', 'number', 'string' ]);
 
 			// DO NOT REMOVE - magic debugger init function
-			if (globalThis.dotnetDebugger)
+			if (globalMONO.dotnetDebugger)
 				debugger;
 			else
 				console.debug ("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
@@ -841,14 +842,14 @@ var MonoSupportLib = {
 		// Set environment variable NAME to VALUE
 		// Should be called before mono_load_runtime_and_bcl () in most cases
 		mono_wasm_setenv: function (name, value) {
-			if (!this.wasm_setenv)
-				this.wasm_setenv = Module.cwrap ('mono_wasm_setenv', null, ['string', 'string']);
-			this.wasm_setenv (name, value);
+			if (!MONO.wasm_setenv)
+				MONO.wasm_setenv = Module.cwrap ('mono_wasm_setenv', null, ['string', 'string']);
+			MONO.wasm_setenv (name, value);
 		},
 
 		mono_wasm_set_runtime_options: function (options) {
-			if (!this.wasm_parse_runtime_options)
-				this.wasm_parse_runtime_options = Module.cwrap ('mono_wasm_parse_runtime_options', null, ['number', 'number']);
+			if (!MONO.wasm_parse_runtime_options)
+				MONO.wasm_parse_runtime_options = Module.cwrap ('mono_wasm_parse_runtime_options', null, ['number', 'number']);
 			var argv = Module._malloc (options.length * 4);
 			var wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
 			let aindex = 0;
@@ -856,7 +857,7 @@ var MonoSupportLib = {
 				Module.setValue (argv + (aindex * 4), wasm_strdup (options [i]), "i32");
 				aindex += 1;
 			}
-			this.wasm_parse_runtime_options (options.length, argv);
+			MONO.wasm_parse_runtime_options (options.length, argv);
 		},
 
 		//
@@ -958,7 +959,7 @@ var MonoSupportLib = {
 					ctx.loaded_files.push ({ url: url, file: virtualName});
 				case "heap":
 				case "icu":
-					offset = this.mono_wasm_load_bytes_into_heap (bytes);
+					offset = MONO.mono_wasm_load_bytes_into_heap (bytes);
 					ctx.loaded_assets[virtualName] = [offset, bytes.length];
 					break;
 
@@ -987,7 +988,7 @@ var MonoSupportLib = {
 					if (ctx.tracing)
 						console.log ("MONO_WASM: Creating file '" + fileName + "' in directory '" + parentDirectory + "'");
 
-					if (!this.mono_wasm_load_data_archive (bytes, parentDirectory)) {
+					if (!MONO.mono_wasm_load_data_archive (bytes, parentDirectory)) {
 						var fileRet = ctx.createDataFile (
 							parentDirectory, fileName,
 							bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
@@ -1008,7 +1009,7 @@ var MonoSupportLib = {
 				}
 			}
 			else if (asset.behavior === "icu") {
-				if (this.mono_wasm_load_icu_data (offset))
+				if (MONO.mono_wasm_load_icu_data (offset))
 					ctx.num_icu_assets_loaded_successfully += 1;
 				else
 					console.error ("Error loading ICU asset", asset.name);
@@ -1046,7 +1047,7 @@ var MonoSupportLib = {
 				});
 			}
 
-			return this.mono_load_runtime_and_bcl_args (args);
+			return MONO.mono_load_runtime_and_bcl_args (args);
 		},
 
 		// Initializes the runtime and loads assemblies, debug information, and other files.
@@ -1090,7 +1091,7 @@ var MonoSupportLib = {
 		//    diagnostic_tracing: (optional) enables diagnostic log messages during startup
 		mono_load_runtime_and_bcl_args: function (args) {
 			try {
-				return this._load_assets_and_runtime (args);
+				return MONO._load_assets_and_runtime (args);
 			} catch (exc) {
 				console.error ("error in mono_load_runtime_and_bcl_args:", exc);
 				throw exc;
@@ -1114,7 +1115,7 @@ var MonoSupportLib = {
 			var fn = Module.cwrap ('mono_wasm_load_icu_data', 'number', ['number']);
 			var ok = (fn (offset)) === 1;
 			if (ok)
-				this.num_icu_assets_loaded_successfully++;
+				MONO.num_icu_assets_loaded_successfully++;
 			return ok;
 		},
 
@@ -1141,7 +1142,7 @@ var MonoSupportLib = {
 
 			console.debug ("MONO_WASM: Initializing mono runtime");
 
-			this.mono_wasm_globalization_init (args.globalization_mode);
+			MONO.mono_wasm_globalization_init (args.globalization_mode);
 
 			if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
 				try {
@@ -1194,9 +1195,9 @@ var MonoSupportLib = {
 			if (ctx.tracing)
 				console.log ("mono_wasm_load_runtime_with_args", JSON.stringify(args));
 
-			this._apply_configuration_from_args (args);
+			MONO._apply_configuration_from_args (args);
 
-			var fetch_file_cb = this._get_fetch_file_cb_from_args (args);
+			var fetch_file_cb = MONO._get_fetch_file_cb_from_args (args);
 
 			var onPendingRequestComplete = function () {
 				--ctx.pending_count;
@@ -1317,7 +1318,7 @@ var MonoSupportLib = {
 				invariantMode = true;
 
 			if (!invariantMode) {
-				if (this.num_icu_assets_loaded_successfully > 0) {
+				if (MONO.num_icu_assets_loaded_successfully > 0) {
 					console.debug ("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
 				} else if (globalization_mode !== "icu") {
 					console.debug ("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
@@ -1330,17 +1331,17 @@ var MonoSupportLib = {
 			}
 
 			if (invariantMode)
-				this.mono_wasm_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
+				MONO.mono_wasm_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
 
 			// Set globalization mode to PredefinedCulturesOnly
-			this.mono_wasm_setenv ("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", "1");
+			MONO.mono_wasm_setenv ("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", "1");
 		},
 
 		// Used by the debugger to enumerate loaded dlls and pdbs
 		mono_wasm_get_loaded_files: function() {
-			if (!this.mono_wasm_set_is_debugger_attached)
-				this.mono_wasm_set_is_debugger_attached = Module.cwrap ('mono_wasm_set_is_debugger_attached', 'void', ['bool']);
-			this.mono_wasm_set_is_debugger_attached (true);
+			if (!MONO.mono_wasm_set_is_debugger_attached)
+				MONO.mono_wasm_set_is_debugger_attached = Module.cwrap ('mono_wasm_set_is_debugger_attached', 'void', ['bool']);
+			MONO.mono_wasm_set_is_debugger_attached (true);
 			return MONO.loaded_files;
 		},
 
@@ -1461,8 +1462,8 @@ var MonoSupportLib = {
 	},
 	schedule_background_exec: function () {
 		++MONO.pump_count;
-		if (typeof globalThis.setTimeout === 'function') {
-			globalThis.setTimeout (MONO.pump_message, 0);
+		if (typeof globalMONO.setTimeout === 'function') {
+			globalMONO.setTimeout (MONO.pump_message, 0);
 		}
 	},
 
@@ -1470,8 +1471,8 @@ var MonoSupportLib = {
 		if (!MONO.mono_set_timeout_exec)
 			MONO.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
 
-		if (typeof globalThis.setTimeout === 'function') {
-			globalThis.setTimeout (function () {
+		if (typeof globalMONO.setTimeout === 'function') {
+			globalMONO.setTimeout (function () {
 				MONO.mono_set_timeout_exec (id);
 			}, timeout);
 		} else {
