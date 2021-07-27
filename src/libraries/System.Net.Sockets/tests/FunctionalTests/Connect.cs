@@ -103,6 +103,13 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void _STRESS_Connect_DualMode_MultiAddressFamilyConnect_RetrievedEndPoints_Success(){
+            System.Threading.Tasks.Parallel.For(0, 100, async _ => {
+                await Connect_DualMode_MultiAddressFamilyConnect_RetrievedEndPoints_Success();
+            });
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/55709", TestPlatforms.Linux)]
         public async Task Connect_DualMode_DnsConnect_RetrievedEndPoints_Success()
         {
@@ -128,7 +135,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         public void _STRESS_Connect_DualMode_DnsConnect_RetrievedEndPoints_Success(){
-            System.Threading.Tasks.Parallel.For(0, 1_000, async _ => {
+            System.Threading.Tasks.Parallel.For(0, 100, async _ => {
                 await Connect_DualMode_DnsConnect_RetrievedEndPoints_Success();
             });
         }
