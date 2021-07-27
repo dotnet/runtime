@@ -2547,6 +2547,12 @@ namespace System.Net.Sockets.Tests
                 e.UserToken = _waitHandle;
 
                 _server.AcceptAsync(e);
+
+                if (OperatingSystem.IsMacOS())
+                {
+                    _guard.Dispose();
+                    _guard = null;
+                }
             }
 
             private void Accepted(object sender, SocketAsyncEventArgs e)
