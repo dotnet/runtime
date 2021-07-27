@@ -1,2 +1,8 @@
 <linker>
+  <assembly fullname="System.Private.CoreLib" feature="System.AggressiveAttributeTrimming" featurevalue="true">
+    <!-- IntrinsicAttribute is only removed on mono. Removing it on coreclr would change runtime behavior. -->
+    <type fullname="System.Runtime.CompilerServices.IntrinsicAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
 </linker>
