@@ -3932,7 +3932,7 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
 
     if (flag == GTF_ICON_STR_HDL)
     {
-        const WCHAR* wstr = emitComp->opts.disDiffable ? nullptr : emitComp->eeGetCPString(handle);
+        const WCHAR* wstr = emitComp->eeGetCPString(handle);
         // NOTE: eGetCPString always returns nullptr on Linux/ARM
         if (wstr == nullptr)
         {
@@ -3967,8 +3967,7 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
     }
     else if (flag == GTF_ICON_CLASS_HDL)
     {
-        str = emitComp->opts.disDiffable ? "class handle"
-                                         : emitComp->eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(handle));
+        str = emitComp->eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(handle));
     }
 #ifndef TARGET_XARCH
     // These are less useful for xarch:
@@ -3982,8 +3981,7 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
     }
     else if (flag == GTF_ICON_FIELD_HDL)
     {
-        str = emitComp->opts.disDiffable ? "field handle"
-                                         : emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(handle));
+        str = emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(handle));
     }
     else if (flag == GTF_ICON_STATIC_HDL)
     {
@@ -3991,9 +3989,7 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
     }
     else if (flag == GTF_ICON_METHOD_HDL)
     {
-        str = emitComp->opts.disDiffable
-                  ? "method handle"
-                  : emitComp->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(handle));
+        str = emitComp->eeGetMethodFullName(reinterpret_cast<CORINFO_METHOD_HANDLE>(handle));
     }
     else if (flag == GTF_ICON_FTN_ADDR)
     {

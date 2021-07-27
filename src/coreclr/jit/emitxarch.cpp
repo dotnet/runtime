@@ -8851,6 +8851,7 @@ void emitter::emitDispIns(
             else
             {
             PRINT_CONSTANT:
+                ssize_t srcVal = val;
                 // Munge any pointers if we want diff-able disassembly
                 if (emitComp->opts.disDiffable)
                 {
@@ -8872,8 +8873,7 @@ void emitter::emitDispIns(
                 { // (val < 0)
                     printf("-0x%IX", -val);
                 }
-
-                emitDispCommentForHandle(val, id->idDebugOnlyInfo()->idFlags & GTF_ICON_HDL_MASK);
+                emitDispCommentForHandle(srcVal, id->idDebugOnlyInfo()->idFlags & GTF_ICON_HDL_MASK);
             }
             break;
 
