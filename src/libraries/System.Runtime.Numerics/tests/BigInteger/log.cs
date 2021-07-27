@@ -1,141 +1,188 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
     public class logTest
     {
-        private static int s_samples = 10;
+        private const int NumberOfRandomIterations = 10;
         private static Random s_random = new Random(100);
 
-        [Fact]
-        public static void RunLogTests()
+        public static IEnumerable<object[]> RunLogOfZeroIsInfinityTestSources
         {
-            byte[] tempByteArray1 = new byte[0];
-            byte[] tempByteArray2 = new byte[0];
-            BigInteger bi;
-
-            // Log Method - Log(1,+Infinity)
-            Assert.Equal(0, BigInteger.Log(1, double.PositiveInfinity));
-
-            // Log Method - Log(1,0)
-            VerifyLogString("0 1 bLog");
-
-            // Log Method - Log(0, >1)
-            for (int i = 0; i < s_samples; i++)
+            get
             {
-                tempByteArray1 = GetRandomPosByteArray(s_random, 10);
-                VerifyLogString(Print(tempByteArray1) + "0 bLog");
-            }
-
-            // Log Method - Log(0, 0>x>1)
-            for (int i = 0; i < s_samples; i++)
-            {
-                Assert.Equal(double.PositiveInfinity, BigInteger.Log(0, s_random.NextDouble()));
-            }
-
-            // Log Method - base = 0
-            for (int i = 0; i < s_samples; i++)
-            {
-                bi = 1;
-                while (bi == 1)
+                for (int i = 0; i < NumberOfRandomIterations; i++)
                 {
-                    bi = new BigInteger(GetRandomPosByteArray(s_random, 8));
+                    double currentValue = s_random.NextDouble();
+                    yield return new object[] { currentValue };
                 }
-                Assert.True((double.IsNaN(BigInteger.Log(bi, 0))));
             }
-
-            // Log Method - base = 1
-            for (int i = 0; i < s_samples; i++)
-            {
-                tempByteArray1 = GetRandomByteArray(s_random);
-                VerifyLogString("1 " + Print(tempByteArray1) + "bLog");
-            }
-
-            // Log Method - base = NaN
-            for (int i = 0; i < s_samples; i++)
-            {
-                Assert.True(double.IsNaN(BigInteger.Log(new BigInteger(GetRandomByteArray(s_random, 10)), double.NaN)));
-            }
-
-            // Log Method - base = +Infinity
-            for (int i = 0; i < s_samples; i++)
-            {
-                Assert.True(double.IsNaN(BigInteger.Log(new BigInteger(GetRandomByteArray(s_random, 10)), double.PositiveInfinity)));
-            }
-
-            // Log Method - Log(0,1)
-            VerifyLogString("1 0 bLog");
-
-            // Log Method - base < 0
-            for (int i = 0; i < s_samples; i++)
-            {
-                tempByteArray1 = GetRandomByteArray(s_random, 10);
-                tempByteArray2 = GetRandomNegByteArray(s_random, 1);
-                VerifyLogString(Print(tempByteArray2) + Print(tempByteArray1) + "bLog");
-                Assert.True(double.IsNaN(BigInteger.Log(new BigInteger(GetRandomByteArray(s_random, 10)), -s_random.NextDouble())));
-            }
-
-            // Log Method - value < 0
-            for (int i = 0; i < s_samples; i++)
-            {
-                tempByteArray1 = GetRandomNegByteArray(s_random, 10);
-                tempByteArray2 = GetRandomPosByteArray(s_random, 1);
-                VerifyLogString(Print(tempByteArray2) + Print(tempByteArray1) + "bLog");
-            }
-
-            // Log Method - Small BigInteger and 0<base<0.5
-            for (int i = 0; i < s_samples; i++)
-            {
-                BigInteger temp = new BigInteger(GetRandomPosByteArray(s_random, 10));
-                double newbase = Math.Min(s_random.NextDouble(), 0.5);
-                Assert.True(ApproxEqual(BigInteger.Log(temp, newbase), Math.Log((double)temp, newbase)));
-            }
-
-            // Log Method - Large BigInteger and 0<base<0.5
-            for (int i = 0; i < s_samples; i++)
-            {
-                BigInteger temp = new BigInteger(GetRandomPosByteArray(s_random, s_random.Next(1, 100)));
-                double newbase = Math.Min(s_random.NextDouble(), 0.5);
-                Assert.True(ApproxEqual(BigInteger.Log(temp, newbase), Math.Log((double)temp, newbase)));
-            }
-
-            // Log Method - two small BigIntegers
-            for (int i = 0; i < s_samples; i++)
-            {
-                tempByteArray1 = GetRandomPosByteArray(s_random, 2);
-                tempByteArray2 = GetRandomPosByteArray(s_random, 3);
-                VerifyLogString(Print(tempByteArray1) + Print(tempByteArray2) + "bLog");
-            }
-
-            // Log Method - one small and one large BigIntegers
-            for (int i = 0; i < s_samples; i++)
-            {
-                tempByteArray1 = GetRandomPosByteArray(s_random, 1);
-                tempByteArray2 = GetRandomPosByteArray(s_random, s_random.Next(1, 100));
-                VerifyLogString(Print(tempByteArray1) + Print(tempByteArray2) + "bLog");
-            }
-
-            // Log Method - two large BigIntegers
-            for (int i = 0; i < s_samples; i++)
-            {
-                tempByteArray1 = GetRandomPosByteArray(s_random, s_random.Next(1, 100));
-                tempByteArray2 = GetRandomPosByteArray(s_random, s_random.Next(1, 100));
-                VerifyLogString(Print(tempByteArray1) + Print(tempByteArray2) + "bLog");
-            }
-
-            // Log Method - Very Large BigInteger 1 << 128 << Int.MaxValue and 2
-            LargeValueLogTests(128, 1);
-
         }
 
-        [Fact]
-        [OuterLoop]
-        public static void RunLargeValueLogTests()
+        [Theory]
+        [MemberData(nameof(RunLogOfZeroIsInfinityTestSources))]
+        public void RunLogOfZeroIsInfinityTest(double baseValue)
         {
-            LargeValueLogTests(0, 4, 64, 3);
+            Assert.Equal(double.PositiveInfinity, BigInteger.Log(0, baseValue));
+        }
+
+        public static IEnumerable<object[]> RunLogToBaseZeroIsNaNTestSources
+        {
+            get
+            {
+                for (int i = 0; i < NumberOfRandomIterations; i++)
+                {
+                    BigInteger currentValue;
+                    do
+                    {
+                        currentValue = new BigInteger(GetRandomPosByteArray(s_random, 8));
+                    }
+                    while (currentValue == BigInteger.One);
+                    yield return new object[] { currentValue };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(RunLogToBaseZeroIsNaNTestSources))]
+        public void RunLogToBaseZeroIsNaNTest(BigInteger testValue)
+        {
+            Assert.True((double.IsNaN(BigInteger.Log(testValue, 0))));
+        }
+
+        public static IEnumerable<object[]> RunLogToBaseNaNIsNaNTestSources
+        {
+            get
+            {
+                for (int i = 0; i < NumberOfRandomIterations; i++)
+                {
+                    BigInteger currentValue = new BigInteger(GetRandomByteArray(s_random, 10));
+                    yield return new object[] { currentValue };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(RunLogToBaseNaNIsNaNTestSources))]
+        public void RunLogToBaseNaNIsNaNTest(BigInteger testValue)
+        {
+            Assert.True((double.IsNaN(BigInteger.Log(testValue, double.NaN))));
+        }
+
+        public static IEnumerable<object[]> RunLogToBasePositiveInfinityIsNaNTestSources
+        {
+            get
+            {
+                for (int i = 0; i < NumberOfRandomIterations; i++)
+                {
+                    BigInteger currentValue = new BigInteger(GetRandomByteArray(s_random, 10));
+                    yield return new object[] { currentValue };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(RunLogToBasePositiveInfinityIsNaNTestSources))]
+        public void RunLogToBasePositiveInfinityIsNaNTest(BigInteger testValue)
+        {
+            Assert.True((double.IsNaN(BigInteger.Log(testValue, double.PositiveInfinity))));
+        }
+
+        public static IEnumerable<object[]> RunLogToBasePositiveInfinityTestSources
+        {
+            get
+            {
+                yield return new object[] { 1, 0 };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(RunLogToBasePositiveInfinityTestSources))]
+        public void RunLogToBasePositiveInfinityTest(BigInteger testValue, double expectedValue)
+        {
+            Assert.Equal(expectedValue, BigInteger.Log(testValue, double.PositiveInfinity));
+        }
+
+        public static IEnumerable<object[]> RunLogToBaseNegativeIsNaNTestSources
+        {
+            get
+            {
+                for (int i = 0; i < NumberOfRandomIterations; i++)
+                {
+                    BigInteger currentValue = new BigInteger(GetRandomByteArray(s_random, 10));
+                    double baseValue = -s_random.NextDouble();
+                    yield return new object[] { currentValue, baseValue };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(RunLogToBaseNegativeIsNaNTestSources))]
+        public void RunLogToBaseNegativeIsNaNTest(BigInteger testValue, double baseValue)
+        {
+            Assert.True((double.IsNaN(BigInteger.Log(testValue, baseValue))));
+        }
+
+        public static IEnumerable<object[]> RunLogOfSmallValueTestSources
+        {
+            get
+            {
+                for (int i = 0; i < NumberOfRandomIterations; i++)
+                {
+                    BigInteger currentValue = new BigInteger(GetRandomByteArray(s_random, 10));
+                    double baseValue = Math.Min(s_random.NextDouble(), 0.5);
+                    double expectedValue = Math.Log((double)currentValue, baseValue);
+                    yield return new object[] { currentValue, baseValue, expectedValue };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(RunLogOfSmallValueTestSources))]
+        public void RunLogOfSmallValueTest(BigInteger testValue, double baseValue, double expectedValue)
+        {
+            Assert.True(ApproxEqual(BigInteger.Log(testValue, baseValue), expectedValue));
+        }
+
+        public static IEnumerable<object[]> RunLogOfLargeValueTestSources
+        {
+            get
+            {
+                for (int i = 0; i < NumberOfRandomIterations; i++)
+                {
+                    BigInteger currentValue = new BigInteger(GetRandomPosByteArray(s_random, s_random.Next(1, 100)));
+                    double baseValue = Math.Min(s_random.NextDouble(), 0.5);
+                    double expectedValue = Math.Log((double)currentValue, baseValue);
+                    yield return new object[] { currentValue, baseValue, expectedValue };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(RunLogOfLargeValueTestSources))]
+        public void RunLogOfLargeValueTest(BigInteger testValue, double baseValue, double expectedValue)
+        {
+            Assert.True(ApproxEqual(BigInteger.Log(testValue, baseValue), expectedValue));
+        }
+
+        public static IEnumerable<object[]> RunLargeValueLogTestSources
+        {
+            get
+            {
+                yield return new object[] { 128, 1, 0, 1 };
+                yield return new object[] { 0, 4, 64, 3 };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(RunLargeValueLogTestSources))]
+        public void RunLargeValueLogTest(int startShift, int bigShiftLoopLimit, int smallShift, int smallShiftLoopLimit)
+        {
+            LargeValueLogTests(startShift, bigShiftLoopLimit, smallShift, smallShiftLoopLimit);
         }
 
         /// <summary>
@@ -168,20 +215,6 @@ namespace System.Numerics.Tests
             }
         }
 
-        private static void VerifyLogString(string opstring)
-        {
-            StackCalc sc = new StackCalc(opstring);
-            while (sc.DoNextOperation())
-            {
-                Assert.Equal(sc.snCalc.Peek().ToString(), sc.myCalc.Peek().ToString());
-            }
-        }
-
-        private static byte[] GetRandomByteArray(Random random)
-        {
-            return GetRandomByteArray(random, random.Next(0, 100));
-        }
-
         private static byte[] GetRandomByteArray(Random random, int size)
         {
             return MyBigIntImp.GetRandomByteArray(random, size);
@@ -199,24 +232,6 @@ namespace System.Numerics.Tests
             value[value.Length - 1] &= 0x7F;
 
             return value;
-        }
-
-        private static byte[] GetRandomNegByteArray(Random random, int size)
-        {
-            byte[] value = new byte[size];
-
-            for (int i = 0; i < value.Length; ++i)
-            {
-                value[i] = (byte)random.Next(0, 256);
-            }
-            value[value.Length - 1] |= 0x80;
-
-            return value;
-        }
-
-        private static string Print(byte[] bytes)
-        {
-            return MyBigIntImp.Print(bytes);
         }
 
         private static bool ApproxEqual(double value1, double value2)
