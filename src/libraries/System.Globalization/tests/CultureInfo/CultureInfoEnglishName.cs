@@ -45,7 +45,7 @@ namespace System.Globalization.Tests
                         $"'{ci.EnglishName}' not equal to `Chinese (Simplified)` nor `Chinese, Simplified`");
 
             ci = new CultureInfo("zh-HanT");
-            Assert.True(ci.EnglishName == "Chinese (Traditional)" || ci.EnglishName == "Chinese, Simplified",
+            Assert.True(ci.EnglishName == "Chinese (Traditional)" || ci.EnglishName == "Chinese, Traditional",
                         $"'{ci.EnglishName}' not equal to `Chinese (Traditional)` nor `Chinese, Traditional`");
         }
     }
