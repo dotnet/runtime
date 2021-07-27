@@ -39,8 +39,6 @@
   <Target Name="WasmBuildNativeOnly" DependsOnTargets="$(WasmBuildNativeOnlyDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
 
   <Target Name="_PrepareForWasmBuildNativeOnly">
-    <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
-
     <ItemGroup>
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
       <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
