@@ -19,8 +19,15 @@ namespace System.Net.NameResolution.Tests
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(localIPAddress));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+        public static bool GetHostEntryWorks =
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+            !PlatformDetection.IsArm64Process &&
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
+            !PlatformDetection.IsOSX &&
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/55271")]
+            !PlatformDetection.IsSLES;
+
+        [ConditionalTheory(nameof(GetHostEntryWorks))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntry_HostString_Ok(string hostName)
@@ -68,8 +75,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
+        [ConditionalTheory(nameof(GetHostEntryWorks))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName) =>
