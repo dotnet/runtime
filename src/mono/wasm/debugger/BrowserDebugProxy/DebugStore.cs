@@ -934,7 +934,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async IAsyncEnumerable<SourceFile> Load(SessionId sessionId, string[] loaded_files, [EnumeratorCancellation] CancellationToken token)
+        public async IAsyncEnumerable<SourceFile> Load(SessionId sessionId, MonoSDBHelper SdbHelper, string[] loaded_files, [EnumeratorCancellation] CancellationToken token)
         {
             var asm_files = new List<string>();
             var pdb_files = new List<string>();
@@ -949,21 +949,38 @@ namespace Microsoft.WebAssembly.Diagnostics
             List<DebugItem> steps = new List<DebugItem>();
             foreach (string url in asm_files)
             {
-                try
+                if (url.StartsWith("http")) // if url is a url to remote resource
                 {
-                    string candidate_pdb = Path.ChangeExtension(url, "pdb");
-                    string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
+                    try
+                    {
+                        string candidate_pdb = Path.ChangeExtension(url, "pdb");
+                        string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
 
-                    steps.Add(
-                        new DebugItem
-                        {
-                            Url = url,
-                            Data = Task.WhenAll(client.GetByteArrayAsync(url, token), pdb != null ? client.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
-                        });
+                        steps.Add(
+                            new DebugItem
+                            {
+                                Url = url,
+                                Data = Task.WhenAll(client.GetByteArrayAsync(url, token), pdb != null ? client.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
+                            });
+
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogDebug($"Failed to read {url} ({e.Message})");
+                    }
+
                 }
-                catch (Exception e)
+                else // otherwise just load it directly
                 {
-                    logger.LogDebug($"Failed to read {url} ({e.Message})");
+                    var assemblyFileName = Path.GetFileName(url);
+                    var assemblyId = await SdbHelper.GetAssemblyId(sessionId, assemblyFileName, token);
+                    var metadataBlob = await SdbHelper.GetMetadataBlob(sessionId, assemblyId, token);
+                    var assembly = new AssemblyInfo(url, metadataBlob, null);
+                    assemblies.Add(assembly);
+                    foreach (SourceFile source in assembly.Sources)
+                    {
+                        yield return source;
+                    }
                 }
             }
 

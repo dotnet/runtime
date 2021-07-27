@@ -1237,7 +1237,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
 
                 await
-                foreach (SourceFile source in context.store.Load(sessionId, loaded_files, token).WithCancellation(token))
+                foreach (SourceFile source in context.store.Load(sessionId, SdbHelper, loaded_files, token).WithCancellation(token))
                 {
                     await OnSourceFileAdded(sessionId, source, context, token);
                 }

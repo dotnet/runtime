@@ -368,6 +368,15 @@ namespace Microsoft.WebAssembly.Diagnostics
             Read(value, 0, valueLen);
             return new string(value);
         }
+
+        public byte[] ReadByteArray()
+        {
+            var valueLen = ReadInt32();
+            byte[] value = new byte[valueLen];
+            Read(value, 0, valueLen);
+            return value;
+        }
+
         public unsafe long ReadLong()
         {
             byte[] data = new byte[8];
@@ -758,6 +767,15 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdVM>(sessionId, CmdVM.GetAssemblyByName, commandParams, token);
             return retDebuggerCmdReader.ReadInt32();
+        }
+
+        public async Task<byte[]> GetMetadataBlob(SessionId sessionId, int assemblyId, CancellationToken token)
+        {
+            var commandParams = new MemoryStream();
+            var commandParamsWriter = new MonoBinaryWriter(commandParams);
+            commandParamsWriter.Write(assemblyId);
+            var retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdAssembly>(sessionId, CmdAssembly.GetMetadataBlob, commandParams, token);
+            return retDebuggerCmdReader.ReadByteArray();
         }
 
         public async Task<string> GetAssemblyNameFromModule(SessionId sessionId, int moduleId, CancellationToken token)
