@@ -108,7 +108,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(constructor));
 
             if (type.GetGenericTypeDefinition() != constructor.DeclaringType)
-                throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(type));
+                throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(constructor));
 
             // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
             if (type is TypeBuilder && type.IsGenericTypeDefinition)
