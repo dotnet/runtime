@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -103,9 +103,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 	class SuppressOnTypeMarkedEntirely
 	{
-		// https://github.com/mono/linker/issues/2095
-		// [LogDoesNotContain (nameof(TypeWithSuppression) + " has more than one unconditional suppression")]
-		[LogContains (nameof (TypeWithSuppression) + " has more than one unconditional suppression")]
+		[LogDoesNotContain (nameof (TypeWithSuppression) + " has more than one unconditional suppression")]
 		[UnconditionalSuppressMessage ("Test", "IL2026")]
 		class TypeWithSuppression
 		{

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
@@ -22,7 +22,7 @@ namespace Mono.Linker
 			InitializedAssemblies = new HashSet<AssemblyDefinition> ();
 		}
 
-		public void AddSuppression (CustomAttribute ca, ICustomAttributeProvider provider)
+		void AddSuppression (CustomAttribute ca, ICustomAttributeProvider provider)
 		{
 			SuppressMessageInfo info;
 			if (!TryDecodeSuppressMessageAttributeData (ca, out info))
@@ -90,7 +90,19 @@ namespace Mono.Linker
 			if (provider == null)
 				return false;
 
-			return _suppressions.TryGetValue (provider, out var suppressions) &&
+			if (_suppressions.TryGetValue (provider, out var suppressions))
+				return suppressions.TryGetValue (id, out info);
+
+			if (!_context.CustomAttributes.HasAny (provider))
+				return false;
+
+			foreach (var ca in _context.CustomAttributes.GetCustomAttributes (provider)) {
+				if (TypeRefHasUnconditionalSuppressions (ca.Constructor.DeclaringType) &&
+					provider is not ModuleDefinition or AssemblyDefinition)
+					AddSuppression (ca, provider);
+			}
+
+			return _suppressions.TryGetValue (provider, out suppressions) &&
 				suppressions.TryGetValue (id, out info);
 		}
 
@@ -200,7 +212,7 @@ namespace Mono.Linker
 			}
 		}
 
-		public static bool TypeRefHasUnconditionalSuppressions (TypeReference typeRef)
+		static bool TypeRefHasUnconditionalSuppressions (TypeReference typeRef)
 		{
 			return typeRef.Name == "UnconditionalSuppressMessageAttribute" &&
 				typeRef.Namespace == "System.Diagnostics.CodeAnalysis";
