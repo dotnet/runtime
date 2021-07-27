@@ -103,9 +103,6 @@
     <!-- Execution may be compromised -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Caching.Memory\tests\Microsoft.Extensions.Caching.Memory.Tests.csproj" />
 
-    <!-- https://github.com/dotnet/runtime/issues/51016 -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\InvariantCultureOnlyMode\Android.Device_Emulator.InvariantCultureOnlyMode.Test.csproj" />
-
     <!-- PSNE -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console/tests/System.Console.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NetworkInformation/tests/FunctionalTests/System.Net.NetworkInformation.Functional.Tests.csproj" />

@@ -38,6 +38,7 @@
       COMPlus_FeatureSIMD;
       COMPlus_ForceRelocs;
       COMPlus_GCStress;
+      COMPlus_GCName;
       COMPlus_HeapVerify;
       COMPlus_JITMinOpts;
       COMPlus_JitELTHookEnabled;
@@ -155,6 +156,8 @@
     <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" />
     <TestEnvironment Include="dynamicpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
     <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0"/>
+    <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>
+    <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true'" GCName="libclrgc.so"/>
   </ItemGroup>
 
   <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables

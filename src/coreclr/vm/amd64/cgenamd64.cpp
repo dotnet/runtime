@@ -286,7 +286,11 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rip = m_ReturnAddress;
+#ifdef TARGET_WINDOWS
+    pRD->pCurrentContext->Rsp = m_Args->Rsp;
+#else
     pRD->pCurrentContext->Rsp = PTR_TO_MEMBER_TADDR(HijackArgs, m_Args, Rip) + sizeof(void *);
+#endif
 
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, &(m_Args->Regs));
 

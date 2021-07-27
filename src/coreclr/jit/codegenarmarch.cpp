@@ -560,7 +560,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //------------------------------------------------------------------------
 // genSetRegToIcon: Generate code that will set the given register to the integer constant.
 //
-void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFlags flags)
+void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFlags flags DEBUGARG(GenTreeFlags gtFlags))
 {
     // Reg cannot be a FP reg
     assert(!genIsValidFloatReg(reg));
@@ -603,7 +603,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
     else
     {
         instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, initReg, (ssize_t)compiler->gsGlobalSecurityCookieAddr,
-                               INS_FLAGS_DONT_CARE DEBUGARG((size_t)THT_SetGSCookie) DEBUGARG(0));
+                               INS_FLAGS_DONT_CARE DEBUGARG((size_t)THT_SetGSCookie) DEBUGARG(GTF_EMPTY));
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, initReg, initReg, 0);
         regSet.verifyRegUsed(initReg);
         GetEmitter()->emitIns_S_R(INS_str, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
