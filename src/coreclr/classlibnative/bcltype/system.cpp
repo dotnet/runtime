@@ -245,7 +245,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     // Another option would seem to be to implement a new frame type that
     // protects object references as pinned, but that seems like overkill for
     // just this problem.
-    WCHAR  *pszMessage = NULL;
+    WCHAR  *pszMessageBuffer = NULL;
     DWORD   cchMessage = (gc.refMesgString == NULL) ? 0 : gc.refMesgString->GetStringLength();
 
     WCHAR * errorSourceString = NULL;
@@ -265,36 +265,43 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     if (cchMessage < FAIL_FAST_STATIC_BUFFER_LENGTH)
     {
         // The static buffer can be used only once to avoid race condition with other threads
-        pszMessage = (WCHAR *)InterlockedExchangeT(&g_pFailFastBuffer, NULL);
+        pszMessageBuffer = InterlockedExchangeT(&g_pFailFastBuffer, NULL);
     }
 
-    if (pszMessage == NULL)
+    if (pszMessageBuffer == NULL)
     {
         // We can fail here, but we can handle the fault.
         CONTRACT_VIOLATION(FaultViolation);
-        pszMessage = new (nothrow) WCHAR[cchMessage + 1];
-        if (pszMessage == NULL)
+        pszMessageBuffer = new (nothrow) WCHAR[cchMessage + 1];
+        if (pszMessageBuffer == NULL)
         {
             // Truncate the message to what will fit in the static buffer.
             cchMessage = FAIL_FAST_STATIC_BUFFER_LENGTH - 1;
-            pszMessage = InterlockedExchangeT(&g_pFailFastBuffer, NULL);
+            pszMessageBuffer = InterlockedExchangeT(&g_pFailFastBuffer, NULL);
         }
     }
 
-    if (cchMessage > 0)
-        memcpyNoGCRefs(pszMessage, gc.refMesgString->GetBuffer(), cchMessage * sizeof(WCHAR));
-
-    if (pszMessage == NULL) {
-        WszOutputDebugString(W("CLR: Managed code called FailFast, but there is not enough memory to print the supplied message.\r\n"));
+    const WCHAR *pszMessage;
+    if (pszMessageBuffer != NULL)
+    {
+        if (cchMessage > 0)
+            memcpyNoGCRefs(pszMessageBuffer, gc.refMesgString->GetBuffer(), cchMessage * sizeof(WCHAR));
+        pszMessageBuffer[cchMessage] = W('\0');
+        pszMessage = pszMessageBuffer;
     }
-    else if (cchMessage == 0) {
+    else
+    {
+        pszMessage = W("There is not enough memory to print the supplied FailFast message.");
+        cchMessage = (DWORD)wcslen(pszMessage);
+    }
+
+    if (cchMessage == 0) {
         WszOutputDebugString(W("CLR: Managed code called FailFast without specifying a reason.\r\n"));
     }
     else {
-        WszOutputDebugString(W("CLR: Managed code called FailFast, saying \""));
-        pszMessage[cchMessage] = W('\0');
+        WszOutputDebugString(W("CLR: Managed code called FailFast.\r\n"));
         WszOutputDebugString(pszMessage);
-        WszOutputDebugString(W("\"\r\n"));
+        WszOutputDebugString(W("\r\n"));
     }
 
     LPCWSTR argExceptionString = NULL;
