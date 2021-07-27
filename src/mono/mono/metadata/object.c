@@ -4148,9 +4148,7 @@ mono_unhandled_exception_internal (MonoObject *exc_raw)
 void
 mono_unhandled_exception (MonoObject *exc)
 {
-	MONO_ENTER_GC_UNSAFE;
-	MONO_EXTERNAL_ONLY_VOID (mono_unhandled_exception_internal (exc));
-	MONO_EXIT_GC_UNSAFE;	
+	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_unhandled_exception_internal (exc));
 }
 
 static MonoObjectHandle
