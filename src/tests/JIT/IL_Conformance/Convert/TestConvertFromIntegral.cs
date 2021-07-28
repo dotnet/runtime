@@ -56,10 +56,12 @@ namespace TestCasts
                 if (exceptionExpected)
                 {
                     failedCount++;
+                    Console.WriteLine("No exception in " + name);
                 }
                 if (checkResult && !expectedTo.Equals(res))
                 {
                     failedCount++;
+                    Console.WriteLine("Wrong result in " + name);
                 }
             }
             catch
@@ -67,6 +69,7 @@ namespace TestCasts
                 if (!exceptionExpected)
                 {
                     failedCount++;
+                    Console.WriteLine("Not expected exception in " + name);
                 }
             }
         }
@@ -736,10 +739,10 @@ namespace TestCasts
             OpCode convNoOvf = OpCodes.Conv_U2;
             GenerateTest<float, ushort>(1F, sourceOp, convNoOvf, DontExpectException, 1);
             GenerateTest<float, ushort>(3.9F, sourceOp, convNoOvf, DontExpectException, 3);
-            GenerateTest<float, ushort>(-1F, sourceOp, convNoOvf, DontExpectException, ushort.MaxValue);
+            GenerateTest<float, ushort>(-1F, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
 
             GenerateTest<float, ushort>(short.MaxValue, sourceOp, convNoOvf, DontExpectException, (ushort)short.MaxValue);
-            GenerateTest<float, ushort>(short.MinValue, sourceOp, convNoOvf, DontExpectException, (ushort)short.MaxValue + 1);
+            GenerateTest<float, ushort>(short.MinValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
             GenerateTest<float, ushort>(ushort.MaxValue, sourceOp, convNoOvf, DontExpectException, ushort.MaxValue);
             GenerateTest<float, ushort>(ushort.MinValue, sourceOp, convNoOvf, DontExpectException, ushort.MinValue);
             GenerateTest<float, ushort>(long.MaxValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
@@ -799,8 +802,8 @@ namespace TestCasts
 
             OpCode convNoOvf = OpCodes.Conv_U4;
             GenerateTest<float, uint>(1, sourceOp, convNoOvf, DontExpectException, 1);
-            GenerateTest<float, uint>(-1, sourceOp, convNoOvf, DontExpectException, uint.MaxValue);
-            GenerateTest<float, uint>(int.MinValue, sourceOp, convNoOvf, DontExpectException, (uint)int.MaxValue + 1);
+            GenerateTest<float, uint>(-1, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
+            GenerateTest<float, uint>(int.MinValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
             GenerateTest<float, uint>(uint.MinValue, sourceOp, convNoOvf, DontExpectException, uint.MinValue);
             GenerateTest<float, uint>(long.MaxValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
             GenerateTest<float, uint>(long.MinValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
@@ -855,9 +858,9 @@ namespace TestCasts
 
             OpCode convNoOvf = OpCodes.Conv_U8;
             GenerateTest<float, ulong>(1, sourceOp, convNoOvf, DontExpectException, 1);
-            GenerateTest<float, ulong>(-1, sourceOp, convNoOvf, DontExpectException, ulong.MaxValue);
-            GenerateTest<float, ulong>(int.MinValue, sourceOp, convNoOvf, DontExpectException, 0xffffffff80000000UL);
-            GenerateTest<float, ulong>(long.MinValue, sourceOp, convNoOvf, DontExpectException, (ulong)long.MaxValue + 1);
+            GenerateTest<float, ulong>(-1, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
+            GenerateTest<float, ulong>(int.MinValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
+            GenerateTest<float, ulong>(long.MinValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
 
             OpCode convOvf = OpCodes.Conv_Ovf_U8;
             GenerateTest<float, ulong>(1, sourceOp, convOvf, DontExpectException, 1);
@@ -1007,9 +1010,9 @@ namespace TestCasts
 
             OpCode convNoOvf = OpCodes.Conv_U2;
             GenerateTest<double, ushort>(1, sourceOp, convNoOvf, DontExpectException, 1);
-            GenerateTest<double, ushort>(-1, sourceOp, convNoOvf, DontExpectException, ushort.MaxValue);
-            GenerateTest<double, ushort>(short.MaxValue, sourceOp, convNoOvf, DontExpectException, (ushort)short.MaxValue);
-            GenerateTest<double, ushort>(short.MinValue, sourceOp, convNoOvf, DontExpectException, (ushort)short.MaxValue + 1);
+            GenerateTest<double, ushort>(-1, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
+            GenerateTest<double, ushort>(short.MaxValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
+            GenerateTest<double, ushort>(short.MinValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
             GenerateTest<double, ushort>(ushort.MaxValue, sourceOp, convNoOvf, DontExpectException, ushort.MaxValue);
             GenerateTest<double, ushort>(ushort.MinValue, sourceOp, convNoOvf, DontExpectException, ushort.MinValue);
             GenerateTest<double, ushort>(long.MaxValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
@@ -1078,8 +1081,8 @@ namespace TestCasts
 
             OpCode convNoOvf = OpCodes.Conv_U4;
             GenerateTest<double, uint>(1, sourceOp, convNoOvf, DontExpectException, 1);
-            GenerateTest<double, uint>(-1, sourceOp, convNoOvf, DontExpectException, uint.MaxValue);
-            GenerateTest<double, uint>(int.MinValue, sourceOp, convNoOvf, DontExpectException, (uint)int.MaxValue + 1);
+            GenerateTest<double, uint>(-1, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
+            GenerateTest<double, uint>(int.MinValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
             GenerateTest<double, uint>(uint.MinValue, sourceOp, convNoOvf, DontExpectException, uint.MinValue);
             GenerateTest<double, uint>(long.MaxValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
             GenerateTest<double, uint>(long.MinValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
@@ -1137,9 +1140,9 @@ namespace TestCasts
 
             OpCode convNoOvf = OpCodes.Conv_U8;
             GenerateTest<double, ulong>(1, sourceOp, convNoOvf, DontExpectException, 1);
-            GenerateTest<double, ulong>(-1, sourceOp, convNoOvf, DontExpectException, ulong.MaxValue);
-            GenerateTest<double, ulong>(int.MinValue, sourceOp, convNoOvf, DontExpectException, 0xffffffff80000000UL);
-            GenerateTest<double, ulong>(long.MinValue, sourceOp, convNoOvf, DontExpectException, (ulong)long.MaxValue + 1);
+            GenerateTest<double, ulong>(-1, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
+            GenerateTest<double, ulong>(int.MinValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
+            GenerateTest<double, ulong>(long.MinValue, sourceOp, convNoOvf, DontExpectException, 0, UnspecifiedBehaviour);
 
             OpCode convOvf = OpCodes.Conv_Ovf_U8;
             GenerateTest<double, ulong>(1, sourceOp, convOvf, DontExpectException, 1);
