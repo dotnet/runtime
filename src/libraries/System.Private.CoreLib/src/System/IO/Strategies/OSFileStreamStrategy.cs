@@ -13,17 +13,15 @@ namespace System.IO.Strategies
     {
         protected readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
         private readonly FileAccess _access; // What file was opened for.
-        private readonly FileShare _share;
 
         protected long _filePosition;
         private long _appendStart; // When appending, prevent overwriting file.
-        private long _length = -1; // When the file is locked for writes on Windows (_share <= FileShare.Read) cache file length in-memory, negative means that hasn't been fetched.
-        private bool _exposedHandle; // created from handle, or SafeFileHandle was used and the handle got exposed
+        private long _length = -1; // When the file is locked for writes on Windows ((share & FileShare.Write) == 0) cache file length in-memory, negative means that hasn't been fetched.
+        private bool _exposedHandle; // created from handle, or SafeFileHandle was used and the handle got exposed, or FileShare.Write was specified when the handle was opened.
 
-        internal OSFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
+        internal OSFileStreamStrategy(SafeFileHandle handle, FileAccess access)
         {
             _access = access;
-            _share = share;
             _exposedHandle = true;
 
             handle.EnsureThreadPoolBindingInitialized();
@@ -47,7 +45,7 @@ namespace System.IO.Strategies
             string fullPath = Path.GetFullPath(path);
 
             _access = access;
-            _share = share;
+            _exposedHandle = (share & FileShare.Write) != 0;
 
             _fileHandle = SafeFileHandle.Open(fullPath, mode, access, share, options, preallocationSize);
 
@@ -115,7 +113,7 @@ namespace System.IO.Strategies
             }
         }
 
-        protected bool LengthCachingSupported => OperatingSystem.IsWindows() && _share <= FileShare.Read && !_exposedHandle;
+        protected bool LengthCachingSupported => OperatingSystem.IsWindows() && !_exposedHandle;
 
         /// <summary>Gets or sets the position within the current stream</summary>
         public sealed override long Position

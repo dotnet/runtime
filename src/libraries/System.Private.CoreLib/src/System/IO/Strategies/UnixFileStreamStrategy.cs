@@ -12,8 +12,7 @@ namespace System.IO.Strategies
     {
         private ReadAsyncTaskSource? _readAsyncTaskSource;
 
-        internal UnixFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share) :
-            base(handle, access, share)
+        internal UnixFileStreamStrategy(SafeFileHandle handle, FileAccess access) : base(handle, access)
         {
         }
 
