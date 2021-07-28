@@ -82,7 +82,7 @@ namespace System.Reflection.Tests
         public void FullyQualifiedName()
         {
 #if SINGLE_FILE_TEST_RUNNER
-            Assert.Equal("<unknown>", Module.FullyQualifiedName);
+            Assert.Equal("<Unknown>", Module.FullyQualifiedName);
 #else
             var loc = AssemblyPathHelper.GetAssemblyLocation(Assembly.GetExecutingAssembly());
 
@@ -100,7 +100,7 @@ namespace System.Reflection.Tests
         public void Name()
         {
 #if SINGLE_FILE_TEST_RUNNER
-            Assert.Equal("<unknown>", Module.Name, ignoreCase: true);
+            Assert.Equal("<Unknown>", Module.Name, ignoreCase: true);
 #else
             Assert.Equal("system.runtime.tests.dll", Module.Name, ignoreCase: true);
 #endif

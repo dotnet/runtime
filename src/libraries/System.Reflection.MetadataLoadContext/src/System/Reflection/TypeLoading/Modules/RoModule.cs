@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Serialization;
 
@@ -31,21 +30,11 @@ namespace System.Reflection.TypeLoading
         public sealed override Assembly Assembly => GetRoAssembly();
         internal abstract RoAssembly GetRoAssembly();
 
-
-
-        internal const string UnknownStringMessageInRAF = "Returns <unknown> for modules with no file path";
-
-#if NETCOREAPP
-        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
-#endif
         public sealed override string FullyQualifiedName => _fullyQualifiedName;
         public abstract override int MDStreamVersion { get; }
         public abstract override int MetadataToken { get; }
         public abstract override Guid ModuleVersionId { get; }
 
-#if NETCOREAPP
-        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
-#endif
         public sealed override string Name
         {
             get

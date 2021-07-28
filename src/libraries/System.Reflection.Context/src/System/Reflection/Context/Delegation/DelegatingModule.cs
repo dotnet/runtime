@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Context.Delegation
 {
@@ -23,11 +22,6 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingModule.Assembly; }
         }
 
-        internal const string UnknownStringMessageInRAF = "Returns <unknown> for modules with no file path";
-
-#if NETCOREAPP
-        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
-#endif
         public override string FullyQualifiedName
         {
             get { return UnderlyingModule.FullyQualifiedName; }
@@ -48,9 +42,6 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingModule.ModuleVersionId; }
         }
 
-#if NETCOREAPP
-        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
-#endif
         public override string Name
         {
             get { return UnderlyingModule.Name; }
