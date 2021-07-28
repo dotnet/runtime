@@ -379,5 +379,33 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             obj.RemoveEventListener("test", handle);
             obj.Invoke("fireEvent", "test");
         }
+
+        [Fact]
+        public static void RegisterSameEventListenerToMultipleSources () {
+            var counter = new int[1];
+            var a = SetupListenerTest("registerSameEventListenerToMultipleSourcesA");
+            var b = SetupListenerTest("registerSameEventListenerToMultipleSourcesB");
+            Action del = () => {
+                counter[0]++;
+            };
+
+            a.AddEventListener("test", del);
+            b.AddEventListener("test", del);
+
+            a.Invoke("fireEvent", "test");
+            Assert.Equal(1, counter[0]);
+            b.Invoke("fireEvent", "test");
+            Assert.Equal(2, counter[0]);
+
+            a.RemoveEventListener("test", del);
+            a.Invoke("fireEvent", "test");
+            b.Invoke("fireEvent", "test");
+            Assert.Equal(3, counter[0]);
+
+            b.RemoveEventListener("test", del);
+            a.Invoke("fireEvent", "test");
+            b.Invoke("fireEvent", "test");
+            Assert.Equal(3, counter[0]);
+        }
     }
 }
