@@ -573,7 +573,7 @@ if [[ "${__BuildArch}" != "${__HostArch}" ]]; then
     __CrossBuild=1
 fi
 
-if [[ "$__CrossBuild" == 1 ]]; then
+if [[ ("$__CrossBuild" == 1) && ("$__TargetOS" != "Android") ]]; then
     __UnprocessedBuildArgs+=("/p:CrossBuild=true")
 fi
 
