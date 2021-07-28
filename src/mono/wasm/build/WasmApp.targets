@@ -138,7 +138,7 @@
 
   <Target Name="WasmGenerateRuntimeConfig">
     <PropertyGroup>
-      <RuntimeConfigFilePath>$(TargetDir)publish\$([System.IO.Path]::GetFileNameWithoutExtension('$(WasmMainAssemblyFileName)')).runtimeconfig.json</RuntimeConfigFilePath>
+      <RuntimeConfigFilePath>$(TargetDir)publish\$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>
       <ParsedRuntimeConfigFilePath>$(TargetDir)publish\runtimeconfig.bin</ParsedRuntimeConfigFilePath>
     </PropertyGroup>
 
