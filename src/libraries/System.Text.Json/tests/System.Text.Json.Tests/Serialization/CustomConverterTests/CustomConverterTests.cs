@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -180,6 +181,36 @@ namespace System.Text.Json.Serialization.Tests
         public static void GetConverterTypeToConvertNull()
         {
             Assert.Throws<ArgumentNullException>(() => (new JsonSerializerOptions()).GetConverter(typeToConvert: null!));
+        }
+
+        [Fact]
+        public static void CustomStringConverter_UsedInDictionaries()
+        {
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new CustomStringConverter() },
+                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            var value = new Dictionary<string, string>()
+            {
+                ["Key"] = "value"
+            };
+
+            string serialized = JsonSerializer.Serialize(value, options);
+            Assert.Equal(@"{""key"":""value""}", serialized);
+
+            value = JsonSerializer.Deserialize<Dictionary<string, string>>(serialized, options);
+            Assert.Equal("value", value["key"]);
+        }
+
+        internal sealed class CustomStringConverter : JsonConverter<string>
+        {
+            public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                => reader.GetString();
+
+            public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+                => writer.WriteStringValue(value);
         }
     }
 }

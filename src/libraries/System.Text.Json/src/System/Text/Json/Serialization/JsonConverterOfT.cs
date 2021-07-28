@@ -594,7 +594,15 @@ namespace System.Text.Json.Serialization
         }
 
         internal virtual void WriteWithQuotes(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options, ref WriteStack state)
-            => ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
+        {
+            if (typeof(T) == typeof(string))
+            {
+                JsonMetadataServices.StringConverter.WriteWithQuotes(writer, (string)(object)value, options, ref state);
+                return;
+            }
+
+            ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
+        }
 
         internal sealed override void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state)
             => WriteWithQuotes(writer, (T)value, options, ref state);
