@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -385,7 +384,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D4", options, 0, 0, false, "" };
             }
 
-            // .* Perf Optimization: Case sensitive
+            // .* : Case sensitive
             foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Compiled })
             {
                 yield return new object[] { @".*\nfoo", "This shouldn't match", options, 0, 20, false, "" };
@@ -403,7 +402,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { @".*\dfoo", "This shouldn't match 1foo", options, 0, 20, false, "" };
             }
 
-            // .* Perf Optimization: Case insensitive
+            // .* : Case insensitive
             foreach (RegexOptions options in new[] { RegexOptions.IgnoreCase, RegexOptions.IgnoreCase | RegexOptions.Compiled })
             {
                 yield return new object[] { @".*\nFoo", "\nfooThis should match", options, 0, 21, true, "\nfoo" };
@@ -413,7 +412,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { @".*\dfoo", "1fooThis1FOO should 1foo match", options, 4, 9, true, "This1FOO" };
             }
 
-            // .* Perf Optimization: RTL, Case-sensitive
+            // .* : RTL, Case-sensitive
             foreach (RegexOptions options in new[] { RegexOptions.None | RegexOptions.RightToLeft, RegexOptions.Compiled | RegexOptions.RightToLeft })
             {
                 yield return new object[] { @".*\nfoo", "This shouldn't match", options, 0, 20, false, "" };
@@ -431,7 +430,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { @".*\dfoo", "This shouldn't match 1foo", options, 0, 20, false, "" };
             }
 
-            // .* Perf Optimization: RTL, case insensitive
+            // .* : RTL, case insensitive
             foreach (RegexOptions options in new[] { RegexOptions.IgnoreCase | RegexOptions.RightToLeft, RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.RightToLeft })
             {
                 yield return new object[] { @".*\nFoo", "\nfooThis should match", options, 0, 21, true, "\nfoo" };

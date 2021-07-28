@@ -183,9 +183,14 @@ namespace System.Globalization.Tests
 
             // Turkish
             yield return new object[] { s_turkishCompare, "i", "I", CompareOptions.None, 1 };
-            yield return new object[] { s_turkishCompare, "i", "I", CompareOptions.IgnoreCase, 1 };
+            // Android has its own ICU, which doesn't work well with tr
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { s_turkishCompare, "i", "I", CompareOptions.IgnoreCase, 1 };
+                yield return new object[] { s_turkishCompare, "i", "\u0130", CompareOptions.IgnoreCase, 0 };
+            }
+
             yield return new object[] { s_invariantCompare, "i", "\u0130", CompareOptions.None, -1 };
-            yield return new object[] { s_turkishCompare, "i", "\u0130", CompareOptions.IgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "i", "I", CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "i", "I", CompareOptions.IgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "i", "\u0130", CompareOptions.None, -1 };
@@ -311,7 +316,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Compare_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void Compare(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
             Compare_Advanced(compareInfo, string1, 0, string1?.Length ?? 0, string2, 0, string2?.Length ?? 0, options, expected);

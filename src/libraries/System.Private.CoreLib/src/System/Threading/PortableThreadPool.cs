@@ -51,8 +51,6 @@ namespace System.Threading
         {
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 1)]
             public ThreadCounts counts; // SOS's ThreadPool command depends on this name
-            [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 1 + sizeof(uint))]
-            public short numThreadsGoal;
 
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 2)]
             public int lastDequeueTime;
@@ -103,7 +101,7 @@ namespace System.Threading
                 _maxThreads = _minThreads;
             }
 
-            _separated.numThreadsGoal = _minThreads;
+            _separated.counts.NumThreadsGoal = _minThreads;
         }
 
         public bool SetMinThreads(int workerThreads, int ioCompletionThreads)
@@ -142,9 +140,9 @@ namespace System.Threading
                         wakeGateThread = true;
                     }
                 }
-                else if (_separated.numThreadsGoal < newMinThreads)
+                else if (_separated.counts.NumThreadsGoal < newMinThreads)
                 {
-                    _separated.numThreadsGoal = newMinThreads;
+                    _separated.counts.InterlockedSetNumThreadsGoal(newMinThreads);
                     if (_separated.numRequestedWorkers > 0)
                     {
                         addWorker = true;
@@ -193,9 +191,9 @@ namespace System.Threading
 
                 short newMaxThreads = (short)Math.Min(workerThreads, MaxPossibleThreadCount);
                 _maxThreads = newMaxThreads;
-                if (_separated.numThreadsGoal > newMaxThreads)
+                if (_separated.counts.NumThreadsGoal > newMaxThreads)
                 {
-                    _separated.numThreadsGoal = newMaxThreads;
+                    _separated.counts.InterlockedSetNumThreadsGoal(newMaxThreads);
                 }
                 return true;
             }
@@ -272,12 +270,14 @@ namespace System.Threading
             bool addWorker = false;
             try
             {
-                // Skip hill climbing when there is a pending blocking adjustment. Hill climbing may otherwise bypass the
-                // blocking adjustment heuristics and increase the thread count too quickly.
-                if (_pendingBlockingAdjustment != PendingBlockingAdjustment.None)
+                // Repeated checks from ShouldAdjustMaxWorkersActive() inside the lock
+                ThreadCounts counts = _separated.counts;
+                if (counts.NumProcessingWork > counts.NumThreadsGoal ||
+                    _pendingBlockingAdjustment != PendingBlockingAdjustment.None)
                 {
                     return;
                 }
+
 
                 long startTime = _currentSampleStartTime;
                 long endTime = Stopwatch.GetTimestamp();
@@ -291,13 +291,13 @@ namespace System.Threading
                     int totalNumCompletions = (int)_completionCounter.Count;
                     int numCompletions = totalNumCompletions - _separated.priorCompletionCount;
 
+                    short oldNumThreadsGoal = counts.NumThreadsGoal;
                     int newNumThreadsGoal;
                     (newNumThreadsGoal, _threadAdjustmentIntervalMs) =
-                        HillClimbing.ThreadPoolHillClimber.Update(_separated.numThreadsGoal, elapsedSeconds, numCompletions);
-                    short oldNumThreadsGoal = _separated.numThreadsGoal;
+                        HillClimbing.ThreadPoolHillClimber.Update(oldNumThreadsGoal, elapsedSeconds, numCompletions);
                     if (oldNumThreadsGoal != (short)newNumThreadsGoal)
                     {
-                        _separated.numThreadsGoal = (short)newNumThreadsGoal;
+                        _separated.counts.InterlockedSetNumThreadsGoal((short)newNumThreadsGoal);
 
                         //
                         // If we're increasing the goal, inject a thread.  If that thread finds work, it will inject
@@ -354,7 +354,8 @@ namespace System.Threading
             // threads processing work to stop in response to a decreased thread count goal. The logic here is a bit
             // different from the original CoreCLR code from which this implementation was ported because in this
             // implementation there are no retired threads, so only the count of threads processing work is considered.
-            if (_separated.counts.NumProcessingWork > _separated.numThreadsGoal)
+            ThreadCounts counts = _separated.counts;
+            if (counts.NumProcessingWork > counts.NumThreadsGoal)
             {
                 return false;
             }

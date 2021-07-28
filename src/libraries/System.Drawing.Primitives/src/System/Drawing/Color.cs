@@ -402,7 +402,7 @@ namespace System.Drawing
 
                 // if we reached here, just encode the value
                 //
-                return Convert.ToString(value, 16);
+                return value.ToString("x");
             }
         }
 

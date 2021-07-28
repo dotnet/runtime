@@ -796,8 +796,11 @@ namespace System.IO
 
                         byte[] tmp = ArrayPool<byte>.Shared.Rent((int)newLength);
                         Buffer.BlockCopy(rentedArray, 0, tmp, 0, bytesRead);
-                        ArrayPool<byte>.Shared.Return(rentedArray);
+
+                        byte[] toReturn = rentedArray;
                         rentedArray = tmp;
+
+                        ArrayPool<byte>.Shared.Return(toReturn);
                     }
 
                     Debug.Assert(bytesRead < rentedArray.Length);

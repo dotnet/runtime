@@ -48,6 +48,7 @@
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Xml.ReaderWriter" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">

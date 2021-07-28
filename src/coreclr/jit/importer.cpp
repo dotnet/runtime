@@ -6808,6 +6808,38 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
         if (varTypeIsStruct(exprToBox))
         {
+            // Workaround for GitHub issue 53549.
+            //
+            // If the struct being boxed is returned via hidden buffer and comes from an inline/gdv candidate,
+            // the IR we produce after importation is out of order:
+            //
+            //    call (&(box-temp + 8), ....)
+            //    box-temp = newobj
+            //    ret-val from call (void)
+            //        ... box-temp (on stack)
+            //
+            // For inline candidates this bad ordering gets fixed up during inlining, but for GDV candidates
+            // the GDV expansion is such that the newobj follows the call as in the above.
+            //
+            // This is nontrivial to fix in GDV, so in these (rare) cases we simply disable GDV.
+            //
+            if (exprToBox->OperIs(GT_RET_EXPR))
+            {
+                GenTreeCall* const call = exprToBox->AsRetExpr()->gtInlineCandidate->AsCall();
+
+                if (call->IsGuardedDevirtualizationCandidate() && call->HasRetBufArg())
+                {
+                    JITDUMP("Disabling GDV for [%06u] because of in-box struct return\n");
+                    call->ClearGuardedDevirtualizationCandidate();
+                    if (call->IsVirtualStub())
+                    {
+                        JITDUMP("Restoring stub addr %p from guarded devirt candidate info\n",
+                                dspPtr(call->gtGuardedDevirtualizationCandidateInfo->stubAddr));
+                        call->gtStubCallStubAddr = call->gtGuardedDevirtualizationCandidateInfo->stubAddr;
+                    }
+                }
+            }
+
             assert(info.compCompHnd->getClassSize(pResolvedToken->hClass) == info.compCompHnd->getClassSize(operCls));
             op1 = impAssignStructPtr(op1, exprToBox, operCls, (unsigned)CHECK_SPILL_ALL);
         }
@@ -7863,11 +7895,32 @@ void Compiler::impInsertHelperCall(CORINFO_HELPER_DESC* helperInfo)
     impAppendTree(callout, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
 }
 
-// Checks whether the return types of caller and callee are compatible
-// so that callee can be tail called. Note that here we don't check
-// compatibility in IL Verifier sense, but on the lines of return type
-// sizes are equal and get returned in the same return register.
-bool Compiler::impTailCallRetTypeCompatible(var_types                callerRetType,
+//------------------------------------------------------------------------
+// impTailCallRetTypeCompatible: Checks whether the return types of caller
+//    and callee are compatible so that calle can be tail called.
+//    sizes are not supported integral type sizes return values to temps.
+//
+// Arguments:
+//     allowWidening -- whether to allow implicit widening by the callee.
+//                      For instance, allowing int32 -> int16 tailcalls.
+//                      The managed calling convention allows this, but
+//                      we don't want explicit tailcalls to depend on this
+//                      detail of the managed calling convention.
+//     callerRetType -- the caller's return type
+//     callerRetTypeClass - the caller's return struct type
+//     callerCallConv -- calling convention of the caller
+//     calleeRetType -- the callee's return type
+//     calleeRetTypeClass - the callee return struct type
+//     calleeCallConv -- calling convention of the callee
+//
+// Returns:
+//     True if the tailcall types are compatible.
+//
+// Remarks:
+//     Note that here we don't check compatibility in IL Verifier sense, but on the
+//     lines of return types getting returned in the same return register.
+bool Compiler::impTailCallRetTypeCompatible(bool                     allowWidening,
+                                            var_types                callerRetType,
                                             CORINFO_CLASS_HANDLE     callerRetTypeClass,
                                             CorInfoCallConvExtension callerCallConv,
                                             var_types                calleeRetType,
@@ -7886,7 +7939,7 @@ bool Compiler::impTailCallRetTypeCompatible(var_types                callerRetTy
     bool isManaged =
         (callerCallConv == CorInfoCallConvExtension::Managed) && (calleeCallConv == CorInfoCallConvExtension::Managed);
 
-    if (isManaged && varTypeIsIntegral(callerRetType) && varTypeIsIntegral(calleeRetType) &&
+    if (allowWidening && isManaged && varTypeIsIntegral(callerRetType) && varTypeIsIntegral(calleeRetType) &&
         (genTypeSize(callerRetType) <= 4) && (genTypeSize(calleeRetType) <= genTypeSize(callerRetType)))
     {
         return true;
@@ -9096,13 +9149,14 @@ DONE:
             BADCODE("Stack should be empty after tailcall");
         }
 
-        // Note that we can not relax this condition with genActualType() as
-        // the calling convention dictates that the caller of a function with
-        // a small-typed return value is responsible for normalizing the return val
-
+        // For opportunistic tailcalls we allow implicit widening, i.e. tailcalls from int32 -> int16, since the
+        // managed calling convention dictates that the callee widens the value. For explicit tailcalls we don't
+        // want to require this detail of the calling convention to bubble up to the tailcall helpers
+        bool allowWidening = isImplicitTailCall;
         if (canTailCall &&
-            !impTailCallRetTypeCompatible(info.compRetType, info.compMethodInfo->args.retTypeClass, info.compCallConv,
-                                          callRetTyp, sig->retTypeClass, call->AsCall()->GetUnmanagedCallConv()))
+            !impTailCallRetTypeCompatible(allowWidening, info.compRetType, info.compMethodInfo->args.retTypeClass,
+                                          info.compCallConv, callRetTyp, sig->retTypeClass,
+                                          call->AsCall()->GetUnmanagedCallConv()))
         {
             canTailCall             = false;
             szCanTailCallFailReason = "Return types are not tail call compatible";
@@ -11904,6 +11958,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     lclNum = impInlineFetchLocal(lclNum DEBUGARG("Inline ldloca(s) first use temp"));
 
+                    assert(!lvaGetDesc(lclNum)->lvNormalizeOnLoad());
                     op1 = gtNewLclvNode(lclNum, lvaGetActualType(lclNum));
 
                     goto _PUSH_ADRVAR;
@@ -11952,7 +12007,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             ADRVAR:
 
-                op1 = gtNewLclvNode(lclNum, lvaGetActualType(lclNum) DEBUGARG(opcodeOffs + sz + 1));
+                op1 = impCreateLocalNode(lclNum DEBUGARG(opcodeOffs + sz + 1));
 
             _PUSH_ADRVAR:
                 assert(op1->gtOper == GT_LCL_VAR);
@@ -16718,9 +16773,17 @@ void Compiler::impPushVar(GenTree* op, typeInfo tiRetVal)
     impPushOnStack(op, tiRetVal);
 }
 
-// Load a local/argument on the operand stack
-// lclNum is an index into lvaTable *NOT* the arg/lcl index in the IL
-void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiRetVal)
+//------------------------------------------------------------------------
+// impCreateLocal: create a GT_LCL_VAR node to access a local that might need to be normalized on load
+//
+// Arguments:
+//     lclNum -- The index into lvaTable
+//     offset -- The offset to associate with the node
+//
+// Returns:
+//     The node
+//
+GenTreeLclVar* Compiler::impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET offset))
 {
     var_types lclTyp;
 
@@ -16733,7 +16796,14 @@ void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiR
         lclTyp = lvaGetActualType(lclNum);
     }
 
-    impPushVar(gtNewLclvNode(lclNum, lclTyp DEBUGARG(offset)), tiRetVal);
+    return gtNewLclvNode(lclNum, lclTyp DEBUGARG(offset));
+}
+
+// Load a local/argument on the operand stack
+// lclNum is an index into lvaTable *NOT* the arg/lcl index in the IL
+void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset, const typeInfo& tiRetVal)
+{
+    impPushVar(impCreateLocalNode(lclNum DEBUGARG(offset)), tiRetVal);
 }
 
 // Load an argument on the operand stack
@@ -20089,28 +20159,31 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
         // Directly substitute unaliased caller locals for args that cannot be modified
         //
         // Use the caller-supplied node if this is the first use.
-        op1               = argNode;
-        argInfo.argTmpNum = op1->AsLclVarCommon()->GetLclNum();
+        op1                = argNode;
+        unsigned argLclNum = op1->AsLclVarCommon()->GetLclNum();
+        argInfo.argTmpNum  = argLclNum;
 
         // Use an equivalent copy if this is the second or subsequent
-        // use, or if we need to retype.
+        // use.
         //
         // Note argument type mismatches that prevent inlining should
-        // have been caught in impInlineInitVars.
-        if (argInfo.argIsUsed || (op1->TypeGet() != lclTyp))
+        // have been caught in impInlineInitVars. If inlining is not prevented
+        // but a cast is necessary, we similarly expect it to have been inserted then.
+        // So here we may have argument type mismatches that are benign, for instance
+        // passing a TYP_SHORT local (eg. normalized-on-load) as a TYP_INT arg.
+        // The exception is when the inlining means we should start tracking the argument.
+        if (argInfo.argIsUsed || ((lclTyp == TYP_BYREF) && (op1->TypeGet() != TYP_BYREF)))
         {
             assert(op1->gtOper == GT_LCL_VAR);
             assert(lclNum == op1->AsLclVar()->gtLclILoffs);
 
-            var_types newTyp = lclTyp;
-
-            if (!lvaTable[op1->AsLclVarCommon()->GetLclNum()].lvNormalizeOnLoad())
-            {
-                newTyp = genActualType(lclTyp);
-            }
-
             // Create a new lcl var node - remember the argument lclNum
-            op1 = gtNewLclvNode(op1->AsLclVarCommon()->GetLclNum(), newTyp DEBUGARG(op1->AsLclVar()->gtLclILoffs));
+            op1 = impCreateLocalNode(argLclNum DEBUGARG(op1->AsLclVar()->gtLclILoffs));
+            // Start tracking things as a byref if the parameter is a byref.
+            if (lclTyp == TYP_BYREF)
+            {
+                op1->gtType = TYP_BYREF;
+            }
         }
     }
     else if (argInfo.argIsByRefToStructLocal && !argInfo.argHasStargOp)

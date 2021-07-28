@@ -281,7 +281,7 @@ namespace System.Buffers
                 // Try to push on to the associated stack first.  If that fails,
                 // round-robin through the other stacks.
                 LockedStack[] stacks = _perCoreStacks;
-                int index = Thread.GetCurrentProcessorId() % stacks.Length;
+                int index = (int)((uint)Thread.GetCurrentProcessorId() % (uint)s_lockedStackCount); // mod by constant in tier 1
                 for (int i = 0; i < stacks.Length; i++)
                 {
                     if (stacks[index].TryPush(array)) return true;
@@ -298,7 +298,7 @@ namespace System.Buffers
                 // Try to pop from the associated stack first.  If that fails, round-robin through the other stacks.
                 T[]? arr;
                 LockedStack[] stacks = _perCoreStacks;
-                int index = Thread.GetCurrentProcessorId() % s_lockedStackCount; // when ProcessorCount is a power of two, the JIT can optimize this in tier 1
+                int index = (int)((uint)Thread.GetCurrentProcessorId() % (uint)s_lockedStackCount); // mod by constant in tier 1
                 for (int i = 0; i < stacks.Length; i++)
                 {
                     if ((arr = stacks[index].TryPop()) is not null) return arr;

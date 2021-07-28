@@ -12,7 +12,8 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { CultureInfo.CurrentCulture.Name, CultureInfo.CurrentCulture.EnglishName };
 
-            if (PlatformDetection.IsNotUsingLimitedCultures)
+            // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
+            if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsAndroid)
             {
                 yield return new object[] { "en-US", "English (United States)" };
                 yield return new object[] { "fr-FR", "French (France)" };
@@ -27,7 +28,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(EnglishName_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36672", TestPlatforms.Android)]
         public void EnglishName(string name, string expected)
         {
             CultureInfo myTestCulture = new CultureInfo(name);
