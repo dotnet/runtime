@@ -94,7 +94,7 @@ public:
                 return hr;
 #else
             *ppvObject = nullptr;
-            return E_NOINTERFACE;
+            return E_NOTIMPL;
 #endif                
         }
 
