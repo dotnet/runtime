@@ -2668,7 +2668,8 @@ void LinearScan::validateIntervals()
             }
             Interval* interval = getIntervalForLocalVar(i);
 
-            bool defined = false;
+            bool     defined      = false;
+            unsigned lastUseBBNum = 0;
             JITDUMP("-----------------\n");
             for (RefPosition* ref = interval->firstRefPosition; ref != nullptr; ref = ref->nextRefPosition)
             {
@@ -2677,13 +2678,17 @@ void LinearScan::validateIntervals()
                     ref->dump(this);
                 }
                 RefType refType = ref->refType;
-                if (!defined && RefTypeIsUse(refType))
+                if (!defined && RefTypeIsUse(refType) && (lastUseBBNum == ref->bbNum))
                 {
-                    if (compiler->info.compMethodName != nullptr)
+                    if (!ref->lastUse)
                     {
-                        JITDUMP("%s: ", compiler->info.compMethodName);
+                        if (compiler->info.compMethodName != nullptr)
+                        {
+                            JITDUMP("%s: ", compiler->info.compMethodName);
+                        }
+                        JITDUMP("LocalVar V%02u: undefined use at %u\n", interval->varNum, ref->nodeLocation);
+                        assert(false);
                     }
-                    JITDUMP("LocalVar V%02u: undefined use at %u\n", interval->varNum, ref->nodeLocation);
                 }
 
                 // For single-def intervals, the only the first refposition should be a RefTypeDef
@@ -2696,7 +2701,8 @@ void LinearScan::validateIntervals()
                 // so we can't really check the lastUse flag
                 if (ref->lastUse)
                 {
-                    defined = false;
+                    defined      = false;
+                    lastUseBBNum = ref->bbNum;
                 }
                 if (RefTypeIsDef(refType))
                 {
