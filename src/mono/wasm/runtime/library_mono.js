@@ -1089,7 +1089,11 @@ var MonoSupportLib = {
 		//      "auto" (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
 		//    diagnostic_tracing: (optional) enables diagnostic log messages during startup
 		mono_load_runtime_and_bcl_args: function (args) {
-			globalThis.MONO = MONO;
+			// the debugger on node needs MONO to be exposed to access the debugger commands.
+			// This is since dotnet.js is modularized and MONO is not imported by debugger
+			if (ENVIRONMENT_IS_NODE && /--debug|--inspect/.test(process.execArgv.join(' '))){
+				globalThis.MONO = MONO;
+			}
 			try {
 				return MONO._load_assets_and_runtime (args);
 			} catch (exc) {
@@ -1349,15 +1353,8 @@ var MonoSupportLib = {
 			return MONO.loaded_assets;
 		},
 
-		// FIXME: improve
 		_base64_to_uint8: function (base64String) {
-			const byteCharacters = atob (base64String);
-			const byteNumbers = new Array(byteCharacters.length);
-			for (let i = 0; i < byteCharacters.length; i++) {
-				byteNumbers[i] = byteCharacters.charCodeAt(i);
-			}
-
-			return new Uint8Array (byteNumbers);
+			return new Uint8Array(Buffer.from(base64String,"base64"));
 		},
 
 		mono_wasm_load_data_archive: function (data, prefix) {
