@@ -842,7 +842,7 @@ class Derived : Base
 }
 ```
 
-Covariant return methods can only be described through MethodImpl records, and are only be applicable to methods on non-interface reference types. In addition the covariant override is only applicable for overriding methods also defined on a non-interface reference type.
+Covariant return methods can only be described through MethodImpl records, and are only applicable to methods on non-interface reference types. In addition the covariant override is only applicable for overriding methods also defined on a non-interface reference type.
 
 See [Implementation Design](../features/covariant-return-methods.md) for notes from the implementation in CoreCLR.
 
@@ -861,11 +861,12 @@ Add a new signature type relation.
 
 ### II.10.3.2 The .override directive (page 147)
 
-Edit the first paragraph "The .override directive specifies that a virtual method shall be implemented (overridden), in this type, by a virtual method with a different name, but with a *covariant-return-compatible-with* signature (§I.8.7.1). This directive can be used to provide an implementation for a virtual method inherited from a base class, or a virtual method specified in an interface implemented by this type and all other. If not used to provide an implementation for a virtual method inherited from a base class the signature must be the identical."
+Edit the first paragraph "The .override directive specifies that a virtual method shall be implemented (overridden), in this type, by a virtual method with a different name, but with a *covariant-return-compatible-with* signature (§I.8.7.1). This directive can be used to provide an implementation for a virtual method inherited from a base class, or a virtual method specified in an interface implemented by this type and all other. If not used to provide an implementation for a virtual method inherited from a base class the signature must be identical."
 
 ### II.10.3.4 Impact of overrides on derived classes
 Add a third bullet
-"- If a virtual method is overridden via a .override directive and virtual method in parent class was overriden with a .override directive where the method body of that second .override directive is decorated with `System.Runtime.CompilerServices.PreserveBaseOverridesAttribute` then the virtual method override shall apply to the method body of the second .override directive as well.
+"- If a virtual method is overridden via an .override directive or if a derived class provides an implentation and that virtual method in parent class was overriden with an .override directive where the method body of that second .override directive is decorated with `System.Runtime.CompilerServices.PreserveBaseOverridesAttribute` then the implementation of the virtual method shall be the implementation of the method body of the second .override directive as well. If this results in the implementor of the virtual method in the parent class not having a signature which is *covariant-return-compatible-with* the virtual method in the parent class, the program is not valid.
+
 
 ```
 .class A {
@@ -885,19 +886,25 @@ Add a third bullet
     ...
   }
 }
+.class D extends C
+{
+  .method virtual DerivedRetTypeNotDerivedFromMoreDerivedRetType VirtualFunction() {
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.PreserveBaseOverridesAttribute::.ctor() = ( 01 00 00 00 ) 
+    .override A.VirtualFuncion 
+    ...
+  }
+}
 ```
 For this example, the behavior of calls on objects of various types is presented in the following table:
-| Type of object | Method Invocation | Method Called |
-| ---  | --- | --- |
-| A | A::VirtualFunction() | A::VirtualFunction |
-| B | A::VirtualFunction() | B::VirtualFunction |
-| B | B::VirtualFunction() | B::VirtualFunction |
-| C | A::VirtualFunction() | C::VirtualFunction |
-| C | B::VirtualFunction() | C::VirtualFunction |
-| C | C::VirtualFunction() | C::VirtualFunction |
+| Type of object | Method Invocation | Method Called | Notes |
+| ---  | --- | --- | --- |
+| A | A::VirtualFunction() | A::VirtualFunction | |
+| B | A::VirtualFunction() | B::VirtualFunction | |
+| B | B::VirtualFunction() | B::VirtualFunction | |
+| C | A::VirtualFunction() | C::VirtualFunction | |
+| C | B::VirtualFunction() | C::VirtualFunction | |
+| C | C::VirtualFunction() | C::VirtualFunction | |
+| D | B::VirtualFunction() | ERROR | A program containing type D is not valid, as B::VirtualFunction would be implemented by D::VirtualFunction which is not *covariant-return-compatible-with* (§I.8.7.1) B::VirtualFunction |
 "
-
-Add a new paragraph "When rules above result in the implementation of virtual method not satisfying the requirement that the signature of the implementor of a virtual method is not *covariant-return-compatible-with* (§I.8.7.1) the program is not considered well formed. As an example, this can happen if a virtual method is overriden with a .override directive(A) paired with a `PreserveBaseOverridesAttribute` with a *covariant-return-compatible-with* signature. and then the initial virtual method is subsequently overridden with a method which is *covariant-return-compatible-with* the initial virtual method, but not with the method body associated with .override directive(A)."
-
 ### II.22.27
 Edit rule 12 to specify that "The method signature defined by *MethodBody* shall match those defined by *MethodDeclaration* exactly if *MethodDeclaration* defines a method on an interface or be *covariant-return-compatible-with* (§I.8.7.1) if *MethodDeclaration* represents a method on a class."
