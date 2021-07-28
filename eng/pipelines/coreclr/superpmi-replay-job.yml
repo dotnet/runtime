@@ -1,0 +1,34 @@
+parameters:
+  buildConfig: ''                 # required -- build configuration
+  archType: ''                    # required -- targeting CPU architecture
+  osGroup: ''                     # required -- operating system for the job
+  osSubgroup: ''                  # optional -- operating system subgroup
+  dependsOn: ''                   # optional -- dependencies of the job
+
+jobs:
+- template: xplat-pipeline-job.yml
+  parameters:
+    dependsOn: ${{ parameters.dependsOn }}
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+
+    variables:
+    - name: PythonScript
+      value: 'py -3'
+    - name: PipScript
+      value: 'py -3 -m pip'
+    - name: Core_Root_Dir
+      value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
+    - name: SpmiCollectionLocation
+      value: '$(Build.SourcesDirectory)\artifacts\spmi\'
+
+    steps:
+    - script: |
+        mkdir -p $(SpmiLogsLocation)
+      displayName: Create directory for SPMI collection
+
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py download -spmi_location $(SpmiCollectionLocation)
+      displayName: Download superpmi collection
+        
