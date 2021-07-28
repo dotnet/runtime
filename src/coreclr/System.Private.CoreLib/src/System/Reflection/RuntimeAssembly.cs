@@ -390,7 +390,6 @@ namespace System.Reflection
                                   FileAccess.Read, FileShare.Read, FileStream.DefaultBufferSize, false);
         }
 
-
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override FileStream[] GetFiles(bool getResourceModules)
         {
