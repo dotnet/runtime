@@ -133,7 +133,7 @@ namespace BasicEventSourceTests
             {
                 EventWrittenEventArgs ea = elEvent.Data;
                 Assert.NotNull(ea);
-                Assert.Equal(Guid.Empty, ea.ActivityId);
+                Assert.Equal(EventSource.CurrentThreadActivityId, ea.ActivityId);
                 Assert.Equal(EventChannel.None, ea.Channel);
                 Assert.Equal(0, ea.EventId);
                 Assert.Equal("EventSourceMessage", ea.EventName);
@@ -144,7 +144,7 @@ namespace BasicEventSourceTests
                 Assert.NotNull(ea.Payload);
                 Assert.NotNull(ea.PayloadNames);
                 Assert.Equal(ea.PayloadNames.Count, ea.Payload.Count);
-                Assert.Equal(Guid.Empty, ea.RelatedActivityId);
+                // Assert.Equal(Guid.Empty, ea.RelatedActivityId); // There may be ambient activities during testing which prevent predictable values
                 Assert.Equal(EventTags.None, ea.Tags);
                 Assert.Equal(EventTask.None, ea.Task);
                 Assert.InRange(ea.TimeStamp, DateTime.MinValue, DateTime.MaxValue);
