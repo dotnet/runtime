@@ -92,7 +92,8 @@ namespace System.Globalization.Tests
             // ICU matches weightless characters at 1 index prior to the end of the string
             yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0, 0 };
             yield return new object[] { s_invariantCompare, "", "\u200d", -1, 0, CompareOptions.None, 0, 0 };
-            yield return new object[] { s_invariantCompare, "hello", "\u200d", 4, 5, CompareOptions.IgnoreCase, useNls ? 5 : 4 , 0};
+            yield return new object[] { s_invariantCompare, "hello", "\u200d", 4, 5, CompareOptions.IgnoreCase, 5, 0};
+            yield return new object[] { s_invariantCompare, "hello", "\0", 4, 5, CompareOptions.None, useNls ? -1 : 5, 0};
 
             // Ignore symbols
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 10, 11, CompareOptions.IgnoreSymbols, 5, 6 };
