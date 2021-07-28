@@ -295,6 +295,8 @@
 
   <PropertyGroup>
     <BeforePack>IncludeAnalyzersInPackage;$(BeforePack)</BeforePack>
+    <BuildAnalyzerReferences>$(BuildProjectReferences)</BuildAnalyzerReferences>
+    <BuildAnalyzerReferences Condition="'$(BuildingInsideVisualStudio)' == 'true'">false</BuildAnalyzerReferences>
   </PropertyGroup>
 
   <ItemGroup>
@@ -303,7 +305,7 @@
          so we don't apply TargetFramework filters nor do we pass in TargetFramework.
          When BuildProjectReferences=false we make sure to set BuildReference=false to make
          sure not to try to call GetTargetPath in the outerbuild of the analyzer project. -->
-    <ProjectReference Include="@(AnalyzerReference)" SkipGetTargetFrameworkProperties="true" UndefineProperties="TargetFramework" ReferenceOutputAssembly="false" PrivateAssets="all" BuildReference="$(BuildProjectReferences)"  />
+    <ProjectReference Include="@(AnalyzerReference)" SkipGetTargetFrameworkProperties="true" UndefineProperties="TargetFramework" ReferenceOutputAssembly="false" PrivateAssets="all" BuildReference="$(BuildAnalyzerReferences)"  />
   </ItemGroup>
 
   <Target Name="IncludeAnalyzersInPackage" Condition="'@(AnalyzerReference)' != ''">
