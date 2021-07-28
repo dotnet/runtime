@@ -243,22 +243,22 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1581")]
         [ConditionalTheory(nameof(SupportsAlpn))]
         [InlineData(SettingId.MaxFrameSize, 16383)]
         [InlineData(SettingId.MaxFrameSize, 162777216)]
         [InlineData(SettingId.InitialWindowSize, 0x80000000)]
-        public async Task Http2_ServerSendsInvalidSettingsValue_Error(SettingId settingId, uint value)
+        public void Http2_ServerSendsInvalidSettingsValue_Error(SettingId settingId, uint value)
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
             {
-                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
-
-                // Send invalid initial SETTINGS value
-                Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = settingId, Value = value });
-
-                await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
+                Http2LoopbackConnection connection = null;
+                Parallel.Invoke(
+                    () => Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(server.Address)),
+                    () => {
+                        // Send invalid initial SETTINGS value
+                        connection = server.EstablishConnectionAsync(new SettingsEntry { SettingId = settingId, Value = value }).Result;
+                    });
 
                 connection.Dispose();
             }
