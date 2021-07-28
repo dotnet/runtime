@@ -191,7 +191,6 @@
     <Compile Include="Compiler\PettisHansenSort\CallGraphNode.cs" />
     <Compile Include="Compiler\PettisHansenSort\DisjointSetForest.cs" />
     <Compile Include="Compiler\PettisHansenSort\PettisHansen.cs" />
-    <Compile Include="Compiler\PettisHansenSort\PriorityQueue.cs" />
     <Compile Include="IBC\IBCDataModel.cs" />
     <Compile Include="IBC\IBCDataReader.cs" />
     <Compile Include="IBC\MIbcProfileParser.cs" />

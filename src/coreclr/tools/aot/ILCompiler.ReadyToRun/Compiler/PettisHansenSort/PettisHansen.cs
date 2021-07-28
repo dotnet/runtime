@@ -56,25 +56,28 @@ namespace ILCompiler.PettisHansenSort
             }
 #endif
 
-            var queue = new PriorityQueue<QueueEdge>();
+            var queue = new PriorityQueue<(int from, int to), long>();
             for (int i = 0; i < phEdges.Length; i++)
             {
                 foreach (var kvp in phEdges[i])
                 {
                     if (kvp.Key > i)
-                        queue.Add(new QueueEdge(i, kvp.Key, kvp.Value));
+                    {
+                        queue.Enqueue((i, kvp.Key), -kvp.Value); // PriorityQueue gives lowest prio first
+                    }
                 }
             }
 
             while (queue.Count > 0)
             {
-                QueueEdge qe = queue.ExtractMax();
-                int from = unionFind.FindSet(qe.From);
-                int to = unionFind.FindSet(qe.To);
+                (int from, int to) = queue.Dequeue();
+                from = unionFind.FindSet(from);
+                to = unionFind.FindSet(to);
+
                 if (from == to)
                     continue; // Already unioned through a different path
 
-                Debug.Assert(phEdges[from][to] == qe.Weight && phEdges[to][from] == qe.Weight);
+                Debug.Assert(phEdges[from][to] == phEdges[to][from]);
 
                 bool unioned = unionFind.Union(from, to);
                 Trace.Assert(unioned);
@@ -134,7 +137,8 @@ namespace ILCompiler.PettisHansenSort
                     AddEdge(winner, edge.Key, edge.Value);
                     AddEdge(edge.Key, winner, edge.Value);
                     // Add a new entry in the queue as the edge could have changed weight from coalescing.
-                    queue.Add(new QueueEdge(winner, edge.Key, phEdges[winner][edge.Key]));
+                    long weight = phEdges[winner][edge.Key];
+                    queue.Enqueue((winner, edge.Key), -weight); // Priority queue gives lowest priority first
                 }
 
                 phEdges[loser].Clear();
@@ -157,22 +161,6 @@ namespace ILCompiler.PettisHansenSort
                 .Where(n => n.Count != 0)
                 .OrderByDescending(n => n.Count)
                 .ToList();
-        }
-
-        private struct QueueEdge : IComparable<QueueEdge>
-        {
-            public int From;
-            public int To;
-            public long Weight;
-
-            public QueueEdge(int from, int to, long weight)
-            {
-                From = from;
-                To = to;
-                Weight = weight;
-            }
-
-            public int CompareTo(QueueEdge other) => Weight.CompareTo(other.Weight);
         }
     }
 }
