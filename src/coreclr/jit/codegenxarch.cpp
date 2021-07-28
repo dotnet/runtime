@@ -2834,18 +2834,18 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                 regSize = 8;
             }
 #endif
-            if (bytesWritten + regSize > size && bytesWritten < size)
+            if (bytesWritten + regSize > size)
             {
+                if (size - bytesWritten <= XMM_REGSIZE_BYTES)
+                {
+                    regSize = XMM_REGSIZE_BYTES;
+                }
+
                 // Shift dstOffset back to use full SIMD move
                 unsigned shiftBack = regSize - (size - bytesWritten);
                 assert(shiftBack <= regSize);
                 bytesWritten -= shiftBack;
                 dstOffset -= shiftBack;
-            }
-            else if (bytesWritten + regSize > size)
-            {
-                assert(srcIntReg != REG_NA);
-                break;
             }
 
             if (dstLclNum != BAD_VAR_NUM)
@@ -2865,13 +2865,32 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         size -= bytesWritten;
     }
 
-    // Fill the remainder using normal stores.
-    for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += regSize)
+    unsigned regSize = REGSIZE_BYTES;
+
+    while (regSize > size)
     {
-        while (regSize > size)
+        regSize /= 2;
+    }
+
+    // Fill the remainder using normal stores.
+    for (; size > regSize; size -= regSize, dstOffset += regSize)
+    {
+        if (dstLclNum != BAD_VAR_NUM)
         {
-            regSize /= 2;
+            emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstLclNum, dstOffset);
         }
+        else
+        {
+            emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), srcIntReg, dstAddrBaseReg, dstAddrIndexReg,
+                                dstAddrIndexScale, dstOffset);
+        }
+    }
+
+    if (size > 0)
+    {
+        unsigned shiftBack = regSize - size;
+        assert(shiftBack <= regSize);
+        dstOffset -= shiftBack;
 
         if (dstLclNum != BAD_VAR_NUM)
         {
