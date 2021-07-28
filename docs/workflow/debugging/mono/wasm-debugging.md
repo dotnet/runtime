@@ -133,3 +133,31 @@ These kinds of faults usually happen because the mono runtime has some helper fu
 never meant to be reached, i.e. `no_gsharedvt_in_wrapper` or `no_llvmonly_interp_method_pointer`.
 These functions are used as placeholders for function pointers with different signatures, so
 if they do end up being called due to a bug, a signature mismatch error happens.
+
+# Running the Debugger
+## Prequisites
+1. Add the following properties to the project's csproj file:
+
+```MSBuild
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType> 
+    <WasmDebugLevel>1</WasmDebugLevel>
+```
+2. Build the mono browser configuration as Debug via `build mono+libs -os Browser -configuration Debug `
+    - If building for NodeJS also include the `/p:ForNode=true` switch.
+3. Publish the project to generate the `AppBundle` folder.
+    -  Browser: `dotnet publish /p:TargetArchitecture=wasm /p:TargetOS=Browser src/mono/sample/wasm/browser/Wasm.Browser.Sample.csproj -c Debug`.
+    -  NodeJS: `dotnet publish /p:TargetArchitecture=wasm /p:TargetOS=Browser src/mono/sample/wasm/console/Wasm.Console.Sample.csproj -c Debug /p:ForNode=true`.
+
+## Debugging Browser
+*Note that this only works in Chrome.*
+1. Install the `dotnet-serve` utlity via `./dotnet tool install -g dotnet-serve `
+2. Publish to generate the `AppBundle` folder via `dotnet publish /p:TargetArchitecture=wasm /p:TargetOS=Browser src/mono/sample/wasm/browser/Wasm.Browser.Sample.csproj -c Debug`
+3. Start the application via `dotnet serve -o -d:src/mono/sample/wasm/browser/bin/Debug/AppBundle -p:8000 `
+
+## Debugging NodeJS
+1. start node via `node --inspect runtime.js --run Wasm.Console.Sample.dll`.
+    - Note that you can use `--inspect-brk` ineatd of `--inspect` to automatically break on the first line of js.
+2. start chrome via `chrome --remote-debugging-port=9222 http://localhost:8000/ `.
+3. start BrowserDebugHost via `cd src\mono\wasm\debugger\BrowserDebugHost` and `dotnet run`.
+4. go to `http://localhost:9222/devtools/inspector.html?ws=127.0.0.1:[PORT THAT BROWSERDEBUGHOST PRINTED]/devtools/node/[EVERYTHING AFTER THE LAST SLASH THAT NODE PRINTED]` in the newly openned chrome instance.

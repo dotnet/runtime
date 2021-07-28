@@ -3,9 +3,6 @@
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>$(MonoProjectRoot)\wasm\runtime-test.js</WasmMainJSPath>
     <WasmGenerateRunScript>true</WasmGenerateRunScript>
-    <DebugSymbols>true</DebugSymbols> <!-- TODO REMOVE THESE -->
-    <DebugType>embedded</DebugType>  <!-- TODO REMOVE THESE -->
-    <WasmDebugLevel>1</WasmDebugLevel>  <!-- TODO REMOVE THESE -->
   </PropertyGroup>
 
   <PropertyGroup>
