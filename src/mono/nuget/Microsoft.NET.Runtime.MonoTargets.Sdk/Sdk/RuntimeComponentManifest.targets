@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <Error Condition="!Exists('$(_MonoRuntimeComponentManifestJsonFilePath)')"
-           Text="Unable to read the runtime components manifest as the path does not exist" />
+           Text="Unable to read the runtime components manifest as the path: $(_MonoRuntimeComponentManifestJsonFilePath) does not exist" />
 
     <MonoRuntimeComponentManifestReadTask JsonFilePath="$(_MonoRuntimeComponentManifestJsonFilePath)">
       <Output TaskParameter="_MonoRuntimeComponentSharedLibExt" ItemName="_MonoRuntimeComponentSharedLibExt" />
