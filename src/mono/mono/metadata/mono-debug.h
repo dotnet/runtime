@@ -10,6 +10,7 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/appdomain.h>
+#include <glib.h>
 
 MONO_BEGIN_DECLS
 
@@ -113,8 +114,15 @@ struct _MonoDebugSourceLocation {
 
 
 struct _MonoDebugInformationEnc {
-	MonoImage *image;
+	MonoPPDBFile *ppdb_file;
 	int idx;
+};
+
+struct _MonoPPDBFile {
+	MonoImage *image;
+	GHashTable *doc_hash;
+	GHashTable *method_hash;
+	gboolean is_embedded;
 };
 
 MONO_API mono_bool mono_debug_enabled (void);

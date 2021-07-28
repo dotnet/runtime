@@ -19,7 +19,9 @@
 #include "mono/utils/mono-lazy-init.h"
 #include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/mono-path.h"
+#include "mono/metadata/debug-internals.h"
 #include "mono/metadata/mono-debug.h"
+#include "mono/metadata/debug-mono-ppdb.h"
 
 
 #include <mono/component/hot_reload.h>
@@ -325,6 +327,8 @@ delta_info_init (MonoImage *image_dmeta, MonoImage *image_base, BaselineInfo *ba
 static void
 free_ppdb_entry (gpointer key, gpointer val, gpointer user_data)
 {
+	MonoDebugInformationEnc *value = (MonoDebugInformationEnc *) val;
+	mono_ppdb_close (value->ppdb_file);
 	g_free (val);
 }
 
@@ -1217,8 +1221,8 @@ hot_reload_get_method_debug_information (MonoImage *image_dppdb, int idx)
 			int token_index = mono_metadata_token_index (map_token);
 			if (token_index == idx)	{
 				MonoDebugInformationEnc *encDebugInfo = g_new0 (MonoDebugInformationEnc, 1);
-				encDebugInfo->idx = i;
-				encDebugInfo->image = image_dppdb;				
+				encDebugInfo->idx = i + 1;
+				encDebugInfo->ppdb_file = mono_create_ppdb_file (image_dppdb, FALSE);
 				return encDebugInfo;
 			}
 		}
