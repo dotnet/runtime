@@ -34,7 +34,7 @@ namespace Tracing.Tests
                     Thread.Sleep(1000);
 
                     // Ensure that we've seen some events.
-                    Assert.True("listener.EventCount > 0", listener.EventCount > 0);
+                    Assert.True("listener.EventCount > 0", listener.EventCount == 0);
                 }
 
                 // Generate some more GC events.
