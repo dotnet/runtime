@@ -3064,6 +3064,11 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         if (size > 0)
         {
+            if (size <= XMM_REGSIZE_BYTES)
+            {
+                regSize = XMM_REGSIZE_BYTES;
+            }
+
             // Copy the remainder by moving the last regSize bytes of the buffer
             unsigned shiftBack = regSize - size;
             assert(shiftBack <= regSize);
@@ -3098,13 +3103,44 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     if (size > 0)
     {
         regNumber tempReg = node->GetSingleTempReg(RBM_ALLINT);
+        unsigned  regSize = REGSIZE_BYTES;
 
-        for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += regSize, dstOffset += regSize)
+        while (regSize > size)
         {
-            while (regSize > size)
+            regSize /= 2;
+        }
+
+        for (; size > regSize; size -= regSize, srcOffset += regSize, dstOffset += regSize)
+        {
+            if (srcLclNum != BAD_VAR_NUM)
             {
-                regSize /= 2;
+                emit->emitIns_R_S(INS_mov, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
             }
+            else
+            {
+                emit->emitIns_R_ARX(INS_mov, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                                    srcAddrIndexScale, srcOffset);
+            }
+
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                emit->emitIns_S_R(INS_mov, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit->emitIns_ARX_R(INS_mov, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                                    dstAddrIndexScale, dstOffset);
+            }
+        }
+
+        if (size > 0)
+        {
+            // Copy the remainder by moving the last regSize bytes of the buffer
+            unsigned shiftBack = regSize - size;
+            assert(shiftBack <= regSize);
+
+            srcOffset -= shiftBack;
+            dstOffset -= shiftBack;
 
             if (srcLclNum != BAD_VAR_NUM)
             {
