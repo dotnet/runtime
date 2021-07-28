@@ -28,6 +28,8 @@ namespace Tracing.Tests
 
         static int Main(string[] args)
         {
+            throw new Exception("Hello");
+            
             if(!Initialize())
             {
                 return -1;
