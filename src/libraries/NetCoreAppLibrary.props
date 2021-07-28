@@ -145,6 +145,19 @@
       System.Xml.XPath;
       System.Xml.XPath.XDocument;
     </NetCoreAppLibrary>
+    <NetCoreAppLibraryPackage>
+      System.Collections.Immutable;
+      System.Diagnostics.DiagnosticSource;
+      System.Formats.Asn1;
+      System.Net.Http.Json;
+      System.Reflection.Metadata;
+      System.Runtime.CompilerServices.Unsafe;
+      System.Text.Encoding.CodePages;
+      System.Text.Encodings.Web;
+      System.Text.Json;
+      System.Threading.Channels;
+      System.Threading.Tasks.Dataflow;
+    </NetCoreAppLibraryPackage>
   </PropertyGroup>
   <!-- Make NetCoreAppLibrary available as an item. -->
   <ItemGroup>

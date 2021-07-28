@@ -49,6 +49,7 @@
     <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == '' and
                                 '$(IsReferenceAssembly)' == 'true' and
                                 $(NetCoreAppLibrary.Contains('$(AssemblyName);'))">true</IsNETCoreAppRef>
+    <IsNETCoreAppPackage Condition="$(NetCoreAppLibraryPackage.Contains('$(AssemblyName);'))">true</IsNETCoreAppPackage>
 
     <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
     <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
@@ -337,6 +338,14 @@
     </ItemGroup>
     <Error Condition="'%(_AnalyzerPackFile.TargetFramework)' != 'netstandard2.0'"
            Text="Analyzers must only target netstandard2.0 since they run in the compiler which targets netstandard2.0. The following files were found to target '%(_AnalyzerPackFile.TargetFramework)': @(_AnalyzerPackFile)" />
+  </Target>
+
+  <Target Name="EnsureNetCoreAppLibraryPackage" BeforeTargets="Pack">
+    <Error Condition="'$(IsNETCoreAppPackage)' != 'true' and '$(IsNETCoreAppSrc)' == 'true' and '$(IsPackable)' == 'true'"
+           Text="Please add $(AssemblyName) to the NetCoreAppLibraryPackage property." />
+           
+    <Error Condition="'$(IsNETCoreAppPackage)' == 'true' and '$(IsSourceProject)' == 'true' and ('$(IsNETCoreAppSrc)' != 'true' or '$(IsPackable)' != 'true')"
+           Text="Please remove $(AssemblyName) from the NetCoreAppLibraryPackage property." />
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)workloads-testing.targets" />
