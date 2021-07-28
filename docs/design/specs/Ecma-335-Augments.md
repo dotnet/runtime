@@ -842,7 +842,7 @@ class Derived : Base
 }
 ```
 
-Covariant return methods can only be described through MethodImpl records, and as are only be applicable to methods on reference types. Methods on interfaces and value types are not supported. In addition the covariant override is only applicable for overriding methods also defined on a reference type.
+Covariant return methods can only be described through MethodImpl records, and are only be applicable to methods on non-interface reference types. In addition the covariant override is only applicable for overriding methods also defined on a non-interface reference type.
 
 See [Implementation Design](../features/covariant-return-methods.md) for notes from the implementation in CoreCLR.
 
@@ -897,7 +897,7 @@ For this example, the behavior of calls on objects of various types is presented
 | C | C::VirtualFunction() | C::VirtualFunction |
 "
 
-Add a new paragraph "When a rules above result in the implementation of virtual method not satisfying the requirement that the signature of the implementor of a virtual method is not *covariant-return-compatible-with* (§I.8.7.1) the program is not considered well formed. As an example, this can happen if a virtual method is overriden with a .override directive(A) paired with a `PreserveBaseOverridesAttribute` with a *covariant-return-compatible-with* signature. and then the initial virtual method is subsequently overridden with a method which is *covariant-return-compatible-with* the initial virtual method, but not with the method body associated with .override directive(A)."
+Add a new paragraph "When rules above result in the implementation of virtual method not satisfying the requirement that the signature of the implementor of a virtual method is not *covariant-return-compatible-with* (§I.8.7.1) the program is not considered well formed. As an example, this can happen if a virtual method is overriden with a .override directive(A) paired with a `PreserveBaseOverridesAttribute` with a *covariant-return-compatible-with* signature. and then the initial virtual method is subsequently overridden with a method which is *covariant-return-compatible-with* the initial virtual method, but not with the method body associated with .override directive(A)."
 
 ### II.22.27
-Edit rule 12 to specify that "The method isgnature defined by *MethodBody* shall match those defined by *MethodDeclaration* exactly if *MethodDeclaration* defines a method on an interface or be covariant-return-compatible-with* (§I.8.7.1) if *MethodDeclaration* represents a method on a class."
+Edit rule 12 to specify that "The method signature defined by *MethodBody* shall match those defined by *MethodDeclaration* exactly if *MethodDeclaration* defines a method on an interface or be *covariant-return-compatible-with* (§I.8.7.1) if *MethodDeclaration* represents a method on a class."
