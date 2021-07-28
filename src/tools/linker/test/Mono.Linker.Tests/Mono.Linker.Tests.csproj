@@ -9,6 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Used in testcase to check the cecil package version. -->
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadata">
+      <_Parameter1>CecilPackageVersion</_Parameter1>
+      <_Parameter2>$(MonoCecilVersion)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Properties\" />
     <Folder Include="TestCasesRunner\" />
     <Folder Include="Extensions\" />

@@ -28,7 +28,7 @@
     <!-- This controls the version of the cecil package, or the version of cecil in the project graph
          when we build the cecil submodule. The reference assembly package will depend on this version of cecil.
          Keep this in sync with ProjectInfo.cs in the submodule. -->
-    <MonoCecilVersion>0.11.3</MonoCecilVersion>
+    <MonoCecilVersion>0.11.4</MonoCecilVersion>
     <UseVSTestRunner>true</UseVSTestRunner>
   </PropertyGroup>
 </Project>
