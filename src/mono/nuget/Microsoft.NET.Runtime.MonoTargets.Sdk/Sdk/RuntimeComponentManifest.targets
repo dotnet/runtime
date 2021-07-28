@@ -1,7 +1,7 @@
 <Project>
   <Target Name="_MonoReadAvailableComponentsManifest">
-    <Error Condition="'%(ResolvedFrameworkReference.Identity)' == 'Microsoft.NETCore.App' and '%(RuntimePackPath)' == '' and '$(_MonoRuntimeComponentManifestJsonFilePath)' == ''"
-           Text="Empty ResolveFrameworkReference.RuntimePackPath while trying to read runtime components manifest" />
+    <Error Condition="'%(ResolvedFrameworkReference.Identity)' == 'Microsoft.NETCore.App' and '%(ResolvedFrameworkReference.RuntimePackPath)' == '' and '$(_MonoRuntimeComponentManifestJsonFilePath)' == ''"
+           Text="Empty ResolveFrameworkReference.RuntimePackPath while trying to read runtime components manifest. ResolvedFrameworkReference available: @(ResolvedFrameworkReference -> '{ %(Identity), RuntimePackPath: %(RuntimePackPath) }')" />
 
     <PropertyGroup>
       <_MonoRuntimeComponentManifestJsonFilePath 
