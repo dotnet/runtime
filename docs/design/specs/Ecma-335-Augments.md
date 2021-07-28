@@ -908,3 +908,15 @@ For this example, the behavior of calls on objects of various types is presented
 "
 ### II.22.27
 Edit rule 12 to specify that "The method signature defined by *MethodBody* shall match those defined by *MethodDeclaration* exactly if *MethodDeclaration* defines a method on an interface or be *covariant-return-compatible-with* (§I.8.7.1) if *MethodDeclaration* represents a method on a class."
+
+### III.3.19, conv.ovf.to type.un (page 354)
+(Edit 1nd Description paragraph:)
+Convert the value on top of the stack to the type specified in the opcode, and leave that converted
+value on the top of the stack. If the value cannot be represented, an exception is thrown.
+
+(Edit 2nd Description paragraph:)
+
+Conversions from floating-point numbers to integral values truncate the number toward zero and used as-is ignoring .un suffix. The integral item
+on the top of the stack is reinterpreted as an unsigned value before the conversion.
+Note that integer values of less than 4 bytes are extended to int32 (not native int) on the
+evaluation stack.
