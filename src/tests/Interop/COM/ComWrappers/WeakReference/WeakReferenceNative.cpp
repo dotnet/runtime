@@ -124,9 +124,7 @@ namespace
             if (ppvObject == nullptr)
                hr = E_POINTER;
 
-            //IUnknown not checked due to ambiguous coversion from IWeakReferenceSource and IInspectable
-
-            if (riid == __uuidof(IWeakReferenceSource))
+            if (riid == __uuidof(IUnknown) || riid == __uuidof(IWeakReferenceSource))
             {
                 *ppvObject = static_cast<IWeakReferenceSource*>(this);
                 hr = S_OK;
