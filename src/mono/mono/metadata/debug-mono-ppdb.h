@@ -20,7 +20,7 @@
 MonoPPDBFile*
 mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size);
 
-void
+MONO_COMPONENT_API void
 mono_ppdb_close (MonoPPDBFile *ppdb_file);
 
 MonoDebugMethodInfo *
@@ -56,7 +56,7 @@ mono_ppdb_get_sourcelink (MonoDebugHandle *handle);
 gboolean 
 mono_ppdb_is_embedded (MonoPPDBFile *ppdb);
 
-MonoPPDBFile*
+MONO_COMPONENT_API MonoPPDBFile*
 mono_create_ppdb_file (MonoImage *ppdb_image, gboolean is_embedded_ppdb);
 
 #endif
