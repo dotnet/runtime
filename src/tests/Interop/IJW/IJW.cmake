@@ -27,10 +27,21 @@ if (CLR_CMAKE_HOST_WIN32)
     string(REPLACE "/GR-" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   endif()
 
-  execute_process(
-    COMMAND powershell -ExecutionPolicy ByPass -NoProfile "${CMAKE_CURRENT_LIST_DIR}/getRefPackFolder.ps1"
-    OUTPUT_VARIABLE CLR_SDK_REF_PACK
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(CLR_SDK_REF_PACK "")
+
+  if (CPP_CLI_LIVE_REF_ASSEMBLIES)
+    message("Using live-built ref assemblies for C++/CLI runtime tests.")
+    execute_process(
+        COMMAND powershell -ExecutionPolicy ByPass -NoProfile "${CMAKE_CURRENT_LIST_DIR}/getRefPackFolderFromArtifacts.ps1"
+        OUTPUT_VARIABLE CLR_SDK_REF_PACK
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+  else()
+    execute_process(
+        COMMAND powershell -ExecutionPolicy ByPass -NoProfile "${CMAKE_CURRENT_LIST_DIR}/getRefPackFolderFromSdk.ps1"
+        OUTPUT_VARIABLE CLR_SDK_REF_PACK
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+  endif()
+
 
   add_compile_options(/AI${CLR_SDK_REF_PACK})
 
