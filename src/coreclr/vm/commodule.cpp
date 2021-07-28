@@ -860,7 +860,7 @@ void QCALLTYPE COMModule::GetFullyQualifiedName(QCall::ModuleHandle pModule, QCa
         if (*fileName != 0) {
                 retString.Set(fileName);
         } else {
-            retString.Set(W("<Unknown>"));
+            retString.Set(W("<unknown>"));
         }
     }
     else

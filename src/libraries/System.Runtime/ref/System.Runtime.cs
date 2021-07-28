@@ -11869,13 +11869,13 @@ namespace System.Reflection
         protected Module() { }
         public virtual System.Reflection.Assembly Assembly { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData> CustomAttributes { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("Returns <Unknown> for modules with no file path")]
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("Returns <unknown> for modules with no file path")]
         public virtual string FullyQualifiedName { get { throw null; } }
         public virtual int MDStreamVersion { get { throw null; } }
         public virtual int MetadataToken { get { throw null; } }
         public System.ModuleHandle ModuleHandle { get { throw null; } }
         public virtual System.Guid ModuleVersionId { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("Returns <Unknown> for modules with no file path")]
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("Returns <unknown> for modules with no file path")]
         public virtual string Name { get { throw null; } }
         public virtual string ScopeName { get { throw null; } }
         public override bool Equals(object? o) { throw null; }

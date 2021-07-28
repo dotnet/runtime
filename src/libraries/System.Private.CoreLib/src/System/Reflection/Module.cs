@@ -14,7 +14,7 @@ namespace System.Reflection
 
         public virtual Assembly Assembly => throw NotImplemented.ByDesign;
 
-        internal const string UnknownStringMessageInRAF = "Returns <Unknown> for modules with no file path";
+        internal const string UnknownStringMessageInRAF = "Returns <unknown> for modules with no file path";
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public virtual string FullyQualifiedName => throw NotImplemented.ByDesign;
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
