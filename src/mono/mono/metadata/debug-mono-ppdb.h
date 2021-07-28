@@ -17,6 +17,21 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/mono-debug.h>
 
+typedef struct _MonoDebugInformationEnc		MonoDebugInformationEnc;
+
+
+struct _MonoPPDBFile {
+	MonoImage *image;
+	GHashTable *doc_hash;
+	GHashTable *method_hash;
+	gboolean is_embedded;
+};
+
+struct _MonoDebugInformationEnc {
+	MonoPPDBFile *ppdb_file;
+	int idx;
+};
+
 MonoPPDBFile*
 mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size);
 
