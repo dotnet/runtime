@@ -50,6 +50,12 @@ namespace System.IO.Strategies
                 // touch the file pointer location at all.  We will adjust it
                 // ourselves, but only in memory. This isn't threadsafe.
                 _filePosition += destination.Length;
+
+                // We know for sure that there is nothing to read, so we just return here and avoid a sys-call.
+                if (destination.IsEmpty && LengthCachingSupported)
+                {
+                    return ValueTask.FromResult(0);
+                }
             }
 
             (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncReadFile(_fileHandle, destination, positionBefore, cancellationToken);
