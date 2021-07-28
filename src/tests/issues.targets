@@ -270,6 +270,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe/*">
             <Issue>TraceEvent can't parse unaligned floats on arm32</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
+            <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm64 All OS -->
@@ -357,6 +360,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
             <Issue>Varargs supported on this platform</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
+            <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -575,6 +581,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i10/*">
             <Issue>https://github.com/dotnet/runtime/issues/12979</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
+            <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows arm64 specific excludes -->
@@ -704,6 +713,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
             <Issue>https://github.com/dotnet/runtime/issues/10001</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
+            <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -1151,6 +1163,9 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/doublinknoleak2/**">
+            <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/DoublinkList/dlcollect/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/FinalNStruct/nstructtun/**">

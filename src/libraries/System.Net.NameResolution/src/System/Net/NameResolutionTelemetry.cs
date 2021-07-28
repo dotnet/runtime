@@ -63,9 +63,10 @@ namespace System.Net
 
 
         [NonEvent]
-        public ValueStopwatch BeforeResolution(string hostNameOrAddress)
+        public ValueStopwatch BeforeResolution(object hostNameOrAddress)
         {
             Debug.Assert(hostNameOrAddress != null);
+            Debug.Assert(hostNameOrAddress is string || hostNameOrAddress is IPAddress);
 
             if (IsEnabled())
             {
@@ -74,28 +75,14 @@ namespace System.Net
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {
-                    ResolutionStart(hostNameOrAddress);
-                }
-
-                return ValueStopwatch.StartNew();
-            }
-
-            return default;
-        }
-
-        [NonEvent]
-        public ValueStopwatch BeforeResolution(IPAddress address)
-        {
-            Debug.Assert(address != null);
-
-            if (IsEnabled())
-            {
-                Interlocked.Increment(ref _lookupsRequested);
-                Interlocked.Increment(ref _currentLookups);
-
-                if (IsEnabled(EventLevel.Informational, EventKeywords.None))
-                {
-                    WriteEvent(ResolutionStartEventId, FormatIPAddressNullTerminated(address, stackalloc char[MaxIPFormattedLength]));
+                    if (hostNameOrAddress is string s)
+                    {
+                        ResolutionStart(s);
+                    }
+                    else
+                    {
+                        WriteEvent(ResolutionStartEventId, FormatIPAddressNullTerminated((IPAddress)hostNameOrAddress, stackalloc char[MaxIPFormattedLength]));
+                    }
                 }
 
                 return ValueStopwatch.StartNew();

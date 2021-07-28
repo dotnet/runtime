@@ -1515,6 +1515,7 @@ namespace Microsoft.Extensions.FileProviders
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56190", TestPlatforms.AnyUnix)]
         public async Task UsePollingFileWatcher_UseActivePolling_HasChanged(bool useWildcard)
         {
             // Arrange
@@ -1541,6 +1542,7 @@ namespace Microsoft.Extensions.FileProviders
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56190", TestPlatforms.AnyUnix)]
         public void UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeleted(bool useWildcard)
         {
             // Arrange

@@ -59,10 +59,6 @@
                                                   '$(DisableImplicitFrameworkReferences)' != 'true' and
                                                   '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                                   ('$(IsReferenceAssembly)' == 'true' or '$(IsSourceProject)' == 'true')">true</DisableImplicitAssemblyReferences>
-    
-    <!-- When we disable implicit assembly references disabling namespace imports is not handled by the SDK as this is our custom
-    way to disable assembly references for OOBs. -->
-    <DisableImplicitNamespaceImports Condition="'$(DisableImplicitAssemblyReferences)' == 'true'">true</DisableImplicitNamespaceImports>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />

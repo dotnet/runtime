@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
@@ -16,6 +17,7 @@ namespace System.Net.Quic.Tests
          where T : IQuicImplProviderFactory, new()
     {
         private static byte[] s_data = Encoding.UTF8.GetBytes("Hello world!");
+        public QuicStreamTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public async Task BasicTest()
@@ -55,6 +57,8 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task MultipleReadsAndWrites()
         {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(PassingTestTimeout);
             const int sendCount = 5;
             int expectedBytesCount = s_data.Length * sendCount;
             byte[] expected = new byte[expectedBytesCount];
@@ -69,7 +73,7 @@ namespace System.Net.Quic.Tests
                 iterations: 100,
                 serverFunction: async connection =>
                 {
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await using QuicStream stream = await connection.AcceptStreamAsync(cts.Token);
 
                     byte[] buffer = new byte[expectedBytesCount];
                     int bytesRead = await ReadAll(stream, buffer);
@@ -80,9 +84,9 @@ namespace System.Net.Quic.Tests
                     {
                         await stream.WriteAsync(s_data);
                     }
-                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
+                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true, cts.Token);
 
-                    await stream.ShutdownCompleted();
+                    await stream.ShutdownCompleted(cts.Token);
                 },
                 clientFunction: async connection =>
                 {
@@ -90,16 +94,16 @@ namespace System.Net.Quic.Tests
 
                     for (int i = 0; i < sendCount; i++)
                     {
-                        await stream.WriteAsync(s_data);
+                        await stream.WriteAsync(s_data, cts.Token);
                     }
-                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
+                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true, cts.Token);
 
                     byte[] buffer = new byte[expectedBytesCount];
                     int bytesRead = await ReadAll(stream, buffer);
                     Assert.Equal(expectedBytesCount, bytesRead);
                     Assert.Equal(expected, buffer);
 
-                    await stream.ShutdownCompleted();
+                    await stream.ShutdownCompleted(cts.Token);
                 }
             );
         }
@@ -677,8 +681,14 @@ namespace System.Net.Quic.Tests
         }
     }
 
-    public sealed class QuicStreamTests_MockProvider : QuicStreamTests<MockProviderFactory> { }
+    public sealed class QuicStreamTests_MockProvider : QuicStreamTests<MockProviderFactory>
+    {
+        public QuicStreamTests_MockProvider(ITestOutputHelper output) : base(output) { }
+    }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
-    public sealed class QuicStreamTests_MsQuicProvider : QuicStreamTests<MsQuicProviderFactory> { }
+    public sealed class QuicStreamTests_MsQuicProvider : QuicStreamTests<MsQuicProviderFactory>
+    {
+        public QuicStreamTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }
+    }
 }
