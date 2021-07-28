@@ -156,11 +156,30 @@ namespace ILCompiler.PettisHansenSort
 #endif
             }
 
-            return
+            // Order by component size as we return. Note that we rely on the
+            // stability of the sort here to keep trivial components of only a
+            // single method (meaning that we did not see any call edges) in
+            // the same order as it was in the input (i.e. increasing indices,
+            // asserted below).
+            List<List<int>> components =
                 phNodes
                 .Where(n => n.Count != 0)
                 .OrderByDescending(n => n.Count)
                 .ToList();
+
+            // We also expect to see a permutation.
+            Debug.Assert(components.SelectMany(l => l).OrderBy(i => i).SequenceEqual(Enumerable.Range(0, graph.Count)));
+
+#if DEBUG
+            int prev = -1;
+            foreach (List<int> component in components.SkipWhile(l => l.Count != 1))
+            {
+                Debug.Assert(component[0] > prev);
+                prev = component[0];
+            }
+#endif
+
+            return components;
         }
     }
 }
