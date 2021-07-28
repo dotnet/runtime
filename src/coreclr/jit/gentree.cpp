@@ -13101,7 +13101,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
                 newNode->gtFlags |= (sideEffList->gtFlags & GTF_ALL_EFFECT);
             }
             newNode->gtFlags |= (tree->gtFlags & (GTF_RELOP_QMARK | GTF_RELOP_JMP_USED));
-            printf("%s\n", info.compMethodName);
             return newNode;
         }
     }
