@@ -33,6 +33,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
         public bool         DisableParallelCompile { get; set; }
         public string       Arguments              { get; set; } = string.Empty;
         public string?      WorkingDirectory       { get; set; }
+        public string       OutputMessageImportance{ get; set; } = "Low";
 
         [Output]
         public ITaskItem[]? OutputFiles            { get; private set; }
@@ -51,6 +52,12 @@ namespace Microsoft.WebAssembly.Build.Tasks
             if (badItem != null)
             {
                 Log.LogError($"Source file {badItem.ItemSpec} is missing ObjectFile metadata.");
+                return false;
+            }
+
+            if (!Enum.TryParse(OutputMessageImportance, ignoreCase: true, out MessageImportance messageImportance))
+            {
+                Log.LogError($"Invalid value for OutputMessageImportance={OutputMessageImportance}. Valid values: {string.Join(", ", Enum.GetNames(typeof(MessageImportance)))}");
                 return false;
             }
 
@@ -112,7 +119,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
                 try
                 {
-                    string command = $"emcc {Arguments} -c -o {objFile} {srcFile}";
+                    string command = $"emcc {Arguments} -c -o \"{objFile}\" \"{srcFile}\"";
 
                     // Log the command in a compact format which can be copy pasted
                     StringBuilder envStr = new StringBuilder(string.Empty);
@@ -120,12 +127,12 @@ namespace Microsoft.WebAssembly.Build.Tasks
                         envStr.Append($"{key}={envVarsDict[key]} ");
                     Log.LogMessage(MessageImportance.Low, $"Exec: {envStr}{command}");
                     (int exitCode, string output) = Utils.RunShellCommand(
+                                                            Log,
                                                             command,
                                                             envVarsDict,
                                                             workingDir: Environment.CurrentDirectory,
-                                                            logger: Log,
                                                             logStdErrAsMessage: true,
-                                                            debugMessageImportance: MessageImportance.High,
+                                                            debugMessageImportance: messageImportance,
                                                             label: Path.GetFileName(srcFile));
 
                     if (exitCode != 0)

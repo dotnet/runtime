@@ -486,6 +486,9 @@ jobs:
           gcSimulatorTests: true
           scenarios:
           - normal
+        ${{ if in(parameters.testGroup, 'gc-standalone') }}:
+          scenarios:
+          - gcstandalone
         ${{ if in(parameters.testGroup, 'jitelthookenabled') }}:
           scenarios:
           - jitelthookenabled

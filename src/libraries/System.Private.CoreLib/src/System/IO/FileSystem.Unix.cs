@@ -380,7 +380,7 @@ namespace System.IO
                 // On Windows we end up with ERROR_INVALID_NAME, which is
                 // "The filename, directory name, or volume label syntax is incorrect."
                 //
-                // This surfaces as a IOException, if we let it go beyond here it would
+                // This surfaces as an IOException, if we let it go beyond here it would
                 // give DirectoryNotFound.
 
                 if (Path.EndsInDirectorySeparator(sourceFullPath))
@@ -405,7 +405,7 @@ namespace System.IO
                     case Interop.Error.EACCES: // match Win32 exception
                         throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), errorInfo.RawErrno);
                     default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, sourceFullPath, isDirectory: true);
+                        throw Interop.GetExceptionForIoErrno(errorInfo, isDirectory: true);
                 }
             }
         }
