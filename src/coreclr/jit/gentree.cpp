@@ -13100,6 +13100,8 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
                 newNode = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffList, gtNewIconNode(oper == GT_EQ ? 1 : 0));
                 newNode->gtFlags |= (sideEffList->gtFlags & GTF_ALL_EFFECT);
             }
+            newNode->gtFlags |= (tree->gtFlags & (GTF_RELOP_QMARK | GTF_RELOP_JMP_USED));
+            printf("%s\n", info.compMethodName);
             return newNode;
         }
     }
