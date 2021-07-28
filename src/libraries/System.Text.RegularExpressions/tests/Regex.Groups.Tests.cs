@@ -582,7 +582,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"([a-z]*)([\w])", "cat", RegexOptions.IgnoreCase, new string[] { "cat", "ca", "t" } };
             yield return new object[] { null, @"^([a-z]*)([\w])$", "cat", RegexOptions.IgnoreCase, new string[] { "cat", "ca", "t" } };
 
-            // Backtracking with multiple (.*) groups -- important ASP.NET scnario
+            // Backtracking with multiple (.*) groups -- important ASP.NET scenario
             yield return new object[] { null, @"(.*)/(.*).aspx", "/.aspx", RegexOptions.None, new string[] { "/.aspx", string.Empty, string.Empty } };
             yield return new object[] { null, @"(.*)/(.*).aspx", "homepage.aspx", RegexOptions.None, new string[] { string.Empty } };
             yield return new object[] { null, @"(.*)/(.*).aspx", "/homepage.aspx", RegexOptions.None, new string[] { "/homepage.aspx", string.Empty, "homepage" } };
