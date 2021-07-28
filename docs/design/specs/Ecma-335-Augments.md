@@ -855,9 +855,7 @@ https://www.ecma-international.org/publications-and-standards/standards/ecma-335
 Add a new signature type relation.
 
 "A method signature type T is *covariant-return-compatible-with* with a method signature type U if and only if:
-1. The calling conventions of T and U shall match exactly, ignoring the distinction 
-between static and instance methods (i.e., the this parameter, if any, is not treated 
-specially).
+1. The calling conventions of T and U shall match exactly, ignoring the distinction between static and instance methods (i.e., the this parameter, if any, is not treated specially).
 2. For each parameter type of P of T, and corresponding type Q of U, P is identical Q.
 3. For the return type P of T, and return type Q of U, Q is *compatible-with* P and is a *reference type* OR Q is identical to P.
 
