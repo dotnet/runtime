@@ -4,9 +4,10 @@ parameters:
   osGroup: ''                     # required -- operating system for the job
   osSubgroup: ''                  # optional -- operating system subgroup
   dependsOn: ''                   # optional -- dependencies of the job
+  runJobTemplate: '/eng/pipelines/coreclr/templates/build-jit-job.yml'
 
 jobs:
-- template: xplat-pipeline-job.yml
+- template: ${{ parameters.runJobTemplate }}
   parameters:
     dependsOn: ${{ parameters.dependsOn }}
     buildConfig: ${{ parameters.buildConfig }}
@@ -25,6 +26,8 @@ jobs:
       value: '$(Build.SourcesDirectory)\artifacts\spmi\'
 
     steps:
+    # Extra steps that will be passed to the superpmi template and run before sending the job to helix (all of which is done in the template)
+
     - script: |
         mkdir -p $(SpmiLogsLocation)
       displayName: Create directory for SPMI collection
