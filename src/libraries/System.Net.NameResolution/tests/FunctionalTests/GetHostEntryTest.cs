@@ -26,23 +26,19 @@ namespace System.Net.NameResolution.Tests
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/27622")]
             PlatformDetection.IsNotArmNorArm64Process &&
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/1488", TestPlatforms.OSX)]
-            PlatformDetection.IsNotOSX &&
+            !PlatformDetection.IsOSX &&
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
             !PlatformDetection.IsiOS && !PlatformDetection.IstvOS && !PlatformDetection.IsMacCatalyst &&
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/55271")]
-            !PlatformDetection.IsSLES;
+            !PlatformDetection.IsSLES &&
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/56295")]
+            !PlatformDetection.IsUbuntu1604 && !PlatformDetection.IsDebian9;
 
         [ConditionalTheory(nameof(GetHostEntryWorks))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntry_HostString_Ok(string hostName)
         {
-            if (PlatformDetection.IsSLES)
-            {
-                // See https://github.com/dotnet/runtime/issues/55271
-                throw new SkipTestException("SLES Tests environment is not configured for this test to work.");
-            }
-
             try
             {
                 await TestGetHostEntryAsync(() => Task.FromResult(Dns.GetHostEntry(hostName)));
@@ -91,12 +87,6 @@ namespace System.Net.NameResolution.Tests
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName)    
         {
-            if (PlatformDetection.IsSLES)
-            {
-                // See https://github.com/dotnet/runtime/issues/55271
-                throw new SkipTestException("SLES Tests environment is not configured for this test to work.");
-            }
-
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(hostName));
         }
 

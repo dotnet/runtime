@@ -115,7 +115,7 @@ namespace System.IO.Strategies
             }
         }
 
-        private bool LengthCachingSupported => OperatingSystem.IsWindows() && _share <= FileShare.Read && !_exposedHandle;
+        protected bool LengthCachingSupported => OperatingSystem.IsWindows() && _share <= FileShare.Read && !_exposedHandle;
 
         /// <summary>Gets or sets the position within the current stream</summary>
         public sealed override long Position

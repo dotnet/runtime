@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -946,6 +947,57 @@ namespace System.Threading.ThreadPools.Tests
                         null,
                         new object[] { name, value });
                 }
+            }).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public static void CooperativeBlockingWithProcessingThreadsAndGoalThreadsAndAddWorkerRaceTest()
+        {
+            // Avoid contaminating the main process' environment
+            RemoteExecutor.Invoke(() =>
+            {
+                try
+                {
+                    // The test is run affinitized to at most 2 processors for more frequent repros. The actual test process below
+                    // will inherit the affinity.
+                    Process testParentProcess = Process.GetCurrentProcess();
+                    testParentProcess.ProcessorAffinity = (nint)testParentProcess.ProcessorAffinity & 0x3;
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    // Processor affinity is not supported on some platforms, try to run the test anyway
+                }
+
+                RemoteExecutor.Invoke(() =>
+                {
+                    const uint TestDurationMs = 4000;
+
+                    var done = new ManualResetEvent(false);
+                    int startTimeMs = Environment.TickCount;
+                    Action<object> completingTask = data => ((TaskCompletionSource<int>)data).SetResult(0);
+                    Action repeatingTask = null;
+                    repeatingTask = () =>
+                    {
+                        if ((uint)(Environment.TickCount - startTimeMs) >= TestDurationMs)
+                        {
+                            done.Set();
+                            return;
+                        }
+
+                        Task.Run(repeatingTask);
+
+                        var tcs = new TaskCompletionSource<int>();
+                        Task.Factory.StartNew(completingTask, tcs);
+                        tcs.Task.Wait();
+                    };
+
+                    for (int i = 0; i < Environment.ProcessorCount; ++i)
+                    {
+                        Task.Run(repeatingTask);
+                    }
+
+                    done.CheckedWait();
+                }).Dispose();
             }).Dispose();
         }
 

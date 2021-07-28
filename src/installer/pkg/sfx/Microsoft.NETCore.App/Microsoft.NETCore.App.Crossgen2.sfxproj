@@ -34,7 +34,7 @@
     <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)" TargetPath="tools/" />
     <Reference Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
     <Reference Include="$(CoreCLRCrossgen2Dir)ILCompiler*.dll" />
-    <Reference Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
+    <Reference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
     <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)jitinterface_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/" />
     <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_win_x86_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />
     <NativeRuntimeAsset Include="$(CoreCLRCrossgen2Dir)$(LibPrefix)clrjit_win_arm_$(TargetArchitecture)$(LibSuffix)" TargetPath="tools/"  />

@@ -23,6 +23,7 @@
 
   <PropertyGroup>
     <_NetCoreAppToolCurrent>net6.0</_NetCoreAppToolCurrent>
+    <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeSrcDir)' != '' and '$(WasmBuildSupportDir)' == ''">

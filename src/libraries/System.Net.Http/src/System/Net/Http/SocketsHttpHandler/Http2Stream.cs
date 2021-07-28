@@ -244,9 +244,8 @@ namespace System.Net.Http
                         Debug.Assert(!sendReset);
 
                         _requestCompletionState = StreamCompletionState.Failed;
-                        Complete();
-
                         SendReset();
+                        Complete();
                     }
 
                     if (signalWaiter)
@@ -270,11 +269,12 @@ namespace System.Net.Http
                         Debug.Assert(_requestCompletionState == StreamCompletionState.InProgress, $"Request already completed with state={_requestCompletionState}");
                         _requestCompletionState = StreamCompletionState.Completed;
 
+                        bool complete = false;
                         if (_responseCompletionState != StreamCompletionState.InProgress)
                         {
                             // Note, we can reach this point if the response stream failed but cancellation didn't propagate before we finished.
                             sendReset = _responseCompletionState == StreamCompletionState.Failed;
-                            Complete();
+                            complete = true;
                         }
 
                         if (sendReset)
@@ -286,6 +286,11 @@ namespace System.Net.Http
                             // Send EndStream asynchronously and without cancellation.
                             // If this fails, it means that the connection is aborting and we will be reset.
                             _connection.LogExceptions(_connection.SendEndStreamAsync(StreamId));
+                        }
+
+                        if (complete)
+                        {
+                            Complete();
                         }
                     }
                 }
@@ -392,6 +397,7 @@ namespace System.Net.Http
                     if (sendReset)
                     {
                         SendReset();
+                        Complete();
                     }
                 }
 
@@ -414,7 +420,6 @@ namespace System.Net.Http
                     if (_requestCompletionState != StreamCompletionState.InProgress)
                     {
                         sendReset = true;
-                        Complete();
                     }
                 }
 

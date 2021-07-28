@@ -568,8 +568,9 @@ namespace System.IO
                 // the return value is the required buffer size, in TCHARs. This value includes the size of the terminating null character.
                 if (result > buffer.Length)
                 {
-                    ArrayPool<char>.Shared.Return(buffer);
+                    char[] toReturn = buffer;
                     buffer = ArrayPool<char>.Shared.Rent((int)result);
+                    ArrayPool<char>.Shared.Return(toReturn);
 
                     result = GetFinalPathNameByHandle(handle, buffer);
                 }

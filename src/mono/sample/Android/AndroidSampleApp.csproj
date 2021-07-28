@@ -21,7 +21,6 @@
     <PropertyGroup>
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
-      <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
       <ApkDir>$(PublishDir)apk\</ApkDir>
     </PropertyGroup>
 
@@ -98,16 +97,7 @@
     <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
     <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
 
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) kill-server"/>
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) start-server"/>
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) logcat -c" ContinueOnError="WarnAndContinue" />
-    <Message Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Importance="High" Text="Uninstalling apk (ignore errors if any):"/>
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) uninstall net.dot.HelloAndroid" ContinueOnError="WarnAndContinue" />
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) install $(ApkDir)/bin/HelloAndroid.apk" />
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(RunActivity)' != 'true' and '$(ArchiveTests)' != 'true'"
-          Command="$(AdbTool) shell am instrument -e env:MONO_LOG_LEVEL warning -e env:MONO_LOG_MASK all -w net.dot.HelloAndroid/net.dot.MonoRunner"/>
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(RunActivity)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) shell am start -n net.dot.HelloAndroid/net.dot.MainActivity" />
-    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="$(AdbTool) logcat -d" />
+    <Exec Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'" Command="dotnet xharness android test --package-name=net.dot.HelloAndroid --instrumentation=net.dot.MonoRunner --app=$(ApkDir)/bin/HelloAndroid.apk --expected-exit-code=42 --output-directory=$(ApkDir)/log" />
   </Target>
 
   <ItemGroup>

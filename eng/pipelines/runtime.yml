@@ -900,25 +900,6 @@ jobs:
     - Linux_x64
 
 #
-# Crossgen-comparison jobs
-# Only when CoreCLR is changed
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/crossgen-comparison-job.yml
-    buildConfig: checked
-    platforms:
-    - Linux_arm
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      liveLibrariesBuildConfig: Release
-      condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-
-#
 # CoreCLR Test builds using live libraries release build
 # Only when CoreCLR is changed
 #

@@ -132,6 +132,7 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ValueTypedMember.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
+    <Compile Include="Serialization\DomTests.cs" />
     <Compile Include="Serialization\DynamicTests.cs" />
     <Compile Include="Serialization\EnumConverterTests.cs" />
     <Compile Include="Serialization\EnumTests.cs" />
@@ -141,6 +142,7 @@
     <Compile Include="Serialization\InvalidTypeTests.cs" />
     <Compile Include="Serialization\JsonDocumentTests.cs" />
     <Compile Include="Serialization\JsonElementTests.cs" />
+    <Compile Include="Serialization\JsonSerializerApiValidation.cs" />
     <Compile Include="Serialization\JsonSerializerWrapperForStream.cs" />
     <Compile Include="Serialization\JsonSerializerWrapperForString.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.cs" />
