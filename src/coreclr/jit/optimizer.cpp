@@ -6117,7 +6117,7 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
     // we know of. Update the map.
     //
     JITDUMP("      ==> Updating loop memory dependence of [%06u] to " FMT_LP "\n", dspTreeID(tree), updateLoopNum);
-    map->Set(tree, optLoopTable[updateLoopNum].lpEntry);
+    map->Set(tree, optLoopTable[updateLoopNum].lpEntry, NodeToLoopMemoryBlockMap::Overwrite);
 }
 
 //------------------------------------------------------------------------
