@@ -54,7 +54,7 @@ namespace DebuggerTests
                    {
                        length = TNumber(len),
                        // __proto__ = TArray (type, 0) // Is this one really required?
-                   }, $"obj_own", num_fields: 1);
+                   }, $"obj_own");
 
                });
         }
@@ -97,7 +97,9 @@ namespace DebuggerTests
                         ownProperties = false
                     }), token);
 
-                    if (!is_js)
+                    if (is_js)
+                       await CheckProps(obj_accessors.Value["result"], new { __proto__ = TIgnore() }, "obj_accessors");
+                    else
                         AssertEqual(0, obj_accessors.Value["result"]?.Count(), "obj_accessors-count");
 
                     // isOwn = true, accessorPropertiesOnly = false
@@ -158,7 +160,7 @@ namespace DebuggerTests
                    await CheckProps(obj_own.Value["result"], new
                    {
                        length = TNumber(ret_len),
-                   }, $"obj_own", num_fields: 1);
+                   }, $"obj_own");
                });
         }
 
@@ -360,7 +362,7 @@ namespace DebuggerTests
                {
                    a_obj = TObject("Object"),
                    b_arr = TArray("Array", 2)
-               }, "obj_own", num_fields: 2);
+               }, "obj_own");
            });
 
         [Theory]
