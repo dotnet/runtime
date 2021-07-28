@@ -969,7 +969,12 @@ namespace System.Globalization
                     // If its neutral use the language name
                     if (IsNeutralCulture)
                     {
-                        englishDisplayName = EnglishLanguageName;
+                        englishDisplayName = GetLocaleInfoCore(LocaleStringData.EnglishDisplayName);
+                        if (string.IsNullOrEmpty(englishDisplayName))
+                        {
+                            englishDisplayName = EnglishLanguageName;
+                        }
+
                         // differentiate the legacy display names
                         switch (_sName)
                         {
@@ -1026,7 +1031,12 @@ namespace System.Globalization
                     // If its neutral use the language name
                     if (IsNeutralCulture)
                     {
-                        nativeDisplayName = NativeLanguageName;
+                        nativeDisplayName = GetLocaleInfoCore(LocaleStringData.NativeDisplayName);
+                        if (string.IsNullOrEmpty(nativeDisplayName))
+                        {
+                            nativeDisplayName = NativeLanguageName;
+                        }
+
                         // differentiate the legacy display names
                         switch (_sName)
                         {

@@ -514,17 +514,16 @@ namespace System.ComponentModel.DataAnnotations
         private static ICollection<KeyValuePair<ValidationContext, object?>> GetPropertyValues(object instance,
             ValidationContext validationContext)
         {
-            var properties = instance.GetType().GetRuntimeProperties()
-                                .Where(p => ValidationAttributeStore.IsPublic(p) && !p.GetIndexParameters().Any());
-            var items = new List<KeyValuePair<ValidationContext, object?>>(properties.Count());
-            foreach (var property in properties)
+            var properties = TypeDescriptor.GetProperties(instance);
+            var items = new List<KeyValuePair<ValidationContext, object?>>(properties.Count);
+            foreach (PropertyDescriptor property in properties)
             {
                 var context = CreateValidationContext(instance, validationContext);
                 context.MemberName = property.Name;
 
                 if (_store.GetPropertyValidationAttributes(context).Any())
                 {
-                    items.Add(new KeyValuePair<ValidationContext, object?>(context, property.GetValue(instance, null)));
+                    items.Add(new KeyValuePair<ValidationContext, object?>(context, property.GetValue(instance)));
                 }
             }
 
