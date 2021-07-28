@@ -12,11 +12,11 @@ namespace Microsoft.Extensions.Options
     /// Implementation of <see cref="IOptions{TOptions}"/> and <see cref="IOptionsSnapshot{TOptions}"/>.
     /// </summary>
     /// <typeparam name="TOptions">Options type.</typeparam>
-    internal class OptionsSnapshot<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] TOptions> :
+    internal sealed class OptionsSnapshot<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] TOptions> :
         IOptionsSnapshot<TOptions>
         where TOptions : class
     {
-        private readonly IOptionsMonitor<TOptions> _factory;
+        private readonly IOptionsMonitor<TOptions> _optionsMonitor;
 
         private volatile ConcurrentDictionary<string, TOptions> _cache;
         private volatile TOptions _unnamedOptionsValue;
@@ -24,10 +24,10 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Initializes a new instance with the specified options configurations.
         /// </summary>
-        /// <param name="factory">The factory to use to create options.</param>
-        public OptionsSnapshot(IOptionsMonitor<TOptions> factory)
+        /// <param name="optionsMonitor">The options monitor to use to provide options.</param>
+        public OptionsSnapshot(IOptionsMonitor<TOptions> optionsMonitor)
         {
-            _factory = factory;
+            _optionsMonitor = optionsMonitor;
         }
 
         /// <summary>
@@ -47,17 +47,17 @@ namespace Microsoft.Extensions.Options
                     return value;
                 }
 
-                return _unnamedOptionsValue = _factory.Get(Options.DefaultName);
+                return _unnamedOptionsValue = _optionsMonitor.Get(Options.DefaultName);
             }
 
             var cache = _cache ?? Interlocked.CompareExchange(ref _cache, new(concurrencyLevel: 1, capacity: 5, StringComparer.Ordinal), null) ?? _cache;
 
 #if NETSTANDARD2_1
-            TOptions options = cache.GetOrAdd(name, static (name, factory) => factory.Get(name), _factory);
+            TOptions options = cache.GetOrAdd(name, static (name, optionsMonitor) => optionsMonitor.Get(name), _optionsMonitor);
 #else
             if (!cache.TryGetValue(name, out TOptions options))
             {
-                options = cache.GetOrAdd(name, _factory.Get(name));
+                options = cache.GetOrAdd(name, _optionsMonitor.Get(name));
             }
 #endif
             return options;

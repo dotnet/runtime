@@ -168,6 +168,7 @@ namespace Microsoft.Extensions.Options.Tests
             {
                 var options2 = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Value;
                 Assert.NotEqual(options, options2);
+                Assert.Equal(4, TestConfigure.ConfigureCount);
                 var namedOne2 = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Get("1");
                 Assert.NotEqual(namedOne, namedOne2);
                 Assert.Equal(4, TestConfigure.ConfigureCount);
