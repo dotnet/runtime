@@ -439,9 +439,9 @@ mono_ppdb_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)
 }
 
 MonoDebugSourceLocation *
-mono_ppdb_lookup_location_enc (MonoImage *image, int idx, uint32_t offset)
+mono_ppdb_lookup_location_enc (MonoPPDBFile *ppdb_file, int idx, uint32_t offset)
 {
-	return mono_ppdb_lookup_location_internal (image, idx, offset, NULL);
+	return mono_ppdb_lookup_location_internal (ppdb_file->image, idx, offset, ppdb_file);
 }
 
 MonoImage *
