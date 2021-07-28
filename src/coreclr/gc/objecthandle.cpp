@@ -1379,9 +1379,9 @@ void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
     uint32_t types[] =
     {
         HNDTYPE_WEAK_SHORT
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
         , HNDTYPE_WEAK_NATIVE_COM
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
     };
     uint32_t flags = (((ScanContext*) lp1)->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
 

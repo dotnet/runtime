@@ -229,12 +229,12 @@ namespace ComWrappersTests
                 {
                     ValidateNonComWrappers();
 
-                    ComWrappers.RegisterForTrackerSupport(TestComWrappers.TrackerSupportInstance);
-                    ValidateGlobalInstanceTrackerSupport();
-
                     ComWrappers.RegisterForMarshalling(TestComWrappers.MarshallingInstance);
                     ValidateGlobalInstanceMarshalling();
                 }
+
+                ComWrappers.RegisterForTrackerSupport(TestComWrappers.TrackerSupportInstance);
+                ValidateGlobalInstanceTrackerSupport();
 
                 ValidateLocalInstance();
             }
