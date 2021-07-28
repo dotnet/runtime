@@ -739,7 +739,7 @@ namespace DebuggerTests
                        objectId = id,
                    });
 
-                   res = await GetPropertiesAndCheckAccessors(get_prop_req,  7);
+                   res = await GetPropertiesAndCheckAccessors(get_prop_req, 7);
                    Assert.True(res.Value["result"].Any(jt => jt["name"]?.Value<string>() == "StringField"), "StringField should be returned for `accessorPropertiesOnly=false`");
                });
 
