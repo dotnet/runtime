@@ -16,7 +16,7 @@ namespace System.Reflection.TypeLoading
     {
         private readonly string _fullyQualifiedName;
 
-        internal const string FullyQualifiedNameForModulesLoadedFromByteArrays = "<unknown>";
+        internal const string FullyQualifiedNameForModulesLoadedFromByteArrays = "<Unknown>";
 
         internal RoModule(string fullyQualifiedName)
             : base()
