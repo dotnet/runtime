@@ -75,7 +75,7 @@ namespace Sample
             byte[] dil_data = System.IO.File.ReadAllBytes(dil_name);
             byte[] dpdb_data = null; // TODO also use the dpdb data
 
-            System.Reflection.Metadata.AssemblyExtensions.ApplyUpdate(assm, dmeta_data, dil_data, dpdb_data);
+            System.Reflection.Metadata.MetadataUpdater.ApplyUpdate(assm, dmeta_data, dil_data, dpdb_data);
         }
     }
 }
