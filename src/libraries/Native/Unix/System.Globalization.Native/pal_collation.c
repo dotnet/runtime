@@ -842,7 +842,7 @@ int32_t GlobalizationNative_LastIndexOf(
     // if the search was successful, we'll try to get the matched string length.
     if (result != USEARCH_DONE)
     {
-        int32_t matchLength;
+        int32_t matchLength = -1;
 
         if (pMatchedLength != NULL)
         {
