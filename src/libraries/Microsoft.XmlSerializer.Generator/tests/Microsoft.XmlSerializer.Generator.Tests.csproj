@@ -1,16 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);XMLSERIALIZERGENERATORTESTS</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <SkipTestsOnPlatform Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'FreeBSD' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'wasm'">true</SkipTestsOnPlatform>
-    <SkipTestsOnPlatform>true</SkipTestsOnPlatform>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <GeneratorRuntimeConfig>$(MSBuildThisFileDirectory)..\pkg\build\dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json</GeneratorRuntimeConfig>
-    <GeneratorCommand>"$(DotNetTool)"</GeneratorCommand>
-    <GeneratorCommand Condition="'$(OS)' == 'Windows_NT'">set DOTNET_MULTILEVEL_LOOKUP=0 &amp; $(GeneratorCommand)</GeneratorCommand>
-    <GeneratorCommand Condition="'$(OS)' != 'Windows_NT'">export DOTNET_MULTILEVEL_LOOKUP=0 &amp;&amp; $(GeneratorCommand)</GeneratorCommand>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(SkipTestsOnPlatform)' != 'true'">
@@ -21,6 +13,9 @@
 
   <ItemGroup>
     <Compile Include="AlwaysPassTest.cs" />
+    <None Include="Expected.XmlSerializers.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <Content Include="$(GeneratorRuntimeConfig)">
       <!-- Rename it to match the Generator application name -->
       <Link>dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json</Link>
@@ -40,14 +35,15 @@
       <SerializerName>SerializableAssembly.XmlSerializers</SerializerName>
     </PropertyGroup>
     <Message Text="Running Serialization Tool" Importance="normal" />
-    <Exec Command="$(GeneratorCommand) $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)SerializableAssembly.dll --force --quiet" />
-    <Warning Condition="Exists('$(OutputPath)$(SerializerName).cs') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).cs" />
     <Copy SourceFiles="$(OutputPath)$(SerializerName).cs" DestinationFiles="$(OutputPath)LKG.$(SerializerName).cs" />
-    <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true'" OutputAssembly="$(OutputPath)$(SerializerName).dll" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" DebugType="$(DebugType)" Sources="$(OutputPath)$(SerializerName).cs" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" DisabledWarnings="$(NoWarn), 219" UseSharedCompilation="true" />
+    <Csc Condition="Exists('$(OutputPath)Expected.XmlSerializers.cs') == 'true'" OutputAssembly="$(OutputPath)$(SerializerName).dll" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" DebugType="$(DebugType)" Sources="$(OutputPath)Expected.XmlSerializers.cs" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" DisabledWarnings="$(NoWarn), 219" UseSharedCompilation="true" />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).dll') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).dll" />
     <ItemGroup>
       <!-- Include the Serializer in ReferenceCopyLocalPaths so that it will be binplaced -->
       <ReferenceCopyLocalPaths Include="$(OutputPath)$(SerializerName).dll" />
     </ItemGroup>
   </Target>
+  <ItemGroup>
+    <AdditionalFiles Remove="C:\Users\smolloy\.nuget\packages\microsoft.dotnet.codeanalysis\6.0.0-beta.21366.1\build\..\content\PinvokeAnalyzer_Win32Apis.txt" />
+  </ItemGroup>
 </Project>
