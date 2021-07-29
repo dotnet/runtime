@@ -194,6 +194,14 @@ Normally, we don't download if the target directory exists. This forces download
 target directory already exists.
 """
 
+download_raw_help = """\
+If specified 'raw', then mch files will not be decompressed.
+"""
+
+download_all_help = """\
+If specified, it will override the target_arch/target_os and download mch files for all arch/OS.
+"""
+
 merge_mch_pattern_help = """\
 A pattern to describing files to merge, passed through directly to `mcs -merge`.
 Acceptable patterns include `*.mch`, `file*.mch`, and `c:\\my\\directory\\*.mch`.
@@ -337,6 +345,8 @@ download_parser.add_argument("-filter", nargs='+', help=filter_help)
 download_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 download_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 download_parser.add_argument("--force_download", action="store_true", help=force_download_help)
+download_parser.add_argument("--download_raw", action="store_true", help=download_raw_help)
+download_parser.add_argument("--download_all", action="store_true", help=download_all_help)
 download_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help=replay_mch_files_help)
 download_parser.add_argument("-private_store", action="append", help=private_store_help)
 
@@ -2645,7 +2655,7 @@ def download_mch_from_azure(coreclr_args, target_dir):
         list containing the local path of files downloaded
     """
 
-    blob_filter_string = "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
+    blob_filter_string =  "{}/".format(coreclr_args.jit_ee_version).lower() if coreclr_args.download_all else "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
 
     # Determine if a URL in Azure Storage should be allowed. The path looks like:
     #   jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
@@ -2664,13 +2674,14 @@ def download_mch_from_azure(coreclr_args, target_dir):
     blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
     urls = [blob_url_prefix + path for path in paths]
 
-    return download_files(urls, target_dir)
+    return download_files(urls, target_dir, uncompress=not coreclr_args.download_raw)
 
 
-def download_files(paths, target_dir, verbose=True, fail_if_not_found=True):
+def download_files(paths, target_dir, uncompress=True, verbose=True, fail_if_not_found=True):
     """ Download a set of files, specified as URLs or paths (such as Windows UNC paths),
         to a target directory. If a file is a .ZIP file, then uncompress the file and
-        copy all its contents to the target directory.
+        copy all its contents to the target directory. If skipUncompress is specified, then
+        simply copy the .ZIP file to the target directory without uncompressing.
 
     Args:
         paths (list): the URLs and paths to download
@@ -2725,13 +2736,17 @@ def download_files(paths, target_dir, verbose=True, fail_if_not_found=True):
                             logging.info("Download: %s -> %s", item_path, download_path)
                         shutil.copy2(item_path, download_path)
 
-                if verbose:
-                    logging.info("Uncompress %s", download_path)
-                with zipfile.ZipFile(download_path, "r") as file_handle:
-                    file_handle.extractall(temp_location)
+                if uncompress:
+                    if verbose:
+                        logging.info("Uncompress %s", download_path)
+                    with zipfile.ZipFile(download_path, "r") as file_handle:
+                        file_handle.extractall(temp_location)
 
                 # Copy everything that was extracted to the target directory.
-                items = [ os.path.join(temp_location, item) for item in os.listdir(temp_location) if not item.endswith(".zip") ]
+                if uncompress:
+                    items = [ os.path.join(temp_location, item) for item in os.listdir(temp_location) if not item.endswith(".zip") ]
+                else:
+                    items = [ os.path.join(temp_location, item) for item in os.listdir(temp_location) if item.endswith(".zip") ]
                 for item in items:
                     target_path = os.path.join(target_dir, os.path.basename(item))
                     if verbose:
@@ -3773,6 +3788,16 @@ def setup_args(args):
                             "force_download",
                             lambda unused: True,
                             "Unable to set force_download")
+
+        coreclr_args.verify(args,
+                            "download_all",
+                            lambda unused: True,
+                            "Unable to set download_all")
+
+        coreclr_args.verify(args,
+                            "download_raw",
+                            lambda unused: True,
+                            "Unable to set download_raw")
 
         coreclr_args.verify(args,
                             "filter",
