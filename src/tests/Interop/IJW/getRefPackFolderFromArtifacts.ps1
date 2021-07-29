@@ -10,4 +10,12 @@ $versionPropsFile = "$repoRoot/eng/Versions.props"
 $majorVersion = Select-Xml -Path $versionPropsFile -XPath "/Project/PropertyGroup/MajorVersion" | %{$_.Node.InnerText}
 $minorVersion = Select-Xml -Path $versionPropsFile -XPath "/Project/PropertyGroup/MinorVersion" | %{$_.Node.InnerText}
 
-echo "$repoRoot/artifacts/bin/ref/net$majorVersion.$minorVersion"
+$refPackPath = "$repoRoot/artifacts/bin/ref/net$majorVersion.$minorVersion"
+
+if (-not (Test-Path $refPackPath))
+{
+    Write-Error "Reference assemblies not found in the artifacts folder. Did you build the libs.ref subset? Did the repo layout change?"
+    return 1
+}
+
+Write-Output $refPackPath

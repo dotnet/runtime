@@ -17,4 +17,12 @@ $sdkBundledVersionsFile = "$dotnetRoot/sdk/$dotnetSdkVersion/Microsoft.NETCoreSd
 $refPackVersion = Select-Xml -Path $sdkBundledVersionsFile -XPath "/Project/PropertyGroup/BundledNETCoreAppPackageVersion" | %{$_.Node.InnerText}
 $refPackTfmVersion = Select-Xml -Path $sdkBundledVersionsFile -XPath "/Project/PropertyGroup/BundledNETCoreAppTargetFrameworkVersion" | %{$_.Node.InnerText}
 
-echo "$dotnetRoot/packs/Microsoft.NETCore.App.Ref/$refPackVersion/ref/net$refPackTfmVersion"
+$refPackPath = "$dotnetRoot/packs/Microsoft.NETCore.App.Ref/$refPackVersion/ref/net$refPackTfmVersion"
+
+if (-not (Test-Path $refPackPath))
+{
+    Write-Error "Reference assemblies not found in the SDK folder. Did the SDK layout change? Did the SDK change how it describes the bundled runtime version?"
+    return 1
+}
+
+Write-Output $refPackPath
