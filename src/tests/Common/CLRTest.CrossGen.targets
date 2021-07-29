@@ -21,6 +21,9 @@ WARNING:   When setting properties based on their current state (for example:
   <PropertyGroup>
     <BashScriptSnippetGen>$(BashScriptSnippetGen);GetCrossgenBashScript</BashScriptSnippetGen>
     <BatchScriptSnippetGen>$(BatchScriptSnippetGen);GetCrossgenBatchScript</BatchScriptSnippetGen>
+
+    <!-- Crossgen2 testing is incompatible with the ilasm/ildasm round trip testing. -->
+    <IlasmRoundTripIncompatible Condition="'$(AlwaysUseCrossGen2)' == 'true'">true</IlasmRoundTripIncompatible>
   </PropertyGroup>
 
   <!--
@@ -62,6 +65,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         cp $CORE_ROOT/lib*.so $CORE_ROOT/lib*.dylib $(scriptPath)
       else
         cp *.dll IL-CG2/
+        rm IL-CG2/composite-r2r.dll
       fi
 
       ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
@@ -185,6 +189,7 @@ if defined RunCrossGen2 (
 
     mkdir IL-CG2
     copy *.dll IL-CG2\
+    del IL-CG2\composite-r2r.dll
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
