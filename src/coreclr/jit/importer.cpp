@@ -7552,14 +7552,18 @@ GenTree* Compiler::impImportStaticReadOnlyField(void* fldAddr, var_types lclTyp)
                 static_assert_no_msg(sizeof(unsigned __int8) == sizeof(bool));
                 static_assert_no_msg(sizeof(unsigned __int8) == sizeof(signed char));
                 static_assert_no_msg(sizeof(unsigned __int8) == sizeof(unsigned char));
-                *(unsigned __int8*)p_aligned_data = *((unsigned __int8*)fldAddr);
+                // No alignment necessary for byte.
                 break;
 
             case TYP_SHORT:
             case TYP_USHORT:
                 static_assert_no_msg(sizeof(unsigned __int16) == sizeof(short));
                 static_assert_no_msg(sizeof(unsigned __int16) == sizeof(unsigned short));
-                *(unsigned __int16*)p_aligned_data = GET_UNALIGNED_16(fldAddr);
+                if ((size_t)fldAddr % sizeof(unsigned __int16) != 0)
+                {
+                    *(unsigned __int16*)p_aligned_data = GET_UNALIGNED_16(fldAddr);
+                    fldAddr                            = p_aligned_data;
+                }
                 break;
 
             case TYP_INT:
@@ -7568,23 +7572,29 @@ GenTree* Compiler::impImportStaticReadOnlyField(void* fldAddr, var_types lclTyp)
                 static_assert_no_msg(sizeof(unsigned __int32) == sizeof(int));
                 static_assert_no_msg(sizeof(unsigned __int32) == sizeof(unsigned int));
                 static_assert_no_msg(sizeof(unsigned __int32) == sizeof(float));
-                *(unsigned __int32*)p_aligned_data = GET_UNALIGNED_32(fldAddr);
+                if ((size_t)fldAddr % sizeof(unsigned __int32) != 0)
+                {
+                    *(unsigned __int32*)p_aligned_data = GET_UNALIGNED_32(fldAddr);
+                    fldAddr                            = p_aligned_data;
+                }
                 break;
 
             case TYP_LONG:
             case TYP_ULONG:
             case TYP_DOUBLE:
-                static_assert_no_msg(sizeof(unsigned __int64) == sizeof(unsigned __int64));
+                static_assert_no_msg(sizeof(unsigned __int64) == sizeof(__int64));
                 static_assert_no_msg(sizeof(unsigned __int64) == sizeof(double));
-                *(unsigned __int64*)p_aligned_data = GET_UNALIGNED_64(fldAddr);
+                if ((size_t)fldAddr % sizeof(unsigned __int64) != 0)
+                {
+                    *(unsigned __int64*)p_aligned_data = GET_UNALIGNED_64(fldAddr);
+                    fldAddr                            = p_aligned_data;
+                }
                 break;
 
             default:
                 assert(!"Unexpected lclTyp");
                 break;
         }
-
-        fldAddr = p_aligned_data;
     }
 #endif // DEBUG
 
