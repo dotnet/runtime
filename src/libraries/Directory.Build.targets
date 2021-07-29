@@ -200,15 +200,6 @@
     </PropertyGroup>
   </Target>
 
-  <!-- Used for packaging -->
-  <Target Name="IsNotNetCoreAppProject" Returns="@(IsNotNetCoreAppProjectResult)">
-    <ItemGroup>
-      <IsNotNetCoreAppProjectResult Include="$(MSBuildProjectName)"
-                                    Version="$(PackageVersion)"
-                                    Condition="!$(NetCoreAppLibrary.Contains('$(MSBuildProjectName);'))" />
-    </ItemGroup>
-  </Target>
-
   <!-- Returns the assembly version of the project for consumption
        by the NuGet package generation -->
   <Target Name="GetAssemblyVersion"
