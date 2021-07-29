@@ -1,7 +1,7 @@
 parameters:
   buildConfig: ''                 # required -- build configuration
   archType: ''                    # required -- targeting CPU architecture
-  osGroup: ''                     # required -- operating system for the job
+  osGroup: 'windows'              # required -- operating system for the job
   osSubgroup: ''                  # optional -- operating system subgroup
   dependsOn: ''                   # optional -- dependencies of the job
   runJobTemplate: '/eng/pipelines/coreclr/templates/build-jit-job.yml'
