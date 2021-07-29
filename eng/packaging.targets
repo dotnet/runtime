@@ -79,4 +79,13 @@
       </TfmSpecificDebugSymbolsFile>
     </ItemGroup>
   </Target>
+  
+  <!-- Ensure that the IsPackable attribute in NetCoreAppLibrary.props is in sync with IsPackable properties in projects. -->
+  <Target Name="EnsureNetCoreAppLibraryIsPackableInSync"
+          BeforeTargets="Pack">
+    <Error Text="Please add $(AssemblyName) to the NetCoreAppLibrary IsPackable item update in NetCoreAppLibrary.props."
+           Condition="!@(NetCoreAppLibrary->WithMetadataValue('Identity', '$(AssemblyName)')->AnyHaveMetadataValue('IsPackable', 'true')) and '$(IsNETCoreAppSrc)' == 'true' and '$(IsPackable)' == 'true'" />
+    <Error Text="Please remove $(AssemblyName) from the NetCoreAppLibrary IsPackable item update in NetCoreAppLibrary.props."
+           Condition="@(NetCoreAppLibrary->WithMetadataValue('Identity', '$(AssemblyName)')->AnyHaveMetadataValue('IsPackable', 'true')) and '$(IsSourceProject)' == 'true' and ('$(IsNETCoreAppSrc)' != 'true' or '$(IsPackable)' != 'true')" />
+  </Target>
 </Project>
