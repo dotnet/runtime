@@ -577,6 +577,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new Exception($"Unsupported remote endpoint type '{_remoteEndPoint.GetType()}'.");
             }
 
+            // We store TCS to local variable to avoid NRE if callbacks finish fast and set _state.ConnectTcs to null.
             var tcs = _state.ConnectTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             try
