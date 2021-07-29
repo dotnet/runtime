@@ -99,6 +99,12 @@
     <Compile Include="System\Text\Json\Serialization\IJsonOnDeserializing.cs" />
     <Compile Include="System\Text\Json\Serialization\IJsonOnSerialized.cs" />
     <Compile Include="System\Text\Json\Serialization\IJsonOnSerializing.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Document.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Element.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Node.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Document.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Element.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Node.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerContext.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\FSharpCoreReflectionProxy.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Collections.cs" />

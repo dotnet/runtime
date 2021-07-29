@@ -359,6 +359,13 @@ namespace System.Net.Test.Common
             }
         }
 
+        public async Task AbortAndWaitForShutdownAsync(long errorCode)
+        {
+            _stream.AbortRead(errorCode);
+            _stream.AbortWrite(errorCode);
+            await _stream.ShutdownCompleted();
+        }
+
         public async Task<(long? frameType, byte[] payload)> ReadFrameAsync()
         {
             long? frameType = await ReadIntegerAsync().ConfigureAwait(false);

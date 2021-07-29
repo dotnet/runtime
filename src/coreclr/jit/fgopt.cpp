@@ -5624,8 +5624,10 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                                 BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true);
                                 bFixup->inheritWeight(bDestNext);
                                 bFixup->bbJumpDest = bDestNext;
-                                fgReplacePred(bDestNext, bDest, bFixup);
+
+                                fgRemoveRefPred(bDestNext, bDest);
                                 fgAddRefPred(bFixup, bDest);
+                                fgAddRefPred(bDestNext, bFixup);
                             }
                         }
                     }

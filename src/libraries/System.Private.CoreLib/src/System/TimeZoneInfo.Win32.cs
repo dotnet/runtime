@@ -35,9 +35,6 @@ namespace System
         private const int MaxKeyLength = 255;
         private const string InvariantUtcStandardDisplayName = "Coordinated Universal Time";
 
-        private static readonly Dictionary<string, string> s_fileMuiPathCache = new();
-        private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone(); // must be initialized after s_fileMuiPathCache
-
         private sealed partial class CachedData
         {
             private static TimeZoneInfo GetCurrentOneYearLocal()
@@ -738,115 +735,12 @@ namespace System
             }
         }
 
-        /// <summary>
-        /// Helper function for getting the MUI path for a given resource and culture, using a cache to prevent duplicating work.
-        /// Searches the installed OS languages for either an exact matching culture, or one that has the same parent.
-        /// If not found, uses the preferred default OS UI language, to align with prior behavior.
-        /// </summary>
-        private static string GetCachedFileMuiPath(string filePath, CultureInfo cultureInfo)
-        {
-            string? result;
-            string cacheKey = $"{cultureInfo.Name};{filePath}";
-
-            lock (s_fileMuiPathCache)
-            {
-                if (s_fileMuiPathCache.TryGetValue(cacheKey, out result))
-                {
-                    return result;
-                }
-            }
-
-            result = GetFileMuiPath(filePath, cultureInfo);
-
-            lock (s_fileMuiPathCache)
-            {
-                s_fileMuiPathCache.TryAdd(cacheKey, result);
-            }
-
-            return result;
-        }
 
         /// <summary>
-        /// Helper function for getting the MUI path for a given resource and culture.
-        /// Searches the installed OS languages for either an exact matching culture, or one that has the same parent.
-        /// If not found, uses the preferred default OS UI language, to align with prior behavior.
-        /// </summary>
-        private static unsafe string GetFileMuiPath(string filePath, CultureInfo cultureInfo)
-        {
-            char* fileMuiPath = stackalloc char[Interop.Kernel32.MAX_PATH + 1];
-            char* language = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1];
-            uint fileMuiPathLength = Interop.Kernel32.MAX_PATH;
-            uint languageLength = Interop.Kernel32.LOCALE_NAME_MAX_LENGTH;
-            ulong enumerator = 0;
-
-            while (true)
-            {
-                // Search all installed languages.  The enumerator is re-used between loop iterations.
-                language[0] = '\0';
-                bool succeeded = Interop.Kernel32.GetFileMUIPath(
-                    Interop.Kernel32.MUI_USE_INSTALLED_LANGUAGES,
-                    filePath, language, ref languageLength,
-                    fileMuiPath, ref fileMuiPathLength, ref enumerator);
-                fileMuiPath[Interop.Kernel32.MAX_PATH] = '\0';
-
-                if (!succeeded)
-                {
-                    // Recurse to search using the parent of the desired culture.
-                    if (cultureInfo.Parent.Name != string.Empty)
-                    {
-                        return GetFileMuiPath(filePath, cultureInfo.Parent);
-                    }
-
-                    // Final fallback, using the preferred installed UI language.
-                    enumerator = 0;
-                    language[0] = '\0';
-                    succeeded = Interop.Kernel32.GetFileMUIPath(
-                        Interop.Kernel32.MUI_USER_PREFERRED_UI_LANGUAGES,
-                        filePath, language, ref languageLength,
-                        fileMuiPath, ref fileMuiPathLength, ref enumerator);
-                    fileMuiPath[Interop.Kernel32.MAX_PATH] = '\0';
-
-                    if (succeeded)
-                    {
-                        return new string(fileMuiPath);
-                    }
-
-                    return string.Empty;
-                }
-
-                // Lookup succeeded.  Check for exact match to the desired culture.
-                language[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH] = '\0';
-                ReadOnlySpan<char> lang = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(language);
-                if (lang.Equals(cultureInfo.Name, StringComparison.OrdinalIgnoreCase))
-                {
-                    return new string(fileMuiPath);
-                }
-
-                // Check for match of any parent of the language returned to the desired culture.
-                var ci = CultureInfo.GetCultureInfo(lang.ToString());
-                while (ci.Parent.Name != string.Empty)
-                {
-                    if (ci.Parent.Name.Equals(cultureInfo.Name, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return new string(fileMuiPath);
-                    }
-
-                    ci = ci.Parent;
-                }
-
-                // Not found yet.  Continue with next iteration.
-            }
-        }
-
-        /// <summary>
-        /// Helper function for retrieving a localized string resource via MUI.
-        /// The function expects a string in the form: "@resource.dll, -123"
-        ///
-        /// "resource.dll" is a language-neutral portable executable (LNPE) file in
-        /// the %windir%\system32 directory.  The OS is queried to find the best-fit
-        /// localized resource file for this LNPE (ex: %windir%\system32\en-us\resource.dll.mui).
-        /// If a localized resource file exists, we LoadString resource ID "123" and
-        /// return it to our caller.
+        /// Try to find the time zone resources Dll matching the CurrentUICulture or one of its parent cultures.
+        /// We try to check of such resource module e.g. %windir%\system32\[UI Culture Name]\tzres.dll.mui exist.
+        /// If a localized resource file exists, we LoadString resource with the id specified inside resource input
+        /// string and and return it to our caller.
         /// </summary>
         private static string GetLocalizedNameByMuiNativeResource(string resource)
         {
@@ -854,9 +748,6 @@ namespace System
             {
                 return string.Empty;
             }
-
-            // Use the current UI culture when culture not specified
-            CultureInfo cultureInfo = CultureInfo.CurrentUICulture;
 
             // parse "@tzres.dll, -100"
             //
@@ -869,32 +760,6 @@ namespace System
                 return string.Empty;
             }
 
-            string filePath;
-
-            // get the path to Windows\System32
-            string system32 = Environment.SystemDirectory;
-
-            // trim the string "@tzres.dll" => "tzres.dll"
-            ReadOnlySpan<char> tzresDll = resources[0].AsSpan().TrimStart('@');
-
-            try
-            {
-                filePath = Path.Join(system32, tzresDll);
-            }
-            catch (ArgumentException)
-            {
-                // there were probably illegal characters in the path
-                return string.Empty;
-            }
-
-            // Get the MUI File Path
-            string fileMuiPath = GetCachedFileMuiPath(filePath, cultureInfo);
-            if (fileMuiPath == string.Empty)
-            {
-                // not likely, but we could not resolve a MUI path
-                return string.Empty;
-            }
-
             // Get the resource ID
             if (!int.TryParse(resources[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int resourceId))
             {
@@ -902,8 +767,35 @@ namespace System
             }
             resourceId = -resourceId;
 
-            // Finally, get the resource from the resource path
-            return GetLocalizedNameByNativeResource(fileMuiPath, resourceId);
+            // Use the current UI culture when culture not specified
+            CultureInfo cultureInfo = CultureInfo.CurrentUICulture;
+
+            // get the path to Windows\System32
+            string system32 = Environment.SystemDirectory;
+
+            // trim the string "@tzres.dll" to "tzres.dll" and append the "mui" file extension to it.
+            string tzresDll = $"{resources[0].AsSpan().TrimStart('@')}.mui";
+
+            try
+            {
+                while (cultureInfo.Name.Length != 0)
+                {
+                    string filePath = Path.Join(system32, cultureInfo.Name, tzresDll);
+                    if (File.Exists(filePath))
+                    {
+                        // Finally, get the resource from the resource path
+                        return GetLocalizedNameByNativeResource(filePath, resourceId);
+                    }
+
+                    cultureInfo = cultureInfo.Parent;
+                }
+            }
+            catch (ArgumentException)
+            {
+                // there were probably illegal characters in the path
+            }
+
+            return string.Empty;
         }
 
         /// <summary>

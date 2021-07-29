@@ -515,8 +515,6 @@ namespace Wasm.Build.Tests
             process.StartInfo = processStartInfo;
             process.EnableRaisingEvents = true;
 
-            process.ErrorDataReceived += (sender, e) => LogData($"[{label}-stderr]", e.Data);
-            process.OutputDataReceived += (sender, e) => LogData($"[{label}]", e.Data);
             // AutoResetEvent resetEvent = new (false);
             // process.Exited += (_, _) => { Console.WriteLine ($"- exited called"); resetEvent.Set(); };
 
@@ -525,6 +523,11 @@ namespace Wasm.Build.Tests
 
             try
             {
+                DataReceivedEventHandler logStdErr = (sender, e) => LogData($"[{label}-stderr]", e.Data);
+                DataReceivedEventHandler logStdOut = (sender, e) => LogData($"[{label}]", e.Data);
+
+                process.ErrorDataReceived += logStdErr;
+                process.OutputDataReceived += logStdOut;
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
@@ -537,9 +540,14 @@ namespace Wasm.Build.Tests
                     lock (syncObj)
                     {
                         var lastLines = outputBuilder.ToString().Split('\r', '\n').TakeLast(20);
-                        throw new XunitException($"Process timed out, output: {string.Join(Environment.NewLine, lastLines)}");
+                        throw new XunitException($"Process timed out. Last 20 lines of output:{Environment.NewLine}{string.Join(Environment.NewLine, lastLines)}");
                     }
                 }
+
+                process.ErrorDataReceived -= logStdErr;
+                process.OutputDataReceived -= logStdOut;
+                process.CancelErrorRead();
+                process.CancelOutputRead();
 
                 lock (syncObj)
                 {

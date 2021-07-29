@@ -710,6 +710,11 @@ namespace System.Net.Sockets
                             if (address.AddressFamily == AddressFamily.InterNetworkV6)
                             {
                                 attemptSocket = tempSocketIPv6 ??= (Socket.OSSupportsIPv6 ? new Socket(AddressFamily.InterNetworkV6, socketType, protocolType) : null);
+                                if (attemptSocket is not null && address.IsIPv4MappedToIPv6)
+                                {
+                                    // We need a DualMode socket to connect to an IPv6-mapped IPv4 address.
+                                    attemptSocket.DualMode = true;
+                                }
                             }
                             else if (address.AddressFamily == AddressFamily.InterNetwork)
                             {
