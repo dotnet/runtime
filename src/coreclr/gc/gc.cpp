@@ -45566,8 +45566,12 @@ bool GCHeap::IsConcurrentGCEnabled()
 #endif //BACKGROUND_GC
 }
 
+void PopulateDacVars(GcDacVars *gcDacVars)
+{
+#ifndef DACCESS_COMPILE
+
 #ifdef MULTIPLE_HEAPS
-int gc_heap_field_offsets[] = {
+static int gc_heap_field_offsets[] = {
     offsetof(gc_heap, alloc_allocated),                              // 0
     offsetof(gc_heap, ephemeral_heap_segment),                       // 1
     offsetof(gc_heap, finalize_queue),                               // 2
@@ -45604,9 +45608,6 @@ int gc_heap_field_offsets[] = {
 };
 #endif //MULTIPLE_HEAPS
 
-void PopulateDacVars(GcDacVars *gcDacVars)
-{
-#ifndef DACCESS_COMPILE
     assert(gcDacVars != nullptr);
     *gcDacVars = {};
     // Note: these version numbers are not actually checked by SOS, so if you change
