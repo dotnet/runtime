@@ -1,7 +1,7 @@
 parameters:
   buildConfig: ''                 # required -- build configuration
   archType: ''                    # required -- targeting CPU architecture
-  osGroup: 'windows'              # required -- operating system for the job
+  osGroup: ''                     # required -- operating system for the job
   osSubgroup: ''                  # optional -- operating system subgroup
   dependsOn: ''                   # optional -- dependencies of the job
   runJobTemplate: '/eng/pipelines/coreclr/templates/build-jit-job.yml'
@@ -14,6 +14,11 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    helixType: 'build/product/'
+    enableMicrobuild: true
+    stagedBuild: ${{ parameters.stagedBuild }}
+    pool: ${{ parameters.pool }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     variables:
     - name: PythonScript
