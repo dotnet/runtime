@@ -69,6 +69,8 @@ interface BINDING_VARS {
     create_date_time: number;
     create_uri: number;
     mono_wasm_object_registry: JSObject[];
+    _js_owned_object_table: Map<number, WeakRef<any>>;
+    _js_owned_object_registry: FinalizationRegistry<any>;
 
     _unbind_raw_obj_and_free: (handle: number) => void;
     _get_raw_mono_obj: (gchandle: number, should_add_in_flight: number) => number;
@@ -78,6 +80,8 @@ interface BINDING_VARS {
     _bind_core_clr_obj: (js_id: number, gc_handle: number) => number;
     _object_to_string: (obj: number) => any;
     _is_simple_array: (obj: any) => boolean;
+    release_js_owned_object_by_handle: (id: number) => void;
+    try_invoke_js_owned_delegate_by_handle: (id: number, options: JSObject) => boolean;
 }
 
 // NAMESPACES ///////////////////////////////////////////////////////////////////////////////
@@ -97,6 +101,8 @@ type JSObject = {
     __mono_delegate_alive__?: boolean,
     __mono_delegate_invoke_sig__?: ArgsMarshalString
     then?: Function,
+    addEventListener?: (name: string, listener: Function, options?: JSObject) => void;
+    removeEventListener? :(name: string, listeenr: Function, capture: boolean) => void;
 };
 
 type Converter = {

@@ -146,6 +146,8 @@ var BindingSupportLib = {
 			BINDING.safehandle_release = get_method ("SafeHandleRelease");
 			BINDING.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			BINDING.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
+			BINDING.release_js_owned_object_by_handle = bind_runtime_method ("ReleaseJSOwnedObjectByHandle", "i");
+			BINDING.try_invoke_js_owned_delegate_by_handle = bind_runtime_method ("TryInvokeJSOwnedDelegateByHandle", "io");
 
 			BINDING._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 
@@ -155,6 +157,53 @@ var BindingSupportLib = {
 			BINDING._interned_string_current_root_buffer = null;
 			BINDING._interned_string_current_root_buffer_count = 0;
 			BINDING._interned_js_string_table = new Map ();
+			BINDING._js_owned_object_table = new Map ();
+			BINDING._js_owned_object_registry = new FinalizationRegistry(BINDING._js_owned_object_finalized.bind(this));
+		},
+
+		_get_weak_delegate_from_handle: function (id: number): Function {
+			var result = null;
+
+			// Look up this handle in the weak delegate table, and if we find a matching weakref,
+			//  deref it to try and get a JS function. This function may have been collected.
+			if (BINDING._js_owned_object_table.has(id)) {
+				var wr = BINDING._js_owned_object_table.get(id);
+				result = wr.deref();
+				// Note that we could check for a null result (i.e. function was GC'd) here and
+				//  opt to abort since resurrecting a given ID probably shouldn't happen.
+				// However, this design makes resurrecting an ID harmless, so there's not any
+				//  value in doing that (and we would then need to differentiate 'new' vs 'get')
+				// Tracking whether an ID is being resurrected also would require us to keep track
+				//  of every ID that has ever been used, which will harm performance long-term.
+			}
+
+			// If the function for this handle was already collected (or was never created),
+			//  we create a new function that will invoke the corresponding C# delegate when
+			//  called, and store it into our weak mapping (so we can look it up again by id)
+			//  and register it with the finalization registry so that the C# side can release
+			//  the associated object references
+			if (!result) {
+				result = (arg1) => {
+					if (!BINDING.try_invoke_js_owned_delegate_by_handle(id, arg1))
+						// Because lifetime is managed by JavaScript, it *is* an error for this 
+						//  invocation to ever fail. If we have a JS wrapper for an ID, there
+						//  should be no way for the managed delegate to have disappeared.
+						throw new Error(`JS-owned delegate invocation failed for id ${id}`);
+				};
+
+				BINDING._js_owned_object_table.set(id, new WeakRef(result));
+				BINDING._js_owned_object_registry.register(result, id);
+			}
+			return result;
+		},
+
+		_js_owned_object_finalized: function (id: number): void {
+			// The JS function associated with this ID has been collected by the JS GC.
+			// As such, it's not possible for this ID to be invoked by JS anymore, so
+			//  we can release the tracking weakref (it's null now, by definition),
+			//  and tell the C# side to stop holding a reference to the managed delegate.
+			BINDING._js_owned_object_table.delete(id);
+			BINDING.release_js_owned_object_by_handle(id);
 		},
 
 		// Ensures the string is already interned on both the managed and JavaScript sides,
@@ -2031,6 +2080,61 @@ var BindingSupportLib = {
 		var res = BINDING.typedarray_copy_from(requireObject as TypedArray, pinned_array, begin, end, bytes_per_element);
 		return BINDING.js_to_mono_obj (res);
 	},
+
+	mono_wasm_add_event_listener: function (objHandle: number, name: number, listenerId: number, optionsHandle: number): number {
+		var nameRoot = MONO.mono_wasm_new_root (name);
+		try {
+			BINDING.bindings_lazy_init ();
+			var obj = BINDING.mono_wasm_require_handle(objHandle);
+			if (!obj)
+				throw new Error("Invalid JS object handle");
+			var listener = BINDING._get_weak_delegate_from_handle(listenerId);
+			if (!listener)
+				throw new Error("Invalid listener ID");
+			var sName = BINDING.conv_string(nameRoot.value);
+
+			var options = optionsHandle
+				? BINDING.mono_wasm_require_handle(optionsHandle)
+				: null;
+
+			if (options)
+				obj.addEventListener(sName, listener, options);
+			else
+				obj.addEventListener(sName, listener);
+			return 0;
+		} catch (exc) {
+			return BINDING.js_string_to_mono_string(exc.message);
+		} finally {
+			nameRoot.release();
+		}
+	},
+
+	mono_wasm_remove_event_listener: function (objHandle: number, name: number, listenerId: number, capture: boolean): number {
+		var nameRoot = MONO.mono_wasm_new_root (name);
+		try {
+			BINDING.bindings_lazy_init ();
+			var obj = BINDING.mono_wasm_require_handle(objHandle);
+			if (!obj)
+				throw new Error("Invalid JS object handle");
+			var listener = BINDING._get_weak_delegate_from_handle(listenerId);
+			// Removing a nonexistent listener should not be treated as an error
+			if (!listener)
+				return;
+			var sName = BINDING.conv_string(nameRoot.value);
+
+			obj.removeEventListener(sName, listener, !!capture); // TODO why is this a double !?
+			// We do not manually remove the listener from the delegate registry here,
+			//  because that same delegate may have been used as an event listener for
+			//  other events or event targets. The GC will automatically clean it up
+			//  and trigger the FinalizationRegistry handler if it's unused
+			return 0;
+		} catch (exc) {
+			return BINDING.js_string_to_mono_string(exc.message);
+		} finally {
+			nameRoot.release();
+		}
+	},
+
 };
 
 autoAddDeps(BindingSupportLib, '$BINDING');

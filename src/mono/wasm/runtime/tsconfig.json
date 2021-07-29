@@ -4,8 +4,8 @@
     "noEmitOnError": true,
     "removeComments": false,
     "sourceMap": false,
-    "target": "es2019",
-    "lib": ["es2019", "dom"],
+    "target": "esnext",
+    "lib": ["esnext", "dom"],
     "strict": false, // todo set to true eventually once types are setup
     "outDir": "bin"
   },

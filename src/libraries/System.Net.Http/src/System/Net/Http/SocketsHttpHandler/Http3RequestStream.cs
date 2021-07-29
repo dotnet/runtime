@@ -141,7 +141,7 @@ namespace System.Net.Http
                     // If we don't have content, or we are doing Expect 100 Continue, then we can't rely on
                     // this and must send our headers immediately.
 
-                    await _stream.WriteAsync(_sendBuffer.ActiveMemory, requestCancellationSource.Token).ConfigureAwait(false);
+                    await _stream.WriteAsync(_sendBuffer.ActiveMemory, endStream: _expect100ContinueCompletionSource == null, requestCancellationSource.Token).ConfigureAwait(false);
                     _sendBuffer.Discard(_sendBuffer.ActiveLength);
 
                     if (_expect100ContinueCompletionSource != null)
@@ -149,10 +149,6 @@ namespace System.Net.Http
                         // Flush to ensure we get a response.
                         // TODO: MsQuic may not need any flushing.
                         await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        _stream.Shutdown();
                     }
                 }
 

@@ -108,11 +108,12 @@ namespace System.Net.NameResolution.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DnsObsoleteGetHostByName_EmptyString_ReturnsHostName()
         {
-            if (PlatformDetection.IsSLES)
+            if (PlatformDetection.IsSLES || // [ActiveIssue("https://github.com/dotnet/runtime/issues/55271")]
+                PlatformDetection.IsUbuntu1604 || PlatformDetection.IsDebian9) // [ActiveIssue("https://github.com/dotnet/runtime/issues/56295")]
             {
-                // See https://github.com/dotnet/runtime/issues/55271
-                throw new SkipTestException("SLES Tests environment is not configured for this test to work.");
+                throw new SkipTestException("Test environment is not configured for this test to work.");
             }
+
             IPHostEntry entry = Dns.GetHostByName("");
 
             // DNS labels should be compared as case insensitive for ASCII characters. See RFC 4343.
@@ -124,10 +125,10 @@ namespace System.Net.NameResolution.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DnsObsoleteBeginEndGetHostByName_EmptyString_ReturnsHostName()
         {
-            if (PlatformDetection.IsSLES)
+            if (PlatformDetection.IsSLES || // [ActiveIssue("https://github.com/dotnet/runtime/issues/55271")]
+                PlatformDetection.IsUbuntu1604 || PlatformDetection.IsDebian9) // [ActiveIssue("https://github.com/dotnet/runtime/issues/56295")]
             {
-                // See https://github.com/dotnet/runtime/issues/55271
-                throw new SkipTestException("SLES Tests environment is not configured for this test to work.");
+                throw new SkipTestException("Test environment is not configured for this test to work.");
             }
 
             IPHostEntry entry = Dns.EndGetHostByName(Dns.BeginGetHostByName("", null, null));

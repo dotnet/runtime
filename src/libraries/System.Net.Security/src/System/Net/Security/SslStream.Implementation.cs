@@ -742,8 +742,10 @@ namespace System.Net.Security
                     if (status.ErrorCode == SecurityStatusPalErrorCode.TryAgain)
                     {
                         // No need to hold on the buffer any more.
-                        ArrayPool<byte>.Shared.Return(bufferToReturn);
+                        byte[] tmp = bufferToReturn;
                         bufferToReturn = null;
+                        ArrayPool<byte>.Shared.Return(tmp);
+
                         // Call WriteSingleChunk() recursively to avoid code duplication.
                         // This should be extremely rare in cases when second renegotiation happens concurrently with Write.
                         await WriteSingleChunk(writeAdapter, buffer).ConfigureAwait(false);
@@ -788,14 +790,12 @@ namespace System.Net.Security
         // actually contains no decrypted or encrypted bytes
         private void ReturnReadBufferIfEmpty()
         {
-            if (_internalBuffer != null && _decryptedBytesCount == 0 && _internalBufferCount == 0)
+            if (_internalBuffer is byte[] internalBuffer && _decryptedBytesCount == 0 && _internalBufferCount == 0)
             {
-                ArrayPool<byte>.Shared.Return(_internalBuffer);
                 _internalBuffer = null;
-                _internalBufferCount = 0;
                 _internalOffset = 0;
-                _decryptedBytesCount = 0;
                 _decryptedBytesOffset = 0;
+                ArrayPool<byte>.Shared.Return(internalBuffer);
             }
             else if (_decryptedBytesCount == 0)
             {

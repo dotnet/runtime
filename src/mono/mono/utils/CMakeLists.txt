@@ -54,8 +54,6 @@ set(utils_common_sources
     mono-state.c
     mono-internal-hash.c
     mono-internal-hash.h
-    mono-io-portability.c
-    mono-io-portability.h
     monobitset.c
     mono-filemap.c
     mono-math-c.c
