@@ -82,9 +82,11 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         local gcStressModeToRestore=$COMPlus_GCStress;
         local heapVerifyModeToRestore=$COMPlus_HeapVerify;
         local readyToRunModeToRestore=$COMPlus_ReadyToRun;
+        local gcstandaloneModeToRestore=$COMPlus_GCName;
         export COMPlus_GCStress=
         export COMPlus_HeapVerify=
         export COMPlus_ReadyToRun=
+        unset COMPlus_GCName
 
         __Command=$_DebuggerFullPath
         # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -113,6 +115,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         $__Command
         __cg2ExitCode=$?
 
+        export COMPlus_GCName=$gcstandaloneModeToRestore
         export COMPlus_GCStress=$gcStressModeToRestore
         export COMPlus_HeapVerify=$heapVerifyModeToRestore
         export COMPlus_ReadyToRun=$readyToRunModeToRestore
@@ -219,6 +222,8 @@ if defined RunCrossGen2 (
     set COMPlus_HeapVerify=
     set __readyToRunModeToRestore=!COMPlus_ReadyToRun!
     set COMPlus_ReadyToRun=
+    set __gcStandaloneModeToRestore=!COMPlus_GCName!
+    set COMPlus_GCName=
 
     set __Command=!_DebuggerFullPath!
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -253,6 +258,7 @@ if defined RunCrossGen2 (
     set COMPlus_GCStress=!__gcStressModeToRestore!
     set COMPlus_HeapVerify=!__heapVerifyModeToRestore!
     set COMPlus_ReadyToRun=!__readyToRunModeToRestore!
+    set COMPlus_GCName=!__gcStandaloneModeToRestore!
 
     Exit /b 0
 
