@@ -160,7 +160,6 @@
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true'" GCName="libclrgc.so"/>
     <TestEnvironment Include="gcserver" gcServer="1" />
-
   </ItemGroup>
 
   <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables
