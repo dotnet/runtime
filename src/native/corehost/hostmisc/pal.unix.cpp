@@ -440,7 +440,15 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     FILE* install_location_file = pal::file_open(install_location_file_path, "r");
     if (install_location_file == nullptr)
     {
-        trace::error(_X("The install_location file ['%s'] failed to open: %s."), install_location_file_path.c_str(), pal::strerror(errno));
+        if (errno == ENOENT)
+        {
+            trace::verbose(_X("The install_location file ['%s'] does not exist - skipping."), install_location_file_path.c_str());
+        }
+        else
+        {
+            trace::error(_X("The install_location file ['%s'] failed to open: %s."), install_location_file_path.c_str(), pal::strerror(errno));
+        }
+
         return false;
     }
 

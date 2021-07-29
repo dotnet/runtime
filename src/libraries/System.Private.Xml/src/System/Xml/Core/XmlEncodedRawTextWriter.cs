@@ -160,11 +160,8 @@ namespace System.Xml
             // grab bom before possibly changing encoding settings
             ReadOnlySpan<byte> bom = _encoding.Preamble;
 
-            // the encoding instance this creates can differ from the one passed in
-            this._encoding = Encoding.GetEncoding(
-                settings.Encoding.CodePage,
-                _charEntityFallback,
-                settings.Encoding.DecoderFallback);
+            _encoding = (Encoding)settings.Encoding.Clone();
+            _encoding.EncoderFallback = _charEntityFallback;
 
             _encoder = _encoding.GetEncoder();
 

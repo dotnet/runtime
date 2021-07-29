@@ -859,13 +859,6 @@ int interceptor_ICJI::FilterException(
     return original_ICorJitInfo->FilterException(pExceptionPointers);
 }
 
-void interceptor_ICJI::HandleException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    mcs->AddCall("HandleException");
-    original_ICorJitInfo->HandleException(pExceptionPointers);
-}
-
 void interceptor_ICJI::ThrowExceptionForJitResult(
           JITINTERFACE_HRESULT result)
 {
@@ -886,6 +879,14 @@ bool interceptor_ICJI::runWithErrorTrap(
 {
     mcs->AddCall("runWithErrorTrap");
     return original_ICorJitInfo->runWithErrorTrap(function, parameter);
+}
+
+bool interceptor_ICJI::runWithSPMIErrorTrap(
+          ICorJitInfo::errorTrapFunction function,
+          void* parameter)
+{
+    mcs->AddCall("runWithSPMIErrorTrap");
+    return original_ICorJitInfo->runWithSPMIErrorTrap(function, parameter);
 }
 
 void interceptor_ICJI::getEEInfo(

@@ -208,17 +208,20 @@ namespace System.Net.Http.Json
             {
                 _disposed = true;
 
-                Debug.Assert(_charBuffer.Array != null);
-                ArrayPool<char>.Shared.Return(_charBuffer.Array);
+                char[]? charBuffer = _charBuffer.Array;
+                Debug.Assert(charBuffer != null);
                 _charBuffer = default;
+                ArrayPool<char>.Shared.Return(charBuffer);
 
-                Debug.Assert(_byteBuffer.Array != null);
-                ArrayPool<byte>.Shared.Return(_byteBuffer.Array);
+                byte[]? byteBuffer = _byteBuffer.Array;
+                Debug.Assert(byteBuffer != null);
                 _byteBuffer = default;
+                ArrayPool<byte>.Shared.Return(byteBuffer);
 
-                Debug.Assert(_overflowBuffer.Array != null);
-                ArrayPool<byte>.Shared.Return(_overflowBuffer.Array);
+                byte[]? overflowBuffer = _overflowBuffer.Array;
+                Debug.Assert(overflowBuffer != null);
                 _overflowBuffer = default;
+                ArrayPool<byte>.Shared.Return(overflowBuffer);
 
                 _stream.Dispose();
             }

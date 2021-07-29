@@ -76,8 +76,9 @@ namespace System.Text.Json.Serialization.Converters
                         ReadPropertyValue(obj, ref state, ref tempReader, jsonPropertyInfo, useExtensionProperty);
                     }
 
-                    ArrayPool<FoundProperty>.Shared.Return(argumentState.FoundProperties!, clearArray: true);
+                    FoundProperty[] toReturn = argumentState.FoundProperties!;
                     argumentState.FoundProperties = null;
+                    ArrayPool<FoundProperty>.Shared.Return(toReturn, clearArray: true);
                 }
             }
             else
@@ -133,8 +134,9 @@ namespace System.Text.Json.Serialization.Converters
                         }
                     }
 
-                    ArrayPool<FoundPropertyAsync>.Shared.Return(argumentState.FoundPropertiesAsync!, clearArray: true);
+                    FoundPropertyAsync[] toReturn = argumentState.FoundPropertiesAsync!;
                     argumentState.FoundPropertiesAsync = null;
+                    ArrayPool<FoundPropertyAsync>.Shared.Return(toReturn, clearArray: true);
                 }
             }
 
@@ -238,9 +240,10 @@ namespace System.Text.Json.Serialization.Converters
 
                             argumentState.FoundProperties.CopyTo(newCache, 0);
 
-                            ArrayPool<FoundProperty>.Shared.Return(argumentState.FoundProperties, clearArray: true);
-
+                            FoundProperty[] toReturn = argumentState.FoundProperties;
                             argumentState.FoundProperties = newCache!;
+
+                            ArrayPool<FoundProperty>.Shared.Return(toReturn, clearArray: true);
                         }
 
                         argumentState.FoundProperties[argumentState.FoundPropertyCount++] = (
@@ -436,9 +439,10 @@ namespace System.Text.Json.Serialization.Converters
 
                 argumentState.FoundPropertiesAsync!.CopyTo(newCache, 0);
 
-                ArrayPool<FoundPropertyAsync>.Shared.Return(argumentState.FoundPropertiesAsync!, clearArray: true);
-
+                FoundPropertyAsync[] toReturn = argumentState.FoundPropertiesAsync!;
                 argumentState.FoundPropertiesAsync = newCache!;
+
+                ArrayPool<FoundPropertyAsync>.Shared.Return(toReturn, clearArray: true);
             }
 
             // Cache the property name and value.

@@ -283,7 +283,7 @@ namespace System.Net.Http
 
             lock (SyncObj)
             {
-                if (lastProcessedStreamId > _lastProcessedStreamId)
+                if (_lastProcessedStreamId != -1 && lastProcessedStreamId > _lastProcessedStreamId)
                 {
                     // Server can send multiple GOAWAY frames.
                     // Spec says a server MUST NOT increase the stream ID in subsequent GOAWAYs,

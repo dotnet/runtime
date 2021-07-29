@@ -223,5 +223,189 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 nextResult?.Dispose();
             }
         }
+
+        private static JSObject SetupListenerTest (string prefix) {
+            Runtime.InvokeJS($"globalThis.{prefix} = {{" + @"
+    listeners: [],
+    addEventListener: function (name, listener, options) {
+        if (name === 'throwError')
+            throw new Error('throwError throwing');
+        var capture = !options ? false : !!options.capture;
+        for (var i = 0; i < this.listeners.length; i++) {
+            var item = this.listeners[i];
+            if (item[0] !== name)
+                continue;
+            var itemCapture = !item[2] ? false : !!item[2].capture;
+            if (itemCapture !== capture)
+                continue;
+            if (item[1] === listener)
+                return;
+        }        
+        this.listeners.push([name, listener, options || null]);
+    },
+    removeEventListener: function (name, listener, capture) {
+        for (var i = 0; i < this.listeners.length; i++) {
+            var item = this.listeners[i];
+            if (item[0] !== name)
+                continue;
+            if (item[1] !== listener)
+                continue;
+            var itemCapture = !item[2] ? false : !!item[2].capture;
+            if (itemCapture !== !!capture)
+                continue;
+            this.listeners.splice(i, 1);
+            return;
+        }
+    },
+    fireEvent: function (name, evt) {
+        this._fireEventImpl(name, true, evt);
+        this._fireEventImpl(name, false, evt);
+    },
+    _fireEventImpl: function (name, capture, evt) {
+        for (var i = 0; i < this.listeners.length; i++) {
+            var item = this.listeners[i];
+            if (item[0] !== name)
+                continue;
+            var itemCapture = !item[2] ? false : (item[2].capture || false);
+            if (itemCapture !== capture)
+                continue;
+            item[1].call(this, evt);
+        }
+    },
+};
+");
+            return (JSObject)Runtime.GetGlobalObject(prefix);
+        }
+
+        [Fact]
+        public static void AddEventListenerWorks () {
+            var temp = new bool[1];
+            var obj = SetupListenerTest("addEventListenerWorks");
+            obj.AddEventListener("test", () => {
+                temp[0] = true;
+            });
+            obj.Invoke("fireEvent", "test");
+            Assert.True(temp[0]);
+        }
+
+        [Fact]
+        public static void AddEventListenerPassesOptions () {
+            var log = new List<string>();
+            var obj = SetupListenerTest("addEventListenerPassesOptions");
+            obj.AddEventListener("test", () => {
+                log.Add("Capture");
+            }, new JSObject.EventListenerOptions { Capture = true });
+            obj.AddEventListener("test", () => {
+                log.Add("Non-capture");
+            }, new JSObject.EventListenerOptions { Capture = false });
+            obj.Invoke("fireEvent", "test");
+            Assert.Equal("Capture", log[0]);
+            Assert.Equal("Non-capture", log[1]);
+        }
+
+        [Fact]
+        public static void AddEventListenerForwardsExceptions () {
+            var obj = SetupListenerTest("addEventListenerForwardsExceptions");
+            obj.AddEventListener("test", () => {
+                throw new Exception("Test exception");
+            });
+            var exc = Assert.Throws<JSException>(() => {
+                obj.Invoke("fireEvent", "test");
+            });
+            Assert.Contains("Test exception", exc.Message);
+
+            exc = Assert.Throws<JSException>(() => {
+                obj.AddEventListener("throwError", () => {
+                    throw new Exception("Should not be called");
+                });
+            });
+            Assert.Contains("throwError throwing", exc.Message);
+            obj.Invoke("fireEvent", "throwError");
+        }
+
+        [Fact]
+        public static void RemovedEventListenerIsNotCalled () {
+            var obj = SetupListenerTest("removedEventListenerIsNotCalled");
+            Action del = () => {
+                throw new Exception("Should not be called");
+            };
+            obj.AddEventListener("test", del);
+            Assert.Throws<JSException>(() => {
+                obj.Invoke("fireEvent", "test");
+            });
+
+            obj.RemoveEventListener("test", del);
+            obj.Invoke("fireEvent", "test");
+        }
+
+        [Fact]
+        public static void RegisterSameEventListener () {
+            var counter = new int[1];
+            var obj = SetupListenerTest("registerSameDelegateTwice");
+            Action del = () => {
+                counter[0]++;
+            };
+
+            obj.AddEventListener("test1", del);
+            obj.AddEventListener("test2", del);
+
+            obj.Invoke("fireEvent", "test1");
+            Assert.Equal(1, counter[0]);
+            obj.Invoke("fireEvent", "test2");
+            Assert.Equal(2, counter[0]);
+
+            obj.RemoveEventListener("test1", del);
+            obj.Invoke("fireEvent", "test1");
+            obj.Invoke("fireEvent", "test2");
+            Assert.Equal(3, counter[0]);
+
+            obj.RemoveEventListener("test2", del);
+            obj.Invoke("fireEvent", "test1");
+            obj.Invoke("fireEvent", "test2");
+            Assert.Equal(3, counter[0]);
+        }
+
+        [Fact]
+        public static void UseAddEventListenerResultToRemove () {
+            var obj = SetupListenerTest("useAddEventListenerResultToRemove");
+            Action del = () => {
+                throw new Exception("Should not be called");
+            };
+            var handle = obj.AddEventListener("test", del);
+            Assert.Throws<JSException>(() => {
+                obj.Invoke("fireEvent", "test");
+            });
+
+            obj.RemoveEventListener("test", handle);
+            obj.Invoke("fireEvent", "test");
+        }
+
+        [Fact]
+        public static void RegisterSameEventListenerToMultipleSources () {
+            var counter = new int[1];
+            var a = SetupListenerTest("registerSameEventListenerToMultipleSourcesA");
+            var b = SetupListenerTest("registerSameEventListenerToMultipleSourcesB");
+            Action del = () => {
+                counter[0]++;
+            };
+
+            a.AddEventListener("test", del);
+            b.AddEventListener("test", del);
+
+            a.Invoke("fireEvent", "test");
+            Assert.Equal(1, counter[0]);
+            b.Invoke("fireEvent", "test");
+            Assert.Equal(2, counter[0]);
+
+            a.RemoveEventListener("test", del);
+            a.Invoke("fireEvent", "test");
+            b.Invoke("fireEvent", "test");
+            Assert.Equal(3, counter[0]);
+
+            b.RemoveEventListener("test", del);
+            a.Invoke("fireEvent", "test");
+            b.Invoke("fireEvent", "test");
+            Assert.Equal(3, counter[0]);
+        }
     }
 }

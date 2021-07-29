@@ -19,7 +19,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public static void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(Socket).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
