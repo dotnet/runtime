@@ -709,28 +709,6 @@ void QCALLTYPE COMModule::SetModuleName(QCall::ModuleHandle pModule, LPCWSTR wsz
 // Return a type spec token given a byte array
 //
 //******************************************************************************
-BOOL QCALLTYPE COMModule::IsTransient(QCall::ModuleHandle pModule)
-{
-    QCALL_CONTRACT;
-
-    BOOL fIsTransient = FALSE;
-
-    BEGIN_QCALL;
-
-    /* Only reflection modules can be transient */
-    if (pModule->IsReflection())
-        fIsTransient = pModule->GetReflectionModule()->IsTransient();
-
-    END_QCALL;
-
-    return fIsTransient;
-}
-
-//******************************************************************************
-//
-// Return a type spec token given a byte array
-//
-//******************************************************************************
 mdTypeSpec QCALLTYPE COMModule::GetTokenFromTypeSpec(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength)
 {
     QCALL_CONTRACT;

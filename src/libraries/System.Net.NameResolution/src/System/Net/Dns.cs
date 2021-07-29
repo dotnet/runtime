@@ -166,8 +166,8 @@ namespace System.Net
                 throw new ArgumentException(SR.net_invalid_ip_addr, nameof(address));
             }
 
-            return RunAsync(static s => {
-                IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified);
+            return RunAsync(static (s, stopwatch) => {
+                IPHostEntry ipHostEntry = GetHostEntryCore((IPAddress)s, AddressFamily.Unspecified, stopwatch);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info((IPAddress)s, $"{ipHostEntry} with {ipHostEntry.AddressList.Length} entries");
                 return ipHostEntry;
             }, address, CancellationToken.None);
@@ -380,17 +380,20 @@ namespace System.Net
             return ipHostEntry;
         }
 
-        private static IPHostEntry GetHostEntryCore(string hostName, AddressFamily addressFamily) =>
-            (IPHostEntry)GetHostEntryOrAddressesCore(hostName, justAddresses: false, addressFamily);
+        private static IPHostEntry GetHostEntryCore(string hostName, AddressFamily addressFamily, ValueStopwatch stopwatch = default) =>
+            (IPHostEntry)GetHostEntryOrAddressesCore(hostName, justAddresses: false, addressFamily, stopwatch);
 
-        private static IPAddress[] GetHostAddressesCore(string hostName, AddressFamily addressFamily) =>
-            (IPAddress[])GetHostEntryOrAddressesCore(hostName, justAddresses: true, addressFamily);
+        private static IPAddress[] GetHostAddressesCore(string hostName, AddressFamily addressFamily, ValueStopwatch stopwatch = default) =>
+            (IPAddress[])GetHostEntryOrAddressesCore(hostName, justAddresses: true, addressFamily, stopwatch);
 
-        private static object GetHostEntryOrAddressesCore(string hostName, bool justAddresses, AddressFamily addressFamily)
+        private static object GetHostEntryOrAddressesCore(string hostName, bool justAddresses, AddressFamily addressFamily, ValueStopwatch stopwatch)
         {
             ValidateHostName(hostName);
 
-            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
+            if (!stopwatch.IsActive)
+            {
+                stopwatch = NameResolutionTelemetry.Log.BeforeResolution(hostName);
+            }
 
             object result;
             try
@@ -423,21 +426,24 @@ namespace System.Net
             return result;
         }
 
-        private static IPHostEntry GetHostEntryCore(IPAddress address, AddressFamily addressFamily) =>
-            (IPHostEntry)GetHostEntryOrAddressesCore(address, justAddresses: false, addressFamily);
+        private static IPHostEntry GetHostEntryCore(IPAddress address, AddressFamily addressFamily, ValueStopwatch stopwatch = default) =>
+            (IPHostEntry)GetHostEntryOrAddressesCore(address, justAddresses: false, addressFamily, stopwatch);
 
-        private static IPAddress[] GetHostAddressesCore(IPAddress address, AddressFamily addressFamily) =>
-            (IPAddress[])GetHostEntryOrAddressesCore(address, justAddresses: true, addressFamily);
+        private static IPAddress[] GetHostAddressesCore(IPAddress address, AddressFamily addressFamily, ValueStopwatch stopwatch) =>
+            (IPAddress[])GetHostEntryOrAddressesCore(address, justAddresses: true, addressFamily, stopwatch);
 
         // Does internal IPAddress reverse and then forward lookups (for Legacy and current public methods).
-        private static object GetHostEntryOrAddressesCore(IPAddress address, bool justAddresses, AddressFamily addressFamily)
+        private static object GetHostEntryOrAddressesCore(IPAddress address, bool justAddresses, AddressFamily addressFamily, ValueStopwatch stopwatch)
         {
             // Try to get the data for the host from its address.
             // We need to call getnameinfo first, because getaddrinfo w/ the ipaddress string
             // will only return that address and not the full list.
 
             // Do a reverse lookup to get the host name.
-            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(address);
+            if (!stopwatch.IsActive)
+            {
+                stopwatch = NameResolutionTelemetry.Log.BeforeResolution(address);
+            }
 
             SocketError errorCode;
             string? name;
@@ -575,23 +581,23 @@ namespace System.Net
 
             if (justAddresses)
             {
-                return RunAsync(static s => s switch
+                return RunAsync(static (s, stopwatch) => s switch
                 {
-                    string h => GetHostAddressesCore(h, AddressFamily.Unspecified),
-                    KeyValuePair<string, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value),
-                    IPAddress a => GetHostAddressesCore(a, AddressFamily.Unspecified),
-                    KeyValuePair<IPAddress, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value),
+                    string h => GetHostAddressesCore(h, AddressFamily.Unspecified, stopwatch),
+                    KeyValuePair<string, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value, stopwatch),
+                    IPAddress a => GetHostAddressesCore(a, AddressFamily.Unspecified, stopwatch),
+                    KeyValuePair<IPAddress, AddressFamily> t => GetHostAddressesCore(t.Key, t.Value, stopwatch),
                     _ => null
                 }, asyncState, cancellationToken);
             }
             else
             {
-                return RunAsync(static s => s switch
+                return RunAsync(static (s, stopwatch) => s switch
                 {
-                    string h => GetHostEntryCore(h, AddressFamily.Unspecified),
-                    KeyValuePair<string, AddressFamily> t => GetHostEntryCore(t.Key, t.Value),
-                    IPAddress a => GetHostEntryCore(a, AddressFamily.Unspecified),
-                    KeyValuePair<IPAddress, AddressFamily> t => GetHostEntryCore(t.Key, t.Value),
+                    string h => GetHostEntryCore(h, AddressFamily.Unspecified, stopwatch),
+                    KeyValuePair<string, AddressFamily> t => GetHostEntryCore(t.Key, t.Value, stopwatch),
+                    IPAddress a => GetHostEntryCore(a, AddressFamily.Unspecified, stopwatch),
+                    KeyValuePair<IPAddress, AddressFamily> t => GetHostEntryCore(t.Key, t.Value, stopwatch),
                     _ => null
                 }, asyncState, cancellationToken);
             }
@@ -668,8 +674,10 @@ namespace System.Net
         /// than having all concurrent requests for the same host share the exact same task, so that any shuffling of the results
         /// by the OS to enable round robin is still perceived.
         /// </remarks>
-        private static Task<TResult> RunAsync<TResult>(Func<object, TResult> func, object key, CancellationToken cancellationToken)
+        private static Task<TResult> RunAsync<TResult>(Func<object, ValueStopwatch, TResult> func, object key, CancellationToken cancellationToken)
         {
+            ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(key);
+
             Task<TResult>? task = null;
 
             lock (s_tasks)
@@ -685,7 +693,7 @@ namespace System.Net
                     Debug.Assert(!Monitor.IsEntered(s_tasks));
                     try
                     {
-                        return func(key);
+                        return func(key, stopwatch);
                     }
                     finally
                     {
