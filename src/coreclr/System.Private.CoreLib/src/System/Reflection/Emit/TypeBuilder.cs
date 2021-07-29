@@ -1328,6 +1328,7 @@ namespace System.Reflection.Emit
             return method;
         }
 
+        [RequiresUnreferencedCode("Constructors of SafeHandle or blittable classes passed as arguments or returned can be trimmed if not referenced directly.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes,
             CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes,
             CallingConvention nativeCallConv, CharSet nativeCharSet)
@@ -1338,6 +1339,7 @@ namespace System.Reflection.Emit
             return method;
         }
 
+        [RequiresUnreferencedCode("Constructors of SafeHandle or blittable classes passed as arguments or returned can be trimmed if not referenced directly.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes,
             CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes,
             CallingConvention nativeCallConv, CharSet nativeCharSet)
@@ -1348,6 +1350,7 @@ namespace System.Reflection.Emit
             return method;
         }
 
+        [RequiresUnreferencedCode("Constructors of SafeHandle or blittable classes passed as arguments or returned can be trimmed if not referenced directly.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes,
             CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
@@ -1360,8 +1363,7 @@ namespace System.Reflection.Emit
             return method;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2082:UnrecognizedReflectionPattern",
-            Justification = "Reflection.Emit is not subject to trimming")]
+        [RequiresUnreferencedCode("Constructors of SafeHandle or blittable classes passed as arguments or returned can be trimmed if not referenced directly.")]
         private MethodBuilder DefinePInvokeMethodHelper(
             string name, string dllName, string importName, MethodAttributes attributes, CallingConventions callingConvention,
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,

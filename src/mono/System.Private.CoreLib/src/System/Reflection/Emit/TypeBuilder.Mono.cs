@@ -583,6 +583,7 @@ namespace System.Reflection.Emit
             return res;
         }
 
+        [RequiresUnreferencedCode("Constructors of SafeHandle or blittable classes passed as arguments or returned can be trimmed if not referenced directly.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             return DefinePInvokeMethod(name, dllName, entryName, attributes,
@@ -590,6 +591,7 @@ namespace System.Reflection.Emit
                 null, null, nativeCallConv, nativeCharSet);
         }
 
+        [RequiresUnreferencedCode("Constructors of SafeHandle or blittable classes passed as arguments or returned can be trimmed if not referenced directly.")]
         public MethodBuilder DefinePInvokeMethod(
                         string name,
                         string dllName,
@@ -633,6 +635,7 @@ namespace System.Reflection.Emit
             return res;
         }
 
+        [RequiresUnreferencedCode("Constructors of SafeHandle or blittable classes passed as arguments or returned can be trimmed if not referenced directly.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             return DefinePInvokeMethod(name, dllName, name, attributes, callingConvention, returnType, parameterTypes,
