@@ -112,6 +112,45 @@ namespace System.Reflection.Metadata
             });
         }
 
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        public void CustomAttributeDelete()
+        {
+            // Test that deleting custom attribute on constructor/property works as expected.
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete).Assembly;
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+                // Just check the updated value on one method
+
+                Type attrType = typeof(System.Reflection.Metadata.ApplyUpdate.Test.MyDeleteAttribute);
+                Type ty = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete");
+                Assert.NotNull(ty);
+
+                MethodInfo mi1 = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete.Method1), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi1);
+                Attribute[] cattrs = Attribute.GetCustomAttributes(mi1, attrType);
+                Assert.NotNull(cattrs);
+                Assert.Equal(0, cattrs.Length);
+
+                MethodInfo mi2 = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete.Method2), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi2);
+                cattrs = Attribute.GetCustomAttributes(mi2, attrType);
+                Assert.NotNull(cattrs);
+                Assert.Equal(0, cattrs.Length);
+
+                MethodInfo mi3 = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete.Method3), BindingFlags.Public | BindingFlags.Static);
+                Assert.NotNull(mi3);
+                cattrs = Attribute.GetCustomAttributes(mi3, attrType);
+                Assert.NotNull(cattrs);
+                Assert.Equal(1, cattrs.Length);
+                string p = (cattrs[0] as System.Reflection.Metadata.ApplyUpdate.Test.MyDeleteAttribute).StringValue;
+                Assert.Equal("Not Deleted", p);
+            });
+        }
+
         class NonRuntimeAssembly : Assembly
         {
         }
