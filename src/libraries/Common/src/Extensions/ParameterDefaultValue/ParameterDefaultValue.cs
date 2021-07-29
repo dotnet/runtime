@@ -7,14 +7,19 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
+#if NETFRAMEWORK || NETSTANDARD2_0
+using System.Runtime.Serialization;
+#else
+using System.Runtime.CompilerServices;
+#endif
+
 namespace Microsoft.Extensions.Internal
 {
     internal static partial class ParameterDefaultValue
     {
         public static bool TryGetDefaultValue(ParameterInfo parameter, out object? defaultValue)
         {
-            bool hasDefaultValue = CheckHasDefaultValue(parameter);
-            bool tryToGetDefaultValue = true;
+            bool hasDefaultValue = CheckHasDefaultValue(parameter, out bool tryToGetDefaultValue);
             defaultValue = null;
 
             if (hasDefaultValue)
@@ -33,6 +38,15 @@ namespace Microsoft.Extensions.Internal
                 {
                     defaultValue = CreateValueType(parameter.ParameterType);
                 }
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+                    Justification = "CreateValueType is only called on a ValueType. You can always create an instance of a ValueType.")]
+                static object? CreateValueType(Type t) =>
+#if NETFRAMEWORK || NETSTANDARD2_0
+                    FormatterServices.GetUninitializedObject(t);
+#else
+                    RuntimeHelpers.GetUninitializedObject(t);
+#endif
 
                 // Handle nullable enums
                 if (defaultValue != null && isNullableParameterType)

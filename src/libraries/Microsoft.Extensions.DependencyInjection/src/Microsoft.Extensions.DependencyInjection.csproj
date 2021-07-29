@@ -8,6 +8,7 @@
     <!-- Type 'Microsoft.Extensions.DependencyInjection.ServiceCollection' has been forwaded down.-->
     <NoWarn>$(NoWarn);CP0001</NoWarn>
     <PackageDescription>Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.</PackageDescription>
+    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
   </PropertyGroup>
   
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -15,15 +16,14 @@
     <ILEmitBackend Condition="'$(TargetFramework)' != 'netstandard2.0'">True</ILEmitBackend>
     <DefineConstants Condition="'$(ILEmitBackend)' == 'True'">$(DefineConstants);IL_EMIT</DefineConstants>
     <DefineConstants Condition="$(TargetFramework.StartsWith('net4')) and '$(ILEmitBackendSaveAssemblies)' == 'True'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>  
-    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
   </PropertyGroup>
 
-  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.netcoreapp.cs"
              Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.netcoreapp.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.netstandard.cs"
              Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.netstandard.cs" />
     <!-- These types weren't available before net5.0 and need to be compiled into the assembly. -->

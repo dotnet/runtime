@@ -12,14 +12,10 @@ namespace Microsoft.Extensions.Internal
 {
     internal static partial class ParameterDefaultValue
     {
-        public static bool CheckHasDefaultValue(ParameterInfo parameter)
+        public static bool CheckHasDefaultValue(ParameterInfo parameter, out bool tryToGetDefaultValue)
         {
+            tryToGetDefaultValue = true;
             return parameter.HasDefaultValue;
         }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "CreateValueType is only called on a ValueType. You can always create an instance of a ValueType.")]
-        internal static object? CreateValueType(Type t) =>
-            RuntimeHelpers.GetUninitializedObject(t);
     }
 }

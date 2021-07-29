@@ -17,12 +17,12 @@ Microsoft.Extensions.DependencyInjection.IServiceCollection</PackageDescription>
              Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.netcoreapp.cs"
              Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.netcoreapp.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CommonPath)Extensions\ParameterDefaultValue\ParameterDefaultValue.netstandard.cs"
              Link="Common\src\Extensions\ParameterDefaultValue\ParameterDefaultValue.netstandard.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
