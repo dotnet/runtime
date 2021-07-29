@@ -40,7 +40,7 @@ $(CLRTestBatchPreCommands)
     echo %scriptPath%\..\FolderA\FolderA\FolderA.dll>>%__ResponseFile%
     echo %scriptPath%\..\FolderB\FolderB\FolderB.dll>>%__ResponseFile%
 
-    REM Suppress GC stress mode for the duration of Crossgen2 execution
+    REM Suppress GC stand alone mode for the duration of Crossgen2 execution
     set __gcStandaloneModeToRestore=!COMPlus_GCName!
     set COMPlus_GCName=
 
@@ -86,7 +86,7 @@ $(BashCLRTestPreCommands)
     echo $__OutputDir/../FolderA/FolderA/FolderA.dll>>$__ResponseFile
     echo $__OutputDir/../FolderB/FolderB/FolderB.dll>>$__ResponseFile
 
-    # Suppress GC stress mode for the duration of Crossgen2 execution
+    # Suppress GC standalone mode for the duration of Crossgen2 execution
     local gcstandaloneModeToRestore=$COMPlus_GCName;
     unset COMPlus_GCName
 
