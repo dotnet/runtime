@@ -24,6 +24,8 @@ jobs:
     dependsOn:
      - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
+    variables: ${{ parameters.variables }}
+
     steps:
 
     # Download jit builds
