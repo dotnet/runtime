@@ -149,5 +149,19 @@
   <!-- Make NetCoreAppLibrary available as an item. -->
   <ItemGroup>
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
+    <NetCoreAppLibrary Update="
+      System.Collections.Immutable;
+      System.Diagnostics.DiagnosticSource;
+      System.Formats.Asn1;
+      System.Net.Http.Json;
+      System.Reflection.Metadata;
+      System.Runtime.CompilerServices.Unsafe;
+      System.Text.Encoding.CodePages;
+      System.Text.Encodings.Web;
+      System.Text.Json;
+      System.Threading.Channels;
+      itemupdate2;
+      System.Threading.Tasks.Dataflow"
+      IsPackable="true" />
   </ItemGroup>
 </Project>
