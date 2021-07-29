@@ -13643,16 +13643,8 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 		{ "inited",	MONO_CPU_INITED},
 #endif
 	};
-	if (!cpu_features) {
-		MonoCPUFeatures features = MONO_CPU_INITED | (MonoCPUFeatures)mono_llvm_check_cpu_features (flags_map, G_N_ELEMENTS (flags_map));
-#if defined(TARGET_ARM64)
-		// This is a standard part of ARMv8-A; see A1.5 in "ARM
-		// Architecture Reference Manual ARMv8, for ARMv8-A
-		// architecture profile"
-		features |= MONO_CPU_ARM64_NEON;
-#endif
-		cpu_features = features;
-	}
+	if (!cpu_features)
+		cpu_features = MONO_CPU_INITED | (MonoCPUFeatures)mono_llvm_check_cpu_features (flags_map, G_N_ELEMENTS (flags_map));
 
 	return cpu_features;
 }
