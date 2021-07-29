@@ -23,20 +23,14 @@ namespace Mono.Linker.Dataflow
 			_hierarchyInfo = new TypeHierarchyCache (context);
 		}
 
-		public bool RequiresDataFlowAnalysis (MethodDefinition method)
-		{
-			return GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out _);
-		}
+		public bool RequiresDataFlowAnalysis (MethodDefinition method) =>
+			GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out _);
 
-		public bool RequiresDataFlowAnalysis (FieldDefinition field)
-		{
-			return GetAnnotations (field.DeclaringType).TryGetAnnotation (field, out _);
-		}
+		public bool RequiresDataFlowAnalysis (FieldDefinition field) =>
+			GetAnnotations (field.DeclaringType).TryGetAnnotation (field, out _);
 
-		public bool RequiresDataFlowAnalysis (GenericParameter genericParameter)
-		{
-			return GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None;
-		}
+		public bool RequiresDataFlowAnalysis (GenericParameter genericParameter) =>
+			GetGenericParameterAnnotation (genericParameter) != DynamicallyAccessedMemberTypes.None;
 
 		/// <summary>
 		/// Retrieves the annotations for the given parameter.
@@ -45,35 +39,31 @@ namespace Mono.Linker.Dataflow
 		/// <returns></returns>
 		public DynamicallyAccessedMemberTypes GetParameterAnnotation (MethodDefinition method, int parameterIndex)
 		{
-			if (GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation) && annotation.ParameterAnnotations != null) {
+			if (GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation) &&
+				annotation.ParameterAnnotations != null)
 				return annotation.ParameterAnnotations[parameterIndex];
-			}
 
 			return DynamicallyAccessedMemberTypes.None;
 		}
 
 		public DynamicallyAccessedMemberTypes GetReturnParameterAnnotation (MethodDefinition method)
 		{
-			if (GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation)) {
+			if (GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation))
 				return annotation.ReturnParameterAnnotation;
-			}
 
 			return DynamicallyAccessedMemberTypes.None;
 		}
 
 		public DynamicallyAccessedMemberTypes GetFieldAnnotation (FieldDefinition field)
 		{
-			if (GetAnnotations (field.DeclaringType).TryGetAnnotation (field, out var annotation)) {
+			if (GetAnnotations (field.DeclaringType).TryGetAnnotation (field, out var annotation))
 				return annotation.Annotation;
-			}
 
 			return DynamicallyAccessedMemberTypes.None;
 		}
 
-		public DynamicallyAccessedMemberTypes GetTypeAnnotation (TypeDefinition type)
-		{
-			return GetAnnotations (type).TypeAnnotation;
-		}
+		public DynamicallyAccessedMemberTypes GetTypeAnnotation (TypeDefinition type) =>
+			GetAnnotations (type).TypeAnnotation;
 
 		public DynamicallyAccessedMemberTypes GetGenericParameterAnnotation (GenericParameter genericParameter)
 		{
@@ -92,6 +82,17 @@ namespace Mono.Linker.Dataflow
 
 			return DynamicallyAccessedMemberTypes.None;
 		}
+
+		public bool ShouldWarnWhenAccessedForReflection (MethodDefinition method) =>
+			GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation) &&
+			(annotation.ParameterAnnotations != null || annotation.ReturnParameterAnnotation != DynamicallyAccessedMemberTypes.None);
+
+		public bool MethodHasNoAnnotatedParameters (MethodDefinition method) =>
+			GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation) &&
+			annotation.ParameterAnnotations == null;
+
+		public bool ShouldWarnWhenAccessedForReflection (FieldDefinition field) =>
+			GetAnnotations (field.DeclaringType).TryGetAnnotation (field, out _);
 
 		TypeAnnotations GetAnnotations (TypeDefinition type)
 		{

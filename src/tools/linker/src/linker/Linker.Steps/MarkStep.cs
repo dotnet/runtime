@@ -1553,6 +1553,23 @@ namespace Mono.Linker.Steps
 				Annotations.Mark (field, reason);
 			}
 
+			switch (reason.Kind) {
+			case DependencyKind.AccessedViaReflection:
+			case DependencyKind.DynamicDependency:
+			case DependencyKind.DynamicallyAccessedMember:
+			case DependencyKind.InteropMethodDependency:
+				if (_context.Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (field) &&
+					!ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode ())
+					_context.LogWarning (
+						$"Field '{field.GetDisplayName ()}' with 'DynamicallyAccessedMembersAttribute' is accessed via reflection. Trimmer can't guarantee availability of the requirements of the field.",
+						2110,
+						_scopeStack.CurrentScope.Origin,
+						MessageSubCategory.TrimAnalysis);
+
+				break;
+			}
+
+
 			if (CheckProcessed (field))
 				return;
 
@@ -2705,12 +2722,12 @@ namespace Mono.Linker.Steps
 
 			// Use the original reason as it's important to correctly generate warnings
 			// the updated reason is only useful for better tracking of dependencies.
-			ProcessRequiresUnreferencedCode (method, originalReasonKind);
+			ProcessAnalysisAnnotationsForMethod (method, originalReasonKind);
 
 			return method;
 		}
 
-		void ProcessRequiresUnreferencedCode (MethodDefinition method, DependencyKind dependencyKind)
+		void ProcessAnalysisAnnotationsForMethod (MethodDefinition method, DependencyKind dependencyKind)
 		{
 			switch (dependencyKind) {
 			// DirectCall, VirtualCall and NewObj are handled by ReflectionMethodBodyScanner
@@ -2767,24 +2784,85 @@ namespace Mono.Linker.Steps
 				return;
 
 			default:
-				// DirectCall, VirtualCall and NewObj are handled by ReflectionMethodBodyScanner
-				// This is necessary since the ReflectionMethodBodyScanner has intrinsic handling for some
-				// of the annotated methods annotated (for example Type.GetType)
-				// and it knows when it's OK and when it needs a warning. In this place we don't know
-				// and would have to warn every time
-
 				// All other cases have the potential of us missing a warning if we don't report it
 				// It is possible that in some cases we may report the same warning twice, but that's better than not reporting it.
 				break;
 			}
 
-			// All override methods should have the same annotations as their base methods (else we will produce warning IL2046.)
-			// When marking override methods with RequiresUnreferencedCode on a type annotated with DynamicallyAccessedMembers,
-			// we should only issue a warning for the base method.
-			if (dependencyKind != DependencyKind.DynamicallyAccessedMember ||
-				!method.IsVirtual ||
-				Annotations.GetBaseMethods (method) == null)
-				CheckAndReportRequiresUnreferencedCode (method);
+			// All override methods should have the same annotations as their base methods
+			// (else we will produce warning IL2046 or IL2092 or some other warning).
+			// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
+			if (dependencyKind == DependencyKind.DynamicallyAccessedMember &&
+				method.IsVirtual &&
+				Annotations.GetBaseMethods (method) != null)
+				return;
+
+			CheckAndReportRequiresUnreferencedCode (method);
+
+			if (_context.Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (method)) {
+				// If the current scope has analysis warnings suppressed, don't generate any
+				if (ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode ())
+					return;
+
+				// ReflectionMethodBodyScanner handles more cases for data flow annotations
+				// so don't warn for those.
+				switch (dependencyKind) {
+				case DependencyKind.AttributeConstructor:
+				case DependencyKind.AttributeProperty:
+					return;
+
+				default:
+					break;
+				}
+
+				// If the method only has annotation on the return value and it's not virtual avoid warning.
+				// Return value annotations are "consumed" by the caller of a method, and as such there is nothing
+				// wrong calling these dynamically. The only problem can happen if something overrides a virtual
+				// method with annotated return value at runtime - in this case the trimmer can't validate
+				// that the method will return only types which fulfill the annotation's requirements.
+				// For example:
+				//   class BaseWithAnnotation
+				//   {
+				//       [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+				//       public abstract Type GetTypeWithFields();
+				//   }
+				//
+				//   class UsingTheBase
+				//   {
+				//       public void PrintFields(Base base)
+				//       {
+				//            // No warning here - GetTypeWithFields is correctly annotated to allow GetFields on the return value.
+				//            Console.WriteLine(string.Join(" ", base.GetTypeWithFields().GetFields().Select(f => f.Name)));
+				//       }
+				//   }
+				//
+				// If at runtime (through ref emit) something generates code like this:
+				//   class DerivedAtRuntimeFromBase
+				//   {
+				//       // No point in adding annotation on the return value - nothing will look at it anyway
+				//       // Linker will not see this code, so there are no checks
+				//       public override Type GetTypeWithFields() { return typeof(TestType); }
+				//   }
+				//
+				// If TestType from above is trimmed, it may note have all its fields, and there would be no warnings generated.
+				// But there has to be code like this somewhere in the app, in order to generate the override:
+				//   class RuntimeTypeGenerator
+				//   {
+				//       public MethodInfo GetBaseMethod()
+				//       {
+				//            // This must warn - that the GetTypeWithFields has annotation on the return value
+				//            return typeof(BaseWithAnnotation).GetMethod("GetTypeWithFields");
+				//       }
+				//   }
+				if (!method.IsVirtual && _context.Annotations.FlowAnnotations.MethodHasNoAnnotatedParameters (method))
+					return;
+
+				_context.LogWarning (
+					$"Method '{method.GetDisplayName ()}' with parameters or return value with `DynamicallyAccessedMembersAttribute` is accessed via reflection. Trimmer can't guarantee availability of the requirements of the field.",
+					2111,
+					_scopeStack.CurrentScope.Origin,
+					MessageSubCategory.TrimAnalysis);
+			}
 		}
 
 		internal bool ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode ()
