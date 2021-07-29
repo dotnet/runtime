@@ -147,11 +147,12 @@ NativeComWeakHandleInfo* GetComWeakReferenceInfo(OBJECTREF* pObject)
     }
     else
 #endif
-#ifdef FEATURE_COMWRAPPERS
     {
+#ifdef FEATURE_COMWRAPPERS        
         pWeakReferenceSource = reinterpret_cast<IWeakReferenceSource*>(ComWrappersNative::GetIdentityForObject(pObject, IID_IWeakReferenceSource, &wrapperId));
+#endif    
     }
-#endif
+
 
     if (pWeakReferenceSource == nullptr)
     {
