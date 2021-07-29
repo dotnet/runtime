@@ -1155,6 +1155,42 @@ enum interesting_data_point
     max_idp_count
 };
 
+#ifdef USE_REGIONS
+enum free_region_kind
+{
+    basic_free_region,
+    large_free_region,
+    huge_free_region,
+    count_free_region_kinds,
+};
+
+class region_free_list
+{
+    size_t  num_free_regions;
+    size_t  size_free_regions;
+    size_t  size_committed_in_free_regions;
+    size_t  num_free_regions_added;
+    size_t  num_free_regions_removed;
+    heap_segment* head_free_region;
+    heap_segment* tail_free_region;
+
+    static size_t free_region_size (heap_segment* region);
+    static size_t free_region_committed_size (heap_segment* region);
+
+public:
+    region_free_list();
+    void add_region_front (heap_segment* region);
+    void transfer_regions (region_free_list* from);
+    heap_segment* unlink_region_front();
+    heap_segment* unlink_smallest_region (size_t size);
+    size_t get_num_free_regions() { return num_free_regions; }
+    size_t get_size_free_regions() { return size_free_regions; }
+    heap_segment* get_first_free_region() { return head_free_region; }
+    static void unlink_region (heap_segment* region);
+    static free_region_kind get_region_kind (heap_segment* region);
+};
+#endif
+
 //class definition of the internal class
 class gc_heap
 {
@@ -3503,33 +3539,12 @@ public:
 #endif //STRESS_REGIONS
 
     PER_HEAP
-    heap_segment* free_regions;
-
-    PER_HEAP
-    int num_free_regions;
-
-    PER_HEAP
-    int num_free_regions_added;
-
-    PER_HEAP
-    int num_free_regions_removed;
+    region_free_list free_regions[count_free_region_kinds];
 
     // This is the number of regions we would free up if we sweep.
     // It's used in the decision for compaction so we calculate it in plan.
     PER_HEAP
     int num_regions_freed_in_sweep;
-
-    PER_HEAP
-    heap_segment* free_large_regions;
-
-    PER_HEAP
-    int num_free_large_regions;
-
-    PER_HEAP
-    int num_free_large_regions_added;
-
-    PER_HEAP
-    int num_free_large_regions_removed;
 
     PER_HEAP
     int regions_per_gen[max_generation + 1];
@@ -4781,12 +4796,12 @@ protected:
 
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED
-    heap_segment* regions_to_decommit;
+    region_free_list global_regions_to_decommit[count_free_region_kinds];
+
     PER_HEAP_ISOLATED
-    heap_segment* large_regions_to_decommit;
-    PER_HEAP_ISOLATED
-    heap_segment* free_huge_regions;
+    region_free_list global_free_huge_regions;
 #endif //USE_REGIONS
+
     PER_HEAP
     size_t ordered_free_space_indices[MAX_NUM_BUCKETS];
 
@@ -5570,6 +5585,9 @@ public:
     }
 
     void thread_free_obj (uint8_t* obj, size_t s);
+
+    PTR_heap_segment    prev_free_region;
+    region_free_list*   containing_free_list;
 #else //USE_REGIONS
 
 #ifdef _MSC_VER
@@ -5700,7 +5718,7 @@ private:
         return (val & ~region_alloc_free_bit);
     }
 
-    uint8_t* find_highest_regions_on_freelists (int64_t n, bool small_region_p);
+    void move_highest_regions (int64_t n, bool small_region_p, region_free_list free_list[count_free_region_kinds]);
 
 public:
     bool init (uint8_t* start, uint8_t* end, size_t alignment, uint8_t** lowest, uint8_t** highest);
@@ -5717,8 +5735,8 @@ public:
     size_t get_free() { return (total_free_units * region_alignment) ; }
     size_t get_region_alignment () { return region_alignment; }
     size_t get_large_region_alignment () { return large_region_alignment; }
-    uint8_t* find_highest_basic_regions_on_freelists (int64_t n);
-    uint8_t* find_highest_large_regions_on_freelists (int64_t n);
+    void move_highest_basic_regions (int64_t n, region_free_list free_list[count_free_region_kinds]);
+    void move_highest_large_and_huge_regions (int64_t n, region_free_list free_list[count_free_region_kinds]);
 };
 #endif //USE_REGIONS
 
@@ -5857,6 +5875,18 @@ inline
 bool heap_segment_overflow_p (heap_segment* inst)
 {
     return ((inst->flags & heap_segment_flags_overflow) != 0);
+}
+
+inline
+region_free_list*& heap_segment_containing_free_list (heap_segment* inst)
+{
+    return inst->containing_free_list;
+}
+
+inline
+PTR_heap_segment& heap_segment_prev_free_region (heap_segment* inst)
+{
+    return inst->prev_free_region;
 }
 #endif //USE_REGIONS
 
