@@ -3803,7 +3803,7 @@ mono_profiler_jit_done (
 	MonoMethod *method,
 	MonoJitInfo *ji)
 {
-	if (!EventEnabledMonoProfilerJitDone() && !EventPipeEventEnabledMonoProfilerJitDoneVerbose())
+	if (!EventEnabledMonoProfilerJitDone() && !EventEnabledMonoProfilerJitDoneVerbose())
 		return;
 
 	bool verbose = (MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.Level >= (uint8_t)EP_EVENT_LEVEL_VERBOSE);
