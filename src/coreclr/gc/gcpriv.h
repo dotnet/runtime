@@ -5698,9 +5698,11 @@ public:
     size_t get_large_region_alignment () { return large_region_alignment; }
     size_t get_used_region_count()
     {
-        return ((region_map_right_start == region_map_right_end)
-              ? (region_map_left_end  - region_map_left_start)
-              : (region_map_right_end - region_map_left_start));
+        // currently we don't allocate anything from the right -
+        // once we do, we need a more sophisticated way to iterate
+        // through the used regions
+        assert (region_map_right_start == region_map_right_end);
+        return (region_map_left_end - region_map_left_start);
     }
 };
 #endif //USE_REGIONS
