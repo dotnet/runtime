@@ -136,7 +136,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="WasmGenerateRuntimeConfig">
+  <Target Name="_WasmGenerateRuntimeConfig">
     <PropertyGroup>
       <RuntimeConfigFilePath>$(TargetDir)publish\$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>
       <ParsedRuntimeConfigFilePath>$(TargetDir)publish\runtimeconfig.bin</ParsedRuntimeConfigFilePath>
@@ -147,7 +147,7 @@
       <RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
     </ItemGroup>
 
-    <!-- Parse runtimeconfig.template.json file -->
+    <!-- Parse *.runtimeconfig.json file -->
     <RuntimeConfigParserTask
         RuntimeConfigFile="$(RuntimeConfigFilePath)"
         OutputFile="$(ParsedRuntimeConfigFilePath)"
@@ -155,7 +155,7 @@
     </RuntimeConfigParserTask>
   </Target>
 
-  <Target Name="_WasmGenerateAppBundle" Condition="'$(WasmGenerateAppBundle)' == 'true'" DependsOnTargets="WasmGenerateRuntimeConfig">
+  <Target Name="_WasmGenerateAppBundle" Condition="'$(WasmGenerateAppBundle)' == 'true'" DependsOnTargets="_WasmGenerateRuntimeConfig">
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
 
     <PropertyGroup>

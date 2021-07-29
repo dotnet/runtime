@@ -28,14 +28,6 @@ var Module = {
             return fetch (asset, { credentials: 'same-origin' });
         }
 
-        if (Module.config.environment_variables !== undefined) {
-            console.log ("expected environment variables to be undefined, but they're: ", Module.config.environment_variables);
-            test_exit(1);
-        }
-        Module.config.environment_variables = {
-            "DOTNET_MODIFIABLE_ASSEMBLIES": "debug"
-        };
-
         try
         {
             MONO.mono_load_runtime_and_bcl_args (Module.config);

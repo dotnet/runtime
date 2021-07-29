@@ -16,7 +16,8 @@ namespace Sample
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static int TestMeaning()
         {
-            int result = ((string)AppContext.GetData("test_runtimeconfig_json")).Equals("25") ? 42 : 1;
+            var config = AppContext.GetData("test_runtimeconfig_json");
+            int result = ((string)config).Equals("25") ? 42 : 1;
             return result;
         }
     }
