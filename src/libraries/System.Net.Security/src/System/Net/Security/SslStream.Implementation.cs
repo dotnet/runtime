@@ -324,7 +324,7 @@ namespace System.Net.Security
                 _nestedRead = 0;
                 _nestedWrite = 0;
                 _isRenego = false;
-                _nestedAuth = 0;
+                // We will not release _nestedAuth at this point to prevent another renegotiation attempt.
             }
         }
 
