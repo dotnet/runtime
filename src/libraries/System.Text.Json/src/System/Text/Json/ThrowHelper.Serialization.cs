@@ -258,9 +258,9 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_ConverterCanConvertNullableRedundant(Type runtimePropertyType, JsonConverter jsonConverter)
+        public static void ThrowInvalidOperationException_ConverterCanConvertMultipleTypes(Type runtimePropertyType, JsonConverter jsonConverter)
         {
-            throw new InvalidOperationException(SR.Format(SR.ConverterCanConvertNullableRedundant, jsonConverter.GetType(), jsonConverter.TypeToConvert, runtimePropertyType));
+            throw new InvalidOperationException(SR.Format(SR.ConverterCanConvertMultipleTypes, jsonConverter.GetType(), jsonConverter.TypeToConvert, runtimePropertyType));
         }
 
         [DoesNotReturn]
