@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Test.Cryptography;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
@@ -336,11 +337,18 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
-        [Fact]
+        [ConditionalFact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/52199", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RoundtripEmptyArray()
         {
+            if (PlatformDetection.IsiOS && !OperatingSystem.IsIOSVersionAtLeast(13, 6))
+            {
+                throw new SkipTestException("This test is broken on <iOS 13.6");
+            }
+            if (PlatformDetection.IstvOS && !OperatingSystem.IsTvOSVersionAtLeast(14, 0))
+            {
+                throw new SkipTestException("This test is broken on <tvOS 14.0");
+            }
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
                 void RoundtripEmpty(RSAEncryptionPadding paddingMode)
