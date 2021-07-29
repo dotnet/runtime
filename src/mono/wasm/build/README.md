@@ -49,3 +49,29 @@ The various task inputs correspond to properties as:
 This should be a step towards eventually having this build as a sdk.
 
 Refer to `WasmApp.targets` for more information about the properties/items used as inputs to the process.
+
+## Updating dependencies needed for building wasm apps
+
+For example, if the wasm targets are using a new task, then references to that
+need to be updated in a few places. Essentially, look for existing references
+to `MonoAOTCompiler`, or `WasmAppBuilder` in the relevant files, and duplicate
+them for the new task assembly.
+
+1. The task assembly dir, and its path need to be in two properties:
+    ```xml
+    <JsonToItemsTaskFactoryDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'JsonToItemsTaskFactory', 'Debug', '$(NetCoreAppToolCurrent)'))</JsonToItemsTaskFactoryDir>
+    <JsonToItemsTaskFactoryTasksAssemblyPath>$([MSBuild]::NormalizePath('$(JsonToItemsTaskFactoryDir)', 'JsonToItemsTaskFactory.dll'))</JsonToItemsTaskFactoryTasksAssemblyPath>
+    ```
+
+    And this needs to be set in:
+    - `Directory.Build.props`
+    - `src/mono/wasm/build/WasmApp.LocalBuild.props`
+    - `src/mono/wasm/build/WasmApp.LocalBuild.targets`
+    - `src/tests/Common/wasm-test-runner/WasmTestRunner.proj`
+
+2. The new dependency (eg. task assembly) needs to be sent to helix as a payload, see `src/libraries/sendtohelixhelp.proj`. Use `MonoAOTCompiler` as an example.
+
+3. Make changes similar to the one for existing dependent tasks in
+   - `eng/testing/linker/trimmingTests.targets`,
+   - `src/tests/Common/wasm-test-runner/WasmTestRunner.proj`
+   - `src/tests/Directory.Build.targets`
