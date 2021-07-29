@@ -21,7 +21,6 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
-    uploadAsArtifacts: true
     dependsOn:
      - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
