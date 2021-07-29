@@ -758,12 +758,10 @@ namespace System.Reflection.Emit
             set { ThrowIfGeneric(); m_fInitLocals = value; }
         }
 
-        public Module GetModule()
+        internal Module GetModule()
         {
             return GetModuleBuilder();
         }
-
-        public string Signature => GetMethodSignature().ToString();
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {

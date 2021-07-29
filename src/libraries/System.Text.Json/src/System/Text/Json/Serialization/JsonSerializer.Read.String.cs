@@ -262,7 +262,7 @@ namespace System.Text.Json
         /// <param name="returnType">The type of the object to convert to and return.</param>
         /// <param name="context">A metadata provider for serializable types.</param>
         /// <exception cref="System.ArgumentNullException">
-        /// <paramref name="json"/> is <see langword="null"/>.
+        /// <paramref name="json"/> or <paramref name="returnType"/> is <see langword="null"/>.
         ///
         /// -or-
         ///
@@ -307,7 +307,7 @@ namespace System.Text.Json
         /// <param name="returnType">The type of the object to convert to and return.</param>
         /// <param name="context">A metadata provider for serializable types.</param>
         /// <exception cref="System.ArgumentNullException">
-        /// <paramref name="json"/> is <see langword="null"/>.
+        /// <paramref name="json"/> or <paramref name="returnType"/> is <see langword="null"/>.
         ///
         /// -or-
         ///

@@ -12,6 +12,9 @@ namespace System.Threading.Tasks
         #region WaitAsync polyfills
         // Test polyfills when targeting a platform that doesn't have these ConfigureAwait overloads on Task
 
+        public static Task WaitAsync(this Task task, int millisecondsTimeout) =>
+            WaitAsync(task, TimeSpan.FromMilliseconds(millisecondsTimeout), default);
+
         public static Task WaitAsync(this Task task, TimeSpan timeout) =>
             WaitAsync(task, timeout, default);
 
@@ -27,6 +30,9 @@ namespace System.Threading.Tasks
                 await(await Task.WhenAny(task, tcs.Task).ConfigureAwait(false)).ConfigureAwait(false);
             }
         }
+
+        public static Task<TResult> WaitAsync<TResult>(this Task<TResult> task, int millisecondsTimeout) =>
+            WaitAsync(task, TimeSpan.FromMilliseconds(millisecondsTimeout), default);
 
         public static Task<TResult> WaitAsync<TResult>(this Task<TResult> task, TimeSpan timeout) =>
             WaitAsync(task, timeout, default);
@@ -47,6 +53,9 @@ namespace System.Threading.Tasks
 
         public static async Task WhenAllOrAnyFailed(this Task[] tasks, int millisecondsTimeout) =>
             await tasks.WhenAllOrAnyFailed().WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout));
+
+        public static async Task WhenAllOrAnyFailed(Task t1, Task t2, int millisecondsTimeout) =>
+            await new Task[] {t1, t2}.WhenAllOrAnyFailed(millisecondsTimeout);
 
         public static async Task WhenAllOrAnyFailed(this Task[] tasks)
         {
