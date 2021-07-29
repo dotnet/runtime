@@ -17,12 +17,11 @@ namespace System.IO.Strategies
         protected long _filePosition;
         private long _appendStart; // When appending, prevent overwriting file.
         private long _length = -1; // When the file is locked for writes on Windows ((share & FileShare.Write) == 0) cache file length in-memory, negative means that hasn't been fetched.
-        private bool _exposedHandle; // created from handle, or SafeFileHandle was used and the handle got exposed, or FileShare.Write was specified when the handle was opened.
+        private bool _lengthCanBeCached; // SafeFileHandle hasn't been exposed and FileShare.Write was not specified when the handle was opened.
 
         internal OSFileStreamStrategy(SafeFileHandle handle, FileAccess access)
         {
             _access = access;
-            _exposedHandle = true;
 
             handle.EnsureThreadPoolBindingInitialized();
 
@@ -45,7 +44,7 @@ namespace System.IO.Strategies
             string fullPath = Path.GetFullPath(path);
 
             _access = access;
-            _exposedHandle = (share & FileShare.Write) != 0;
+            _lengthCanBeCached = (share & FileShare.Write) == 0;
 
             _fileHandle = SafeFileHandle.Open(fullPath, mode, access, share, options, preallocationSize);
 
@@ -113,7 +112,7 @@ namespace System.IO.Strategies
             }
         }
 
-        protected bool LengthCachingSupported => OperatingSystem.IsWindows() && !_exposedHandle;
+        protected bool LengthCachingSupported => OperatingSystem.IsWindows() && _lengthCanBeCached;
 
         /// <summary>Gets or sets the position within the current stream</summary>
         public sealed override long Position
@@ -138,7 +137,7 @@ namespace System.IO.Strategies
                     FileStreamHelpers.Seek(_fileHandle, _filePosition, SeekOrigin.Begin);
                 }
 
-                _exposedHandle = true;
+                _lengthCanBeCached = false;
                 _length = -1; // invalidate cached length
 
                 return _fileHandle;
