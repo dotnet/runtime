@@ -1125,7 +1125,6 @@ namespace System.Runtime.InteropServices
         Aggregation = 4,
         Unwrap = 8,
     }
-    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     [System.CLSCompliantAttribute(false)]
     public abstract class ComWrappers
     {
@@ -1147,6 +1146,7 @@ namespace System.Runtime.InteropServices
         public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper, System.IntPtr inner) { throw null; }
         protected abstract void ReleaseObjects(System.Collections.IEnumerable objects);
         public static void RegisterForTrackerSupport(ComWrappers instance) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void RegisterForMarshalling(ComWrappers instance) { }
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }

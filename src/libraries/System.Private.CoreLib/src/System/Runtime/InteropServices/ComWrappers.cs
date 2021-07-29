@@ -69,7 +69,6 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// Class for managing wrappers of COM IUnknown types.
     /// </summary>
-    [SupportedOSPlatform("windows")]
     [CLSCompliant(false)]
     public abstract partial class ComWrappers
     {

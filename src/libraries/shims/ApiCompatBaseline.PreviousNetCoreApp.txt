@@ -167,6 +167,7 @@ Compat issues with assembly System.Runtime.InteropServices:
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' exists on 'System.Runtime.InteropServices.Marshal.AddRef(System.IntPtr)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' exists on 'System.Runtime.InteropServices.Marshal.QueryInterface(System.IntPtr, System.Guid, System.IntPtr)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' exists on 'System.Runtime.InteropServices.Marshal.Release(System.IntPtr)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' exists on 'System.Runtime.InteropServices.ComWrappers' in the contract but not the implementation.
 Compat issues with assembly System.Security.Cryptography.Algorithms:
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.CryptoConfig' in the contract but not the implementation.
 Compat issues with assembly System.Threading.Tasks.Extensions:
@@ -185,4 +186,4 @@ CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Security.Cryptography.AesCcm' changed from '[UnsupportedOSPlatformAttribute("browser")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Security.Cryptography.AesGcm' changed from '[UnsupportedOSPlatformAttribute("browser")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
 CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Text.Json.Serialization.JsonConverterAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Struct, AllowMultiple=false)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Field | AttributeTargets.Interface | AttributeTargets.Property | AttributeTargets.Struct, AllowMultiple=false)]' in the implementation.
-Total Issues: 171
+Total Issues: 172
