@@ -509,9 +509,11 @@ mono_local_cprop (MonoCompile *cfg)
 #else
 	#define VREG_ADD_SIZE 0
 #endif
+	// TODO: do not add VREG_ADD_SIZE once problem described in https://github.com/BrzVlad/runtime/commit/09801c13d8879136da48eaa247d50a3ec4d7fed6 is fixed
+	int defs_allocated = cfg->next_vreg + VREG_ADD_SIZE;
 
 	max = cfg->next_vreg;
-	defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * (cfg->next_vreg + VREG_ADD_SIZE));
+	defs = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * defs_allocated);
 	def_index = (gint32 *)mono_mempool_alloc (cfg->mempool, sizeof (guint32) * cfg->next_vreg);
 	cfg->cbb = bb_opt = (MonoBasicBlock *)mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoBasicBlock));
 
@@ -529,6 +531,7 @@ mono_local_cprop (MonoCompile *cfg)
 #if SIZEOF_REGISTER == 4
 				const char *spec = INS_INFO (ins->opcode);
 				if (spec [MONO_INST_DEST] == 'l') {
+					g_assert (ins->dreg + 2 < defs_allocated);
 					defs [ins->dreg + 1] = NULL;
 					defs [ins->dreg + 2] = NULL;
 				}
@@ -542,6 +545,7 @@ mono_local_cprop (MonoCompile *cfg)
 #if SIZEOF_REGISTER == 4
 				const char *spec = INS_INFO (ins->opcode);
 				if (spec [MONO_INST_SRC1 + i] == 'l') {
+					g_assert (sreg + 2 < defs_allocated);
 					defs [sreg + 1] = NULL;
 					defs [sreg + 2] = NULL;
 				}
