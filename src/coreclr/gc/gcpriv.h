@@ -1174,8 +1174,7 @@ class region_free_list
     heap_segment* head_free_region;
     heap_segment* tail_free_region;
 
-    static size_t free_region_size (heap_segment* region);
-    static size_t free_region_committed_size (heap_segment* region);
+    static size_t get_region_committed_size (heap_segment* region);
 
 public:
     region_free_list();
@@ -5718,7 +5717,7 @@ private:
         return (val & ~region_alloc_free_bit);
     }
 
-    void move_highest_regions (int64_t n, bool small_region_p, region_free_list free_list[count_free_region_kinds]);
+    void move_highest_free_regions (int64_t n, bool small_region_p, region_free_list to_free_list[count_free_region_kinds]);
 
 public:
     bool init (uint8_t* start, uint8_t* end, size_t alignment, uint8_t** lowest, uint8_t** highest);
@@ -5735,8 +5734,8 @@ public:
     size_t get_free() { return (total_free_units * region_alignment) ; }
     size_t get_region_alignment () { return region_alignment; }
     size_t get_large_region_alignment () { return large_region_alignment; }
-    void move_highest_basic_regions (int64_t n, region_free_list free_list[count_free_region_kinds]);
-    void move_highest_large_and_huge_regions (int64_t n, region_free_list free_list[count_free_region_kinds]);
+    void move_highest_basic_free_regions (int64_t n, region_free_list to_free_list[count_free_region_kinds]);
+    void move_highest_large_and_huge_free_regions(int64_t n, region_free_list to_free_list[count_free_region_kinds]);
 };
 #endif //USE_REGIONS
 
