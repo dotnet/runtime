@@ -234,11 +234,6 @@ namespace ILCompiler
             {
                 List<string> instructionSetParams = new List<string>();
 
-                // At this time, instruction sets may only be specified with --input-bubble, as
-                // we do not yet have a stable ABI for all vector parameter/return types.
-                if (!_commandLineOptions.InputBubble)
-                    throw new CommandLineException(SR.InstructionSetWithoutInputBubble);
-
                 // Normalize instruction set format to include implied +.
                 string[] instructionSetParamsInput = _commandLineOptions.InstructionSet.Split(",");
                 for (int i = 0; i < instructionSetParamsInput.Length; i++)
