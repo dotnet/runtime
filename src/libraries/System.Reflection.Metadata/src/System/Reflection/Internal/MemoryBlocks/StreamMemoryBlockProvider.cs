@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Threading;
 
 namespace System.Reflection.Internal
@@ -33,8 +34,7 @@ namespace System.Reflection.Internal
         private readonly long _imageStart;
         private readonly int _imageSize;
 
-        // MemoryMappedFile
-        private IDisposable? _lazyMemoryMap;
+        private MemoryMappedFile? _lazyMemoryMap;
 
         public StreamMemoryBlockProvider(Stream stream, long imageStart, int imageSize, bool isFileStream, bool leaveOpen)
         {
@@ -129,12 +129,19 @@ namespace System.Reflection.Internal
             if (_lazyMemoryMap == null)
             {
                 // leave the underlying stream open. It will be closed by the Dispose method.
-                IDisposable newMemoryMap;
+                MemoryMappedFile newMemoryMap;
 
                 // CreateMemoryMap might modify the stream (calls FileStream.Flush)
                 lock (_streamGuard)
                 {
-                    newMemoryMap = MemoryMapLightUp.CreateMemoryMap(_stream);
+                    newMemoryMap =
+                        MemoryMappedFile.CreateFromFile(
+                            (FileStream) _stream,
+                            null,
+                            0,
+                            MemoryMappedFileAccess.Read,
+                            HandleInheritability.None,
+                            leaveOpen: true);
                 }
 
                 if (newMemoryMap == null)
@@ -149,20 +156,14 @@ namespace System.Reflection.Internal
                 }
             }
 
-            IDisposable accessor = MemoryMapLightUp.CreateViewAccessor(_lazyMemoryMap, start, size);
+            MemoryMappedViewAccessor accessor = _lazyMemoryMap.CreateViewAccessor(start, size, MemoryMappedFileAccess.Read);
             if (accessor == null)
             {
                 block = null;
                 return false;
             }
 
-            if (!MemoryMapLightUp.TryGetSafeBufferAndPointerOffset(accessor, out var safeBuffer, out long offset))
-            {
-                block = null;
-                return false;
-            }
-
-            block = new MemoryMappedFileBlock(accessor, safeBuffer, offset, size);
+            block = new MemoryMappedFileBlock(accessor, accessor.SafeMemoryMappedViewHandle, accessor.PointerOffset, size);
             return true;
         }
     }
