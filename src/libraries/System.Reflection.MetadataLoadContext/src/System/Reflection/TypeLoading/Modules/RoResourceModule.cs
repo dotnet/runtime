@@ -30,7 +30,6 @@ namespace System.Reflection.TypeLoading
         public sealed override int MDStreamVersion => throw new InvalidOperationException(SR.ResourceOnlyModule);
         public sealed override int MetadataToken => 0x00000000;
         public sealed override Guid ModuleVersionId => throw new InvalidOperationException(SR.ResourceOnlyModule);
-        public sealed override string ScopeName => Name;
         public sealed override void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine)
         {
             peKind = PortableExecutableKinds.NotAPortableExecutableImage;

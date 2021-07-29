@@ -883,7 +883,7 @@ namespace System.Reflection.Emit
 
             m = GetRegisteredToken(metadataToken) as MemberInfo;
             if (m == null)
-                throw RuntimeModule.resolve_token_exception(Name, metadataToken, error, "MemberInfo");
+                throw RuntimeModule.resolve_token_exception(this, metadataToken, error, "MemberInfo");
             else
                 return m;
         }

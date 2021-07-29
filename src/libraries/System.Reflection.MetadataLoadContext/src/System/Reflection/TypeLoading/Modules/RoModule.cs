@@ -57,8 +57,6 @@ namespace System.Reflection.TypeLoading
             }
         }
 
-        public abstract override string ScopeName { get; }
-
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
         public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
 
