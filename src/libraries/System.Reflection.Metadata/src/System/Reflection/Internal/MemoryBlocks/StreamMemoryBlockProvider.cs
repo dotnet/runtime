@@ -29,14 +29,13 @@ namespace System.Reflection.Internal
 
         private readonly bool _leaveOpen;
         private bool _useMemoryMap;
-        private readonly bool _isFileStream;
 
         private readonly long _imageStart;
         private readonly int _imageSize;
 
         private MemoryMappedFile? _lazyMemoryMap;
 
-        public StreamMemoryBlockProvider(Stream stream, long imageStart, int imageSize, bool isFileStream, bool leaveOpen)
+        public StreamMemoryBlockProvider(Stream stream, long imageStart, int imageSize, bool leaveOpen)
         {
             Debug.Assert(stream.CanSeek && stream.CanRead);
             _stream = stream;
@@ -44,8 +43,7 @@ namespace System.Reflection.Internal
             _imageStart = imageStart;
             _imageSize = imageSize;
             _leaveOpen = leaveOpen;
-            _isFileStream = isFileStream;
-            _useMemoryMap = isFileStream && MemoryMapLightUp.IsAvailable;
+            _useMemoryMap = stream is FileStream;
         }
 
         protected override void Dispose(bool disposing)
@@ -68,7 +66,7 @@ namespace System.Reflection.Internal
         }
 
         /// <exception cref="IOException">Error reading from the stream.</exception>
-        internal static unsafe NativeHeapMemoryBlock ReadMemoryBlockNoLock(Stream stream, bool isFileStream, long start, int size)
+        internal static unsafe NativeHeapMemoryBlock ReadMemoryBlockNoLock(Stream stream, long start, int size)
         {
             var block = new NativeHeapMemoryBlock(size);
             bool fault = true;
@@ -78,7 +76,7 @@ namespace System.Reflection.Internal
 
                 int bytesRead = 0;
 
-                if (!isFileStream || (bytesRead = FileStreamReadLightUp.ReadFile(stream, block.Pointer, size)) != size)
+                if ((bytesRead = FileStreamReadLightUp.ReadFile(stream, block.Pointer, size)) != size)
                 {
                     stream.CopyTo(block.Pointer + bytesRead, size - bytesRead);
                 }
@@ -113,7 +111,7 @@ namespace System.Reflection.Internal
 
             lock (_streamGuard)
             {
-                return ReadMemoryBlockNoLock(_stream!, _isFileStream, absoluteStart, size);
+                return ReadMemoryBlockNoLock(_stream!, absoluteStart, size);
             }
         }
 
