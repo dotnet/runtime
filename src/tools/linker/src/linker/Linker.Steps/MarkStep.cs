@@ -72,6 +72,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.AccessedViaReflection,
 			DependencyKind.BaseType,
 			DependencyKind.DynamicallyAccessedMember,
+			DependencyKind.DynamicallyAccessedMemberOnType,
 			DependencyKind.DynamicDependency,
 			DependencyKind.NestedType,
 			DependencyKind.TypeInAssembly,
@@ -85,6 +86,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.Custom,
 			DependencyKind.CustomAttributeField,
 			DependencyKind.DynamicallyAccessedMember,
+			DependencyKind.DynamicallyAccessedMemberOnType,
 			DependencyKind.EventSourceProviderField,
 			DependencyKind.FieldAccess,
 			DependencyKind.FieldOnGenericInstance,
@@ -110,6 +112,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.DeclaringType,
 			DependencyKind.DeclaringTypeOfCalledMethod,
 			DependencyKind.DynamicallyAccessedMember,
+			DependencyKind.DynamicallyAccessedMemberOnType,
 			DependencyKind.DynamicDependency,
 			DependencyKind.ElementType,
 			DependencyKind.FieldType,
@@ -146,6 +149,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.DefaultCtorForNewConstrainedGenericArgument,
 			DependencyKind.DirectCall,
 			DependencyKind.DynamicallyAccessedMember,
+			DependencyKind.DynamicallyAccessedMemberOnType,
 			DependencyKind.DynamicDependency,
 			DependencyKind.ElementMethod,
 			DependencyKind.EventMethod,
@@ -329,7 +333,7 @@ namespace Mono.Linker.Steps
 
 			_entireTypesMarked[type] = includeBaseAndInterfaceTypes;
 
-			bool isDynamicDependencyReason = reason.Kind == DependencyKind.DynamicallyAccessedMember || reason.Kind == DependencyKind.DynamicDependency;
+			bool isDynamicDependencyReason = reason.Kind == DependencyKind.DynamicallyAccessedMember || reason.Kind == DependencyKind.DynamicDependency || reason.Kind == DependencyKind.DynamicallyAccessedMemberOnType;
 
 			if (type.HasNestedTypes) {
 				foreach (TypeDefinition nested in type.NestedTypes)
@@ -1540,6 +1544,57 @@ namespace Mono.Linker.Steps
 			MarkField (field, reason);
 		}
 
+		void ReportWarningsForTypeHierarchyReflectionAccess (IMemberDefinition member)
+		{
+			Debug.Assert (member is MethodDefinition or FieldDefinition);
+
+			// Don't check whether the current scope is a RUC type or RUC method because these warnings
+			// are not suppressed in RUC scopes. Here the scope represents the DynamicallyAccessedMembers
+			// annotation on a type, not a callsite which uses the annotation. We always want to warn about
+			// possible reflection access indicated by these annotations.
+
+			var type = _scopeStack.CurrentScope.Origin.MemberDefinition as TypeDefinition;
+			Debug.Assert (type != null);
+
+			static bool IsDeclaredWithinType (IMemberDefinition member, TypeDefinition type)
+			{
+				while ((member = member.DeclaringType) != null) {
+					if (member == type)
+						return true;
+				}
+				return false;
+			}
+
+			var reportOnMember = IsDeclaredWithinType (member, type);
+			var memberScope = reportOnMember ? _scopeStack.PushScope (new MessageOrigin (member)) : null;
+
+			try {
+				var origin = _scopeStack.CurrentScope.Origin;
+
+				if (member is MethodDefinition method && DoesMethodRequireUnreferencedCode (method, out RequiresUnreferencedCodeAttribute attribute)) {
+					var message = string.Format (
+						"'DynamicallyAccessedMembersAttribute' on '{0}' or one of its base types references '{1}' which requires unreferenced code.{2}{3}",
+						type.GetDisplayName (),
+						method.GetDisplayName (),
+						MessageFormat.FormatRequiresAttributeMessageArg (attribute.Message),
+						MessageFormat.FormatRequiresAttributeMessageArg (attribute.Url));
+					var code = reportOnMember ? 2112 : 2113;
+					_context.LogWarning (message, code, origin, MessageSubCategory.TrimAnalysis);
+				}
+
+				if (_context.Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (member)) {
+					var message = string.Format (
+						"'DynamicallyAccessedMembersAttribute' on '{0}' or one of its base types references '{1}' which has 'DynamicallyAccessedMembersAttribute' requirements.",
+						type.GetDisplayName (),
+						(member as MemberReference).GetDisplayName ());
+					var code = reportOnMember ? 2114 : 2115;
+					_context.LogWarning (message, code, origin, MessageSubCategory.TrimAnalysis);
+				}
+			} finally {
+				memberScope?.Dispose ();
+			}
+		}
+
 		void MarkField (FieldDefinition field, in DependencyInfo reason)
 		{
 #if DEBUG
@@ -1567,8 +1622,10 @@ namespace Mono.Linker.Steps
 						MessageSubCategory.TrimAnalysis);
 
 				break;
+			case DependencyKind.DynamicallyAccessedMemberOnType:
+				ReportWarningsForTypeHierarchyReflectionAccess (field);
+				break;
 			}
-
 
 			if (CheckProcessed (field))
 				return;
@@ -1688,8 +1745,13 @@ namespace Mono.Linker.Steps
 
 		internal void MarkEventVisibleToReflection (EventDefinition @event, in DependencyInfo reason)
 		{
-			// MarkEvent actually marks the add/remove/invoke methods as well, so no need to mark those explicitly
 			MarkEvent (@event, reason);
+			// MarkEvent already marks the add/remove/invoke methods, but we need to mark them with the
+			// DependencyInfo used to access the event from reflection, to produce warnings for annotated
+			// event methods.
+			MarkMethodIfNotNull (@event.AddMethod, reason);
+			MarkMethodIfNotNull (@event.InvokeMethod, reason);
+			MarkMethodIfNotNull (@event.InvokeMethod, reason);
 			MarkMethodsIf (@event.OtherMethods, m => true, reason);
 		}
 
@@ -2783,19 +2845,27 @@ namespace Mono.Linker.Steps
 			case DependencyKind.KeptForSpecialAttribute:
 				return;
 
+			case DependencyKind.DynamicallyAccessedMember:
+			case DependencyKind.DynamicallyAccessedMemberOnType:
+				// All override methods should have the same annotations as their base methods
+				// (else we will produce warning IL2046 or IL2092 or some other warning).
+				// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
+				if (method.IsVirtual && Annotations.GetBaseMethods (method) != null)
+					return;
+				break;
+
 			default:
 				// All other cases have the potential of us missing a warning if we don't report it
 				// It is possible that in some cases we may report the same warning twice, but that's better than not reporting it.
 				break;
 			}
 
-			// All override methods should have the same annotations as their base methods
-			// (else we will produce warning IL2046 or IL2092 or some other warning).
-			// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
-			if (dependencyKind == DependencyKind.DynamicallyAccessedMember &&
-				method.IsVirtual &&
-				Annotations.GetBaseMethods (method) != null)
+			if (dependencyKind == DependencyKind.DynamicallyAccessedMemberOnType) {
+				// DynamicallyAccessedMembers on type gets special treatment so that the warning origin
+				// is the type or the annotated member.
+				ReportWarningsForTypeHierarchyReflectionAccess (method);
 				return;
+			}
 
 			CheckAndReportRequiresUnreferencedCode (method);
 
@@ -2814,48 +2884,6 @@ namespace Mono.Linker.Steps
 				default:
 					break;
 				}
-
-				// If the method only has annotation on the return value and it's not virtual avoid warning.
-				// Return value annotations are "consumed" by the caller of a method, and as such there is nothing
-				// wrong calling these dynamically. The only problem can happen if something overrides a virtual
-				// method with annotated return value at runtime - in this case the trimmer can't validate
-				// that the method will return only types which fulfill the annotation's requirements.
-				// For example:
-				//   class BaseWithAnnotation
-				//   {
-				//       [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
-				//       public abstract Type GetTypeWithFields();
-				//   }
-				//
-				//   class UsingTheBase
-				//   {
-				//       public void PrintFields(Base base)
-				//       {
-				//            // No warning here - GetTypeWithFields is correctly annotated to allow GetFields on the return value.
-				//            Console.WriteLine(string.Join(" ", base.GetTypeWithFields().GetFields().Select(f => f.Name)));
-				//       }
-				//   }
-				//
-				// If at runtime (through ref emit) something generates code like this:
-				//   class DerivedAtRuntimeFromBase
-				//   {
-				//       // No point in adding annotation on the return value - nothing will look at it anyway
-				//       // Linker will not see this code, so there are no checks
-				//       public override Type GetTypeWithFields() { return typeof(TestType); }
-				//   }
-				//
-				// If TestType from above is trimmed, it may note have all its fields, and there would be no warnings generated.
-				// But there has to be code like this somewhere in the app, in order to generate the override:
-				//   class RuntimeTypeGenerator
-				//   {
-				//       public MethodInfo GetBaseMethod()
-				//       {
-				//            // This must warn - that the GetTypeWithFields has annotation on the return value
-				//            return typeof(BaseWithAnnotation).GetMethod("GetTypeWithFields");
-				//       }
-				//   }
-				if (!method.IsVirtual && _context.Annotations.FlowAnnotations.MethodHasNoAnnotatedParameters (method))
-					return;
 
 				_context.LogWarning (
 					$"Method '{method.GetDisplayName ()}' with parameters or return value with `DynamicallyAccessedMembersAttribute` is accessed via reflection. Trimmer can't guarantee availability of the requirements of the field.",
@@ -2890,24 +2918,29 @@ namespace Mono.Linker.Steps
 			return false;
 		}
 
+		bool DoesMethodRequireUnreferencedCode (MethodDefinition method, out RequiresUnreferencedCodeAttribute attribute)
+		{
+			if (Annotations.TryGetLinkerAttribute (method, out attribute))
+				return true;
+
+			if ((method.IsStatic || method.IsConstructor) &&
+				Annotations.TryGetEffectiveRequiresUnreferencedCodeAttributeOnType (method.DeclaringType, out attribute))
+				return true;
+
+			return false;
+		}
+
 		internal void CheckAndReportRequiresUnreferencedCode (MethodDefinition method)
 		{
-			var currentOrigin = _scopeStack.CurrentScope.Origin;
-
 			// If the caller of a method is already marked with `RequiresUnreferencedCodeAttribute` a new warning should not
 			// be produced for the callee.
 			if (ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode ())
 				return;
 
-			if (method.IsStatic || method.IsConstructor) {
-				if (Annotations.TryGetEffectiveRequiresUnreferencedCodeAttributeOnType (method.DeclaringType, out RequiresUnreferencedCodeAttribute requiresUnreferencedCodeOnTypeHierarchy)) {
-					ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCodeOnTypeHierarchy, currentOrigin);
-					return;
-				}
-			}
+			if (!DoesMethodRequireUnreferencedCode (method, out RequiresUnreferencedCodeAttribute requiresUnreferencedCode))
+				return;
 
-			if (Annotations.TryGetLinkerAttribute (method, out RequiresUnreferencedCodeAttribute requiresUnreferencedCode))
-				ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode, currentOrigin);
+			ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode, _scopeStack.CurrentScope.Origin);
 		}
 
 		private void ReportRequiresUnreferencedCode (string displayName, RequiresUnreferencedCodeAttribute requiresUnreferencedCode, MessageOrigin currentOrigin)

@@ -137,7 +137,9 @@ namespace Mono.Linker
 		SerializedRecursiveType = 85, // recursive type kept due to serialization handling
 		SerializedMember = 86, // field or property kept on a type for serialization
 
-		PreservedOperator = 87 // operator method preserved on a type
+		PreservedOperator = 87, // operator method preserved on a type
+
+		DynamicallyAccessedMemberOnType = 88, // type with DynamicallyAccessedMembers annotations (including those inherited from base types and interfaces)
 	}
 
 	public readonly struct DependencyInfo : IEquatable<DependencyInfo>

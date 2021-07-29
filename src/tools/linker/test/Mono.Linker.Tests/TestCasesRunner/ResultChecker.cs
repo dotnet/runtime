@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
@@ -760,6 +761,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											string actualName = methodDefinition.DeclaringType.FullName + "." + methodDefinition.Name;
 											if (actualName.StartsWith (attrProvider.DeclaringType.FullName) &&
 												actualName.Contains ("<" + attrProvider.Name + ">"))
+												return true;
+											if (methodDefinition.Name == ".ctor" &&
+												methodDefinition.DeclaringType.FullName == attrProvider.FullName)
 												return true;
 										}
 
