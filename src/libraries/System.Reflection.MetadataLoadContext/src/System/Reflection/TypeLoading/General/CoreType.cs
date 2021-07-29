@@ -72,7 +72,7 @@ namespace System.Reflection.TypeLoading
 
     internal static class CoreTypeHelpers
     {
-        public static void GetFullName(this CoreType coreType, out byte[] ns, out byte[] name)
+        public static void GetFullName(this CoreType coreType, out ReadOnlySpan<byte> ns, out ReadOnlySpan<byte> name)
         {
             switch (coreType)
             {
@@ -121,7 +121,7 @@ namespace System.Reflection.TypeLoading
                 case CoreType.FieldOffsetAttribute: ns = Utf8Constants.SystemRuntimeInteropServices; name = Utf8Constants.FieldOffsetAttribute; return;
                 default:
                     Debug.Fail("Unexpected coreType passed to GetCoreTypeFullName: " + coreType);
-                    ns = name = null;
+                    ns = name = default;
                     return;
             }
         }

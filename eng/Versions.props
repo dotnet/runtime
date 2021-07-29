@@ -17,8 +17,8 @@
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
     <!-- Opt-in/out repo features -->
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
-    <!-- TODO: Upgrade compiler version to enable Static Abstracts in Interfaces and interpolated string handlers; remove this once the employed SDK uses a new enough version. -->
-    <MicrosoftNetCompilersToolsetVersion>4.0.0-3.21367.2</MicrosoftNetCompilersToolsetVersion>
+    <!-- TODO: Upgrade compiler version to enable Static Abstracts in Interfaces, interpolated string handlers, and caller arg expressions; remove this once the employed SDK uses a new enough version. -->
+    <MicrosoftNetCompilersToolsetVersion>4.0.0-3.21376.12</MicrosoftNetCompilersToolsetVersion>
     <UsingToolMicrosoftNetILLinkTasks>true</UsingToolMicrosoftNetILLinkTasks>
     <UsingToolIbcOptimization>false</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
@@ -62,7 +62,7 @@
     <MicrosoftDotNetBuildTasksArchivesVersion>6.0.0-beta.21370.12</MicrosoftDotNetBuildTasksArchivesVersion>
     <MicrosoftDotNetBuildTasksInstallersVersion>6.0.0-beta.21370.12</MicrosoftDotNetBuildTasksInstallersVersion>
     <MicrosoftDotNetBuildTasksPackagingVersion>6.0.0-beta.21370.12</MicrosoftDotNetBuildTasksPackagingVersion>
-    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>6.0.0-beta.21370.12</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
+    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>6.0.0-beta.21372.16</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
     <MicrosoftDotNetRemoteExecutorVersion>6.0.0-beta.21370.12</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>6.0.0-beta.21370.12</MicrosoftDotNetVersionToolsTasksVersion>
     <MicrosoftDotNetPackageTestingVersion>6.0.0-beta.21370.12</MicrosoftDotNetPackageTestingVersion>
@@ -143,7 +143,7 @@
       These are used as reference assemblies only, so they must not take a ProdCon/source-build
       version. Insert "RefOnly" to avoid assignment via PVP.
     -->
-    <RefOnlyMicrosoftBuildVersion>16.9.0</RefOnlyMicrosoftBuildVersion>
+    <RefOnlyMicrosoftBuildVersion>16.10.0</RefOnlyMicrosoftBuildVersion>
     <RefOnlyMicrosoftBuildFrameworkVersion>$(RefOnlyMicrosoftBuildVersion)</RefOnlyMicrosoftBuildFrameworkVersion>
     <RefOnlyMicrosoftBuildTasksCoreVersion>$(RefOnlyMicrosoftBuildVersion)</RefOnlyMicrosoftBuildTasksCoreVersion>
     <RefOnlyMicrosoftBuildUtilitiesCoreVersion>$(RefOnlyMicrosoftBuildVersion)</RefOnlyMicrosoftBuildUtilitiesCoreVersion>
@@ -166,12 +166,12 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>5.0.0-preview-20201009.2</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
-    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.6.21370.1</MicrosoftNETILLinkTasksVersion>
+    <MicrosoftNETILLinkTasksVersion>6.0.100-preview.6.21376.2</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-rc.1.21369.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
-    <SystemNetMsQuicTransportVersion>6.0.0-preview.7.21357.1</SystemNetMsQuicTransportVersion>
+    <SystemNetMsQuicTransportVersion>6.0.0-preview.7.21376.1</SystemNetMsQuicTransportVersion>
     <!-- Mono LLVM -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.21369.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21369.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>

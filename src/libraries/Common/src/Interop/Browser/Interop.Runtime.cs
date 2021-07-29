@@ -52,6 +52,11 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object TypedArrayCopyFrom(int jsObjHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern string? AddEventListener(int jsObjHandle, string name, int weakDelegateHandle, int optionsObjHandle);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern string? RemoveEventListener(int jsObjHandle, string name, int weakDelegateHandle, bool capture);
+
         // / <summary>
         // / Execute the provided string in the JavaScript context
         // / </summary>

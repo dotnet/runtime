@@ -39,8 +39,6 @@
   <Target Name="WasmBuildNativeOnly" DependsOnTargets="$(WasmBuildNativeOnlyDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
 
   <Target Name="_PrepareForWasmBuildNativeOnly">
-    <MakeDir Directories="$(_WasmIntermediateOutputPath)" />
-
     <ItemGroup>
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />
       <_WasmAssembliesInternal Include="@(WasmAssembliesToBundle->Distinct())" />
@@ -312,7 +310,7 @@
 
     <Message Text="Linking with emcc. This may take a while ..." Importance="High" />
     <Message Text="Running emcc with @(_EmccLinkStepArgs->'%(Identity)', ' ')" Importance="Low" />
-    <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" />
+    <Exec Command='emcc "@$(_EmccDefaultFlagsRsp)" "@$(_EmccLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" StandardOutputImportance="Normal" StandardErrorImportance="Normal" />
 
     <Exec Command='wasm-opt$(_ExeExt) --strip-dwarf "$(_WasmIntermediateOutputPath)dotnet.wasm" -o "$(_WasmIntermediateOutputPath)dotnet.wasm"' Condition="'$(WasmNativeStrip)' == 'true'" IgnoreStandardErrorWarningFormat="true" EnvironmentVariables="@(EmscriptenEnvVars)" />
   </Target>

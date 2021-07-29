@@ -176,7 +176,7 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
 #ifndef CROSSGEN_COMPILE
     if (GetManifestFile()->IsDynamic())
         // manifest modules of dynamic assemblies are always transient
-        m_pManifest = ReflectionModule::Create(this, GetManifestFile(), pamTracker, REFEMIT_MANIFEST_MODULE_NAME, TRUE);
+        m_pManifest = ReflectionModule::Create(this, GetManifestFile(), pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
     else
 #endif
         m_pManifest = Module::Create(this, mdFileNil, GetManifestFile(), pamTracker);
