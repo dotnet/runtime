@@ -3803,8 +3803,10 @@ mono_profiler_jit_done (
 	MonoMethod *method,
 	MonoJitInfo *ji)
 {
-	if (!EventEnabledMonoProfilerJitDone())
+	if (!EventEnabledMonoProfilerJitDone() && !EventPipeEventEnabledMonoProfilerJitDoneVerbose())
 		return;
+
+	bool verbose = (MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context.Level >= (uint8_t)EP_EVENT_LEVEL_VERBOSE);
 
 	uint64_t method_id;
 	uint64_t module_id;
@@ -3812,13 +3814,36 @@ mono_profiler_jit_done (
 
 	get_jit_data (method, &method_id, &module_id, &method_token);
 
-	FireEtwMonoProfilerJitDone (
-		clr_instance_get_id (),
-		method_id,
-		module_id,
-		method_token,
-		NULL,
-		NULL);
+	if (verbose) {
+		//TODO: Optimize string formatting into functions accepting GString to reduce heap alloc.
+		char *method_namespace = NULL;
+		char *method_name = method->name;
+		char *method_signature = mono_signature_full_name (method->signature);
+		if (method->klass)
+			method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
+
+		FireEtwMonoProfilerJitDoneVerbose (
+			clr_instance_get_id (),
+			method_id,
+			module_id,
+			method_token,
+			(const ep_char8_t *)method_namespace,
+			(const ep_char8_t *)method_name,
+			(const ep_char8_t *)method_signature,
+			NULL,
+			NULL);
+
+		g_free (method_namespace);
+		g_free (method_signature);
+	} else {
+		FireEtwMonoProfilerJitDone (
+			clr_instance_get_id (),
+			method_id,
+			module_id,
+			method_token,
+			NULL,
+			NULL);
+	}
 }
 
 static

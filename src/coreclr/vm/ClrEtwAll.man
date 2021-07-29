@@ -7357,6 +7357,7 @@
                             <opcode name="ThreadStopped" message="$(string.MonoProfilerPublisher.ThreadStoppedOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_STOPPED_OPCODE" value="76" />
                             <opcode name="ThreadExited" message="$(string.MonoProfilerPublisher.ThreadExitedOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_EXITED_OPCODE" value="77" />
                             <opcode name="ThreadName" message="$(string.MonoProfilerPublisher.ThreadNameOpcodeMessage)" symbol="CLR_MONO_PROFILER_THREAD_NAME_OPCODE" value="78" />
+                            <opcode name="JitDoneVerbose" message="$(string.MonoProfilerPublisher.JitDoneVerboseOpcodeMessage)" symbol="CLR_MONO_PROFILER_JIT_DONE_VERBOSE_OPCODE" value="79" />
                         </opcodes>
                     </task>
                 </tasks>
@@ -7862,6 +7863,27 @@
                         </UserData>
                     </template>
 
+                    <template tid="JitDoneVerbose">
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="MethodToken" inType="win:UInt32" outType="win:HexInt32" />
+                        <data name="MethodNamespace" inType="win:UnicodeString" />
+                        <data name="MethodName" inType="win:UnicodeString" />
+                        <data name="MethodSignature" inType="win:UnicodeString" />
+                        <UserData>
+                            <JitDoneVerbose xmlns="myNs">
+                                <ClrInstanceID> %1 </ClrInstanceID>
+                                <MethodID> %2 </MethodID>
+                                <ModuleID> %3 </ModuleID>
+                                <MethodToken> %4 </MethodToken>
+                                <MethodNamespace> %5 </MethodNamespace>
+                                <MethodName> %6 </MethodName>
+                                <MethodSignature> %7 </MethodSignature>
+                            </JitDoneVerbose>
+                        </UserData>
+                    </template>
+
                 </templates>
 
                 <events>
@@ -8169,6 +8191,11 @@
                            keywords ="ThreadingKeyword" opcode="ThreadName"
                            task="MonoProfiler"
                            symbol="MonoProfilerThreadName" message="$(string.MonoProfilerPublisher.ThreadNameEventMessage)" />
+
+                    <event value="62" version="0" level="win:Verbose"  template="JitDoneVerbose"
+                           keywords ="JitKeyword" opcode="JitDoneVerbose"
+                           task="MonoProfiler"
+                           symbol="MonoProfilerJitDoneVerbose" message="$(string.MonoProfilerPublisher.JitDoneVerboseEventMessage)" />
                 </events>
             </provider>
         </events>
@@ -9277,6 +9304,8 @@
                 <string id="MonoProfilerPublisher.ThreadExitedOpcodeMessage" value="ThreadExited" />
                 <string id="MonoProfilerPublisher.ThreadNameOpcodeMessage" value="ThreadName" />
 
+                <string id="MonoProfilerPublisher.JitDoneVerboseOpcodeMessage" value="JitDoneVerbose" />
+
                 <string id="MonoProfilerPublisher.CodeBufferTypeMap.MethodMessage" value="Method" />
                 <string id="MonoProfilerPublisher.CodeBufferTypeMap.MethodTrampolineMessage" value="MethodTrampoline" />
                 <string id="MonoProfilerPublisher.CodeBufferTypeMap.UnboxTrampolineMessage" value="UnboxTrampoline" />
@@ -9367,6 +9396,8 @@
 
                 <string id="MonoProfilerPublisher.ThreadStartedStoppingStoppedExitedEventMessage" value="ClrInstanceID=%1;%nThreadID=%2" />
                 <string id="MonoProfilerPublisher.ThreadNameEventMessage" value="ClrInstanceID=%1;%nThreadID=%2;%nThreadName=%3" />
+
+                <string id="MonoProfilerPublisher.JitDoneVerboseEventMessage" value="ClrInstanceID=%1;%nMethodId=%2;%nModuleID=%3;%nMethodToken=%4;%nMethodNamespace=%5;%nMethodName=%6;%nMethodSignature=%7" />
             </stringTable>
         </resources>
     </localization>
