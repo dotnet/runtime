@@ -20,7 +20,7 @@ jobs:
     buildConfig: checked
     platforms:
     - windows_x64
-    - windows_x86
+    # - windows_x86
 
     variables:
     - name: PythonScript
@@ -28,7 +28,8 @@ jobs:
     - name: PipScript
       value: 'py -3 -m pip'
     - name: Core_Root_Dir
-      value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
+      value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\windows.x64.checked\Tests\Core_Root'
+      # value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
     - name: SpmiCollectionLocation
       value: '$(Build.SourcesDirectory)\artifacts\spmi\'
 
