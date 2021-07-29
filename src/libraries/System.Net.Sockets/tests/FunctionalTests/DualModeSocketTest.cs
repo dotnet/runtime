@@ -854,8 +854,8 @@ namespace System.Net.Sockets.Tests
                     client.WaitHandle.WaitOne(TestSettings.PassingTestTimeout),
                     "Timed out while waiting for connection");
                 Assert.True(
-                        async.AsyncWaitHandle.WaitOne(TestSettings.PassingTestTimeout),
-                        "Timed out while to accept the client");
+                    async.AsyncWaitHandle.WaitOne(TestSettings.PassingTestTimeout),
+                    "Timed out while waiting to accept the client");
 
                 // Due to the nondeterministic nature of calling dispose on a Socket that is doing
                 // an EndAccept operation, we expect two types of exceptions to happen.
