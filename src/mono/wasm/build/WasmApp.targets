@@ -142,6 +142,8 @@
       <ParsedRuntimeConfigFilePath>$(TargetDir)publish\runtimeconfig.bin</ParsedRuntimeConfigFilePath>
     </PropertyGroup>
 
+    <Error Condition="!Exists('$(RuntimeConfigFilePath)')" Text="RuntimeConfigFilePath=$(RuntimeConfigFilePath) doesn't exist" />
+
     <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
       <RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
       <RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
@@ -173,7 +175,6 @@
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
 
-      <WasmExtraFilesToDeploy Include="$(TargetDir)publish\runtimeconfig.bin" TargetPath="managed" />
       <WasmFilesToIncludeInFileSystem Include="$(TargetDir)publish\runtimeconfig.bin" />
     </ItemGroup>
 

@@ -22,9 +22,7 @@
 <Project>
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
-  <UsingTask TaskName="RuntimeConfigParserTask"
-             AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)"
-             Condition="'$(RuntimeConfigParserTasksAssemblyPath)' != ''" />
+  <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)" />
 
   <PropertyGroup>
     <PublishTrimmed>true</PublishTrimmed>

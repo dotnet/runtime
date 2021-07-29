@@ -97,6 +97,7 @@
                                                  .Replace('{MonoProjectRoot}', '$(MonoProjectRoot)')
                                                  .Replace('{MonoAOTCompilerTasksAssemblyPath}', '$(MonoAOTCompilerTasksAssemblyPath)')
                                                  .Replace('{JsonToItemsTaskFactoryTasksAssemblyPath}', '$(JsonToItemsTaskFactoryTasksAssemblyPath)')
+                                                 .Replace('{RuntimeConfigParserTasksAssemblyPath}', '$(RuntimeConfigParserTasksAssemblyPath)')
                                                  .Replace('{WasmAppBuilderTasksAssemblyPath}', '$(WasmAppBuilderTasksAssemblyPath)')
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackRidDir}', '$(MicrosoftNetCoreAppRuntimePackRidDir)'))"
                       Overwrite="true" />
