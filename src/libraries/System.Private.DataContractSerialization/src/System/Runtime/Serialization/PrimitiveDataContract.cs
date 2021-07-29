@@ -346,6 +346,9 @@ namespace System.Runtime.Serialization
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This warns because the call to Base has the type annotated with DynamicallyAccessedMembers so it warns" +
             "when looking into the methods of NullPrimitiveDataContract. Because this just represents null, we suppress.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111",
+            Justification = "This warns because the call to Base has the type annotated with DynamicallyAccessedMembers so it warns" +
+            "when looking into the methods of NullPrimitiveDataContract. Because this just represents null, we suppress.")]
         public NullPrimitiveDataContract() : base(typeof(NullPrimitiveDataContract), DictionaryGlobals.EmptyString, DictionaryGlobals.EmptyString)
         {
 
