@@ -47,16 +47,14 @@ namespace System
         [ConditionalFact(nameof(ManualTestsEnabled))]
         public static void ConsoleReadSupportsBackspace()
         {
-            string expectedLine = "aab\r";
+            const string expectedLine = "aab\r";
 
-            // Use Console.ReadLine
             Console.WriteLine($"Please type 'a' 3 times, press 'Backspace' to erase 1, then type a single 'b' and press 'Enter'.");
             foreach (char c in expectedLine)
             {
                 Assert.Equal((int)c, Console.Read());
             }
             AssertUserExpectedResults("the characters you typed properly echoed as you typed");
-
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
