@@ -65,10 +65,10 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
         return true;
     }
 
-    // For framework-dependent apps, use DOTNET_ROOT
+    // For framework-dependent apps, use DOTNET_ROOT_<ARCH>
     pal::string_t default_install_location;
-    pal::string_t dotnet_root_env_var_name = get_dotnet_root_env_var_name();
-    if (get_file_path_from_env(dotnet_root_env_var_name.c_str(), out_dotnet_root))
+    pal::string_t dotnet_root_env_var_name;
+    if (get_dotnet_root_from_env(&dotnet_root_env_var_name, out_dotnet_root))
     {
         trace::info(_X("Using environment variable %s=[%s] as runtime location."), dotnet_root_env_var_name.c_str(), out_dotnet_root->c_str());
     }
@@ -134,7 +134,7 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
 #endif // !FEATURE_APPHOST && !FEATURE_LIBHOST
 }
 
-bool fxr_resolver::try_get_path_from_dotnet_root(const pal::string_t &dotnet_root, pal::string_t *out_fxr_path)
+bool fxr_resolver::try_get_path_from_dotnet_root(const pal::string_t& dotnet_root, pal::string_t* out_fxr_path)
 {
     pal::string_t fxr_dir = dotnet_root;
     append_path(&fxr_dir, _X("host"));
@@ -148,7 +148,7 @@ bool fxr_resolver::try_get_path_from_dotnet_root(const pal::string_t &dotnet_roo
     return get_latest_fxr(std::move(fxr_dir), out_fxr_path);
 }
 
-bool fxr_resolver::try_get_existing_fxr(pal::dll_t *out_fxr, pal::string_t *out_fxr_path)
+bool fxr_resolver::try_get_existing_fxr(pal::dll_t* out_fxr, pal::string_t* out_fxr_path)
 {
     if (!pal::get_loaded_library(LIBFXR_NAME, "hostfxr_main", out_fxr, out_fxr_path))
         return false;

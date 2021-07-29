@@ -4,7 +4,7 @@ This depends on `emsdk` to be installed.
 
 ## emsdk on mac
 
-* You can run `make provision-wasm`, which will install it to `$reporoot/src/mono/wasm/emsdk`.
+* You can run `make provision-wasm`, which will install it to `$reporoot/src/mono/wasm/emsdk` .
 Note: Irrespective of `$(EMSDK_PATH)`'s value, `provision-wasm` will always install into `$reporoot/src/mono/wasm/emsdk`.
 
 `EMSDK_PATH` is set to `$reporoot/src/mono/wasm/emsdk` by default, by the Makefile.
@@ -13,7 +13,7 @@ Note: `EMSDK_PATH` is set by default in `src/mono/wasm/Makefile`, so building ta
 you are directly using the `dotnet build`, or `build.sh`.
 
 * Alternatively you can install **correct version** yourself from the [Emscripten SDK guide](https://emscripten.org/docs/getting_started/downloads.html).
-Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.21`. See [emscripten-version.txt](./emscripten-version.txt)
+Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.23`. See [emscripten-version.txt](./emscripten-version.txt)
 
 Make sure to set `EMSDK_PATH` variable, whenever building, or running tests for wasm.
 
@@ -154,3 +154,14 @@ The samples in `src/mono/sample/wasm` can be build and run like this:
 `dotnet build /t:RunSample browser/Wasm.Browser.Sample.csproj`
 
 To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the above command lines.
+
+### Upgrading Emscripten
+
+Bumping Emscripten version involves these steps:
+
+* update https://github.com/dotnet/runtime/blob/main/src/mono/wasm/emscripten-version.txt
+* bump emscripten versions in docker images in https://github.com/dotnet/dotnet-buildtools-prereqs-docker
+* bump emscripten in https://github.com/dotnet/emsdk
+* update version number in docs
+* update `Microsoft.NET.Runtime.Emscripten.<emscripten version>.Node.win-x64` package name, version and sha hash in https://github.com/dotnet/runtime/blob/main/eng/Version.Details.xml and in https://github.com/dotnet/runtime/blob/main/eng/Versions.props. the sha is the commit hash in https://github.com/dotnet/emsdk and the package version can be found at https://dev.azure.com/dnceng/public/_packaging?_a=feed&feed=dotnet6
+* update packages in the workload manifest https://github.com/dotnet/runtime/blob/main/src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/WorkloadManifest.json.in

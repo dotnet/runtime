@@ -225,7 +225,7 @@ namespace System.Diagnostics
                     else
                         sb.AppendLine();
 
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "   {0} ", word_At);
+                    sb.Append("   ").Append(word_At).Append(' ');
 
                     bool isAsync = false;
                     Type? declaringType = mb.DeclaringType;

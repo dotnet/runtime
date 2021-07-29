@@ -48,6 +48,9 @@ mono_metadata_update_image_close_all (MonoImage *base_image);
 gpointer
 mono_metadata_update_get_updated_method_rva (MonoImage *base_image, uint32_t idx);
 
+gpointer
+mono_metadata_update_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx);
+
 gboolean
 mono_metadata_update_table_bounds_check (MonoImage *base_image, int table_index, int token_index);
 

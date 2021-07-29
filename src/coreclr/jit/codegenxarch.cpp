@@ -28,7 +28,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *  Generate code that will set the given register to the integer constant.
  */
 
-void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFlags flags)
+void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFlags flags DEBUGARG(GenTreeFlags gtFlags))
 {
     // Reg cannot be a FP reg
     assert(!genIsValidFloatReg(reg));
@@ -45,7 +45,7 @@ void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFla
     else
     {
         // TODO-XArch-CQ: needs all the optimized cases
-        GetEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(type), reg, val);
+        GetEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(type), reg, val DEBUGARG(gtFlags));
     }
 }
 
@@ -440,7 +440,7 @@ void CodeGen::genEHFinallyOrFilterRet(BasicBlock* block)
 void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
                                      regNumber reg,
                                      ssize_t   imm,
-                                     insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(unsigned gtFlags))
+                                     insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
@@ -505,7 +505,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
             else
             {
-                genSetRegToIcon(targetReg, cnsVal, targetType);
+                genSetRegToIcon(targetReg, cnsVal, targetType, INS_FLAGS_DONT_CARE DEBUGARG(tree->gtFlags));
             }
         }
         break;
@@ -2752,26 +2752,47 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         src = src->AsUnOp()->gtGetOp1();
     }
 
+    unsigned size = node->GetLayout()->GetSize();
+
+    // An SSE mov that accesses data larger than 8 bytes may be implemented using
+    // multiple memory accesses. Hence, the JIT must not use such stores when
+    // INITBLK zeroes a struct that contains GC pointers and can be observed by
+    // other threads (i.e. when dstAddr is not an address of a local).
+    // For example, this can happen when initializing a struct field of an object.
+    const bool canUse16BytesSimdMov = !node->IsOnHeapAndContainsReferences();
+
+#ifdef TARGET_AMD64
+    // On Amd64 the JIT will not use SIMD stores for such structs and instead
+    // will always allocate a GP register for src node.
+    const bool willUseSimdMov = canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES);
+#else
+    // On X86 the JIT will use movq for structs that are larger than 16 bytes
+    // since it is more beneficial than using two mov-s from a GP register.
+    const bool willUseSimdMov = (size >= 16);
+#endif
+
     if (!src->isContained())
     {
         srcIntReg = genConsumeReg(src);
     }
     else
     {
-        // If src is contained then it must be 0 and the size must be a multiple
-        // of XMM_REGSIZE_BYTES so initialization can use only SSE2 instructions.
+        // If src is contained then it must be 0.
         assert(src->IsIntegralConst(0));
-        assert((node->GetLayout()->GetSize() % XMM_REGSIZE_BYTES) == 0);
+        assert(willUseSimdMov);
+#ifdef TARGET_AMD64
+        assert(size % 16 == 0);
+#else
+        assert(size % 8 == 0);
+#endif
     }
 
     emitter* emit = GetEmitter();
-    unsigned size = node->GetLayout()->GetSize();
 
     assert(size <= INT32_MAX);
     assert(dstOffset < (INT32_MAX - static_cast<int>(size)));
 
-    // Fill as much as possible using SSE2 stores.
-    if (size >= XMM_REGSIZE_BYTES)
+    if (willUseSimdMov)
     {
         regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
@@ -2791,9 +2812,25 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 #endif
         }
 
-        instruction simdMov = simdUnalignedMovIns();
-        for (unsigned regSize = XMM_REGSIZE_BYTES; size >= regSize; size -= regSize, dstOffset += regSize)
+        instruction simdMov      = simdUnalignedMovIns();
+        unsigned    regSize      = XMM_REGSIZE_BYTES;
+        unsigned    bytesWritten = 0;
+
+        while (bytesWritten < size)
         {
+#ifdef TARGET_X86
+            if (!canUse16BytesSimdMov || (bytesWritten + regSize > size))
+            {
+                simdMov = INS_movq;
+                regSize = 8;
+            }
+#endif
+            if (bytesWritten + regSize > size)
+            {
+                assert(srcIntReg != REG_NA);
+                break;
+            }
+
             if (dstLclNum != BAD_VAR_NUM)
             {
                 emit->emitIns_S_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
@@ -2803,11 +2840,12 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                 emit->emitIns_ARX_R(simdMov, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
                                     dstAddrIndexScale, dstOffset);
             }
+
+            dstOffset += regSize;
+            bytesWritten += regSize;
         }
 
-        // TODO-CQ-XArch: On x86 we could initialize 8 byte at once by using MOVQ instead of two 4 byte MOV stores.
-        // On x64 it may also be worth zero initializing a 4/8 byte remainder using MOVD/MOVQ, that avoids the need
-        // to allocate a GPR just for the remainder.
+        size -= bytesWritten;
     }
 
     // Fill the remainder using normal stores.
@@ -4387,7 +4425,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
 #ifdef FEATURE_SIMD
     // storing of TYP_SIMD12 (i.e. Vector3) field
-    if (tree->TypeGet() == TYP_SIMD12)
+    if (targetType == TYP_SIMD12)
     {
         genStoreLclTypeSIMD12(tree);
         return;
@@ -4398,7 +4436,32 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     assert(genTypeSize(genActualType(targetType)) == genTypeSize(genActualType(op1->TypeGet())));
 
     genConsumeRegs(op1);
-    GetEmitter()->emitInsBinary(ins_Store(targetType), emitTypeSize(tree), tree, op1);
+
+    if (op1->OperIs(GT_BITCAST) && op1->isContained())
+    {
+        regNumber targetReg  = tree->GetRegNum();
+        GenTree*  bitCastSrc = op1->gtGetOp1();
+        var_types srcType    = bitCastSrc->TypeGet();
+        noway_assert(!bitCastSrc->isContained());
+
+        if (targetReg == REG_NA)
+        {
+            unsigned   lclNum = tree->GetLclNum();
+            LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+
+            GetEmitter()->emitIns_S_R(ins_Store(srcType, compiler->isSIMDTypeLocalAligned(lclNum)),
+                                      emitTypeSize(targetType), bitCastSrc->GetRegNum(), lclNum, 0);
+            varDsc->SetRegNum(REG_STK);
+        }
+        else
+        {
+            genBitCast(targetType, targetReg, srcType, bitCastSrc->GetRegNum());
+        }
+    }
+    else
+    {
+        GetEmitter()->emitInsBinary(ins_Store(targetType), emitTypeSize(tree), tree, op1);
+    }
 
     // Updating variable liveness after instruction was emitted
     genUpdateLife(tree);
@@ -4604,7 +4667,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
             // The VM doesn't allow such large array elements but let's be sure.
             noway_assert(scale <= INT32_MAX);
 #else  // !TARGET_64BIT
-            tmpReg              = node->GetSingleTempReg();
+            tmpReg = node->GetSingleTempReg();
 #endif // !TARGET_64BIT
 
             GetEmitter()->emitIns_R_I(emitter::inst3opImulForReg(tmpReg), EA_PTRSIZE, indexReg,
@@ -7032,64 +7095,6 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
             unreached();
     }
 
-    genProduceReg(treeNode);
-}
-
-//----------------------------------------------------------------------
-// genBitCast - Generate the instruction to move a value between register files
-//
-// Arguments
-//    targetType - the destination type
-//    targetReg  - the destination register
-//    srcType    - the source type
-//    srcReg     - the source register
-//
-void CodeGen::genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg)
-{
-    const bool srcFltReg = varTypeUsesFloatReg(srcType) || varTypeIsSIMD(srcType);
-    assert(srcFltReg == genIsValidFloatReg(srcReg));
-
-    const bool dstFltReg = varTypeUsesFloatReg(targetType) || varTypeIsSIMD(targetType);
-    assert(dstFltReg == genIsValidFloatReg(targetReg));
-
-    inst_Mov(targetType, targetReg, srcReg, /* canSkip */ true);
-}
-
-//----------------------------------------------------------------------
-// genCodeForBitCast - Generate code for a GT_BITCAST that is not contained
-//
-// Arguments
-//    treeNode - the GT_BITCAST for which we're generating code
-//
-void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
-{
-    regNumber targetReg  = treeNode->GetRegNum();
-    var_types targetType = treeNode->TypeGet();
-    GenTree*  op1        = treeNode->gtGetOp1();
-    genConsumeRegs(op1);
-
-    if (op1->isContained())
-    {
-        assert(op1->IsLocal() || op1->isIndir());
-        if (genIsRegCandidateLocal(op1))
-        {
-            unsigned lclNum = op1->AsLclVar()->GetLclNum();
-            GetEmitter()->emitIns_R_S(ins_Load(treeNode->TypeGet(), compiler->isSIMDTypeLocalAligned(lclNum)),
-                                      emitTypeSize(treeNode), targetReg, lclNum, 0);
-        }
-        else
-        {
-            op1->gtType = treeNode->TypeGet();
-            op1->SetRegNum(targetReg);
-            op1->ClearContained();
-            JITDUMP("Changing type of BITCAST source to load directly.");
-            genCodeForTreeNode(op1);
-        }
-    }
-    else
-    {
-        genBitCast(targetType, targetReg, op1->TypeGet(), op1->GetRegNum());
-    }
     genProduceReg(treeNode);
 }
 

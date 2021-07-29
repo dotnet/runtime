@@ -59,6 +59,46 @@ parser.add_argument("-max_size", help="Max size of each partition in MB")
 is_windows = platform.system() == "Windows"
 
 native_binaries_to_ignore = [
+    "api-ms-win-core-console-l1-1-0.dll",
+    "api-ms-win-core-datetime-l1-1-0.dll",
+    "api-ms-win-core-debug-l1-1-0.dll",
+    "api-ms-win-core-errorhandling-l1-1-0.dll",
+    "api-ms-win-core-file-l1-1-0.dll",
+    "api-ms-win-core-file-l1-2-0.dll",
+    "api-ms-win-core-file-l2-1-0.dll",
+    "api-ms-win-core-handle-l1-1-0.dll",
+    "api-ms-win-core-heap-l1-1-0.dll",
+    "api-ms-win-core-interlocked-l1-1-0.dll",
+    "api-ms-win-core-libraryloader-l1-1-0.dll",
+    "api-ms-win-core-localization-l1-2-0.dll",
+    "api-ms-win-core-memory-l1-1-0.dll",
+    "api-ms-win-core-namedpipe-l1-1-0.dll",
+    "api-ms-win-core-processenvironment-l1-1-0.dll",
+    "api-ms-win-core-processthreads-l1-1-0.dll",
+    "api-ms-win-core-processthreads-l1-1-1.dll",
+    "api-ms-win-core-profile-l1-1-0.dll",
+    "api-ms-win-core-rtlsupport-l1-1-0.dll",
+    "api-ms-win-core-string-l1-1-0.dll",
+    "api-ms-win-core-synch-l1-1-0.dll",
+    "api-ms-win-core-synch-l1-2-0.dll",
+    "api-ms-win-core-sysinfo-l1-1-0.dll",
+    "api-ms-win-core-timezone-l1-1-0.dll",
+    "api-ms-win-core-util-l1-1-0.dll",
+    "api-ms-win-crt-conio-l1-1-0.dll",
+    "api-ms-win-crt-convert-l1-1-0.dll",
+    "api-ms-win-crt-environment-l1-1-0.dll",
+    "api-ms-win-crt-filesystem-l1-1-0.dll",
+    "api-ms-win-crt-heap-l1-1-0.dll",
+    "api-ms-win-crt-locale-l1-1-0.dll",
+    "api-ms-win-crt-math-l1-1-0.dll",
+    "api-ms-win-crt-multibyte-l1-1-0.dll",
+    "api-ms-win-crt-private-l1-1-0.dll",
+    "api-ms-win-crt-process-l1-1-0.dll",
+    "api-ms-win-crt-runtime-l1-1-0.dll",
+    "api-ms-win-crt-stdio-l1-1-0.dll",
+    "api-ms-win-crt-string-l1-1-0.dll",
+    "api-ms-win-crt-time-l1-1-0.dll",
+    "api-ms-win-crt-utility-l1-1-0.dll",
     "clretwrc.dll",
     "clrgc.dll",
     "clrjit.dll",
@@ -68,6 +108,9 @@ native_binaries_to_ignore = [
     "clrjit_unix_arm_x86.dll",
     "clrjit_unix_arm64_arm64.dll",
     "clrjit_unix_arm64_x64.dll",
+    "clrjit_unix_armel_arm.dll",
+    "clrjit_unix_armel_arm64.dll",
+    "clrjit_unix_armel_x64.dll",
     "clrjit_unix_armel_x86.dll",
     "clrjit_unix_osx_arm64_arm64.dll",
     "clrjit_unix_osx_arm64_x64.dll",
@@ -92,6 +135,7 @@ native_binaries_to_ignore = [
     "CoreShim.dll",
     "createdump.exe",
     "crossgen.exe",
+    "crossgen2.exe",
     "dbgshim.dll",
     "ilasm.exe",
     "ildasm.exe",
@@ -108,12 +152,15 @@ native_binaries_to_ignore = [
     "mscordbi.dll",
     "mscorrc.dll",
     "msdia140.dll",
+    "R2RDump.exe",
+    "R2RTest.exe",
     "superpmi.exe",
     "superpmi-shim-collector.dll",
     "superpmi-shim-counter.dll",
     "superpmi-shim-simple.dll",
     "System.IO.Compression.Native.dll",
     "ucrtbase.dll",
+    "xunit.console.exe",
 ]
 
 MAX_FILES_COUNT = 1500
@@ -202,7 +249,9 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
         # Credit: https://stackoverflow.com/a/19859907
         dirs[:] = [d for d in dirs if d not in exclude_directories]
         for name in files:
-            if name in exclude_files:
+            # Make the exclude check case-insensitive
+            exclude_files_lower = [filename.lower() for filename in exclude_files]
+            if name.lower() in exclude_files_lower:
                 continue
             curr_file_path = path.join(file_path, name)
 

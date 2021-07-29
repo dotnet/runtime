@@ -42,7 +42,6 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/coree.h>
 #include <mono/metadata/cil-coff.h>
-#include <mono/utils/mono-io-portability.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/metadata/mono-private-unstable.h>
@@ -1061,7 +1060,8 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 	 *
 	 * 7. If this is a satellite request, call the ALC ResolveSatelliteAssembly method.
 	 *
-	 * 8. Call the ALC Resolving event.
+	 * 8. Call the ALC Resolving event.  If the ALC is not the default and this is not
+	 *    a satellite request, call the Resolving event in the default ALC first.
 	 *
 	 * 9. Call the ALC AssemblyResolve event (except for corlib satellite assemblies).
 	 *
@@ -1138,6 +1138,15 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 		}
 	}
 
+	// For compatibility with CoreCLR, invoke the Resolving event in the default ALC first whenever loading
+	// a non-satellite assembly into a non-default ALC.  See: https://github.com/dotnet/runtime/issues/54814
+	if (!is_default && !is_satellite) {
+		reference = mono_alc_invoke_resolve_using_resolving_event_nofail (mono_alc_get_default (), aname);
+		if (reference) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found with the Resolving event (default ALC): '%s'.", aname->name);
+			goto leave;
+		}
+	}
 	reference = mono_alc_invoke_resolve_using_resolving_event_nofail (alc, aname);
 	if (reference) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found with the Resolving event: '%s'.", aname->name);
@@ -1579,9 +1588,21 @@ invoke_assembly_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *an
 			if (hook->version == 2)
 				assembly = hook->func.v2 (alc, aname, apath, hook->user_data, error);
 			else { // v3
-				MonoGCHandle strong_gchandle = mono_gchandle_from_handle (mono_gchandle_get_target_handle (alc->gchandle), TRUE);
+				/*
+				 * For the default ALC, pass the globally known gchandle (since it's never collectible, it's always a strong handle).
+				 * For other ALCs, make a new strong handle that is passed to the caller.
+				 * Early at startup, when the default ALC exists, but its managed object doesn't, so the default ALC gchandle points to null.
+				 */
+				gboolean needs_free = TRUE;
+				MonoGCHandle strong_gchandle;
+				if (mono_alc_is_default (alc)) {
+					needs_free = FALSE;
+					strong_gchandle = alc->gchandle;
+				} else
+					strong_gchandle = mono_gchandle_from_handle (mono_gchandle_get_target_handle (alc->gchandle), TRUE);
 				assembly = hook->func.v3 (strong_gchandle, aname, apath, hook->user_data, error);
-				mono_gchandle_free_internal (strong_gchandle);
+				if (needs_free)
+					mono_gchandle_free_internal (strong_gchandle);
 			}
 			/* TODO: propagage error out to callers */
 			mono_error_assert_ok (error);

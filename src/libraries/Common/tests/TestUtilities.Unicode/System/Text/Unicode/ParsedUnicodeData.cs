@@ -151,7 +151,7 @@ namespace System.Text.Unicode
                         string baseName = value.PropName[..^1];
                         for (int i = value.FirstCodePoint; i <= value.LastCodePoint /* inclusive */; i++)
                         {
-                            dict.Add(i, baseName + i.ToString("X4", CultureInfo.InvariantCulture));
+                            dict.Add(i, $"{baseName}{i:X4}");
                         }
                     }
                 }

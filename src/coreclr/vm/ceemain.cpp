@@ -607,6 +607,11 @@ void EESocketCleanupHelper(bool isExecutingOnAltStack)
 #endif // TARGET_UNIX
 #endif // CROSSGEN_COMPILE
 
+void FatalErrorHandler(UINT errorCode, LPCWSTR pszMessage)
+{
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(errorCode, pszMessage);
+}
+
 void EEStartupHelper()
 {
     CONTRACTL
@@ -670,6 +675,9 @@ void EEStartupHelper()
         // This needs to be done before the EE has started
         InitializeStartupFlags();
 
+        IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
+
+        Thread::StaticInitialize();
         ThreadpoolMgr::StaticInitialize();
 
         MethodDescBackpatchInfoTracker::StaticInitialize();
@@ -703,11 +711,6 @@ void EEStartupHelper()
         }
 #endif
 
-#ifdef PROFILING_SUPPORTED
-        // The diagnostics server might register a profiler for delayed startup, indicate here that 
-        // it is not currently set. This will be set to TRUE if a profiler is registered.
-       g_profControlBlock.fIsStoredProfilerRegistered = FALSE;
-#endif // PROFILING_SUPPORTED
 #ifdef FEATURE_PERFTRACING
         DiagnosticServerAdapter::Initialize();
         DiagnosticServerAdapter::PauseForDiagnosticsMonitor();
@@ -829,7 +832,7 @@ void EEStartupHelper()
 
             g_runtimeLoadedBaseAddress = (SIZE_T)pe.GetBase();
             g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();
-            InitCodeAllocHint(g_runtimeLoadedBaseAddress, g_runtimeVirtualSize, GetRandomInt(64));
+            ExecutableAllocator::InitCodeAllocHint(g_runtimeLoadedBaseAddress, g_runtimeVirtualSize, GetRandomInt(64));
         }
 #endif // !TARGET_UNIX
 
@@ -1404,10 +1407,10 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
             // Don't call back in to the profiler if we are being torn down, it might be unloaded
             if (!fIsDllUnloading)
             {
-                BEGIN_PIN_PROFILER(CORProfilerPresent());
+                BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
                 GCX_PREEMP();
-                g_profControlBlock.pProfInterface->Shutdown();
-                END_PIN_PROFILER();
+                (&g_profControlBlock)->Shutdown();
+                END_PROFILER_CALLBACK();
             }
 
             g_fEEShutDown |= ShutDown_Profiler;

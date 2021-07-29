@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
+using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Versioning;
@@ -42,6 +43,7 @@ namespace System.Security.Cryptography
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete(Obsoletions.UseManagedSha1Message, DiagnosticId = Obsoletions.UseManagedSha1DiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public HMACSHA1(byte[] key, bool useManagedSha1) : this(key)
         {
             // useManagedSha1 is ignored

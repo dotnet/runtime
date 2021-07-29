@@ -58,7 +58,10 @@ namespace System.Text.Json.Serialization.Metadata
             JsonTypeInfo? elementInfo,
             JsonNumberHandling numberHandling,
             Action<Utf8JsonWriter, T>? serializeFunc,
-            Type elementType) : base(typeof(T), options, ConverterStrategy.Enumerable)
+            Type elementType,
+            object? createObjectWithArgs = null,
+            object? addFunc = null)
+            : base(typeof(T), options, ConverterStrategy.Enumerable)
         {
             JsonConverter<T> converter = new JsonMetadataServicesConverter<T>(converterCreator, ConverterStrategy.Enumerable, keyType: null, elementType);
 
@@ -67,6 +70,8 @@ namespace System.Text.Json.Serialization.Metadata
             NumberHandling = numberHandling;
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
             Serialize = serializeFunc;
+            CreateObjectWithArgs = createObjectWithArgs;
+            AddMethodDelegate = addFunc;
             SetCreateObjectFunc(createObjectFunc);
         }
 
@@ -82,7 +87,9 @@ namespace System.Text.Json.Serialization.Metadata
             JsonNumberHandling numberHandling,
             Action<Utf8JsonWriter, T>? serializeFunc,
             Type keyType,
-            Type elementType) : base(typeof(T), options, ConverterStrategy.Dictionary)
+            Type elementType,
+            object? createObjectWithArgs = null)
+            : base(typeof(T), options, ConverterStrategy.Dictionary)
         {
             JsonConverter<T> converter = new JsonMetadataServicesConverter<T>(converterCreator, ConverterStrategy.Dictionary, keyType, elementType);
 
@@ -94,6 +101,7 @@ namespace System.Text.Json.Serialization.Metadata
             NumberHandling = numberHandling;
             PropertyInfoForTypeInfo = JsonMetadataServices.CreateJsonPropertyInfoForClassInfo(typeof(T), this, converter, options);
             Serialize = serializeFunc;
+            CreateObjectWithArgs = createObjectWithArgs;
             SetCreateObjectFunc(createObjectFunc);
         }
 

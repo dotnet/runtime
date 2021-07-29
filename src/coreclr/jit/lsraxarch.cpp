@@ -1069,7 +1069,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // The return value will be on the X87 stack, and we will need to move it.
         dstCandidates = allRegs(registerType);
 #else  // !TARGET_X86
-        dstCandidates = RBM_FLOATRET;
+        dstCandidates                     = RBM_FLOATRET;
 #endif // !TARGET_X86
     }
     else if (registerType == TYP_LONG)
@@ -1297,7 +1297,14 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         switch (blkNode->gtBlkOpKind)
         {
             case GenTreeBlk::BlkOpKindUnroll:
-                if (size >= XMM_REGSIZE_BYTES)
+            {
+#ifdef TARGET_AMD64
+                const bool canUse16BytesSimdMov = !blkNode->IsOnHeapAndContainsReferences();
+                const bool willUseSimdMov       = canUse16BytesSimdMov && (size >= 16);
+#else
+                const bool willUseSimdMov = (size >= 16);
+#endif
+                if (willUseSimdMov)
                 {
                     buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
                     SetContainsAVXFlags();
@@ -1310,7 +1317,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     srcRegMask = allByteRegs();
                 }
 #endif
-                break;
+            }
+            break;
 
             case GenTreeBlk::BlkOpKindRepInstr:
                 dstAddrRegMask = RBM_RDI;

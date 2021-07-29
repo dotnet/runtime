@@ -331,6 +331,9 @@
   <data name="Cryptography_X509_NoOrMismatchedPemKey" xml:space="preserve">
     <value>The key contents do not contain a PEM, the content is malformed, or the key does not match the certificate.</value>
   </data>
+  <data name="Cryptography_X509_CertificateCorrupted" xml:space="preserve">
+    <value>Certificate '{0}' is corrupted.</value>
+  </data>
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started. Call MoveNext.</value>
   </data>

@@ -1749,7 +1749,7 @@ namespace System.Xml.Xsl.IlGen
                     }
                     else
                     {
-                        Debug.Assert(code != XmlTypeCode.QName, "QName values do not support the " + relOp + " operation");
+                        Debug.Assert(code != XmlTypeCode.QName, $"QName values do not support the {relOp} operation");
 
                         // Push -1, 0, or 1 onto the stack depending upon the result of the comparison
                         _helper.CallCompare(code);

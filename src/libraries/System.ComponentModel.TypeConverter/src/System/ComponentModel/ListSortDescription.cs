@@ -5,13 +5,13 @@ namespace System.ComponentModel
 {
     public class ListSortDescription
     {
-        public ListSortDescription(PropertyDescriptor property, ListSortDirection direction)
+        public ListSortDescription(PropertyDescriptor? property, ListSortDirection direction)
         {
             PropertyDescriptor = property;
             SortDirection = direction;
         }
 
-        public PropertyDescriptor PropertyDescriptor { get; set; }
+        public PropertyDescriptor? PropertyDescriptor { get; set; }
 
         public ListSortDirection SortDirection { get; set; }
     }

@@ -172,7 +172,7 @@ INLINE_OBSERVATION(RARE_GC_STRUCT,            bool,   "rarely called, has gc str
 
 // ------ Call Site Information -------
 
-INLINE_OBSERVATION(NONGENERIC_CALLS_GENERIC, bool,    "callee is generic and caller is not",  INFORMATION, CALLSITE)
+INLINE_OBSERVATION(NONGENERIC_CALLS_GENERIC,  bool,   "callee is generic and caller is not",  INFORMATION, CALLSITE)
 INLINE_OBSERVATION(ARG_EXACT_CLS,             int,    "arg is of an exact class",             INFORMATION, CALLSITE)
 INLINE_OBSERVATION(ARG_EXACT_CLS_SIG_IS_NOT,  int,    "arg is more concrete than in sig.",    INFORMATION, CALLSITE)
 INLINE_OBSERVATION(ARG_CONST,                 int,    "arg is a constant",                    INFORMATION, CALLSITE)
@@ -181,6 +181,7 @@ INLINE_OBSERVATION(FOLDABLE_INTRINSIC,        int,    "foldable intrinsic",     
 INLINE_OBSERVATION(FOLDABLE_EXPR,             int,    "foldable binary expression",           INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FOLDABLE_EXPR_UN,          int,    "foldable unary expression",            INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FOLDABLE_BRANCH,           int,    "foldable branch",                      INFORMATION, CALLSITE)
+INLINE_OBSERVATION(FOLDABLE_SWITCH,           int,    "foldable switch",                      INFORMATION, CALLSITE)
 INLINE_OBSERVATION(DIV_BY_CNS,                int,    "dividy by const",                      INFORMATION, CALLSITE)
 INLINE_OBSERVATION(CONSTANT_ARG_FEEDS_TEST,   bool,   "constant argument feeds test",         INFORMATION, CALLSITE)
 INLINE_OBSERVATION(DEPTH,                     int,    "depth",                                INFORMATION, CALLSITE)

@@ -1169,7 +1169,22 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	return reinterpret_cast<const ep_char8_t*>(GetAppDomain ()->GetRootAssembly ()->GetSimpleName ());
+	AppDomain *app_domain_ref = nullptr;
+	Assembly *assembly_ref = nullptr;
+
+	app_domain_ref = GetAppDomain ();
+	if (app_domain_ref != nullptr)
+	{
+		assembly_ref = app_domain_ref->GetRootAssembly ();
+		if (assembly_ref != nullptr)
+		{
+			return reinterpret_cast<const ep_char8_t*>(assembly_ref->GetSimpleName ());
+		}
+	}
+
+	// fallback to the empty string if we can't get assembly info, e.g., if the runtime is
+	// suspended before an assembly is loaded.
+	return reinterpret_cast<const ep_char8_t*>("");
 }
 
 static
@@ -1661,9 +1676,9 @@ ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 
 #ifndef DACCESS_COMPILE
 		// Let the profiler know the provider has been created so it can register if it wants to
-		BEGIN_PIN_PROFILER (CORProfilerIsMonitoringEventPipe ());
-		g_profControlBlock.pProfInterface->EventPipeProviderCreated (provider);
-		END_PIN_PROFILER ();
+		BEGIN_PROFILER_CALLBACK (CORProfilerTrackEventPipe ());
+		(&g_profControlBlock)->EventPipeProviderCreated (provider);
+		END_PROFILER_CALLBACK ();
 #endif // DACCESS_COMPILE
 }
 

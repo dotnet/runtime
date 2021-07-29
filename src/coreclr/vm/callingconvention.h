@@ -423,11 +423,12 @@ public:
                             //@todo: Is it more apropos to call LookupApproxFieldTypeHandle() here?	
                             TypeHandle fldHnd = pFD->GetApproxFieldTypeHandleThrowing();	
                             CONSISTENCY_CHECK(!fldHnd.IsNull());
-                            pMT = fldHnd.GetMethodTable();	
+                            pMT = fldHnd.GetMethodTable();
+                            FALLTHROUGH;
                         }	
-                        case ELEMENT_TYPE_PTR:	
-                        case ELEMENT_TYPE_I:	
-                        case ELEMENT_TYPE_U:	
+                        case ELEMENT_TYPE_PTR:
+                        case ELEMENT_TYPE_I:
+                        case ELEMENT_TYPE_U:
                         case ELEMENT_TYPE_I4:	
                         case ELEMENT_TYPE_U4:
                         {	

@@ -318,6 +318,9 @@
   <data name="FormatDateTimeOffset" xml:space="preserve">
     <value>The JSON value is not in a supported DateTimeOffset format.</value>
   </data>
+  <data name="FormatTimeSpan" xml:space="preserve">
+    <value>The JSON value is not in a supported TimeSpan format.</value>
+  </data>
   <data name="FormatGuid" xml:space="preserve">
     <value>The JSON value is not in a supported Guid format.</value>
   </data>
@@ -349,7 +352,7 @@
     <value>The data extension property '{0}.{1}' does not match the required signature of 'IDictionary&lt;string, JsonElement&gt;', 'IDictionary&lt;string, object&gt;' or 'JsonObject'.</value>
   </data>
   <data name="SerializationDuplicateTypeAttribute" xml:space="preserve">
-    <value>The type '{0}' cannot have more than one property that has the attribute '{1}'.</value>
+    <value>The type '{0}' cannot have more than one member that has the attribute '{1}'.</value>
   </data>
   <data name="SerializationNotSupportedType" xml:space="preserve">
     <value>The type '{0}' is not supported.</value>
@@ -604,5 +607,14 @@
   </data>
   <data name="NoDefaultOptionsForContext" xml:space="preserve">
     <value>To specify a serialization implementation for type '{0}'', context '{0}' must specify default options.</value>
+  </data>
+  <data name="FieldCannotBeVirtual" xml:space="preserve">
+    <value>A 'field' member cannot be 'virtual'. See arguments for the '{0}' and '{1}' parameters. </value>
+  </data>
+  <data name="MissingFSharpCoreMember" xml:space="preserve">
+    <value>Could not locate required member '{0}' from FSharp.Core. This might happen because your application has enabled member-level trimming.</value>
+  </data>
+  <data name="FSharpDiscriminatedUnionsNotSupported" xml:space="preserve">
+    <value>F# discriminated union serialization is not supported. Consider authoring a custom converter for the type.</value>
   </data>
 </root>
