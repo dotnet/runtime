@@ -5,12 +5,6 @@ build_test_wrappers()
     if [[ "$__BuildTestWrappers" -ne -0 ]]; then
         echo "${__MsgPrefix}Creating test wrappers..."
 
-        if [[ $__Mono -eq 1 ]]; then
-            __RuntimeFlavor="mono"
-        else
-            __RuntimeFlavor="coreclr"
-        fi
-
         __Exclude="$__RepoRootDir/src/tests/issues.targets"
         __BuildLogRootName="Tests_XunitWrapper"
 
@@ -274,7 +268,7 @@ build_Tests()
     if [[ "$__SkipManaged" != 1 ]]; then
         echo "Starting the Managed Tests Build..."
 
-        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "$__up"
+        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "$__up" "/p:RuntimeFlavor=$__RuntimeFlavor"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: managed test build failed. Refer to the build log files for details (above)"
@@ -575,6 +569,12 @@ fi
 
 if [[ "$__CrossBuild" == 1 ]]; then
     __UnprocessedBuildArgs+=("/p:CrossBuild=true")
+fi
+
+if [[ $__Mono -eq 1 ]]; then
+    __RuntimeFlavor="mono"
+else
+    __RuntimeFlavor="coreclr"
 fi
 
 # Set dependent variables
