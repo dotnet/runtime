@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -65,6 +65,13 @@ namespace Mono.Linker.Dataflow
 		public DynamicallyAccessedMemberTypes GetTypeAnnotation (TypeDefinition type) =>
 			GetAnnotations (type).TypeAnnotation;
 
+		public bool ShouldWarnWhenAccessedForReflection (IMemberDefinition provider) =>
+			provider switch {
+				MethodDefinition method => ShouldWarnWhenAccessedForReflection (method),
+				FieldDefinition field => ShouldWarnWhenAccessedForReflection (field),
+				_ => false
+			};
+
 		public DynamicallyAccessedMemberTypes GetGenericParameterAnnotation (GenericParameter genericParameter)
 		{
 			TypeDefinition declaringType = _context.Resolve (genericParameter.DeclaringType);
@@ -83,13 +90,55 @@ namespace Mono.Linker.Dataflow
 			return DynamicallyAccessedMemberTypes.None;
 		}
 
-		public bool ShouldWarnWhenAccessedForReflection (MethodDefinition method) =>
-			GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation) &&
-			(annotation.ParameterAnnotations != null || annotation.ReturnParameterAnnotation != DynamicallyAccessedMemberTypes.None);
+		public bool ShouldWarnWhenAccessedForReflection (MethodDefinition method)
+		{
+			if (!GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation))
+				return false;
 
-		public bool MethodHasNoAnnotatedParameters (MethodDefinition method) =>
-			GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation) &&
-			annotation.ParameterAnnotations == null;
+			if (annotation.ParameterAnnotations == null && annotation.ReturnParameterAnnotation == DynamicallyAccessedMemberTypes.None)
+				return false;
+
+			// If the method only has annotation on the return value and it's not virtual avoid warning.
+			// Return value annotations are "consumed" by the caller of a method, and as such there is nothing
+			// wrong calling these dynamically. The only problem can happen if something overrides a virtual
+			// method with annotated return value at runtime - in this case the trimmer can't validate
+			// that the method will return only types which fulfill the annotation's requirements.
+			// For example:
+			//   class BaseWithAnnotation
+			//   {
+			//       [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
+			//       public abstract Type GetTypeWithFields();
+			//   }
+			//
+			//   class UsingTheBase
+			//   {
+			//       public void PrintFields(Base base)
+			//       {
+			//            // No warning here - GetTypeWithFields is correctly annotated to allow GetFields on the return value.
+			//            Console.WriteLine(string.Join(" ", base.GetTypeWithFields().GetFields().Select(f => f.Name)));
+			//       }
+			//   }
+			//
+			// If at runtime (through ref emit) something generates code like this:
+			//   class DerivedAtRuntimeFromBase
+			//   {
+			//       // No point in adding annotation on the return value - nothing will look at it anyway
+			//       // Linker will not see this code, so there are no checks
+			//       public override Type GetTypeWithFields() { return typeof(TestType); }
+			//   }
+			//
+			// If TestType from above is trimmed, it may note have all its fields, and there would be no warnings generated.
+			// But there has to be code like this somewhere in the app, in order to generate the override:
+			//   class RuntimeTypeGenerator
+			//   {
+			//       public MethodInfo GetBaseMethod()
+			//       {
+			//            // This must warn - that the GetTypeWithFields has annotation on the return value
+			//            return typeof(BaseWithAnnotation).GetMethod("GetTypeWithFields");
+			//       }
+			//   }
+			return method.IsVirtual || annotation.ParameterAnnotations != null;
+		}
 
 		public bool ShouldWarnWhenAccessedForReflection (FieldDefinition field) =>
 			GetAnnotations (field.DeclaringType).TryGetAnnotation (field, out _);
