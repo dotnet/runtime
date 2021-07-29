@@ -271,7 +271,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributesInternal(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
         #endregion
 
@@ -410,8 +410,26 @@ namespace System.Reflection
         [Diagnostics.DebuggerHidden]
         public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
+            // INVOCATION_FLAGS_CONTAINS_STACK_POINTERS means that the struct (either the declaring type or the return type)
+            // contains pointers that point to the stack. This is either a ByRef or a TypedReference. These structs cannot
+            // be boxed and thus cannot be invoked through reflection which only deals with boxed value type objects.
+            if ((InvocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE | INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS)) != 0)
+                ThrowNoInvokeException();
+
+            // check basic method consistency. This call will throw if there are problems in the target/method relationship
+            CheckConsistency(obj);
+
+            Signature sig = Signature;
+            int actualCount = (parameters != null) ? parameters.Length : 0;
+            if (sig.Arguments.Length != actualCount)
+                throw new TargetParameterCountException(SR.Arg_ParmCnt);
+
             StackAllocedArguments stackArgs = default; // try to avoid intermediate array allocation if possible
-            Span<object?> arguments = InvokeArgumentsCheck(ref stackArgs, obj, invokeAttr, binder, parameters, culture);
+            Span<object?> arguments = default;
+            if (actualCount != 0)
+            {
+                arguments = CheckArguments(ref stackArgs, parameters!, binder, invokeAttr, culture, sig);
+            }
 
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             object? retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
@@ -426,34 +444,30 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        private Span<object?> InvokeArgumentsCheck(ref StackAllocedArguments stackArgs, object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
+        internal object? InvokeOneParameter(object? obj, BindingFlags invokeAttr, Binder? binder, object? parameter, CultureInfo? culture)
         {
-            Signature sig = Signature;
-
-            // get the signature
-            int formalCount = sig.Arguments.Length;
-            int actualCount = (parameters != null) ? parameters.Length : 0;
-
-            INVOCATION_FLAGS invocationFlags = InvocationFlags;
-
             // INVOCATION_FLAGS_CONTAINS_STACK_POINTERS means that the struct (either the declaring type or the return type)
             // contains pointers that point to the stack. This is either a ByRef or a TypedReference. These structs cannot
             // be boxed and thus cannot be invoked through reflection which only deals with boxed value type objects.
-            if ((invocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE | INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS)) != 0)
+            if ((InvocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE | INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS)) != 0)
+            {
                 ThrowNoInvokeException();
+            }
 
             // check basic method consistency. This call will throw if there are problems in the target/method relationship
             CheckConsistency(obj);
 
-            if (formalCount != actualCount)
-                throw new TargetParameterCountException(SR.Arg_ParmCnt);
-
-            Span<object?> retVal = default;
-            if (actualCount != 0)
+            Signature sig = Signature;
+            if (sig.Arguments.Length != 1)
             {
-                retVal = CheckArguments(ref stackArgs, parameters!, binder, invokeAttr, culture, sig);
+                throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
-            return retVal;
+
+            StackAllocedArguments stackArgs = default;
+            Span<object?> arguments = CheckArguments(ref stackArgs, new ReadOnlySpan<object?>(ref parameter, 1), binder, invokeAttr, culture, sig);
+
+            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
+            return RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, constructor: false, wrapExceptions);
         }
 
         #endregion

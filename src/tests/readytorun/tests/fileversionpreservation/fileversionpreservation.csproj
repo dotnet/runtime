@@ -10,14 +10,4 @@
     <Compile Include="fileversionpreservation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-%Core_Root%\crossgen /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out fileversionpreservation.ni.exe fileversionpreservation.exe
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-$CORE_ROOT/crossgen -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out fileversionpreservation.ni.exe fileversionpreservation.exe
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>

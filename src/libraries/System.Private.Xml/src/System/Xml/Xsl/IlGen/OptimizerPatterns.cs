@@ -233,7 +233,7 @@ namespace System.Xml.Xsl.IlGen
                 case 2: arg = _arg2; break;
             }
 
-            Debug.Assert(arg != null, "There is no '" + argNum + "' argument.");
+            Debug.Assert(arg != null, $"There is no '{argNum}' argument.");
             return arg;
         }
 

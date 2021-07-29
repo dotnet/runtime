@@ -479,10 +479,17 @@ namespace System.IO
 
         public override ValueTask DisposeAsync() => _strategy.DisposeAsync();
 
-        public override void CopyTo(Stream destination, int bufferSize) => _strategy.CopyTo(destination, bufferSize);
+        public override void CopyTo(Stream destination, int bufferSize)
+        {
+            ValidateCopyToArguments(destination, bufferSize);
+            _strategy.CopyTo(destination, bufferSize);
+        }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
-            => _strategy.CopyToAsync(destination, bufferSize, cancellationToken);
+        {
+            ValidateCopyToArguments(destination, bufferSize);
+            return _strategy.CopyToAsync(destination, bufferSize, cancellationToken);
+        }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {

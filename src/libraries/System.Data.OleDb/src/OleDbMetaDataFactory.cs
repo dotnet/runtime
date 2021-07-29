@@ -214,13 +214,13 @@ namespace System.Data.OleDb
                 StringBuilder compositeSeparatorPattern = new StringBuilder();
                 StringBuilder patternEscaped = new StringBuilder();
                 ADP.EscapeSpecialCharacters(catalogSeparatorPattern, patternEscaped);
-                compositeSeparatorPattern.Append(patternEscaped.ToString());
+                compositeSeparatorPattern.Append(patternEscaped);
                 if ((schemaSeparatorPattern != null) && (schemaSeparatorPattern != catalogSeparatorPattern))
                 {
                     compositeSeparatorPattern.Append('|');
                     patternEscaped.Length = 0;
                     ADP.EscapeSpecialCharacters(schemaSeparatorPattern, patternEscaped);
-                    compositeSeparatorPattern.Append(patternEscaped.ToString());
+                    compositeSeparatorPattern.Append(patternEscaped);
                 }
                 dataSourceInformation[DbMetaDataColumnNames.CompositeIdentifierSeparatorPattern] = compositeSeparatorPattern.ToString();
             }

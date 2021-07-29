@@ -13,23 +13,25 @@ namespace System.IO.Tests
 
         protected override bool UsesOffsets => false;
 
-        [Fact]
-        public void ReturnsZeroForEmptyFile()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public void ReturnsZeroForEmptyFile(FileOptions options)
         {
-            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write))
+            using (SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.CreateNew, FileAccess.Write, options: options))
             {
                 Assert.Equal(0, RandomAccess.GetLength(handle));
             }
         }
 
-        [Fact]
-        public void ReturnsExactSizeForNonEmptyFiles()
+        [Theory]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public void ReturnsExactSizeForNonEmptyFiles(FileOptions options)
         {
             const int fileSize = 123;
             string filePath = GetTestFilePath();
             File.WriteAllBytes(filePath, new byte[fileSize]);
 
-            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open))
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.Open, options: options))
             {
                 Assert.Equal(fileSize, RandomAccess.GetLength(handle));
             }

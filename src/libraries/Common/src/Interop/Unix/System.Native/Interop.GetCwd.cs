@@ -14,18 +14,16 @@ internal static partial class Interop
 
         internal static unsafe string GetCwd()
         {
-            const int StackLimit = 256;
-
             // First try to get the path into a buffer on the stack
-            byte* stackBuf = stackalloc byte[StackLimit];
-            string? result = GetCwdHelper(stackBuf, StackLimit);
+            byte* stackBuf = stackalloc byte[DefaultPathBufferSize];
+            string? result = GetCwdHelper(stackBuf, DefaultPathBufferSize);
             if (result != null)
             {
                 return result;
             }
 
             // If that was too small, try increasing large buffer sizes
-            int bufferSize = StackLimit;
+            int bufferSize = DefaultPathBufferSize;
             while (true)
             {
                 checked { bufferSize *= 2; }

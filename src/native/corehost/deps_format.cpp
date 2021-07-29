@@ -84,7 +84,7 @@ void deps_json_t::reconcile_libraries_with_targets(
                 size_t pos = lib_name.find(_X("/"));
                 entry.library_name = lib_name.substr(0, pos);
                 entry.library_version = lib_name.substr(pos + 1);
-                entry.library_type = pal::to_lower(library.value[_X("type")].GetString());
+                entry.library_type = to_lower(library.value[_X("type")].GetString());
                 entry.library_hash = hash;
                 entry.library_path = library_path;
                 entry.library_hash_path = library_hash_path;
@@ -439,7 +439,7 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
 bool deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph)
 {
     m_deps_file = deps_path;
-    m_file_exists = bundle::info_t::config_t::probe(deps_path) || pal::file_exists(deps_path);
+    m_file_exists = bundle::info_t::config_t::probe(deps_path) || pal::realpath(&m_deps_file, true);
 
     json_parser_t json;
     if (!m_file_exists)
@@ -449,7 +449,7 @@ bool deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_pa
         return true;
     }
 
-    if (!json.parse_file(deps_path))
+    if (!json.parse_file(m_deps_file))
     {
         return false;
     }

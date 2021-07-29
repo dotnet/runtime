@@ -262,7 +262,7 @@ namespace System.Text.Json
         /// <param name="returnType">The type of the object to convert to and return.</param>
         /// <param name="context">A metadata provider for serializable types.</param>
         /// <exception cref="System.ArgumentNullException">
-        /// <paramref name="json"/> is <see langword="null"/>.
+        /// <paramref name="json"/> or <paramref name="returnType"/> is <see langword="null"/>.
         ///
         /// -or-
         ///
@@ -307,7 +307,7 @@ namespace System.Text.Json
         /// <param name="returnType">The type of the object to convert to and return.</param>
         /// <param name="context">A metadata provider for serializable types.</param>
         /// <exception cref="System.ArgumentNullException">
-        /// <paramref name="json"/> is <see langword="null"/>.
+        /// <paramref name="json"/> or <paramref name="returnType"/> is <see langword="null"/>.
         ///
         /// -or-
         ///
@@ -355,12 +355,10 @@ namespace System.Text.Json
 
         private static TValue? ReadUsingMetadata<TValue>(ReadOnlySpan<char> json, JsonTypeInfo jsonTypeInfo)
         {
-            const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
-
             byte[]? tempArray = null;
 
             // For performance, avoid obtaining actual byte count unless memory usage is higher than the threshold.
-            Span<byte> utf8 = json.Length <= (ArrayPoolMaxSizeBeforeUsingNormalAlloc / JsonConstants.MaxExpansionFactorWhileTranscoding) ?
+            Span<byte> utf8 = json.Length <= (JsonConstants.ArrayPoolMaxSizeBeforeUsingNormalAlloc / JsonConstants.MaxExpansionFactorWhileTranscoding) ?
                 // Use a pooled alloc.
                 tempArray = ArrayPool<byte>.Shared.Rent(json.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) :
                 // Use a normal alloc since the pool would create a normal alloc anyway based on the threshold (per current implementation)

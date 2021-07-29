@@ -1947,6 +1947,9 @@ namespace System.Tests
 
             // Format: F
             yield return new object[] { typeof(SimpleEnum), 1, "F", "Red" };
+
+            // Format: G with Flags Attribute
+            yield return new object[] { typeof(AttributeTargets), (int)(AttributeTargets.Class | AttributeTargets.Delegate), "G", "Class, Delegate" };
         }
 
         [Theory]

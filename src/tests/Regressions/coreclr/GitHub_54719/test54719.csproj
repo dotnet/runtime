@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test54719.cs" />
+  </ItemGroup>
+</Project>

@@ -5,12 +5,6 @@ build_test_wrappers()
     if [[ "$__BuildTestWrappers" -ne -0 ]]; then
         echo "${__MsgPrefix}Creating test wrappers..."
 
-        if [[ $__Mono -eq 1 ]]; then
-            __RuntimeFlavor="mono"
-        else
-            __RuntimeFlavor="coreclr"
-        fi
-
         __Exclude="$__RepoRootDir/src/tests/issues.targets"
         __BuildLogRootName="Tests_XunitWrapper"
 
@@ -133,8 +127,7 @@ generate_layout()
     build_MSBuild_projects "Tests_Overlay_Managed" "$__RepoRootDir/src/tests/run.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
     # Precompile framework assemblies with crossgen if required
-    if [[ "$__DoCrossgen" != 0 || "$__DoCrossgen2" != 0 ]]; then
-        chmod +x "$__CrossgenExe"
+    if [[ "$__DoCrossgen2" != 0 ]]; then
         if [[ "$__SkipCrossgenFramework" == 0 ]]; then
             precompile_coreroot_fx
         fi
@@ -171,11 +164,7 @@ precompile_coreroot_fx()
         crossgenDir="$crossgenDir/$__HostArch"
     fi
 
-    if [[ "$__DoCrossgen" != 0 ]]; then
-        crossgenCmd="$crossgenCmd --crossgen --nocrossgen2 --crossgen-path \"$crossgenDir/crossgen\""
-    else
-        crossgenCmd="$crossgenCmd --verify-type-and-field-layout --crossgen2-path \"$crossgenDir/crossgen2/crossgen2.dll\""
-    fi
+    crossgenCmd="$crossgenCmd --verify-type-and-field-layout --crossgen2-path \"$crossgenDir/crossgen2/crossgen2.dll\""
 
     echo "Running $crossgenCmd"
     eval $crossgenCmd
@@ -189,17 +178,6 @@ precompile_coreroot_fx()
     mv "$outputDir"/*.dll "$CORE_ROOT"
 
     return 0
-}
-
-declare -a skipCrossGenFiles
-
-function is_skip_crossgen_test {
-    for skip in "${skipCrossGenFiles[@]}"; do
-        if [[ "$1" == "$skip" ]]; then
-            return 0
-        fi
-    done
-    return 1
 }
 
 build_Tests()
@@ -290,7 +268,7 @@ build_Tests()
     if [[ "$__SkipManaged" != 1 ]]; then
         echo "Starting the Managed Tests Build..."
 
-        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "$__up"
+        build_MSBuild_projects "Tests_Managed" "$__RepoRootDir/src/tests/build.proj" "Managed tests build (build tests)" "$__up" "/p:RuntimeFlavor=$__RuntimeFlavor"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: managed test build failed. Refer to the build log files for details (above)"
@@ -447,7 +425,6 @@ usage_list+=("-buildtestwrappersonly: only build the test wrappers.")
 usage_list+=("-copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-generatelayoutonly: only pull down dependencies and build coreroot.")
 
-usage_list+=("-crossgen: Precompiles the framework managed assemblies in coreroot.")
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
 usage_list+=("-allTargets: Build managed tests for all target platforms.")
@@ -478,11 +455,6 @@ handle_arguments_local() {
             __CopyNativeProjectsAfterCombinedTestBuild=true
             __SkipGenerateLayout=1
             __SkipCrossgenFramework=1
-            ;;
-
-        crossgen|-crossgen)
-            __DoCrossgen=1
-            __TestBuildMode=crossgen
             ;;
 
         crossgen2|-crossgen2)
@@ -559,9 +531,9 @@ __CopyNativeProjectsAfterCombinedTestBuild=true
 __CopyNativeTestBinaries=0
 __CrossBuild=0
 __DistroRid=""
-__DoCrossgen=0
 __DoCrossgen2=0
 __CompositeBuildMode=0
+__TestBuildMode=
 __DotNetCli="$__RepoRootDir/dotnet.sh"
 __GenerateLayoutOnly=
 __IsMSBuildOnNETCoreSupported=0
@@ -595,6 +567,16 @@ if [[ "${__BuildArch}" != "${__HostArch}" ]]; then
     __CrossBuild=1
 fi
 
+if [[ "$__CrossBuild" == 1 ]]; then
+    __UnprocessedBuildArgs+=("/p:CrossBuild=true")
+fi
+
+if [[ $__Mono -eq 1 ]]; then
+    __RuntimeFlavor="mono"
+else
+    __RuntimeFlavor="coreclr"
+fi
+
 # Set dependent variables
 __LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
@@ -607,17 +589,8 @@ __TestDir="$__RepoRootDir/src/tests"
 __TestWorkingDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__OSPlatformConfig"
 __TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__OSPlatformConfig"
-__CrossComponentBinDir="$__BinDir"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
 __MonoBinDir="$__RootBinDir/bin/mono/$__OSPlatformConfig"
-
-__CrossArch="$__HostArch"
-if [[ "$__CrossBuild" == 1 ]]; then
-    __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
-fi
-__CrossgenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__TargetOS.$BuildArch.$__BuildType.log"
-__CrossgenExe="$__CrossComponentBinDir/crossgen"
-__Crossgen2Dll="$__CrossComponentBinDir/crossgen2/crossgen2.dll"
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to it.
 # This is needed by CLI to function.

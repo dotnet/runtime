@@ -185,15 +185,29 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public void RecordObservableInstruments()
         {
+            List<Exception>? exceptionsList = null;
             DiagNode<Instrument>? current = _enabledMeasurementInstruments.First;
             while (current is not null)
             {
                 if (current.Value.IsObservable)
                 {
-                    current.Value.Observe(this);
+                    try
+                    {
+                        current.Value.Observe(this);
+                    }
+                    catch (Exception e)
+                    {
+                        exceptionsList ??= new List<Exception>();
+                        exceptionsList.Add(e);
+                    }
                 }
 
                 current = current.Next;
+            }
+
+            if (exceptionsList is not null)
+            {
+                throw new AggregateException(exceptionsList);
             }
         }
 

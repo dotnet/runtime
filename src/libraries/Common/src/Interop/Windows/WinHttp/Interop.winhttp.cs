@@ -18,8 +18,8 @@ internal static partial class Interop
 #endif
             IntPtr userAgent,
             uint accessType,
-            string proxyName,
-            string proxyBypass, int flags);
+            string? proxyName,
+            string? proxyBypass, int flags);
 
 #if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
@@ -54,7 +54,7 @@ internal static partial class Interop
             SafeWinHttpHandle connectHandle,
             string verb,
             string objectName,
-            string version,
+            string? version,
             string referrer,
             string acceptTypes,
             uint flags);
@@ -266,8 +266,8 @@ internal static partial class Interop
             SafeWinHttpHandle requestHandle,
             uint authTargets,
             uint authScheme,
-            string userName,
-            string password,
+            string? userName,
+            string? password,
             IntPtr reserved);
 
 #if DLLIMPORTGENERATOR_ENABLED

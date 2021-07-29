@@ -1,12 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Threading.AccessControl.Extensions.cs" />
     <Compile Include="System.Threading.AccessControl.cs" Condition="'$(TargetFramework)' != 'net461'" />
     <Compile Include="System.Threading.AccessControl.net461.cs" Condition="'$(TargetFramework)' == 'net461'" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\ref\System.Threading.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />

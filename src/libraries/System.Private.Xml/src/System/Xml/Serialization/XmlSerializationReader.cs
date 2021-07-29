@@ -105,6 +105,7 @@ namespace System.Xml.Serialization
         private string _charID = null!;
         private string _guidID = null!;
         private string _timeSpanID = null!;
+        private string _dateTimeOffsetID = null!;
 
         protected abstract void InitIDs();
 
@@ -214,6 +215,7 @@ namespace System.Xml.Serialization
             _charID = _r.NameTable.Add("char");
             _guidID = _r.NameTable.Add("guid");
             _timeSpanID = _r.NameTable.Add("TimeSpan");
+            _dateTimeOffsetID = _r.NameTable.Add("dateTimeOffset");
             _base64ID = _r.NameTable.Add("base64");
 
             _anyURIID = _r.NameTable.Add("anyURI");
@@ -667,6 +669,8 @@ namespace System.Xml.Serialization
                     value = new Guid(CollapseWhitespace(ReadStringValue()));
                 else if ((object)type.Name == (object)_timeSpanID)
                     value = XmlConvert.ToTimeSpan(ReadStringValue());
+                else if ((object)type.Name == (object)_dateTimeOffsetID)
+                    value = XmlConvert.ToDateTimeOffset(ReadStringValue());
                 else
                     value = ReadXmlNodes(elementCanBeType);
             }
@@ -764,6 +768,8 @@ namespace System.Xml.Serialization
                     value = default(Nullable<Guid>);
                 else if ((object)type.Name == (object)_timeSpanID)
                     value = default(Nullable<TimeSpan>);
+                else if ((object)type.Name == (object)_dateTimeOffsetID)
+                    value = default(Nullable<DateTimeOffset>);
                 else
                     value = null;
             }
@@ -2464,7 +2470,7 @@ namespace System.Xml.Serialization
                 {
                     if (mappings[j].Name == member.ChoiceIdentifier.MemberName)
                     {
-                        choiceSource = "p[" + j.ToString(CultureInfo.InvariantCulture) + "]";
+                        choiceSource = $"p[{j}]";
                         break;
                     }
                 }
@@ -2520,17 +2526,17 @@ namespace System.Xml.Serialization
             for (int i = 0; i < mappings.Length; i++)
             {
                 MemberMapping mapping = mappings[i];
-                string source = "p[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+                string source = $"p[{i}]";
                 string arraySource = source;
                 if (mapping.Xmlns != null)
                 {
-                    arraySource = "((" + mapping.TypeDesc!.CSharpName + ")" + source + ")";
+                    arraySource = $"(({mapping.TypeDesc!.CSharpName}){source})";
                 }
                 string? choiceSource = GetChoiceIdentifierSource(mappings, mapping);
                 Member member = new Member(this, source, arraySource, "a", i, mapping, choiceSource);
                 Member anyMember = new Member(this, source, null, "a", i, mapping, choiceSource);
                 if (!mapping.IsSequence)
-                    member.ParamsReadSource = "paramsRead[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+                    member.ParamsReadSource = $"paramsRead[{i}]";
                 if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
                 {
                     string nameSpecified = mapping.Name + "Specified";
@@ -2538,7 +2544,7 @@ namespace System.Xml.Serialization
                     {
                         if (mappings[j].Name == nameSpecified)
                         {
-                            member.CheckSpecifiedSource = "p[" + j.ToString(CultureInfo.InvariantCulture) + "]";
+                            member.CheckSpecifiedSource = $"p[{j}]";
                             break;
                         }
                     }
@@ -2700,15 +2706,15 @@ namespace System.Xml.Serialization
             for (int i = 0; i < mappings.Length; i++)
             {
                 MemberMapping mapping = mappings[i];
-                string source = "p[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+                string source = $"p[{i}]";
                 string arraySource = source;
                 if (mapping.Xmlns != null)
                 {
-                    arraySource = "((" + mapping.TypeDesc!.CSharpName + ")" + source + ")";
+                    arraySource = $"(({mapping.TypeDesc!.CSharpName}){source})";
                 }
                 Member member = new Member(this, source, arraySource, "a", i, mapping);
                 if (!mapping.IsSequence)
-                    member.ParamsReadSource = "paramsRead[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+                    member.ParamsReadSource = $"paramsRead[{i}]";
                 members[i] = member;
 
                 if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
@@ -2718,7 +2724,7 @@ namespace System.Xml.Serialization
                     {
                         if (mappings[j].Name == nameSpecified)
                         {
-                            member.CheckSpecifiedSource = "p[" + j.ToString(CultureInfo.InvariantCulture) + "]";
+                            member.CheckSpecifiedSource = $"p[{j}]";
                             break;
                         }
                     }
@@ -2826,15 +2832,11 @@ namespace System.Xml.Serialization
             return methodName;
         }
 
-        private string NextMethodName(string name)
-        {
-            return "Read" + (++NextMethodNumber).ToString(CultureInfo.InvariantCulture) + "_" + CodeIdentifier.MakeValidInternal(name);
-        }
+        private string NextMethodName(string name) =>
+            string.Create(CultureInfo.InvariantCulture, $"Read{++NextMethodNumber}_{CodeIdentifier.MakeValidInternal(name)}");
 
-        private string NextIdName(string name)
-        {
-            return "id" + (++_nextIdNumber).ToString(CultureInfo.InvariantCulture) + "_" + CodeIdentifier.MakeValidInternal(name);
-        }
+        private string NextIdName(string name) =>
+            string.Create(CultureInfo.InvariantCulture, $"id{(++_nextIdNumber)}_{CodeIdentifier.MakeValidInternal(name)}");
 
         private void WritePrimitive(TypeMapping mapping, string source)
         {
@@ -2961,7 +2963,7 @@ namespace System.Xml.Serialization
                 else
                 {
                     Writer.Write(", ");
-                    Writer.Write(constants[i].Value.ToString(CultureInfo.InvariantCulture) + "L");
+                    Writer.Write(string.Create(CultureInfo.InvariantCulture, $"{constants[i].Value}L"));
                 }
 
                 Writer.WriteLine(");");
@@ -3336,7 +3338,7 @@ namespace System.Xml.Serialization
                     string source = RaCodeGen.GetStringForMember("o", mapping.Name, structMapping.TypeDesc);
                     Member member = new Member(this, source, "a", i, mapping, GetChoiceIdentifierSource(mapping, "o", structMapping.TypeDesc));
                     if (!mapping.IsSequence)
-                        member.ParamsReadSource = "paramsRead[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+                        member.ParamsReadSource = $"paramsRead[{i}]";
                     member.IsNullable = mapping.TypeDesc!.IsNullable;
                     if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
                         member.CheckSpecifiedSource = RaCodeGen.GetStringForMember("o", mapping.Name + "Specified", structMapping.TypeDesc);
@@ -3478,7 +3480,7 @@ namespace System.Xml.Serialization
                     if (mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
                         member.CheckSpecifiedSource = RaCodeGen.GetStringForMember("o", mapping.Name + "Specified", structMapping.TypeDesc);
                     if (!mapping.IsSequence)
-                        member.ParamsReadSource = "paramsRead[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+                        member.ParamsReadSource = $"paramsRead[{i}]";
                     members[i] = member;
                 }
 
@@ -3581,7 +3583,7 @@ namespace System.Xml.Serialization
             CreateCollectionInfo? create = (CreateCollectionInfo?)_createMethods[typeDesc];
             if (create == null)
             {
-                string createName = "create" + (++_nextCreateMethodNumber).ToString(CultureInfo.InvariantCulture) + "_" + typeDesc.Name;
+                string createName = string.Create(CultureInfo.InvariantCulture, $"create{++_nextCreateMethodNumber}_{typeDesc.Name}");
                 create = new CreateCollectionInfo(createName, typeDesc);
                 _createMethods.Add(typeDesc, create);
             }
@@ -4704,13 +4706,20 @@ namespace System.Xml.Serialization
                 }
                 Writer.Indent++;
 
-                if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan))
+                if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan) || element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset))
                 {
                     Writer.WriteLine("if (Reader.IsEmptyElement) {");
                     Writer.Indent++;
                     Writer.WriteLine("Reader.Skip();");
                     WriteSourceBegin(source);
-                    Writer.Write("default(System.TimeSpan)");
+                    if (element.Mapping.TypeDesc!.Type == typeof(TimeSpan))
+                    {
+                        Writer.Write("default(System.TimeSpan)");
+                    }
+                    else if (element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset))
+                    {
+                        Writer.Write("default(System.DateTimeOffset)");
+                    }
                     WriteSourceEnd(source);
                     Writer.WriteLine(";");
                     Writer.Indent--;

@@ -162,7 +162,7 @@ namespace System.Drawing
 #endif
                     Gdip.GdipDeleteFontFamily(new HandleRef(this, _nativeFamily));
 #if DEBUG
-                    Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(status == Gdip.Ok, $"GDI+ returned an error status: {status.ToString(CultureInfo.InvariantCulture)}");
 #endif
                 }
                 catch (Exception ex) when (!ClientUtils.IsCriticalException(ex))

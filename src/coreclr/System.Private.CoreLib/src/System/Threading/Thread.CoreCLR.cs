@@ -322,33 +322,14 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern bool Join(int millisecondsTimeout);
 
-        private static int s_optimalMaxSpinWaitsPerSpinIteration;
-
-        [DllImport(RuntimeHelpers.QCall)]
-        private static extern int GetOptimalMaxSpinWaitsPerSpinIterationInternal();
-
         /// <summary>
         /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
         /// appropriate for the processor.
         /// </summary>
         internal static int OptimalMaxSpinWaitsPerSpinIteration
         {
-            get
-            {
-                int optimalMaxSpinWaitsPerSpinIteration = s_optimalMaxSpinWaitsPerSpinIteration;
-                return optimalMaxSpinWaitsPerSpinIteration != 0 ? optimalMaxSpinWaitsPerSpinIteration : CalculateOptimalMaxSpinWaitsPerSpinIteration();
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int CalculateOptimalMaxSpinWaitsPerSpinIteration()
-        {
-            // This is done lazily because the first call to the function below in the process triggers a measurement that
-            // takes a nontrivial amount of time if the measurement has not already been done in the backgorund.
-            // See Thread::InitializeYieldProcessorNormalized(), which describes and calculates this value.
-            s_optimalMaxSpinWaitsPerSpinIteration = GetOptimalMaxSpinWaitsPerSpinIterationInternal();
-            Debug.Assert(s_optimalMaxSpinWaitsPerSpinIteration > 0);
-            return s_optimalMaxSpinWaitsPerSpinIteration;
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            get;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

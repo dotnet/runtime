@@ -1,8 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Composition</RootNamespace>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <PackageDescription>Contains runtime components of the Managed Extensibility Framework.
+
+Commonly Used Types:
+System.Composition.CompositionContext</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Composition\CompositionContext.cs" />
     <Compile Include="System\Composition\ExportFactoryOfT.cs" />
@@ -11,5 +18,15 @@
     <Compile Include="System\Composition\Hosting\CompositionFailedException.cs" />
     <Compile Include="System\Composition\Hosting\Core\CompositionContract.cs" />
     <Compile Include="System\Composition\Runtime\Util\Formatters.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NETStandardCompatError Include="netcoreapp2.0" Supported="$(NetCoreAppMinimum)" />
   </ItemGroup>
 </Project>
