@@ -40,12 +40,27 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(@"""""", json);
         }
 
-        [Fact]
-        public static void WriteByteArray()
+        [Theory]
+        [InlineData(null, "null")]
+        [InlineData(new byte[] { }, "\"\"")]
+        [InlineData(new byte[] { 1, 2 }, "\"AQI=\"")]
+        public static void WriteByteArray(byte[]? input, string expectedEncoding)
         {
-            var input = new byte[] { 1, 2 };
+            // root-level serialization
             string json = JsonSerializer.Serialize(input);
-            Assert.Equal($"\"{Convert.ToBase64String(input)}\"", json);
+            Assert.Equal(expectedEncoding, json);
+
+            // object property
+            json = JsonSerializer.Serialize(new { Property = input });
+            Assert.Equal(@$"{{""Property"":{expectedEncoding}}}", json);
+
+            // array element
+            json = JsonSerializer.Serialize(new[] { input });
+            Assert.Equal($"[{expectedEncoding}]", json);
+
+            // dictionary entry
+            json = JsonSerializer.Serialize(new Dictionary<string, byte[]> { ["key"] = input });
+            Assert.Equal(@$"{{""key"":{expectedEncoding}}}", json);
         }
 
         [Fact]

@@ -71,9 +71,6 @@
 /* Define to the home page for this package. */
 #cmakedefine PACKAGE_URL 1
 
-/* Disables the IO portability layer */
-#cmakedefine DISABLE_PORTABILITY 1
-
 /* This platform does not support symlinks */
 #cmakedefine HOST_NO_SYMLINKS 1
 

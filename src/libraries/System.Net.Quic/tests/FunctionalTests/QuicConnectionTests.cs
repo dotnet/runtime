@@ -13,6 +13,8 @@ namespace System.Net.Quic.Tests
     {
         const int ExpectedErrorCode = 1234;
 
+        public QuicConnectionTests(ITestOutputHelper output) : base(output) { }
+
         [Fact]
         public async Task TestConnect()
         {
@@ -285,8 +287,14 @@ namespace System.Net.Quic.Tests
         }
     }
 
-    public sealed class QuicConnectionTests_MockProvider : QuicConnectionTests<MockProviderFactory> { }
+    public sealed class QuicConnectionTests_MockProvider : QuicConnectionTests<MockProviderFactory>
+    {
+        public QuicConnectionTests_MockProvider(ITestOutputHelper output) : base(output) { }
+    }
 
     [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
-    public sealed class QuicConnectionTests_MsQuicProvider : QuicConnectionTests<MsQuicProviderFactory> { }
+    public sealed class QuicConnectionTests_MsQuicProvider : QuicConnectionTests<MsQuicProviderFactory>
+    {
+        public QuicConnectionTests_MsQuicProvider(ITestOutputHelper output) : base(output) { }
+    }
 }

@@ -8,6 +8,12 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class JsonSerializerWrapperForString
     {
+        /// <summary>
+        /// Do the deserialize methods allow a value of 'null'.
+        /// For example, deserializing JSON to a String supports null by returning a 'null' String reference from a literal value of "null".
+        /// </summary>
+        protected internal abstract bool SupportsNullValueOnDeserialize { get; }
+
         protected internal abstract Task<string> SerializeWrapper(object value, Type inputType, JsonSerializerOptions options = null);
 
         protected internal abstract Task<string> SerializeWrapper<T>(T value, JsonSerializerOptions options = null);

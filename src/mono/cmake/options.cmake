@@ -2,7 +2,6 @@
 # Configure options
 #
 
-option (DISABLE_PORTABILITY "Disables the IO portability layer")
 option (DISABLE_AOT "Disable AOT Compiler")
 option (DISABLE_PROFILER "Disable default profiler support")
 option (DISABLE_DECIMAL "Disable System.Decimal support")

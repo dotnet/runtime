@@ -32,6 +32,7 @@ namespace System.Text.Json.Serialization.Converters
         protected override object CreateObject(ref ReadStackFrame frame)
         {
             object[] arguments = (object[])frame.CtorArgumentState!.Arguments;
+            frame.CtorArgumentState.Arguments = null!;
 
             var createObject = (JsonTypeInfo.ParameterizedConstructorDelegate<T>?)frame.JsonTypeInfo.CreateObjectWithArgs;
 
