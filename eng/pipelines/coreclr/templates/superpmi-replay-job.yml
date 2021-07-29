@@ -25,6 +25,7 @@ jobs:
     stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    _skipRestoreInternalTools: true
 
     variables:
     - name: PythonScript
