@@ -1167,8 +1167,6 @@ namespace TestCasts
 
         static int Main(string[] args)
         {
-            sbyte Zero = 0;
-            Debug.Assert(Zero.Equals(0));
             TestConvertFromInt4();
             TestConvertFromInt8();
             TestConvertFromFloat();
