@@ -8,22 +8,6 @@
     </ItemGroup>
 
     <!-- Target specific excludes -->
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'arm' and '$(TargetOS)' == 'Linux'">
-        <ExcludeList Include="eventprovider/eventprovidertest">
-            <Issue>https://github.com/dotnet/runtime/issues/42291</Issue>
-        </ExcludeList>
-    </ItemGroup>
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'Linux'">
-        <ExcludeList Include="eventprovider/eventprovidertest">
-            <Issue>https://github.com/dotnet/runtime/issues/42291</Issue>
-        </ExcludeList>
-    </ItemGroup>
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'Linux'">
-        <ExcludeList Include="eventprovider/eventprovidertest">
-            <Issue>https://github.com/dotnet/runtime/issues/42291</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
     <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
         <ExcludeList Include="miscellaneous/queryperformancecounter/test1/paltest_queryperformancecounter_test1">
             <Issue>https://github.com/dotnet/runtime/issues/7639</Issue>
