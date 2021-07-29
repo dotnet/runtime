@@ -11541,48 +11541,6 @@ void gc_heap::rearrange_heap_segments(BOOL compacting)
 #endif //!USE_REGIONS
 
 #if defined(USE_REGIONS)
-// go through the list of regions pointed at by root_link and move any regions above the threshold to the list decommit_link
-static size_t move_regions_above_threshold_to_decommit_list (heap_segment** root_link, heap_segment** decommit_link, uint8_t *threshold)
-{
-    heap_segment* last_region = nullptr;
-    heap_segment* next_region = nullptr;
-    size_t num_moved_regions = 0;
-    const size_t LARGE_REGION_SIZE = global_region_allocator.get_large_region_alignment();
-    for (heap_segment* region = *root_link; region != nullptr; region = next_region)
-    {
-        next_region = heap_segment_next (region);
-        if (get_region_start (region) >= threshold)
-        {
-            if (last_region != nullptr)
-            {
-                heap_segment_next (last_region) = next_region;
-            }
-            else
-            {
-                *root_link = next_region;
-            }
-            heap_segment_next (region) = *decommit_link;
-            *decommit_link = region;
-            size_t size = heap_segment_reserved(region) - get_region_start(region);
-            dprintf (REGIONS_LOG, ("Moved region %Ix(%Ix) size %Id to decommit list", region, get_region_start (region), size));
-
-            if (size <= LARGE_REGION_SIZE)
-            {
-                num_moved_regions++;
-            }
-            else
-            {
-                num_moved_regions += size / LARGE_REGION_SIZE;
-            }
-        }
-        else
-        {
-            last_region = region;
-        }
-    }
-    return num_moved_regions;
-}
-
 // trim down the list of free regions pointed at by free_link down to target_count, moving the extra ones to surplus_link
 static void remove_surplus_regions (region_free_list* free_list, region_free_list* surplus_list, size_t target_count)
 {
@@ -11614,45 +11572,6 @@ static int64_t add_regions (region_free_list* free_list, region_free_list* surpl
         free_list->add_region_front (region);
     }
     return added_count;
-}
-
-// move any huge regions on the list from_link to to_link
-static size_t move_huge_regions (heap_segment** from_link, heap_segment** to_link, int* count = nullptr)
-{
-    heap_segment* last_region = nullptr;
-    heap_segment* next_region = nullptr;
-    size_t moved_size = 0;
-    const size_t LARGE_REGION_SIZE = global_region_allocator.get_large_region_alignment();
-    for (heap_segment* region = *from_link; region != nullptr; region = next_region)
-    {
-        next_region = heap_segment_next (region);
-        size_t size = heap_segment_reserved(region) - get_region_start(region);
-        if (size > LARGE_REGION_SIZE)
-        {
-            dprintf(REGIONS_LOG, ("Moved huge region %Ix(%Ix) size %Id", region, get_region_start(region), size));
-
-            if (last_region != nullptr)
-            {
-                heap_segment_next (last_region) = next_region;
-            }
-            else
-            {
-                *from_link = next_region;
-            }
-
-            heap_segment_next (region) = *to_link;
-            *to_link = region;
-
-            moved_size += size;
-            if (count != nullptr)
-                (*count)--;
-        }
-        else
-        {
-            last_region = region;
-        }
-    }
-    return moved_size;
 }
 
 region_free_list::region_free_list() : num_free_regions (0),
