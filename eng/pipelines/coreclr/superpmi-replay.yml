@@ -16,12 +16,28 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-replay-job.yml
+    jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
     buildConfig: checked
     platforms:
     - windows_x64
     - windows_x86
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
+
+    variables:
+    - name: PythonScript
+      value: 'py -3'
+    - name: PipScript
+      value: 'py -3 -m pip'
+    - name: Core_Root_Dir
+      value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
+    - name: SpmiCollectionLocation
+      value: '$(Build.SourcesDirectory)\artifacts\spmi\'
+
+    steps:
+    # Extra steps that will be passed to the superpmi template and run before sending the job to helix (all of which is done in the template)
+
+    - script: |
+        mkdir -p $(SpmiLogsLocation)
+      displayName: Create directory for SPMI collection
+
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py download -spmi_location $(SpmiCollectionLocation)
+      displayName: Download superpmi collection
