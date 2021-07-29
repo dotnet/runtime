@@ -408,9 +408,9 @@ namespace System.Net.Http
                     // Ensure value is valid.
                     // Opaque, Domain and Realm can have empty string
                     if (value == string.Empty &&
-                       (!key.Equals(Opaque, StringComparison.OrdinalIgnoreCase) &&
+                        !key.Equals(Opaque, StringComparison.OrdinalIgnoreCase) &&
                         !key.Equals(Domain, StringComparison.OrdinalIgnoreCase) &&
-                        !key.Equals(Realm, StringComparison.OrdinalIgnoreCase)))
+                        !key.Equals(Realm, StringComparison.OrdinalIgnoreCase))
                         break;
 
                     // Add the key-value pair to Parameters.
