@@ -411,12 +411,7 @@ namespace System.Security.Cryptography
                     // Half, rounded up.
                     int halfModulusLength = (parameters.Modulus.Length + 1) / 2;
 
-                    // The same checks are done by RSACryptoServiceProvider on import (when building the key blob)
-                    // Historically RSACng let CNG handle this (reporting NTE_NOT_SUPPORTED), but on RS1 CNG let the
-                    // import succeed, then on private key use (e.g. signing) it would report NTE_INVALID_PARAMETER.
-                    //
-                    // Doing the check here prevents the state in RS1 where the Import succeeds, but corrupts the key,
-                    // and makes for a friendlier exception message.
+                    // Matching the .NET Framework RSACryptoServiceProvider behavior, as that's the .NET de facto standard
                     if (parameters.D.Length != parameters.Modulus.Length ||
                         parameters.P.Length != halfModulusLength ||
                         parameters.Q.Length != halfModulusLength ||
