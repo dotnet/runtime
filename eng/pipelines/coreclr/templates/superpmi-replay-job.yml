@@ -4,6 +4,12 @@ parameters:
   osGroup: ''                     # required -- operating system for the job
   osSubgroup: ''                  # optional -- operating system subgroup
   dependsOn: ''                   # optional -- dependencies of the job
+  pool: ''
+  stagedBuild: false
+  timeoutInMinutes: ''
+  variables: {}
+  dependOnEvaluatePaths: false
+  skipBinariesUpload: false
   runJobTemplate: '/eng/pipelines/coreclr/templates/build-jit-job.yml'
 
 jobs:
