@@ -1449,6 +1449,10 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
+            // Do not invoke Dispose under the lock as this can lead to a deadlock.
+            // See https://github.com/dotnet/runtime/issues/48342 for details.
+            Debug.Assert(!Monitor.IsEntered(EventListener.EventListenersLock));
+
             if (disposing)
             {
 #if FEATURE_MANAGED_ETW
@@ -4274,15 +4278,25 @@ namespace System.Diagnostics.Tracing
 #endif
         {
             Debug.Assert(EventSource.IsSupported);
-
+            List<EventSource> sourcesToDispose = new List<EventSource>();
             lock (EventListenersLock)
             {
                 Debug.Assert(s_EventSources != null);
                 foreach (WeakReference<EventSource> esRef in s_EventSources)
                 {
                     if (esRef.TryGetTarget(out EventSource? es))
-                        es.Dispose();
+                    {
+                        sourcesToDispose.Add(es);
+                    }
                 }
+            }
+
+            // Do not invoke Dispose under the lock as this can lead to a deadlock.
+            // See https://github.com/dotnet/runtime/issues/48342 for details.
+            Debug.Assert(!Monitor.IsEntered(EventListenersLock));
+            foreach (EventSource es in sourcesToDispose)
+            {
+                es.Dispose();
             }
         }
 

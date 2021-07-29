@@ -4941,6 +4941,12 @@ public:
                          size_t& card, size_t& end_card, size_t& card_word_end);
 #endif //FEATURE_CARD_MARKING_STEALING
 
+    PER_HEAP_ISOLATED
+    size_t smoothed_desired_per_heap[total_generation_count];
+
+    PER_HEAP_ISOLATED
+    size_t exponential_smoothing (int gen, size_t collection_count, size_t desired_per_heap);
+
 protected:
     PER_HEAP
     void update_collection_counts ();

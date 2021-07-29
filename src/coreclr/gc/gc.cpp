@@ -56,8 +56,6 @@ BOOL bgc_heap_walk_for_etw_p = FALSE;
 #define MIN_SOH_CROSS_GEN_REFS (400)
 #define MIN_LOH_CROSS_GEN_REFS (800)
 
-static size_t smoothed_desired_per_heap = 0;
-
 #ifdef SERVER_GC
 #define partial_size_th 100
 #define num_partial_refs 64
@@ -2813,6 +2811,8 @@ size_t     gc_heap::interesting_mechanism_bits_per_heap[max_gc_mechanism_bits_co
 
 /* end of per heap static initialization */
 
+// budget smoothing
+size_t     gc_heap::smoothed_desired_per_heap[total_generation_count];
 /* end of static initialization */
 
 #ifndef DACCESS_COMPILE
@@ -19949,6 +19949,18 @@ void gc_heap::update_end_ngc_time()
 #endif //HEAP_BALANCE_INSTRUMENTATION
 }
 
+size_t gc_heap::exponential_smoothing (int gen, size_t collection_count, size_t desired_per_heap)
+{
+    // to avoid spikes in mem usage due to short terms fluctuations in survivorship,
+    // apply some smoothing.
+    size_t smoothing = min(3, collection_count);
+    
+    size_t new_smoothed_desired_per_heap = desired_per_heap / smoothing + ((smoothed_desired_per_heap[gen] / smoothing) * (smoothing - 1));
+    dprintf (2, ("new smoothed_desired_per_heap for gen %d = %Id, desired_per_heap = %Id", gen, new_smoothed_desired_per_heap, desired_per_heap));
+    smoothed_desired_per_heap[gen] = new_smoothed_desired_per_heap;
+    return Align (smoothed_desired_per_heap[gen], get_alignment_constant (gen <= soh_gen2));
+}
+
 //internal part of gc used by the serial and concurrent version
 void gc_heap::gc1()
 {
@@ -20349,10 +20361,7 @@ void gc_heap::gc1()
 #if 1 //subsumed by the linear allocation model
                     // to avoid spikes in mem usage due to short terms fluctuations in survivorship,
                     // apply some smoothing.
-                    size_t smoothing = 3; // exponential smoothing factor
-                    smoothed_desired_per_heap = desired_per_heap / smoothing + ((smoothed_desired_per_heap / smoothing) * (smoothing-1));
-                    dprintf (HEAP_BALANCE_LOG, ("TEMPsn = %Id  n = %Id", smoothed_desired_per_heap, desired_per_heap));
-                    desired_per_heap = Align(smoothed_desired_per_heap, get_alignment_constant (true));
+                    desired_per_heap = exponential_smoothing (gen, dd_collection_count (dynamic_data_of(gen)), desired_per_heap);
 #endif //0
 
                     if (!heap_hard_limit)
@@ -20381,14 +20390,7 @@ void gc_heap::gc1()
                 {
                     // to avoid spikes in mem usage due to short terms fluctuations in survivorship,
                     // apply some smoothing.
-                    static size_t smoothed_desired_per_heap_uoh[total_generation_count - uoh_start_generation] = { 0, 0 };
-                    size_t smoothing = 3; // exponential smoothing factor
-                    size_t uoh_count = dd_collection_count (dynamic_data_of (max_generation));
-                    if (smoothing  > uoh_count)
-                        smoothing  = uoh_count;
-                    smoothed_desired_per_heap_uoh[gen - uoh_start_generation] = desired_per_heap / smoothing + ((smoothed_desired_per_heap_uoh[gen - uoh_start_generation] / smoothing) * (smoothing-1));
-                    dprintf (2, ("smoothed_desired_per_heap_%s  = %Id  desired_per_heap = %Id", ((gen == loh_generation) ? "loh" : "poh"), smoothed_desired_per_heap_uoh[gen - uoh_start_generation], desired_per_heap));
-                    desired_per_heap = Align(smoothed_desired_per_heap_uoh[gen - uoh_start_generation], get_alignment_constant (false));
+                    desired_per_heap = exponential_smoothing (gen, dd_collection_count (dynamic_data_of (max_generation)), desired_per_heap);
                 }
 #endif //0
                 for (int i = 0; i < gc_heap::n_heaps; i++)
@@ -33875,6 +33877,11 @@ void gc_heap::bgc_thread_function()
 
                 desired_per_heap = Align ((total_desired/n_heaps), get_alignment_constant (FALSE));
 
+                if (gen >= loh_generation)
+                {
+                    desired_per_heap = exponential_smoothing (gen, dd_collection_count (dynamic_data_of (max_generation)), desired_per_heap);
+                }
+
                 for (int i = 0; i < n_heaps; i++)
                 {
                     hp = gc_heap::g_heaps[i];
@@ -37725,7 +37732,7 @@ bool gc_heap::init_dynamic_data()
     if (heap_number == 0)
     {
         process_start_time = now;
-        smoothed_desired_per_heap = dynamic_data_of (0)->min_size;
+        smoothed_desired_per_heap[0] = dynamic_data_of (0)->min_size;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
         last_gc_end_time_us = now;
         dprintf (HEAP_BALANCE_LOG, ("qpf=%I64d, start: %I64d(%d)", qpf, start_raw_ts, now));
