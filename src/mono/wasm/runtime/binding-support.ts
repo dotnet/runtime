@@ -161,7 +161,7 @@ var BindingSupportLib = {
 			BINDING._js_owned_object_registry = new FinalizationRegistry(BINDING._js_owned_object_finalized.bind(this));
 		},
 
-		_get_weak_delegate_from_handle: function (id: number): Function {
+		_get_weak_delegate_from_handle: function (id: number): (a: JSObject) => void {
 			var result = null;
 
 			// Look up this handle in the weak delegate table, and if we find a matching weakref,
@@ -183,7 +183,7 @@ var BindingSupportLib = {
 			//  and register it with the finalization registry so that the C# side can release
 			//  the associated object references
 			if (!result) {
-				result = (arg1) => {
+				result = (arg1: JSObject): void => {
 					if (!BINDING.try_invoke_js_owned_delegate_by_handle(id, arg1))
 						// Because lifetime is managed by JavaScript, it *is* an error for this 
 						//  invocation to ever fail. If we have a JS wrapper for an ID, there
