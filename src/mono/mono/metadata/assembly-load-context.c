@@ -453,15 +453,7 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 	goto_if_nok (error, leave);
 
 	MonoReflectionAssemblyHandle assm;
-	gpointer gchandle;
-	/* for the default ALC, pass NULL to ask for the Default ALC - see
-	 * AssemblyLoadContext.GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext) - which
-	 * will create the managed ALC object if it hasn't been created yet
-	 */
-	if (alc->gchandle == default_alc->gchandle)
-		gchandle = NULL;
-	else
-		gchandle = GUINT_TO_POINTER (alc->gchandle);
+	gpointer gchandle = mono_alc_get_gchandle_for_resolving (alc);
 	gpointer args [2];
 	args [0] = &gchandle;
 	args [1] = MONO_HANDLE_RAW (aname_obj);

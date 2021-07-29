@@ -634,15 +634,7 @@ netcore_resolve_with_load (MonoAssemblyLoadContext *alc, const char *scope, Mono
 	scope_handle = mono_string_new_handle (scope, error);
 	goto_if_nok (error, leave);
 
-	gpointer gchandle;
-	/* for the default ALC, pass NULL to ask for the Default ALC - see
-	 * AssemblyLoadContext.GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext) - which
-	 * will create the managed ALC object if it hasn't been created yet
-	 */
-	if (alc->gchandle == mono_alc_get_default ()->gchandle)
-		gchandle = NULL;
-	else
-		gchandle = GUINT_TO_POINTER (alc->gchandle);
+	gpointer gchandle = mono_alc_get_gchandle_for_resolving (alc);
 	gpointer args [3];
 	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = &gchandle;
@@ -708,15 +700,7 @@ netcore_resolve_with_resolving_event (MonoAssemblyLoadContext *alc, MonoAssembly
 	assembly_handle = mono_assembly_get_object_handle (assembly, error);
 	goto_if_nok (error, leave);
 
-	gpointer gchandle;
-	/* for the default ALC, pass NULL to ask for the Default ALC - see
-	 * AssemblyLoadContext.GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext) - which
-	 * will create the managed ALC object if it hasn't been created yet
-	 */
-	if (alc->gchandle == mono_alc_get_default ()->gchandle)
-		gchandle = NULL;
-	else
-		gchandle = GUINT_TO_POINTER (alc->gchandle);
+	gpointer gchandle = mono_alc_get_gchandle_for_resolving (alc);
 	gpointer args [4];
 	args [0] = MONO_HANDLE_RAW (scope_handle);
 	args [1] = MONO_HANDLE_RAW (assembly_handle);
