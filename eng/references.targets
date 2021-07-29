@@ -38,12 +38,18 @@
   <!-- Make shared framework assemblies not app-local (non private). -->
   <Target Name="UpdateProjectReferencesWithPrivateAttribute"
           Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                     ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsSourceProject)' == 'true') and
+                     ('$(IsSourceProject)' == 'true' or '$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true') and
                      '@(ProjectReference)' != ''">
     <ItemGroup>
-      <ProjectReference PrivateAssets="all"
-                        Private="false"
-                        Condition="$(NetCoreAppLibrary.Contains('%(Filename);')) and '%(ProjectReference.DonotUseInboxVersion)' != 'true'" />
+      <_noPackageNetCoreAppLibrary Include="@(NetCoreAppLibrary)"
+                                   Condition="'%(NetCoreAppLibrary.IsPackable)' != 'true'" />
+      <_projectReferenceByFileName Include="@(ProjectReference->'%(FileName)')"
+                                   Original="%(Identity)" />
+      <_projectReferenceByFileName Condition="'@(_noPackageNetCoreAppLibrary)' == '@(_ProjectReferenceByFileName)' and '%(Identity)' != ''"
+                                   PrivateAssets="all"
+                                   Private="false" />
+      <ProjectReference Remove="@(ProjectReference)" />
+      <ProjectReference Include="@(_ProjectReferenceByFileName->'%(Original)')" />
     </ItemGroup>
   </Target>
 
