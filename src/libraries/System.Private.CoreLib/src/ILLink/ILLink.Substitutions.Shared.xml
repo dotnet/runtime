@@ -1,10 +1,27 @@
 <linker>
   <assembly fullname="System.Private.CoreLib">
     <type fullname="System.Diagnostics.Tracing.EventSource" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="false">
+      <method signature="System.Void .cctor()" body="stub" />
+      <method signature="System.Void .ctor()" body="stub" />
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
       <method signature="System.Boolean IsEnabled()" body="stub" value="false" />
       <method signature="System.Boolean IsEnabled(System.Diagnostics.Tracing.EventLevel,System.Diagnostics.Tracing.EventKeywords)" body="stub" value="false" />
       <method signature="System.Boolean IsEnabled(System.Diagnostics.Tracing.EventLevel,System.Diagnostics.Tracing.EventKeywords,System.Diagnostics.Tracing.EventChannel)" body="stub" value="false" />
+    </type>
+    <type fullname="System.Buffers.ArrayPoolEventSource" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="false">
+      <method signature="System.Void .ctor()" body="stub" />
+    </type>
+    <type fullname="System.Threading.Tasks.TplEventSource" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="false">
+      <method signature="System.Void .ctor()" body="stub" />
+    </type>
+    <type fullname="System.Diagnostics.Tracing.FrameworkEventSource" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="false">
+      <method signature="System.Void .ctor()" body="stub" />
+    </type>
+    <type fullname="System.Diagnostics.Tracing.NativeRuntimeEventSource" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="false">
+      <method signature="System.Void .ctor()" body="stub" />
+    </type>
+    <type fullname="System.Threading.ThreadPoolWorkQueue" feature="System.Diagnostics.Tracing.EventSource.IsSupported" featurevalue="false">
+      <method signature="System.Void RefreshLoggingEnabled()" body="stub" />
     </type>
     <!-- Note: Invariant=true and Invariant=false are substituted at different levels. This allows for the whole Settings nested class
          to be trimmed when Invariant=true, and allows for the Settings static cctor (on Unix) to be preserved when Invariant=false. -->
