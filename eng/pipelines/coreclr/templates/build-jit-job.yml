@@ -107,7 +107,7 @@ jobs:
       - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -nopgooptimize -skiprestoreoptdata -component alljits
         displayName: Build CoreCLR JIT
 
-    - ${{ if eq(parameters.skipBinariesUpload, 'false') }}:
+    - ${{ if eq(parameters.uploadAsArtifacts, 'false') }}:
       # Ensure the Python azure-storage-blob package is installed before doing the upload.
       - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
         displayName: Upgrade Pip to latest and install azure-storage-blob Python package
@@ -116,6 +116,18 @@ jobs:
         displayName: Upload JIT to Azure Storage
         env:
           CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
+
+    - ${{ if eq(parameters.uploadAsArtifacts, 'true') }}:
+      # Publish product output directory for consumption by tests.
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(buildProductRootFolderPath)
+          includeRootFolder: false
+          archiveType: $(archiveType)
+          tarCompression: $(tarCompression)
+          archiveExtension: $(archiveExtension)
+          artifactName: $(buildProductArtifactName)
+          displayName: 'product build'
 
     # Publish Logs
     - task: PublishPipelineArtifact@1

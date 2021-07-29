@@ -3,47 +3,34 @@ parameters:
   archType: ''                    # required -- targeting CPU architecture
   osGroup: ''                     # required -- operating system for the job
   osSubgroup: ''                  # optional -- operating system subgroup
-  dependsOn: ''                   # optional -- dependencies of the job
   pool: ''
   stagedBuild: false
   timeoutInMinutes: ''
   variables: {}
   dependOnEvaluatePaths: false
-  skipBinariesUpload: false
-  runJobTemplate: '/eng/pipelines/coreclr/templates/build-jit-job.yml'
+  runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-replay-job.yml'
 
 jobs:
 - template: ${{ parameters.runJobTemplate }}
   parameters:
-    dependsOn: ${{ parameters.dependsOn }}
+    jobName: ${{ format('superpmibuild_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('SuperPMI replay {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
-    helixType: 'build/product/'
-    enableMicrobuild: true
-    stagedBuild: ${{ parameters.stagedBuild }}
-    pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
-    _skipRestoreInternalTools: true
-
-    variables:
-    - name: PythonScript
-      value: 'py -3'
-    - name: PipScript
-      value: 'py -3 -m pip'
-    - name: Core_Root_Dir
-      value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
-    - name: SpmiCollectionLocation
-      value: '$(Build.SourcesDirectory)\artifacts\spmi\'
+    uploadAsArtifacts: true
+    dependsOn:
+     - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     steps:
-    # Extra steps that will be passed to the superpmi template and run before sending the job to helix (all of which is done in the template)
 
-    - script: |
-        mkdir -p $(SpmiLogsLocation)
-      displayName: Create directory for SPMI collection
-
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py download -spmi_location $(SpmiCollectionLocation)
-      displayName: Download superpmi collection
-        
+    # Download jit builds
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(buildProductRootFolderPath)
+        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+        artifactName: '$(buildProductArtifactName)'
+        displayName: 'JIT product build'
