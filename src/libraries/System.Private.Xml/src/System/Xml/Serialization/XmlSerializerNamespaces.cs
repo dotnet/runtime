@@ -50,6 +50,18 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        internal XmlSerializerNamespaces(IList<XmlQualifiedName> namespaces)
+        {
+            _namespaces = new Dictionary<string, XmlQualifiedName>(namespaces.Count);
+
+            foreach (var qname in namespaces)
+                _namespaces.Add(qname.Name, qname);
+        }
+
+
+        /// <devdoc>
+        ///    <para>[To be supplied.]</para>
+        /// </devdoc>
         public void Add(string prefix, string? ns)
         {
             // parameter value check
@@ -114,14 +126,14 @@ namespace System.Xml.Serialization
         {
             prefix = null;
 
-            if (string.IsNullOrEmpty(ns) || _namespaces == null || _namespaces.Count == 0)
+            if (_namespaces == null || _namespaces.Count == 0 || string.IsNullOrEmpty(ns))
                 return false;
 
-            foreach (string pfx in _namespaces.Keys)
+            foreach (var nsPair in _namespaces)
             {
-                if (!string.IsNullOrEmpty(pfx) && _namespaces[pfx].Namespace == ns)
+                if (!string.IsNullOrEmpty(nsPair.Key) && nsPair.Value.Namespace == ns)
                 {
-                    prefix = pfx;
+                    prefix = nsPair.Key;
                     return true;
                 }
             }
@@ -132,7 +144,7 @@ namespace System.Xml.Serialization
         {
             ns = null;
 
-            if (string.IsNullOrEmpty(prefix) || _namespaces == null || _namespaces.Count == 0)
+            if (_namespaces == null || _namespaces.Count == 0 || string.IsNullOrEmpty(prefix))
                 return false;
 
             if (_namespaces.TryGetValue(prefix, out XmlQualifiedName? qName))
