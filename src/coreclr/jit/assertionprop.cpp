@@ -15,6 +15,287 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+bool IntegralRange::Contains(int64_t value) const
+{
+    int64_t lowerBound = SymbolicToRealValue(m_lowerBound);
+    int64_t upperBound = SymbolicToRealValue(m_upperBound);
+
+    return (lowerBound <= value) && (value <= upperBound);
+}
+
+/* static */ int64_t IntegralRange::SymbolicToRealValue(SymbolicIntegerValue value)
+{
+    switch (value)
+    {
+        case SymbolicIntegerValue::LongMin:
+            return INT64_MIN;
+        case SymbolicIntegerValue::IntMin:
+            return INT32_MIN;
+        case SymbolicIntegerValue::ShortMin:
+            return INT16_MIN;
+        case SymbolicIntegerValue::ByteMin:
+            return INT8_MIN;
+        case SymbolicIntegerValue::Zero:
+            return 0;
+        case SymbolicIntegerValue::One:
+            return 1;
+        case SymbolicIntegerValue::ByteMax:
+            return INT8_MAX;
+        case SymbolicIntegerValue::UByteMax:
+            return UINT8_MAX;
+        case SymbolicIntegerValue::ShortMax:
+            return INT16_MAX;
+        case SymbolicIntegerValue::UShortMax:
+            return UINT16_MAX;
+        case SymbolicIntegerValue::IntMax:
+            return INT32_MAX;
+        case SymbolicIntegerValue::UIntMax:
+            return UINT32_MAX;
+        case SymbolicIntegerValue::LongMax:
+            return INT64_MAX;
+        default:
+            unreached();
+    }
+}
+
+/* static */ SymbolicIntegerValue IntegralRange::LowerBoundForType(var_types type)
+{
+    switch (type)
+    {
+        case TYP_BOOL:
+        case TYP_UBYTE:
+        case TYP_USHORT:
+            return SymbolicIntegerValue::Zero;
+        case TYP_BYTE:
+            return SymbolicIntegerValue::ByteMin;
+        case TYP_SHORT:
+            return SymbolicIntegerValue::ShortMin;
+        case TYP_INT:
+            return SymbolicIntegerValue::IntMin;
+        case TYP_LONG:
+            return SymbolicIntegerValue::LongMin;
+        default:
+            unreached();
+    }
+}
+
+/* static */ SymbolicIntegerValue IntegralRange::UpperBoundForType(var_types type)
+{
+    switch (type)
+    {
+        case TYP_BYTE:
+            return SymbolicIntegerValue::ByteMax;
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return SymbolicIntegerValue::UByteMax;
+        case TYP_SHORT:
+            return SymbolicIntegerValue::ShortMax;
+        case TYP_USHORT:
+            return SymbolicIntegerValue::UShortMax;
+        case TYP_INT:
+            return SymbolicIntegerValue::IntMax;
+        case TYP_UINT:
+            return SymbolicIntegerValue::UIntMax;
+        case TYP_LONG:
+            return SymbolicIntegerValue::LongMax;
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// IntegralRange::ForCastInput: Get the non-overflowing input range for a cast.
+//
+// This routine computes the input range for a cast from
+// an integer to an integer for which it will not overflow.
+//
+// Note that the ranges computed by this method are **always** in the
+// "signed" domain. For example, a cast such as CAST_OVF(ulong <- uint)
+// will return [INT32_MIN..INT32_MAX], i. e. the operation does not
+// overflow for any possible input and the GTF_OVERFLOW flag is a no-op.
+//
+// Arguments:
+//    cast - the cast node for which the range will be computed
+//
+// Return Value:
+//    The range this cast consumes without overflowing - see description.
+//
+/* static */ IntegralRange IntegralRange::ForCastInput(GenTreeCast* cast)
+{
+    var_types fromType     = genActualType(cast->CastOp());
+    var_types toType       = cast->CastToType();
+    bool      fromUnsigned = cast->IsUnsigned();
+
+    assert((fromType == TYP_INT) || (fromType == TYP_LONG));
+    assert(varTypeIsIntegral(toType));
+
+    if (!cast->gtOverflow())
+    {
+        // CAST(small type <- uint/int/ulong/long) - [TO_TYPE_MIN..TO_TYPE_MAX]
+        if (varTypeIsSmall(toType))
+        {
+            return {LowerBoundForType(toType), UpperBoundForType(toType)};
+        }
+
+        // Widening/no-op representation-changing casts never "overflow" under our definition.
+        // These are CAST(u/long <- int), CAST(u/long <- uint), CAST(u/int <- u/int).
+        // Narrowing cases "overflow" when the input does not fit into TYP_INT.
+        // These are CAST(u/int <- u/long) - they are all the same operation.
+        return {SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
+    }
+
+    SymbolicIntegerValue lowerBound;
+    SymbolicIntegerValue upperBound;
+
+    // CAST_OVF(small type <- int/long)   - [TO_TYPE_MIN..TO_TYPE_MAX]
+    // CAST_OVF(small type <- uint/ulong) - [0..TO_TYPE_MAX]
+    if (varTypeIsSmall(toType))
+    {
+        lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : LowerBoundForType(toType);
+        upperBound = UpperBoundForType(toType);
+    }
+    else
+    {
+        switch (toType)
+        {
+            // CAST_OVF(uint <- uint)       - [INT_MIN..INT_MAX]
+            // CAST_OVF(uint <- int)        - [0..INT_MAX]
+            // CAST_OVF(uint <- ulong/long) - [0..UINT_MAX]
+            case TYP_UINT:
+                if (fromType == TYP_LONG)
+                {
+                    lowerBound = SymbolicIntegerValue::Zero;
+                    upperBound = SymbolicIntegerValue::UIntMax;
+                }
+                else
+                {
+                    lowerBound = fromUnsigned ? SymbolicIntegerValue::IntMin : SymbolicIntegerValue::Zero;
+                    upperBound = SymbolicIntegerValue::IntMax;
+                }
+                break;
+
+            // CAST_OVF(int <- uint/ulong) - [0..INT_MAX]
+            // CAST_OVF(int <- int/long)   - [INT_MIN..INT_MAX]
+            case TYP_INT:
+                lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : SymbolicIntegerValue::IntMin;
+                upperBound = SymbolicIntegerValue::IntMax;
+                break;
+
+            // CAST_OVF(ulong <- uint)  - [INT_MIN..INT_MAX]
+            // CAST_OVF(ulong <- int)   - [0..INT_MAX]
+            // CAST_OVF(ulong <- ulong) - [LONG_MIN..LONG_MAX]
+            // CAST_OVF(ulong <- long)  - [0..LONG_MAX]
+            case TYP_ULONG:
+                lowerBound = fromUnsigned ? LowerBoundForType(fromType) : SymbolicIntegerValue::Zero;
+                upperBound = UpperBoundForType(fromType);
+                break;
+
+            // CAST_OVF(long <- uint/int) - [INT_MIN..INT_MAX]
+            // CAST_OVF(long <- ulong)    - [0..LONG_MAX]
+            // CAST_OVF(long <- long)     - [LONG_MIN..LONG_MAX]
+            case TYP_LONG:
+                lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : LowerBoundForType(fromType);
+                upperBound = UpperBoundForType(fromType);
+                break;
+
+            default:
+                unreached();
+        }
+    }
+
+    return {lowerBound, upperBound};
+}
+
+//------------------------------------------------------------------------
+// IntegralRange::ForCastOutput: Get the output range for a cast.
+//
+// This method is the "output" counterpart to ForCastInput, it returns
+// a range produces by a cast (by definition, non-overflowing one).
+// The output range is the same for representation-preserving casts, but
+// can be different for others. One example is CAST_OVF(uint <- long).
+// The input range is [0..UINT_MAX], while the output is [INT_MIN..INT_MAX].
+//
+// Arguments:
+//   cast - the cast node for which the range will be computed
+//
+// Return Value:
+//   The range this cast produces - see description.
+//
+/* static */ IntegralRange IntegralRange::ForCastOutput(GenTreeCast* cast)
+{
+    var_types fromType     = genActualType(cast->CastOp());
+    var_types toType       = cast->CastToType();
+    bool      fromUnsigned = cast->IsUnsigned();
+
+    assert((fromType == TYP_INT) || (fromType == TYP_LONG));
+    assert(varTypeIsIntegral(toType));
+
+    if (varTypeIsSmall(toType) || (genActualType(toType) == fromType))
+    {
+        return ForCastInput(cast);
+    }
+
+    // CAST(uint/int <- ulong/long) - [INT_MIN..INT_MAX]
+    // CAST(ulong/long <- uint)     - [0..UINT_MAX]
+    // CAST(ulong/long <- int)      - [INT_MIN..INT_MAX]
+    if (!cast->gtOverflow())
+    {
+        if ((fromType == TYP_INT) && fromUnsigned)
+        {
+            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax};
+        }
+
+        return {SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
+    }
+
+    SymbolicIntegerValue lowerBound;
+    SymbolicIntegerValue upperBound;
+    switch (toType)
+    {
+        // CAST_OVF(uint <- ulong) - [INT_MIN..INT_MAX]
+        // CAST_OVF(uint <- long)  - [INT_MIN..INT_MAX]
+        case TYP_UINT:
+            lowerBound = SymbolicIntegerValue::IntMin;
+            upperBound = SymbolicIntegerValue::IntMax;
+            break;
+
+        // CAST_OVF(int <- ulong) - [0..INT_MAX]
+        // CAST_OVF(int <- long)  - [INT_MIN..INT_MAX]
+        case TYP_INT:
+            lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : SymbolicIntegerValue::IntMin;
+            upperBound = SymbolicIntegerValue::IntMax;
+            break;
+
+        // CAST_OVF(ulong <- uint) - [0..UINT_MAX]
+        // CAST_OVF(ulong <- int)  - [0..INT_MAX]
+        case TYP_ULONG:
+            lowerBound = SymbolicIntegerValue::Zero;
+            upperBound = fromUnsigned ? SymbolicIntegerValue::UIntMax : SymbolicIntegerValue::IntMax;
+            break;
+
+        // CAST_OVF(long <- uint) - [0..UINT_MAX]
+        // CAST_OVF(long <- int)  - [INT_MIN..INT_MAX]
+        case TYP_LONG:
+            lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : SymbolicIntegerValue::IntMin;
+            upperBound = fromUnsigned ? SymbolicIntegerValue::UIntMax : SymbolicIntegerValue::IntMax;
+            break;
+
+        default:
+            unreached();
+    }
+
+    return {lowerBound, upperBound};
+}
+
+#ifdef DEBUG
+/* static */ void IntegralRange::Print(IntegralRange range)
+{
+    printf("[%lld", SymbolicToRealValue(range.m_lowerBound));
+    printf("..");
+    printf("%lld]", SymbolicToRealValue(range.m_upperBound));
+}
+#endif // DEBUG
+
 /*****************************************************************************
  *
  *  Helper passed to Compiler::fgWalkTreePre() to find the Asgn node for optAddCopies()
@@ -762,9 +1043,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 break;
 
             case O2K_SUBRANGE:
-                printf("[%lld", AssertionDsc::SymbolicToRealValue(curAssertion->op2.u2.loBound));
-                printf("..");
-                printf("%lld]", AssertionDsc::SymbolicToRealValue(curAssertion->op2.u2.hiBound));
+                IntegralRange::Print(curAssertion->op2.u2);
                 break;
 
             default:
@@ -883,8 +1162,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     assert((op2 == nullptr) || !op2->OperIs(GT_LIST));
     assert(!helperCallArgs || (op2 != nullptr));
 
-    AssertionDsc assertion;
-    memset(&assertion, 0, sizeof(AssertionDsc));
+    AssertionDsc assertion = {OAK_INVALID};
     assert(assertion.assertionKind == OAK_INVALID);
 
     if (op1->gtOper == GT_ARR_BOUNDS_CHECK)
@@ -1383,7 +1661,7 @@ AssertionIndex Compiler::optFinalizeCreatingAssertion(AssertionDsc* assertion)
 //
 // Generates [0..1] ranges for relops, [T_MIN..T_MAX] for small-typed indirections
 // and casts to small types. Generates various ranges for casts to and from "large"
-// types - see "AssertionDsc::GetOutputRangeForCast".
+// types - see "IntegralRange::ForCastOutput".
 //
 // Arguments:
 //    source - tree producing the value
@@ -1396,7 +1674,7 @@ AssertionIndex Compiler::optFinalizeCreatingAssertion(AssertionDsc* assertion)
 // Notes:
 //   The "pRange" parameter is only written to if the function returns "true".
 //
-bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, AssertionDsc::Range* pRange)
+bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange)
 {
     var_types sourceType = TYP_UNDEF;
 
@@ -1420,9 +1698,9 @@ bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, AssertionDsc::Ran
         case GT_CAST:
             if (varTypeIsIntegral(source) && varTypeIsIntegral(source->AsCast()->CastOp()))
             {
-                AssertionDsc::Range castRange = AssertionDsc::GetOutputRangeForCast(source->AsCast());
+                IntegralRange castRange = IntegralRange::ForCastOutput(source->AsCast());
                 // TODO-Casts: change below to source->TypeGet() when BOX import is fixed to not have CAST(short).
-                AssertionDsc::Range nodeRange = AssertionDsc::GetRangeForIntegralType(genActualType(source));
+                IntegralRange nodeRange = IntegralRange::ForType(genActualType(source));
                 assert(nodeRange.Contains(castRange));
 
                 if (!castRange.Equals(nodeRange))
@@ -1439,283 +1717,11 @@ bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, AssertionDsc::Ran
 
     if (varTypeIsSmall(sourceType))
     {
-        *pRange = AssertionDsc::GetRangeForIntegralType(sourceType);
+        *pRange = IntegralRange::ForType(sourceType);
         return true;
     }
 
     return false;
-}
-
-//------------------------------------------------------------------------
-// GetInputRangeForCast: Get the non-overflowing input range for a cast.
-//
-// This routine computes the input range for a cast from
-// an integer to an integer for which it will not overflow.
-//
-// Note that the ranges computed by this method are **always** in the
-// "signed" domain. For example, a cast such as CAST_OVF(ulong <- uint)
-// will return [INT32_MIN..INT32_MAX], i. e. the operation does not
-// overflow for any possible input and the GTF_OVERFLOW flag is a no-op.
-//
-// Arguments:
-//    cast - the cast node for which the range will be computed
-//
-// Return Value:
-//    The range this cast consumes without overflowing - see description.
-//
-/* static */ Compiler::AssertionDsc::Range Compiler::AssertionDsc::GetInputRangeForCast(GenTreeCast* cast)
-{
-    var_types fromType     = genActualType(cast->CastOp());
-    var_types toType       = cast->CastToType();
-    bool      fromUnsigned = cast->IsUnsigned();
-
-    assert((fromType == TYP_INT) || (fromType == TYP_LONG));
-    assert(varTypeIsIntegral(toType));
-
-    if (!cast->gtOverflow())
-    {
-        // CAST(small type <- uint/int/ulong/long) - [TO_TYPE_MIN..TO_TYPE_MAX]
-        if (varTypeIsSmall(toType))
-        {
-            return {GetLowerBoundForIntegralType(toType), GetUpperBoundForIntegralType(toType)};
-        }
-
-        // Widening/no-op representation-changing casts never "overflow" under our definition.
-        // These are CAST(u/long <- int), CAST(u/long <- uint), CAST(u/int <- u/int).
-        // Narrowing cases "overflow" when the input does not fit into TYP_INT.
-        // These are CAST(u/int <- u/long) - they are all the same operation.
-        return {SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
-    }
-
-    SymbolicIntegerValue lowerBound;
-    SymbolicIntegerValue upperBound;
-
-    // CAST_OVF(small type <- int/long)   - [TO_TYPE_MIN..TO_TYPE_MAX]
-    // CAST_OVF(small type <- uint/ulong) - [0..TO_TYPE_MAX]
-    if (varTypeIsSmall(toType))
-    {
-        lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : GetLowerBoundForIntegralType(toType);
-        upperBound = GetUpperBoundForIntegralType(toType);
-    }
-    else
-    {
-        switch (toType)
-        {
-            // CAST_OVF(uint <- uint)       - [INT_MIN..INT_MAX]
-            // CAST_OVF(uint <- int)        - [0..INT_MAX]
-            // CAST_OVF(uint <- ulong/long) - [0..UINT_MAX]
-            case TYP_UINT:
-                if (fromType == TYP_LONG)
-                {
-                    lowerBound = SymbolicIntegerValue::Zero;
-                    upperBound = SymbolicIntegerValue::UIntMax;
-                }
-                else
-                {
-                    lowerBound = fromUnsigned ? SymbolicIntegerValue::IntMin : SymbolicIntegerValue::Zero;
-                    upperBound = SymbolicIntegerValue::IntMax;
-                }
-                break;
-
-                // CAST_OVF(int <- uint/ulong) - [0..INT_MAX]
-                // CAST_OVF(int <- int/long)   - [INT_MIN..INT_MAX]
-            case TYP_INT:
-                lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : SymbolicIntegerValue::IntMin;
-                upperBound = SymbolicIntegerValue::IntMax;
-                break;
-
-                // CAST_OVF(ulong <- uint)  - [INT_MIN..INT_MAX]
-                // CAST_OVF(ulong <- int)   - [0..INT_MAX]
-                // CAST_OVF(ulong <- ulong) - [LONG_MIN..LONG_MAX]
-                // CAST_OVF(ulong <- long)  - [0..LONG_MAX]
-            case TYP_ULONG:
-                lowerBound = fromUnsigned ? GetLowerBoundForIntegralType(fromType) : SymbolicIntegerValue::Zero;
-                upperBound = GetUpperBoundForIntegralType(fromType);
-                break;
-
-                // CAST_OVF(long <- uint/int) - [INT_MIN..INT_MAX]
-                // CAST_OVF(long <- ulong)    - [0..LONG_MAX]
-                // CAST_OVF(long <- long)     - [LONG_MIN..LONG_MAX]
-            case TYP_LONG:
-                lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : GetLowerBoundForIntegralType(fromType);
-                upperBound = GetUpperBoundForIntegralType(fromType);
-                break;
-
-            default:
-                unreached();
-        }
-    }
-
-    return {lowerBound, upperBound};
-}
-
-//------------------------------------------------------------------------
-// GetInputRangeForCast: Get the output range for a cast.
-//
-// This method is the "output" counterpart to GetInputRangeForCast, it returns
-// a range produces by a cast (by definition, non-overflowing one).
-// The output range is the same for representation-preserving casts, but
-// can be different for other. One example is CAST_OVF(uint <- long).
-// The input range is [0..UINT_MAX], while the output is [INT_MIN..INT_MAX].
-//
-// Arguments:
-//   cast - the cast node for which the range will be computed
-//
-// Return Value:
-//   The range this cast produces - see description.
-//
-/* static */ Compiler::AssertionDsc::Range Compiler::AssertionDsc::GetOutputRangeForCast(GenTreeCast* cast)
-{
-    var_types fromType     = genActualType(cast->CastOp());
-    var_types toType       = cast->CastToType();
-    bool      fromUnsigned = cast->IsUnsigned();
-
-    assert((fromType == TYP_INT) || (fromType == TYP_LONG));
-    assert(varTypeIsIntegral(toType));
-
-    if (varTypeIsSmall(toType) || (genActualType(toType) == fromType))
-    {
-        return GetInputRangeForCast(cast);
-    }
-
-    // CAST(uint/int <- ulong/long) - [INT_MIN..INT_MAX]
-    // CAST(ulong/long <- uint)     - [0..UINT_MAX]
-    // CAST(ulong/long <- int)      - [INT_MIN..INT_MAX]
-    if (!cast->gtOverflow())
-    {
-        if ((fromType == TYP_INT) && fromUnsigned)
-        {
-            return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax};
-        }
-
-        return {SymbolicIntegerValue::IntMin, SymbolicIntegerValue::IntMax};
-    }
-
-    SymbolicIntegerValue lowerBound;
-    SymbolicIntegerValue upperBound;
-    switch (toType)
-    {
-        // CAST_OVF(uint <- ulong) - [INT_MIN..INT_MAX]
-        // CAST_OVF(uint <- long)  - [INT_MIN..INT_MAX]
-        case TYP_UINT:
-            lowerBound = SymbolicIntegerValue::IntMin;
-            upperBound = SymbolicIntegerValue::IntMax;
-            break;
-
-            // CAST_OVF(int <- ulong) - [0..INT_MAX]
-            // CAST_OVF(int <- long)  - [INT_MIN..INT_MAX]
-        case TYP_INT:
-            lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : SymbolicIntegerValue::IntMin;
-            upperBound = SymbolicIntegerValue::IntMax;
-            break;
-
-            // CAST_OVF(ulong <- uint) - [0..UINT_MAX]
-            // CAST_OVF(ulong <- int)  - [0..INT_MAX]
-        case TYP_ULONG:
-            lowerBound = SymbolicIntegerValue::Zero;
-            upperBound = fromUnsigned ? SymbolicIntegerValue::UIntMax : SymbolicIntegerValue::IntMax;
-            break;
-
-            // CAST_OVF(long <- uint) - [0..UINT_MAX]
-            // CAST_OVF(long <- int)  - [INT_MIN..INT_MAX]
-        case TYP_LONG:
-            lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : SymbolicIntegerValue::IntMin;
-            upperBound = fromUnsigned ? SymbolicIntegerValue::UIntMax : SymbolicIntegerValue::IntMax;
-            break;
-
-        default:
-            unreached();
-    }
-
-    return {lowerBound, upperBound};
-}
-
-/* static */ SymbolicIntegerValue Compiler::AssertionDsc::GetLowerBoundForIntegralType(var_types type)
-{
-    switch (type)
-    {
-        case TYP_BOOL:
-        case TYP_UBYTE:
-        case TYP_USHORT:
-            return SymbolicIntegerValue::Zero;
-        case TYP_BYTE:
-            return SymbolicIntegerValue::ByteMin;
-        case TYP_SHORT:
-            return SymbolicIntegerValue::ShortMin;
-        case TYP_INT:
-            return SymbolicIntegerValue::IntMin;
-        case TYP_LONG:
-            return SymbolicIntegerValue::LongMin;
-        default:
-            unreached();
-    }
-}
-
-/* static */ SymbolicIntegerValue Compiler::AssertionDsc::GetUpperBoundForIntegralType(var_types type)
-{
-    switch (type)
-    {
-        case TYP_BYTE:
-            return SymbolicIntegerValue::ByteMax;
-        case TYP_BOOL:
-        case TYP_UBYTE:
-            return SymbolicIntegerValue::UByteMax;
-        case TYP_SHORT:
-            return SymbolicIntegerValue::ShortMax;
-        case TYP_USHORT:
-            return SymbolicIntegerValue::UShortMax;
-        case TYP_INT:
-            return SymbolicIntegerValue::IntMax;
-        case TYP_UINT:
-            return SymbolicIntegerValue::UIntMax;
-        case TYP_LONG:
-            return SymbolicIntegerValue::LongMax;
-        default:
-            unreached();
-    }
-}
-
-/* static */ int64_t Compiler::AssertionDsc::SymbolicToRealValue(SymbolicIntegerValue symbolicValue)
-{
-    switch (symbolicValue)
-    {
-        case SymbolicIntegerValue::LongMin:
-            return INT64_MIN;
-        case SymbolicIntegerValue::IntMin:
-            return INT32_MIN;
-        case SymbolicIntegerValue::ShortMin:
-            return INT16_MIN;
-        case SymbolicIntegerValue::ByteMin:
-            return INT8_MIN;
-        case SymbolicIntegerValue::Zero:
-            return 0;
-        case SymbolicIntegerValue::One:
-            return 1;
-        case SymbolicIntegerValue::ByteMax:
-            return INT8_MAX;
-        case SymbolicIntegerValue::UByteMax:
-            return UINT8_MAX;
-        case SymbolicIntegerValue::ShortMax:
-            return INT16_MAX;
-        case SymbolicIntegerValue::UShortMax:
-            return UINT16_MAX;
-        case SymbolicIntegerValue::IntMax:
-            return INT32_MAX;
-        case SymbolicIntegerValue::UIntMax:
-            return UINT32_MAX;
-        case SymbolicIntegerValue::LongMax:
-            return INT64_MAX;
-        default:
-            unreached();
-    }
-}
-
-bool Compiler::AssertionDsc::Range::Contains(int64_t value) const
-{
-    int64_t lowerBound = SymbolicToRealValue(loBound);
-    int64_t upperBound = SymbolicToRealValue(hiBound);
-
-    return (lowerBound <= value) && (value <= upperBound);
 }
 
 /*****************************************************************************
@@ -2124,7 +2130,7 @@ AssertionIndex Compiler::optAssertionGenCast(GenTreeCast* cast)
     assertion.op1.lcl.lclNum = lclVar->GetLclNum();
     assertion.op1.lcl.ssaNum = lclVar->GetSsaNum();
     assertion.op2.kind       = O2K_SUBRANGE;
-    assertion.op2.u2         = AssertionDsc::GetInputRangeForCast(cast);
+    assertion.op2.u2         = IntegralRange::ForCastInput(cast);
 
     return optFinalizeCreatingAssertion(&assertion);
 }
@@ -2686,7 +2692,7 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
 // Return Value:
 //    Index of the found assertion, NO_ASSERTION_INDEX otherwise.
 //
-AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, AssertionDsc::Range range, ASSERT_VALARG_TP assertions)
+AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions)
 {
     if (!optLocalAssertionProp && BitVecOps::IsEmpty(apTraits, assertions))
     {
@@ -3940,7 +3946,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 //
 // The function use "optAssertionIsSubrange" to find an assertion which claims the
 // cast's operand (only locals are supported) is a subrange of the "input" range
-// for the cast, as computed by "AssertionDsc::GetInputRangeForCast", and, if such
+// for the cast, as computed by "IntegralRange::ForCastInput", and, if such
 // assertion is found, act on it - either remove the cast if it is not changing
 // representation, or try to remove the GTF_OVERFLOW flag from it.
 //
@@ -3975,8 +3981,8 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
         return nullptr;
     }
 
-    AssertionDsc::Range range = AssertionDsc::GetInputRangeForCast(cast);
-    AssertionIndex      index = optAssertionIsSubrange(lcl, range, assertions);
+    IntegralRange  range = IntegralRange::ForCastInput(cast);
+    AssertionIndex index = optAssertionIsSubrange(lcl, range, assertions);
     if (index != NO_ASSERTION_INDEX)
     {
         LclVarDsc* varDsc = lvaGetDesc(lcl->AsLclVarCommon());
@@ -4980,8 +4986,7 @@ void Compiler::optImpliedByCopyAssertion(AssertionDsc* copyAssertion, AssertionD
         switch (impAssertion->op2.kind)
         {
             case O2K_SUBRANGE:
-                usable = op1MatchesCopy && ((impAssertion->op2.u2.loBound <= depAssertion->op2.u2.loBound) &&
-                                            (impAssertion->op2.u2.hiBound >= depAssertion->op2.u2.hiBound));
+                usable = op1MatchesCopy && impAssertion->op2.u2.Contains(depAssertion->op2.u2);
                 break;
 
             case O2K_CONST_LONG:

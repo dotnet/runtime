@@ -6023,7 +6023,7 @@ GenTree* Compiler::fgMorphLocalVar(GenTree* tree, bool forceRemorph)
 #if LOCAL_ASSERTION_PROP
         // Assertion prop can tell us to omit adding a cast here
         if (optLocalAssertionProp &&
-            optAssertionIsSubrange(tree, AssertionDsc::GetRangeForIntegralType(varType), apFull) != NO_ASSERTION_INDEX)
+            optAssertionIsSubrange(tree, IntegralRange::ForType(varType), apFull) != NO_ASSERTION_INDEX)
         {
             // The previous assertion can guarantee us that if this node gets
             // assigned a register, it will be normalized already. It is still

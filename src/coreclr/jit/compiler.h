@@ -1151,25 +1151,72 @@ enum class SymbolicIntegerValue : int32_t
     LongMax,
 };
 
-inline constexpr bool operator >(SymbolicIntegerValue left, SymbolicIntegerValue right)
+inline constexpr bool operator>(SymbolicIntegerValue left, SymbolicIntegerValue right)
 {
     return static_cast<int32_t>(left) > static_cast<int32_t>(right);
 }
 
-inline constexpr bool operator >=(SymbolicIntegerValue left, SymbolicIntegerValue right)
+inline constexpr bool operator>=(SymbolicIntegerValue left, SymbolicIntegerValue right)
 {
     return static_cast<int32_t>(left) >= static_cast<int32_t>(right);
 }
 
-inline constexpr bool operator <(SymbolicIntegerValue left, SymbolicIntegerValue right)
+inline constexpr bool operator<(SymbolicIntegerValue left, SymbolicIntegerValue right)
 {
     return static_cast<int32_t>(left) < static_cast<int32_t>(right);
 }
 
-inline constexpr bool operator <=(SymbolicIntegerValue left, SymbolicIntegerValue right)
+inline constexpr bool operator<=(SymbolicIntegerValue left, SymbolicIntegerValue right)
 {
     return static_cast<int32_t>(left) <= static_cast<int32_t>(right);
 }
+
+// Represents an integral range useful for reasoning about integral casts.
+// It uses a symbolic representation for lower and upper bounds so
+// that it can efficiently handle integers of all sizes on all hosts.
+class IntegralRange
+{
+private:
+    SymbolicIntegerValue m_lowerBound;
+    SymbolicIntegerValue m_upperBound;
+
+public:
+    IntegralRange() = default;
+
+    IntegralRange(SymbolicIntegerValue lowerBound, SymbolicIntegerValue upperBound)
+        : m_lowerBound(lowerBound), m_upperBound(upperBound)
+    {
+        assert(lowerBound <= upperBound);
+    }
+
+    bool Contains(int64_t value) const;
+
+    bool Contains(IntegralRange other) const
+    {
+        return (m_lowerBound <= other.m_lowerBound) && (other.m_upperBound <= m_upperBound);
+    }
+
+    bool Equals(IntegralRange other) const
+    {
+        return (m_lowerBound == other.m_lowerBound) && (m_upperBound == other.m_upperBound);
+    }
+
+    static int64_t SymbolicToRealValue(SymbolicIntegerValue value);
+    static SymbolicIntegerValue LowerBoundForType(var_types type);
+    static SymbolicIntegerValue UpperBoundForType(var_types type);
+
+    static IntegralRange ForType(var_types type)
+    {
+        return {LowerBoundForType(type), UpperBoundForType(type)};
+    }
+
+    static IntegralRange ForCastInput(GenTreeCast* cast);
+    static IntegralRange ForCastOutput(GenTreeCast* cast);
+
+#ifdef DEBUG
+    static void Print(IntegralRange range);
+#endif // DEBUG
+};
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -7398,23 +7445,6 @@ public:
             ValueNum vnIdx;
             ValueNum vnLen;
         };
-        struct Range // integer subrange
-        {
-            SymbolicIntegerValue loBound;
-            SymbolicIntegerValue hiBound;
-
-            bool Contains(int64_t value) const;
-
-            bool Contains(Range other) const
-            {
-                return (loBound <= other.loBound) && (other.hiBound <= hiBound);
-            }
-
-            bool Equals(Range other) const
-            {
-                return (loBound == other.loBound) && (hiBound == other.hiBound);
-            }
-        };
         struct AssertionDscOp1
         {
             optOp1Kind kind; // a normal LclVar, or Exact-type or Subtype
@@ -7430,18 +7460,18 @@ public:
             ValueNum   vn;
             struct IntVal
             {
-                ssize_t      iconVal;   // integer
-#if  !defined(HOST_64BIT)
-                unsigned     padding;   // unused; ensures iconFlags does not overlap lconVal
+                ssize_t iconVal; // integer
+#if !defined(HOST_64BIT)
+                unsigned padding; // unused; ensures iconFlags does not overlap lconVal
 #endif
                 GenTreeFlags iconFlags; // gtFlags
             };
             union {
-                SsaVar  lcl;
-                IntVal  u1;
-                __int64 lconVal;
-                double  dconVal;
-                Range   u2;
+                SsaVar        lcl;
+                IntVal        u1;
+                __int64       lconVal;
+                double        dconVal;
+                IntegralRange u2;
             };
         } op2;
 
@@ -7490,18 +7520,6 @@ public:
                 return kind2 == OAK_EQUAL;
             }
             return false;
-        }
-
-        static Range GetInputRangeForCast(GenTreeCast* cast);
-        static Range GetOutputRangeForCast(GenTreeCast* cast);
-
-        static SymbolicIntegerValue GetLowerBoundForIntegralType(var_types type);
-        static SymbolicIntegerValue GetUpperBoundForIntegralType(var_types type);
-        static int64_t SymbolicToRealValue(SymbolicIntegerValue value);
-
-        static Range GetRangeForIntegralType(var_types type)
-        {
-            return {GetLowerBoundForIntegralType(type), GetUpperBoundForIntegralType(type)};
         }
 
         bool HasSameOp1(AssertionDsc* that, bool vnBased)
@@ -7656,7 +7674,7 @@ public:
 
     AssertionIndex optFinalizeCreatingAssertion(AssertionDsc* assertion);
 
-    bool optTryExtractSubrangeAssertion(GenTree* source, AssertionDsc::Range* pRange);
+    bool optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange);
 
     void optCreateComplementaryAssertion(AssertionIndex assertionIndex,
                                          GenTree*       op1,
@@ -7672,7 +7690,7 @@ public:
     ASSERT_TP optGetVnMappedAssertions(ValueNum vn);
 
     // Used for respective assertion propagations.
-    AssertionIndex optAssertionIsSubrange(GenTree* tree, AssertionDsc::Range range, ASSERT_VALARG_TP assertions);
+    AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased));
     bool optAssertionIsNonNull(GenTree*         op,
