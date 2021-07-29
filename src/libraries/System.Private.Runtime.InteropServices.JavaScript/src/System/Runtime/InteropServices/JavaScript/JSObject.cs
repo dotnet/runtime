@@ -84,7 +84,7 @@ namespace System.Runtime.InteropServices.JavaScript
             public object? Signal;
         }
 
-        public int AddEventListener(string name, Delegate listener, EventListenerOptions? options = null)
+        public int AddEventListener(string name, Action<JSObject> listener, EventListenerOptions? options = null)
         {
             var optionsDict = options.HasValue
                 ? new JSObject()
@@ -117,7 +117,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public void RemoveEventListener(string name, Delegate? listener, EventListenerOptions? options = null)
+        public void RemoveEventListener(string name, Action<JSObject>? listener, EventListenerOptions? options = null)
         {
             if (listener == null)
                 return;

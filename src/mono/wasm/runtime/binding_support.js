@@ -147,7 +147,6 @@ var BindingSupportLib = {
 			this.safehandle_get_handle = get_method ("SafeHandleGetHandle");
 			this.safehandle_release_by_handle = get_method ("SafeHandleReleaseByHandle");
 			this.release_js_owned_object_by_handle = bind_runtime_method ("ReleaseJSOwnedObjectByHandle", "i");
-			this.try_invoke_js_owned_delegate_by_handle = bind_runtime_method ("TryInvokeJSOwnedDelegateByHandle", "io");
 
 			this._are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 
@@ -162,49 +161,54 @@ var BindingSupportLib = {
 			this._js_owned_object_registry = new FinalizationRegistry(this._js_owned_object_finalized.bind(this));
 		},
 
-		_get_weak_delegate_from_handle: function (id) {
+		_get_weak_delegate_from_handle: function (gcHandle) {
 			var result = null;
 
 			// Look up this handle in the weak delegate table, and if we find a matching weakref,
 			//  deref it to try and get a JS function. This function may have been collected.
-			if (this._js_owned_object_table.has(id)) {
-				var wr = this._js_owned_object_table.get(id);
+			if (this._js_owned_object_table.has(gcHandle)) {
+				var wr = this._js_owned_object_table.get(gcHandle);
 				result = wr.deref();
-				// Note that we could check for a null result (i.e. function was GC'd) here and
-				//  opt to abort since resurrecting a given ID probably shouldn't happen.
-				// However, this design makes resurrecting an ID harmless, so there's not any
-				//  value in doing that (and we would then need to differentiate 'new' vs 'get')
-				// Tracking whether an ID is being resurrected also would require us to keep track
-				//  of every ID that has ever been used, which will harm performance long-term.
+				// result could be null after the previous registration of the same object was GC on JS side
+				// it should only happen after FinalizationRegistry called _js_owned_object_finalized for it
 			}
 
 			// If the function for this handle was already collected (or was never created),
 			//  we create a new function that will invoke the corresponding C# delegate when
-			//  called, and store it into our weak mapping (so we can look it up again by id)
+			//  called, and store it into our weak mapping (so we can look it up again by gcHandle)
 			//  and register it with the finalization registry so that the C# side can release
 			//  the associated object references
 			if (!result) {
-				result = (arg1) => {
-					if (!this.try_invoke_js_owned_delegate_by_handle(id, arg1))
-						// Because lifetime is managed by JavaScript, it *is* an error for this 
-						//  invocation to ever fail. If we have a JS wrapper for an ID, there
-						//  should be no way for the managed delegate to have disappeared.
-						throw new Error(`JS-owned delegate invocation failed for id ${id}`);
+				result = () => {
+					var delegateRoot = MONO.mono_wasm_new_root (this.wasm_get_raw_obj(gcHandle, false));
+					try {
+						if (typeof result.__mono_delegate_invoke__ === "undefined")
+							result.__mono_delegate_invoke__ = this.mono_wasm_get_delegate_invoke(delegateRoot.value);
+						if (!result.__mono_delegate_invoke__)
+							throw new Error("System.Delegate Invoke method can not be resolved.");
+		
+						if (typeof result.__mono_delegate_invoke_sig__ === "undefined")
+							result.__mono_delegate_invoke_sig__ = Module.mono_method_get_call_signature (result.__mono_delegate_invoke__, delegateRoot.value);
+		
+						return this.call_method (result.__mono_delegate_invoke__, delegateRoot.value, result.__mono_delegate_invoke_sig__, arguments);
+					} finally {
+						delegateRoot.release();
+					}
 				};
 
-				this._js_owned_object_table.set(id, new WeakRef(result));
-				this._js_owned_object_registry.register(result, id);
+				this._js_owned_object_table.set(gcHandle, new WeakRef(result));
+				this._js_owned_object_registry.register(result, gcHandle);
 			}
 			return result;
 		},
 
-		_js_owned_object_finalized: function (id) {
-			// The JS function associated with this ID has been collected by the JS GC.
-			// As such, it's not possible for this ID to be invoked by JS anymore, so
+		_js_owned_object_finalized: function (gcHandle) {
+			// The JS function associated with this gcHandle has been collected by the JS GC.
+			// As such, it's not possible for this gcHandle to be invoked by JS anymore, so
 			//  we can release the tracking weakref (it's null now, by definition),
 			//  and tell the C# side to stop holding a reference to the managed delegate.
-			this._js_owned_object_table.delete(id);
-			this.release_js_owned_object_by_handle(id);
+			this._js_owned_object_table.delete(gcHandle);
+			this.release_js_owned_object_by_handle(gcHandle);
 		},
 
 		// Ensures the string is already interned on both the managed and JavaScript sides,

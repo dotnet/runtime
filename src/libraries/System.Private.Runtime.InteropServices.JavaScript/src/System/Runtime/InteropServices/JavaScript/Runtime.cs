@@ -218,10 +218,8 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject.Int32Handle;
         }
 
-        private static int NextJSOwnedObjectID = 1;
         private static object JSOwnedObjectLock = new object();
         private static Dictionary<object, int> IDFromJSOwnedObject = new Dictionary<object, int>();
-        private static Dictionary<int, object> JSOwnedObjectFromID = new Dictionary<int, object>();
 
         // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
         // The managed side maintains a strong reference to the object, while the JS side
@@ -239,9 +237,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (IDFromJSOwnedObject.TryGetValue(o, out result))
                     return result;
 
-                result = NextJSOwnedObjectID++;
+                result = (int)(IntPtr)GCHandle.Alloc(o, GCHandleType.Normal);
                 IDFromJSOwnedObject[o] = result;
-                JSOwnedObjectFromID[result] = o;
                 return result;
             }
         }
@@ -249,41 +246,11 @@ namespace System.Runtime.InteropServices.JavaScript
         // The JS layer invokes this method when the JS wrapper for a JS owned object
         //  has been collected by the JS garbage collector
         public static void ReleaseJSOwnedObjectByHandle (int id) {
+            GCHandle handle = (GCHandle)(IntPtr)id;
             lock (JSOwnedObjectLock) {
-                if (!JSOwnedObjectFromID.TryGetValue(id, out object? o))
-                    throw new Exception($"JS-owned object with id {id} was already released");
-                IDFromJSOwnedObject.Remove(o);
-                JSOwnedObjectFromID.Remove(id);
+                IDFromJSOwnedObject.Remove(handle.Target!);
             }
-        }
-
-        // The JS layer invokes this API when the JS wrapper for a delegate is invoked.
-        // In multiple places this function intentionally returns false instead of throwing
-        //  in an unexpected condition. This is done because unexpected conditions of this
-        //  type are usually caused by a JS object (i.e. a WebSocket) receiving an event
-        //  after its managed owner has been disposed - throwing in that case is unwanted.
-        public static bool TryInvokeJSOwnedDelegateByHandle (int id, JSObject? arg1) {
-            Delegate? del;
-            lock (JSOwnedObjectLock) {
-                if (!JSOwnedObjectFromID.TryGetValue(id, out object? o))
-                    return false;
-                del = (Delegate)o;
-            }
-
-            if (del == null)
-                return false;
-
-// error CS0117: 'Array' does not contain a definition for 'Empty' [/home/kate/Projects/dotnet-runtime-wasm/src/libraries/System.Private.Runtime.InteropServices.JavaScript/src/System.Private.Runtime.InteropServices.JavaScript.csproj]
-#pragma warning disable CA1825
-
-            if (arg1 != null)
-                del.DynamicInvoke(new object[] { arg1 });
-            else
-                del.DynamicInvoke(new object[0]);
-
-#pragma warning restore CA1825
-
-            return true;
+            handle.Free();
         }
 
         public static int GetJSObjectId(object rawObj)
