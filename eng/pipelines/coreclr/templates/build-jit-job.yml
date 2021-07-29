@@ -12,6 +12,7 @@ parameters:
   variables: {}
   dependOnEvaluatePaths: false
   skipBinariesUpload: false
+  uploadAsArtifacts: false
 
 ### Product build
 jobs:
