@@ -118,21 +118,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		class TestUnknownType
 		{
 			[Kept]
-			public static void PublicMethod ()
-			{
-			}
-
-			[Kept]
-			protected static void ProtectedMethod ()
-			{
-			}
-
-			[Kept]
-			private static void PrivateMethod ()
-			{
-			}
-
-			[Kept]
 			[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.Call),
 				new Type[] { typeof (Type), typeof (string), typeof (Type[]), typeof (Expression[]) }, messageCode: "IL2072")]
 			public static void Test ()
@@ -148,13 +133,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
 			static Type GetUnknownType ()
 			{
-				return typeof (TestUnknownType);
+				return typeof (TestType);
 			}
 
 			[Kept]
 			static Type TriggerUnrecognizedPattern ()
 			{
-				return typeof (TestUnknownType);
+				return typeof (TestType);
 			}
 		}
 
@@ -355,5 +340,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)]
 			static Type GetUnknownTypeWithRequrements () { return null; }
 		}
+
+		[Kept]
+		class TestType { }
 	}
 }

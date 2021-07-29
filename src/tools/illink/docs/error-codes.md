@@ -1689,7 +1689,7 @@ The only scopes supported on global unconditional suppressions are 'module', 'ty
 it is assumed that the suppression is put on the module. Global unconditional suppressions using invalid scopes are ignored.
 
 ```C#
-// Invalid scope 'method' used in 'UnconditionalSuppressMessageAttribute' on module 'Warning' with target 'MyTarget'.
+// IL2108: Invalid scope 'method' used in 'UnconditionalSuppressMessageAttribute' on module 'Warning' with target 'MyTarget'.
 [module: UnconditionalSuppressMessage ("Test suppression with invalid scope", "IL2026", Scope = "method", Target = "MyTarget")]
 
 class Warning
@@ -1721,6 +1721,37 @@ class Warning
   // IL2109: Type 'Derived' derives from 'UnsafeClass' which has 'RequiresUnreferencedCodeAttribute'. Using any of the members inside this class is trim unsafe. http://help/unreferencedcode
   class Derived : UnsafeClass {}
   ```
+
+#### `IL2110`: Trim analysis: Field 'field' with 'DynamicallyAccessedMembersAttribute' is accessed via reflection. Trimmer can't guarantee availability of the requirements of the field.
+
+- Trimmer currently can't guarantee that all requirements of the `DynamicallyAccessedMembersAttribute` are fulfilled if the field is accessed via reflection.
+
+```C#
+[DynamicallyAccessedMembers(DynamicallyAccessedMemeberTypes.PublicMethods)]
+Type _field;
+
+void TestMethod()
+{
+    // IL2110: Field '_field' with 'DynamicallyAccessedMembersAttribute' is accessed via reflection. Trimmer can't guarantee availability of the requirements of the field.
+    typeof(Test).GetField("_field");
+}
+```
+
+#### `IL2111`: Trim analysis: Method 'method' with parameters or return value with `DynamicallyAccessedMembersAttribute` is accessed via reflection. Trimmer can't guarantee availability of the requirements of the field.
+
+- Trimmer currently can't guarantee that all requirements of the `DynamicallyAccessedMembersAttribute` are fulfilled if the method is accessed via reflection.
+
+```C#
+void MethodWithRequirements([DynamicallyAccessedMembers(DynamicallyAccessedMemeberTypes.PublicMethods)] Type type)
+{
+}
+
+void TestMethod()
+{
+    // IL2111: Method 'MethodWithRequirements' with parameters or return value with `DynamicallyAccessedMembersAttribute` is accessed via reflection. Trimmer can't guarantee availability of the requirements of the field.
+    typeof(Test).GetMethod("MethodWithRequirements");
+}
+```
 
 ## Single-File Warning Codes
 
