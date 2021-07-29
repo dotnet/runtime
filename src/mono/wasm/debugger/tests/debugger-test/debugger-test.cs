@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Threading.Tasks;
+using System.Linq;
 public partial class Math
 { //Only append content to this class as the test suite depends on line info
     public static int IntAdd(int a, int b)
@@ -361,7 +361,7 @@ public class DebuggerTest
         Console.WriteLine ($"break here");
     }
 
-    public static async Task BoxingTestAsync()
+    public static async System.Threading.Tasks.Task BoxingTestAsync()
     {
         int? n_i = 5;
         object o_i = n_i.Value;
@@ -380,7 +380,7 @@ public class DebuggerTest
         object o_ia = new int[] {918, 58971};
 
         Console.WriteLine ($"break here");
-        await Task.CompletedTask;
+        await System.Threading.Tasks.Task.CompletedTask;
     }
 
     public static void BoxedTypeObjectTest()
@@ -395,7 +395,7 @@ public class DebuggerTest
         object oo0 = oo;
         Console.WriteLine ($"break here");
     }
-    public static async Task BoxedTypeObjectTestAsync()
+    public static async System.Threading.Tasks.Task BoxedTypeObjectTestAsync()
     {
         int i = 5;
         object o0 = i;
@@ -406,7 +406,7 @@ public class DebuggerTest
         object oo = new object();
         object oo0 = oo;
         Console.WriteLine ($"break here");
-        await Task.CompletedTask;
+        await System.Threading.Tasks.Task.CompletedTask;
     }
 
     public static void BoxedAsClass()
@@ -419,7 +419,7 @@ public class DebuggerTest
         Console.WriteLine ($"break here");
     }
 
-    public static async Task BoxedAsClassAsync()
+    public static async System.Threading.Tasks.Task BoxedAsClassAsync()
     {
         ValueType vt_dt = new DateTime(4819, 5, 6, 7, 8, 9);
         ValueType vt_gs = new Math.GenericStruct<string> { StringField = "vt_gs#StringField" };
@@ -427,7 +427,7 @@ public class DebuggerTest
         Enum ee = System.IO.FileMode.Append;
 
         Console.WriteLine ($"break here");
-        await Task.CompletedTask;
+        await System.Threading.Tasks.Task.CompletedTask;
     }
 }
 
@@ -452,14 +452,14 @@ public class MulticastDelegateTestClass
         TestEvent?.Invoke(this, Delegate?.ToString());
     }
 
-    public async Task TestAsync()
+    public async System.Threading.Tasks.Task TestAsync()
     {
         TestEvent += (_, s) => Console.WriteLine(s);
         TestEvent += (_, s) => Console.WriteLine(s + "qwe");
         Delegate = TestEvent;
 
         TestEvent?.Invoke(this, Delegate?.ToString());
-        await Task.CompletedTask;
+        await System.Threading.Tasks.Task.CompletedTask;
     }
 }
 
@@ -470,10 +470,10 @@ public class EmptyClass
         Console.WriteLine($"break here");
     }
 
-    public static async Task StaticMethodWithNoLocalsAsync()
+    public static async System.Threading.Tasks.Task StaticMethodWithNoLocalsAsync()
     {
         Console.WriteLine($"break here");
-        await Task.CompletedTask;
+        await System.Threading.Tasks.Task.CompletedTask;
     }
 
     public static void run()
@@ -490,10 +490,10 @@ public struct EmptyStruct
         Console.WriteLine($"break here");
     }
 
-    public static async Task StaticMethodWithNoLocalsAsync()
+    public static async System.Threading.Tasks.Task StaticMethodWithNoLocalsAsync()
     {
         Console.WriteLine($"break here");
-        await Task.CompletedTask;
+        await System.Threading.Tasks.Task.CompletedTask;
     }
 
     public static void StaticMethodWithLocalEmptyStruct()
@@ -502,11 +502,11 @@ public struct EmptyStruct
         Console.WriteLine($"break here");
     }
 
-    public static async Task StaticMethodWithLocalEmptyStructAsync()
+    public static async System.Threading.Tasks.Task StaticMethodWithLocalEmptyStructAsync()
     {
         var es = new EmptyStruct();
         Console.WriteLine($"break here");
-        await Task.CompletedTask;
+        await System.Threading.Tasks.Task.CompletedTask;
     }
 
     public static void run()
@@ -556,3 +556,174 @@ public class HiddenSequencePointTest {
     }
 #line default
 }
+
+public class LoadDebuggerTestALC {
+    static System.Reflection.Assembly loadedAssembly;
+    public static void LoadLazyAssemblyInALC(string asm_base64, string pdb_base64)
+    {
+        var context = new System.Runtime.Loader.AssemblyLoadContext("testContext", true);
+        byte[] asm_bytes = Convert.FromBase64String(asm_base64);
+        byte[] pdb_bytes = null;
+        if (pdb_base64 != null)
+            pdb_bytes = Convert.FromBase64String(pdb_base64);
+
+        loadedAssembly = context.LoadFromStream(new System.IO.MemoryStream(asm_bytes), new System.IO.MemoryStream(pdb_bytes));
+        Console.WriteLine($"Loaded - {loadedAssembly}");
+    }
+    public static void RunMethodInALC(string type_name, string method_name)
+    {
+        var myType = loadedAssembly.GetType(type_name);
+        var myMethod = myType.GetMethod(method_name);
+        myMethod.Invoke(null, new object[] { 5, 10 });
+    }
+}
+
+    public class TestHotReload {
+        static System.Reflection.Assembly loadedAssembly;
+        static byte[] dmeta_data1_bytes;
+        static byte[] dil_data1_bytes;
+        static byte[] dpdb_data1_bytes;
+        static byte[] dmeta_data2_bytes;
+        static byte[] dil_data2_bytes;
+        static byte[] dpdb_data2_bytes;
+        public static void LoadLazyHotReload(string asm_base64, string pdb_base64, string dmeta_data1, string dil_data1, string dpdb_data1, string dmeta_data2, string dil_data2, string dpdb_data2)
+        {
+            byte[] asm_bytes = Convert.FromBase64String(asm_base64);
+            byte[] pdb_bytes = Convert.FromBase64String(pdb_base64);
+
+            dmeta_data1_bytes = Convert.FromBase64String(dmeta_data1);
+            dil_data1_bytes = Convert.FromBase64String(dil_data1);
+            dpdb_data1_bytes = Convert.FromBase64String(dpdb_data1);
+
+            dmeta_data2_bytes = Convert.FromBase64String(dmeta_data2);
+            dil_data2_bytes = Convert.FromBase64String(dil_data2);
+            dpdb_data2_bytes = Convert.FromBase64String(dpdb_data2);
+
+
+            loadedAssembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromStream(new System.IO.MemoryStream(asm_bytes), new System.IO.MemoryStream(pdb_bytes));
+            Console.WriteLine($"Loaded - {loadedAssembly}");
+
+        }
+        public static void RunMethod(string className, string methodName)
+        {
+            var ty = typeof(System.Reflection.Metadata.AssemblyExtensions);
+            var mi = ty.GetMethod("GetApplyUpdateCapabilities", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, Array.Empty<Type>());
+
+            if (mi == null)
+                return;
+
+            var caps = mi.Invoke(null, null) as string;
+
+            if (String.IsNullOrEmpty(caps))
+                return;
+
+            var myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
+            var myMethod = myType.GetMethod(methodName);
+            myMethod.Invoke(null, null);
+
+            ApplyUpdate(loadedAssembly, 1);
+
+            myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
+            myMethod = myType.GetMethod(methodName);
+            myMethod.Invoke(null, null);
+
+            ApplyUpdate(loadedAssembly, 2);
+
+            myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
+            myMethod = myType.GetMethod(methodName);
+            myMethod.Invoke(null, null);
+        }
+
+        internal static void ApplyUpdate (System.Reflection.Assembly assm, int version)
+        {
+            string basename = assm.Location;
+            if (basename == "")
+                basename = assm.GetName().Name + ".dll";
+            Console.Error.WriteLine($"Apply Delta Update for {basename}, revision {version}");
+
+            if (version == 1)
+            {
+                System.Reflection.Metadata.AssemblyExtensions.ApplyUpdate(assm, dmeta_data1_bytes, dil_data1_bytes, dpdb_data1_bytes);
+            }
+            else if (version == 2)
+            {
+                System.Reflection.Metadata.AssemblyExtensions.ApplyUpdate(assm, dmeta_data2_bytes, dil_data2_bytes, dpdb_data2_bytes);
+            }
+
+        }
+    }
+
+
+public class Something
+{
+    public string Name { get; set; }
+    public Something() => Name = "Same of something";
+    public override string ToString() => Name;
+}
+
+public class Foo
+{
+    public string Bar => Stuffs.First(x => x.Name.StartsWith('S')).Name;
+    public System.Collections.Generic.List<Something> Stuffs { get; } = Enumerable.Range(0, 10).Select(x => new Something()).ToList();
+    public string Lorem { get; set; } = "Safe";
+    public string Ipsum { get; set; } = "Side";
+    public Something What { get; } = new Something();
+    public int Bart()
+    {
+        int ret;
+        if (Lorem.StartsWith('S'))
+            ret = 0;
+        else
+            ret = 1;
+        return ret;
+    }
+    public static void RunBart()
+    {
+        Foo foo = new Foo();
+        foo.Bart();
+        Console.WriteLine(foo.OtherBar());
+        foo.OtherBarAsync().Wait(10);
+    }
+    public bool OtherBar()
+    {
+        var a = 1;
+        var b = 2;
+        var x = "Stew";
+        var y = "00.123";
+        var c = a + b == 3 || b + a == 2;
+        var d = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts) && x.Contains('S');
+        var e = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts1)
+                && x.Contains('S');
+        var f = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts2)
+                &&
+                x.Contains('S');
+        var g = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts3) &&
+                x.Contains('S');
+        return d && e == true;
+    }
+    public async System.Threading.Tasks.Task OtherBarAsync()
+    {
+        var a = 1;
+        var b = 2;
+        var x = "Stew";
+        var y = "00.123";
+        var c = a + b == 3 || b + a == 2;
+        var d = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts) && await AsyncMethod();
+        var e = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts1)
+                && await AsyncMethod();
+        var f = TimeSpan.TryParseExact(y, @"ss\.fff", null, out var ts2)
+                &&
+                await AsyncMethod();
+        var g = await AsyncMethod() &&
+                await AsyncMethod();
+        Console.WriteLine(g);
+        await System.Threading.Tasks.Task.CompletedTask;
+    }
+    public async System.Threading.Tasks.Task<bool> AsyncMethod()
+    {
+        await System.Threading.Tasks.Task.Delay(1);
+        Console.WriteLine($"time for await");
+        return true;
+    }
+}
+

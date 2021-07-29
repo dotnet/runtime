@@ -34,8 +34,7 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatformAttribute("browser")]
-        public virtual HttpResponseMessage Send(HttpRequestMessage request,
-            CancellationToken cancellationToken)
+        public virtual HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (request == null)
             {
@@ -43,7 +42,7 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
-            if (HttpTelemetry.Log.IsEnabled() && !request.WasSentByHttpClient() && request.RequestUri != null)
+            if (ShouldSendWithTelemetry(request))
             {
                 HttpTelemetry.Log.RequestStart(request);
 
@@ -67,8 +66,7 @@ namespace System.Net.Http
             }
         }
 
-        public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
-            CancellationToken cancellationToken)
+        public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (request == null)
             {
@@ -76,7 +74,7 @@ namespace System.Net.Http
             }
             CheckDisposed();
 
-            if (HttpTelemetry.Log.IsEnabled() && !request.WasSentByHttpClient() && request.RequestUri != null)
+            if (ShouldSendWithTelemetry(request))
             {
                 return SendAsyncWithTelemetry(_handler, request, cancellationToken);
             }
@@ -102,6 +100,12 @@ namespace System.Net.Http
                 }
             }
         }
+
+        private static bool ShouldSendWithTelemetry(HttpRequestMessage request) =>
+            HttpTelemetry.Log.IsEnabled() &&
+            !request.WasSentByHttpClient() &&
+            request.RequestUri is Uri requestUri &&
+            requestUri.IsAbsoluteUri;
 
         internal static bool LogRequestFailed(bool telemetryStarted)
         {

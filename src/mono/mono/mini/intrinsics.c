@@ -14,7 +14,6 @@
 #include "mini-runtime.h"
 #include "ir-emit.h"
 #include "jit-icalls.h"
-#include "debugger-agent.h"
 
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/class-abi-details.h>
@@ -1625,16 +1624,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return ins;
 		}
 	} else if (in_corlib &&
-	        	(strcmp (cmethod_klass_name_space, "System") == 0) &&
-	        	(strcmp (cmethod_klass_name, "Environment") == 0)) {
-		if (!strcmp (cmethod->name, "get_IsRunningOnWindows") && fsig->param_count == 0) {
-#ifdef TARGET_WIN32
-			EMIT_NEW_ICONST (cfg, ins, 1);
-#else
-			EMIT_NEW_ICONST (cfg, ins, 0);
-#endif
-		}
-	} else if (in_corlib &&
 			(strcmp (cmethod_klass_name_space, "System.Reflection") == 0) &&
 			(strcmp (cmethod_klass_name, "Assembly") == 0)) {
 		if (cfg->llvm_only && !strcmp (cmethod->name, "GetExecutingAssembly")) {
@@ -1813,6 +1802,14 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		ins->type = STACK_I4;
 		MONO_ADD_INS (cfg->cbb, ins);
 		return ins;
+	} else if (cmethod->klass == mono_defaults.systemtype_class && !strcmp (cmethod->name, "op_Inequality") &&
+			args [0]->klass == mono_defaults.runtimetype_class && args [1]->klass == mono_defaults.runtimetype_class) {
+		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
+		MONO_INST_NEW (cfg, ins, OP_ICNEQ);
+		ins->dreg = alloc_preg (cfg);
+		ins->type = STACK_I4;
+		MONO_ADD_INS (cfg->cbb, ins);
+		return ins;
 	} else if (((!strcmp (cmethod_klass_image->assembly->aname.name, "MonoMac") ||
 	            !strcmp (cmethod_klass_image->assembly->aname.name, "monotouch")) &&
 				!strcmp (cmethod_klass_name_space, "XamCore.ObjCRuntime") &&
@@ -1929,15 +1926,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (in_corlib && !strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) {
 		if (!strcmp (cmethod->name, "get_IsHardwareAccelerated")) {
 			EMIT_NEW_ICONST (cfg, ins, 0);
-			ins->type = STACK_I4;
-			return ins;
-		}
-	}
-
-	/* Workaround for the compiler server IsMemoryAvailable. */
-	if (!strcmp ("Microsoft.CodeAnalysis.CompilerServer", cmethod_klass_name_space) && !strcmp ("MemoryHelper", cmethod_klass_name)) {
-		if (!strcmp (cmethod->name, "IsMemoryAvailable")) {
-			EMIT_NEW_ICONST (cfg, ins, 1);
 			ins->type = STACK_I4;
 			return ins;
 		}

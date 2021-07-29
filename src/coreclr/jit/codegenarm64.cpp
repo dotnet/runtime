@@ -1594,7 +1594,7 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
 void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
                                      regNumber reg,
                                      ssize_t   imm,
-                                     insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(unsigned gtFlags))
+                                     insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
@@ -1940,6 +1940,13 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
         assert(data->IsIntegralConst(0));
         dataReg = REG_ZR;
     }
+    else if (data->isContained())
+    {
+        assert(data->OperIs(GT_BITCAST));
+        const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
+        assert(!bitcastSrc->isContained());
+        dataReg = bitcastSrc->GetRegNum();
+    }
     else
     {
         assert(!data->isContained());
@@ -1947,7 +1954,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     }
     assert(dataReg != REG_NA);
 
-    instruction ins = ins_Store(targetType);
+    instruction ins = ins_StoreFromSrc(dataReg, targetType);
 
     emitAttr attr = emitActualTypeSize(targetType);
 
@@ -2015,10 +2022,11 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         regNumber dataReg = REG_NA;
         if (data->isContained())
         {
-            // This is only possible for a zero-init.
-            assert(data->IsIntegralConst(0) || data->IsSIMDZero());
+            // This is only possible for a zero-init or bitcast.
+            const bool zeroInit = (data->IsIntegralConst(0) || data->IsSIMDZero());
+            assert(zeroInit || data->OperIs(GT_BITCAST));
 
-            if (varTypeIsSIMD(targetType))
+            if (zeroInit && varTypeIsSIMD(targetType))
             {
                 if (targetReg != REG_NA)
                 {
@@ -2040,8 +2048,16 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                 }
                 return;
             }
-
-            dataReg = REG_ZR;
+            if (zeroInit)
+            {
+                dataReg = REG_ZR;
+            }
+            else
+            {
+                const GenTree* bitcastSrc = data->AsUnOp()->gtGetOp1();
+                assert(!bitcastSrc->isContained());
+                dataReg = bitcastSrc->GetRegNum();
+            }
         }
         else
         {
@@ -2054,7 +2070,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         {
             inst_set_SV_var(lclNode);
 
-            instruction ins  = ins_Store(targetType);
+            instruction ins  = ins_StoreFromSrc(dataReg, targetType);
             emitAttr    attr = emitActualTypeSize(targetType);
 
             emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
@@ -4378,9 +4394,11 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
 {
     assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicUpperSave);
 
-    GenTree* op1 = simdNode->gtGetOp1();
-    assert(op1->IsLocal());
-    assert(emitTypeSize(op1->TypeGet()) == 16);
+    GenTree*       op1     = simdNode->gtGetOp1();
+    GenTreeLclVar* lclNode = op1->AsLclVar();
+    LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
+    assert(emitTypeSize(varDsc->GetRegisterType(lclNode)) == 16);
+
     regNumber targetReg = simdNode->GetRegNum();
     regNumber op1Reg    = genConsumeReg(op1);
     assert(op1Reg != REG_NA);
@@ -4391,8 +4409,7 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
     {
         // This is not a normal spill; we'll spill it to the lclVar location.
         // The localVar must have a stack home.
-        unsigned   varNum = op1->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+        unsigned varNum = lclNode->GetLclNum();
         assert(varDsc->lvOnFrame);
         // We want to store this to the upper 8 bytes of this localVar's home.
         int offset = 8;
@@ -4429,16 +4446,18 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
 
     GenTree* op1 = simdNode->gtGetOp1();
     assert(op1->IsLocal());
-    assert(emitTypeSize(op1->TypeGet()) == 16);
+    GenTreeLclVar* lclNode = op1->AsLclVar();
+    LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
+    assert(emitTypeSize(varDsc->GetRegisterType(lclNode)) == 16);
+
     regNumber srcReg    = simdNode->GetRegNum();
-    regNumber lclVarReg = genConsumeReg(op1);
-    unsigned  varNum    = op1->AsLclVarCommon()->GetLclNum();
+    regNumber lclVarReg = genConsumeReg(lclNode);
+    unsigned  varNum    = lclNode->GetLclNum();
     assert(lclVarReg != REG_NA);
     assert(srcReg != REG_NA);
     if (simdNode->gtFlags & GTF_SPILLED)
     {
         // The localVar must have a stack home.
-        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
         assert(varDsc->lvOnFrame);
         // We will load this from the upper 8 bytes of this localVar's home.
         int offset = 8;

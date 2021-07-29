@@ -401,7 +401,7 @@ namespace System.Security.Cryptography.Apple
         private static readonly Dictionary<IntPtr, SafeTemporaryKeychainHandle> s_lookup =
             new Dictionary<IntPtr, SafeTemporaryKeychainHandle>();
 
-        internal SafeTemporaryKeychainHandle()
+        public SafeTemporaryKeychainHandle()
         {
         }
 

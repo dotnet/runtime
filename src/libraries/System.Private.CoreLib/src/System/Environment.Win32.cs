@@ -57,7 +57,7 @@ namespace System
                 {
                     IntPtr unused;
                     IntPtr r = Interop.User32.SendMessageTimeout(new IntPtr(Interop.User32.HWND_BROADCAST), Interop.User32.WM_SETTINGCHANGE, IntPtr.Zero, (IntPtr)lParam, 0, 1000, &unused);
-                    Debug.Assert(r != IntPtr.Zero, "SetEnvironmentVariable failed: " + Marshal.GetLastPInvokeError());
+                    Debug.Assert(r != IntPtr.Zero, $"SetEnvironmentVariable failed: {Marshal.GetLastPInvokeError()}");
                 }
             }
         }

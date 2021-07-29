@@ -104,6 +104,7 @@ namespace System.Reflection.Emit
 
         public override string Location => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
 
+        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
         public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
 
         [RequiresUnreferencedCode("Types might be removed")]
@@ -303,10 +304,6 @@ namespace System.Reflection.Emit
         [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public ModuleBuilder DefineDynamicModule(string name) =>
             DefineDynamicModuleInternal(name, emitSymbolInfo: false);
-
-        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
-        public ModuleBuilder DefineDynamicModule(string name, bool emitSymbolInfo) =>
-            DefineDynamicModuleInternal(name, emitSymbolInfo);
 
         private ModuleBuilder DefineDynamicModuleInternal(string name, bool emitSymbolInfo)
         {

@@ -28,14 +28,14 @@ namespace System.Xml.Tests
         public static MethodInfo GetInstanceMethod(Type type, string methName)
         {
             MethodInfo methInfo = type.GetMethod(methName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            Debug.Assert(methInfo != null, "Instance method " + type.Name + "." + methName + " not found");
+            Debug.Assert(methInfo != null, $"Instance method {type.Name}.{methName} not found");
             return methInfo;
         }
 
         public static MethodInfo GetStaticMethod(Type type, string methName)
         {
             MethodInfo methInfo = type.GetMethod(methName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            Debug.Assert(methInfo != null, "Static method " + type.Name + "." + methName + " not found");
+            Debug.Assert(methInfo != null, $"Static method {type.Name}.{methName} not found");
             return methInfo;
         }
 
@@ -3002,7 +3002,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Pass XmlUrlResolver, load style sheet with document function, should resolve during transform", Param = "xmlResolver_document_function.txt")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51911", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         [InlineData("xmlResolver_document_function.txt", XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData("xmlResolver_document_function.txt", XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData("xmlResolver_document_function.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader)]

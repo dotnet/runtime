@@ -680,7 +680,7 @@ namespace System
                             }
                             else
                             {
-                                result.Append(year.ToString("D" + tokenLen.ToString(), CultureInfo.InvariantCulture));
+                                result.Append(year.ToString("D" + tokenLen.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture));
                             }
                         }
                         bTimeOnly = false;
@@ -811,16 +811,16 @@ namespace System
             if (tokenLen <= 1)
             {
                 // 'z' format e.g "-7"
-                result.AppendFormat(CultureInfo.InvariantCulture, "{0:0}", offset.Hours);
+                result.Append(CultureInfo.InvariantCulture, $"{offset.Hours:0}");
             }
             else
             {
                 // 'zz' or longer format e.g "-07"
-                result.AppendFormat(CultureInfo.InvariantCulture, "{0:00}", offset.Hours);
+                result.Append(CultureInfo.InvariantCulture, $"{offset.Hours:00}");
                 if (tokenLen >= 3)
                 {
                     // 'zzz*' or longer format e.g "-07:30"
-                    result.AppendFormat(CultureInfo.InvariantCulture, ":{0:00}", offset.Minutes);
+                    result.Append(CultureInfo.InvariantCulture, $":{offset.Minutes:00}");
                 }
             }
         }

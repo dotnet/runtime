@@ -2273,7 +2273,7 @@ namespace Microsoft.VisualBasic
             {
                 foreach (byte b in checksumPragma.ChecksumData)
                 {
-                    Output.Write(b.ToString("X2", CultureInfo.InvariantCulture));
+                    Output.Write(b.ToString("X2"));
                 }
             }
             Output.WriteLine("\")");

@@ -1620,6 +1620,9 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
             }
         }
         bNext->bbPreds = nullptr;
+
+        // `block` can no longer be a loop pre-header (if it was before).
+        block->bbFlags &= ~BBF_LOOP_PREHEADER;
     }
     else
     {
@@ -5621,8 +5624,10 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
                                 BasicBlock* const bFixup = fgNewBBafter(BBJ_ALWAYS, bDest, true);
                                 bFixup->inheritWeight(bDestNext);
                                 bFixup->bbJumpDest = bDestNext;
-                                fgReplacePred(bDestNext, bDest, bFixup);
+
+                                fgRemoveRefPred(bDestNext, bDest);
                                 fgAddRefPred(bFixup, bDest);
+                                fgAddRefPred(bDestNext, bFixup);
                             }
                         }
                     }

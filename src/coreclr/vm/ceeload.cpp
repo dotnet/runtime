@@ -12442,7 +12442,7 @@ idMethodSpec Module::LogInstantiatedMethod(const MethodDesc * md, ULONG flagNum)
 // ===========================================================================
 
 /* static */
-ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName, BOOL fIsTransient)
+ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName)
 {
     CONTRACT(ReflectionModule *)
     {
@@ -12467,9 +12467,6 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEFile *pFile, A
     ReflectionModuleHolder pModule(new (pMemory) ReflectionModule(pAssembly, token, pFile));
 
     pModule->DoInit(pamTracker, szName);
-
-    // Set this at module creation time. The m_fIsTransient field should never change during the lifetime of this ReflectionModule.
-    pModule->SetIsTransient(fIsTransient ? true : false);
 
     RETURN pModule.Extract();
 }
@@ -12498,7 +12495,6 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, mdFile token, PEFile *pF
     m_pCeeFileGen = NULL;
     m_pDynamicMetadata = NULL;
     m_fSuppressMetadataCapture = false;
-    m_fIsTransient = false;
 }
 
 HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen);

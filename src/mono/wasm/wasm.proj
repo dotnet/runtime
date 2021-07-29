@@ -7,9 +7,6 @@
     <PackageRID>browser-wasm</PackageRID>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
     <ICULibDir>$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
-    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(PackageRID)', '$(Configuration)'))</MicrosoftNetCoreAppRuntimePackDir>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(PackageRID)'))</MicrosoftNetCoreAppRuntimePackRidDir>
-    <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
     <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">false</WasmEnableES6>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
@@ -72,7 +69,6 @@
       <_EmccCommonFlags Include="-s &quot;EXPORTED_RUNTIME_METHODS=['ccall', 'FS_createPath', 'FS_createDataFile', 'cwrap', 'setValue', 'getValue', 'UTF8ToString', 'UTF8ArrayToString', 'addFunction']&quot;" />
       <_EmccCommonFlags Include="-s &quot;EXPORTED_FUNCTIONS=['_putchar']&quot;" />
       <_EmccCommonFlags Include="--source-map-base http://example.com" />
-      <_EmccCommonFlags Include="-emit-llvm" />
 
       <_EmccCommonFlags Include="-s MODULARIZE=1" Condition="'$(WasmEnableES6)' != 'false'" />
       <_EmccCommonFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' != 'false'" />
@@ -93,7 +89,7 @@
                       WriteOnlyWhenDifferent="true"
                       Overwrite="true" />
 
-    <!-- Generate Emcc.props -->
+    <!-- Generate emcc-props.json -->
 
     <RunWithEmSdkEnv Command="$(EmccCmd) --version"
           ConsoleToMsBuild="true"
@@ -110,28 +106,30 @@
     <PropertyGroup>
       <_EmccVersionRaw>%(_ReversedVersionLines.Identity)</_EmccVersionRaw>
 
-      <_EmccVersionRegexPattern>^ *emcc \([^\)]+\) *([^ \(]+) *\(([^\)]+)\)$</_EmccVersionRegexPattern>
+      <_EmccVersionRegexPattern>^ *emcc \([^\)]+\) *([0-9\.]+).*\(([^\)]+)\)$</_EmccVersionRegexPattern>
       <_EmccVersion>$([System.Text.RegularExpressions.Regex]::Match($(_EmccVersionRaw), $(_EmccVersionRegexPattern)).Groups[1].Value)</_EmccVersion>
       <_EmccVersionHash>$([System.Text.RegularExpressions.Regex]::Match($(_EmccVersionRaw), $(_EmccVersionRegexPattern)).Groups[2].Value)</_EmccVersionHash>
 
-      <_EmccPropsContent>
+      <_EmccPropsJson>
 <![CDATA[
-<Project>
-  <PropertyGroup>
-    <RuntimeEmccVersionRaw>$(_EmccVersionRaw)</RuntimeEmccVersionRaw>
-    <RuntimeEmccVersion>$(_EmccVersion)</RuntimeEmccVersion>
-    <RuntimeEmccVersionHash>$(_EmccVersionHash)</RuntimeEmccVersionHash>
-  </PropertyGroup>
-</Project>
+{
+  "items": {
+    "EmccProperties": [
+      { "identity": "RuntimeEmccVersion",     "value": "$(_EmccVersion)" },
+      { "identity": "RuntimeEmccVersionRaw",  "value": "$(_EmccVersionRaw)" },
+      { "identity": "RuntimeEmccVersionHash", "value": "$(_EmccVersionHash)" }
+    ]
+  }
+}
 ]]>
-      </_EmccPropsContent>
+      </_EmccPropsJson>
     </PropertyGroup>
 
     <Error Text="Failed to parse emcc version, and hash from the full version string: '$(_EmccVersionRaw)'"
            Condition="'$(_EmccVersion)' == '' or '$(_EmccVersionHash)' == ''" />
 
-    <WriteLinesToFile File="$(NativeBinDir)src\Emcc.props"
-                      Lines="$(_EmccPropsContent)"
+    <WriteLinesToFile File="$(NativeBinDir)src\emcc-props.json"
+                      Lines="$(_EmccPropsJson)"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
   </Target>
@@ -150,7 +148,7 @@
       <WasmSrcFiles Include="$(NativeBinDir)src\*.c;
                              $(NativeBinDir)src\*.js;
                              $(_EmccDefaultsRspPath);
-                             $(NativeBinDir)src\Emcc.props" />
+                             $(NativeBinDir)src\emcc-props.json" />
       <WasmHeaderFiles Include="$(NativeBinDir)include\wasm\*.h" />
     </ItemGroup>
 
@@ -181,7 +179,7 @@
           DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BundleTimezones">
 
     <PropertyGroup>
-      <EmccConfigurationFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s ASSERTIONS=1 -DENABLE_NETCORE=1 -DDEBUG=1</EmccConfigurationFlags>
+      <EmccConfigurationFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DENABLE_NETCORE=1 -DDEBUG=1</EmccConfigurationFlags>
       <EmccConfigurationFlags Condition="'$(Configuration)' == 'Release'">-Oz -DENABLE_NETCORE=1</EmccConfigurationFlags>
       <StripCmd>&quot;$(EMSDK_PATH)/upstream/bin/wasm-opt&quot; --strip-dwarf &quot;$(NativeBinDir)dotnet.wasm&quot; -o &quot;$(NativeBinDir)dotnet.wasm&quot;</StripCmd>
       <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
@@ -192,6 +190,9 @@
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
                                   $(ICULibDir)/libicui18n.a" />
+      <MonoComponentLibs Include="$(MonoArtifactsPath)libmono-component-hot_reload-static.a;
+                                  $(MonoArtifactsPath)libmono-component-debugger-static.a;
+                                  $(MonoArtifactsPath)libmono-component-diagnostics_tracing-stub-static.a" />
       <MonoLibFiles Include="$(MonoArtifactsPath)libmono-ee-interp.a;
                              $(MonoArtifactsPath)libmonosgen-2.0.a;
                              $(MonoArtifactsPath)libmono-ilgen.a;
@@ -199,6 +200,7 @@
                              $(NativeBinDir)libSystem.Native.a;
                              $(NativeBinDir)libSystem.IO.Compression.Native.a" />
       <MonoLibFiles Include="@(ICULibNativeFiles)" />
+      <MonoLibFiles Include="@(MonoComponentLibs)" />
       <PInvokeTableFile Include="$(WasmObjDir)\pinvoke-table.h" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
@@ -259,7 +261,7 @@
       <WasmSrcFiles Include="$(NativeBinDir)src\*.c;
                              $(NativeBinDir)src\*.js;
                              $(_EmccDefaultsRspPath);
-                             $(NativeBinDir)src\Emcc.props" />
+                             $(NativeBinDir)src\emcc-props.json" />
       <IcuDataFiles Include="$(NativeBinDir)*.dat" />
     </ItemGroup>
 

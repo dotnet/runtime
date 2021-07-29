@@ -18,7 +18,7 @@ namespace System.ComponentModel.Design.Serialization
         /// derive a name from the data type's name. The container
         /// parameter can be null if no container search is needed.
         /// </summary>
-        string CreateName(IContainer container, Type dataType);
+        string CreateName(IContainer? container, Type dataType);
 
         /// <summary>
         /// Determines if the given name is valid. A name

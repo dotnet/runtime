@@ -8,7 +8,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -24,7 +23,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public static void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(Socket).Assembly.GetType("System.Net.Sockets.SocketsTelemetry", throwOnError: true, ignoreCase: false);
@@ -117,14 +115,9 @@ namespace System.Net.Sockets.Tests
 
                     await WaitForEventCountersAsync(events);
                 });
-                Assert.DoesNotContain(events, ev => ev.Event.EventId == 0); // errors from the EventSource itself
 
-                VerifyStartStopEvents(events, connect: true, expectedCount: 1);
-                VerifyStartStopEvents(events, connect: false, expectedCount: 1);
-
-                Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectFailed");
-                Assert.DoesNotContain(events, e => e.Event.EventName == "AcceptFailed");
-
+                VerifyEvents(events, connect: true, expectedCount: 1);
+                VerifyEvents(events, connect: false, expectedCount: 1);
                 VerifyEventCounters(events, connectCount: 1);
             }, connectMethod, acceptMethod).Dispose();
         }
@@ -153,12 +146,8 @@ namespace System.Net.Sockets.Tests
 
                     await WaitForEventCountersAsync(events);
                 });
-                Assert.DoesNotContain(events, ev => ev.Event.EventId == 0); // errors from the EventSource itself
 
-                VerifyStartStopEvents(events, connect: true, expectedCount: 1);
-
-                Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectFailed");
-
+                VerifyEvents(events, connect: true, expectedCount: 1);
                 VerifyEventCounters(events, connectCount: 1, connectOnly: true);
             }, connectMethod, useDnsEndPoint.ToString()).Dispose();
         }
@@ -169,12 +158,6 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(SocketMethods_WithBools_MemberData))]
         public void EventSource_SocketConnectFailure_LogsConnectFailed(string connectMethod, bool useDnsEndPoint)
         {
-            if (useDnsEndPoint)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/43931")]
-                throw new SkipTestException("https://github.com/dotnet/runtime/issues/43931");
-            }
-
             RemoteExecutor.Invoke(async (connectMethod, useDnsEndPointString) =>
             {
                 EndPoint endPoint = await GetRemoteEndPointAsync(useDnsEndPointString, port: 12345);
@@ -207,7 +190,10 @@ namespace System.Net.Sockets.Tests
                     await WaitForEventCountersAsync(events);
                 });
 
-                VerifyConnectFailureEvents(events);
+                // For DNS endpoints, we may see multiple Start/Failure/Stop events
+                int? expectedCount = bool.Parse(useDnsEndPointString) ? null : 1;
+                VerifyEvents(events, connect: true, expectedCount, shouldHaveFailures: true);
+                VerifyEventCounters(events, connectCount: 0);
             }, connectMethod, useDnsEndPoint.ToString()).Dispose();
         }
 
@@ -216,12 +202,6 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(SocketMethods_MemberData))]
         public void EventSource_SocketAcceptFailure_LogsAcceptFailed(string acceptMethod)
         {
-            if (acceptMethod == "Sync" && PlatformDetection.IsRedHatFamily7)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/42686")]
-                throw new SkipTestException("Disposing a Socket performing a sync operation can hang on RedHat7 systems");
-            }
-
             RemoteExecutor.Invoke(async acceptMethod =>
             {
                 using var listener = new TestEventListener("System.Net.Sockets", EventLevel.Verbose, 0.1);
@@ -246,18 +226,8 @@ namespace System.Net.Sockets.Tests
 
                     await WaitForEventCountersAsync(events);
                 });
-                Assert.DoesNotContain(events, ev => ev.Event.EventId == 0); // errors from the EventSource itself
 
-                VerifyStartStopEvents(events, connect: false, expectedCount: 1);
-
-                (EventWrittenEventArgs Event, Guid ActivityId) failed = Assert.Single(events, e => e.Event.EventName == "AcceptFailed");
-                Assert.Equal(2, failed.Event.Payload.Count);
-                Assert.True(Enum.IsDefined((SocketError)failed.Event.Payload[0]));
-                Assert.IsType<string>(failed.Event.Payload[1]);
-
-                (_, Guid startActivityId) = Assert.Single(events, e => e.Event.EventName == "AcceptStart");
-                Assert.Equal(startActivityId, failed.ActivityId);
-
+                VerifyEvents(events, connect: false, expectedCount: 1, shouldHaveFailures: true);
                 VerifyEventCounters(events, connectCount: 0);
             }, acceptMethod).Dispose();
         }
@@ -270,12 +240,6 @@ namespace System.Net.Sockets.Tests
         [InlineData("Eap", false)]
         public void EventSource_ConnectAsyncCanceled_LogsConnectFailed(string connectMethod, bool useDnsEndPoint)
         {
-            if (useDnsEndPoint)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/46030")]
-                throw new SkipTestException("https://github.com/dotnet/runtime/issues/46030");
-            }
-
             RemoteExecutor.Invoke(async (connectMethod, useDnsEndPointString) =>
             {
                 EndPoint endPoint = await GetRemoteEndPointAsync(useDnsEndPointString, port: 12345);
@@ -326,25 +290,11 @@ namespace System.Net.Sockets.Tests
                     await WaitForEventCountersAsync(events);
                 });
 
-                VerifyConnectFailureEvents(events);
+                // For DNS endpoints, we may see multiple Start/Failure/Stop events
+                int? expectedCount = bool.Parse(useDnsEndPointString) ? null : 1;
+                VerifyEvents(events, connect: true, expectedCount, shouldHaveFailures: true);
+                VerifyEventCounters(events, connectCount: 0);
             }, connectMethod, useDnsEndPoint.ToString()).Dispose();
-        }
-
-        private static void VerifyConnectFailureEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events)
-        {
-            Assert.DoesNotContain(events, ev => ev.Event.EventId == 0); // errors from the EventSource itself
-
-            VerifyStartStopEvents(events, connect: true, expectedCount: 1);
-
-            (EventWrittenEventArgs Event, Guid ActivityId) failed = Assert.Single(events, e => e.Event.EventName == "ConnectFailed");
-            Assert.Equal(2, failed.Event.Payload.Count);
-            Assert.True(Enum.IsDefined((SocketError)failed.Event.Payload[0]));
-            Assert.IsType<string>(failed.Event.Payload[1]);
-
-            (_, Guid startActivityId) = Assert.Single(events, e => e.Event.EventName == "ConnectStart");
-            Assert.Equal(startActivityId, failed.ActivityId);
-
-            VerifyEventCounters(events, connectCount: 0);
         }
 
         [OuterLoop]
@@ -374,46 +324,19 @@ namespace System.Net.Sockets.Tests
                         await new SendReceive_Apm(null).SendRecv_Stream_TCP(IPAddress.Loopback, false).ConfigureAwait(false);
                         await new SendReceive_Apm(null).SendRecv_Stream_TCP(IPAddress.Loopback, true).ConfigureAwait(false);
 
-                        await new SendReceiveUdpClient().SendToRecvFromAsync_Datagram_UDP_UdpClient(IPAddress.Loopback).ConfigureAwait(false);
-                        await new SendReceiveUdpClient().SendToRecvFromAsync_Datagram_UDP_UdpClient(IPAddress.Loopback).ConfigureAwait(false);
+                        await new SendReceiveUdpClient().SendToRecvFromAsync_Datagram_UDP_UdpClient(IPAddress.Loopback, false).ConfigureAwait(false);
+                        await new SendReceiveUdpClient().SendToRecvFromAsync_Datagram_UDP_UdpClient(IPAddress.Loopback, false).ConfigureAwait(false);
 
                         await new NetworkStreamTest().CopyToAsync_AllDataCopied(4096, true).ConfigureAwait(false);
                         await new NetworkStreamTest().Timeout_Roundtrips().ConfigureAwait(false);
 
                         await WaitForEventCountersAsync(events);
                     });
-                    Assert.DoesNotContain(events, ev => ev.Event.EventId == 0); // errors from the EventSource itself
 
-                    VerifyStartStopEvents(events, connect: true, expectedCount: 10);
-
-                    Assert.DoesNotContain(events, e => e.Event.EventName == "ConnectFailed");
-
+                    VerifyEvents(events, connect: true, expectedCount: 10);
                     VerifyEventCounters(events, connectCount: 10, shouldHaveTransferedBytes: true, shouldHaveDatagrams: true);
                 }
             }).Dispose();
-        }
-
-        private static void VerifyStartStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, bool connect, int expectedCount)
-        {
-            string startName = connect ? "ConnectStart" : "AcceptStart";
-            (EventWrittenEventArgs Event, Guid ActivityId)[] starts = events.Where(e => e.Event.EventName == startName).ToArray();
-            Assert.Equal(expectedCount, starts.Length);
-            foreach ((EventWrittenEventArgs Event, _) in starts)
-            {
-                object startPayload = Assert.Single(Event.Payload);
-                Assert.False(string.IsNullOrWhiteSpace(startPayload as string));
-            }
-
-            string stopName = connect ? "ConnectStop" : "AcceptStop";
-            (EventWrittenEventArgs Event, Guid ActivityId)[] stops = events.Where(e => e.Event.EventName == stopName).ToArray();
-            Assert.Equal(expectedCount, stops.Length);
-            Assert.All(stops, stop => Assert.Empty(stop.Event.Payload));
-
-            for (int i = 0; i < expectedCount; i++)
-            {
-                Assert.NotEqual(Guid.Empty, starts[i].ActivityId);
-                Assert.Equal(starts[i].ActivityId, stops[i].ActivityId);
-            }
         }
 
         private static async Task WaitForEventAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, string name)
@@ -433,7 +356,7 @@ namespace System.Net.Sockets.Tests
             DateTime startTime = DateTime.UtcNow;
             int startCount = events.Count;
 
-            while (events.Skip(startCount).Count(e => IsBytesSentEventCounter(e.Event)) < 2)
+            while (events.Skip(startCount).Count(e => IsBytesSentEventCounter(e.Event)) < 3)
             {
                 if (DateTime.UtcNow.Subtract(startTime) > TimeSpan.FromSeconds(30))
                     throw new TimeoutException($"Timed out waiting for EventCounters");
@@ -449,6 +372,76 @@ namespace System.Net.Sockets.Tests
                 var dictionary = (IDictionary<string, object>)e.Payload.Single();
 
                 return (string)dictionary["Name"] == "bytes-sent";
+            }
+        }
+
+        private static void VerifyEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, bool connect, int? expectedCount, bool shouldHaveFailures = false)
+        {
+            bool start = false;
+            Guid startGuid = Guid.Empty;
+            bool seenFailures = false;
+            bool seenFailureAfterStart = false;
+            int numberOfStops = 0;
+
+            foreach ((EventWrittenEventArgs Event, Guid ActivityId) in events)
+            {
+                Assert.False(Event.EventId == 0, $"Received an error event from EventSource: {Event.Message}");
+
+                if (Event.EventName.Contains("Connect") != connect)
+                {
+                    continue;
+                }
+
+                switch (Event.EventName)
+                {
+                    case "ConnectStart":
+                    case "AcceptStart":
+                        Assert.False(start, "Start without a Stop");
+                        Assert.NotEqual(Guid.Empty, ActivityId);
+                        startGuid = ActivityId;
+                        seenFailureAfterStart = false;
+                        start = true;
+
+                        string startAddress = Assert.IsType<string>(Assert.Single(Event.Payload));
+                        Assert.Matches(@"^InterNetwork.*?:\d\d:{(?:\d{1,3},?)+}$", startAddress);
+                        break;
+
+                    case "ConnectStop":
+                    case "AcceptStop":
+                        Assert.True(start, "Stop without a Start");
+                        Assert.Equal(startGuid, ActivityId);
+                        startGuid = Guid.Empty;
+                        numberOfStops++;
+                        start = false;
+
+                        Assert.Empty(Event.Payload);
+                        break;
+
+                    case "ConnectFailed":
+                    case "AcceptFailed":
+                        Assert.True(start, "Failed should come between Start and Stop");
+                        Assert.False(seenFailureAfterStart, "Start may only have one Failed event");
+                        Assert.Equal(startGuid, ActivityId);
+                        seenFailureAfterStart = true;
+                        seenFailures = true;
+
+                        Assert.Equal(2, Event.Payload.Count);
+                        Assert.True(Enum.IsDefined((SocketError)Event.Payload[0]));
+                        Assert.IsType<string>(Event.Payload[1]);
+                        break;
+                }
+            }
+
+            Assert.False(start, "Start without a Stop");
+            Assert.Equal(shouldHaveFailures, seenFailures);
+
+            if (expectedCount.HasValue)
+            {
+                Assert.Equal(expectedCount, numberOfStops);
+            }
+            else
+            {
+                Assert.NotEqual(0, numberOfStops);
             }
         }
 

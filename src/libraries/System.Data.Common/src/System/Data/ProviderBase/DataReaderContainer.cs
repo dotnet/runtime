@@ -3,6 +3,7 @@
 
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.ProviderBase
 {
@@ -41,6 +42,7 @@ namespace System.Data.ProviderBase
         internal abstract bool ReturnProviderSpecificTypes { get; }
         protected abstract int VisibleFieldCount { get; }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         internal abstract Type GetFieldType(int ordinal);
         internal abstract object GetValue(int ordinal);
         internal abstract int GetValues(object[] values);
@@ -98,6 +100,7 @@ namespace System.Data.ProviderBase
                 }
             }
 
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
             internal override Type GetFieldType(int ordinal)
             {
                 Type fieldType = _providerSpecificDataReader.GetProviderSpecificFieldType(ordinal);
@@ -138,6 +141,7 @@ namespace System.Data.ProviderBase
                 }
             }
 
+            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
             internal override Type GetFieldType(int ordinal)
             {
                 return _dataReader.GetFieldType(ordinal);

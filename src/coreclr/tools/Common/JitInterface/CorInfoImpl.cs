@@ -74,8 +74,38 @@ namespace Internal.JitInterface
         [DllImport(JitLibrary)]
         private extern static IntPtr jitStartup(IntPtr host);
 
-        [DllImport(JitLibrary)]
-        private extern static IntPtr getJit();
+        private static class JitPointerAccessor
+        {
+            [DllImport(JitLibrary)]
+            private extern static IntPtr getJit();
+
+            public static IntPtr Get()
+            {
+                if (s_jit != IntPtr.Zero)
+                {
+                    return s_jit;
+                }
+
+                lock(typeof(JitPointerAccessor))
+                {
+                    s_jit = getJit();
+                    return s_jit;
+                }
+            }
+
+            [DllImport(JitSupportLibrary)]
+            private extern static CorJitResult JitProcessShutdownWork(IntPtr jit);
+
+            public static void ShutdownJit()
+            {
+                if (s_jit != IntPtr.Zero)
+                {
+                    JitProcessShutdownWork(s_jit);
+                }
+            }
+
+            private static IntPtr s_jit;
+        }
 
         [DllImport(JitLibrary)]
         private extern static IntPtr getLikelyClass(PgoInstrumentationSchema* schema, uint countSchemaItems, byte*pInstrumentationData, int ilOffset, out uint pLikelihood, out uint pNumberOfClasses);
@@ -129,9 +159,14 @@ namespace Internal.JitInterface
             jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
         }
 
+        public static void ShutdownJit()
+        {
+            JitPointerAccessor.ShutdownJit();
+        }
+
         public CorInfoImpl()
         {
-            _jit = getJit();
+            _jit = JitPointerAccessor.Get();
             if (_jit == IntPtr.Zero)
             {
                 throw new IOException("Failed to initialize JIT");
@@ -2853,20 +2888,20 @@ namespace Internal.JitInterface
             throw new NotSupportedException("FilterException");
         }
 
-        private void HandleException(_EXCEPTION_POINTERS* pExceptionPointers)
-        {
-            // This method is completely handled by the C++ wrapper to the JIT-EE interface,
-            // and should never reach the managed implementation.
-            Debug.Fail("CorInfoImpl.HandleException should not be called");
-            throw new NotSupportedException("HandleException");
-        }
-
         private bool runWithErrorTrap(void* function, void* parameter)
         {
             // This method is completely handled by the C++ wrapper to the JIT-EE interface,
             // and should never reach the managed implementation.
             Debug.Fail("CorInfoImpl.runWithErrorTrap should not be called");
             throw new NotSupportedException("runWithErrorTrap");
+        }
+
+        private bool runWithSPMIErrorTrap(void* function, void* parameter)
+        {
+            // This method is completely handled by the C++ wrapper to the JIT-EE interface,
+            // and should never reach the managed implementation.
+            Debug.Fail("CorInfoImpl.runWithSPMIErrorTrap should not be called");
+            throw new NotSupportedException("runWithSPMIErrorTrap");
         }
 
         private void ThrowExceptionForJitResult(HRESULT result)

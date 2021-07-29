@@ -127,20 +127,10 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 else
                 {
-                    str = Convert.ToString(val, CultureInfo.InvariantCulture);
+                    str = val.ToString(CultureInfo.InvariantCulture);
                 }
 
-                if (str.Length >= minLength)
-                {
-                    return str;
-                }
-                else
-                {
-                    StringBuilder sb = new StringBuilder(minLength);
-                    sb.Append('0', minLength - str.Length);
-                    sb.Append(str);
-                    return sb.ToString();
-                }
+                return str.PadLeft(minLength, '0');
             }
         }
 

@@ -31,5 +31,13 @@ FORCEINLINE BOOL TrackLargeAllocations()
 #endif // PROFILING_SUPPORTED
 }
 
+FORCEINLINE BOOL TrackPinnedAllocations()
+{
+#ifdef PROFILING_SUPPORTED
+    return CORProfilerTrackPinnedAllocations();
+#else
+    return FALSE;
+#endif // PROFILING_SUPPORTED
+}
 
 #endif

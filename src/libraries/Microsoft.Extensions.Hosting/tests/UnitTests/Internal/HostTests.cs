@@ -19,7 +19,6 @@ using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Internal
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     public class HostTests
     {
         [Fact]
@@ -678,7 +677,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         [Fact]
         public async Task HostStopsApplicationWithOneBackgroundServiceErrorAndOthersWithoutError()
-        { 
+        {
             var wasOtherServiceStarted = false;
 
             TaskCompletionSource<bool> throwingTcs = new();

@@ -233,6 +233,12 @@ namespace System.Diagnostics.Tracing
     // The EnsureDescriptorsInitialized() method might need to access EventSource and its derived type
     // members and the trimmer ensures that these members are preserved.
     [DynamicallyAccessedMembers(ManifestMemberTypes)]
+    // This coarse suppression silences all RequiresUnreferencedCode warnings in the class.
+    // https://github.com/mono/linker/issues/2136 tracks making it possible to add more granular suppressions at the member level, and with a different warning code.
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+        Justification = "EnsureDescriptorsInitialized's use of GetType preserves all members, so " +
+                        "those that are marked with RequiresUnreferencedCode will warn. " +
+                        "This method will not access any of these members and is safe to call.")]
 #endif
     public partial class EventSource : IDisposable
     {
@@ -495,6 +501,9 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public override string ToString()
         {
+            if (!IsSupported)
+                return base.ToString()!;
+
             return SR.Format(SR.EventSource_ToString, Name, Guid);
         }
 
@@ -1440,6 +1449,10 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
+            // Do not invoke Dispose under the lock as this can lead to a deadlock.
+            // See https://github.com/dotnet/runtime/issues/48342 for details.
+            Debug.Assert(!Monitor.IsEntered(EventListener.EventListenersLock));
+
             if (disposing)
             {
 #if FEATURE_MANAGED_ETW
@@ -2118,7 +2131,7 @@ namespace System.Diagnostics.Tracing
                 }
             }
 
-            if (lastThrownException != null)
+            if (lastThrownException != null && ThrowOnEventWriteErrors)
             {
                 throw new EventSourceException(lastThrownException);
             }
@@ -2810,16 +2823,7 @@ namespace System.Diagnostics.Tracing
             {
                 // get the metadata via reflection.
                 Debug.Assert(m_rawManifest == null);
-#if !ES_BUILD_STANDALONE
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                    Justification = "Based on the annotation on EventSource class, Trimmer will see from its analysis members " +
-                                    "that are marked with RequiresUnreferencedCode and will warn." +
-                                    "This method will not access any of these members and is safe to call.")]
-                byte[]? GetCreateManifestAndDescriptorsViaLocalMethod(string name) => CreateManifestAndDescriptors(this.GetType(), name, this);
-                m_rawManifest = GetCreateManifestAndDescriptorsViaLocalMethod(Name);
-#else
                 m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
-#endif
                 Debug.Assert(m_eventData != null);
 
                 // TODO Enforce singleton pattern
@@ -3787,7 +3791,9 @@ namespace System.Diagnostics.Tracing
             try
             {
                 if (m_outOfBandMessageCount < 16 - 1)     // Note this is only if size byte
+                {
                     m_outOfBandMessageCount++;
+                }
                 else
                 {
                     if (m_outOfBandMessageCount == 16)
@@ -3797,7 +3803,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // send message to debugger
-                System.Diagnostics.Debugger.Log(0, null, string.Format("EventSource Error: {0}{1}", msg, System.Environment.NewLine));
+                Debugger.Log(0, null, $"EventSource Error: {msg}{System.Environment.NewLine}");
 
                 // Send it to all listeners.
                 WriteEventString(msg);
@@ -4272,15 +4278,25 @@ namespace System.Diagnostics.Tracing
 #endif
         {
             Debug.Assert(EventSource.IsSupported);
-
+            List<EventSource> sourcesToDispose = new List<EventSource>();
             lock (EventListenersLock)
             {
                 Debug.Assert(s_EventSources != null);
                 foreach (WeakReference<EventSource> esRef in s_EventSources)
                 {
                     if (esRef.TryGetTarget(out EventSource? es))
-                        es.Dispose();
+                    {
+                        sourcesToDispose.Add(es);
+                    }
                 }
+            }
+
+            // Do not invoke Dispose under the lock as this can lead to a deadlock.
+            // See https://github.com/dotnet/runtime/issues/48342 for details.
+            Debug.Assert(!Monitor.IsEntered(EventListenersLock));
+            foreach (EventSource es in sourcesToDispose)
+            {
+                es.Dispose();
             }
         }
 
@@ -5217,14 +5233,12 @@ namespace System.Diagnostics.Tracing
             sb.AppendLine("<instrumentationManifest xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
             sb.AppendLine(" <instrumentation xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:win=\"http://manifests.microsoft.com/win/2004/08/windows/events\">");
             sb.AppendLine("  <events xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
-            sb.Append("<provider name=\"").Append(providerName).
-               Append("\" guid=\"{").Append(providerGuid.ToString()).Append('}');
+            sb.Append($"<provider name=\"{providerName}\" guid=\"{{{providerGuid}}}\"");
             if (dllName != null)
-                sb.Append("\" resourceFileName=\"").Append(dllName).Append("\" messageFileName=\"").Append(dllName);
+                sb.Append($" resourceFileName=\"{dllName}\" messageFileName=\"{dllName}\"");
 
             string symbolsName = providerName.Replace("-", "").Replace('.', '_');  // Period and - are illegal replace them.
-            sb.Append("\" symbol=\"").Append(symbolsName);
-            sb.AppendLine("\">");
+            sb.AppendLine($" symbol=\"{symbolsName}\">");
         }
 
         public void AddOpcode(string name, int value)

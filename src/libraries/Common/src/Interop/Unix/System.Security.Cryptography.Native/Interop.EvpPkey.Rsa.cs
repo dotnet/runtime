@@ -12,7 +12,25 @@ internal static partial class Interop
     internal static partial class Crypto
     {
         [GeneratedDllImport(Libraries.CryptoNative)]
-        private static partial SafeEvpPKeyHandle CryptoNative_RsaGenerateKey(int keySize);
+        private static extern SafeEvpPKeyHandle CryptoNative_EvpPKeyCreateRsa(IntPtr rsa);
+
+        internal static SafeEvpPKeyHandle EvpPKeyCreateRsa(IntPtr rsa)
+        {
+            Debug.Assert(rsa != IntPtr.Zero);
+
+            SafeEvpPKeyHandle pkey = CryptoNative_EvpPKeyCreateRsa(rsa);
+
+            if (pkey.IsInvalid)
+            {
+                pkey.Dispose();
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return pkey;
+        }
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern SafeEvpPKeyHandle CryptoNative_RsaGenerateKey(int keySize);
 
         internal static SafeEvpPKeyHandle RsaGenerateKey(int keySize)
         {
@@ -171,16 +189,5 @@ internal static partial class Interop
             Debug.Assert(ret == -1);
             throw CreateOpenSslCryptographicException();
         }
-
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyGetRsa")]
-        internal static partial SafeRsaHandle EvpPkeyGetRsa(SafeEvpPKeyHandle pkey);
-
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetRsa")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvpPkeySetRsa(SafeEvpPKeyHandle pkey, SafeRsaHandle rsa);
-
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeySetRsa")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool EvpPkeySetRsa(SafeEvpPKeyHandle pkey, IntPtr rsa);
     }
 }

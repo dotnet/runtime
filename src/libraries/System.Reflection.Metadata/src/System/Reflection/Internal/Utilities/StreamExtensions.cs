@@ -60,7 +60,7 @@ namespace System.Reflection.Internal
             Debug.Assert(count > 0);
 
             int totalBytesRead;
-            int bytesRead = 0;
+            int bytesRead;
             for (totalBytesRead = 0; totalBytesRead < count; totalBytesRead += bytesRead)
             {
                 // Note: Don't attempt to save state in-between calls to .Read as it would
@@ -75,6 +75,25 @@ namespace System.Reflection.Internal
             }
             return totalBytesRead;
         }
+
+#if NETCOREAPP3_0_OR_GREATER
+        internal static int TryReadAll(this Stream stream, Span<byte> buffer)
+        {
+            int totalBytesRead = 0;
+            while (totalBytesRead < buffer.Length)
+            {
+                int bytesRead = stream.Read(buffer.Slice(totalBytesRead));
+                if (bytesRead == 0)
+                {
+                    break;
+                }
+
+                totalBytesRead += bytesRead;
+            }
+
+            return totalBytesRead;
+        }
+#endif
 
         /// <summary>
         /// Resolve image size as either the given user-specified size or distance from current position to end-of-stream.
