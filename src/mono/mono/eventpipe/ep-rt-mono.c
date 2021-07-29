@@ -3817,7 +3817,7 @@ mono_profiler_jit_done (
 	if (verbose) {
 		//TODO: Optimize string formatting into functions accepting GString to reduce heap alloc.
 		char *method_namespace = NULL;
-		char *method_name = method->name;
+		const char *method_name = method->name;
 		char *method_signature = mono_signature_full_name (method->signature);
 		if (method->klass)
 			method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
