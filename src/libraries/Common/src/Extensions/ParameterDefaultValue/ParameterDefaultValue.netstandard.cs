@@ -6,12 +6,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-
-#if NETFRAMEWORK || NETSTANDARD2_0
 using System.Runtime.Serialization;
-#else
-using System.Runtime.CompilerServices;
-#endif
 
 namespace Microsoft.Extensions.Internal
 {
