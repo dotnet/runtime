@@ -60,7 +60,7 @@
       <ParsedRuntimeConfigFilePath>$(PublishDir)runtimeconfig.bin</ParsedRuntimeConfigFilePath>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
+    <ItemGroup>
       <RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
       <RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
     </ItemGroup>

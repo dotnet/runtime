@@ -144,7 +144,7 @@
 
     <Error Condition="!Exists('$(RuntimeConfigFilePath)')" Text="RuntimeConfigFilePath=$(RuntimeConfigFilePath) doesn't exist" />
 
-    <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
+    <ItemGroup>
       <RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
       <RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
     </ItemGroup>
@@ -155,6 +155,10 @@
         OutputFile="$(ParsedRuntimeConfigFilePath)"
         RuntimeConfigReservedProperties="@(RuntimeConfigReservedProperties)">
     </RuntimeConfigParserTask>
+
+    <ItemGroup>
+      <WasmFilesToIncludeInFileSystem Include="$(TargetDir)publish\runtimeconfig.bin" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_WasmGenerateAppBundle" Condition="'$(WasmGenerateAppBundle)' == 'true'" DependsOnTargets="_WasmGenerateRuntimeConfig">
