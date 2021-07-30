@@ -281,7 +281,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void AddEventListenerWorks () {
             var temp = new bool[1];
             var obj = SetupListenerTest("addEventListenerWorks");
-            obj.AddEventListener("test", () => {
+            obj.AddEventListener("test", (JSObject? o) => {
                 temp[0] = true;
             });
             obj.Invoke("fireEvent", "test");
@@ -292,10 +292,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void AddEventListenerPassesOptions () {
             var log = new List<string>();
             var obj = SetupListenerTest("addEventListenerPassesOptions");
-            obj.AddEventListener("test", () => {
+            obj.AddEventListener("test", (JSObject? o) => {
                 log.Add("Capture");
             }, new JSObject.EventListenerOptions { Capture = true });
-            obj.AddEventListener("test", () => {
+            obj.AddEventListener("test", (JSObject? o) => {
                 log.Add("Non-capture");
             }, new JSObject.EventListenerOptions { Capture = false });
             obj.Invoke("fireEvent", "test");
@@ -306,7 +306,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void AddEventListenerForwardsExceptions () {
             var obj = SetupListenerTest("addEventListenerForwardsExceptions");
-            obj.AddEventListener("test", () => {
+            obj.AddEventListener("test", (JSObject? o) => {
                 throw new Exception("Test exception");
             });
             var exc = Assert.Throws<JSException>(() => {
@@ -315,7 +315,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Contains("Test exception", exc.Message);
 
             exc = Assert.Throws<JSException>(() => {
-                obj.AddEventListener("throwError", () => {
+                obj.AddEventListener("throwError", (JSObject? o) => {
                     throw new Exception("Should not be called");
                 });
             });
@@ -326,7 +326,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void RemovedEventListenerIsNotCalled () {
             var obj = SetupListenerTest("removedEventListenerIsNotCalled");
-            Action del = () => {
+            Action<JSObject?> del = (JSObject? o) => {
                 throw new Exception("Should not be called");
             };
             obj.AddEventListener("test", del);
@@ -342,7 +342,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void RegisterSameEventListener () {
             var counter = new int[1];
             var obj = SetupListenerTest("registerSameDelegateTwice");
-            Action del = () => {
+            Action<JSObject?> del = (JSObject? o) => {
                 counter[0]++;
             };
 
@@ -368,7 +368,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public static void UseAddEventListenerResultToRemove () {
             var obj = SetupListenerTest("useAddEventListenerResultToRemove");
-            Action del = () => {
+            Action<JSObject?> del = (JSObject? o) => {
                 throw new Exception("Should not be called");
             };
             var handle = obj.AddEventListener("test", del);
@@ -385,7 +385,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var counter = new int[1];
             var a = SetupListenerTest("registerSameEventListenerToMultipleSourcesA");
             var b = SetupListenerTest("registerSameEventListenerToMultipleSourcesB");
-            Action del = () => {
+            Action<JSObject?> del = (JSObject? o) => {
                 counter[0]++;
             };
 

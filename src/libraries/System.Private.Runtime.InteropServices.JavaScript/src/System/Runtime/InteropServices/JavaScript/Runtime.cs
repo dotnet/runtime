@@ -263,11 +263,11 @@ namespace System.Runtime.InteropServices.JavaScript
         //  type are usually caused by a JS object (i.e. a WebSocket) receiving an event
         //  after its managed owner has been disposed - throwing in that case is unwanted.
         public static bool TryInvokeJSOwnedDelegateByHandle (int id, JSObject? arg1) {
-            Delegate? del;
+            Action<JSObject?>? del;
             lock (JSOwnedObjectLock) {
                 if (!JSOwnedObjectFromID.TryGetValue(id, out object? o))
                     return false;
-                del = (Delegate)o;
+                del = (Action<JSObject?>)o;
             }
 
             if (del == null)
@@ -276,10 +276,7 @@ namespace System.Runtime.InteropServices.JavaScript
 // error CS0117: 'Array' does not contain a definition for 'Empty' [/home/kate/Projects/dotnet-runtime-wasm/src/libraries/System.Private.Runtime.InteropServices.JavaScript/src/System.Private.Runtime.InteropServices.JavaScript.csproj]
 #pragma warning disable CA1825
 
-            if (arg1 != null)
-                del.DynamicInvoke(new object[] { arg1 });
-            else
-                del.DynamicInvoke(new object[0]);
+            del.Invoke(arg1);
 
 #pragma warning restore CA1825
 
