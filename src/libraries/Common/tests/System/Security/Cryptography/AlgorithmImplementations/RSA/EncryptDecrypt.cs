@@ -343,12 +343,13 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             if (PlatformDetection.IsiOS && !OperatingSystem.IsIOSVersionAtLeast(13, 6))
             {
-                throw new SkipTestException("This test is broken on <iOS 13.6");
+                throw new SkipTestException("iOS prior to 13.6 does not reliably support RSA encryption of empty data.");
             }
             if (PlatformDetection.IstvOS && !OperatingSystem.IsTvOSVersionAtLeast(14, 0))
             {
-                throw new SkipTestException("This test is broken on <tvOS 14.0");
+                throw new SkipTestException("tvOS prior to 14.0 does not reliably support RSA encryption of empty data.");
             }
+
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
                 void RoundtripEmpty(RSAEncryptionPadding paddingMode)
