@@ -10,8 +10,7 @@ namespace System.IO.Strategies
 {
     internal sealed partial class AsyncWindowsFileStreamStrategy : OSFileStreamStrategy
     {
-        internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access, FileShare share)
-            : base(handle, access, share)
+        internal AsyncWindowsFileStreamStrategy(SafeFileHandle handle, FileAccess access) : base(handle, access)
         {
         }
 
