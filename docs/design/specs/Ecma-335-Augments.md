@@ -921,7 +921,7 @@ conv.ovf.u4.un -> uint.MaxValue (0xFFFFFFFF)
 
 However, the source of these opcodes can be a float value and it was not clear how in such case .un should be treated. The ECMA was saying: ""The item on the top of the stack is treated as an unsigned value before the conversion." but there was no definition of "treated" so the result of:
 ldc.r4 -1
-conv.ovf.i4.un 
+conv.ovf.i4.un
 was ambiguous, it could treat -1 as 0xFFFFFFFF and return 0xFFFFFFFF or it could throw an overflow exception.
 
 ### III.3.19, conv.ovf.to type.un (page 354)
