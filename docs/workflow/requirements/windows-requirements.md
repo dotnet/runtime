@@ -27,8 +27,7 @@ Visual Studio 2019 installation process:
   - **Desktop Development with C++** with all default components.
 - The build tools (CMake, Ninja and Python) can be downloaded and installed separately (see detailed instructions in the [section below](#build-tools)) or by selecting the following **Individual Components**:
   - **C++ CMake tools for Windows** (includes Ninja),
-  - **Python 3 32-bit** for building x86 target architecture,
-  - **Python 3 64-bit** for building x64 target architecture.
+  - **Python 3 64-bit** (3.7.4 or newer).
 - To build for Arm32 or Arm64, make sure that you have the right architecture-specific compilers installed. In the **Individual components** window, in the **Compilers, build tools, and runtimes** section:
   - For Arm32, check the box for **MSVC v142 - VS 2019 C++ ARM build tools (Latest)** (v14.23 or newer),
   - For Arm64, check the box for **MSVC v142 - VS 2019 C++ ARM64 build tools (Latest)** (v14.23 or newer).
