@@ -136,7 +136,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmGenerateRuntimeConfig">
+  <Target Name="_WasmGenerateRuntimeConfig" Condition="'$(OutputType)' != 'library'">
     <PropertyGroup>
       <RuntimeConfigFilePath>$(TargetDir)publish\$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>
       <ParsedRuntimeConfigFilePath>$(TargetDir)publish\runtimeconfig.bin</ParsedRuntimeConfigFilePath>
