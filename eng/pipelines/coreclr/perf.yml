@@ -364,23 +364,23 @@ jobs:
         logicalmachine: 'perftiger'
         javascriptengine: 'javascriptcore'
 
-  # run mono aot microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
-      buildConfig: release
-      runtimeFlavor: aot
-      platforms:
-      - Linux_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        runtimeType: mono
-        codeGenType: 'AOT'
-        projectFile: microbenchmarks.proj
-        runKind: micro_mono
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
+  ## run mono aot microbenchmarks perf job
+  #- template: /eng/pipelines/common/platform-matrix.yml
+  #  parameters:
+  #    jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
+  #    buildConfig: release
+  #    runtimeFlavor: aot
+  #    platforms:
+  #    - Linux_x64
+  #    jobParameters:
+  #      testGroup: perf
+  #      liveLibrariesBuildConfig: Release
+  #      runtimeType: mono
+  #      codeGenType: 'AOT'
+  #      projectFile: microbenchmarks.proj
+  #      runKind: micro_mono
+  #      runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+  #      logicalmachine: 'perftiger'
 
   ## run coreclr perftiger microbenchmarks perf job
   #- template: /eng/pipelines/common/platform-matrix.yml
