@@ -341,11 +341,11 @@ namespace System.Security.Cryptography.Rsa.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void RoundtripEmptyArray()
         {
-            if (PlatformDetection.IsiOS && !OperatingSystem.IsIOSVersionAtLeast(13, 6))
+            if (OperatingSystem.IsIOS() && !OperatingSystem.IsIOSVersionAtLeast(13, 6))
             {
                 throw new SkipTestException("iOS prior to 13.6 does not reliably support RSA encryption of empty data.");
             }
-            if (PlatformDetection.IstvOS && !OperatingSystem.IsTvOSVersionAtLeast(14, 0))
+            if (OperatingSystem.IsTvOS() && !OperatingSystem.IsTvOSVersionAtLeast(14, 0))
             {
                 throw new SkipTestException("tvOS prior to 14.0 does not reliably support RSA encryption of empty data.");
             }
