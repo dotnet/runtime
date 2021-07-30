@@ -50,6 +50,7 @@ namespace System.Runtime.CompilerServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern object? GetObjectValue(object? obj);
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
             if (type.Value == IntPtr.Zero)
