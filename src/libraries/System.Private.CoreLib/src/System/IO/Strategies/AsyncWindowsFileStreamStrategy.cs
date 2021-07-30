@@ -84,7 +84,7 @@ namespace System.IO.Strategies
 
         private Exception HandleIOError(long positionBefore, int errorCode)
         {
-            if (!_fileHandle.IsClosed && CanSeek)
+            if (_fileHandle.CanSeek)
             {
                 // Update Position... it could be anywhere.
                 _filePosition = positionBefore;
