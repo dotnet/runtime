@@ -157,7 +157,7 @@
     </RuntimeConfigParserTask>
 
     <ItemGroup>
-      <WasmFilesToIncludeInFileSystem Include="$(TargetDir)publish\runtimeconfig.bin" />
+      <WasmFilesToIncludeInFileSystem Include="$(ParsedRuntimeConfigFilePath)" />
     </ItemGroup>
   </Target>
 
@@ -178,8 +178,6 @@
 
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)" Condition="'$(InvariantGlobalization)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.timezones.blat" />
-
-      <WasmFilesToIncludeInFileSystem Include="$(TargetDir)publish\runtimeconfig.bin" />
     </ItemGroup>
 
     <WasmAppBuilder
