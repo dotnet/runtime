@@ -148,25 +148,6 @@ jobs:
           archiveType: zip
           archiveExtension: .zip
 
-  #run mono wasm aot microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobtemplate: /eng/pipelines/coreclr/templates/perf-job.yml # note: should we move this file out of coreclr tempelates because it contains mono jobs?
-      buildconfig: release
-      runtimeflavor: wasm
-      platforms:
-      - linux_x64
-      jobparameters:
-        testgroup: perf
-        livelibrariesbuildconfig: release
-        runtimetype: wasm
-        codegentype: 'aot'
-        projectfile: microbenchmarks.proj
-        runkind: micro
-        runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        javascriptengine: 'javascriptcore'
-
   ## build mono for AOT
   #- template: /eng/pipelines/common/platform-matrix.yml
   #  parameters:
