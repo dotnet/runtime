@@ -22,6 +22,10 @@ jobs:
       runtimeFlavor: mono
       platforms:
       - windows_x86
+      - Android_x64
+      - Android_x86
+      - Android_arm
+      - Android_arm64
       - Browser_wasm
       - ${{ if eq(variables['isFullMatrix'], true) }}:
         - windows_x64
@@ -43,7 +47,7 @@ jobs:
           testScope: outerloop
           creator: dotnet-bot
           testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-    
+
   - ${{ if eq(variables['isFullMatrix'], false) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
