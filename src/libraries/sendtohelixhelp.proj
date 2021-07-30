@@ -389,7 +389,7 @@
     <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'"
-                               AsArchive="$(HelixCorrelationPayload.EndsWith('.zip') or HelixCorrelationPayload.EndsWith('.tar.xz'))" />
+                               AsArchive="$(HelixCorrelationPayload.EndsWith('.zip')) or $(HelixCorrelationPayload.EndsWith('.tar.xz'))" />
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)"         Condition="'$(NeedsToRunOnBrowser)' == 'true'" />
       <HelixCorrelationPayload Include="chromedriver" Uri="$(ChromeDriverUrl)" Condition="'$(NeedsToRunOnBrowser)' == 'true'" />
 
