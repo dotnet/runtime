@@ -162,6 +162,7 @@ var BindingSupportLib = {
 		},
 
 		_get_weak_delegate_from_handle: function (gcHandle) {
+			BINDING.bindings_lazy_init ();
 			var result = null;
 
 			// Look up this handle in the weak delegate table, and if we find a matching weakref,
@@ -179,18 +180,18 @@ var BindingSupportLib = {
 			//  and register it with the finalization registry so that the C# side can release
 			//  the associated object references
 			if (!result) {
-				result = () => {
-					var delegateRoot = MONO.mono_wasm_new_root (this.wasm_get_raw_obj(gcHandle, false));
+				result = function() {
+					const delegateRoot = MONO.mono_wasm_new_root (BINDING.wasm_get_raw_obj(gcHandle, false));
 					try {
 						if (typeof result.__mono_delegate_invoke__ === "undefined")
-							result.__mono_delegate_invoke__ = this.mono_wasm_get_delegate_invoke(delegateRoot.value);
+						result.__mono_delegate_invoke__ = BINDING.mono_wasm_get_delegate_invoke(delegateRoot.value);
 						if (!result.__mono_delegate_invoke__)
 							throw new Error("System.Delegate Invoke method can not be resolved.");
 		
 						if (typeof result.__mono_delegate_invoke_sig__ === "undefined")
 							result.__mono_delegate_invoke_sig__ = Module.mono_method_get_call_signature (result.__mono_delegate_invoke__, delegateRoot.value);
-		
-						return this.call_method (result.__mono_delegate_invoke__, delegateRoot.value, result.__mono_delegate_invoke_sig__, arguments);
+
+						return BINDING.call_method (result.__mono_delegate_invoke__, delegateRoot.value, result.__mono_delegate_invoke_sig__, arguments);
 					} finally {
 						delegateRoot.release();
 					}

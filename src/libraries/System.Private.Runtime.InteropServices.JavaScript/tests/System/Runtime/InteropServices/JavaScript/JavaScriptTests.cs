@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -227,6 +226,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         private static JSObject SetupListenerTest (string prefix) {
             Runtime.InvokeJS($"globalThis.{prefix} = {{" + @"
     listeners: [],
+    eventFactory:function(data){
+        return {
+            data:data
+        };
+    },
     addEventListener: function (name, listener, options) {
         if (name === 'throwError')
             throw new Error('throwError throwing');
@@ -279,13 +283,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Fact]
         public static void AddEventListenerWorks () {
-            var temp = new bool[1];
+            var temp = new bool[2];
             var obj = SetupListenerTest("addEventListenerWorks");
             obj.AddEventListener("test", (JSObject envt) => {
-                temp[0] = true;
+                var data = (int)envt.GetObjectProperty("data");
+                temp[data] = true;
             });
-            obj.Invoke("fireEvent", "test");
+            var evnt0 = obj.Invoke("eventFactory", 0);
+            var evnt1 = obj.Invoke("eventFactory", 1);
+            obj.Invoke("fireEvent", "test", evnt0);
+            obj.Invoke("fireEvent", "test", evnt0);
+            obj.Invoke("fireEvent", "test", evnt1);
             Assert.True(temp[0]);
+            Assert.True(temp[1]);
         }
 
         [Fact]

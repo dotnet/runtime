@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices.JavaScript;
 using System.Collections.Generic;
 using Xunit;
 
@@ -194,6 +193,38 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(50, HelperMarshal._funcActionBufferObjectResultValue.Length);
             Assert.Equal(HelperMarshal._funcActionBufferObjectResultValue.Length, HelperMarshal._funcActionBufferResultLengthValue);
             Assert.Equal($"[object {creator}]", objectPrototype.Call(HelperMarshal._funcActionBufferObjectResultValue));
+        }
+
+        [Fact]
+        public static void DispatchToDelegate()
+        {
+            Runtime.InvokeJS($"globalThis.dispatcher = " + @"
+            {
+                callback: null,
+                eventFactory:function(data){
+                    return {
+                        data:data
+                    };
+                },
+                fireEvent: function (evt) {
+                    this.callback(evt);
+                }
+            };");
+            var dispatcher = (JSObject)Runtime.GetGlobalObject("dispatcher");
+            var temp = new bool[2];
+            Action<JSObject> cb = (JSObject envt) =>
+            {
+                var data = (int)envt.GetObjectProperty("data");
+                temp[data] = true;
+            };
+            dispatcher.SetObjectProperty("callback", cb);
+            var evnt0 = dispatcher.Invoke("eventFactory", 0);
+            var evnt1 = dispatcher.Invoke("eventFactory", 1);
+            dispatcher.Invoke("fireEvent", evnt0);
+            dispatcher.Invoke("fireEvent", evnt0);
+            dispatcher.Invoke("fireEvent", evnt1);
+            Assert.True(temp[0]);
+            Assert.True(temp[1]);
         }
     }
 }
