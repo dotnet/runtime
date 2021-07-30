@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Metadata;
 
@@ -51,6 +52,8 @@ namespace System.Reflection.TypeLoading.Ecma
             return resourceNames;
         }
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3002:RequiresAssemblyFiles on Module.GetFile",
+            Justification = "ResourceLocation should never be ContainedInAnotherAssembly if embedded in a single-file")]
         public sealed override Stream? GetManifestResourceStream(string name)
         {
             if (name == null)

@@ -1204,10 +1204,12 @@ bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_strin
 }
 
 // Initialize the critical section
-void CLRCriticalSection::Initialize()
+bool CLRCriticalSection::Initialize()
 {
     WRAPPER_NO_CONTRACT;
     InitializeCriticalSection(&m_cs);
+
+    return true;
 }
 
 // Destroy the critical section

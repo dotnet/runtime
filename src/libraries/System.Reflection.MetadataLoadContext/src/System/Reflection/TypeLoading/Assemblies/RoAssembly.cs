@@ -40,16 +40,18 @@ namespace System.Reflection.TypeLoading
         public sealed override string FullName => _lazyFullName ?? (_lazyFullName = GetName().FullName);
         private volatile string? _lazyFullName;
 
+        internal const string ThrowingMessageInRAF = "This member throws an exception for assemblies embedded in a single-file app";
+
         // Location and codebase
         public abstract override string Location { get; }
 #if NET5_0_OR_GREATER
         [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
 #endif
         public sealed override string CodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
 #if NET5_0_OR_GREATER
         [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
 #endif
         public sealed override string EscapedCodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
 
