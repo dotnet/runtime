@@ -310,7 +310,6 @@ namespace System.Net.Quic.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/microsoft/msquic/pull/1728")]
         public async Task ConnectWithClientCertificate()
         {
             bool clientCertificateOK = false;
