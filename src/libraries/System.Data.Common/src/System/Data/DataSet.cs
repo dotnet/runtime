@@ -227,14 +227,14 @@ namespace System.Data
 
         // Deserialize all the tables schema and data of the dataset from binary/xml stream.
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:RequiresUnreferencedCode",
             Justification = "CreateInstanceOfThisType's use of GetType uses only the parameterless constructor, but the annotations preserve all non-public constructors causing a warning for the serialization constructors. Those constructors won't be used here.")]
         protected DataSet(SerializationInfo info, StreamingContext context) : this(info, context, true)
         {
         }
 
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:RequiresUnreferencedCode",
             Justification = "CreateInstanceOfThisType's use of GetType uses only the parameterless constructor, but the annotations preserve all non-public constructors causing a warning for the serialization constructors. Those constructors won't be used here.")]
         protected DataSet(SerializationInfo info, StreamingContext context, bool ConstructSchema) : this()
         {

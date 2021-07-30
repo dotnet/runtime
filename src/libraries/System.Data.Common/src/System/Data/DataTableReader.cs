@@ -739,7 +739,7 @@ namespace System.Data
             DataColumn NumericScale = new DataColumn(SchemaTableColumn.NumericScale, typeof(short));
             DataColumn DataType = GetSystemTypeDataColumn();
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111",
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:RequiresDynamicallyAccessedMembers",
                 Justification = "The problem is Type.TypeInitializer which requires constructors on the Type instance." +
                     "In this case the Type instance is about System.Type itself, so adding an explicit dependency on the same" +
                     "annotation here.")]

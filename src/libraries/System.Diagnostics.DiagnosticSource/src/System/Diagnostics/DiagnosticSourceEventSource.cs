@@ -161,12 +161,12 @@ namespace System.Diagnostics
     /// </summary>
     [EventSource(Name = "Microsoft-Diagnostics-DiagnosticSource")]
     // These suppressions can go away with https://github.com/mono/linker/issues/2175
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113",
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:RequiresUnreferencedCode",
         Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
                         "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
                         "This includes Delegate and MulticastDelegate methods which require unreferenced code, but " +
                         "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2115",
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2115:RequiresDynamicallyAccessedMembers",
         Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
                         "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
                         "This includes Delegate and MulticastDelegate methods which have dynamically accessed members requirements, but " +
@@ -1024,7 +1024,7 @@ namespace System.Diagnostics
                 }
             }
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112",
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:RequiresUnreferencedCode",
                 Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                 "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
@@ -1108,7 +1108,7 @@ namespace System.Diagnostics
 
             // Given a type generate all the implicit transforms for type (that is for every field
             // generate the spec that fetches it).
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112",
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:RequiresUnreferencedCode",
                 Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                 "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
@@ -1206,7 +1206,7 @@ namespace System.Diagnostics
             /// if the spec is OUTSTR=EVENT_VALUE.PROP1.PROP2.PROP3 and the ultimate value of PROP3 is
             /// 10 then the return key value pair is  KeyValuePair("OUTSTR","10")
             /// </summary>
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112",
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:RequiresUnreferencedCode",
                 Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                 "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
@@ -1260,7 +1260,7 @@ namespace System.Diagnostics
                 /// Given an object fetch the property that this PropertySpec represents.
                 /// obj may be null when IsStatic is true, otherwise it must be non-null.
                 /// </summary>
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112",
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:RequiresUnreferencedCode",
                     Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                 [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
@@ -1306,7 +1306,7 @@ namespace System.Diagnostics
                     /// <summary>
                     /// Create a property fetcher for a propertyName
                     /// </summary>
-                    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112",
+                    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:RequiresUnreferencedCode",
                         Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                         "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                     [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]

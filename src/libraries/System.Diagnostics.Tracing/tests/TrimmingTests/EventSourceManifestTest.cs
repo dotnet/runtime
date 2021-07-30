@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System;
@@ -34,6 +35,10 @@ internal class Program
         int EventSourceTest_Method_7() => 5; 
     }
 
+    [UnconditionalSuppressMessage ("TrimAnalysis", "IL2111:RequiresDynamicallyAccessedMembers",
+        Justification = "GenerateManifest requires all members of EventSourceTest, including members of the base type " +
+        "EventSource which are annotated with DynamicallyAccessedMembersAttribute. " +
+        "GenerateManifest does not access these members and is safe to call.")]
     public static int Main()
     {
         string manifest = EventSource.GenerateManifest(typeof(EventSourceTest), null);

@@ -627,7 +627,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
         private object? _licContext;
         private Type? _targetRcwType;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:RequiresDynamicallyAccessedMembers",
             Justification = "The type parameter to LicenseManager.CreateWithContext method has PublicConstructors annotation. We only invoke this method" +
                 "from AllocateAndValidateLicense which annotates the value passed in with the same annotation.")]
         public LicenseInteropProxy()
