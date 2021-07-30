@@ -131,7 +131,7 @@ namespace System.Security.Cryptography
                     providerHandle,
                     IntPtr.Zero,
                     format.Format,
-                    IntPtr.Zero,
+                    null,
                     out keyHandle,
                     ref MemoryMarshal.GetReference(keyBlob),
                     keyBlob.Length,
