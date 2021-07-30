@@ -386,6 +386,8 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
                 }
 
+                // Check that either all parameters are not null or all are null, if a subset were set, then the parameters are invalid.
+                // If the parameters are all not null, verify the integrity of their lengths.
                 if (parameters.D == null)
                 {
                     if (parameters.P != null ||
