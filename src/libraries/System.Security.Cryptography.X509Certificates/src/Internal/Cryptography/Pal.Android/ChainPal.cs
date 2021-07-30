@@ -184,7 +184,7 @@ namespace Internal.Cryptography.Pal
                 }
             }
 
-            internal void Evaluate(
+            internal unsafe void Evaluate(
                 DateTime verificationTime,
                 OidCollection applicationPolicy,
                 OidCollection certificatePolicy,
@@ -337,7 +337,7 @@ namespace Internal.Cryptography.Pal
                 }
             }
 
-            private static Dictionary<int, List<X509ChainStatus>> GetStatusByIndex(SafeX509ChainContextHandle ctx)
+            private static unsafe Dictionary<int, List<X509ChainStatus>> GetStatusByIndex(SafeX509ChainContextHandle ctx)
             {
                 var statusByIndex = new Dictionary<int, List<X509ChainStatus>>();
                 Interop.AndroidCrypto.ValidationError[] errors = Interop.AndroidCrypto.X509ChainGetErrors(ctx);
@@ -345,7 +345,7 @@ namespace Internal.Cryptography.Pal
                 {
                     Interop.AndroidCrypto.ValidationError error = errors[i];
                     X509ChainStatus chainStatus = ValidationErrorToChainStatus(error);
-                    NativeMemory.Free((nint)error.Message);
+                    NativeMemory.Free(error.Message);
 
                     if (!statusByIndex.ContainsKey(error.Index))
                     {
@@ -358,7 +358,7 @@ namespace Internal.Cryptography.Pal
                 return statusByIndex;
             }
 
-            private static X509ChainStatus ValidationErrorToChainStatus(Interop.AndroidCrypto.ValidationError error)
+            private static unsafe X509ChainStatus ValidationErrorToChainStatus(Interop.AndroidCrypto.ValidationError error)
             {
                 X509ChainStatusFlags statusFlags = (X509ChainStatusFlags)error.Status;
                 Debug.Assert(statusFlags != X509ChainStatusFlags.NoError);
