@@ -74,10 +74,12 @@ def setup_args(args):
 def partition_mch(mch_directory, dst_directory):
     from os import listdir
 
+    print("Inside partition_mch")
     all_zip_files = [f for f in listdir(mch_directory) if isfile(join(mch_directory, f))]
     mch_zip_files = filter(lambda zip_file: zip_file.endswith(".mch.zip"), all_zip_files)
     index = 1
     for mch_file in mch_zip_files:
+        print("Processing {}".format(mch_file))
         file_names = []
         file_names += [path.join(mch_directory, mch_file)]
         file_names += [path.join(mch_directory, mch_file.replace(".mch.zip", ".mch.mct.zip"))]

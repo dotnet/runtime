@@ -39,7 +39,6 @@ jobs:
     collectionType: $ {{ parameters.collectionType }}
     collectionName: ${{ parameters.collectionName }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
-    helixType: 'build/product/'
 
     ${{ if ne(parameters.displayName, '') }}:
       displayName: '${{ parameters.displayName }}'
@@ -47,6 +46,13 @@ jobs:
       displayName: '${{ parameters.jobName }}'
 
     variables:
+    - ${{ each variable in parameters.variables }}:
+      - ${{ if ne(variable.name, '') }}:
+        - name: ${{ variable.name }}
+          value: ${{ variable.value }}
+      - ${{ if ne(variable.group, '') }}:
+        - group: ${{ variable.group }}
+
     - name: PythonScript
       value: 'py -3'
     - name: PipScript

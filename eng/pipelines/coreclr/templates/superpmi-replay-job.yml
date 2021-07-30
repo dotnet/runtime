@@ -6,6 +6,7 @@ parameters:
   pool: ''
   stagedBuild: false
   timeoutInMinutes: ''
+  framework: net5.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
   variables: {}
   dependOnEvaluatePaths: false
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-replay-job.yml'
@@ -21,10 +22,14 @@ jobs:
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
     dependsOn:
      - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     variables: ${{ parameters.variables }}
+
+    frameworks:
+      - ${{ parameters.framework }}
 
     steps:
 
