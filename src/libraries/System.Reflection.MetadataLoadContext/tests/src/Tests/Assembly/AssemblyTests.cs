@@ -606,23 +606,23 @@ namespace System.Reflection.Tests
         [Fact]
         public static void ResourceDoesNotExist_GetManifestResourceInfo_ReturnsNull()
         {
-            var resolver = new PathAssemblyResolver(new string[] { typeof(object).Assembly.Location });
-            using var mlc = new MetadataLoadContext(resolver, typeof(object).Assembly.GetName().Name);
-
-            var runtimeAssembly = mlc.LoadFromAssemblyPath(typeof(object).Assembly.Location);
-            var resource = runtimeAssembly.GetManifestResourceInfo("Nonsense");
-            Assert.Null(resource);
+            using (MetadataLoadContext lc = new MetadataLoadContext(new SimpleAssemblyResolver()))
+            {
+                Assembly a = lc.LoadFromByteArray(TestData.s_AssemblyWithEmbeddedResourcesImage);
+                ManifestResourceInfo? r = a.GetManifestResourceInfo("ResourceThatDoesNotExist");
+                Assert.Null(r);
+            }
         }
 
         [Fact]
         public static void ResourceDoesNotExist_GetManifestResourceStream_ReturnsNull()
         {
-            var resolver = new PathAssemblyResolver(new string[] { typeof(object).Assembly.Location });
-            using var mlc = new MetadataLoadContext(resolver, typeof(object).Assembly.GetName().Name);
-
-            var runtimeAssembly = mlc.LoadFromAssemblyPath(typeof(object).Assembly.Location);
-            var resource = runtimeAssembly.GetManifestResourceStream("Nonsense");
-            Assert.Null(resource);
+            using (MetadataLoadContext lc = new MetadataLoadContext(new SimpleAssemblyResolver()))
+            {
+                Assembly a = lc.LoadFromByteArray(TestData.s_AssemblyWithEmbeddedResourcesImage);
+                Stream? r = a.GetManifestResourceStream("ResourceThatDoesNotExist");
+                Assert.Null(r);
+            }
         }
     }
 }
