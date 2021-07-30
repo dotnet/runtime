@@ -630,6 +630,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(IsMsQuicSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56609")]
         public async Task Alpn_H3_Success()
         {
             // Mock doesn't use ALPN.
