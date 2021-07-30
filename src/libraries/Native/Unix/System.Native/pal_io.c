@@ -1409,7 +1409,7 @@ int64_t SystemNative_GetFileSystemType(intptr_t fd)
     // which got deprecated in macOS 10.6, in favor of statfs
     while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
     return statfsRes == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
-#elif defined(TARGET_SUNOS // we use statvfs (see SystemNative_GetFileSystemTypeAsString) on SunOS
+#elif defined(TARGET_SUNOS) // we use statvfs (see SystemNative_GetFileSystemTypeAsString) on SunOS
     (void)fd; // unused
     return -1;
 #else
