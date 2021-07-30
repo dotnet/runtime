@@ -51,8 +51,6 @@ jobs:
       value: 'py -3'
     - name: PipScript
       value: 'py -3 -m pip'
-    - name: Core_Root_Dir
-      value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
     - name: SpmiCollectionLocation
       value: '$(Build.SourcesDirectory)\artifacts\spmi\'
     - name: SpmiLogsLocation
@@ -80,8 +78,8 @@ jobs:
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py download --download_all --download_raw -spmi_location $(SpmiCollectionLocation)
       displayName: Download superpmi collection
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_replay_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(Core_Root_Dir) -arch $(archType) -mch_directory $(SpmiCollectionLocation)
-      displayName: ${{ format('SuperPMI replay setup ({0})', parameters.osGroup) }}
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_replay_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(buildProductRootFolderPath) -arch $(archType) -mch_directory $(SpmiCollectionLocation)
+      displayName: ${{ format('SuperPMI replay setup ({0})', parameters.archType) }}
 
       # Run superpmi replay in helix
     - template: /eng/pipelines/coreclr/templates/superpmi-send-to-helix.yml
