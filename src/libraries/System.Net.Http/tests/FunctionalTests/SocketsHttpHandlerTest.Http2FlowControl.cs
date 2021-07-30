@@ -2,19 +2,183 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.VisualStudio.TestPlatform.Utilities;
 using Xunit;
 using Xunit.Abstractions;
+using static System.Net.Test.Common.LoopbackServer;
 
 namespace System.Net.Http.Functional.Tests
 {
     [CollectionDefinition(nameof(NonParallelTestCollection), DisableParallelization = true)]
     public class NonParallelTestCollection
     {
+    }
+
+    [Collection(nameof(NonParallelTestCollection))]
+    [ConditionalClass(typeof(SocketsHttpHandler_Http2FlowControl_Test), nameof(IsSupported))]
+    public sealed class SocketsHttpHandler_Http2KeepAlivePing_Test : HttpClientHandlerTestBase
+    {
+        public static readonly bool IsSupported = PlatformDetection.SupportsAlpn && PlatformDetection.IsNotBrowser;
+
+        protected override Version UseVersion => HttpVersion20.Value;
+
+        public SocketsHttpHandler_Http2KeepAlivePing_Test(ITestOutputHelper output) : base(output)
+        {
+        }
+
+        [Theory]
+        [InlineData(HttpKeepAlivePingPolicy.Always)]
+        [InlineData(HttpKeepAlivePingPolicy.WithActiveRequests)]
+        public async Task KeepAlivePingDelay_Infinite_NoKeepAlivePingIsSent(HttpKeepAlivePingPolicy policy)
+        {
+            TaskCompletionSource serverFinished = new TaskCompletionSource();
+            TimeSpan testTimeout = TimeSpan.FromSeconds(60);
+
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                SocketsHttpHandler handler = new SocketsHttpHandler()
+                {
+                    KeepAlivePingTimeout = TimeSpan.FromSeconds(1),
+                    KeepAlivePingPolicy = policy,
+                    KeepAlivePingDelay = Timeout.InfiniteTimeSpan
+                };
+                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+
+                using HttpClient client = new HttpClient(handler);
+                client.DefaultRequestVersion = HttpVersion.Version20;
+
+                // Warmup request to create connection:
+                await client.GetStringAsync(uri).WaitAsync(testTimeout);
+
+                // Actual request:
+                await client.GetStringAsync(uri).WaitAsync(testTimeout);
+
+                // Let connection live until server finishes:
+                await serverFinished.Task.WaitAsync(testTimeout);
+            },
+            async server =>
+            {
+                using Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+
+                // Warmup the connection.
+                int streamId1 = await connection.ReadRequestHeaderAsync();
+                await connection.SendDefaultResponseAsync(streamId1);
+
+                int pingCounter = 0;
+
+                connection.PingFrameCallback = _ =>
+                {
+                    pingCounter++;
+                    return true;
+                };
+
+                // Request under the test scope.
+                int streamId2 = await connection.ReadRequestHeaderAsync();
+
+                // Simulate inactive period:
+                await Task.Delay(5_000);
+
+                // We can receive one RTT PING because of HEADERS, but should receive no KeepAlive PINGs
+                Assert.True(pingCounter <= 1);
+                pingCounter = 0; // reset the counter
+
+                // Finish the response:
+                await connection.SendDefaultResponseAsync(streamId2);
+
+                // Simulate inactive period:
+                await Task.Delay(5_000);
+
+                // We can receive one more RTT PING because of DATA, but should receive no KeepAlive PINGs
+                Assert.True(pingCounter <= 1);
+
+                serverFinished.SetResult();
+            }).WaitAsync(testTimeout);
+        }
+
+        [Theory]
+        [InlineData(HttpKeepAlivePingPolicy.Always)]
+        [InlineData(HttpKeepAlivePingPolicy.WithActiveRequests)]
+        public async Task KeepAliveConfigured_KeepAlivePingsAreSentAccordingToPolicy(HttpKeepAlivePingPolicy policy)
+        {
+            TaskCompletionSource serverFinished = new TaskCompletionSource();
+            TimeSpan testTimeout = TimeSpan.FromSeconds(60);
+
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                SocketsHttpHandler handler = new SocketsHttpHandler()
+                {
+                    KeepAlivePingTimeout = TimeSpan.FromSeconds(10),
+                    KeepAlivePingPolicy = policy,
+                    KeepAlivePingDelay = TimeSpan.FromSeconds(1)
+                };
+                handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
+
+                using HttpClient client = new HttpClient(handler);
+                client.DefaultRequestVersion = HttpVersion.Version20;
+
+                // Warmup request to create connection:
+                await client.GetStringAsync(uri).WaitAsync(testTimeout);
+
+                // Actual request:
+                await client.GetStringAsync(uri).WaitAsync(testTimeout);
+
+                // Let connection live until server finishes:
+                await serverFinished.Task.WaitAsync(testTimeout);
+            },
+            async server =>
+            {
+                using Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+
+                // Warmup the connection.
+                int streamId1 = await connection.ReadRequestHeaderAsync();
+                await connection.SendDefaultResponseAsync(streamId1);
+
+                int pingCounter = 0;
+
+                connection.PingFrameCallback = _ =>
+                {
+                    pingCounter++;
+                    return true;
+                };
+
+                // Request under the test scope.
+                int streamId2 = await connection.ReadRequestHeaderAsync();
+
+                // Simulate inactive period:
+                await Task.Delay(10_000);
+
+                // We may receive one RTT PING because of HEADERS.
+                // We expect to receive at least one keep alive ping upon that:
+                Assert.True(pingCounter > 1);
+                pingCounter = 0; // reset the counter
+
+                // Finish the response:
+                await connection.SendDefaultResponseAsync(streamId2);
+
+                // Simulate inactive period:
+                await Task.Delay(10_000);
+
+                if (policy == HttpKeepAlivePingPolicy.Always)
+                {
+                    // We may receive one RTT PING because of HEADERS.
+                    // We expect to receive at least one keep alive ping upon that:
+                    Assert.True(pingCounter > 1);
+                }
+                else
+                {
+                    // We can receive one more RTT PING because of DATA, but should receive no KeepAlive PINGs
+                    Assert.True(pingCounter <= 1);
+                }
+
+                serverFinished.SetResult();
+            }).WaitAsync(testTimeout);
+        }
     }
 
     // This test class contains tests which are strongly timing-dependent.

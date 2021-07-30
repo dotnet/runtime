@@ -1859,7 +1859,8 @@ namespace System.Net.Http.Functional.Tests
                     {
                         using Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
 
-                        Task<PingFrame> receivePingTask = expectStreamPing ? connection.ExpectPingFrameAsync() : null;
+                        //Task<PingFrame> receivePingTask = expectStreamPing ? connection.ExpectPingFrameAsync() : null;
+                        Task<PingFrame> receivePingTask = null;
 
                         // Warmup the connection.
                         int streamId1 = await connection.ReadRequestHeaderAsync();
