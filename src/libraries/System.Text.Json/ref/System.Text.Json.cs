@@ -595,7 +595,7 @@ namespace System.Text.Json.Nodes
         public System.Text.Json.Nodes.JsonObject AsObject() { throw null; }
         public System.Text.Json.Nodes.JsonValue AsValue() { throw null; }
         public string GetPath() { throw null; }
-        public virtual TValue GetValue<TValue>() { throw null; }
+        public virtual T GetValue<T>() { throw null; }
         public static explicit operator bool (System.Text.Json.Nodes.JsonNode value) { throw null; }
         public static explicit operator byte (System.Text.Json.Nodes.JsonNode value) { throw null; }
         public static explicit operator char (System.Text.Json.Nodes.JsonNode value) { throw null; }

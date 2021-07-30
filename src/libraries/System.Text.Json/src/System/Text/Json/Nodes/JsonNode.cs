@@ -165,22 +165,22 @@ namespace System.Text.Json.Nodes
         ///   Gets the value for the current <see cref="JsonValue"/>.
         /// </summary>
         /// <remarks>
-        ///   {TValue} can be the type or base type of the underlying value.
-        ///   If the underlying value is a <see cref="JsonElement"/> then {TValue} can also be the type of any primitive
-        ///   value supported by current <see cref="JsonElement"/>.<br />
-        ///   Specifying <see cref="object"/> will always succeed and return the underlying value as <see cref="object"/>.<br />
-        ///   The underlying value of a <see cref="JsonValue"/> after deserialization is <see cref="JsonElement"/>,
-        ///   otherwise it is the value specified when the <see cref="JsonValue"/> was created.
+        ///   {T} can be the type or base type of the underlying value.
+        ///   If the underlying value is a <see cref="JsonElement"/> then {T} can also be the type of any primitive
+        ///   value supported by current <see cref="JsonElement"/>.
+        ///   Specifying the <see cref="object"/> type for {T} will always succeed and return the underlying value as <see cref="object"/>.<br />
+        ///   The underlying value of a <see cref="JsonValue"/> after deserialization is an instance of <see cref="JsonElement"/>,
+        ///   otherwise it's the value specified when the <see cref="JsonValue"/> was created.
         /// </remarks>
-        /// <seealso cref="JsonValue.TryGetValue{T}">
+        /// <seealso cref="System.Text.Json.Nodes.JsonValue.TryGetValue"></seealso>
         /// <exception cref="FormatException">
-        ///   The current <see cref="JsonNode"/> cannot be represented as a {TValue}.
+        ///   The current <see cref="JsonNode"/> cannot be represented as a {T}.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         ///   The current <see cref="JsonNode"/> is not a <see cref="JsonValue"/> or
-        ///   is not compatible with {TValue}.
+        ///   is not compatible with {T}.
         /// </exception>
-        public virtual TValue GetValue<TValue>() =>
+        public virtual T GetValue<T>() =>
             throw new InvalidOperationException(SR.Format(SR.NodeWrongType, nameof(JsonValue)));
 
         /// <summary>
