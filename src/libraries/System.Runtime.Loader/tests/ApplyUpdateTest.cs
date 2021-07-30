@@ -112,6 +112,7 @@ namespace System.Reflection.Metadata
             });
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52993", TestRuntimes.Mono)]
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
         public void CustomAttributeDelete()
         {
