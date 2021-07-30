@@ -5272,20 +5272,17 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 //------------------------------------------------------------------------
 // impKeepAliveIntrinsic: Import the GC.KeepAlive intrinsic call
 //
-// Imports the intrinsic either as a GT_KEEPALIVE node, or, as an
-// optimization, if the object to keep alive is a GT_BOX, as a series
-// of statements (prepended as needed) with GT_KEEPALIVE top-level nodes,
-// for each field of a reference type in the struct's layout. As part
-// of this, removes the box's allocation and inserts a copy of the
-// box's source to a temporary, if the source wasn't a local already,
-// to enable the re-use of this local for field indirections.
+// Imports the intrinsic as a GT_KEEPALIVE node, and, as an optimization,
+// if the object to keep alive is a GT_BOX, removes its side effects and
+// uses the address of a local (copied from the box's source if needed)
+// as the operand for GT_KEEPALIVE. For the BOX optimization, if the class
+// of the box has no GC fields, a GT_NOP is returned.
 //
 // Arguments:
 //    objToKeepAlive - the intrinisic call's argument
 //
 // Return Value:
-//    The imported GT_KEEPALIVE, with "objToKeepAlive" as the operand.
-//    If the GT_BOX optimization was successful, always returns a GT_NOP.
+//    The imported GT_KEEPALIVE or GT_NOP - see description.
 //
 GenTree* Compiler::impKeepAliveIntrinsic(GenTree* objToKeepAlive)
 {
@@ -5294,13 +5291,19 @@ GenTree* Compiler::impKeepAliveIntrinsic(GenTree* objToKeepAlive)
     if (opts.OptimizationEnabled() && objToKeepAlive->IsBoxedValue())
     {
         CORINFO_CLASS_HANDLE boxedClass = lvaGetDesc(objToKeepAlive->AsBox()->BoxOp()->AsLclVar())->lvClassHnd;
-        GenTree*             boxSrc = gtTryRemoveBoxUpstreamEffects(objToKeepAlive, Compiler::BR_REMOVE_BUT_NOT_NARROW);
+        ClassLayout*         layout     = typGetObjLayout(boxedClass);
 
+        if (!layout->HasGCPtr())
+        {
+            gtTryRemoveBoxUpstreamEffects(objToKeepAlive, BR_REMOVE_AND_NARROW);
+            JITDUMP("\nBOX class has no GC fields, KEEPALIVE is a NOP");
+
+            return gtNewNothingNode();
+        }
+
+        GenTree* boxSrc = gtTryRemoveBoxUpstreamEffects(objToKeepAlive, BR_REMOVE_BUT_NOT_NARROW);
         if (boxSrc != nullptr)
         {
-            JITDUMP("\nImporting KEEPALIVE(BOX) as a series of KEEPALIVE(FIELD)\n");
-            INDEBUG(bool foundGcField = false);
-
             unsigned boxTempNum;
             if (boxSrc->OperIs(GT_LCL_VAR))
             {
@@ -5314,38 +5317,12 @@ GenTree* Compiler::impKeepAliveIntrinsic(GenTree* objToKeepAlive)
                 boxAsgStmt->SetRootNode(boxTempAsg);
             }
 
-            ClassLayout* layout = typGetObjLayout(boxedClass);
-            if (layout->HasGCPtr())
-            {
-                for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
-                {
-                    if (layout->IsGCPtr(slot))
-                    {
-                        // This is a very verbose way of saying gtNewLclFldNode.
-                        // However, gtNewLclFldNode will not work for implicit byrefs.
-                        // TODO-Addr: replace this with a method that accounts for this.
+            JITDUMP("\nImporting KEEPALIVE(BOX) as KEEPALIVE(ADDR(LCL_VAR V%02u))", boxTempNum);
 
-                        GenTree* fieldOffset = gtNewIconNode(slot * TARGET_POINTER_SIZE);
-                        GenTree* boxTemp     = gtNewLclvNode(boxTempNum, boxSrc->TypeGet());
-                        GenTree* boxSrcAddr  = gtNewOperNode(GT_ADDR, TYP_BYREF, boxTemp);
-                        GenTree* fieldAddr   = gtNewOperNode(GT_ADD, TYP_BYREF, boxSrcAddr, fieldOffset);
-                        GenTree* field       = gtNewIndir(TYP_REF, fieldAddr);
-                        GenTree* keepalive   = gtNewKeepAliveNode(field);
+            GenTree* boxTemp     = gtNewLclvNode(boxTempNum, boxSrc->TypeGet());
+            GenTree* boxTempAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, boxTemp);
 
-                        Statement* stmt = gtNewStmt(keepalive, impCurStmtOffs);
-                        JITDUMP("\n");
-                        DISPSTMT(stmt);
-                        INDEBUG(foundGcField = true);
-                        impAppendStmt(stmt);
-                    }
-                }
-            }
-
-            DBEXEC(!foundGcField, JITDUMP("Found no GC fields, KEEPALIVE is a NOP\n"));
-
-            // Return a NOP - impIntrinsic expects a non-nullptr node, and we get correct handling
-            // for the case when the struct has no GC pointers "for free" this way.
-            return gtNewNothingNode();
+            return gtNewKeepAliveNode(boxTempAddr);
         }
     }
 
