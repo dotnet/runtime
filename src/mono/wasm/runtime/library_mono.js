@@ -525,7 +525,7 @@ var MonoSupportLib = {
 						result = MONO.interned_string_table.get(mono_string);
 						// console.log("intern table cache hit", mono_string, result.length);
 					} else {
-						result = MONO.decode(pChars, pChars + lengthBytes, false);
+						result = this.decode(pChars, pChars + lengthBytes, false);
 						if (isInterned) {
 							if (!MONO.interned_string_table)
 								MONO.interned_string_table = new Map();
