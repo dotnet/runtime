@@ -63,6 +63,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             private bool _closing;
 
             // Certificate validation properties
+            public X509Certificate? RemoteCertificate;
             public bool RemoteCertificateRequired;
             public X509RevocationMode RevocationMode = X509RevocationMode.Offline;
             public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback;
@@ -207,6 +208,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         internal override IPEndPoint? LocalEndPoint => _localEndPoint;
 
         internal override EndPoint RemoteEndPoint => _remoteEndPoint;
+
+        internal override X509Certificate? RemoteCertificate => _state.RemoteCertificate;
 
         internal override SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedAlpnProtocol;
 
@@ -394,6 +397,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
                 }
+
+                state.RemoteCertificate = certificate;
 
                 if (state.RemoteCertificateValidationCallback != null)
                 {

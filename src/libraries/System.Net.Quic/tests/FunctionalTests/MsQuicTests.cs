@@ -111,6 +111,8 @@ namespace System.Net.Quic.Tests
             Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
             await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientConnection.ConnectAsync().AsTask(), serverTask, PassingTestTimeoutMilliseconds);
             using QuicConnection serverConnection = serverTask.Result;
+            Assert.Equal(certificate, clientConnection.RemoteCertificate);
+            Assert.Null(serverConnection.RemoteCertificate);
         }
 
         [Fact]
@@ -308,7 +310,6 @@ namespace System.Net.Quic.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/microsoft/msquic/pull/1728")]
         public async Task ConnectWithClientCertificate()
         {
             bool clientCertificateOK = false;
@@ -344,6 +345,7 @@ namespace System.Net.Quic.Tests
             await PingPong(clientConnection, serverConnection);
             // check we completed the client certificate verification.
             Assert.True(clientCertificateOK);
+            Assert.Equal(ClientCertificate, serverConnection.RemoteCertificate);
 
             await serverConnection.CloseAsync(0);
         }

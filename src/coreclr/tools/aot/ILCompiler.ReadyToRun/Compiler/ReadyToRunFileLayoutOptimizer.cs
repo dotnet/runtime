@@ -14,6 +14,7 @@ using System.Linq;
 using System.Collections.Immutable;
 using System.Text;
 using System.Reflection.Metadata.Ecma335;
+using ILCompiler.PettisHansenSort;
 
 namespace ILCompiler
 {
@@ -24,6 +25,7 @@ namespace ILCompiler
         HotCold,
         HotWarmCold,
         CallFrequency,
+        PettisHansen,
     }
 
     public enum ReadyToRunFileLayoutAlgorithm
@@ -34,17 +36,20 @@ namespace ILCompiler
 
     class ReadyToRunFileLayoutOptimizer
     {
-        public ReadyToRunFileLayoutOptimizer (ReadyToRunMethodLayoutAlgorithm methodAlgorithm,
+        public ReadyToRunFileLayoutOptimizer (Logger logger,
+                                              ReadyToRunMethodLayoutAlgorithm methodAlgorithm,
                                               ReadyToRunFileLayoutAlgorithm fileAlgorithm,
                                               ProfileDataManager profileData,
                                               NodeFactory nodeFactory)
         {
+            _logger = logger;
             _methodLayoutAlgorithm = methodAlgorithm;
             _fileLayoutAlgorithm = fileAlgorithm;
             _profileData = profileData;
             _nodeFactory = nodeFactory;
         }
 
+        private Logger _logger;
         private ReadyToRunMethodLayoutAlgorithm _methodLayoutAlgorithm = ReadyToRunMethodLayoutAlgorithm.DefaultSort;
         private ReadyToRunFileLayoutAlgorithm _fileLayoutAlgorithm = ReadyToRunFileLayoutAlgorithm.DefaultSort;
         private ProfileDataManager _profileData;
@@ -157,6 +162,10 @@ namespace ILCompiler
                     methods = MethodCallFrequencySort(methods);
                     break;
 
+                case ReadyToRunMethodLayoutAlgorithm.PettisHansen:
+                    methods = PettisHansenSort(methods);
+                    break;
+
                 default:
                     throw new NotImplementedException(_methodLayoutAlgorithm.ToString());
             }
@@ -241,6 +250,58 @@ namespace ILCompiler
             outputMethods.AddRange(methodMap.Values.Where(m => m != null));
             Debug.Assert(outputMethods.Count == methodsToPlace.Count);
             return outputMethods;
+        }
+
+        /// <summary>
+        /// Sort methods with Pettis-Hansen using call graph data from profile.
+        /// </summary>
+        private List<MethodWithGCInfo> PettisHansenSort(List<MethodWithGCInfo> methodsToPlace)
+        {
+            var graphNodes = new List<CallGraphNode>(methodsToPlace.Count);
+            var mdToIndex = new Dictionary<MethodDesc, int>();
+            int index = 0;
+            foreach (MethodWithGCInfo method in methodsToPlace)
+            {
+                mdToIndex.Add(method.Method, index);
+                graphNodes.Add(new CallGraphNode(index));
+                index++;
+            }
+
+            bool any = false;
+            foreach (MethodWithGCInfo method in methodsToPlace)
+            {
+                MethodProfileData data = _profileData[method.Method];
+                if (data == null || data.CallWeights == null)
+                    continue;
+
+                foreach ((MethodDesc other, int count) in data.CallWeights)
+                {
+                    if (!mdToIndex.TryGetValue(other, out int otherIndex))
+                        continue;
+
+                    graphNodes[mdToIndex[method.Method]].IncreaseEdge(graphNodes[otherIndex], count);
+                    any = true;
+                }
+            }
+
+            if (!any)
+            {
+                _logger.Writer.WriteLine("Warning: no call graph data was found or a .mibc file was not specified. Skipping Pettis Hansen method ordering.");
+                return methodsToPlace;
+            }
+
+            List<List<int>> components = PettisHansen.Sort(graphNodes);
+            // We expect to see a permutation.
+            Debug.Assert(components.SelectMany(l => l).OrderBy(i => i).SequenceEqual(Enumerable.Range(0, methodsToPlace.Count)));
+
+            List<MethodWithGCInfo> result = new List<MethodWithGCInfo>(methodsToPlace.Count);
+            foreach (List<int> component in components)
+            {
+                foreach (int node in component)
+                    result.Add(methodsToPlace[node]);
+            }
+
+            return result;
         }
     }
 }

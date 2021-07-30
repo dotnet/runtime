@@ -48,7 +48,7 @@ namespace System.IO
             {
                 ValidateHandle(safeHandle, access, bufferSize, isAsync);
 
-                _strategy = FileStreamHelpers.ChooseStrategy(this, safeHandle, access, DefaultShare, bufferSize, isAsync);
+                _strategy = FileStreamHelpers.ChooseStrategy(this, safeHandle, access, bufferSize, isAsync);
             }
             catch
             {
@@ -107,14 +107,14 @@ namespace System.IO
         {
             ValidateHandle(handle, access, bufferSize);
 
-            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, DefaultShare, bufferSize, handle.IsAsync);
+            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, handle.IsAsync);
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             ValidateHandle(handle, access, bufferSize, isAsync);
 
-            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, DefaultShare, bufferSize, isAsync);
+            _strategy = FileStreamHelpers.ChooseStrategy(this, handle, access, bufferSize, isAsync);
         }
 
         public FileStream(string path, FileMode mode)

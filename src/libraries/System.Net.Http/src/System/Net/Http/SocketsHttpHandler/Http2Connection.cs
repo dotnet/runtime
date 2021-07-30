@@ -1492,6 +1492,11 @@ namespace System.Net.Http
                     Shutdown();
                 }
 
+                if (_abortException is not null)
+                {
+                    throw GetRequestAbortedException(_abortException);
+                }
+
                 if (_shutdown)
                 {
                     // The connection has shut down. Throw a retryable exception so that this request will be handled on another connection.
