@@ -5996,7 +5996,11 @@ static HMODULE GetIJWHostForModule(Module* module)
             if ((importNameTable[thunkIndex].u1.Ordinal & (1LL << (sizeof(importNameTable[thunkIndex].u1.Ordinal) * CHAR_BIT - 1))) == 0)
             {
                 IMAGE_IMPORT_BY_NAME* nameImport = (IMAGE_IMPORT_BY_NAME*)(baseAddress + importNameTable[thunkIndex].u1.AddressOfData);
-                if (strcmp("_CorDllMain", nameImport->Name) == 0)
+                if (strcmp("_CorDllMain", nameImport->Name) == 0
+#ifdef TARGET_X86
+                    || strcmp("__CorDllMain@12", nameImport->Name) == 0 // The MSVC compiler can and will bind to the stdcall-decorated name of _CorDllMain if it exists, even if the _CorDllMain symbol also exists.
+#endif
+                )
                 {
                     HMODULE ijwHost;
 
