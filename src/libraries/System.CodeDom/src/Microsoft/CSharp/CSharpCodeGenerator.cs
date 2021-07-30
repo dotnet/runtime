@@ -851,17 +851,25 @@ namespace Microsoft.CSharp
             string commentLineStart = e.DocComment ? "///" : "//";
             Output.Write(commentLineStart);
             Output.Write(' ');
+            bool isAfterCommentLineStart = false;
 
             string value = e.Text;
             for (int i = 0; i < value.Length; i++)
             {
+                if (isAfterCommentLineStart)
+                {
+                    if (value[i] == '/')
+                    {
+                        Output.Write(' ');
+                    }
+                    isAfterCommentLineStart = false;
+                }
+
                 if (value[i] == '\u0000')
                 {
                     continue;
                 }
                 Output.Write(value[i]);
-
-                bool startNewCommentLine = false;
 
                 if (value[i] == '\r')
                 {
@@ -871,26 +879,19 @@ namespace Microsoft.CSharp
                         i++;
                     }
                     _output.InternalOutputTabs();
-                    startNewCommentLine = true;
+                    Output.Write(commentLineStart);
+                    isAfterCommentLineStart = true;
                 }
                 else if (value[i] == '\n')
                 {
                     _output.InternalOutputTabs();
-                    startNewCommentLine = true;
+                    Output.Write(commentLineStart);
+                    isAfterCommentLineStart = true;
                 }
                 else if (value[i] == '\u2028' || value[i] == '\u2029' || value[i] == '\u0085')
                 {
-                    startNewCommentLine = true;
-                }
-
-                if (startNewCommentLine)
-                {
                     Output.Write(commentLineStart);
-
-                    if (i < value.Length - 1 && value[i + 1] == '/')
-                    {
-                        Output.Write(' ');
-                    }
+                    isAfterCommentLineStart = true;
                 }
             }
             Output.WriteLine();
