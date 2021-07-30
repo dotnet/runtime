@@ -5,9 +5,11 @@
 using System;
 using System.Collections.Immutable;
 using System.Composition;
+using System.Linq;
 using System.Threading.Tasks;
 using ILLink.CodeFixProvider;
 using ILLink.RoslynAnalyzer;
+using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
@@ -18,8 +20,12 @@ namespace ILLink.CodeFix
 	[ExportCodeFixProvider (LanguageNames.CSharp, Name = nameof (RequiresAssemblyFilesCodeFixProvider)), Shared]
 	public class RequiresAssemblyFilesCodeFixProvider : BaseAttributeCodeFixProvider
 	{
-		public sealed override ImmutableArray<string> FixableDiagnosticIds
-			=> ImmutableArray.Create (RequiresAssemblyFilesAnalyzer.IL3000, RequiresAssemblyFilesAnalyzer.IL3001, RequiresAssemblyFilesAnalyzer.IL3002);
+		public ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (
+			DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.AvoidAssemblyLocationInSingleFile),
+			DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.AvoidAssemblyGetFilesInSingleFile),
+			DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresAssemblyFiles));
+
+		public sealed override ImmutableArray<string> FixableDiagnosticIds => SupportedDiagnostics.Select (dd => dd.Id).ToImmutableArray ();
 
 		private protected override LocalizableString CodeFixTitle => new LocalizableResourceString (nameof (Resources.RequiresAssemblyFilesCodeFixTitle), Resources.ResourceManager, typeof (Resources));
 

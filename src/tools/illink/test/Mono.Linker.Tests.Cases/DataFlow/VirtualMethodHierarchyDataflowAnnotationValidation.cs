@@ -271,9 +271,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 
 			// === RequiresUnreferencedCode ===
-			[ExpectedWarning ("IL2046", "DerivedClass.RequiresUnreferencedCodeBaseWithDerivedWithout()", "BaseClass.RequiresUnreferencedCodeBaseWithDerivedWithout()")]
+			[ExpectedWarning ("IL2046", "DerivedClass.RequiresUnreferencedCodeBaseWithDerivedWithout()",
+				"BaseClass.RequiresUnreferencedCodeBaseWithDerivedWithout()",
+				"'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides")]
 			public override void RequiresUnreferencedCodeBaseWithDerivedWithout () { }
-			[ExpectedWarning ("IL2046", "DerivedClass.RequiresUnreferencedCodeBaseWithoutDerivedWith_()", "BaseClass.RequiresUnreferencedCodeBaseWithoutDerivedWith_()")]
+			[ExpectedWarning ("IL2046", "DerivedClass.RequiresUnreferencedCodeBaseWithoutDerivedWith_()",
+				"BaseClass.RequiresUnreferencedCodeBaseWithoutDerivedWith_()",
+				"'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides")]
 			[RequiresUnreferencedCode ("")]
 			public override void RequiresUnreferencedCodeBaseWithoutDerivedWith_ () { }
 			[LogDoesNotContain ("DerivedClass.RequiresUnreferencedCodeBaseWithDerivedWith_")]

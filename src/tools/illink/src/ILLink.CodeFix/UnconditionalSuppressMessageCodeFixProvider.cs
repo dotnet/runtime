@@ -5,9 +5,10 @@
 using System.Collections.Immutable;
 using System.Composition;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using ILLink.CodeFixProvider;
-using ILLink.RoslynAnalyzer;
+using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
@@ -22,7 +23,11 @@ namespace ILLink.CodeFix
 		public const string FullyQualifiedUnconditionalSuppressMessageAttribute = "System.Diagnostics.CodeAnalysis." + UnconditionalSuppressMessageAttribute;
 
 		public sealed override ImmutableArray<string> FixableDiagnosticIds
-			=> ImmutableArray.Create (RequiresUnreferencedCodeAnalyzer.IL2026, RequiresAssemblyFilesAnalyzer.IL3000, RequiresAssemblyFilesAnalyzer.IL3001, RequiresAssemblyFilesAnalyzer.IL3002);
+			=> (new DiagnosticId[] {
+				DiagnosticId.RequiresUnreferencedCode,
+				DiagnosticId.AvoidAssemblyLocationInSingleFile,
+				DiagnosticId.AvoidAssemblyGetFilesInSingleFile,
+				DiagnosticId.RequiresAssemblyFiles }).Select (d => d.AsString ()).ToImmutableArray ();
 
 		private protected override LocalizableString CodeFixTitle => new LocalizableResourceString (nameof (Resources.UconditionalSuppressMessageCodeFixTitle), Resources.ResourceManager, typeof (Resources));
 

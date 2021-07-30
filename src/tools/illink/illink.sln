@@ -36,6 +36,11 @@ EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ILLink.Shared", "src\ILLink.Shared\ILLink.Shared.shproj", "{92F5E753-2179-46DC-BDCE-736858C18DC7}"
 EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		src\ILLink.Shared\ILLink.Shared.projitems*{92f5e753-2179-46dc-bdce-736858c18dc7}*SharedItemsImports = 13
+		src\ILLink.Shared\ILLink.Shared.projitems*{dd28e2b1-057b-4b4d-a04d-b2ebd9e76e46}*SharedItemsImports = 5
+		src\ILLink.Shared\ILLink.Shared.projitems*{f1a44a78-34ee-408b-8285-9a26f0e7d4f2}*SharedItemsImports = 5
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64

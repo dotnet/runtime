@@ -43,8 +43,10 @@ namespace Mono.Linker.Steps
 			var annotations = Context.Annotations;
 			bool methodHasAttribute = annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (method);
 			if (methodHasAttribute != annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (baseMethod)) {
-				string message = MessageFormat.FormatRequiresAttributeMismatch (methodHasAttribute, baseMethod.DeclaringType.IsInterface, nameof (RequiresUnreferencedCodeAttribute), method.GetDisplayName (), baseMethod.GetDisplayName ());
-				Context.LogWarning (string.Format (SharedStrings.RequiresAttributeMismatchMessage, message), 2046, method, subcategory: MessageSubCategory.TrimAnalysis);
+				string message = MessageFormat.FormatRequiresAttributeMismatch (methodHasAttribute,
+					baseMethod.DeclaringType.IsInterface, nameof (RequiresUnreferencedCodeAttribute), method.GetDisplayName (), baseMethod.GetDisplayName ());
+				Context.LogWarning (new DiagnosticString (DiagnosticId.RequiresUnreferencedCodeAttributeMismatch).GetMessage (message),
+					2046, method, subcategory: MessageSubCategory.TrimAnalysis);
 			}
 		}
 	}
