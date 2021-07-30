@@ -266,7 +266,7 @@ if [[ "$run_from_perf_repo" = true ]]; then
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
     echo "Not running from perf repo"
-    git clone --branch pr-alicias-branch --depth 1 https://github.com/radekdoulik/performance.git $performance_directory
+    git clone --branch alicial/wasmaotmicro --depth 1 https://github.com/dotnet/performance.git $performance_directory
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 
@@ -280,23 +280,22 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     using_wasm=true
     wasm_dotnet_path=$payload_directory/dotnet-wasm
     mv $wasm_runtime_loc $wasm_dotnet_path
+    # wasm aot and interpreter need some source code from dotnet\runtime repo
+    rm -r $source_directory/__download__
+    rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude Payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj --exclude artifacts/log --exclude artifacts/tests
+
     if [[ "$wasmaot" == "true" ]]; then
         # install EMSDK if $EMSDK_PATH is not Set. EMSDK may be available in the payload in a different directory, should visit this install to avoid deplicated payload.
         pushd $source_directory/src/mono/wasm/
         make provision-wasm
         EMSDK_PATH = $source_directory/src/mono/wasm/emsdk
         popd
-        rm -r $source_directory/__download__
-        # wasm aot needs some source code from dotnet\runtime repo
-        echo "copy source code from dotnet\runtime repo"
-        rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude Payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj --exclude artifacts/log --exclude artifacts/tests
         # copy wasm build drop to the location that aot build expects
-        echo "copy BrowserWasm/artifacts"
         rsync -a --progress $wasm_dotnet_path/artifacts/BrowserWasm/artifacts/* $wasm_dotnet_path/artifacts
         rm -r $wasm_dotnet_path/artifacts/BrowserWasm/artifacts
         extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --aotcompilermode wasm --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --buildTimeout 3600 --keepfiles" 
     else
-        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --keepfiles"
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/$javascript_engine --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --keepfiles"
     fi
 fi
 
