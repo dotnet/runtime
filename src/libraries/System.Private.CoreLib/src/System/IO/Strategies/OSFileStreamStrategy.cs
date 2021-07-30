@@ -16,7 +16,7 @@ namespace System.IO.Strategies
 
         protected long _filePosition;
         private long _appendStart; // When appending, prevent overwriting file.
-        private long _length = -1; // When the file is locked for writes on Windows ((share & FileShare.Write) == 0) cache file length in-memory, negative means that hasn't been fetched.
+        protected long _length = -1; // When the file is locked for writes on Windows ((share & FileShare.Write) == 0) cache file length in-memory, negative means that hasn't been fetched.
         private bool _lengthCanBeCached; // SafeFileHandle hasn't been exposed and FileShare.Write was not specified when the handle was opened.
 
         internal OSFileStreamStrategy(SafeFileHandle handle, FileAccess access)
@@ -95,6 +95,10 @@ namespace System.IO.Strategies
                 return _length;
             }
         }
+
+        // in case of concurrent incomplete reads, there can be multiple threads trying to update the position
+        // at the same time. That is why we are using Interlocked here.
+        internal void OnIncompleteRead(int expectedBytesRead, int actualBytesRead) => Interlocked.Add(ref _filePosition, actualBytesRead - expectedBytesRead);
 
         protected void UpdateLengthOnChangePosition()
         {

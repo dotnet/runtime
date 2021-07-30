@@ -29,33 +29,27 @@ namespace System.IO.Strategies
 
         private ValueTask<int> ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken)
         {
-            long positionBefore = _filePosition;
-            if (CanSeek)
+            if (!CanSeek)
             {
-                long len = Length;
-                if (positionBefore + destination.Length > len)
-                {
-                    destination = positionBefore <= len ?
-                        destination.Slice(0, (int)(len - positionBefore)) :
-                        default;
-                }
-
-                // When using overlapped IO, the OS is not supposed to
-                // touch the file pointer location at all.  We will adjust it
-                // ourselves, but only in memory. This isn't threadsafe.
-                _filePosition += destination.Length;
-
-                // We know for sure that there is nothing to read, so we just return here and avoid a sys-call.
-                if (destination.IsEmpty && LengthCachingSupported)
-                {
-                    return ValueTask.FromResult(0);
-                }
+                return RandomAccess.ReadAtOffsetAsync(_fileHandle, destination, fileOffset: -1, cancellationToken);
             }
 
-            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncReadFile(_fileHandle, destination, positionBefore, cancellationToken);
+            if (LengthCachingSupported && _length >= 0 && Volatile.Read(ref _filePosition) >= _length)
+            {
+                // We know for sure that the file length can be safely cached and it has already been obtained.
+                // If we have reached EOF we just return here and avoid a sys-call.
+                return ValueTask.FromResult(0);
+            }
+
+            // This implementation updates the file position before the operation starts and updates it after incomplete read.
+            // This is done to keep backward compatibility for concurrent reads.
+            // It uses Interlocked as there can be multiple concurrent incomplete reads updating position at the same time.
+            long readOffset = Interlocked.Add(ref _filePosition, destination.Length) - destination.Length;
+
+            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncReadFile(_fileHandle, destination, readOffset, cancellationToken, this);
             return vts != null
                 ? new ValueTask<int>(vts, vts.Version)
-                : (errorCode == 0) ? ValueTask.FromResult(0) : ValueTask.FromException<int>(HandleIOError(positionBefore, errorCode));
+                : (errorCode == 0) ? ValueTask.FromResult(0) : ValueTask.FromException<int>(HandleIOError(readOffset, errorCode));
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -87,7 +81,7 @@ namespace System.IO.Strategies
             if (_fileHandle.CanSeek)
             {
                 // Update Position... it could be anywhere.
-                _filePosition = positionBefore;
+                Interlocked.Exchange(ref _filePosition, positionBefore);
             }
 
             return SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, _fileHandle.Path);
