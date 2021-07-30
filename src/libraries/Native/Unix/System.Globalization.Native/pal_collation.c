@@ -850,8 +850,8 @@ int32_t GlobalizationNative_LastIndexOf(
             *pMatchedLength = matchLength;
         }
 
-        // In case the search result pointing at last character (including Surrogate case) of the source string, we need to check if the target string
-        // constructed with characters which have no sort weights. The way we do that is to check the matched length is 0.
+        // In case the search result is pointing at the last character (including Surrogate case) of the source string, we need to check if the target string
+        // was constructed with characters which have no sort weights. The way we do that is to check that the matched length is 0.
         // We need to update the returned index to have consistent behavior with Ordinal and NLS operations, and satisfy the condition:
         //      index = source.LastIndexOf(value, comparisonType);
         //      originalString.Substring(index).StartsWith(value, comparisonType) == true.
