@@ -116,6 +116,10 @@
     <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chrome-win%3B%PATH%" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(ForNode)' == 'true'">
+    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/node-v14.17.4-linux-x64/bin:$PATH" />
+  </ItemGroup>
+
   <Choose>
     <When Condition="'$(NeedsWorkload)' == 'true'">
       <PropertyGroup>
@@ -333,6 +337,11 @@
       <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chromedriver_win32.zip</ChromeDriverUrl>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(ForNode)' == 'true'">
+      <!-- Helix has an old version of Node that we don't support. So we send a valid version (current LTS) in the correlation payload -->
+      <NodeUrl>https://nodejs.org/dist/latest-v14.x/node-v14.17.4-linux-x64.tar.xz</NodeUrl>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
       <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
       <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
@@ -380,9 +389,11 @@
     <ItemGroup Condition="'$(TargetOS)' != 'Android' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator' and '$(TargetOS)' != 'MacCatalyst'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true' and '$(TargetOS)' != 'Browser'"
-                               AsArchive="$(HelixCorrelationPayload.EndsWith('.zip'))" />
+                               AsArchive="$(HelixCorrelationPayload.EndsWith('.zip') or HelixCorrelationPayload.EndsWith('.tar.xz'))" />
       <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)"         Condition="'$(NeedsToRunOnBrowser)' == 'true'" />
       <HelixCorrelationPayload Include="chromedriver" Uri="$(ChromeDriverUrl)" Condition="'$(NeedsToRunOnBrowser)' == 'true'" />
+
+       <HelixCorrelationPayload Include="nodejs" Uri="$(NodeUrl)" Condition="'$(ForNode)' == 'true'" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
       <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Console.*.Test.zip" Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'" />
