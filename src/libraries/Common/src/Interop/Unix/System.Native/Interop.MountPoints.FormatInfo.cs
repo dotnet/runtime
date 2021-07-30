@@ -165,6 +165,7 @@ internal static partial class Interop
                 case "qnx6":
                 case "reiserfs":
                 case "rpc_pipefs":
+                case "sffs":
                 case "smackfs":
                 case "squashfs":
                 case "swap":
@@ -179,6 +180,8 @@ internal static partial class Interop
                 case "umsdos":
                 case "umview-mod-umfuseext2":
                 case "v9fs":
+                case "vagrant":
+                case "vboxfs":
                 case "vxfs":
                 case "vxfs_olt":
                 case "vzfs":
@@ -304,6 +307,7 @@ internal static partial class Interop
                 case "sockfs":
                 case "sysfs":
                 case "tmpfs":
+                case "udev":
                 case "usbdev":
                 case "usbdevfs":
                     return DriveType.Ram;
@@ -314,8 +318,8 @@ internal static partial class Interop
                 case "vfat":
                     return DriveType.Removable;
 
-                    // Categorize as "Unknown" everything else not explicitly
-                    // recognized as a particular drive type.
+                // Categorize as "Unknown" everything else not explicitly
+                // recognized as a particular drive type.
                 default:
                     return DriveType.Unknown;
             }
