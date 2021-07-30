@@ -602,5 +602,27 @@ namespace System.Reflection.Tests
                 Assert.Equal(expected, bt);
             }
         }
+
+        [Fact]
+        public static void ResourceDoesNotExist_GetManifestResourceInfo_ReturnsNull()
+        {
+            var resolver = new PathAssemblyResolver(new string[] { typeof(object).Assembly.Location });
+            using var mlc = new MetadataLoadContext(resolver, typeof(object).Assembly.GetName().Name);
+
+            var runtimeAssembly = mlc.LoadFromAssemblyPath(typeof(object).Assembly.Location);
+            var resource = runtimeAssembly.GetManifestResourceInfo("Nonsense");
+            Assert.Null(resource);
+        }
+
+        [Fact]
+        public static void ResourceDoesNotExist_GetManifestResourceStream_ReturnsNull()
+        {
+            var resolver = new PathAssemblyResolver(new string[] { typeof(object).Assembly.Location });
+            using var mlc = new MetadataLoadContext(resolver, typeof(object).Assembly.GetName().Name);
+
+            var runtimeAssembly = mlc.LoadFromAssemblyPath(typeof(object).Assembly.Location);
+            var resource = runtimeAssembly.GetManifestResourceStream("Nonsense");
+            Assert.Null(resource);
+        }
     }
 }
