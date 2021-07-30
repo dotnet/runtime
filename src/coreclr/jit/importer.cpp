@@ -7563,6 +7563,73 @@ GenTree* Compiler::impImportStaticReadOnlyField(void* fldAddr, var_types lclTyp)
 {
     GenTree* op1 = nullptr;
 
+#if defined(DEBUG)
+    // If we're replaying under SuperPMI, we're going to read the data stored by SuperPMI and use it
+    // for optimization. Unfortunately, SuperPMI doesn't implement a guarantee on the alignment of
+    // this data, so for some platforms which don't allow unaligned access (e.g., Linux arm32),
+    // this can fault. We should fix SuperPMI to guarantee alignment, but that is a big change.
+    // Instead, simply fix up the data here for future use.
+
+    // This variable should be the largest size element, with the largest alignment requirement,
+    // and the native C++ compiler should guarantee sufficient alignment.
+    double aligned_data   = 0.0;
+    void*  p_aligned_data = &aligned_data;
+    if (info.compMethodSuperPMIIndex != -1)
+    {
+        switch (lclTyp)
+        {
+            case TYP_BOOL:
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                static_assert_no_msg(sizeof(unsigned __int8) == sizeof(bool));
+                static_assert_no_msg(sizeof(unsigned __int8) == sizeof(signed char));
+                static_assert_no_msg(sizeof(unsigned __int8) == sizeof(unsigned char));
+                // No alignment necessary for byte.
+                break;
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+                static_assert_no_msg(sizeof(unsigned __int16) == sizeof(short));
+                static_assert_no_msg(sizeof(unsigned __int16) == sizeof(unsigned short));
+                if ((size_t)fldAddr % sizeof(unsigned __int16) != 0)
+                {
+                    *(unsigned __int16*)p_aligned_data = GET_UNALIGNED_16(fldAddr);
+                    fldAddr                            = p_aligned_data;
+                }
+                break;
+
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+                static_assert_no_msg(sizeof(unsigned __int32) == sizeof(int));
+                static_assert_no_msg(sizeof(unsigned __int32) == sizeof(unsigned int));
+                static_assert_no_msg(sizeof(unsigned __int32) == sizeof(float));
+                if ((size_t)fldAddr % sizeof(unsigned __int32) != 0)
+                {
+                    *(unsigned __int32*)p_aligned_data = GET_UNALIGNED_32(fldAddr);
+                    fldAddr                            = p_aligned_data;
+                }
+                break;
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+                static_assert_no_msg(sizeof(unsigned __int64) == sizeof(__int64));
+                static_assert_no_msg(sizeof(unsigned __int64) == sizeof(double));
+                if ((size_t)fldAddr % sizeof(unsigned __int64) != 0)
+                {
+                    *(unsigned __int64*)p_aligned_data = GET_UNALIGNED_64(fldAddr);
+                    fldAddr                            = p_aligned_data;
+                }
+                break;
+
+            default:
+                assert(!"Unexpected lclTyp");
+                break;
+        }
+    }
+#endif // DEBUG
+
     switch (lclTyp)
     {
         int     ival;
