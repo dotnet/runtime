@@ -69,6 +69,11 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// Class for managing wrappers of COM IUnknown types.
     /// </summary>
+    [UnsupportedOSPlatform("android")]
+    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("maccatalyst")]
+    [UnsupportedOSPlatform("tvos")]
     [CLSCompliant(false)]
     public abstract partial class ComWrappers
     {

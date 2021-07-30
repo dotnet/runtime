@@ -9,6 +9,7 @@ namespace System.Runtime.InteropServices.Tests
     public class AddRefTests
     {
         [Fact]
+        [SkipOnMono("ComWrappers are not supported on Mono")]
         public void AddRef_ValidPointer_Success()
         {
             var cw = new ComWrappersImpl();

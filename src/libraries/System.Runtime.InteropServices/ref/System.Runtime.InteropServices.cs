@@ -1125,6 +1125,11 @@ namespace System.Runtime.InteropServices
         Aggregation = 4,
         Unwrap = 8,
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("maccatalyst")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
     [System.CLSCompliantAttribute(false)]
     public abstract class ComWrappers
     {

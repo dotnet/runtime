@@ -9,6 +9,7 @@ namespace System.Runtime.InteropServices.Tests
     public class ReleaseTests
     {
         [Fact]
+        [SkipOnMono("ComWrappers are not supported on Mono")]
         public void Release_ValidPointer_Success()
         {
             var cw = new ComWrappersImpl();
