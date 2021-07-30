@@ -26,18 +26,19 @@
   <PropertyGroup>
     <Python>%HELIX_PYTHONPATH%</Python>
     <ProductDirectory>$HELIX_CORRELATION_PAYLOAD</ProductDirectory>
+    <SpmiCollectionFolder>$(WorkItemDirectory)\partitions</SpmiCollectionFolder>
     <SuperpmiLogsLocation>$HELIX_WORKITEM_UPLOAD_ROOT</SuperpmiLogsLocation>
     <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi-replay.py -arch $(Architecture) -jit_directory $(ProductDirectory)</WorkItemCommand>
   </PropertyGroup>
 
   <ItemGroup>
-    <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(WorkItemDirectory)))"/>
+    <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(SpmiCollectionFolder)))"/>
     <Partition Include="@(PartitionDirectories -> '%(Filename)')" PmiAssemblies="%(Filename)" PartitionId="%(Filename)" />
   </ItemGroup>
 
   <ItemGroup>
     <HelixWorkItem Include="@(Partition)">
-      <Command>$(WorkItemCommand) -mch_directory $(WorkItemDirectory)\%(Identity) -partition_index %(Identity) -log_directory $(SuperpmiLogsLocation)</Command>
+      <Command>$(WorkItemCommand) -mch_directory $(SpmiCollectionFolder)\%(Identity)\mch -partition_index %(Identity) -log_directory $(SuperpmiLogsLocation)</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults>superpmi_%(Identity).log</DownloadFilesFromResults>
     </HelixWorkItem>

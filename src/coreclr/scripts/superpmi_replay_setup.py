@@ -18,7 +18,7 @@
 ################################################################################
 
 import argparse
-from os import path
+from os import path, walk
 import shutil
 import stat
 import subprocess
@@ -75,8 +75,18 @@ def partition_mch(mch_directory, dst_directory):
     from os import listdir
 
     print("Inside partition_mch")
-    all_zip_files = [f for f in listdir(mch_directory) if isfile(join(mch_directory, f))]
-    mch_zip_files = filter(lambda zip_file: zip_file.endswith(".mch.zip"), all_zip_files)
+    mch_zip_files = []
+    for file_path, dirs, files in walk(mch_directory, topdown=True):
+        for name in files:
+            curr_file_path = path.join(file_path, name)
+
+            if not isfile(curr_file_path):
+                continue
+            if not name.endswith(".mch.zip"):
+                continue
+
+            mch_zip_files.append(curr_file_path)
+
     index = 1
     for mch_file in mch_zip_files:
         print("Processing {}".format(mch_file))
