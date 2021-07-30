@@ -3396,7 +3396,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             }
             else if (op1->TypeGet() == TYP_BYREF)
             {
-                printf("%d (byref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<target_size_t>(vnCns)));
+                printf("%d (byref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
             }
             else
             {
@@ -3456,7 +3456,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         else if (op1->TypeGet() == TYP_BYREF)
         {
             op1->ChangeOperConst(GT_CNS_INT);
-            op1->AsIntCon()->gtIconVal = static_cast<target_ssize_t>(vnStore->ConstantValue<target_size_t>(vnCns));
+            op1->AsIntCon()->gtIconVal = static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns));
         }
         else
         {
