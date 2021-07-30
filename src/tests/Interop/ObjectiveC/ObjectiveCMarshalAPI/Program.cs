@@ -139,7 +139,7 @@ namespace ObjectiveCMarshalAPI
             ObjectiveCMarshal.Initialize(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization, OnUnhandledExceptionPropagationHandler);
         }
 
-        static GCHandle AllocAndTrackObject<T>() where T : Base, new()
+        static GCHandle AllocAndTrackObject<T>(uint count) where T : Base, new()
         {
             var obj = new T();
             GCHandle h = ObjectiveCMarshal.CreateReferenceTrackingHandle(obj, out Span<IntPtr> s);
@@ -147,9 +147,9 @@ namespace ObjectiveCMarshalAPI
             // Validate contract length for tagged memory.
             Assert.AreEqual(2, s.Length);
 
-            // Make the "is referenced" callback run a few times.
+            // Make the "is referenced" callback run at least 'count' number of times.
             fixed (void* p = s)
-                obj.SetContractMemory((IntPtr)p, count: 3);
+                obj.SetContractMemory((IntPtr)p, count);
             return h;
         }
 
@@ -188,24 +188,27 @@ namespace ObjectiveCMarshalAPI
                     ObjectiveCMarshal.CreateReferenceTrackingHandle(new AttributedNoFinalizer(), out _);
                 });
 
+            // Provide the minimum number of times the reference callback should run.
+            // See IsRefCb() in NativeObjCMarshalTests.cpp for usage logic.
+            const uint callbackCount = 3;
             {
-                GCHandle h = AllocAndTrackObject<Base>();
+                GCHandle h = AllocAndTrackObject<Base>(callbackCount);
                 handles.Add(h);
                 Validate_AllocAndFreeAnotherHandle<Base>(h);
             }
             {
-                GCHandle h = AllocAndTrackObject<Derived>();
+                GCHandle h = AllocAndTrackObject<Derived>(callbackCount);
                 handles.Add(h);
                 Validate_AllocAndFreeAnotherHandle<Derived>(h);
             }
             {
-                GCHandle h = AllocAndTrackObject<DerivedWithFinalizer>();
+                GCHandle h = AllocAndTrackObject<DerivedWithFinalizer>(callbackCount);
                 handles.Add(h);
                 Validate_AllocAndFreeAnotherHandle<DerivedWithFinalizer>(h);
             }
 
             // Trigger the GC
-            for (int i = 0; i < 5; ++i)
+            for (int i = 0; i < (callbackCount + 2); ++i)
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();

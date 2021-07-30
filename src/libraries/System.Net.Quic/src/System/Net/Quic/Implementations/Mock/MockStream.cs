@@ -73,7 +73,7 @@ namespace System.Net.Quic.Implementations.Mock
                 long errorCode = _isInitiator ? _streamState._inboundReadErrorCode : _streamState._outboundReadErrorCode;
                 if (errorCode != 0)
                 {
-                    throw new QuicStreamAbortedException(errorCode);
+                    throw (errorCode == -1) ? new QuicOperationAbortedException() : new QuicStreamAbortedException(errorCode);
                 }
             }
 

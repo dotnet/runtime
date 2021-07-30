@@ -1,0 +1,17 @@
+<Project>
+  <ItemGroup>
+    <!-- https://github.com/dotnet/standard/issues/1622 -->
+    <IgnoredTypes Include="System.Data.DataRowComparer" />
+    <IgnoredTypes Include="System.Data.DataRowComparer`1" />
+    <IgnoredTypes Include="System.Data.DataRowExtensions" />
+    <IgnoredTypes Include="System.Data.DataTableExtensions" />
+    <IgnoredTypes Include="System.Data.EnumerableRowCollection" />
+    <IgnoredTypes Include="System.Data.EnumerableRowCollectionExtensions" />
+    <IgnoredTypes Include="System.Data.EnumerableRowCollection`1" />
+    <IgnoredTypes Include="System.Data.OrderedEnumerableRowCollection`1" />
+    <IgnoredTypes Include="System.Data.TypedTableBaseExtensions" />
+    <IgnoredTypes Include="System.Data.TypedTableBase`1" />
+    <!-- https://github.com/dotnet/standard/issues/1791 -->
+    <IgnoredTypes Include="System.Reflection.DispatchProxy" />
+  </ItemGroup>
+</Project>

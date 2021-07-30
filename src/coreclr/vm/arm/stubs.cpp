@@ -281,8 +281,8 @@ void StubLinkerCPU::Init(void)
 // value of the global into a register.
 struct WriteBarrierDescriptor
 {
-    BYTE *  m_pFuncStart;                   // Pointer to the start of the barrier function
-    BYTE *  m_pFuncEnd;                     // Pointer to the end of the barrier function
+    DWORD   m_pFuncStart;                   // Offset to the start of the barrier function relative to this struct address
+    DWORD   m_pFuncEnd;                     // Offset to the end of the barrier function relative to this struct address
     DWORD   m_dw_g_lowest_address_offset;   // Offset of the instruction reading g_lowest_address
     DWORD   m_dw_g_highest_address_offset;  // Offset of the instruction reading g_highest_address
     DWORD   m_dw_g_ephemeral_low_offset;    // Offset of the instruction reading g_ephemeral_low
@@ -440,7 +440,7 @@ void UpdateGCWriteBarriers(bool postGrow = false)
     {
         // If the write barrier is being currently used (as in copied over to the patchable site)
         // then read the patch location from the table and use the offset to patch the target asm code
-        PBYTE to = FindWBMapping(pDesc->m_pFuncStart);
+        PBYTE to = FindWBMapping((BYTE *)pDesc + pDesc->m_pFuncStart);
         if(to)
         {
             to = (PBYTE)PCODEToPINSTR((PCODE)GetWriteBarrierCodeLocation(to));

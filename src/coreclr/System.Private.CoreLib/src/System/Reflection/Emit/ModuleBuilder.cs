@@ -1598,20 +1598,6 @@ namespace System.Reflection.Emit
         // Regardless, this is a reliability bug.
         internal ISymbolWriter? GetSymWriter() => _iSymWriter;
 
-        public ISymbolDocumentWriter? DefineDocument(string url, Guid language, Guid languageVendor, Guid documentType)
-        {
-            // url cannot be null but can be an empty string
-            if (url == null)
-            {
-                throw new ArgumentNullException(nameof(url));
-            }
-
-            lock (SyncRoot)
-            {
-                return DefineDocumentNoLock(url, language, languageVendor, documentType);
-            }
-        }
-
         private ISymbolDocumentWriter? DefineDocumentNoLock(string url, Guid language, Guid languageVendor, Guid documentType)
         {
             if (_iSymWriter == null)
@@ -1622,8 +1608,6 @@ namespace System.Reflection.Emit
 
             return _iSymWriter.DefineDocument(url, language, languageVendor, documentType);
         }
-
-        public bool IsTransient() => InternalModule.IsTransientInternal();
 
         #endregion
 

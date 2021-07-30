@@ -103,9 +103,6 @@
     <!-- Execution may be compromised -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Caching.Memory\tests\Microsoft.Extensions.Caching.Memory.Tests.csproj" />
 
-    <!-- https://github.com/dotnet/runtime/issues/51016 -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\InvariantCultureOnlyMode\Android.Device_Emulator.InvariantCultureOnlyMode.Test.csproj" />
-
     <!-- PSNE -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console/tests/System.Console.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NetworkInformation/tests/FunctionalTests/System.Net.NetworkInformation.Functional.Tests.csproj" />
@@ -147,17 +144,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XPath/XPathDocument/System.Xml.XPath.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri/tests/ExtendedFunctionalTests/System.Private.Uri.ExtendedFunctional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.DispatchProxy/tests/System.Reflection.DispatchProxy.Tests.csproj" />
-
-    <!-- JSON parsing exception https://github.com/dotnet/runtime/issues/53097 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipes/tests/System.IO.Pipes.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors/tests/System.Numerics.Vectors.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/Misc/System.Xml.Misc.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlNodeReader/System.Xml.XmlNodeReader.Tests/System.Xml.XmlNodeReader.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlSerializer/System.Xml.XmlSerializer.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit/tests/System.Reflection.Emit.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Claims/tests/System.Security.Claims.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Primitives/tests/System.Security.Cryptography.Primitives.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions/tests/System.Text.RegularExpressions.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(TargetArchitecture)' == 'x64' and '$(RunDisabledAndroidTests)' != 'true'">
@@ -193,6 +179,9 @@
     <!-- https://github.com/dotnet/runtime/issues/52120 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/FunctionalTests/System.Net.Security.Tests.csproj" />
 
+    <!-- Crash https://github.com/dotnet/runtime/issues/55823 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Experimental\tests\System.Runtime.Experimental.Tests.csproj" />
+
     <!-- Crashes on CI but passes locally https://github.com/dotnet/runtime/issues/52615 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Http/tests/Microsoft.Extensions.Http.Tests/Microsoft.Extensions.Http.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging/tests/Common/Microsoft.Extensions.Logging.Tests.csproj" />
@@ -224,6 +213,9 @@
     <!-- Crashes randomly during test runs https://github.com/dotnet/runtime/issues/52460 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks\tests\System.Threading.Tasks.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Dataflow\tests\System.Threading.Tasks.Dataflow.Tests.csproj" />
+
+    <!-- Crash https://github.com/dotnet/runtime/issues/56085 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Tests.csproj" />
 
     <!-- Crashes on CI but passes locally https://github.com/dotnet/runtime/issues/52615 -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Simulator\Interpreter\iOS.Simulator.Interpreter.Test.csproj" />
@@ -339,9 +331,6 @@
     <!-- ActiveIssue Apple Silicon No usable version of libssl was found https://github.com/dotnet/runtime/issues/49083 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Algorithms/tests/System.Security.Cryptography.Algorithms.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl/tests/System.Security.Cryptography.OpenSsl.Tests.csproj" />
-    <!-- ActiveIssue XUnit crashes on Apple Silicon https://github.com/dotnet/runtime/issues/49110 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors/tests/System.Numerics.Vectors.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime/tests/System.Runtime.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestSingleFile)' == 'true'">

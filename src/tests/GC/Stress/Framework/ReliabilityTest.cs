@@ -98,7 +98,7 @@ public class ReliabilityTest
 {
     private bool _suppressConsoleOutput = false;
 
-    private string _assembly,_debugger,_debuggerOptions;
+    private string _assembly, _debugger, _debuggerOptions;
     private string _basePath;
 #if PROJECTK_BUILD
     private MethodInfo _entryPointMethod = null;
@@ -117,7 +117,7 @@ public class ReliabilityTest
     private int _concurrentCopies = 1;
     private int _runningCount = 0;
     private int _expectedDuration = -1;
-    private bool _requiresSDK = false,_hasFailed = false;
+    private bool _requiresSDK = false, _hasFailed = false;
     private Guid _guid = Guid.Empty;
     private TestStartModeEnum _testStartMode = TestStartModeEnum.AppDomainLoader;
     private DateTime _startTime = DateTime.Now;
@@ -272,7 +272,7 @@ public class ReliabilityTest
     public bool HasAssemblyLoadContext
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
-        get { return _assemblyLoadContext != null;  }
+        get { return _assemblyLoadContext != null; }
     }
 
     public string AssemblyLoadContextName
@@ -436,7 +436,7 @@ public class ReliabilityTest
             // first, check the current directory
             string curDir = Directory.GetCurrentDirectory();
             string theAnswer;
-            if (File.Exists(theAnswer = Path.Combine (curDir, _debugger)))
+            if (File.Exists(theAnswer = Path.Combine(curDir, _debugger)))
             {
                 return (theAnswer);
             }
@@ -451,7 +451,7 @@ public class ReliabilityTest
             string[] splitPath = path.Split(new char[] { ';' });
             foreach (string curPath in splitPath)
             {
-                if (File.Exists(theAnswer = Path.Combine (curPath, _debugger)))
+                if (File.Exists(theAnswer = Path.Combine(curPath, _debugger)))
                 {
                     return (theAnswer);
                 }

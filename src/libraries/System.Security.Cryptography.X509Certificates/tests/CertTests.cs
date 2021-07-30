@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
@@ -21,6 +22,34 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public CertTests(ITestOutputHelper output)
         {
             _log = output;
+        }
+
+        [Fact]
+        public static void RaceUseAndDisposeDoesNotCrash()
+        {
+            X509Certificate2 cert = new X509Certificate2(TestFiles.MicrosoftRootCertFile);
+
+            Thread subjThread = new Thread(static state => {
+                X509Certificate2 c = (X509Certificate2)state;
+
+                try
+                {
+                    _ = c.Subject;
+                }
+                catch
+                {
+                    // managed exceptions are okay, we are looking for runtime crashes.
+                }
+            });
+
+            Thread disposeThread = new Thread(static state => {
+                ((X509Certificate2)state).Dispose();
+            });
+
+            subjThread.Start(cert);
+            disposeThread.Start(cert);
+            disposeThread.Join();
+            subjThread.Join();
         }
 
         [Fact]

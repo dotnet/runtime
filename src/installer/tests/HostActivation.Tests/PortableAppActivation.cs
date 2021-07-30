@@ -162,7 +162,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var fixture = sharedTestState.PortableAppFixture_Built
                 .Copy();
 
+            // Move the .deps.json to a subdirectory, note that in this case we have to move all of the app's dependencies
+            // along with it - in this case Newtonsoft.Json.dll
+            // For framework dependent apps (dotnet build produces those) the probing directories are:
+            // - The directory where the .deps.json is
+            // - Any framework directory
             var depsJson = MoveDepsJsonToSubdirectory(fixture);
+            File.Move(
+                Path.Combine(Path.GetDirectoryName(fixture.TestProject.AppDll), "Newtonsoft.Json.dll"),
+                Path.Combine(Path.GetDirectoryName(depsJson), "Newtonsoft.Json.dll"));
 
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
@@ -330,6 +338,37 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .And.HaveStdOutContaining("Hello World")
                     .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
             }
+        }
+
+        [Fact]
+        public void RuntimeConfig_FilePath_Breaks_MAX_PATH_Threshold()
+        {
+            var project = sharedTestState.PortableAppFixture_Published
+                .Copy();
+
+            var appExeName = Path.GetFileName(project.TestProject.AppExe);
+            var outputDir = project.TestProject.OutputDirectory;
+
+            // Move the portable app to a path such that the length of the executable's fullpath
+            // is just 1 char behind MAX_PATH (260) so that the runtimeconfig(.dev).json files
+            // break this threshold. This will cause hostfxr to normalize these paths -- here we
+            // are checking that the updated paths are used.
+            var tmp = Path.GetTempPath();
+            var dirName = new string('a', 259 - tmp.Length - appExeName.Length - 1);
+            var newDir = Path.Combine(tmp, dirName);
+            var appExe = Path.Combine(newDir, appExeName);
+            Debug.Assert(appExe.Length == 259);
+            Directory.CreateDirectory(newDir);
+            foreach (var file in Directory.GetFiles(outputDir, "*.*", SearchOption.TopDirectoryOnly))
+                File.Copy(file, Path.Combine(newDir, Path.GetFileName(file)), true);
+
+            Command.Create(appExe)
+                .DotNetRoot(project.BuiltDotnet.BinPath)
+                .EnableTracingAndCaptureOutputs()
+                .MultilevelLookup(false)
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World");
         }
 
         [Fact]
@@ -699,7 +738,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 PortableAppFixture_Published = new TestProjectFixture("PortableApp", RepoDirectories)
                     .EnsureRestored()
-                    .PublishProject();
+                    .PublishProject(extraArgs: "/p:UseAppHost=true");
 
                 MockApp = new TestApp(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "portableAppActivation")), "App");
                 Directory.CreateDirectory(MockApp.Location);
