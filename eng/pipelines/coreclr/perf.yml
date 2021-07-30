@@ -343,7 +343,7 @@ jobs:
         runkind: micro
         runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
-        javascriptengine: 'javascriptcore'
+        javascriptEngine: 'v8'
 
   ## run mono aot microbenchmarks perf job
   #- template: /eng/pipelines/common/platform-matrix.yml
