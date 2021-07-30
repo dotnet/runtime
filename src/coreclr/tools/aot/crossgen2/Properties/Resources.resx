@@ -148,7 +148,7 @@
     <value>Method layout must be either DefaultSort or MethodOrder.</value>
   </data>
   <data name="InvalidMethodLayout" xml:space="preserve">
-    <value>Method layout must be either DefaultSort, ExclusiveWeight, HotCold, HotWarmCold, or CallFrequency.</value>
+    <value>Method layout must be either DefaultSort, ExclusiveWeight, HotCold, HotWarmCold, CallFrequency or PettisHansen.</value>
   </data>
   <data name="CompileNoMethodsOption" xml:space="preserve">
     <value>True to skip compiling methods into the R2R image (default = false)</value>
@@ -170,9 +170,6 @@
   </data>
   <data name="InstructionSetMustNotBe" xml:space="preserve">
     <value>Instruction set '{0}' is not valid for this architecture and operating system</value>
-  </data>
-  <data name="InstructionSetWithoutInputBubble" xml:space="preserve">
-    <value>Instruction set(s) specified without also specifying input-bubble</value>
   </data>
   <data name="InstructionSetInvalidImplication" xml:space="preserve">
     <value>Instruction set '{0}' implies support for instruction set '{1}'</value>

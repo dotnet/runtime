@@ -1945,10 +1945,10 @@ namespace System.Data.Common
     public abstract class DbBatchCommand
     {
         public abstract string CommandText { get; set; }
-        public abstract CommandType CommandType { get; set; }
+        public abstract System.Data.CommandType CommandType { get; set; }
         public abstract int RecordsAffected { get; }
-        public DbParameterCollection Parameters { get { throw null; } }
-        protected abstract DbParameterCollection DbParameterCollection { get; }
+        public System.Data.Common.DbParameterCollection Parameters { get { throw null; } }
+        protected abstract System.Data.Common.DbParameterCollection DbParameterCollection { get; }
     }
     public abstract class DbBatchCommandCollection : System.Collections.Generic.IList<DbBatchCommand>
     {
@@ -1964,7 +1964,9 @@ namespace System.Data.Common
         public abstract int IndexOf(DbBatchCommand item);
         public abstract void Insert(int index, DbBatchCommand item);
         public abstract void RemoveAt(int index);
-        public abstract DbBatchCommand this[int index] { get; set; }
+        public System.Data.Common.DbBatchCommand this[int index] { get { throw null; } set { throw null; } }
+        protected abstract System.Data.Common.DbBatchCommand GetBatchCommand(int index);
+        protected abstract void SetBatchCommand(int index, System.Data.Common.DbBatchCommand batchCommand);
     }
     public abstract partial class DbColumn
     {

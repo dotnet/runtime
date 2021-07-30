@@ -63,6 +63,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             private bool _closing;
 
             // Certificate validation properties
+            public X509Certificate? RemoteCertificate;
             public bool RemoteCertificateRequired;
             public X509RevocationMode RevocationMode = X509RevocationMode.Offline;
             public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback;
@@ -208,6 +209,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override EndPoint RemoteEndPoint => _remoteEndPoint;
 
+        internal override X509Certificate? RemoteCertificate => _state.RemoteCertificate;
+
         internal override SslApplicationProtocol NegotiatedApplicationProtocol => _negotiatedAlpnProtocol;
 
         internal override bool Connected => _state.Connected;
@@ -227,6 +230,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 state.Connected = true;
                 state.ConnectTcs!.SetResult(MsQuicStatusCodes.Success);
+                state.ConnectTcs = null;
             }
 
             return MsQuicStatusCodes.Success;
@@ -393,6 +397,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 {
                     sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNotAvailable;
                 }
+
+                state.RemoteCertificate = certificate;
 
                 if (state.RemoteCertificateValidationCallback != null)
                 {
@@ -576,7 +582,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new Exception($"Unsupported remote endpoint type '{_remoteEndPoint.GetType()}'.");
             }
 
-            _state.ConnectTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
+            // We store TCS to local variable to avoid NRE if callbacks finish fast and set _state.ConnectTcs to null.
+            var tcs = _state.ConnectTcs = new TaskCompletionSource<uint>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             try
             {
@@ -600,7 +607,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
-            return new ValueTask(_state.ConnectTcs.Task);
+            return new ValueTask(tcs.Task);
         }
 
         private ValueTask ShutdownAsync(
@@ -683,9 +690,10 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (state.ConnectTcs != null)
                 {
-                    state.ConnectTcs.SetException(ex);
-                    state.ConnectTcs = null;
+                    // This is opportunistic if we get exception and have ability to propagate it to caller.
+                    state.ConnectTcs.TrySetException(ex);
                     state.Connection = null;
+                    state.ConnectTcs = null;
                 }
                 else
                 {

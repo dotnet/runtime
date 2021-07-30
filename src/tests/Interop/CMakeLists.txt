@@ -94,6 +94,11 @@ if(CLR_CMAKE_TARGET_WIN32)
     endif()
 endif(CLR_CMAKE_TARGET_WIN32)
 
+if(CLR_CMAKE_TARGET_UNIX)
+    add_subdirectory(COM/ComWrappers/MockReferenceTrackerRuntime)
+    add_subdirectory(COM/ComWrappers/WeakReference)
+endif(CLR_CMAKE_TARGET_UNIX)
+
 if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     add_subdirectory(ObjectiveC/AutoReleaseTest)
     add_subdirectory(ObjectiveC/ObjectiveCMarshalAPI)

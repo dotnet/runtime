@@ -136,6 +136,12 @@ if "%__TargetsWindows%"=="1" (
     set TargetsWindowsMsbuildArg=/p:TargetsWindows=false
 )
 
+if "%__Mono%"=="1" (
+  set __RuntimeFlavor=mono
+) else (
+  set __RuntimeFlavor=coreclr
+)
+
 @if defined _echo @echo on
 
 set __CommonMSBuildArgs=/p:TargetOS=%__TargetOS% /p:Configuration=%__BuildType% /p:TargetArchitecture=%__BuildArch%
@@ -353,6 +359,7 @@ for /l %%G in (1, 1, %__NumberOfTestGroups%) do (
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:CopyNativeProjectBinaries=!__CopyNativeProjectsAfterCombinedTestBuild!
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:__SkipPackageRestore=true
         set __MSBuildBuildArgs=!__MSBuildBuildArgs! !__NativeBinariesLayoutTypeArg!
+        set __MSBuildBuildArgs=!__MSBuildBuildArgs! /p:RuntimeFlavor=!__RuntimeFlavor!
         echo Running: msbuild !__MSBuildBuildArgs!
         !__CommonMSBuildCmdPrefix! !__MSBuildBuildArgs!
 
@@ -476,14 +483,8 @@ set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
-if %%__Mono%%==1 (
-  set RuntimeFlavor="mono"
-) else (
-  set RuntimeFlavor="coreclr"
-)
-
 REM Build wrappers using the local SDK's msbuild. As we move to arcade, the other builds should be moved away from run.exe as well.
-call "%__RepoRootDir%\dotnet.cmd" msbuild %__RepoRootDir%\src\tests\run.proj /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=%__TestBuildMode% !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__UnprocessedBuildArgs% /p:RuntimeFlavor=%RuntimeFlavor%
+call "%__RepoRootDir%\dotnet.cmd" msbuild %__RepoRootDir%\src\tests\run.proj /nodereuse:false /p:BuildWrappers=true /p:TestBuildMode=%__TestBuildMode% !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__UnprocessedBuildArgs% /p:RuntimeFlavor=%__RuntimeFlavor%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: XUnit wrapper build failed. Refer to the build log files for details:
     echo     %__BuildLog%

@@ -582,6 +582,39 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"([a-z]*)([\w])", "cat", RegexOptions.IgnoreCase, new string[] { "cat", "ca", "t" } };
             yield return new object[] { null, @"^([a-z]*)([\w])$", "cat", RegexOptions.IgnoreCase, new string[] { "cat", "ca", "t" } };
 
+            // Backtracking with multiple (.*) groups -- important ASP.NET scenario
+            yield return new object[] { null, @"(.*)/(.*).aspx", "/.aspx", RegexOptions.None, new string[] { "/.aspx", string.Empty, string.Empty } };
+            yield return new object[] { null, @"(.*)/(.*).aspx", "/homepage.aspx", RegexOptions.None, new string[] { "/homepage.aspx", string.Empty, "homepage" } };
+            yield return new object[] { null, @"(.*)/(.*).aspx", "pages/.aspx", RegexOptions.None, new string[] { "pages/.aspx", "pages", string.Empty } };
+            yield return new object[] { null, @"(.*)/(.*).aspx", "pages/homepage.aspx", RegexOptions.None, new string[] { "pages/homepage.aspx", "pages", "homepage" } };
+            yield return new object[] { null, @"(.*)/(.*).aspx", "/pages/homepage.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx", "/pages", "homepage" } };
+            yield return new object[] { null, @"(.*)/(.*).aspx", "/pages/homepage/index.aspx", RegexOptions.None, new string[] { "/pages/homepage/index.aspx", "/pages/homepage", "index" } };
+            yield return new object[] { null, @"(.*)/(.*).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages/homepage.aspx", "index" } };
+            yield return new object[] { null, @"(.*)/(.*)/(.*).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages", "homepage.aspx", "index" } };
+
+            // Backtracking with multiple (.+) groups
+            yield return new object[] { null, @"(.+)/(.+).aspx", "pages/homepage.aspx", RegexOptions.None, new string[] { "pages/homepage.aspx", "pages", "homepage" } };
+            yield return new object[] { null, @"(.+)/(.+).aspx", "/pages/homepage.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx", "/pages", "homepage" } };
+            yield return new object[] { null, @"(.+)/(.+).aspx", "/pages/homepage/index.aspx", RegexOptions.None, new string[] { "/pages/homepage/index.aspx", "/pages/homepage", "index" } };
+            yield return new object[] { null, @"(.+)/(.+).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages/homepage.aspx", "index" } };
+            yield return new object[] { null, @"(.+)/(.+)/(.+).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages", "homepage.aspx", "index" } };
+
+            // Backtracking with (.+) group followed by (.*)
+            yield return new object[] { null, @"(.+)/(.*).aspx", "pages/.aspx", RegexOptions.None, new string[] { "pages/.aspx", "pages", string.Empty } };
+            yield return new object[] { null, @"(.+)/(.*).aspx", "pages/homepage.aspx", RegexOptions.None, new string[] { "pages/homepage.aspx", "pages", "homepage" } };
+            yield return new object[] { null, @"(.+)/(.*).aspx", "/pages/homepage.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx", "/pages", "homepage" } };
+            yield return new object[] { null, @"(.+)/(.*).aspx", "/pages/homepage/index.aspx", RegexOptions.None, new string[] { "/pages/homepage/index.aspx", "/pages/homepage", "index" } };
+            yield return new object[] { null, @"(.+)/(.*).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages/homepage.aspx", "index" } };
+            yield return new object[] { null, @"(.+)/(.*)/(.*).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages", "homepage.aspx", "index" } };
+
+            // Backtracking with (.*) group followed by (.+)
+            yield return new object[] { null, @"(.*)/(.+).aspx", "/homepage.aspx", RegexOptions.None, new string[] { "/homepage.aspx", string.Empty, "homepage" } };
+            yield return new object[] { null, @"(.*)/(.+).aspx", "pages/homepage.aspx", RegexOptions.None, new string[] { "pages/homepage.aspx", "pages", "homepage" } };
+            yield return new object[] { null, @"(.*)/(.+).aspx", "/pages/homepage.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx", "/pages", "homepage" } };
+            yield return new object[] { null, @"(.*)/(.+).aspx", "/pages/homepage/index.aspx", RegexOptions.None, new string[] { "/pages/homepage/index.aspx", "/pages/homepage", "index" } };
+            yield return new object[] { null, @"(.*)/(.+).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages/homepage.aspx", "index" } };
+            yield return new object[] { null, @"(.*)/(.+)/(.+).aspx", "/pages/homepage.aspx/index.aspx", RegexOptions.None, new string[] { "/pages/homepage.aspx/index.aspx", "/pages", "homepage.aspx", "index" } };
+
             // Quantifiers
             yield return new object[] { null, @"a*", "", RegexOptions.None, new string[] { "" } };
             yield return new object[] { null, @"a*", "a", RegexOptions.None, new string[] { "a" } };
