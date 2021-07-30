@@ -487,6 +487,8 @@ namespace System.Diagnostics.Tests
             Process p = CreateDefaultProcess();
             KillWait(p);
 
+            Assert.True(p.HasExited); // Refresh process object
+
             // Ensure ToString does not throw an exception, but still returns
             // a representation of the object.
             Assert.Equal("System.Diagnostics.Process", p.ToString());
