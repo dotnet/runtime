@@ -1,4 +1,4 @@
-<Project InitialTargets="UpdateProjectReferencesWithPrivateAttribute">
+<Project>
   <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!--
       Disable RAR from transitively discovering dependencies for references. This is required as we don't copy
@@ -35,22 +35,23 @@
     </ItemGroup>
   </Target>
 
-  <!-- Make shared framework assemblies not app-local (non private). -->
-  <Target Name="UpdateProjectReferencesWithPrivateAttribute"
-          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                     ('$(IsSourceProject)' == 'true' or '$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true') and
-                     '@(ProjectReference)' != ''">
-    <ItemGroup>
-      <_noPackageNetCoreAppLibrary Include="@(NetCoreAppLibrary)"
-                                   Condition="'%(NetCoreAppLibrary.IsPackable)' != 'true'" />
-      <_projectReferenceByFileName Include="@(ProjectReference->'%(FileName)')"
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                        ('$(IsSourceProject)' == 'true' or '$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true')">
+    <_projectReferenceWithOriginal Include="@(ProjectReference)"
                                    Original="%(Identity)" />
-      <_projectReferenceByFileName Condition="'@(_noPackageNetCoreAppLibrary)' == '@(_ProjectReferenceByFileName)' and '%(Identity)' != ''"
-                                   PrivateAssets="all"
-                                   Private="false" />
-      <ProjectReference Remove="@(ProjectReference)" />
-      <ProjectReference Include="@(_ProjectReferenceByFileName->'%(Original)')" />
-    </ItemGroup>
-  </Target>
+    <_projectReferenceByFileName Include="@(_projectReferenceWithOriginal->'%(FileName)')" />
+  </ItemGroup>
+
+  <!-- Make NetCoreAppLibrary P2Ps which aren't packable not app-local (non private). -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                        ('$(IsSourceProject)' == 'true' or '$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true')">
+    <_projectReferencePackable Include="@(_projectReferenceByFileName)"
+                               Exclude="@(NetCoreAppLibrary->WithMetadataValue('IsPackable', ''))" />
+    <_projectReferenceNonPackable Include="@(_projectReferenceByFileName)"
+                                  Exclude="@(_projectReferencePackable)" />
+    <ProjectReference Update="@(_projectReferenceNonPackable->'%(Original)')"
+                      PrivateAssets="all"
+                      Private="false" />
+  </ItemGroup>
 
 </Project>
