@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using ILLink.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp.Testing;
@@ -46,6 +47,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 		/// <inheritdoc cref="AnalyzerVerifier{TAnalyzer, TTest}.Diagnostic(string)"/>
 		public static DiagnosticResult Diagnostic (string diagnosticId)
 			=> CSharpAnalyzerVerifier<TAnalyzer>.Diagnostic (diagnosticId);
+
+		public static DiagnosticResult Diagnostic (DiagnosticId diagnosticId)
+			=> CSharpAnalyzerVerifier<TAnalyzer>.Diagnostic (DiagnosticDescriptors.GetDiagnosticDescriptor (diagnosticId));
 
 		/// <inheritdoc cref="AnalyzerVerifier{TAnalyzer, TTest}.Diagnostic(DiagnosticDescriptor)"/>
 		public static DiagnosticResult Diagnostic (DiagnosticDescriptor descriptor)

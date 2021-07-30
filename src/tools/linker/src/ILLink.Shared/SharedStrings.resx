@@ -141,11 +141,11 @@
   <data name="RequiresAssemblyFilesMessage" xml:space="preserve">
     <value>Using member '{0}' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.{1}{2}</value>
   </data>
-  <data name="RequiresAttributeMismatchMessage" xml:space="preserve">
-    <value>{0}. Attributes must match across all interface implementations or overrides.</value>
+  <data name="RequiresUnreferencedCodeAttributeMismatchMessage" xml:space="preserve">
+    <value>{0}. 'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides.</value>
   </data>
-  <data name="RequiresAttributeMismatchTitle" xml:space="preserve">
-    <value>RequiresAttribute must match across all interface implementations or overrides.</value>
+  <data name="RequiresUnreferencedCodeAttributeMismatchTitle" xml:space="preserve">
+    <value>'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides.</value>
   </data>
   <data name="BaseRequiresMismatchMessage" xml:space="preserve">
     <value>Base member '{2}' with '{0}' has a derived member '{1}' without '{0}'</value>

@@ -69,9 +69,9 @@ namespace ILLink.CodeFix
 			CancellationToken cancellationToken)
 		{
 			var semanticModel = await document.GetSemanticModelAsync (cancellationToken).ConfigureAwait (false);
-			if (semanticModel is null) {
+			if (semanticModel is null)
 				return document;
-			}
+
 			var newAttribute = generator
 				.Attribute (generator.TypeExpression (AttributeSymbol), attrArgs)
 				.WithAdditionalAnnotations (

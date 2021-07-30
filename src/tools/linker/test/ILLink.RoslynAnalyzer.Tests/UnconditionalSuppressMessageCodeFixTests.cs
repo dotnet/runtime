@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using ILLink.CodeFix;
+using ILLink.Shared;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
@@ -88,7 +89,7 @@ public class C
 				fixtest,
 				baselineExpected: new[] {
 				// /0/Test0.cs(7,17): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-				VerifyCSUSMwithRUC.Diagnostic (RequiresUnreferencedCodeAnalyzer.IL2026).WithSpan (7, 17, 7, 21).WithArguments ("C.M1()", " message.", ""),
+				VerifyCSUSMwithRUC.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan (7, 17, 7, 21).WithArguments ("C.M1()", " message.", ""),
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
 		}
@@ -118,7 +119,7 @@ public class C
 				fixtest,
 				baselineExpected: new[] {
 				// /0/Test0.cs(7,17): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-				VerifyCSUSMwithRAF.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (7, 17, 7, 21).WithArguments ("C.M1()", " message.", "")
+				VerifyCSUSMwithRAF.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (7, 17, 7, 21).WithArguments ("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
 		}
@@ -159,9 +160,9 @@ public class C
 				fixtest,
 				baselineExpected: new[] {
 				// /0/Test0.cs(7,27): warning IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
-				VerifyCSUSMwithRAF.Diagnostic(RequiresAssemblyFilesAnalyzer.IL3000).WithSpan (7, 27, 7, 44).WithArguments ("System.Reflection.Assembly.Location", "", ""),
+				VerifyCSUSMwithRAF.Diagnostic(DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (7, 27, 7, 44).WithArguments ("System.Reflection.Assembly.Location", "", ""),
 				// /0/Test0.cs(9,13): warning IL3001: 'System.Reflection.Assembly.GetFiles()' will throw for assemblies embedded in a single-file app
-				VerifyCSUSMwithRAF.Diagnostic(RequiresAssemblyFilesAnalyzer.IL3001).WithSpan (9, 13, 9, 32).WithArguments("System.Reflection.Assembly.GetFiles()", "", ""),
+				VerifyCSUSMwithRAF.Diagnostic(DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (9, 13, 9, 32).WithArguments("System.Reflection.Assembly.GetFiles()", "", ""),
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
 		}
@@ -197,7 +198,7 @@ public class C
 				fix,
 				baselineExpected: new[] {
 					// /0/Test0.cs(10,15): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-					VerifyCSUSMwithRUC.Diagnostic (RequiresUnreferencedCodeAnalyzer.IL2026).WithSpan(10, 15, 10, 19).WithArguments("C.M1()", " message.", "")
+					VerifyCSUSMwithRUC.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan(10, 15, 10, 19).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
 		}
@@ -239,7 +240,7 @@ class C
 				fixtest,
 				baselineExpected: new[] {
 				// /0/Test0.cs(6,50): warning IL3002: Using member 'C.InitC()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.
-				VerifyCSUSMwithRAF.Diagnostic (RequiresAssemblyFilesAnalyzer.IL3002).WithSpan (6, 50, 6, 55).WithArguments ("C.InitC()", "", ""),
+				VerifyCSUSMwithRAF.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (6, 50, 6, 55).WithArguments ("C.InitC()", "", ""),
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
 		}
@@ -283,7 +284,7 @@ public class C
 				fix,
 				baselineExpected: new[] {
 					// /0/Test0.cs(12,28): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-					VerifyCSUSMwithRUC.Diagnostic (RequiresUnreferencedCodeAnalyzer.IL2026).WithSpan(12, 28, 12, 32).WithArguments("C.M1()", " message.", "")
+					VerifyCSUSMwithRUC.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan(12, 28, 12, 32).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
 		}
@@ -319,7 +320,7 @@ public class C
 				fix,
 				baselineExpected: new[] {
 					// /0/Test0.cs(10,15): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-					VerifyCSUSMwithRUC.Diagnostic (RequiresUnreferencedCodeAnalyzer.IL2026).WithSpan(10, 20, 10, 24).WithArguments("C.M1()", " message.", "")
+					VerifyCSUSMwithRUC.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan(10, 20, 10, 24).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
 		}
@@ -369,7 +370,7 @@ public class C
 				fix,
 				baselineExpected: new[] {
 					// /0/Test0.cs(14,21): warning IL2026: Using method 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
-					VerifyCSUSMwithRUC.Diagnostic (RequiresUnreferencedCodeAnalyzer.IL2026).WithSpan(14, 21, 14, 25).WithArguments("C.M1()", " message.", "")
+					VerifyCSUSMwithRUC.Diagnostic (DiagnosticId.RequiresUnreferencedCode).WithSpan(14, 21, 14, 25).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
 		}
