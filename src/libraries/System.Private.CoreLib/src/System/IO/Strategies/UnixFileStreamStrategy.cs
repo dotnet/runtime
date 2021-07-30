@@ -34,11 +34,6 @@ namespace System.IO.Strategies
 
         public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
         {
-            if (!CanRead)
-            {
-                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
-            }
-
             if (CanSeek)
             {
                 // This implementation updates the file position after the operation completes, rather than before.
@@ -61,11 +56,6 @@ namespace System.IO.Strategies
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            if (!CanWrite)
-            {
-                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
-            }
-
             long filePositionBefore = -1;
             if (CanSeek)
             {

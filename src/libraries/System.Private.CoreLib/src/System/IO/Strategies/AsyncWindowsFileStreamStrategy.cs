@@ -27,13 +27,8 @@ namespace System.IO.Strategies
         public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
             => ReadAsyncInternal(destination, cancellationToken);
 
-        private unsafe ValueTask<int> ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken)
+        private ValueTask<int> ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken)
         {
-            if (!CanRead)
-            {
-                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
-            }
-
             long positionBefore = _filePosition;
             if (CanSeek)
             {
@@ -69,13 +64,8 @@ namespace System.IO.Strategies
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => WriteAsyncInternal(buffer, cancellationToken);
 
-        private unsafe ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        private ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            if (!CanWrite)
-            {
-                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
-            }
-
             long positionBefore = _filePosition;
             if (CanSeek)
             {
