@@ -53,15 +53,17 @@ GenerationTableIndex(DPTR(dac_generation) base, size_t index)
 // field_offset = g_gcDacGlobals->gc_heap_field_offsets
 // p_field_offset = field_offset[field_index]
 // p_field = heap + p_field_offset 
-#define LOAD_BASE(field_name, field_index, field_type)                                       \
+// field_index++
+#define LOAD_BASE(field_name, field_type)                                                    \
     DPTR(int) p_##field_name##_offset = TableIndex(field_offsets, field_index, sizeof(int)); \
     int field_name##_offset = *p_##field_name##_offset;                                      \
-    DPTR(field_type) p_##field_name = heap + field_name##_offset;
+    DPTR(field_type) p_##field_name = heap + field_name##_offset;                            \
+    field_index++;
 
 // if (field_offset != -1)
 //    result.field = *p_field
-#define LOAD(field_name, field_index, field_type)                                            \
-    LOAD_BASE(field_name, field_index, field_type)                                           \
+#define LOAD(field_name, field_type)                                                         \
+    LOAD_BASE(field_name, field_type)                                                        \
     if (field_name##_offset != -1)                                                           \
     {                                                                                        \
         field_type field_name = *p_##field_name;                                             \
@@ -70,8 +72,8 @@ GenerationTableIndex(DPTR(dac_generation) base, size_t index)
 
 // if (field_offset != -1)
 //    result.field = DPTR(field_type)field_name
-#define LOAD_DPTR(field_name, field_index, field_type)                                       \
-    LOAD_BASE(field_name, field_index, field_type*)                                          \
+#define LOAD_DPTR(field_name, field_type)                                                    \
+    LOAD_BASE(field_name, field_type*)                                                       \
     if (field_name##_offset != -1)                                                           \
     {                                                                                        \
         field_type* field_name = *p_##field_name;                                            \
@@ -82,8 +84,8 @@ GenerationTableIndex(DPTR(dac_generation) base, size_t index)
 //    for i from 0 to array_length - 1
 //        result.field[i] = *p_field
 //        p_field = p_field + 1
-#define LOAD_ARRAY(field_name, field_index, field_type, array_length)                        \
-    LOAD_BASE(field_name, field_index, field_type)                                           \
+#define LOAD_ARRAY(field_name, field_type, array_length)                                     \
+    LOAD_BASE(field_name, field_type)                                                        \
     if (field_name##_offset != -1)                                                           \
     {                                                                                        \
         for (int i = 0; i < array_length; i++)                                               \
@@ -99,7 +101,8 @@ inline DPTR(dac_generation)
 ServerGenerationTableIndex(TADDR heap, size_t index)
 {
     DPTR(int) field_offsets = g_gcDacGlobals->gc_heap_field_offsets;
-    LOAD_BASE (generation_table, 18, dac_generation);
+    int field_index = GENERATION_TABLE_FIELD_INDEX;
+    LOAD_BASE (generation_table, dac_generation);
     assert (generation_table_offset != -1);
     return TableIndex(p_generation_table, index, g_gcDacGlobals->generation_size);
 }
@@ -114,25 +117,19 @@ LoadGcHeapData(TADDR heap)
     memset(&result, 0, sizeof(dac_gc_heap));
 
     DPTR(int) field_offsets = g_gcDacGlobals->gc_heap_field_offsets;
+    int field_index = 0;
 
-    LOAD      (alloc_allocated,                    0,  uint8_t*);
-    LOAD_DPTR (ephemeral_heap_segment,             1,  dac_heap_segment);
-    LOAD_DPTR (finalize_queue,                     2,  dac_finalize_queue);
-    LOAD      (oom_info,                           3,  oom_history);
-    LOAD_ARRAY(interesting_data_per_heap,          4,  size_t, NUM_GC_DATA_POINTS);
-    LOAD_ARRAY(compact_reasons_per_heap,           5,  size_t, MAX_COMPACT_REASONS_COUNT);
-    LOAD_ARRAY(expand_mechanisms_per_heap,         6,  size_t, MAX_EXPAND_MECHANISMS_COUNT);
-    LOAD_ARRAY(interesting_mechanism_bits_per_heap,7,  size_t, MAX_GC_MECHANISM_BITS_COUNT);
-    LOAD      (internal_root_array,                8,  uint8_t*);
-    LOAD      (internal_root_array_index,          9,  size_t);
-    LOAD      (heap_analyze_success,               10, BOOL);
-    LOAD      (card_table,                         11, uint32_t*);
-    LOAD      (mark_array,                         12, uint32_t*);
-    LOAD      (next_sweep_obj,                     13, uint8_t*);    
-    LOAD      (background_saved_lowest_address,    14, uint8_t*);
-    LOAD      (background_saved_highest_address,   15, uint8_t*);
-    LOAD_DPTR (saved_sweep_ephemeral_seg,          16, dac_heap_segment);
-    LOAD      (saved_sweep_ephemeral_start,        17, uint8_t*);
+#define ALL_FIELDS
+#define DEFINE_FIELD(field_name, field_type) LOAD(field_name, field_type)
+#define DEFINE_DPTR_FIELD(field_name, field_type) LOAD_DPTR(field_name, field_type)
+#define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) LOAD_ARRAY(field_name, field_type, array_length);
+
+#include "../../gc/gc_typefields.h"
+
+#undef DEFINE_ARRAY_FIELD
+#undef DEFINE_DPTR_FIELD
+#undef DEFINE_FIELD
+#undef ALL_FIELDS
 
     return result;
 }

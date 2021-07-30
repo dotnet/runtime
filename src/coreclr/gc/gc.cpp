@@ -45571,41 +45571,23 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #ifndef DACCESS_COMPILE
 
 #ifdef MULTIPLE_HEAPS
-static int gc_heap_field_offsets[] = {
-    offsetof(gc_heap, alloc_allocated),                              // 0
-    offsetof(gc_heap, ephemeral_heap_segment),                       // 1
-    offsetof(gc_heap, finalize_queue),                               // 2
-    offsetof(gc_heap, oom_info),                                     // 3
-    offsetof(gc_heap, interesting_data_per_heap),                    // 4
-    offsetof(gc_heap, compact_reasons_per_heap),                     // 5
-    offsetof(gc_heap, expand_mechanisms_per_heap),                   // 6
-    offsetof(gc_heap, interesting_mechanism_bits_per_heap),          // 7
-    offsetof(gc_heap, internal_root_array),                          // 8
-    offsetof(gc_heap, internal_root_array_index),                    // 9
-    offsetof(gc_heap, heap_analyze_success),                         // 10
-    offsetof(gc_heap, card_table),                                   // 11
-#ifdef BACKGROUND_GC
-    offsetof(gc_heap, mark_array),                                   // 12
-    offsetof(gc_heap, next_sweep_obj),                               // 13
-    offsetof(gc_heap, background_saved_lowest_address),              // 14
-    offsetof(gc_heap, background_saved_highest_address),             // 15
-#ifndef USE_REGIONS
-    offsetof(gc_heap, saved_sweep_ephemeral_seg),                    // 16
-    offsetof(gc_heap, saved_sweep_ephemeral_start),                  // 17
-#else
-    -1,                                                              // 16
-    -1,                                                              // 17
-#endif //!USE_REGIONS
-#else
-    -1,                                                              // 12
-    -1,                                                              // 13
-    -1,                                                              // 14
-    -1,                                                              // 15
-    -1,                                                              // 16
-    -1,                                                              // 17
-#endif //BACKGROUND_GC
-    offsetof(gc_heap, generation_table)                              // 18
-};
+    static int gc_heap_field_offsets[] = {
+
+#define DEFINE_FIELD(field_name, field_type) offsetof(gc_heap, field_name),
+#define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(gc_heap, field_name),
+#define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) offsetof(gc_heap, field_name),
+#define DEFINE_MISSING_FIELD -1,
+
+#include "gc_typefields.h"
+
+#undef DEFINE_MISSING_FIELD
+#undef DEFINE_ARRAY_FIELD
+#undef DEFINE_DPTR_FIELD
+#undef DEFINE_FIELD
+
+        offsetof(gc_heap, generation_table)
+    };
+    static_assert(sizeof(gc_heap_field_offsets) == (GENERATION_TABLE_FIELD_INDEX + 1) * sizeof(int), "GENERATION_TABLE_INDEX mismatch");
 #endif //MULTIPLE_HEAPS
 
     assert(gcDacVars != nullptr);
