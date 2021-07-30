@@ -3000,6 +3000,8 @@ bool flowList::setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
 void flowList::setEdgeWeights(BasicBlock::weight_t theMinWeight, BasicBlock::weight_t theMaxWeight, BasicBlock* bDst)
 {
     assert(theMinWeight <= theMaxWeight);
+    assert(theMinWeight >= 0.0f);
+    assert(theMaxWeight >= 0.0f);
 
     JITDUMP("Setting edge weights for " FMT_BB " -> " FMT_BB " to [" FMT_WT " .. " FMT_WT "]\n", getBlock()->bbNum,
             bDst->bbNum, theMinWeight, theMaxWeight);
