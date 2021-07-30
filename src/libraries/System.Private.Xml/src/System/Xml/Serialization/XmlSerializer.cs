@@ -110,7 +110,7 @@ namespace System.Xml.Serialization
 
     public class XmlSerializer
     {
-        internal static SerializationMode Mode => RuntimeFeature.IsDynamicCodeSupported ? SerializationMode.ReflectionAsBackup : SerializationMode.ReflectionOnly;
+        internal static SerializationMode Mode { get; set; } = RuntimeFeature.IsDynamicCodeSupported ? SerializationMode.ReflectionAsBackup : SerializationMode.ReflectionOnly;
 
         private static bool ReflectionMethodEnabled
         {
