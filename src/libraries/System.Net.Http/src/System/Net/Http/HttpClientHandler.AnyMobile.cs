@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Security;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -424,7 +425,15 @@ namespace System.Net.Http
                 s_cachedMethods[name] = method;
             }
 
-            return method!.Invoke(_nativeHandler, parameters)!;
+            try
+            {
+                return method!.Invoke(_nativeHandler, parameters)!;
+            }
+            catch (TargetInvocationException e)
+            {
+                ExceptionDispatchInfo.Capture(e.InnerException!).Throw();
+                throw;
+            }
         }
 
         private static bool IsNativeHandlerEnabled => RuntimeSettingParser.QueryRuntimeSettingSwitch(

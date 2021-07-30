@@ -4,7 +4,7 @@
       <Uri>https://github.com/dotnet/icu</Uri>
       <Sha>08293141bc33a81b7e58120535079d8eac36519f</Sha>
     </Dependency>
-    <Dependency Name="System.Net.MsQuic.Transport" Version="6.0.0-preview.7.21357.1">
+    <Dependency Name="System.Net.MsQuic.Transport" Version="6.0.0-preview.7.21376.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>d7db669b70f4dd67ec001c192f9809c218cab88b</Sha>
     </Dependency>
@@ -54,9 +54,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>89806f0b9e93ad2bbe32c654412835c0801a2032</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="6.0.0-beta.21370.12">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="6.0.0-beta.21372.16">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>89806f0b9e93ad2bbe32c654412835c0801a2032</Sha>
+      <Sha>6224d1b573b73caaa84176bd83dabe75f202cdc7</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.CodeAnalysis" Version="6.0.0-beta.21370.12">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -186,9 +186,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>f7e4c261815c66fde2c1e750b744f193e236c17e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21370.1">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.100-preview.6.21376.2">
       <Uri>https://github.com/mono/linker</Uri>
-      <Sha>6eae01980dc694107bdee0bc723d75a0dd601f0e</Sha>
+      <Sha>b888d672e11588e2bbca1cd3eeaee30d53416897</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.21370.1">
       <Uri>https://github.com/dotnet/xharness</Uri>

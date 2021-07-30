@@ -209,14 +209,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        public string Signature
-        {
-            get
-            {
-                return "constructor signature";
-            }
-        }
-
         public ParameterBuilder DefineParameter(int iSequence, ParameterAttributes attributes, string? strParamName)
         {
             // The 0th ParameterBuilder does not correspond to an
@@ -313,16 +305,11 @@ namespace System.Reflection.Emit
             iattrs = attributes;
         }
 
-        public Module GetModule()
-        {
-            return type.Module;
-        }
-
         public override Module Module
         {
             get
             {
-                return GetModule();
+                return type.Module;
             }
         }
 

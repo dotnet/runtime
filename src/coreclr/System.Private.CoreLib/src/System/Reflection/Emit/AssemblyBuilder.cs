@@ -305,10 +305,6 @@ namespace System.Reflection.Emit
         public ModuleBuilder DefineDynamicModule(string name) =>
             DefineDynamicModuleInternal(name, emitSymbolInfo: false);
 
-        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
-        public ModuleBuilder DefineDynamicModule(string name, bool emitSymbolInfo) =>
-            DefineDynamicModuleInternal(name, emitSymbolInfo);
-
         private ModuleBuilder DefineDynamicModuleInternal(string name, bool emitSymbolInfo)
         {
             lock (SyncRoot)
