@@ -80,12 +80,15 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public void RemoveStream(MsQuicStream? stream)
             {
-                int count = Interlocked.Decrement(ref StreamCount);
-                bool closing = Volatile.Read(ref _closing);
+                bool releaseHandles;
+                lock (this)
+                {
+                    StreamCount--;
+                    Debug.Assert(StreamCount >= 0);
+                    releaseHandles = _closing && StreamCount == 0;
+                }
 
-                Debug.Assert(StreamCount >= 0 || closing);
-
-                if (count < 0)
+                if (releaseHandles)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{TraceId} releasing handle after last stream.");
                     Handle?.Dispose();
@@ -108,22 +111,25 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public bool TryAddStream(MsQuicStream stream)
             {
-                // Refuse new streams if Dispose was called.
-                if (Volatile.Read(ref _closing))
+                lock (this)
                 {
-                    return false;
-                }
+                    if (_closing)
+                    {
+                        return false;
+                    }
 
-                return Interlocked.Increment(ref StreamCount) > 0;
+                    StreamCount++;
+                    return true;
+                }
             }
 
             // This is called under lock from connection dispose
-            public int SetClosing()
+            public void SetClosing()
             {
-                // This will do one more decrement.
-                // StreamCount will become negative if there are no streams and SetClosing was called.
-                Volatile.Write(ref _closing, true);
-                return Interlocked.Decrement(ref StreamCount);
+                lock (this)
+                {
+                    _closing = true;
+                }
             }
         }
 
@@ -144,6 +150,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             try
             {
+                Debug.Assert(!Monitor.IsEntered(_state));
                 MsQuicApi.Api.SetCallbackHandlerDelegate(
                     _state.Handle,
                     s_connectionDelegate,
@@ -178,6 +185,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             _state.StateGCHandle = GCHandle.Alloc(_state);
             try
             {
+                Debug.Assert(!Monitor.IsEntered(_state));
                 uint status = MsQuicApi.Api.ConnectionOpenDelegate(
                     MsQuicApi.Api.Registration,
                     s_connectionDelegate,
@@ -214,7 +222,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (!state.Connected)
             {
                 // Connected will already be true for connections accepted from a listener.
-
+                Debug.Assert(!Monitor.IsEntered(state));
                 SOCKADDR_INET inetAddress = MsQuicParameterHelpers.GetINetParam(MsQuicApi.Api, state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_ADDRESS);
 
                 Debug.Assert(state.Connection != null);
@@ -529,11 +537,13 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override int GetRemoteAvailableUnidirectionalStreamCount()
         {
+            Debug.Assert(!Monitor.IsEntered(_state));
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_UNIDI_STREAM_COUNT);
         }
 
         internal override int GetRemoteAvailableBidirectionalStreamCount()
         {
+            Debug.Assert(!Monitor.IsEntered(_state));
             return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.LOCAL_BIDI_STREAM_COUNT);
         }
 
@@ -566,6 +576,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 SOCKADDR_INET address = MsQuicAddressHelpers.IPEndPointToINet((IPEndPoint)_remoteEndPoint);
                 unsafe
                 {
+                    Debug.Assert(!Monitor.IsEntered(_state));
                     status = MsQuicApi.Api.SetParamDelegate(_state.Handle, QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.REMOTE_ADDRESS, (uint)sizeof(SOCKADDR_INET), (byte*)&address);
                     QuicExceptionHelpers.ThrowIfFailed(status, "Failed to connect to peer.");
                 }
@@ -590,6 +601,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             try
             {
+                Debug.Assert(!Monitor.IsEntered(_state));
                 status = MsQuicApi.Api.ConnectionStartDelegate(
                     _state.Handle,
                     _configuration,
@@ -623,6 +635,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             try
             {
+                Debug.Assert(!Monitor.IsEntered(_state));
                 MsQuicApi.Api.ConnectionShutdownDelegate(
                     _state.Handle,
                     Flags,
@@ -750,19 +763,31 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (_state.Handle != null)
             {
                 // Handle can be null if outbound constructor failed and we are called from finalizer.
+                Debug.Assert(!Monitor.IsEntered(_state));
                 MsQuicApi.Api.ConnectionShutdownDelegate(
                     _state.Handle,
                     QUIC_CONNECTION_SHUTDOWN_FLAGS.SILENT,
                     0);
             }
 
-            _state.Connection = null;
-            // If there are no streams, count will be negative.
-            int count = _state.SetClosing();
+            bool releaseHandles = false;
+            lock (_state)
+            {
+                _state.Connection = null;
+                if (_state.StreamCount == 0)
+                {
+                    releaseHandles = true;
+                }
+                else
+                {
+                    // We have pending streams so we need to defer cleanup until last one is gone.
+                    _state.SetClosing();
+                }
+            }
 
             FlushAcceptQueue().GetAwaiter().GetResult();
             _configuration?.Dispose();
-            if (count < 0)
+            if (releaseHandles)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Connection releasing handle");
 
