@@ -144,7 +144,7 @@ jobs:
         WorkItemTimeout: 4:00 # 4 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
-        ProjectFile: ${{ parameters.projectFile }}
+        ProjectFile: 'superpmi.proj'
         BuildConfig: ${{ parameters.buildConfig }}
         osGroup: ${{ parameters.osGroup }}
         InputArtifacts: '$(InputArtifacts)'

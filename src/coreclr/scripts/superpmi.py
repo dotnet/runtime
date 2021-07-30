@@ -2542,7 +2542,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     for item in mch_files:
         # On Windows only, see if any of the mch_files are UNC paths (i.e., "\\server\share\...").
         # If so, download and cache all the files found there to our usual local cache location, to avoid future network access.
-        if coreclr_args.host_os == "windows" and item.startswith("\\\\"):
+        if coreclr_args.host_os == "windows":# and item.startswith("\\\\"):
             # Special case: if the user specifies a .mch file, we'll also look for and cache a .mch.mct file next to it, if one exists.
             # This happens naturally if a directory is passed and we search for all .mch and .mct files in that directory.
             mch_file = os.path.abspath(item)
@@ -2655,7 +2655,9 @@ def download_mch_from_azure(coreclr_args, target_dir):
         list containing the local path of files downloaded
     """
 
-    blob_filter_string =  "{}/".format(coreclr_args.jit_ee_version).lower() if coreclr_args.download_all else "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
+    download_all = hasattr(coreclr_args, "download_all") and coreclr_args.download_all
+    download_raw = hasattr(coreclr_args, "download_raw") and coreclr_args.download_raw
+    blob_filter_string =  "{}/".format(coreclr_args.jit_ee_version).lower() if download_all else "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
 
     # Determine if a URL in Azure Storage should be allowed. The path looks like:
     #   jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
@@ -2674,7 +2676,7 @@ def download_mch_from_azure(coreclr_args, target_dir):
     blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
     urls = [blob_url_prefix + path for path in paths]
 
-    return download_files(urls, target_dir, uncompress=not coreclr_args.download_raw)
+    return download_files(urls, target_dir, uncompress=not download_raw)
 
 
 def download_files(paths, target_dir, uncompress=True, verbose=True, fail_if_not_found=True):

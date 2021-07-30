@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
+  <!--
+    This is useful for local testing to print the produced helix items
+    To use this when you are changing how items are produced, uncomment the target
+    and replace the Project item at the top of the file with this:
+    <Project DefaultTargets="printItems">
+
+    Once you've done that you can run this to see the results:
+    dotnet msbuild .\superpmi.proj /v:n
+   -->
+
+   <!-- <PropertyGroup>
+     <HelixTargetQueues>Some_Queue</HelixTargetQueues>
+     <WorkItemDirectory>E:\temp\replay-setup\workitem\mch</WorkItemDirectory>
+   </PropertyGroup>
+
+  <Target Name="printItems">
+        <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
+     dir: %(HelixWorkItem.PayloadDirectory)
+     pre: %(HelixWorkItem.PreCommands)
+     command: %(HelixWorkItem.Command)
+     post: %(HelixWorkItem.PostCommands)
+     timeout: %(HelixWorkItem.Timeout)  '"/>
+  </Target> -->
+
+  <PropertyGroup>
+    <Python>%HELIX_PYTHONPATH%</Python>
+    <ProductDirectory>$HELIX_CORRELATION_PAYLOAD</ProductDirectory>
+    <SuperpmiLogsLocation>$HELIX_WORKITEM_UPLOAD_ROOT</SuperpmiLogsLocation>
+    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi-replay.py -arch $(Architecture) -jit_directory $(ProductDirectory)</WorkItemCommand>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PartitionDirectories Include="$([System.IO.Directory]::GetDirectories($(WorkItemDirectory)))"/>
+    <Partition Include="@(PartitionDirectories -> '%(Filename)')" PmiAssemblies="%(Filename)" PartitionId="%(Filename)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <HelixWorkItem Include="@(Partition)">
+      <Command>$(WorkItemCommand) -mch_directory $(WorkItemDirectory)\%(Identity) -partition_index %(Identity) -log_directory $(SuperpmiLogsLocation)</Command>
+      <Timeout>$(WorkItemTimeout)</Timeout>
+      <DownloadFilesFromResults>superpmi_%(Identity).log</DownloadFilesFromResults>
+    </HelixWorkItem>
+  </ItemGroup>
+  </Project>
