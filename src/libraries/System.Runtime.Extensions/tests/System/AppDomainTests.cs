@@ -841,7 +841,7 @@ namespace System.Tests
             Type exceptionType;
 
             // Technically case-insensitive OS
-            if (PlatformDetection.IsNotMobile)
+            if (PlatformDetection.IsCaseInsensitiveOS)
             {
                 exceptionType = typeof(TypeLoadException);
             }
