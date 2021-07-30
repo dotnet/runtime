@@ -80,15 +80,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public void RemoveStream(MsQuicStream? stream)
             {
-                bool releaseHandles;
-                lock (this)
-                {
-                    StreamCount--;
-                    Debug.Assert(StreamCount >= 0);
-                    releaseHandles = _closing && StreamCount == 0;
-                }
+                int count = Interlocked.Decrement(ref StreamCount);
+                bool closing = Volatile.Read(ref _closing);
 
-                if (releaseHandles)
+                Debug.Assert(StreamCount >= 0 || closing);
+
+                if (count < 0)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{TraceId} releasing handle after last stream.");
                     Handle?.Dispose();
@@ -111,25 +108,22 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public bool TryAddStream(MsQuicStream stream)
             {
-                lock (this)
+                // Refuse new streams if Dispose was called.
+                if (Volatile.Read(ref _closing))
                 {
-                    if (_closing)
-                    {
-                        return false;
-                    }
-
-                    StreamCount++;
-                    return true;
+                    return false;
                 }
+
+                return Interlocked.Increment(ref StreamCount) > 0;
             }
 
             // This is called under lock from connection dispose
-            public void SetClosing()
+            public int SetClosing()
             {
-                lock (this)
-                {
-                    _closing = true;
-                }
+                // This will do one more decrement.
+                // StreamCount will become negative if there are no streams and SetClosing was called.
+                Volatile.Write(ref _closing, true);
+                return Interlocked.Decrement(ref StreamCount);
             }
         }
 
@@ -459,6 +453,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             TaskCompletionSource? tcs = _state.NewUnidirectionalStreamsAvailable;
             if (tcs is null)
             {
+                // We need to avoid calling MsQuic under lock.
+                // This is not atomic but it won't be anyway as counts can change between when task is completed
+                // and before somebody may try to allocate new stream.
+                int count = GetRemoteAvailableUnidirectionalStreamCount();
                 lock (_state)
                 {
                     if (_state.NewUnidirectionalStreamsAvailable is null)
@@ -468,13 +466,14 @@ namespace System.Net.Quic.Implementations.MsQuic
                             throw new QuicOperationAbortedException();
                         }
 
-                        if (GetRemoteAvailableUnidirectionalStreamCount() > 0)
+                        if (count > 0)
                         {
                             return ValueTask.CompletedTask;
                         }
 
                         _state.NewUnidirectionalStreamsAvailable = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                     }
+
                     tcs = _state.NewUnidirectionalStreamsAvailable;
                 }
             }
@@ -487,6 +486,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             TaskCompletionSource? tcs = _state.NewBidirectionalStreamsAvailable;
             if (tcs is null)
             {
+                // We need to avoid calling MsQuic under lock.
+                // This is not atomic but it won't be anyway as counts can change between when task is completed
+                // and before somebody may try to allocate new stream.
+                int count = GetRemoteAvailableBidirectionalStreamCount();
                 lock (_state)
                 {
                     if (_state.NewBidirectionalStreamsAvailable is null)
@@ -496,7 +499,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                             throw new QuicOperationAbortedException();
                         }
 
-                        if (GetRemoteAvailableBidirectionalStreamCount() > 0)
+                        if (count > 0)
                         {
                             return ValueTask.CompletedTask;
                         }
@@ -753,24 +756,13 @@ namespace System.Net.Quic.Implementations.MsQuic
                     0);
             }
 
-            bool releaseHandles = false;
-            lock (_state)
-            {
-                _state.Connection = null;
-                if (_state.StreamCount == 0)
-                {
-                    releaseHandles = true;
-                }
-                else
-                {
-                    // We have pending streams so we need to defer cleanup until last one is gone.
-                    _state.SetClosing();
-                }
-            }
+            _state.Connection = null;
+            // If there are no streams, count will be negative.
+            int count = _state.SetClosing();
 
             FlushAcceptQueue().GetAwaiter().GetResult();
             _configuration?.Dispose();
-            if (releaseHandles)
+            if (count < 0)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(_state, $"{TraceId()} Connection releasing handle");
 
