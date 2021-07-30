@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices.Tests.Common;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -8,10 +9,10 @@ namespace System.Runtime.InteropServices.Tests
     public class ReleaseTests
     {
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void Release_ValidPointer_Success()
         {
-            IntPtr iUnknown = Marshal.GetIUnknownForObject(new object());
+            var cw = new ComWrappersImpl();
+            IntPtr iUnknown = cw.GetOrCreateComInterfaceForObject(new object(), CreateComInterfaceFlags.None);
             try
             {
                 Marshal.AddRef(iUnknown);
