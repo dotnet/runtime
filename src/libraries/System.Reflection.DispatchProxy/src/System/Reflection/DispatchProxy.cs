@@ -33,6 +33,7 @@ namespace System.Reflection
         /// <returns>An object instance that implements <typeparamref name="T"/>.</returns>
         /// <exception cref="System.ArgumentException"><typeparamref name="T"/> is a class,
         /// or <typeparamref name="TProxy"/> is sealed or does not have a parameterless constructor</exception>
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public static T Create<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TProxy>()
             where TProxy : DispatchProxy
         {
