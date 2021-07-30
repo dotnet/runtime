@@ -3266,7 +3266,7 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56267", TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/56267")]
         public void OrdinaryCommentsDoNotAccidentallyBecomeDocumentationComments()
         {
             var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithCommment")
@@ -3295,7 +3295,7 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/56267", TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/56267")]
         public void DocumentationCommentsDoNotAccidentallyBecomeOrdinaryComments()
         {
             var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithCommment")
