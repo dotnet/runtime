@@ -3264,5 +3264,61 @@ namespace System.CodeDom.Compiler.Tests
                       End Class
                   End Namespace");
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56267", TargetFrameworkMonikers.NetFramework)]
+        public void OrdinaryCommentsDoNotAccidentallyBecomeDocumentationComments()
+        {
+            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithCommment")
+            {
+                IsClass = true,
+                Comments =
+                {
+                    new CodeCommentStatement(
+                        "'' Lines starting with two single quotes" + Environment.NewLine +
+                        "'' each get a separating space" + Environment.NewLine +
+                        "but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs." + Environment.NewLine +
+                        "' Not even lines starting with only one single quote.",
+                        docComment: false),
+                },
+            };
+
+            AssertEqualPreserveLineBreaks(codeTypeDeclaration,
+                @"
+                  ' '' Lines starting with two single quotes
+                  ' '' each get a separating space
+                  'but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
+                  '' Not even lines starting with only one single quote.
+                  Public Class ClassWithCommment
+                  End Class
+                ");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56267", TargetFrameworkMonikers.NetFramework)]
+        public void DocumentationCommentsDoNotAccidentallyBecomeOrdinaryComments()
+        {
+            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithCommment")
+            {
+                IsClass = true,
+                Comments =
+                {
+                    new CodeCommentStatement(
+                        "' Lines starting with a single quote" + Environment.NewLine +
+                        "' each get a separating space" + Environment.NewLine +
+                        "but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.",
+                        docComment: true),
+                },
+            };
+
+            AssertEqualPreserveLineBreaks(codeTypeDeclaration,
+                @"
+                  ''' ' Lines starting with a single quote
+                  ''' ' each get a separating space
+                  '''but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
+                  Public Class ClassWithCommment
+                  End Class
+                ");
+        }
     }
 }

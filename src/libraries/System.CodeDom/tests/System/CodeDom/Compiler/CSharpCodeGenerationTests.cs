@@ -3516,5 +3516,59 @@ namespace System.CodeDom.Compiler.Tests
                   }
                 ");
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56267", TargetFrameworkMonikers.NetFramework)]
+        public void OrdinaryCommentsDoNotAccidentallyBecomeDocumentationComments()
+        {
+            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithCommment")
+            {
+                IsClass = true,
+                Comments =
+                {
+                    new CodeCommentStatement(
+                        "/ Lines starting with a slash" + Environment.NewLine +
+                        "/ each get a separating space" + Environment.NewLine +
+                        "but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.",
+                        docComment: false),
+                },
+            };
+
+            AssertEqualPreserveLineBreaks(codeTypeDeclaration,
+                @"
+                  // / Lines starting with a slash
+                  // / each get a separating space
+                  //but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
+                  public class ClassWithCommment {
+                  }
+                ");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56267", TargetFrameworkMonikers.NetFramework)]
+        public void DocumentationCommentsDoNotAccidentallyBecomeOrdinaryComments()
+        {
+            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithCommment")
+            {
+                IsClass = true,
+                Comments =
+                {
+                    new CodeCommentStatement(
+                        "/ Lines starting with a slash" + Environment.NewLine +
+                        "/ each get a separating space" + Environment.NewLine +
+                        "but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.",
+                        docComment: true),
+                },
+            };
+
+            AssertEqualPreserveLineBreaks(codeTypeDeclaration,
+                @"
+                  /// / Lines starting with a slash
+                  /// / each get a separating space
+                  ///but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
+                  public class ClassWithCommment {
+                  }
+                ");
+        }
     }
 }
