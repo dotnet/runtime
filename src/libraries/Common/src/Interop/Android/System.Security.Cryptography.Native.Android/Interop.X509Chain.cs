@@ -62,9 +62,9 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct ValidationError
+        internal unsafe struct ValidationError
         {
-            public IntPtr Message; // UTF-16 string
+            public char* Message; // UTF-16 string
             public int Index;
             public int Status;
         }
