@@ -276,7 +276,7 @@ namespace System.Runtime.InteropServices.JavaScript
 // error CS0117: 'Array' does not contain a definition for 'Empty' [/home/kate/Projects/dotnet-runtime-wasm/src/libraries/System.Private.Runtime.InteropServices.JavaScript/src/System.Private.Runtime.InteropServices.JavaScript.csproj]
 #pragma warning disable CA1825
 
-            del.Invoke(arg1);
+            del(arg1);
 
 #pragma warning restore CA1825
 
