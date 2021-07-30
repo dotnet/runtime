@@ -861,6 +861,8 @@ namespace Microsoft.CSharp
                 }
                 Output.Write(value[i]);
 
+                bool startNewCommentLine = false;
+
                 if (value[i] == '\r')
                 {
                     if (i < value.Length - 1 && value[i + 1] == '\n')
@@ -869,16 +871,26 @@ namespace Microsoft.CSharp
                         i++;
                     }
                     _output.InternalOutputTabs();
-                    Output.Write(commentLineStart);
+                    startNewCommentLine = true;
                 }
                 else if (value[i] == '\n')
                 {
                     _output.InternalOutputTabs();
-                    Output.Write(commentLineStart);
+                    startNewCommentLine = true;
                 }
                 else if (value[i] == '\u2028' || value[i] == '\u2029' || value[i] == '\u0085')
                 {
+                    startNewCommentLine = true;
+                }
+
+                if (startNewCommentLine)
+                {
                     Output.Write(commentLineStart);
+
+                    if (i < value.Length - 1 && value[i + 1] == '/')
+                    {
+                        Output.Write(' ');
+                    }
                 }
             }
             Output.WriteLine();

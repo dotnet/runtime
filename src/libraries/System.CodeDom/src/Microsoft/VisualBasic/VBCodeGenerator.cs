@@ -1224,9 +1224,20 @@ namespace Microsoft.VisualBasic
         {
             string commentLineStart = e.DocComment ? "'''" : "'";
             Output.Write(commentLineStart);
+            bool isAfterCommentLineStart = true;
+
             string value = e.Text;
             for (int i = 0; i < value.Length; i++)
             {
+                if (isAfterCommentLineStart)
+                {
+                    if (value[i] == '\'' && (e.DocComment || (i < value.Length - 1 && value[i + 1] == '\'')))
+                    {
+                        Output.Write(' ');
+                    }
+                    isAfterCommentLineStart = false;
+                }
+
                 Output.Write(value[i]);
 
                 if (value[i] == '\r')
@@ -1238,15 +1249,18 @@ namespace Microsoft.VisualBasic
                     }
                     ((ExposedTabStringIndentedTextWriter)Output).InternalOutputTabs();
                     Output.Write(commentLineStart);
+                    isAfterCommentLineStart = true;
                 }
                 else if (value[i] == '\n')
                 {
                     ((ExposedTabStringIndentedTextWriter)Output).InternalOutputTabs();
                     Output.Write(commentLineStart);
+                    isAfterCommentLineStart = true;
                 }
                 else if (value[i] == '\u2028' || value[i] == '\u2029' || value[i] == '\u0085')
                 {
                     Output.Write(commentLineStart);
+                    isAfterCommentLineStart = true;
                 }
             }
             Output.WriteLine();
