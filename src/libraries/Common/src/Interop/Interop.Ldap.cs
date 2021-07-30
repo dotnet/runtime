@@ -162,16 +162,23 @@ namespace System.DirectoryServices.Protocols
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal sealed unsafe class LdapMod
+    internal sealed class LdapMod
     {
         public int type;
-        public char* attribute = null;
-        public void** values = null;
+        public IntPtr attribute = IntPtr.Zero;
+        public IntPtr values = IntPtr.Zero;
 
         ~LdapMod()
         {
-            NativeMemory.Free(attribute);
-            NativeMemory.Free(values);
+            if (attribute != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(attribute);
+            }
+
+            if (values != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(values);
+            }
         }
     }
 }
