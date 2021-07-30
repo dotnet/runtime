@@ -227,7 +227,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                     {
                         const bool canUse16BytesSimdMov = !blkNode->IsOnHeapAndContainsReferences();
 #ifdef TARGET_AMD64
-                        const bool willUseOnlySimdMov = canUse16BytesSimdMov && (size % 16 == 0);
+                        const bool willUseOnlySimdMov = canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES);
 #else
                         const bool willUseOnlySimdMov = (size % 8 == 0);
 #endif

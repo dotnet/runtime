@@ -2781,7 +2781,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         assert(src->IsIntegralConst(0));
         assert(willUseSimdMov);
 #ifdef TARGET_AMD64
-        assert(size % 16 == 0);
+        assert(size >= XMM_REGSIZE_BYTES);
 #else
         assert(size % 8 == 0);
 #endif
