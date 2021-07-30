@@ -5302,7 +5302,7 @@ GenTree* Compiler::impKeepAliveIntrinsic(GenTree* objToKeepAlive)
             INDEBUG(bool foundGcField = false);
 
             unsigned boxTempNum;
-            if (boxSrc->OperIsLocal())
+            if (boxSrc->OperIs(GT_LCL_VAR))
             {
                 boxTempNum = boxSrc->AsLclVarCommon()->GetLclNum();
             }
