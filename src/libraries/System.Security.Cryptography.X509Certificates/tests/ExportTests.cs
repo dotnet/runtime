@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
+using Internal.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -293,6 +295,85 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     return rsaCng.Key.IsEphemeral;
                 }
             }
+        }
+
+        [Fact]
+        public static void TryExportCertificatePem_DestinationTooSmall()
+        {
+            using X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate);
+            Assert.False(cert.TryExportCertificatePem(Span<char>.Empty, out int charsWritten));
+            Assert.Equal(0, charsWritten);
+        }
+
+        [Fact]
+        public static void TryExportCertificatePem_DestinationJustRight()
+        {
+            using X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate);
+            int pemSize = PemEncoding.GetEncodedSize("CERTIFICATE".Length, cert.RawData.Length);
+            Span<char> destination = new char[pemSize];
+            Assert.True(cert.TryExportCertificatePem(destination, out int charsWritten));
+            Assert.Equal(pemSize, charsWritten);
+
+            using X509Certificate2 importedCert = X509Certificate2.CreateFromPem(destination);
+            Assert.Equal(cert.RawData, importedCert.RawData);
+        }
+
+        [Fact]
+        public static void TryExportCertificatePem_DestinationLarger()
+        {
+            using X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate);
+            int pemSize = PemEncoding.GetEncodedSize("CERTIFICATE".Length, cert.RawData.Length);
+            Span<char> destination = new char[pemSize * 2];
+            Assert.True(cert.TryExportCertificatePem(destination, out int charsWritten));
+            Assert.Equal(pemSize, charsWritten);
+
+            using X509Certificate2 importedCert = X509Certificate2.CreateFromPem(destination.Slice(0, charsWritten));
+            Assert.Equal(cert.RawData, importedCert.RawData);
+        }
+
+        [Fact]
+        public static void TryExportCertificatePem_ContainsOnlyCertPem()
+        {
+            using X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate);
+            int pemSize = PemEncoding.GetEncodedSize("CERTIFICATE".Length, cert.RawData.Length);
+            Span<char> destination = new char[pemSize];
+            Assert.True(cert.TryExportCertificatePem(destination, out int charsWritten));
+            Assert.Equal(pemSize, charsWritten);
+
+            int pemCount = 0;
+
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(destination))
+            {
+                AssertExtensions.SequenceEqual("CERTIFICATE", contents[fields.Label]);
+                pemCount++;
+            }
+
+            Assert.Equal(1, pemCount);
+        }
+
+        [Fact]
+        public static void ExportCertificatePem()
+        {
+            using X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate);
+            string pem = cert.ExportCertificatePem();
+            using X509Certificate2 importedCert = X509Certificate2.CreateFromPem(pem);
+            Assert.Equal(cert.RawData, importedCert.RawData);
+        }
+
+        [Fact]
+        public static void ExportCertificatePem_ContainsOnlyCertPem()
+        {
+            using X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate);
+            string pem = cert.ExportCertificatePem();
+            int pemCount = 0;
+
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(pem))
+            {
+                AssertExtensions.SequenceEqual("CERTIFICATE", contents[fields.Label]);
+                pemCount++;
+            }
+
+            Assert.Equal(1, pemCount);
         }
     }
 }

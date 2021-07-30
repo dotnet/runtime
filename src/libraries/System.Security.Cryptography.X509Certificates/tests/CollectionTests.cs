@@ -1563,6 +1563,56 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal("1.2.840.113549.1.7.2", oid); //signedData (PKCS #7)
         }
 
+        [Fact]
+        public static void TryExportCertificatePems_Empty()
+        {
+            X509Certificate2Collection cc = new X509Certificate2Collection();
+           AssertPemExport(cc, string.Empty);
+        }
+
+        [Fact]
+        public static void ExportCertificatePems_SingleCert()
+        {
+            const string SinglePem = "-----BEGIN CERTIFICATE-----\n" +
+                "MIIBETCBuaADAgECAgkA9StU5ZnBmM4wCgYIKoZIzj0EAwIwDzENMAsGA1UEAxME\n" +
+                "dGlueTAeFw0yMTA5MTUyMjAyNDNaFw0yMTA5MTUyMjAyNDNaMA8xDTALBgNVBAMT\n" +
+                "BHRpbnkwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQZ+baUXzzLi+p3cZEf4f23\n" +
+                "L/2Dbn5UB/uMCB7L71rWf3UwuCA3Is5uPci/3PQYLNwDkP3m3ZzxyzVCgFVqqYFg\n" +
+                "MAoGCCqGSM49BAMCA0cAMEQCIHafyKHQhv+03DaOJpuotD+jNu0Nc9pUI9OA8pUY\n" +
+                "3+qJAiBsqKjtc8LuGtUoqGvxLLQJwJ2QNY/qyEGtaImlqTYg5w==\n" +
+                "-----END CERTIFICATE-----";
+            using ImportedCollection ic = Cert.ImportFromPem(SinglePem);
+            X509Certificate2Collection cc = ic.Collection;
+            AssertPemExport(cc, SinglePem);
+            AssertPkcs7PemExport(cc);
+        }
+
+        [Fact]
+        public static void ExportCertificatePems_MultiCert()
+        {
+            const string MultiPem = "-----BEGIN CERTIFICATE-----\n" +
+                "MIIBETCBuaADAgECAgkA9StU5ZnBmM4wCgYIKoZIzj0EAwIwDzENMAsGA1UEAxME\n" +
+                "dGlueTAeFw0yMTA5MTUyMjAyNDNaFw0yMTA5MTUyMjAyNDNaMA8xDTALBgNVBAMT\n" +
+                "BHRpbnkwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQZ+baUXzzLi+p3cZEf4f23\n" +
+                "L/2Dbn5UB/uMCB7L71rWf3UwuCA3Is5uPci/3PQYLNwDkP3m3ZzxyzVCgFVqqYFg\n" +
+                "MAoGCCqGSM49BAMCA0cAMEQCIHafyKHQhv+03DaOJpuotD+jNu0Nc9pUI9OA8pUY\n" +
+                "3+qJAiBsqKjtc8LuGtUoqGvxLLQJwJ2QNY/qyEGtaImlqTYg5w==\n" +
+                "-----END CERTIFICATE-----\n" +
+                "-----BEGIN CERTIFICATE-----\n" +
+                "MIIBETCBuaADAgECAgkAg4L3Q2Ro0vcwCgYIKoZIzj0EAwIwDzENMAsGA1UEAxME\n" +
+                "dGlueTAeFw0yMTA5MTUyMjA1MTBaFw0yMTA5MTUyMjA1MTBaMA8xDTALBgNVBAMT\n" +
+                "BHRpbnkwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATaulLpfqjLAxefbhEgamRf\n" +
+                "HNyIRzCpXRtktpjEQi3kFa39SHJEvoX/LFTeSisw+0sNPGjIKVOLUQvx7+5x0H3F\n" +
+                "MAoGCCqGSM49BAMCA0cAMEQCIHIweJarpnxQ88gAtGbBq6iFWjGhXP0mfxJtrJKd\n" +
+                "WqzGAiBqbvlwpNMDKYGB7fwthHKn4SzxQaHYj27TdRuitsNCHg==\n" +
+                "-----END CERTIFICATE-----";
+            using ImportedCollection ic = Cert.ImportFromPem(MultiPem);
+            X509Certificate2Collection cc = ic.Collection;
+            Assert.Equal(2, cc.Count);
+            AssertPemExport(cc, MultiPem);
+            AssertPkcs7PemExport(cc);
+        }
+
         private static void TestExportSingleCert_SecureStringPassword(X509ContentType ct)
         {
             using (var pfxCer = new X509Certificate2(TestData.PfxData, TestData.CreatePfxDataPasswordSecureString(), Cert.EphemeralIfPossible))
@@ -1640,6 +1690,71 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        private static void AssertPemExport(X509Certificate2Collection collection, string expectedContents)
+        {
+            Span<char> buffer = new char[expectedContents.Length];
+            int written;
+
+            // If we expect something to get written, try writing to a buffer that is too small by one
+            // and make sure it fails.
+            if (!buffer.IsEmpty)
+            {
+                Assert.False(collection.TryExportCertificatePems(buffer.Slice(1), out written), nameof(collection.TryExportCertificatePems));
+                Assert.Equal(0, written);
+            }
+
+            Assert.True(collection.TryExportCertificatePems(buffer, out written), nameof(collection.TryExportCertificatePems));
+            Assert.Equal(written, buffer.Length);
+            Assert.Equal(expectedContents, new string(buffer));
+
+            string exported = collection.ExportCertificatePems();
+            Assert.Equal(expectedContents, exported);
+        }
+
+        private static void AssertPkcs7PemExport(X509Certificate2Collection collection)
+        {
+            if (PlatformDetection.UsesMobileAppleCrypto)
+            {
+                return;
+            }
+
+            static void AssertPem(X509Certificate2Collection expected, ReadOnlySpan<char> pemActual)
+            {
+                PemFields fields = PemEncoding.Find(pemActual);
+                ReadOnlySpan<char> actualBase64 = pemActual[fields.Base64Data];
+                Assert.Equal("PKCS7", new string(pemActual[fields.Label]));
+                byte[] data = Convert.FromBase64String(new string(actualBase64));
+
+                using ImportedCollection imported = Cert.Import(data);
+                Assert.Equal(expected.ToArray(), imported.Collection.ToArray(), new X509Certificate2EqualityComparer());
+            }
+
+            string pkcs7Pem = collection.ExportPkcs7Pem();
+            AssertPem(collection, pkcs7Pem);
+
+            Span<char> pkcs7Buffer = new char[pkcs7Pem.Length];
+            Assert.False(collection.TryExportPkcs7Pem(pkcs7Buffer.Slice(1), out int written), nameof(collection.TryExportPkcs7Pem));
+            Assert.Equal(0, written);
+
+            Assert.True(collection.TryExportPkcs7Pem(pkcs7Buffer, out written), nameof(collection.TryExportPkcs7Pem));
+            Assert.Equal(pkcs7Buffer.Length, written);
+            AssertPem(collection, pkcs7Buffer);
+        }
+
         public static IEnumerable<object[]> StorageFlags => CollectionImportTests.StorageFlags;
+
+        private class X509Certificate2EqualityComparer : IEqualityComparer<X509Certificate2>
+        {
+            public int GetHashCode(X509Certificate2 obj) => obj.GetHashCode();
+
+            public bool Equals(X509Certificate2 x, X509Certificate2 y)
+            {
+                if (x is null)
+                    return y is null;
+                if (y is null)
+                    return false;
+                return x.RawDataMemory.Span.SequenceEqual(y.RawDataMemory.Span);
+            }
+        }
     }
 }
