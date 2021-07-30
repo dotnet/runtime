@@ -29,10 +29,10 @@ DPTR(T) Dereference(DPTR(T*) ptr)
 // Indexes into the global heap table, returning a TADDR to the requested
 // heap instance.
 inline TADDR
-HeapTableIndex(DPTR(dac_gc_heap**) heaps, size_t index)
+HeapTableIndex(DPTR(opaque_gc_heap**) heaps, size_t index)
 {
-    DPTR(dac_gc_heap*) heap_table = Dereference(heaps);
-    DPTR(dac_gc_heap*) ptr = TableIndex(heap_table, index, sizeof(dac_gc_heap*));
+    DPTR(opaque_gc_heap*) heap_table = Dereference(heaps);
+    DPTR(opaque_gc_heap*) ptr = TableIndex(heap_table, index, sizeof(void*));
     return Dereference(ptr).GetAddr();
 }
 

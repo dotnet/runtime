@@ -147,7 +147,7 @@ ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *
     detailsData->background_saved_highest_address = (CLRDATA_ADDRESS)pHeap->background_saved_highest_address;
 
     // get bounds for the different generations
-    for (unsigned int i=0; i < *g_gcDacGlobals->max_gen + 2; i++)
+    for (unsigned int i=0; i < DAC_NUMBERGENERATIONS; i++)
     {
         DPTR(dac_generation) generation = ServerGenerationTableIndex(heapAddress, i);
         detailsData->generation_table[i].start_segment     = (CLRDATA_ADDRESS)dac_cast<TADDR>(generation->start_segment);
@@ -161,7 +161,7 @@ ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *
     if (fq.IsValid())
     {
         DPTR(uint8_t*) fillPointersTable = dac_cast<TADDR>(fq) + offsetof(dac_finalize_queue, m_FillPointers);
-        for (unsigned int i = 0; i<(*g_gcDacGlobals->max_gen + 2 + dac_finalize_queue::ExtraSegCount); i++)
+        for (unsigned int i = 0; i < DAC_NUMBERGENERATIONS + 3; i++)
         {
             detailsData->finalization_fill_pointers[i] = (CLRDATA_ADDRESS)*TableIndex(fillPointersTable, i, sizeof(uint8_t*));
         }

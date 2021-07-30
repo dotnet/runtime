@@ -169,6 +169,10 @@ public:
     dac_generation generation_table[1];
 };
 
+struct opaque_gc_heap
+{
+    uint8_t unused;
+};
 
 // The DAC links against six symbols that build as part of the VM DACCESS_COMPILE
 // build. These symbols are considered to be GC-private functions, but the DAC needs
