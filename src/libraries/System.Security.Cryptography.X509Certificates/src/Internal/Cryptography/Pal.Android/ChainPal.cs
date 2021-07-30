@@ -207,7 +207,7 @@ namespace Internal.Cryptography.Pal
                     {
                         Interop.AndroidCrypto.ValidationError error = errors[i];
                         chainStatus[i] = ValidationErrorToChainStatus(error);
-                        NativeMemory.Free((nint)error.Message);
+                        NativeMemory.Free(error.Message);
                     }
 
                     ChainStatus = chainStatus;
@@ -366,7 +366,7 @@ namespace Internal.Cryptography.Pal
                 return new X509ChainStatus
                 {
                     Status = statusFlags,
-                    StatusInformation = Marshal.PtrToStringUni(error.Message)
+                    StatusInformation = new string(error.Message)
                 };
             }
 
