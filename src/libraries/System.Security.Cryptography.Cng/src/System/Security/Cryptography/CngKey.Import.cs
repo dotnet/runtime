@@ -110,7 +110,7 @@ namespace System.Security.Cryptography
             return Import(new ReadOnlySpan<byte>(keyBlob), curveName, format, provider);
         }
 
-        internal static CngKey Import(
+        internal static unsafe CngKey Import(
             ReadOnlySpan<byte> keyBlob,
             string? curveName,
             CngKeyBlobFormat format,
