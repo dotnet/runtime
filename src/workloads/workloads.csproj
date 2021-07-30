@@ -85,6 +85,9 @@
       <ShortNames Include="microsoft.netcore.app.runtime;Microsoft.NETCore.App.Runtime;microsoft.net.runtime;Microsoft.NET.Runtime">
         <Replacement>Microsoft</Replacement>
       </ShortNames>
+      <ShortNames Include="Microsoft.NET.Workload;microsoft.net.workload">
+        <Replacement>Microsoft</Replacement>
+      </ShortNames>
     </ItemGroup>
 
     <ItemGroup>
