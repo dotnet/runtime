@@ -80,7 +80,7 @@ namespace System.Security.Cryptography
                     s_microsoftSoftwareProviderHandle,
                     IntPtr.Zero,
                     blobType,
-                    IntPtr.Zero,
+                    null,
                     out keyHandle,
                     ref MemoryMarshal.GetReference(keyBlob),
                     keyBlob.Length,
