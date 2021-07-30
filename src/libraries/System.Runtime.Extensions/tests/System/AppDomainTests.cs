@@ -45,7 +45,7 @@ namespace System.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "throws pNSE")]
-        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "The dotnet process will not installed on device")]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "The dotnet sdk is not installed on devices")]
         public void TargetFrameworkTest()
         {
             const int ExpectedExitCode = 0;
