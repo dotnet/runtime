@@ -54,7 +54,6 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50999", TestPlatforms.Android)]
         public void TestConstructorWithStringArgument()
         {
             string msg;
@@ -92,7 +91,6 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50999", TestPlatforms.Android)]
         public void TestConstructorWithStatusCodeAndStringArgument()
         {
             string msg;

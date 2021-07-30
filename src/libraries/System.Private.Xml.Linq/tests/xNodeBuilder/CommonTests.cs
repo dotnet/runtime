@@ -3403,7 +3403,6 @@ namespace CoreXml.Test.XLinq
 
                 //[Variation(Id = 5, Desc = "WriteCData with ]]>", Priority = 1)]
                 [Fact]
-                [ActiveIssue("https://github.com/dotnet/runtime/issues/50944", TestPlatforms.Android)]
                 public void WriteCDataWithTwoClosingBrackets_5()
                 {
                     XDocument doc = new XDocument();
@@ -3599,7 +3598,6 @@ namespace CoreXml.Test.XLinq
 
                 //[Variation(Id = 6, Desc = "WriteComment with -- in value", Priority = 1)]
                 [Fact]
-                [ActiveIssue("https://github.com/dotnet/runtime/issues/50944", TestPlatforms.Android)]
                 public void WriteCommentWithDoubleHyphensInValue()
                 {
                     XDocument doc = new XDocument();
@@ -4205,7 +4203,6 @@ namespace CoreXml.Test.XLinq
 
                 //[Variation(Id = 11, Desc = "Include PI end tag ?> as part of the text value", Priority = 1)]
                 [Fact]
-                [ActiveIssue("https://github.com/dotnet/runtime/issues/50944", TestPlatforms.Android)]
                 public void IncludePIEndTagAsPartOfTextValue()
                 {
                     XDocument doc = new XDocument();
