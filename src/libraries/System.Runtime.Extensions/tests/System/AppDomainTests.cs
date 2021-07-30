@@ -840,14 +840,13 @@ namespace System.Tests
         {
             Type exceptionType;
 
-            // Technically case-insensitive OS
-            if (PlatformDetection.IsCaseInsensitiveOS)
+            if (PlatformDetection.IsCaseSensitiveOS && PlatformDetection.IsMonoRuntime)
             {
-                exceptionType = typeof(TypeLoadException);
+                exceptionType = typeof(FileNotFoundException);
             }
             else
             {
-                exceptionType = typeof(FileNotFoundException);
+                exceptionType = typeof(TypeLoadException);
             }
 
             // string physicalFileName, string assemblyFile, string typeName, returnedFullNameType, expectedException
