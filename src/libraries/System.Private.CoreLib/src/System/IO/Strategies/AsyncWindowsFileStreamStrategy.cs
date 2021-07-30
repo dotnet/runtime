@@ -60,20 +60,12 @@ namespace System.IO.Strategies
 
         private ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            long positionBefore = _filePosition;
-            if (CanSeek)
-            {
-                // When using overlapped IO, the OS is not supposed to
-                // touch the file pointer location at all.  We will adjust it
-                // ourselves, but only in memory.  This isn't threadsafe.
-                _filePosition += source.Length;
-                UpdateLengthOnChangePosition();
-            }
+            long writeOffset = CanSeek ? Interlocked.Add(ref _filePosition, source.Length) - source.Length : -1;
 
-            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncWriteFile(_fileHandle, source, positionBefore, cancellationToken);
+            (SafeFileHandle.OverlappedValueTaskSource? vts, int errorCode) = RandomAccess.QueueAsyncWriteFile(_fileHandle, source, writeOffset, cancellationToken);
             return vts != null
                 ? new ValueTask(vts, vts.Version)
-                : (errorCode == 0) ? ValueTask.CompletedTask : ValueTask.FromException(HandleIOError(positionBefore, errorCode));
+                : (errorCode == 0) ? ValueTask.CompletedTask : ValueTask.FromException(HandleIOError(writeOffset, errorCode));
         }
 
         private Exception HandleIOError(long positionBefore, int errorCode)

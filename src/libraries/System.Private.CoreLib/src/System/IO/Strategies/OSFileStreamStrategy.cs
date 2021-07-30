@@ -15,9 +15,9 @@ namespace System.IO.Strategies
         private readonly FileAccess _access; // What file was opened for.
 
         protected long _filePosition;
+        protected long _length = -1; // negative means that hasn't been fetched.
         private long _appendStart; // When appending, prevent overwriting file.
-        protected long _length = -1; // When the file is locked for writes on Windows ((share & FileShare.Write) == 0) cache file length in-memory, negative means that hasn't been fetched.
-        private bool _lengthCanBeCached; // SafeFileHandle hasn't been exposed and FileShare.Write was not specified when the handle was opened.
+        private bool _lengthCanBeCached; // SafeFileHandle hasn't been exposed, file has been opened for reading and not shared for writing.
 
         internal OSFileStreamStrategy(SafeFileHandle handle, FileAccess access)
         {
@@ -44,7 +44,7 @@ namespace System.IO.Strategies
             string fullPath = Path.GetFullPath(path);
 
             _access = access;
-            _lengthCanBeCached = (share & FileShare.Write) == 0;
+            _lengthCanBeCached = (share & FileShare.Write) == 0 && (access & FileAccess.Write) == 0;
 
             _fileHandle = SafeFileHandle.Open(fullPath, mode, access, share, options, preallocationSize);
 
@@ -99,22 +99,6 @@ namespace System.IO.Strategies
         // in case of concurrent incomplete reads, there can be multiple threads trying to update the position
         // at the same time. That is why we are using Interlocked here.
         internal void OnIncompleteRead(int expectedBytesRead, int actualBytesRead) => Interlocked.Add(ref _filePosition, actualBytesRead - expectedBytesRead);
-
-        protected void UpdateLengthOnChangePosition()
-        {
-            // Do not update the cached length if the file is not locked
-            // or if the length hasn't been fetched.
-            if (!LengthCachingSupported || _length < 0)
-            {
-                Debug.Assert(_length < 0);
-                return;
-            }
-
-            if (_filePosition > _length)
-            {
-                _length = _filePosition;
-            }
-        }
 
         protected bool LengthCachingSupported => OperatingSystem.IsWindows() && _lengthCanBeCached;
 
@@ -291,18 +275,8 @@ namespace System.IO.Strategies
                 ThrowHelper.ThrowNotSupportedException_UnwritableStream();
             }
 
-            try
-            {
-                RandomAccess.WriteAtOffset(_fileHandle, buffer, _filePosition);
-            }
-            catch
-            {
-                _length = -1; // invalidate cached length
-                throw;
-            }
-
+            RandomAccess.WriteAtOffset(_fileHandle, buffer, _filePosition);
             _filePosition += buffer.Length;
-            UpdateLengthOnChangePosition();
         }
     }
 }

@@ -58,14 +58,8 @@ namespace System.IO.Strategies
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            long filePositionBefore = -1;
-            if (CanSeek)
-            {
-                filePositionBefore = _filePosition;
-                _filePosition += source.Length;
-            }
-
-            return RandomAccess.WriteAtOffsetAsync(_fileHandle, source, filePositionBefore, cancellationToken);
+            long writeOffset = CanSeek ? Interlocked.Add(ref _filePosition, source.Length) - source.Length : -1;
+            return RandomAccess.WriteAtOffsetAsync(_fileHandle, source, writeOffset, cancellationToken);
         }
 
         /// <summary>Provides a reusable ValueTask-backing object for implementing ReadAsync.</summary>
