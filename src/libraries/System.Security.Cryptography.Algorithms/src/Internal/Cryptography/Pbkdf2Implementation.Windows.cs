@@ -199,7 +199,7 @@ namespace Internal.Cryptography
                     Interop.BCrypt.BCryptBufferDesc bufferDesc;
                     bufferDesc.ulVersion = Interop.BCrypt.BCRYPTBUFFER_VERSION;
                     bufferDesc.cBuffers = buffers.Length;
-                    bufferDesc.pBuffers = (IntPtr)pBuffers;
+                    bufferDesc.pBuffers = pBuffers;
 
                     NTSTATUS deriveStatus = Interop.BCrypt.BCryptKeyDerivation(
                         keyHandle,
