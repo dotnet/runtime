@@ -1317,9 +1317,10 @@ static DWORD GCThreadStub(void* param)
 }
 
 // Initialize the critical section
-void CLRCriticalSection::Initialize()
+bool CLRCriticalSection::Initialize()
 {
     ::InitializeCriticalSection(&m_cs);
+    return true;
 }
 
 // Destroy the critical section
