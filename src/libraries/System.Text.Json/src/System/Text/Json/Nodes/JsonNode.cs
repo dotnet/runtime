@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Nodes
 {
@@ -165,6 +164,15 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Gets the value for the current <see cref="JsonValue"/>.
         /// </summary>
+        /// <remarks>
+        ///   {TValue} can be the type or base type of the underlying value.
+        ///   If the underlying value is a <see cref="JsonElement"/> then {TValue} can also be the type of any primitive
+        ///   value supported by current <see cref="JsonElement"/>.<br />
+        ///   Specifying <see cref="object"/> will always succeed and return the underlying value as <see cref="object"/>.<br />
+        ///   The underlying value of a <see cref="JsonValue"/> after deserialization is <see cref="JsonElement"/>,
+        ///   otherwise it is the value specified when the <see cref="JsonValue"/> was created.
+        /// </remarks>
+        /// <seealso cref="JsonValue.TryGetValue{T}">
         /// <exception cref="FormatException">
         ///   The current <see cref="JsonNode"/> cannot be represented as a {TValue}.
         /// </exception>
