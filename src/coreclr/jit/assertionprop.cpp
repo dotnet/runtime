@@ -25,37 +25,16 @@ bool IntegralRange::Contains(int64_t value) const
 
 /* static */ int64_t IntegralRange::SymbolicToRealValue(SymbolicIntegerValue value)
 {
-    switch (value)
-    {
-        case SymbolicIntegerValue::LongMin:
-            return INT64_MIN;
-        case SymbolicIntegerValue::IntMin:
-            return INT32_MIN;
-        case SymbolicIntegerValue::ShortMin:
-            return INT16_MIN;
-        case SymbolicIntegerValue::ByteMin:
-            return INT8_MIN;
-        case SymbolicIntegerValue::Zero:
-            return 0;
-        case SymbolicIntegerValue::One:
-            return 1;
-        case SymbolicIntegerValue::ByteMax:
-            return INT8_MAX;
-        case SymbolicIntegerValue::UByteMax:
-            return UINT8_MAX;
-        case SymbolicIntegerValue::ShortMax:
-            return INT16_MAX;
-        case SymbolicIntegerValue::UShortMax:
-            return UINT16_MAX;
-        case SymbolicIntegerValue::IntMax:
-            return INT32_MAX;
-        case SymbolicIntegerValue::UIntMax:
-            return UINT32_MAX;
-        case SymbolicIntegerValue::LongMax:
-            return INT64_MAX;
-        default:
-            unreached();
-    }
+    static const int64_t SymbolicToRealMap[13] = {INT64_MIN, INT32_MIN,  INT16_MIN, INT8_MIN,  0,
+                                                  1,         INT8_MAX,   UINT8_MAX, INT16_MAX, UINT16_MAX,
+                                                  INT32_MAX, UINT32_MAX, INT64_MAX};
+
+    assert(sizeof(SymbolicIntegerValue) == sizeof(int32_t));
+    assert(SymbolicToRealMap[static_cast<int32_t>(SymbolicIntegerValue::LongMin)] == INT64_MIN);
+    assert(SymbolicToRealMap[static_cast<int32_t>(SymbolicIntegerValue::Zero)] == 0);
+    assert(SymbolicToRealMap[static_cast<int32_t>(SymbolicIntegerValue::LongMax)] == INT64_MAX);
+
+    return SymbolicToRealMap[static_cast<int32_t>(value)];
 }
 
 /* static */ SymbolicIntegerValue IntegralRange::LowerBoundForType(var_types type)
