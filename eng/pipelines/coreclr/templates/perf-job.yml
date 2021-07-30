@@ -59,7 +59,7 @@ jobs:
     - ${{ if eq(parameters.runtimeType, 'wasm')}}:
       - ${{ format('build_{0}{1}_{2}_{3}_{4}', 'Browser', '', 'wasm', parameters.buildConfig, parameters.runtimeType) }}
     - ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm'))}}:
-      - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.codeGenType) }}
     - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
       - ${{ 'build_Android_arm64_release_AndroidMono' }}
     - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
