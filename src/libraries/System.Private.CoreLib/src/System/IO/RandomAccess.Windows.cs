@@ -290,7 +290,7 @@ namespace System.IO
             }
             finally
             {
-                if (errorCode != Interop.Errors.ERROR_IO_PENDING)
+                if (errorCode != Interop.Errors.ERROR_IO_PENDING && errorCode != Interop.Errors.ERROR_SUCCESS)
                 {
                     strategy?.OnIncompleteRead(buffer.Length, 0);
                 }
