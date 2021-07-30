@@ -233,12 +233,16 @@ namespace System.Diagnostics.Tracing
     // The EnsureDescriptorsInitialized() method might need to access EventSource and its derived type
     // members and the trimmer ensures that these members are preserved.
     [DynamicallyAccessedMembers(ManifestMemberTypes)]
-    // This coarse suppression silences all RequiresUnreferencedCode warnings in the class.
-    // https://github.com/mono/linker/issues/2136 tracks making it possible to add more granular suppressions at the member level, and with a different warning code.
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-        Justification = "EnsureDescriptorsInitialized's use of GetType preserves all members, so " +
-                        "those that are marked with RequiresUnreferencedCode will warn. " +
-                        "This method will not access any of these members and is safe to call.")]
+     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113",
+         Justification = "EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
+                         "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
+                         "This includes Delegate and MulticastDelegate methods which require unreferenced code, but " +
+                         "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
+     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2115",
+         Justification = "EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
+                         "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
+                         "This includes Delegate and MulticastDelegate methods which have dynamically accessed members requirements, but " +
+                         "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
 #endif
     public partial class EventSource : IDisposable
     {
@@ -367,6 +371,12 @@ namespace System.Diagnostics.Tracing
         /// <param name="assemblyPathToIncludeInManifest">The manifest XML fragment contains the string name of the DLL name in
         /// which it is embedded.  This parameter specifies what name will be used</param>
         /// <returns>The XML data string</returns>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114",
+            Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                            "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not "+
+                            "access this member and is safe to call.")]
+#endif
         public static string? GenerateManifest(
 #if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(ManifestMemberTypes)]
@@ -388,6 +398,12 @@ namespace System.Diagnostics.Tracing
         /// <param name="flags">The flags to customize manifest generation. If flags has bit OnlyIfNeededForRegistration specified
         /// this returns null when the eventSourceType does not require explicit registration</param>
         /// <returns>The XML data string or null</returns>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114",
+            Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                            "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not "+
+                            "access this member and is safe to call.")]
+#endif
         public static string? GenerateManifest(
 #if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(ManifestMemberTypes)]
@@ -1269,6 +1285,9 @@ namespace System.Diagnostics.Tracing
         /// </code>
         /// </remarks>
 #if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112",
+                    Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         [CLSCompliant(false)]
@@ -1303,6 +1322,9 @@ namespace System.Diagnostics.Tracing
         /// </code>
         /// </remarks>
 #if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112",
+                    Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         [CLSCompliant(false)]
@@ -1398,6 +1420,9 @@ namespace System.Diagnostics.Tracing
         /// check so that the varargs call is not made when the EventSource is not active.
         /// </summary>
 #if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112",
+                    Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         protected unsafe void WriteEvent(int eventId, params object?[] args)
@@ -1414,6 +1439,9 @@ namespace System.Diagnostics.Tracing
         /// check so that the varargs call is not made when the EventSource is not active.
         /// </summary>
 #if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112",
+                    Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         protected unsafe void WriteEventWithRelatedActivityId(int eventId, Guid relatedActivityId, params object?[] args)
@@ -1898,6 +1926,9 @@ namespace System.Diagnostics.Tracing
         }
 
 #if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112",
+                    Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object?[] args)
@@ -2010,6 +2041,9 @@ namespace System.Diagnostics.Tracing
         }
 
 #if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112",
+            Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                            "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
         private unsafe object?[] SerializeEventArgs(int eventId, object?[] args)
@@ -2469,6 +2503,9 @@ namespace System.Diagnostics.Tracing
             public TraceLoggingEventTypes TraceLoggingEventTypes
             {
 #if !ES_BUILD_STANDALONE
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112",
+                    Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                 [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
 #endif
                 get
@@ -2956,6 +2993,12 @@ namespace System.Diagnostics.Tracing
 
         // Helper to deal with the fact that the type we are reflecting over might be loaded in the ReflectionOnly context.
         // When that is the case, we have the build the custom assemblies on a member by hand.
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114",
+            Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                            "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not "+
+                            "access this member and is safe to call.")]
+#endif
         internal static Attribute? GetCustomAttributeHelper(
             MemberInfo member,
 #if !ES_BUILD_STANDALONE
@@ -3077,6 +3120,12 @@ namespace System.Diagnostics.Tracing
         // return the UTF8 bytes.  It also sets up the code:EventData structures needed to dispatch events
         // at run time.  'source' is the event source to place the descriptors.  If it is null,
         // then the descriptors are not created, and just the manifest is generated.
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114",
+            Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                            "has dynamically accessed members requirements, but its use of this method satisfies " +
+                            "these requirements because it passes in the result of GetType with the same annotations.")]
+#endif
         private static byte[]? CreateManifestAndDescriptors(
 #if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(ManifestMemberTypes)]
