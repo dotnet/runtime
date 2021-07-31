@@ -138,8 +138,9 @@
 
   <Target Name="_WasmGenerateRuntimeConfig" Condition="'$(OutputType)' != 'library'">
     <PropertyGroup>
-      <RuntimeConfigFilePath>$(TargetDir)publish\$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>
-      <ParsedRuntimeConfigFilePath>$(TargetDir)publish\runtimeconfig.bin</ParsedRuntimeConfigFilePath>
+      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
+      <RuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</RuntimeConfigFilePath>
+      <ParsedRuntimeConfigFilePath>$([System.IO.Path]::GetDirectoryName($(_MainAssemblyPath)))\runtimeconfig.bin</ParsedRuntimeConfigFilePath>
     </PropertyGroup>
 
     <Error Condition="!Exists('$(RuntimeConfigFilePath)')" Text="RuntimeConfigFilePath=$(RuntimeConfigFilePath) doesn't exist" />
