@@ -30,6 +30,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal ServiceProviderEngineScope Root { get; }
 
+        internal static bool VerifyOpenGenericServiceTrimmability { get; } =
+            AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability", out bool verifyOpenGenerics) ? verifyOpenGenerics : false;
+
         internal ServiceProvider(IEnumerable<ServiceDescriptor> serviceDescriptors, ServiceProviderOptions options)
         {
             // note that Root needs to be set before calling GetEngine(), because the engine may need to access Root
