@@ -399,6 +399,59 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
         }
 
+        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        public void TestMultiValueCustomAttributes()
+        {
+            var userData = CustomUserData.GenerateUserData("CustomCoreFxUser2");
+            userData.PostalAddress.Add("Second address");
+
+            DeleteUser(userData.Name);
+
+            // Check whether directory-data is equivalent to expected data
+            void CheckAddressWithDirectory(PrincipalContext context, List<string> address)
+            {
+                using var foundPrincipal = FindCustomUser(userData.Name, context);
+                Assert.NotNull(foundPrincipal);
+                Assert.Equal(address.ToHashSet(), foundPrincipal.PostalAddress.ToHashSet());
+            };
+
+            // Helper to update list
+            void UpdateAddressList(CustomUserPrincipal principal, Action<List<string>> update)
+            {
+                var localCopy = principal.PostalAddress;
+                update(localCopy);
+                principal.PostalAddress = localCopy;
+                principal.Save();
+            }
+
+            try
+            {
+                // Initial setup
+                using var context = DomainContext;
+                using var principal = CreateCustomUser(context, userData);
+                Assert.NotNull(principal);
+                Assert.Equal(userData.PostalAddress, principal.PostalAddress);
+
+                CheckAddressWithDirectory(context, principal.PostalAddress);
+
+                // Add address
+                UpdateAddressList(principal, addresses => addresses.Add("Third address"));
+                CheckAddressWithDirectory(context, principal.PostalAddress);
+
+                // Remove address
+                UpdateAddressList(principal, addresses => addresses.Remove("Second address"));
+                CheckAddressWithDirectory(context, principal.PostalAddress);
+
+                // Remove address so we have one remaining
+                UpdateAddressList(principal, addresses => addresses.Remove("Third address"));
+                CheckAddressWithDirectory(context, principal.PostalAddress);
+            }
+            finally
+            {
+                DeleteUser(userData.Name);
+            }
+        }
+
         private void ValidateRecentAddedUser(PrincipalContext context, UserData userData)
         {
             using (UserPrincipal p = FindUser(userData.Name, context))
