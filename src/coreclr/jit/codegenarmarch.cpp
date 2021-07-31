@@ -2364,6 +2364,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // Use IP0 on ARM64 and R12 on ARM32 as the call target register.
             inst_Mov(TYP_I_IMPL, REG_FASTTAILCALL_TARGET, target->GetRegNum(), /* canSkip */ true);
         }
+        else if (call->IsR2RRelativeIndir())
+        {
+            assert(call->gtEntryPoint.accessType == IAT_PVALUE);
+            assert(call->gtControlExpr == nullptr);
+            // Call target is in REG_R2R_INDIRECT_PARAM. genFnEpilog knows to look for it there
+            // instead of from REG_FASTTAILCALL_TARGET.
+        }
 
         return;
     }

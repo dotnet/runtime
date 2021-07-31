@@ -4485,7 +4485,6 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         else
 #endif // TARGET_X86
 
-
         if (ctrlExpr->isIndir())
         {
             bool canContainIndir = true;

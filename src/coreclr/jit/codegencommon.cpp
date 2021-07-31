@@ -8025,7 +8025,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             // target address will be in gtDirectCallAddress. It is still possible that calls
             // to user funcs require indirection, in which case the control expression will
             // be non-null.
-            if ((callType == CT_USER_FUNC) && (call->gtControlExpr == nullptr))
+            if ((callType == CT_USER_FUNC) && (call->gtControlExpr == nullptr) && !call->IsR2RRelativeIndir())
             {
                 assert(call->gtCallMethHnd != nullptr);
                 // clang-format off
@@ -8050,8 +8050,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             else
             {
                 // Target requires indirection to obtain. genCallInstruction will have materialized
-                // it into REG_FASTTAILCALL_TARGET already, so just branch to it.
-                GetEmitter()->emitIns_R(INS_br, emitTypeSize(TYP_I_IMPL), REG_FASTTAILCALL_TARGET);
+                // it into REG_R2R_INDIRECT_PARAM/REG_FASTTAILCALL_TARGET already, so just branch to it.
+                regNumber reg = call->IsR2RRelativeIndir() ? REG_R2R_INDIRECT_PARAM : REG_FASTTAILCALL_TARGET;
+                GetEmitter()->emitIns_R(INS_br, emitTypeSize(TYP_I_IMPL), reg);
             }
         }
 #endif // FEATURE_FASTTAILCALL
@@ -8487,8 +8488,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 if (target->isContained())
                 {
                     // We can only tailcall with indirect target if the target
-                    // is an offset as otherwise we may need registers that
-                    // could have been wiped out by the epilog.
+                    // is an indirs off of an immediate as otherwise we may
+                    // need registers that could have been wiped out by the
+                    // epilog.
                     noway_assert(target->isIndir());
                     assert(target->AsIndir()->HasBase() && target->AsIndir()->Base()->isContainedIntOrIImmed());
                     assert(!target->AsIndir()->HasIndex());
