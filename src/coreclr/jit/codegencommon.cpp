@@ -8025,7 +8025,12 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             // target address will be in gtDirectCallAddress. It is still possible that calls
             // to user funcs require indirection, in which case the control expression will
             // be non-null.
-            if ((callType == CT_USER_FUNC) && (call->gtControlExpr == nullptr) && !call->IsR2RRelativeIndir())
+            bool isR2rRelIndir = false;
+#ifdef FEATURE_READYTORUN_COMPILER
+            isR2rRelIndir = call->IsR2RRelativeIndir();
+#endif
+
+            if ((callType == CT_USER_FUNC) && (call->gtControlExpr == nullptr) && !isR2rRelIndir)
             {
                 assert(call->gtCallMethHnd != nullptr);
                 // clang-format off
@@ -8051,7 +8056,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             {
                 // Target requires indirection to obtain. genCallInstruction will have materialized
                 // it into REG_R2R_INDIRECT_PARAM/REG_FASTTAILCALL_TARGET already, so just branch to it.
-                regNumber reg = call->IsR2RRelativeIndir() ? REG_R2R_INDIRECT_PARAM : REG_FASTTAILCALL_TARGET;
+                regNumber reg = isR2rRelIndir ? REG_R2R_INDIRECT_PARAM : REG_FASTTAILCALL_TARGET;
                 GetEmitter()->emitIns_R(INS_br, emitTypeSize(TYP_I_IMPL), reg);
             }
         }
