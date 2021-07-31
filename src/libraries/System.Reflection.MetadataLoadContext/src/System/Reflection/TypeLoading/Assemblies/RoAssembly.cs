@@ -166,7 +166,7 @@ namespace System.Reflection.TypeLoading
         public abstract override MethodInfo? EntryPoint { get; }
 
         // Manifest resource support.
-        public abstract override ManifestResourceInfo GetManifestResourceInfo(string resourceName);
+        public abstract override ManifestResourceInfo? GetManifestResourceInfo(string resourceName);
         public abstract override string[] GetManifestResourceNames();
         public abstract override Stream? GetManifestResourceStream(string name);
         public sealed override Stream? GetManifestResourceStream(Type type, string name)
