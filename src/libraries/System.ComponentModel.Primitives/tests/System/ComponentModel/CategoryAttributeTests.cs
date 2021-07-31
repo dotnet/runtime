@@ -9,7 +9,6 @@ namespace System.ComponentModel.Tests
     public class CategoryAttributeTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50881", TestPlatforms.Android)]
         public void Ctor_Default()
         {
             var attribute = new CategoryAttribute();
@@ -24,7 +23,6 @@ namespace System.ComponentModel.Tests
         [InlineData("Misc", true)]
         [InlineData("misc", false)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws a NullReferenceException")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50881", TestPlatforms.Android)]
         public void Ctor_String(string category, bool expectedIsDefaultAttribute)
         {
             var attribute = new CategoryAttribute(category);
@@ -61,7 +59,6 @@ namespace System.ComponentModel.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50881", TestPlatforms.Android)]
         public void Equals_Object_ReturnsExpected(CategoryAttribute attribute, object other, bool expected)
         {
             Assert.Equal(expected, attribute.Equals(other));
@@ -90,7 +87,6 @@ namespace System.ComponentModel.Tests
 
         [Theory]
         [MemberData(nameof(Properties_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50881", TestPlatforms.Android)]
         public void Properties_Get_ReturnsExpected(Func<CategoryAttribute> attributeThunk, string expectedCategory)
         {
             CategoryAttribute attribute = attributeThunk();
@@ -129,7 +125,6 @@ namespace System.ComponentModel.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("value")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50881", TestPlatforms.Android)]
         public void GetLocalizedString_InvokeNoSuchValue_ReturnsNull(string value)
         {
             var attribute = new SubCategoryAttribute();

@@ -542,6 +542,13 @@ namespace Wasm.Build.Tests
                         throw new XunitException($"Process timed out. Last 20 lines of output:{Environment.NewLine}{string.Join(Environment.NewLine, lastLines)}");
                     }
                 }
+                else
+                {
+                    // this will ensure that all the async event handling
+                    // has completed
+                    // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
+                    process.WaitForExit();
+                }
 
                 process.ErrorDataReceived -= logStdErr;
                 process.OutputDataReceived -= logStdOut;

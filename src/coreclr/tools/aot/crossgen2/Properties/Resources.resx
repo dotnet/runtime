@@ -171,9 +171,6 @@
   <data name="InstructionSetMustNotBe" xml:space="preserve">
     <value>Instruction set '{0}' is not valid for this architecture and operating system</value>
   </data>
-  <data name="InstructionSetWithoutInputBubble" xml:space="preserve">
-    <value>Instruction set(s) specified without also specifying input-bubble</value>
-  </data>
   <data name="InstructionSetInvalidImplication" xml:space="preserve">
     <value>Instruction set '{0}' implies support for instruction set '{1}'</value>
   </data>

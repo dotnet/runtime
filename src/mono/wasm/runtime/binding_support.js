@@ -892,6 +892,12 @@ var BindingSupportLib = {
 				// It's possible the managed object corresponding to this JS object was collected,
 				//  in which case we need to make a new one.
 				if (!result) {
+
+					if (typeof js_obj.__mono_delegate_alive__ !== "undefined") {
+						console.log("The delegate target that is being invoked is no longer available.  Please check if it has been prematurely GC'd.");
+						return null;
+					}
+		
 					delete js_obj.__mono_gchandle__;
 					delete js_obj.is_mono_bridged_obj;
 				}
