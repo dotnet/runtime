@@ -1146,7 +1146,7 @@ public:
         {
             if (alloc_objects [i] != (uint8_t*)0)
             {
-                GCToOSInterface::DebugBreak();
+                FATAL_GC_ERROR();
             }
         }
     }
