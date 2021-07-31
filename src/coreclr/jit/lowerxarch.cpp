@@ -4466,9 +4466,6 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         // we should never see a gtControlExpr whose type is void.
         assert(ctrlExpr->TypeGet() != TYP_VOID);
 
-        // In case of fast tail implemented as jmp it can be problematic to mark the control expression as contained
-        // since it may rely on registers that have been cleaned up. The exception is indirections off of constants
-        // that don't need any registers.
 #ifdef TARGET_X86
         // On x86, we need to generate a very specific pattern for indirect VSD calls:
         //
@@ -4485,17 +4482,19 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         else
 #endif // TARGET_X86
 
-        if (ctrlExpr->isIndir())
+            if (ctrlExpr->isIndir())
         {
             bool canContainIndir = true;
             if (call->IsFastTailCall())
             {
-                // Currently we only allow fast tailcalls with indirections when no registers are required in the indirection.
-                // This is to ensure we won't need a register for the addressing mode since registers will have been cleaned up
+                // Currently we only allow fast tailcalls with indirections when no registers are required in the
+                // indirection.
+                // This is to ensure we won't need a register for the addressing mode since registers will have been
+                // cleaned up
                 // by the epilog at this point.
-                canContainIndir =
-                    ctrlExpr->AsIndir()->HasBase() && ctrlExpr->AsIndir()->Base()->isContainedIntOrIImmed() &&
-                    !ctrlExpr->AsIndir()->HasIndex();
+                canContainIndir = ctrlExpr->AsIndir()->HasBase() &&
+                                  ctrlExpr->AsIndir()->Base()->isContainedIntOrIImmed() &&
+                                  !ctrlExpr->AsIndir()->HasIndex();
             }
 
             if (canContainIndir)

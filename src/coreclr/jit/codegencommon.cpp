@@ -8496,6 +8496,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                     assert(!target->AsIndir()->HasIndex());
                     assert(target->AsIndir()->Base()->AsIntConCommon()->FitsInAddrBase(compiler));
 
+                    // clang-format off
                     GetEmitter()->emitIns_Call(
                         emitter::EC_FUNC_TOKEN_INDIR,
                         call->gtCallMethHnd,
@@ -8510,6 +8511,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                         BAD_IL_OFFSET, REG_NA, REG_NA, 0, 0,
                         true /* isJump */
                     );
+                    // clang-format on
                 }
                 else
                 {
