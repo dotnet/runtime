@@ -2886,7 +2886,7 @@ namespace Mono.Linker.Steps
 				}
 
 				_context.LogWarning (
-					$"Method '{method.GetDisplayName ()}' with parameters or return value with `DynamicallyAccessedMembersAttribute` is accessed via reflection. Trimmer can't guarantee availability of the requirements of the field.",
+					$"Method '{method.GetDisplayName ()}' with parameters or return value with `DynamicallyAccessedMembersAttribute` is accessed via reflection. Trimmer can't guarantee availability of the requirements of the method.",
 					2111,
 					_scopeStack.CurrentScope.Origin,
 					MessageSubCategory.TrimAnalysis);

@@ -1737,7 +1737,7 @@ void TestMethod()
 }
 ```
 
-#### `IL2111`: Trim analysis: Method 'method' with parameters or return value with `DynamicallyAccessedMembersAttribute` is accessed via reflection. Trimmer can't guarantee availability of the requirements of the field.
+#### `IL2111`: Trim analysis: Method 'method' with parameters or return value with `DynamicallyAccessedMembersAttribute` is accessed via reflection. Trimmer can't guarantee availability of the requirements of the method.
 
 - Trimmer currently can't guarantee that all requirements of the `DynamicallyAccessedMembersAttribute` are fulfilled if the method is accessed via reflection.
 
@@ -1748,7 +1748,7 @@ void MethodWithRequirements([DynamicallyAccessedMembers(DynamicallyAccessedMemeb
 
 void TestMethod()
 {
-    // IL2111: Method 'MethodWithRequirements' with parameters or return value with `DynamicallyAccessedMembersAttribute` is accessed via reflection. Trimmer can't guarantee availability of the requirements of the field.
+    // IL2111: Method 'MethodWithRequirements' with parameters or return value with `DynamicallyAccessedMembersAttribute` is accessed via reflection. Trimmer can't guarantee availability of the requirements of the method.
     typeof(Test).GetMethod("MethodWithRequirements");
 }
 ```
