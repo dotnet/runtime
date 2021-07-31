@@ -8835,6 +8835,35 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------------
+// fgGetArgTabEntryParameterLclNum : Get the lcl num for the parameter that
+// corresponds to the argument to a recursive call.
+//
+// Notes:
+//    Due to non-standard args this is not just fgArgTabEntry::argNum.
+//    For example, in R2R compilations we will have added a non-standard
+//    arg for the R2R indirection cell.
+//
+// Arguments:
+//    argTabEntry  - the arg
+//
+unsigned fgGetArgTabEntryParameterLclNum(GenTreeCall* call, fgArgTabEntry* argTabEntry)
+{
+    fgArgInfo* argInfo = call->fgArgInfo;
+    unsigned        argCount       = argInfo->ArgCount();
+    fgArgTabEntry** argTable       = argInfo->ArgTable();
+
+    unsigned numNonStandardBefore = 0;
+    for (unsigned i = 0; i < argCount; i++)
+    {
+        fgArgTabEntry* arg = argTable[i];
+        if (arg->isNonStandard && (arg->argNum < argTabEntry->argNum))
+            numNonStandardBefore++;
+    }
+
+    return argTabEntry->argNum - numNonStandardBefore;
+}
+
+//------------------------------------------------------------------------------
 // fgMorphRecursiveFastTailCallIntoLoop : Transform a recursive fast tail call into a loop.
 //
 //
@@ -8925,13 +8954,17 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
             {
                 // This is an actual argument that needs to be assigned to the corresponding caller parameter.
                 fgArgTabEntry* curArgTabEntry = gtArgEntryByArgNum(recursiveTailCall, earlyArgIndex);
-                Statement*     paramAssignStmt =
-                    fgAssignRecursiveCallArgToCallerParam(earlyArg, curArgTabEntry, block, callILOffset,
-                                                          tmpAssignmentInsertionPoint, paramAssignmentInsertionPoint);
-                if ((tmpAssignmentInsertionPoint == lastStmt) && (paramAssignStmt != nullptr))
+                if (!curArgTabEntry->isNonStandard)
                 {
-                    // All temp assignments will happen before the first param assignment.
-                    tmpAssignmentInsertionPoint = paramAssignStmt;
+                    Statement* paramAssignStmt =
+                        fgAssignRecursiveCallArgToCallerParam(earlyArg, curArgTabEntry, fgGetArgTabEntryParameterLclNum(recursiveTailCall, curArgTabEntry),
+                            block, callILOffset,
+                            tmpAssignmentInsertionPoint, paramAssignmentInsertionPoint);
+                    if ((tmpAssignmentInsertionPoint == lastStmt) && (paramAssignStmt != nullptr))
+                    {
+                        // All temp assignments will happen before the first param assignment.
+                        tmpAssignmentInsertionPoint = paramAssignStmt;
+                    }
                 }
             }
         }
@@ -8945,14 +8978,17 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // A late argument is an actual argument that needs to be assigned to the corresponding caller's parameter.
         GenTree*       lateArg        = use.GetNode();
         fgArgTabEntry* curArgTabEntry = gtArgEntryByLateArgIndex(recursiveTailCall, lateArgIndex);
-        Statement*     paramAssignStmt =
-            fgAssignRecursiveCallArgToCallerParam(lateArg, curArgTabEntry, block, callILOffset,
-                                                  tmpAssignmentInsertionPoint, paramAssignmentInsertionPoint);
-
-        if ((tmpAssignmentInsertionPoint == lastStmt) && (paramAssignStmt != nullptr))
+        if (!curArgTabEntry->isNonStandard)
         {
-            // All temp assignments will happen before the first param assignment.
-            tmpAssignmentInsertionPoint = paramAssignStmt;
+            Statement* paramAssignStmt =
+                fgAssignRecursiveCallArgToCallerParam(lateArg, curArgTabEntry, fgGetArgTabEntryParameterLclNum(recursiveTailCall, curArgTabEntry), block, callILOffset,
+                    tmpAssignmentInsertionPoint, paramAssignmentInsertionPoint);
+
+            if ((tmpAssignmentInsertionPoint == lastStmt) && (paramAssignStmt != nullptr))
+            {
+                // All temp assignments will happen before the first param assignment.
+                tmpAssignmentInsertionPoint = paramAssignStmt;
+            }
         }
         lateArgIndex++;
     }
@@ -9048,6 +9084,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 // Arguments:
 //    arg  -  argument to assign
 //    argTabEntry  -  argument table entry corresponding to arg
+//    lclParamNum - the lcl num of the parameter
 //    block  --- basic block the call is in
 //    callILOffset  -  IL offset of the call
 //    tmpAssignmentInsertionPoint  -  tree before which temp assignment should be inserted (if necessary)
@@ -9058,6 +9095,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 
 Statement* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
                                                            fgArgTabEntry* argTabEntry,
+                                                           unsigned       lclParamNum,
                                                            BasicBlock*    block,
                                                            IL_OFFSETX     callILOffset,
                                                            Statement*     tmpAssignmentInsertionPoint,
@@ -9067,7 +9105,6 @@ Statement* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
     // some argument trees may reference parameters directly.
 
     GenTree* argInTemp             = nullptr;
-    unsigned originalArgNum        = argTabEntry->argNum;
     bool     needToAssignParameter = true;
 
     // TODO-CQ: enable calls with struct arguments passed in registers.
@@ -9087,7 +9124,7 @@ Statement* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
             // The argument is a non-parameter local so it doesn't need to be assigned to a temp.
             argInTemp = arg;
         }
-        else if (lclNum == originalArgNum)
+        else if (lclNum == lclParamNum)
         {
             // The argument is the same parameter local that we were about to assign so
             // we can skip the assignment.
@@ -9118,9 +9155,9 @@ Statement* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
         }
 
         // Now assign the temp to the parameter.
-        LclVarDsc* paramDsc = lvaTable + originalArgNum;
+        LclVarDsc* paramDsc = lvaTable + lclParamNum;
         assert(paramDsc->lvIsParam);
-        GenTree* paramDest       = gtNewLclvNode(originalArgNum, paramDsc->lvType);
+        GenTree* paramDest       = gtNewLclvNode(lclParamNum, paramDsc->lvType);
         GenTree* paramAssignNode = gtNewAssignNode(paramDest, argInTemp);
         paramAssignStmt          = gtNewStmt(paramAssignNode, callILOffset);
 
