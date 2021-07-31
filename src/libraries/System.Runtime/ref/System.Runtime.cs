@@ -5846,6 +5846,11 @@ namespace System
         public System.String PadRight(int totalWidth, char paddingChar) { throw null; }
         public System.String Remove(int startIndex) { throw null; }
         public System.String Remove(int startIndex, int count) { throw null; }
+        public System.String RemoveEnd(System.String value) { throw null; }
+        public System.String RemoveEnd(System.String value, System.StringComparison comparisonType) { throw null; }
+
+        public System.String RemoveStart(System.String value) { throw null; }
+        public System.String RemoveStart(System.String value, System.StringComparison comparisonType) { throw null; }
         public System.String Replace(char oldChar, char newChar) { throw null; }
         public System.String Replace(System.String oldValue, System.String? newValue) { throw null; }
         public System.String Replace(System.String oldValue, System.String? newValue, bool ignoreCase, System.Globalization.CultureInfo? culture) { throw null; }

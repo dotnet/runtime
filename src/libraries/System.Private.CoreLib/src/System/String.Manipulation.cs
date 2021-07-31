@@ -1956,6 +1956,17 @@ namespace System
             }
         }
 
+        public string RemoveStart(string value) => RemoveStart(value, StringComparison.Ordinal);
+
+        public unsafe string RemoveStart(string value, StringComparison comparisonType)
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+            if (!this.StartsWith(value, comparisonType) || value.Length > Length)
+                return this;
+            return CreateTrimmedString(value.Length, Length - 1);
+        }
+
         // Removes a set of characters from the end of this string.
         public string TrimEnd() => TrimWhiteSpaceHelper(TrimType.Tail);
 
@@ -1973,6 +1984,17 @@ namespace System
             {
                 return TrimHelper(pTrimChars, trimChars.Length, TrimType.Tail);
             }
+        }
+
+        public string RemoveEnd(string value) => RemoveEnd(value, StringComparison.Ordinal);
+
+        public unsafe string RemoveEnd(string value, StringComparison comparisonType)
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+            if (!this.EndsWith(value, comparisonType) || value.Length > Length)
+                return this;
+            return CreateTrimmedString(0, Length - value.Length - 1);
         }
 
         private string TrimWhiteSpaceHelper(TrimType trimType)
