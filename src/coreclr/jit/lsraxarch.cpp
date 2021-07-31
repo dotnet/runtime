@@ -1214,9 +1214,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
         // In case of fast tail implemented as jmp, make sure that gtControlExpr is
         // computed into a register.
-        if (call->IsFastTailCall())
+        if (call->IsFastTailCall() && !ctrlExpr->isContained())
         {
-            assert(!ctrlExpr->isContained());
             // Fast tail call - make sure that call target is always computed in RAX
             // so that epilog sequence can generate "jmp rax" to achieve fast tail call.
             ctrlExprCandidates = RBM_RAX;
@@ -1239,7 +1238,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 #if FEATURE_VARARG
         // If it is a fast tail call, it is already preferenced to use RAX.
         // Therefore, no need set src candidates on call tgt again.
-        if (call->IsVarargs() && callHasFloatRegArgs && !call->IsFastTailCall())
+        if (call->IsVarargs() && callHasFloatRegArgs && (ctrlExprCandidates == RBM_NONE))
         {
             // Don't assign the call target to any of the argument registers because
             // we will use them to also pass floating point arguments as required

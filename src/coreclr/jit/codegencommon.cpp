@@ -8483,10 +8483,39 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             }
             else
             {
-                // Target requires indirection to obtain. genCallInstruction will have materialized
-                // it into RAX already, so just jump to it. The stack walker requires that a register
-                // indirect tail call be rex.w prefixed.
-                GetEmitter()->emitIns_R(INS_rex_jmp, emitTypeSize(TYP_I_IMPL), REG_RAX);
+                GenTree* target = callType == CT_INDIRECT ? call->gtCallAddr : call->gtControlExpr;
+                if (target->isContained())
+                {
+                    // We can only tailcall with indirect target if the target
+                    // is an offset as otherwise we may need registers that
+                    // could have been wiped out by the epilog.
+                    noway_assert(target->isIndir());
+                    assert(target->AsIndir()->HasBase() && target->AsIndir()->Base()->isContainedIntOrIImmed());
+                    assert(!target->AsIndir()->HasIndex());
+                    assert(target->AsIndir()->Base()->AsIntConCommon()->FitsInAddrBase(compiler));
+
+                    GetEmitter()->emitIns_Call(
+                        emitter::EC_FUNC_TOKEN_INDIR,
+                        call->gtCallMethHnd,
+                        INDEBUG_LDISASM_COMMA(nullptr)
+                        (void*)target->AsIndir()->Base()->AsIntConCommon()->IconValue(),
+                        0,
+                        EA_UNKNOWN
+                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),
+                        gcInfo.gcVarPtrSetCur,
+                        gcInfo.gcRegGCrefSetCur,
+                        gcInfo.gcRegByrefSetCur,
+                        BAD_IL_OFFSET, REG_NA, REG_NA, 0, 0,
+                        true /* isJump */
+                    );
+                }
+                else
+                {
+                    // Target requires indirection to obtain. genCallInstruction will have materialized
+                    // it into RAX already, so just jump to it. The stack walker requires that a register
+                    // indirect tail call be rex.w prefixed.
+                    GetEmitter()->emitIns_R(INS_rex_jmp, emitTypeSize(TYP_I_IMPL), REG_RAX);
+                }
             }
 
 #else

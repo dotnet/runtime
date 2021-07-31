@@ -4466,26 +4466,40 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         // we should never see a gtControlExpr whose type is void.
         assert(ctrlExpr->TypeGet() != TYP_VOID);
 
-        // In case of fast tail implemented as jmp, make sure that gtControlExpr is
-        // computed into a register.
-        if (!call->IsFastTailCall())
-        {
+        // In case of fast tail implemented as jmp it can be problematic to mark the control expression as contained
+        // since it may rely on registers that have been cleaned up. The exception is indirections off of constants
+        // that don't need any registers.
 #ifdef TARGET_X86
-            // On x86, we need to generate a very specific pattern for indirect VSD calls:
-            //
-            //    3-byte nop
-            //    call dword ptr [eax]
-            //
-            // Where EAX is also used as an argument to the stub dispatch helper. Make
-            // sure that the call target address is computed into EAX in this case.
-            if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
-            {
-                assert(ctrlExpr->isIndir());
-                MakeSrcContained(call, ctrlExpr);
-            }
-            else
+        // On x86, we need to generate a very specific pattern for indirect VSD calls:
+        //
+        //    3-byte nop
+        //    call dword ptr [eax]
+        //
+        // Where EAX is also used as an argument to the stub dispatch helper. Make
+        // sure that the call target address is computed into EAX in this case.
+        if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
+        {
+            assert(ctrlExpr->isIndir());
+            MakeSrcContained(call, ctrlExpr);
+        }
+        else
 #endif // TARGET_X86
-                if (ctrlExpr->isIndir())
+
+
+        if (ctrlExpr->isIndir())
+        {
+            bool canContainIndir = true;
+            if (call->IsFastTailCall())
+            {
+                // Currently we only allow fast tailcalls with indirections when no registers are required in the indirection.
+                // This is to ensure we won't need a register for the addressing mode since registers will have been cleaned up
+                // by the epilog at this point.
+                canContainIndir =
+                    ctrlExpr->AsIndir()->HasBase() && ctrlExpr->AsIndir()->Base()->isContainedIntOrIImmed() &&
+                    !ctrlExpr->AsIndir()->HasIndex();
+            }
+
+            if (canContainIndir)
             {
                 // We may have cases where we have set a register target on the ctrlExpr, but if it
                 // contained we must clear it.

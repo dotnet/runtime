@@ -915,13 +915,7 @@ namespace Internal.JitInterface
 
         private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
         {
-            if (fIsTailPrefix)
-            {
-                // FUTURE: Delay load fixups for tailcalls
-                throw new RequiresRuntimeJitException(nameof(fIsTailPrefix));
-            }
-
-            return false;
+            return true;
         }
 
         private MethodWithToken ComputeMethodWithToken(MethodDesc method, ref CORINFO_RESOLVED_TOKEN pResolvedToken, TypeDesc constrainedType, bool unboxing)

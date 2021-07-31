@@ -5191,7 +5191,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // If this is indirect then we go through RAX with epilog sequence
         // generating "jmp rax". Otherwise epilog will try to generate a
         // rip-relative jump.
-        if (target != nullptr)
+        if (target != nullptr && !target->isContained())
         {
             genConsumeReg(target);
             genCopyRegIfNeeded(target, REG_RAX);
