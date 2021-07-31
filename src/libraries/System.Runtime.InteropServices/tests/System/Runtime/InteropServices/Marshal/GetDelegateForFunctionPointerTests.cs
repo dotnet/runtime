@@ -10,7 +10,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
     public class GetDelegateForFunctionPointerTests
     {
         [Theory]
