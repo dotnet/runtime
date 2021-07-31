@@ -13,7 +13,9 @@ namespace System.Globalization
             /// </summary>
             static Settings()
             {
-                if (!Invariant)
+                // Use GlobalizationMode.Invariant to allow ICU initialization to be trimmed when Invariant=false
+                // and PredefinedCulturesOnly is unspecified.
+                if (!GlobalizationMode.Invariant)
                 {
                     if (TryGetAppLocalIcuSwitchValue(out string? icuSuffixAndVersion))
                     {
