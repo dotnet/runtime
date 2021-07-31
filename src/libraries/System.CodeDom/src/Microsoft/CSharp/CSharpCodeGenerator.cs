@@ -858,8 +858,7 @@ namespace Microsoft.CSharp
             {
                 if (isAfterCommentLineStart)
                 {
-                    if (value[i] == '/' && (e.DocComment || !(
-                        i < value.Length - 1 && value[i + 1] == '/')))
+                    if (value[i] == '/' && (e.DocComment || !value.HasCharAt(i + 1, '/')))
                     {
                         Output.Write(' ');
                     }
@@ -874,7 +873,7 @@ namespace Microsoft.CSharp
 
                 if (value[i] == '\r')
                 {
-                    if (i < value.Length - 1 && value[i + 1] == '\n')
+                    if (value.HasCharAt(i + 1, '\n'))
                     { // if next char is '\n', skip it
                         Output.Write('\n');
                         i++;

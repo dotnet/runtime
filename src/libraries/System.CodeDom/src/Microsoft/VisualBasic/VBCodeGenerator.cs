@@ -1231,9 +1231,7 @@ namespace Microsoft.VisualBasic
             {
                 if (isAfterCommentLineStart)
                 {
-                    if (value[i] == '\'' && (e.DocComment || (
-                        i < value.Length - 1 && value[i + 1] == '\'' && !(
-                        i < value.Length - 2 && value[i + 2] == '\''))))
+                    if (value[i] == '\'' && (e.DocComment || (value.HasCharAt(i + 1, '\'') && !value.HasCharAt(i + 2, '\''))))
                     {
                         Output.Write(' ');
                     }
@@ -1244,7 +1242,7 @@ namespace Microsoft.VisualBasic
 
                 if (value[i] == '\r')
                 {
-                    if (i < value.Length - 1 && value[i + 1] == '\n')
+                    if (value.HasCharAt(i + 1, '\n'))
                     { // if next char is '\n', skip it
                         Output.Write('\n');
                         i++;
