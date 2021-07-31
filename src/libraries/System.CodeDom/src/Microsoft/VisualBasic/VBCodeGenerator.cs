@@ -1231,7 +1231,9 @@ namespace Microsoft.VisualBasic
             {
                 if (isAfterCommentLineStart)
                 {
-                    if (value[i] == '\'' && (e.DocComment || (i < value.Length - 1 && value[i + 1] == '\'')))
+                    if (value[i] == '\'' && (e.DocComment || (
+                        i < value.Length - 1 && value[i + 1] == '\'' && !(
+                        i < value.Length - 2 && value[i + 2] == '\''))))
                     {
                         Output.Write(' ');
                     }

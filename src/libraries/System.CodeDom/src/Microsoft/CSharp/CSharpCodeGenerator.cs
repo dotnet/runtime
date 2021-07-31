@@ -858,7 +858,8 @@ namespace Microsoft.CSharp
             {
                 if (isAfterCommentLineStart)
                 {
-                    if (value[i] == '/')
+                    if (value[i] == '/' && (e.DocComment || !(
+                        i < value.Length - 1 && value[i + 1] == '/')))
                     {
                         Output.Write(' ');
                     }

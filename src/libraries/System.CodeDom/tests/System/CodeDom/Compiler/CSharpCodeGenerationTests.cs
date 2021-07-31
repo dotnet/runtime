@@ -3527,18 +3527,20 @@ namespace System.CodeDom.Compiler.Tests
                 Comments =
                 {
                     new CodeCommentStatement(
-                        "/ Lines starting with a slash" + Environment.NewLine +
-                        "/ each get a separating space" + Environment.NewLine +
-                        "but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.",
+                        "/ Lines starting with exactly one slash" + Environment.NewLine +
+                        "/ each get a separating space," + Environment.NewLine +
+                        "but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs."+ Environment.NewLine +
+                        "// This includes lines starting with more than one slash.",
                         docComment: false),
                 },
             };
 
             AssertEqualPreserveLineBreaks(codeTypeDeclaration,
                 @"
-                  // / Lines starting with a slash
-                  // / each get a separating space
+                  // / Lines starting with exactly one slash
+                  // / each get a separating space,
                   //but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
+                  //// This includes lines starting with more than one slash.
                   public class ClassWithCommment {
                   }
                 ");
@@ -3554,8 +3556,8 @@ namespace System.CodeDom.Compiler.Tests
                 Comments =
                 {
                     new CodeCommentStatement(
-                        "/ Lines starting with a slash" + Environment.NewLine +
-                        "/ each get a separating space" + Environment.NewLine +
+                        "/ Lines starting with a slash each get a separating space," + Environment.NewLine +
+                        "// including lines starting with more than one slash," + Environment.NewLine +
                         "but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.",
                         docComment: true),
                 },
@@ -3563,8 +3565,8 @@ namespace System.CodeDom.Compiler.Tests
 
             AssertEqualPreserveLineBreaks(codeTypeDeclaration,
                 @"
-                  /// / Lines starting with a slash
-                  /// / each get a separating space
+                  /// / Lines starting with a slash each get a separating space,
+                  /// // including lines starting with more than one slash,
                   ///but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
                   public class ClassWithCommment {
                   }
