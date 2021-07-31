@@ -54,6 +54,7 @@ namespace System.DirectoryServices.Protocols
 
         public void StartTransportLayerSecurity(DirectoryControlCollection controls)
         {
+            if (_connection._disposed) throw new ObjectDisposedException(GetType().Name);
             _connection._startTls = true;
             _connection._startTlsControls = controls;
         }

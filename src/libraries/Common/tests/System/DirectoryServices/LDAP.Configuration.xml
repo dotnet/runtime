@@ -28,12 +28,12 @@ and to test and view status
 
     docker exec -it slapd01 slapcat
 
-SLAPD OPENLDAP SERVER WITH TLS
+SLAPD OPENLDAP SERVER WITH TLS/STARTTLS
 ==============================
 
-The osixia/openldap container image automatically creates a TLS lisener with a self-signed certificate. This can be used to test TLS.
+The osixia/openldap container image automatically creates a TLS listener with a self-signed certificate. This can be used to test TLS or StartTLS.
 
-Start the container, with TLS on port 1636, without client certificate verification:
+Start the container, with TLS on port 1636 or StartTLS on 1389, without client certificate verification:
 
     docker run --publish 1389:389 --publish 1636:636 --name ldap --hostname ldap.local --detach --rm --env LDAP_TLS_VERIFY_CLIENT=never --env LDAP_ADMIN_PASSWORD=password osixia/openldap --loglevel debug
 
@@ -52,9 +52,13 @@ Finally, map the `ldap.local` hostname manually set above to the loopback addres
     # /etc/hosts
     127.0.0.1 ldap.local
 
-To test and view the status:
+To test the TLS connection:
 
     ldapsearch -H ldaps://ldap.local:1636 -b dc=example,dc=org -x -D cn=admin,dc=example,dc=org -w password
+
+Or for StartTLS:
+
+    ldapsearch -H ldap://ldap.local:1389 -ZZ -b dc=example,dc=org -x -D cn=admin,dc=example,dc=org -w password
 
 ACTIVE DIRECTORY
 ================
@@ -118,7 +122,16 @@ Note:
         <User>cn=admin,dc=example,dc=org</User>
         <Password>password</Password>
         <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
-        <UseTls>true</UseTls>
+        <TransportSecurity>TLS</TransportSecurity>
+    </Connection>
+    <Connection Name="SLAPD OPENLDAP SERVER STARTTLS">
+        <ServerName>ldap.local</ServerName>
+        <SearchDN>DC=example,DC=org</SearchDN>
+        <Port>1389</Port>
+        <User>cn=admin,dc=example,dc=org</User>
+        <Password>password</Password>
+        <AuthenticationTypes>ServerBind,None</AuthenticationTypes>
+        <TransportSecurity>StartTLS</TransportSecurity>
     </Connection>
 
 </Configuration>

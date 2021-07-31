@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.DirectoryServices.Tests;
 using System.Globalization;
 using System.Net;
-using System.Threading;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
@@ -630,7 +628,12 @@ namespace System.DirectoryServices.Protocols.Tests
             // Set server protocol before bind; OpenLDAP servers default
             // to LDAP v2, which we do not support, and will return LDAP_PROTOCOL_ERROR
             connection.SessionOptions.ProtocolVersion = 3;
-            connection.SessionOptions.SecureSocketLayer = LdapConfiguration.Configuration.UseTls;
+
+            if (LdapConfiguration.Configuration.TransportSecurityOption == LdapConfiguration.TransportSecurity.StartTls)
+                connection.SessionOptions.StartTransportLayerSecurity(null);
+            else if (LdapConfiguration.Configuration.TransportSecurityOption == LdapConfiguration.TransportSecurity.Tls)
+                connection.SessionOptions.SecureSocketLayer = true;
+
             connection.Bind();
 
             connection.Timeout = new TimeSpan(0, 3, 0);
