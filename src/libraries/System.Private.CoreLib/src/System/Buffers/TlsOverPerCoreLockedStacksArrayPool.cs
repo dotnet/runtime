@@ -208,17 +208,11 @@ namespace System.Buffers
             // that we may end up firing a trimming event even if an array wasn't trimmed, and potentially
             // trim an array we didn't need to.  Both of these should be rare occurrences.
 
+            // Under high pressure, release all thread locals.
             if (pressure == Utilities.MemoryPressure.High)
             {
-                // Under high pressure, release all thread locals.
-                if (!log.IsEnabled())
-                {
-                    foreach (KeyValuePair<ThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets)
-                    {
-                        Array.Clear(tlsBuckets.Key);
-                    }
-                }
-                else
+#if !MONO // TODO https://github.com/mono/linker/issues/2181: Remove !MONO ifdefs in this method once  is fixed
+                if (log.IsEnabled())
                 {
                     foreach (KeyValuePair<ThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets)
                     {
@@ -230,6 +224,14 @@ namespace System.Buffers
                                 log.BufferTrimmed(buffer.GetHashCode(), buffer.Length, Id);
                             }
                         }
+                    }
+                }
+                else
+#endif
+                {
+                    foreach (KeyValuePair<ThreadLocalArray[], object?> tlsBuckets in _allTlsBuckets)
+                    {
+                        Array.Clear(tlsBuckets.Key);
                     }
                 }
             }
@@ -266,10 +268,14 @@ namespace System.Buffers
                         {
                             // Time noticeably wrapped, or we've surpassed the threshold.
                             // Clear out the array, and log its being trimmed if desired.
-                            if (Interlocked.Exchange(ref buckets[i].Array, null) is T[] buffer &&
-                                log.IsEnabled())
+                            if (Interlocked.Exchange(ref buckets[i].Array, null) is T[] buffer)
                             {
-                                log.BufferTrimmed(buffer.GetHashCode(), buffer.Length, Id);
+#if !MONO
+                                if (log.IsEnabled())
+                                {
+                                    log.BufferTrimmed(buffer.GetHashCode(), buffer.Length, Id);
+                                }
+#endif
                             }
                         }
                     }
