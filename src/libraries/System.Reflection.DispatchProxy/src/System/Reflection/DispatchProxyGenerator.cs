@@ -57,7 +57,8 @@ namespace System.Reflection
         // This approach is used to prevent regenerating identical proxy types for identical T/Proxy pairs,
         // which would ultimately be a more expensive leak.
         // Proxy instances are not cached.  Their lifetime is entirely owned by the caller of DispatchProxy.Create.
-        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Use of the MakeGenericMethod is done in a trim-safe way in DispatchProxyGenerator.")]
         [SuppressMessage("Performance", "CA1810", Justification = "Requires to suppress a trim warning")]
         static DispatchProxyGenerator()
         {
@@ -70,7 +71,6 @@ namespace System.Reflection
         private static readonly MethodInfo s_makeGenericMethodMethod;
 
         // Returns a new instance of a proxy the derives from 'baseType' and implements 'interfaceType'
-        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         internal static object CreateProxyInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
@@ -82,7 +82,6 @@ namespace System.Reflection
             return Activator.CreateInstance(proxiedType.GeneratedType, new object[] { proxiedType.MethodInfos })!;
         }
 
-        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         private static GeneratedTypeInfo GetProxyType(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
@@ -105,8 +104,8 @@ namespace System.Reflection
             }
         }
 
-        // Generates IL2062 incorrectly interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed
-        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
+                    Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
         private static GeneratedTypeInfo GenerateProxyType(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
@@ -300,7 +299,6 @@ namespace System.Reflection
                 return new GeneratedTypeInfo(_tb.CreateType()!, _methodInfos.ToArray());
             }
 
-            [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
             internal void AddInterfaceImpl([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type iface)
             {
                 // If necessary, generate an attribute to permit visibility
@@ -399,7 +397,6 @@ namespace System.Reflection
                 }
             }
 
-            [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
             private MethodBuilder AddMethodImpl(MethodInfo mi, int methodInfoIndex)
             {
                 ParameterInfo[] parameters = mi.GetParameters();
