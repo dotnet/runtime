@@ -5,9 +5,9 @@ namespace System
 {
     public enum LoaderOptimization
     {
-        [System.ObsoleteAttribute("LoaderOptimization.DisallowBindings has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("LoaderOptimization.DisallowBindings has been deprecated and is not supported.")]
         DisallowBindings = 4,
-        [System.ObsoleteAttribute("LoaderOptimization.DomainMask has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("LoaderOptimization.DomainMask has been deprecated and is not supported.")]
         DomainMask = 3,
         MultiDomain = 2,
         MultiDomainHost = 3,

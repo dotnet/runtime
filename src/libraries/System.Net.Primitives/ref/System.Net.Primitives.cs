@@ -512,12 +512,12 @@ namespace System.Security.Authentication
     public enum SslProtocols
     {
         None = 0,
-        [System.ObsoleteAttribute("SslProtocols.Ssl2 has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("SslProtocols.Ssl2 has been deprecated and is not supported.")]
         Ssl2 = 12,
-        [System.ObsoleteAttribute("SslProtocols.Ssl3 has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("SslProtocols.Ssl3 has been deprecated and is not supported.")]
         Ssl3 = 48,
         Tls = 192,
-        [System.ObsoleteAttribute("SslProtocols.Default has been deprecated and is no longer supported.")]
+        [System.ObsoleteAttribute("SslProtocols.Default has been deprecated and is not supported.")]
         Default = 240,
         Tls11 = 768,
         Tls12 = 3072,

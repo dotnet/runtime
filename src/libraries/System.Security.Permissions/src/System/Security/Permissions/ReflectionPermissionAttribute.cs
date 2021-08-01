@@ -12,10 +12,10 @@ namespace System.Security.Permissions
         public ReflectionPermissionAttribute(SecurityAction action) : base(default(SecurityAction)) { }
         public ReflectionPermissionFlag Flags { get; set; }
         public bool MemberAccess { get; set; }
-        [Obsolete("ReflectionPermissionAttribute.ReflectionEmit has been deprecated and is no longer supported.")]
+        [Obsolete("ReflectionPermissionAttribute.ReflectionEmit has been deprecated and is not supported.")]
         public bool ReflectionEmit { get; set; }
         public bool RestrictedMemberAccess { get; set; }
-        [Obsolete("ReflectionPermissionAttribute.TypeInformation has been deprecated and is no longer supported.")]
+        [Obsolete("ReflectionPermissionAttribute.TypeInformation has been deprecated and is not supported.")]
         public bool TypeInformation { get; set; }
         public override IPermission CreatePermission() { return default(IPermission); }
     }

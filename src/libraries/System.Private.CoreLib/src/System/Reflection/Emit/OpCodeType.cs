@@ -15,7 +15,7 @@ namespace System.Reflection.Emit
 {
     public enum OpCodeType
     {
-        [Obsolete("OpCodeType.Annotation has been deprecated and is no longer supported.")]
+        [Obsolete("OpCodeType.Annotation has been deprecated and is not supported.")]
         Annotation = 0,
         Macro = 1,
         Nternal = 2,
