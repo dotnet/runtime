@@ -4495,13 +4495,6 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
                 canContainIndir = ctrlExpr->AsIndir()->HasBase() &&
                                   ctrlExpr->AsIndir()->Base()->isContainedIntOrIImmed() &&
                                   !ctrlExpr->AsIndir()->HasIndex();
-
-                // For R2R we cannot allow containment as the delay load helper
-                // expects the indirection cell to be left in a register.
-#ifdef FEATURE_READYTORUN_COMPILER
-                if (call->gtEntryPoint.addr != nullptr)
-                    canContainIndir = false;
-#endif
             }
 
             if (canContainIndir)

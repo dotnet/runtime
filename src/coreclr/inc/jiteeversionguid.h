@@ -44,7 +44,6 @@ typedef const GUID *LPCGUID;
 #endif // !GUID_DEFINED
 
 constexpr GUID JITEEVersionIdentifier = { /* 7374274c-5cb5-4c41-872e-01f438ac1548 */
-
     0x7374274c,
     0x5cb5,
     0x4c41,

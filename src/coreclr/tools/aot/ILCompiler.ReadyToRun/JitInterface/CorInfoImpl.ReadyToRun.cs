@@ -2643,8 +2643,8 @@ namespace Internal.JitInterface
                 _compilation.NodeFactory.MethodEntrypoint(
                     imp.MethodWithToken,
                     ((MethodFixupSignature)imp.ImportSignature.Target).IsInstantiatingStub,
-                    false,
-                    true);
+                    isPrecodeImportRequired: false,
+                    isJumpableImportRequired: true);
 
             entryPoint = CreateConstLookupToSymbol(newEntryPoint);
         }

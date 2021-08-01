@@ -3714,7 +3714,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 #elif defined(TARGET_XARCH)
             // For xarch we usually get the indirection cell from the return address,
             // except for fast tailcalls where we do the same as ARM.
-            hasIndirectionCell = call->IsR2RRelativeIndir() && call->IsFastTailCall();
+            hasIndirectionCell    = call->IsR2RRelativeIndir() && call->IsFastTailCall();
 #endif
 
             if (!hasIndirectionCell)

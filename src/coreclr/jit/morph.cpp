@@ -3227,7 +3227,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             eeGetSystemVAmd64PassStructInRegisterDescriptor(objClass, &structDesc);
         }
 #else // !UNIX_AMD64_ABI
-        size               = 1; // On AMD64 Windows, all args fit in a single (64-bit) 'slot'
+        size = 1; // On AMD64 Windows, all args fit in a single (64-bit) 'slot'
         if (!isStructArg)
         {
             byteSize = genTypeSize(argx);
@@ -7689,10 +7689,10 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
 
-    // For R2R we might need a different entry point for this call if we are doing a tailcall.
-    // The reason is that the normal delay load helper uses the return address to find the indirection
-    // cell in x64, but now the JIT is expected to leave the indirection cell in rax.
-    // We optimize delegate invocations manually in the JIT so skip this for those.
+// For R2R we might need a different entry point for this call if we are doing a tailcall.
+// The reason is that the normal delay load helper uses the return address to find the indirection
+// cell in x64, but now the JIT is expected to leave the indirection cell in rax.
+// We optimize delegate invocations manually in the JIT so skip this for those.
 #ifdef FEATURE_READYTORUN_COMPILER
     if (call->IsR2RRelativeIndir() && canFastTailCall && !fastTailCallToLoop && !call->IsDelegateInvoke())
     {

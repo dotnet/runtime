@@ -5193,10 +5193,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // rip-relative jump.
         // Note that the indirection cell is required to be in RAX for R2R delay load helper
         // that expects to find it there (see ImportThunk.Kind.DelayLoadHelperWithExistingIndirectionCell
-        // in crossgen2). We handle this by marking the target as contained and then emitting
-        // mov rax, cell
-        // jmp [rax]
-        // in codegen.
+        // in crossgen2).
         if (target != nullptr && !target->isContained())
         {
             genConsumeReg(target);
