@@ -103,7 +103,7 @@ jobs:
       - linux_x64
       jobparameters:
         testgroup: perf
-        livelibrariesbuildconfig: release
+        livelibrariesbuildconfig: Release
         runtimetype: wasm
         codegentype: 'aot'
         projectfile: microbenchmarks.proj
@@ -336,7 +336,7 @@ jobs:
       - linux_x64
       jobparameters:
         testgroup: perf
-        livelibrariesbuildconfig: release
+        livelibrariesbuildconfig: Release
         runtimetype: wasm
         codegentype: 'aot'
         projectfile: microbenchmarks.proj
