@@ -14,10 +14,6 @@ class Module;
 class COMModule
 {
 public:
-    // Attaches an unmanaged symwriter to a newly created dynamic module.
-    static FCDECL2(LPVOID, nCreateISymWriterForDynamicModule, ReflectModuleBaseObject* reflectionModuleUNSAFE, StringObject* filenameUNSAFE);
-
-
     // IsTransient
     // Determine if a Module is transient
     static

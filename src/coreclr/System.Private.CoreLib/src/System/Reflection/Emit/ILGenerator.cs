@@ -1681,25 +1681,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal void EmitScopeTree(ISymbolWriter symWriter)
-        {
-            for (int i = 0; i < m_iCount; i++)
-            {
-                if (m_ScopeActions[i] == ScopeAction.Open)
-                {
-                    symWriter.OpenScope(m_iOffsets[i]);
-                }
-                else
-                {
-                    symWriter.CloseScope(m_iOffsets[i]);
-                }
-                if (m_localSymInfos[i] is LocalSymInfo lsi)
-                {
-                    lsi.EmitLocalSymInfo(symWriter);
-                }
-            }
-        }
-
         internal int[] m_iOffsets = null!;                 // array of offsets
         internal ScopeAction[] m_ScopeActions = null!;             // array of scope actions
         internal int m_iCount;                   // how many entries in the arrays are occupied
@@ -1780,12 +1761,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal void EmitLineNumberInfo(ISymbolWriter symWriter)
-        {
-            for (int i = 0; i < m_DocumentCount; i++)
-                m_Documents[i].EmitLineNumberInfo(symWriter);
-        }
-
         private int m_DocumentCount;         // how many documents that we have right now
         private REDocument[] m_Documents = null!;             // array of documents
         private const int InitialSize = 16;
@@ -1864,29 +1839,6 @@ namespace System.Reflection.Emit
                 Array.Copy(m_iEndColumns, temp, m_iLineNumberCount);
                 m_iEndColumns = temp;
             }
-        }
-
-        internal void EmitLineNumberInfo(ISymbolWriter symWriter)
-        {
-            if (m_iLineNumberCount == 0)
-                return;
-            // reduce the array size to be exact
-            int[] iOffsetsTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iOffsets, iOffsetsTemp, m_iLineNumberCount);
-
-            int[] iLinesTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iLines, iLinesTemp, m_iLineNumberCount);
-
-            int[] iColumnsTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iColumns, iColumnsTemp, m_iLineNumberCount);
-
-            int[] iEndLinesTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iEndLines, iEndLinesTemp, m_iLineNumberCount);
-
-            int[] iEndColumnsTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iEndColumns, iEndColumnsTemp, m_iLineNumberCount);
-
-            symWriter.DefineSequencePoints(m_document, iOffsetsTemp, iLinesTemp, iColumnsTemp, iEndLinesTemp, iEndColumnsTemp);
         }
 
         private int[] m_iOffsets = null!;                 // array of offsets
