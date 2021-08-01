@@ -658,10 +658,10 @@ namespace System.Data
         Utc = 4,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All)]
-    [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated and is not supported.", false)]
+    [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated and is not supported.")]
     public partial class DataSysDescriptionAttribute : System.ComponentModel.DescriptionAttribute
     {
-        [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated and is not supported.", false)]
+        [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated and is not supported.")]
         public DataSysDescriptionAttribute(string description) { }
         public override string Description { get { throw null; } }
     }

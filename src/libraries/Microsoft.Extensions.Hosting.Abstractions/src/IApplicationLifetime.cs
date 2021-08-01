@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Hosting
     ///  The recommended alternative is Microsoft.Extensions.Hosting.IHostApplicationLifetime.
     /// </para>
     /// </summary>
-    [Obsolete("IApplicationLifetime has been deprecated. Use Microsoft.Extensions.Hosting.IHostApplicationLifetime instead.", error: false)]
+    [Obsolete("IApplicationLifetime has been deprecated. Use Microsoft.Extensions.Hosting.IHostApplicationLifetime instead.")]
     public interface IApplicationLifetime
     {
         /// <summary>

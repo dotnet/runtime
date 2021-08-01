@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Hosting
     ///  The recommended alternative is Microsoft.Extensions.Hosting.IHostEnvironment.
     /// </para>
     /// </summary>
-    [Obsolete("IHostingEnvironment has been deprecated. Use Microsoft.Extensions.Hosting.IHostEnvironment instead.", error: false)]
+    [Obsolete("IHostingEnvironment has been deprecated. Use Microsoft.Extensions.Hosting.IHostEnvironment instead.")]
     public interface IHostingEnvironment
     {
         /// <summary>
