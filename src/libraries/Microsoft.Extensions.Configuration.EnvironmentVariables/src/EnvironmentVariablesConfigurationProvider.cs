@@ -37,6 +37,13 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables
         /// </summary>
         public override void Load() =>
             Load(Environment.GetEnvironmentVariables());
+        
+        /// <summary>
+        /// Generates a string representing this provider name and relevant details.
+        /// </summary>
+        /// <returns> The configuration name. </returns>
+        public override string ToString()
+            => $"{GetType().Name} Prefix: '{_prefix}'";
 
         internal void Load(IDictionary envVariables)
         {
