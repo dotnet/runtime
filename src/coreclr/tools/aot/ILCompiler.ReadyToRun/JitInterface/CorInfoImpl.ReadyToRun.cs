@@ -1943,7 +1943,8 @@ namespace Internal.JitInterface
                                 _compilation.NodeFactory.MethodEntrypoint(
                                     ComputeMethodWithToken(nonUnboxingMethod, ref pResolvedToken, constrainedType, unboxing: isUnboxingStub),
                                     isInstantiatingStub: useInstantiatingStub,
-                                    isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0));
+                                    isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0,
+                                    isJumpableImportRequired: false));
                         }
 
                         // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
@@ -2624,6 +2625,28 @@ namespace Internal.JitInterface
                 MethodDesc inlinee = HandleToObject(inlineeHnd);
                 _inlinedMethods.Add(inlinee);
             }
+        }
+
+        private void updateEntryPointForTailCall(ref CORINFO_CONST_LOOKUP entryPoint)
+        {
+            // In x64 we normally use a return address to find the indirection cell for delay load.
+            // For tailcalls we instead expect the JIT to leave the indirection in rax.
+            if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.X64)
+                return;
+
+            object node = HandleToObject((IntPtr)entryPoint.addr);
+            if (node is not DelayLoadMethodImport imp)
+                return;
+
+            Debug.Assert(imp.GetType() == typeof(DelayLoadMethodImport));
+            IMethodNode newEntryPoint =
+                _compilation.NodeFactory.MethodEntrypoint(
+                    imp.MethodWithToken,
+                    ((MethodFixupSignature)imp.ImportSignature.Target).IsInstantiatingStub,
+                    false,
+                    true);
+
+            entryPoint = CreateConstLookupToSymbol(newEntryPoint);
         }
     }
 }

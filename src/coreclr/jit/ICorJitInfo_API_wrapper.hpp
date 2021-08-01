@@ -1527,6 +1527,14 @@ bool WrapICorJitInfo::notifyInstructionSetUsage(
     return temp;
 }
 
+void WrapICorJitInfo::updateEntryPointForTailCall(
+          CORINFO_CONST_LOOKUP* entryPoint)
+{
+    API_ENTER(updateEntryPointForTailCall);
+    wrapHnd->updateEntryPointForTailCall(entryPoint);
+    API_LEAVE(updateEntryPointForTailCall);
+}
+
 void WrapICorJitInfo::allocMem(
           AllocMemArgs* pArgs)
 {

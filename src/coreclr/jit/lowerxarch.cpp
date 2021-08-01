@@ -4487,14 +4487,21 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
             bool canContainIndir = true;
             if (call->IsFastTailCall())
             {
-                // Currently we only allow fast tailcalls with indirections when no registers are required in the
-                // indirection.
-                // This is to ensure we won't need a register for the addressing mode since registers will have been
-                // cleaned up
-                // by the epilog at this point.
+                // Currently we only allow fast tailcalls with indirections
+                // when no registers are required in the indirection. This is
+                // to ensure we won't need a register for the addressing mode
+                // since registers will have been cleaned up by the epilog at
+                // this point.
                 canContainIndir = ctrlExpr->AsIndir()->HasBase() &&
                                   ctrlExpr->AsIndir()->Base()->isContainedIntOrIImmed() &&
                                   !ctrlExpr->AsIndir()->HasIndex();
+
+                // For R2R we cannot allow containment as the delay load helper
+                // expects the indirection cell to be left in a register.
+#ifdef FEATURE_READYTORUN_COMPILER
+                if (call->gtEntryPoint.addr != nullptr)
+                    canContainIndir = false;
+#endif
             }
 
             if (canContainIndir)

@@ -2831,10 +2831,11 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         call->gtCallType    = CT_HELPER;
         call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_PINVOKE_CALLI);
     }
-#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
+#if defined(FEATURE_READYTORUN_COMPILER)
+#if defined(TARGET_ARMARCH)
     // For arm, we dispatch code same as VSD using virtualStubParamInfo->GetReg()
     // for indirection cell address, which ZapIndirectHelperThunk expects.
-    if (call->IsR2RRelativeIndir())
+    if (call->IsR2RRelativeIndir() && !call->IsDelegateInvoke())
     {
         assert(call->gtEntryPoint.addr != nullptr);
 
@@ -2858,8 +2859,33 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         numArgs++;
         nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->GetRegNum());
     }
+#elif defined(TARGET_XARCH)
+    // For xarch fast tailcalls we do the same as ARM, leaving the indirection cell in the
+    // fast tailcall register.
+    // Note that we call this before we know if something will be a fast tailcall or not.
+    // That's ok; after making something a tailcall, we will invalidate this information
+    // and reconstruct it if necessary. The tailcalling decision does not change since
+    // this is a non-standard arg in a register.
+    if (call->IsR2RRelativeIndir() && call->IsFastTailCall() && !call->IsDelegateInvoke())
+    {
+        assert(call->gtEntryPoint.addr != nullptr);
 
-#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
+        size_t   addrValue           = (size_t)call->gtEntryPoint.addr;
+        GenTree* indirectCellAddress = gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
+#ifdef DEBUG
+        indirectCellAddress->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
+#endif
+        indirectCellAddress->SetRegNum(REG_RAX);
+
+        // Push the stub address onto the list of arguments.
+        call->gtCallArgs = gtPrependNewCallArg(indirectCellAddress, call->gtCallArgs);
+
+        numArgs++;
+        nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->GetRegNum());
+    }
+
+#endif
+#endif
 
     // Allocate the fgArgInfo for the call node;
     //
@@ -7663,6 +7689,22 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
 
+    // For R2R we might need a different entry point for this call if we are doing a tailcall.
+    // The reason is that the normal delay load helper uses the return address to find the indirection
+    // cell in x64, but now the JIT is expected to leave the indirection cell in rax.
+    // We optimize delegate invocations manually in the JIT so skip this for those.
+#ifdef FEATURE_READYTORUN_COMPILER
+    if (call->IsR2RRelativeIndir() && canFastTailCall && !fastTailCallToLoop && !call->IsDelegateInvoke())
+    {
+        info.compCompHnd->updateEntryPointForTailCall(&call->gtEntryPoint);
+
+#ifdef TARGET_XARCH
+        // We need to redo arg info to add the indirection cell arg.
+        call->fgArgInfo = nullptr;
+#endif
+    }
+#endif
+
     // If this block has a flow successor, make suitable updates.
     //
     BasicBlock* const nextBlock = compCurBB->GetUniqueSucc();
@@ -8846,11 +8888,11 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
 // Arguments:
 //    argTabEntry  - the arg
 //
-unsigned fgGetArgTabEntryParameterLclNum(GenTreeCall* call, fgArgTabEntry* argTabEntry)
+unsigned Compiler::fgGetArgTabEntryParameterLclNum(GenTreeCall* call, fgArgTabEntry* argTabEntry)
 {
-    fgArgInfo* argInfo = call->fgArgInfo;
-    unsigned        argCount       = argInfo->ArgCount();
-    fgArgTabEntry** argTable       = argInfo->ArgTable();
+    fgArgInfo*      argInfo  = call->fgArgInfo;
+    unsigned        argCount = argInfo->ArgCount();
+    fgArgTabEntry** argTable = argInfo->ArgTable();
 
     unsigned numNonStandardBefore = 0;
     for (unsigned i = 0; i < argCount; i++)
@@ -8957,9 +8999,11 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
                 if (!curArgTabEntry->isNonStandard)
                 {
                     Statement* paramAssignStmt =
-                        fgAssignRecursiveCallArgToCallerParam(earlyArg, curArgTabEntry, fgGetArgTabEntryParameterLclNum(recursiveTailCall, curArgTabEntry),
-                            block, callILOffset,
-                            tmpAssignmentInsertionPoint, paramAssignmentInsertionPoint);
+                        fgAssignRecursiveCallArgToCallerParam(earlyArg, curArgTabEntry,
+                                                              fgGetArgTabEntryParameterLclNum(recursiveTailCall,
+                                                                                              curArgTabEntry),
+                                                              block, callILOffset, tmpAssignmentInsertionPoint,
+                                                              paramAssignmentInsertionPoint);
                     if ((tmpAssignmentInsertionPoint == lastStmt) && (paramAssignStmt != nullptr))
                     {
                         // All temp assignments will happen before the first param assignment.
@@ -8981,8 +9025,11 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         if (!curArgTabEntry->isNonStandard)
         {
             Statement* paramAssignStmt =
-                fgAssignRecursiveCallArgToCallerParam(lateArg, curArgTabEntry, fgGetArgTabEntryParameterLclNum(recursiveTailCall, curArgTabEntry), block, callILOffset,
-                    tmpAssignmentInsertionPoint, paramAssignmentInsertionPoint);
+                fgAssignRecursiveCallArgToCallerParam(lateArg, curArgTabEntry,
+                                                      fgGetArgTabEntryParameterLclNum(recursiveTailCall,
+                                                                                      curArgTabEntry),
+                                                      block, callILOffset, tmpAssignmentInsertionPoint,
+                                                      paramAssignmentInsertionPoint);
 
             if ((tmpAssignmentInsertionPoint == lastStmt) && (paramAssignStmt != nullptr))
             {

@@ -5191,6 +5191,12 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // If this is indirect then we go through RAX with epilog sequence
         // generating "jmp rax". Otherwise epilog will try to generate a
         // rip-relative jump.
+        // Note that the indirection cell is required to be in RAX for R2R delay load helper
+        // that expects to find it there (see ImportThunk.Kind.DelayLoadHelperWithExistingIndirectionCell
+        // in crossgen2). We handle this by marking the target as contained and then emitting
+        // mov rax, cell
+        // jmp [rax]
+        // in codegen.
         if (target != nullptr && !target->isContained())
         {
             genConsumeReg(target);

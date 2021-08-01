@@ -8025,12 +8025,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             // target address will be in gtDirectCallAddress. It is still possible that calls
             // to user funcs require indirection, in which case the control expression will
             // be non-null.
-            bool isR2rRelIndir = false;
-#ifdef FEATURE_READYTORUN_COMPILER
-            isR2rRelIndir = call->IsR2RRelativeIndir();
-#endif
 
-            if ((callType == CT_USER_FUNC) && (call->gtControlExpr == nullptr) && !isR2rRelIndir)
+            if ((callType == CT_USER_FUNC) && (call->gtControlExpr == nullptr) && !call->IsR2RRelativeIndir())
             {
                 assert(call->gtCallMethHnd != nullptr);
                 // clang-format off
@@ -8054,10 +8050,10 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             }
             else
             {
-                // Target requires indirection to obtain. genCallInstruction will have materialized
-                // it into REG_R2R_INDIRECT_PARAM/REG_FASTTAILCALL_TARGET already, so just branch to it.
-                regNumber reg = isR2rRelIndir ? REG_R2R_INDIRECT_PARAM : REG_FASTTAILCALL_TARGET;
-                GetEmitter()->emitIns_R(INS_br, emitTypeSize(TYP_I_IMPL), reg);
+                // Target requires indirection to obtain. genCallInstruction
+                // will have materialized it into REG_FASTTAILCALL_TARGET
+                // already, so just branch to it.
+                GetEmitter()->emitIns_R(INS_br, emitTypeSize(TYP_I_IMPL), REG_FASTTAILCALL_TARGET);
             }
         }
 #endif // FEATURE_FASTTAILCALL
@@ -8470,21 +8466,42 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             if ((callType == CT_USER_FUNC) && (call->gtControlExpr == nullptr))
             {
                 assert(call->gtCallMethHnd != nullptr);
+
                 // clang-format off
-                GetEmitter()->emitIns_Call(
-                        emitter::EC_FUNC_TOKEN,
-                        call->gtCallMethHnd,
-                        INDEBUG_LDISASM_COMMA(nullptr)
-                        call->gtDirectCallAddress,
-                        0,                                              // argSize
-                        EA_UNKNOWN                                      // retSize
-                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),// secondRetSize
-                        gcInfo.gcVarPtrSetCur,
-                        gcInfo.gcRegGCrefSetCur,
-                        gcInfo.gcRegByrefSetCur,
-                        BAD_IL_OFFSET, REG_NA, REG_NA, 0, 0,  /* iloffset, ireg, xreg, xmul, disp */
-                        true /* isJump */
-                );
+                if (call->IsR2RRelativeIndir())
+                {
+                    GetEmitter()->emitIns_Call(
+                            emitter::EC_INDIR_ARD,
+                            call->gtCallMethHnd,
+                            INDEBUG_LDISASM_COMMA(nullptr)
+                            0,                                              // addr
+                            0,                                              // argSize
+                            EA_UNKNOWN                                      // retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),// secondRetSize
+                            gcInfo.gcVarPtrSetCur,
+                            gcInfo.gcRegGCrefSetCur,
+                            gcInfo.gcRegByrefSetCur,
+                            BAD_IL_OFFSET, REG_RAX, REG_NA, 0, 0,  /* iloffset, ireg, xreg, xmul, disp */
+                            true /* isJump */
+                    );
+                }
+                else
+                {
+                    GetEmitter()->emitIns_Call(
+                            emitter::EC_FUNC_TOKEN,
+                            call->gtCallMethHnd,
+                            INDEBUG_LDISASM_COMMA(nullptr)
+                            call->gtDirectCallAddress,
+                            0,                                              // argSize
+                            EA_UNKNOWN                                      // retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),// secondRetSize
+                            gcInfo.gcVarPtrSetCur,
+                            gcInfo.gcRegGCrefSetCur,
+                            gcInfo.gcRegByrefSetCur,
+                            BAD_IL_OFFSET, REG_NA, REG_NA, 0, 0,  /* iloffset, ireg, xreg, xmul, disp */
+                            true /* isJump */
+                    );
+                }
                 // clang-format on
             }
             else

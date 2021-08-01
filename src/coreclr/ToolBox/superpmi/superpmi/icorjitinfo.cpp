@@ -1556,6 +1556,11 @@ bool MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bo
     return supported;
 }
 
+void MyICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
+{
+    jitInstance->mc->cr->AddCall("updateEntryPointForTailCall");
+}
+
 // Stuff directly on ICorJitInfo
 
 // Returns extended flags for a particular compilation instance.

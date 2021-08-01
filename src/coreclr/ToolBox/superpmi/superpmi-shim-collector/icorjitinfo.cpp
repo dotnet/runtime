@@ -1776,6 +1776,11 @@ bool interceptor_ICJI::getTailCallHelpers(
     return result;
 }
 
+void interceptor_ICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
+{
+    mc->cr->AddCall("updateEntryPointForTailCall");
+}
+
 // Stuff directly on ICorJitInfo
 
 // Returns extended flags for a particular compilation instance.
