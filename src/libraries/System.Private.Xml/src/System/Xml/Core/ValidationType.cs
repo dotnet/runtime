@@ -19,7 +19,7 @@ namespace System.Xml
         // 4) If there is no <!DOCTYPE ...&> declaration and no XSD "schemaLocation" attribute but there are some namespaces
         //    using the MSXML "x-schema:" URN prefix, it will load and process those schemas and it will return any default
         //    attributes defined in those schemas.
-        [Obsolete("ValidationType.Auto has been deprecated.Use DTD or Schema instead.")]
+        [Obsolete("ValidationType.Auto has been deprecated. Use DTD or Schema instead.")]
         Auto,
 
         // Validate according to DTD.
